@@ -2,6 +2,7 @@ package mcpconfig
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"os"
@@ -174,6 +175,7 @@ func (s *Server) buildConfig() fwmcp.CircuitConfig {
 			{Name: "scenario", Type: "string", Description: "Calibration scenario name (e.g. 'ptp')", Required: true},
 			{Name: "mode", Type: "string", Description: "Execution mode", Enum: []string{"offline", "online"}},
 			{Name: "backend", Type: "string", Description: "Transformer backend for LLM processing", Enum: []string{"stub", "basic", "llm"}},
+			{Name: "resolution", Type: "string", Description: "Calibration resolution: unit (single circuit, stubs at ports), pairwise, integrated, or empty for full", Enum: []string{"unit", "pairwise", "integrated"}},
 			{Name: "rp_base_url", Type: "string", Description: "ReportPortal base URL for online mode (e.g. 'https://rp.example.com')"},
 			{Name: "rp_project", Type: "string", Description: "ReportPortal project name (defaults to $ASTERISK_RP_PROJECT)"},
 			{Name: "rp_api_key_path", Type: "string", Description: "Path to RP API key file (defaults to $ASTERISK_RP_API_KEY_PATH or '.rp-api-key')"},
@@ -239,10 +241,46 @@ func (s *Server) createSession(ctx context.Context, params fwmcp.StartParams, di
 		return nil, fwmcp.SessionMeta{}, fmt.Errorf("extra.scenario is required; pass it in start_circuit extra, e.g. extra:{\"scenario\":\"ptp\"}")
 	}
 	transformerName, _ := extra["backend"].(string)
+	resolutionStr, _ := extra["resolution"].(string)
 	rpBaseURL, _ := extra["rp_base_url"].(string)
 	rpProject, _ := extra["rp_project"].(string)
 	modeStr, _ := extra["mode"].(string)
 	mode := rca.ParseCalibrationMode(modeStr)
+
+	var resolution cal.Resolution
+	var portStubs cal.PortStubs
+	if resolutionStr != "" {
+		var err error
+		resolution, err = cal.ParseResolution(resolutionStr)
+		if err != nil {
+			return nil, fwmcp.SessionMeta{}, fmt.Errorf("invalid resolution: %w", err)
+		}
+		if s.DomainFS != nil {
+			stubsDir := fmt.Sprintf("stubs/%s", resolutionStr)
+			if stubFS, fsErr := fs.Sub(s.DomainFS, stubsDir); fsErr == nil {
+				ps := cal.PortStubs{}
+				entries, _ := fs.ReadDir(stubFS, ".")
+				for _, e := range entries {
+					if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
+						continue
+					}
+					data, readErr := fs.ReadFile(stubFS, e.Name())
+					if readErr != nil {
+						continue
+					}
+					var v any
+					if jsonErr := json.Unmarshal(data, &v); jsonErr != nil {
+						continue
+					}
+					portName := e.Name()[:len(e.Name())-len(".json")]
+					ps[portName] = v
+				}
+				if len(ps) > 0 {
+					portStubs = ps
+				}
+			}
+		}
+	}
 
 	var scenarioFS fs.FS
 	if s.DomainFS != nil {
@@ -393,6 +431,9 @@ func (s *Server) createSession(ctx context.Context, params fwmcp.StartParams, di
 			Renderer:       adapter,
 			CircuitDef:     circuitDef,
 			ScoreCard:      sc,
+			Contract:       cal.ContractFromDef(circuitDef.Calibration),
+			Resolution:     resolution,
+			PortStubs:      portStubs,
 			Scenario:       scenario.Name,
 			Transformer:    transformerLabel,
 			Runs:           1,

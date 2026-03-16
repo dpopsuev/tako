@@ -1,6 +1,8 @@
 package calibrate
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	framework "github.com/dpopsuev/origami"
@@ -152,5 +154,122 @@ func TestWrapForResolution_SetsResolutionMetadata(t *testing.T) {
 	}
 	if !IsCalibrationWrapped(wrapped) {
 		t.Error("WrapForResolution should produce calibration-wrapped circuit")
+	}
+}
+
+func TestParseResolution_Valid(t *testing.T) {
+	for _, tc := range []struct {
+		in   string
+		want Resolution
+	}{
+		{"unit", ResolutionUnit},
+		{"pairwise", ResolutionPairwise},
+		{"integrated", ResolutionIntegrated},
+	} {
+		got, err := ParseResolution(tc.in)
+		if err != nil {
+			t.Errorf("ParseResolution(%q): unexpected error: %v", tc.in, err)
+		}
+		if got != tc.want {
+			t.Errorf("ParseResolution(%q): got %q, want %q", tc.in, got, tc.want)
+		}
+	}
+}
+
+func TestParseResolution_Invalid(t *testing.T) {
+	_, err := ParseResolution("bad")
+	if err == nil {
+		t.Error("ParseResolution(bad): expected error")
+	}
+}
+
+func TestLoadPortStubs_ValidJSON(t *testing.T) {
+	dir := t.TempDir()
+	fixture := filepath.Join(dir, "code-context.json")
+	if err := os.WriteFile(fixture, []byte(`{"files":["a.go","b.go"]}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	stubs := []StubDef{{Port: "rca.in:code-context", Fixture: fixture}}
+	ps, err := LoadPortStubs(stubs)
+	if err != nil {
+		t.Fatalf("LoadPortStubs: %v", err)
+	}
+	if !ps.IsPortStubbed("rca.in:code-context") {
+		t.Error("port should be stubbed")
+	}
+	m, ok := ps.Get("rca.in:code-context").(map[string]any)
+	if !ok {
+		t.Fatalf("expected map, got %T", ps.Get("rca.in:code-context"))
+	}
+	if _, ok := m["files"]; !ok {
+		t.Error("expected files key in fixture data")
+	}
+}
+
+func TestLoadPortStubs_MissingFile(t *testing.T) {
+	stubs := []StubDef{{Port: "test", Fixture: "/nonexistent/file.json"}}
+	_, err := LoadPortStubs(stubs)
+	if err == nil {
+		t.Error("expected error for missing fixture")
+	}
+}
+
+func TestLoadPortStubs_Empty(t *testing.T) {
+	ps, err := LoadPortStubs(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ps != nil {
+		t.Error("expected nil for empty stubs")
+	}
+}
+
+func TestPortStubs_NilSafe(t *testing.T) {
+	var ps PortStubs
+	if ps.IsPortStubbed("anything") {
+		t.Error("nil PortStubs should not report stubbed")
+	}
+	if ps.Get("anything") != nil {
+		t.Error("nil PortStubs.Get should return nil")
+	}
+}
+
+func TestGetPortStubs_FromCircuit(t *testing.T) {
+	def := &framework.CircuitDef{
+		Vars: map[string]any{
+			"_port_stubs": PortStubs{"test.in:x": "hello"},
+		},
+	}
+	ps := GetPortStubs(def)
+	if ps == nil {
+		t.Fatal("expected port stubs")
+	}
+	if ps.Get("test.in:x") != "hello" {
+		t.Errorf("got %v, want hello", ps.Get("test.in:x"))
+	}
+}
+
+func TestGetPortStubs_NilDef(t *testing.T) {
+	if GetPortStubs(nil) != nil {
+		t.Error("nil def should return nil stubs")
+	}
+}
+
+func TestGetResolution_FromCircuit(t *testing.T) {
+	def := &framework.CircuitDef{
+		Vars: map[string]any{
+			"_calibration_resolution": "unit",
+		},
+	}
+	if GetResolution(def) != ResolutionUnit {
+		t.Errorf("got %q, want unit", GetResolution(def))
+	}
+}
+
+func TestGetResolution_NotSet(t *testing.T) {
+	def := &framework.CircuitDef{}
+	if GetResolution(def) != "" {
+		t.Error("expected empty resolution for unwrapped circuit")
 	}
 }

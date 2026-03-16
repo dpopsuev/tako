@@ -2,6 +2,7 @@ package mcpconfig_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"os"
@@ -34,6 +35,10 @@ func calibrateMode() string {
 		return v
 	}
 	return "offline"
+}
+
+func calibrateResolution() string {
+	return os.Getenv("CALIBRATE_RESOLUTION")
 }
 
 func loadCalibrationScenario(t *testing.T, domainFS fs.FS) *rca.Scenario {
@@ -100,18 +105,58 @@ func TestCalibrate(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	genReport, err := cal.Run(ctx, cal.HarnessConfig{
+	harnessConfig := cal.HarnessConfig{
 		Loader:         adapter,
 		Collector:      adapter,
 		Renderer:       adapter,
 		CircuitDef:     def,
 		ScoreCard:      sc,
+		Contract:       cal.ContractFromDef(def.Calibration),
 		Scenario:       scenario.Name,
 		Transformer:    calibrateBackend(),
 		Runs:           1,
 		Parallel:       1,
 		OnCaseComplete: adapter.OnCaseComplete(),
-	})
+	}
+
+	if res := calibrateResolution(); res != "" {
+		resolution, err := cal.ParseResolution(res)
+		if err != nil {
+			t.Fatalf("parse resolution: %v", err)
+		}
+		harnessConfig.Resolution = resolution
+
+		// Load port stubs for isolated resolutions from domain FS.
+		stubsDir := fmt.Sprintf("stubs/%s", res)
+		if domainFS != nil {
+			stubFS, fsErr := fs.Sub(domainFS, stubsDir)
+			if fsErr == nil {
+				ps := cal.PortStubs{}
+				entries, _ := fs.ReadDir(stubFS, ".")
+				for _, e := range entries {
+					if e.IsDir() {
+						continue
+					}
+					data, readErr := fs.ReadFile(stubFS, e.Name())
+					if readErr != nil {
+						continue
+					}
+					var v any
+					if jsonErr := json.Unmarshal(data, &v); jsonErr != nil {
+						continue
+					}
+					portName := e.Name()[:len(e.Name())-len(".json")]
+					ps[portName] = v
+				}
+				if len(ps) > 0 {
+					harnessConfig.PortStubs = ps
+				}
+			}
+		}
+		t.Logf("calibration resolution: %s (port stubs: %d)", res, len(harnessConfig.PortStubs))
+	}
+
+	genReport, err := cal.Run(ctx, harnessConfig)
 	if err != nil {
 		t.Fatalf("calibration failed: %v", err)
 	}

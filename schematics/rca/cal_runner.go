@@ -109,6 +109,7 @@ func RunCalibration(ctx context.Context, cfg RunConfig) (*CalibrationReport, err
 		Collector:      adapter,
 		CircuitDef:     def,
 		ScoreCard:      cfg.ScoreCard,
+		Contract:       cal.ContractFromDef(def.Calibration),
 		Scenario:       cfg.Scenario.Name,
 		Transformer:    cfg.TransformerName,
 		Runs:           cfg.Runs,
@@ -138,6 +139,44 @@ func RunCalibration(ctx context.Context, cfg RunConfig) (*CalibrationReport, err
 	}
 
 	return report, nil
+}
+
+// applyContractFields overlays contract-extracted values onto a CaseResult.
+// Fields extracted via the calibration contract take precedence over store-based
+// extraction for fields the contract declares. Store-specific fields (RCAID,
+// store-persisted state) remain untouched.
+func applyContractFields(r *CaseResult, fields map[string]any) {
+	if s, ok := fields["actual_defect_type"].(string); ok && s != "" {
+		r.ActualDefectType = s
+	} else if s, ok := fields["rca_defect_type"].(string); ok && s != "" {
+		r.ActualDefectType = s
+	}
+	if s, ok := fields["actual_category"].(string); ok && s != "" {
+		r.ActualCategory = s
+	}
+	if s, ok := fields["actual_component"].(string); ok && s != "" {
+		r.ActualComponent = s
+	}
+	if s, ok := fields["actual_rca_message"].(string); ok && s != "" {
+		r.ActualRCAMessage = s
+	}
+	if v, ok := fields["actual_convergence"].(float64); ok {
+		r.ActualConvergence = v
+	}
+	if refs, ok := fields["actual_evidence_refs"].([]any); ok {
+		strs := make([]string, 0, len(refs))
+		for _, ref := range refs {
+			if s, ok := ref.(string); ok {
+				strs = append(strs, s)
+			}
+		}
+		if len(strs) > 0 {
+			r.ActualEvidenceRefs = strs
+		}
+	}
+	if path, ok := fields["_path"].([]string); ok && len(path) > 0 {
+		r.ActualPath = path
+	}
 }
 
 // scoreCaseResult sets the DefectTypeCorrect, PathCorrect, and ComponentCorrect

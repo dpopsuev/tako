@@ -68,6 +68,12 @@ func FormatReport(report *CalibrationReport, cfg FormatConfig) string {
 	b.WriteString(fmt.Sprintf("=== %s ===\n", title))
 	b.WriteString(fmt.Sprintf("Scenario: %s\n", report.Scenario))
 	b.WriteString(fmt.Sprintf("Transformer: %s\n", report.Transformer))
+	if report.Resolution != "" {
+		b.WriteString(fmt.Sprintf("Resolution: %s\n", report.Resolution))
+	}
+	if report.Plan != "" {
+		b.WriteString(fmt.Sprintf("Plan: %s\n", report.Plan))
+	}
 	b.WriteString(fmt.Sprintf("Runs:     %d\n\n", report.Runs))
 
 	nameFunc := cfg.MetricNameFunc
@@ -130,5 +136,68 @@ func FormatReport(report *CalibrationReport, cfg FormatConfig) string {
 		b.WriteString("\n")
 	}
 
+	return b.String()
+}
+
+// ResolutionComparison holds metric deltas between two resolution levels.
+type ResolutionComparison struct {
+	MetricID   string  `json:"metric_id"`
+	MetricName string  `json:"metric_name"`
+	ValueA     float64 `json:"value_a"`
+	ValueB     float64 `json:"value_b"`
+	Delta      float64 `json:"delta"`
+	PassA      bool    `json:"pass_a"`
+	PassB      bool    `json:"pass_b"`
+}
+
+// CompareResolutions produces a metric-by-metric comparison between two
+// calibration reports at different resolution levels. This surfaces which
+// metrics degrade when moving from isolated to integrated calibration.
+func CompareResolutions(a, b *CalibrationReport) []ResolutionComparison {
+	bMap := b.Metrics.ByID()
+	var comps []ResolutionComparison
+	for _, ma := range a.Metrics.Metrics {
+		comp := ResolutionComparison{
+			MetricID:   ma.ID,
+			MetricName: ma.Name,
+			ValueA:     ma.Value,
+			PassA:      ma.Pass,
+		}
+		if mb, ok := bMap[ma.ID]; ok {
+			comp.ValueB = mb.Value
+			comp.PassB = mb.Pass
+			comp.Delta = mb.Value - ma.Value
+		}
+		comps = append(comps, comp)
+	}
+	return comps
+}
+
+// FormatResolutionComparison renders a cross-resolution comparison table.
+func FormatResolutionComparison(comps []ResolutionComparison, labelA, labelB string) string {
+	var b strings.Builder
+	b.WriteString(fmt.Sprintf("\n=== Resolution Comparison: %s vs %s ===\n\n", labelA, labelB))
+
+	tbl := format.NewTable(format.ASCII)
+	tbl.Header("ID", "NAME", labelA, "", labelB, "", "DELTA")
+
+	for _, c := range comps {
+		passA := "✓"
+		if !c.PassA {
+			passA = "✗"
+		}
+		passB := "✓"
+		if !c.PassB {
+			passB = "✗"
+		}
+		tbl.Row(
+			c.MetricID, c.MetricName,
+			fmt.Sprintf("%.3f", c.ValueA), passA,
+			fmt.Sprintf("%.3f", c.ValueB), passB,
+			fmt.Sprintf("%+.3f", c.Delta),
+		)
+	}
+
+	b.WriteString(tbl.String())
 	return b.String()
 }

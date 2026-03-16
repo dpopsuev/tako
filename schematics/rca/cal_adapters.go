@@ -17,9 +17,10 @@ import (
 
 // Compile-time checks.
 var (
-	_ cal.ScenarioLoader = (*RCACalibrationAdapter)(nil)
-	_ cal.CaseCollector  = (*RCACalibrationAdapter)(nil)
-	_ cal.ReportRenderer = (*RCACalibrationAdapter)(nil)
+	_ cal.ScenarioLoader          = (*RCACalibrationAdapter)(nil)
+	_ cal.CaseCollector           = (*RCACalibrationAdapter)(nil)
+	_ cal.ContractFieldsReceiver  = (*RCACalibrationAdapter)(nil)
+	_ cal.ReportRenderer          = (*RCACalibrationAdapter)(nil)
 )
 
 // caseEntry pairs a ground truth case with its store entity and artifact directory.
@@ -54,9 +55,17 @@ type RCACalibrationAdapter struct {
 	st      store.Store
 	suiteID int64
 
+	// Contract-extracted fields — populated by harness via SetContractFields.
+	contractFields []map[string]any
+
 	// Output — populated by Collect(), readable by caller after Run().
 	caseResults []CaseResult
 	dataset     *DatasetHealth
+}
+
+// SetContractFields receives contract-extracted field maps from the harness.
+func (a *RCACalibrationAdapter) SetContractFields(fields []map[string]any) {
+	a.contractFields = fields
 }
 
 // CaseResults returns the per-case results collected during the last Collect() call.
@@ -244,6 +253,14 @@ func (a *RCACalibrationAdapter) Collect(_ context.Context, results []framework.B
 			"case_id", entry.gtCase.ID, "index", i+1, "total", len(a.entries), "test", entry.gtCase.TestName)
 
 		caseResults[i] = collectCaseResult(br, entry.gtCase, entry.caseData, entry.caseDir, a.suiteID, a.st, cfg)
+
+		// Overlay contract-extracted fields when available. The contract
+		// provides a generic extraction path for standard fields; the
+		// store-based extraction in collectCaseResult handles
+		// RCA-specific state (RCAID, store-persisted defect type, etc.).
+		if i < len(a.contractFields) && a.contractFields[i] != nil {
+			applyContractFields(&caseResults[i], a.contractFields[i])
+		}
 	}
 
 	for i := range caseResults {
