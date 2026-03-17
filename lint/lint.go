@@ -110,8 +110,14 @@ type LintContext struct {
 	Registries      *framework.GraphRegistries
 	PromptFS        fs.FS
 	PromptValidator PromptValidator
-	yamlRoot        *yaml.Node
-	fieldLineMap    map[string]int
+
+	// ProjectFiles holds all YAML files in the project indexed by kind.
+	// Populated when linting in project mode (directory or multiple files).
+	// Cross-reference rules use this for multi-file validation.
+	ProjectFiles map[string][]ProjectFile
+
+	yamlRoot     *yaml.Node
+	fieldLineMap map[string]int
 }
 
 // NewLintContext creates a LintContext from raw YAML bytes.
@@ -364,6 +370,7 @@ type runConfig struct {
 	registries      *framework.GraphRegistries
 	promptFS        fs.FS
 	promptValidator PromptValidator
+	projectFiles    map[string][]ProjectFile
 }
 
 // WithProfile sets the lint profile.
@@ -392,6 +399,12 @@ func WithPromptFS(fsys fs.FS) Option {
 // does not import domain modules.
 func WithPromptValidator(v PromptValidator) Option {
 	return func(c *runConfig) { c.promptValidator = v }
+}
+
+// WithProjectFiles provides parsed YAML files indexed by kind for
+// cross-file validation rules (S30+). Built from LoadProjectFiles.
+func WithProjectFiles(files map[string][]ProjectFile) Option {
+	return func(c *runConfig) { c.projectFiles = files }
 }
 
 // Runner holds a set of rules and executes them against circuit definitions.
@@ -424,6 +437,9 @@ func (r *Runner) Run(ctx *LintContext, opts ...Option) []Finding {
 	}
 	if cfg.promptValidator != nil {
 		ctx.PromptValidator = cfg.promptValidator
+	}
+	if cfg.projectFiles != nil {
+		ctx.ProjectFiles = cfg.projectFiles
 	}
 
 	maxSev := cfg.profile.maxSeverity()

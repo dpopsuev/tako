@@ -526,9 +526,34 @@ func lintCmd(args []string) error {
 		}
 		return out
 	})
+
+	// Build project file index for cross-reference validation.
+	// Collect all YAML files from directories containing the lint targets.
+	projectRaw := make(map[string][]byte)
+	seen := make(map[string]bool)
+	for _, file := range fs.Args() {
+		dir := filepath.Dir(file)
+		if seen[dir] {
+			continue
+		}
+		seen[dir] = true
+		entries, _ := os.ReadDir(dir)
+		for _, e := range entries {
+			if e.IsDir() || !(strings.HasSuffix(e.Name(), ".yaml") || strings.HasSuffix(e.Name(), ".yml")) {
+				continue
+			}
+			fp := filepath.Join(dir, e.Name())
+			if data, err := os.ReadFile(fp); err == nil {
+				projectRaw[fp] = data
+			}
+		}
+	}
+	projectFiles := lint.LoadProjectFiles(projectRaw)
+
 	promptOpts := []lint.Option{
 		lint.WithPromptFS(os.DirFS("internal/prompts")),
 		lint.WithPromptValidator(promptValidator),
+		lint.WithProjectFiles(projectFiles),
 	}
 
 	for _, file := range fs.Args() {

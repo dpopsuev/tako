@@ -6,6 +6,7 @@ func AllRules() []Rule {
 	all := append(structuralRules(), semanticRules()...)
 	all = append(all, bestPracticeRules()...)
 	all = append(all, promptRules()...)
+	all = append(all, crossRefRules()...)
 	return all
 }
 
@@ -68,5 +69,11 @@ func bestPracticeRules() []Rule {
 func promptRules() []Rule {
 	return []Rule{
 		&TemplateParamValidity{},
+	}
+}
+
+func crossRefRules() []Rule {
+	return []Rule{
+		&CrossRefEngine{Rules: DefaultCrossRefRules()},
 	}
 }
