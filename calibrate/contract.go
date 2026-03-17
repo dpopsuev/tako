@@ -85,12 +85,48 @@ func resolveStatePath(parts []string, state *framework.WalkerState) any {
 	return nil
 }
 
-// walkMap traverses a nested map using a dotted path like "evidence_refs" or
-// "gap_brief.verdict".
+// walkMap traverses a nested map using a dotted path like "evidence_refs",
+// "gap_brief.verdict", or "files[].path" (array projection).
+//
+// When a segment ends with "[]", the value at that key is treated as an
+// array. The remaining path is resolved against each element, and the
+// results are collected into a flat []any slice.
 func walkMap(m map[string]any, path string) any {
 	parts := strings.Split(path, ".")
 	current := any(m)
-	for _, key := range parts {
+	for i, key := range parts {
+		// Array projection: "files[]" → iterate array, collect remaining path.
+		if strings.HasSuffix(key, "[]") {
+			mapKey := strings.TrimSuffix(key, "[]")
+			cm, ok := current.(map[string]any)
+			if !ok {
+				return nil
+			}
+			arr, ok := cm[mapKey]
+			if !ok {
+				return nil
+			}
+			items := toAnySlice(arr)
+			if items == nil {
+				return nil
+			}
+			// If no remaining path, return the array as-is.
+			remaining := strings.Join(parts[i+1:], ".")
+			if remaining == "" {
+				return items
+			}
+			// Collect values at remaining path from each element.
+			var collected []any
+			for _, item := range items {
+				if im, ok := item.(map[string]any); ok {
+					if v := walkMap(im, remaining); v != nil {
+						collected = append(collected, v)
+					}
+				}
+			}
+			return collected
+		}
+
 		cm, ok := current.(map[string]any)
 		if !ok {
 			return nil
@@ -101,6 +137,21 @@ func walkMap(m map[string]any, path string) any {
 		}
 	}
 	return current
+}
+
+// toAnySlice converts various slice types to []any.
+func toAnySlice(v any) []any {
+	switch s := v.(type) {
+	case []any:
+		return s
+	case []map[string]any:
+		out := make([]any, len(s))
+		for i, m := range s {
+			out[i] = m
+		}
+		return out
+	}
+	return nil
 }
 
 // asAnyMap converts an arbitrary value to map[string]any if possible.

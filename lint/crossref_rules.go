@@ -7,19 +7,21 @@ package lint
 func DefaultCrossRefRules() []CrossRefRule {
 	return []CrossRefRule{
 		{
-			// S30: only check params.actual against the calibration contract.
-			// params.expected comes from ground truth (scenario data), not
-			// circuit outputs — it's wired by the CaseCollector, not the contract.
+			// S30: check all scorer actual-value params against the calibration
+			// contract + adapter_fields exclusion list. Params.expected comes
+			// from ground truth (scenario data), not circuit outputs.
 			RuleID:      "S30/calibration-fields",
-			Desc:        "scorecard actual params must reference fields declared in the circuit's calibration contract",
+			Desc:        "scorecard actual params must reference fields declared in the circuit's calibration contract or adapter_fields",
 			RuleSev:     SeverityWarning,
 			ExportKind:  "circuit",
 			ExportPath:  "calibration.outputs[].scorer_name",
 			RefKind:     "scorecard",
-			RefPaths:    "metrics[].params.actual",
+			RefPaths:    "metrics[].params.actual,metrics[].params.actual_field,metrics[].params.text_field,metrics[].params.x_field,metrics[].params.numerator_field,metrics[].params.field",
 			CheckType:   "refs_subset_of_exports",
 			ExportLabel: "calibration contract",
 			RefLabel:    "scorecard param",
+			ExcludeKind: "circuit",
+			ExcludePath: "calibration.adapter_fields[]",
 		},
 		{
 			RuleID:      "S32/scenario-sources",

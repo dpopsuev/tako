@@ -21,6 +21,8 @@ type CrossRefRule struct {
 	CheckType   string // "refs_subset_of_exports" or "bidirectional"
 	ExportLabel string // human label for the export set (e.g., "calibration contract")
 	RefLabel    string // human label for the reference set (e.g., "scorecard params")
+	ExcludeKind string // optional: kind of file containing exclusion list
+	ExcludePath string // optional: path to values excluded from reference checking (adapter-provided fields)
 }
 
 // CrossRefEngine implements the Rule interface by processing N declarative
@@ -61,6 +63,20 @@ func (e *CrossRefEngine) checkRule(rule CrossRefRule, ctx *LintContext) []Findin
 		return nil // no exports found — rule doesn't apply
 	}
 
+	// Extract exclusions (adapter-provided fields that should not be checked).
+	excluded := make(map[string]bool)
+	if rule.ExcludePath != "" {
+		excludeKind := rule.ExcludeKind
+		if excludeKind == "" {
+			excludeKind = rule.ExportKind
+		}
+		for _, doc := range ctx.ProjectFiles[excludeKind] {
+			for _, v := range ExtractPath(doc.Data, rule.ExcludePath) {
+				excluded[fmt.Sprint(v)] = true
+			}
+		}
+	}
+
 	// Extract references from all files matching RefKind.
 	type ref struct {
 		value string
@@ -81,7 +97,7 @@ func (e *CrossRefEngine) checkRule(rule CrossRefRule, ctx *LintContext) []Findin
 	switch rule.CheckType {
 	case "refs_subset_of_exports":
 		for _, r := range refs {
-			if !exports[r.value] {
+			if !exports[r.value] && !excluded[r.value] {
 				findings = append(findings, Finding{
 					RuleID:   rule.RuleID,
 					Severity: rule.RuleSev,

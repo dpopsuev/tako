@@ -177,6 +177,53 @@ func TestContractFromDef_Nil(t *testing.T) {
 	}
 }
 
+func TestExtractFields_ArrayProjection(t *testing.T) {
+	contract := &CalibrationContract{
+		Outputs: []ContractField{
+			{Field: "read.files[].path", ScorerName: "actual_files", Type: "array"},
+			{Field: "tree.trees[].repo", ScorerName: "actual_repos", Type: "array"},
+		},
+	}
+	result := framework.BatchWalkResult{
+		StepArtifacts: map[string]framework.Artifact{
+			"read": fakeArtifact{data: map[string]any{
+				"files": []any{
+					map[string]any{"repo": "linuxptp-daemon", "path": "daemon.go"},
+					map[string]any{"repo": "linuxptp-daemon", "path": "process.go"},
+					map[string]any{"repo": "cloud-event-proxy", "path": "main.go"},
+				},
+			}},
+			"tree": fakeArtifact{data: map[string]any{
+				"trees": []any{
+					map[string]any{"repo": "linuxptp-daemon", "branch": "main"},
+					map[string]any{"repo": "cloud-event-proxy", "branch": "main"},
+				},
+			}},
+		},
+	}
+
+	fields := ExtractFields(contract, result)
+
+	files, ok := fields["actual_files"].([]any)
+	if !ok {
+		t.Fatalf("actual_files type = %T, want []any", fields["actual_files"])
+	}
+	if len(files) != 3 {
+		t.Fatalf("actual_files len = %d, want 3", len(files))
+	}
+	if files[0] != "daemon.go" || files[1] != "process.go" || files[2] != "main.go" {
+		t.Errorf("actual_files = %v", files)
+	}
+
+	repos, ok := fields["actual_repos"].([]any)
+	if !ok {
+		t.Fatalf("actual_repos type = %T, want []any", fields["actual_repos"])
+	}
+	if len(repos) != 2 {
+		t.Fatalf("actual_repos len = %d, want 2", len(repos))
+	}
+}
+
 func TestContractFromDef_Converts(t *testing.T) {
 	def := &framework.CalibrationContractDef{
 		Outputs: []framework.CalibrationFieldDef{
