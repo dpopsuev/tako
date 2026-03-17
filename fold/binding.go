@@ -420,10 +420,20 @@ func sanitize(s string) string {
 // (e.g. "github.com/dpopsuev/rh-rca").
 func resolveComponentPath(refPath, origamiRoot string, resolver ModuleResolver) string {
 	// Module path: first segment contains a dot (e.g. "github.com").
-	if parts := strings.SplitN(refPath, "/", 2); strings.Contains(parts[0], ".") {
-		if resolver != nil {
-			if root := resolver.FindLocalModule(refPath); root != "" {
-				return filepath.Join(root, "component.yaml")
+	if parts := strings.SplitN(refPath, "/", 2); strings.Contains(parts[0], ".") && resolver != nil {
+		// Try the full path as a module, then walk up to find the module root.
+		// For "github.com/dpopsuev/rh-rca/connectors/rp":
+		//   try rh-rca/connectors/rp → no go.mod
+		//   try rh-rca → has go.mod → subpath = connectors/rp
+		segments := strings.Split(refPath, "/")
+		for i := len(segments); i >= 3; i-- { // minimum: host/org/repo
+			candidate := strings.Join(segments[:i], "/")
+			if root := resolver.FindLocalModule(candidate); root != "" {
+				subpath := ""
+				if i < len(segments) {
+					subpath = strings.Join(segments[i:], "/")
+				}
+				return filepath.Join(root, subpath, "component.yaml")
 			}
 		}
 	}

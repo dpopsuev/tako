@@ -28,10 +28,10 @@ func TestResolve_AsteriskLike(t *testing.T) {
 		Version: "1.0",
 		Schematics: map[string]SchematicRef{
 			"rca": {
-				Path: "schematics/rca",
+				Path: "github.com/dpopsuev/rh-rca",
 				Bindings: map[string]string{
-					"source":    "reportportal",
-					"harvester": "harvester",
+					"source": "reportportal",
+					"dsr":    "harvester",
 				},
 			},
 			"harvester": {
@@ -43,7 +43,7 @@ func TestResolve_AsteriskLike(t *testing.T) {
 			},
 		},
 		Connectors: map[string]ConnectorRef{
-			"reportportal": {Path: "connectors/rp"},
+			"reportportal": {Path: "github.com/dpopsuev/rh-rca/connectors/rp"},
 			"github":       {Path: "connectors/github"},
 			"docs":         {Path: "connectors/docs"},
 		},
@@ -84,8 +84,8 @@ func TestResolve_AsteriskLike(t *testing.T) {
 	if !contains(optNames, "WithSourceReader") {
 		t.Errorf("root options %v missing WithSourceReader", optNames)
 	}
-	if !contains(optNames, "WithHarvesterReader") {
-		t.Errorf("root options %v missing WithHarvesterReader", optNames)
+	if !contains(optNames, "WithDSRReader") {
+		t.Errorf("root options %v missing WithDSRReader", optNames)
 	}
 
 	// Source binding should be factory-mode (RP)
@@ -113,7 +113,7 @@ func TestResolve_MissingBinding(t *testing.T) {
 		Name: "test",
 		Schematics: map[string]SchematicRef{
 			"rca": {
-				Path:     "schematics/rca",
+				Path:     "github.com/dpopsuev/rh-rca",
 				Bindings: map[string]string{},
 			},
 		},
@@ -133,7 +133,7 @@ func TestResolve_CycleDetection(t *testing.T) {
 	m := &Manifest{
 		Name: "test",
 		Schematics: map[string]SchematicRef{
-			"a": {Path: "schematics/rca", Bindings: map[string]string{"source": "b"}},
+			"a": {Path: "github.com/dpopsuev/rh-rca", Bindings: map[string]string{"source": "b"}},
 			"b": {Path: "github.com/dpopsuev/rh-dsr", Bindings: map[string]string{"git": "a"}},
 		},
 		Connectors: map[string]ConnectorRef{},
@@ -152,7 +152,7 @@ func TestTopoSort_SingleRoot(t *testing.T) {
 	m := &Manifest{
 		Name: "test",
 		Schematics: map[string]SchematicRef{
-			"rca":       {Path: "schematics/rca", Bindings: map[string]string{"harvester": "harvester"}},
+			"rca":       {Path: "github.com/dpopsuev/rh-rca", Bindings: map[string]string{"harvester": "harvester"}},
 			"harvester": {Path: "github.com/dpopsuev/rh-dsr"},
 		},
 	}
@@ -173,7 +173,7 @@ func TestTopoSort_MultipleRoots(t *testing.T) {
 	m := &Manifest{
 		Name: "test",
 		Schematics: map[string]SchematicRef{
-			"a": {Path: "schematics/rca"},
+			"a": {Path: "github.com/dpopsuev/rh-rca"},
 			"b": {Path: "github.com/dpopsuev/rh-dsr"},
 		},
 	}
@@ -192,10 +192,10 @@ func TestImportAlias(t *testing.T) {
 		mod  string
 		want string
 	}{
-		{"github.com/dpopsuev/origami/connectors/rp", "rp"},
+		{"github.com/dpopsuev/rh-rca/connectors/rp", "rp"},
 		{"github.com/dpopsuev/origami/connectors/github", "github"},
 		{"github.com/dpopsuev/rh-dsr", "rhdsr"},
-		{"github.com/dpopsuev/origami/schematics/rca/mcpconfig", "mcpconfig"},
+		{"github.com/dpopsuev/rh-rca/mcpconfig", "mcpconfig"},
 	}
 	for _, tt := range tests {
 		got := importAlias(tt.mod)
@@ -211,10 +211,10 @@ name: asterisk
 version: "1.0"
 schematics:
   rca:
-    path: schematics/rca
+    path: github.com/dpopsuev/rh-rca
     bindings:
       source: reportportal
-      harvester: harvester
+      dsr: harvester
   harvester:
     path: github.com/dpopsuev/rh-dsr
     bindings:
@@ -222,7 +222,7 @@ schematics:
       docs: docs
 connectors:
   reportportal:
-    path: connectors/rp
+    path: github.com/dpopsuev/rh-rca/connectors/rp
   github:
     path: connectors/github
   docs:
@@ -242,7 +242,7 @@ connectors:
 		t.Errorf("connectors count = %d, want 3", len(m.Connectors))
 	}
 	rca := m.Schematics["rca"]
-	if rca.Path != "schematics/rca" {
+	if rca.Path != "github.com/dpopsuev/rh-rca" {
 		t.Errorf("rca.path = %q", rca.Path)
 	}
 	if rca.Bindings["source"] != "reportportal" {

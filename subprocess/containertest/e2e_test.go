@@ -20,7 +20,7 @@ import (
 	"github.com/dpopsuev/origami/domainserve"
 	"github.com/dpopsuev/origami/gateway"
 	dsr "github.com/dpopsuev/rh-dsr"
-	mcpserver "github.com/dpopsuev/origami/schematics/rca/mcpconfig"
+	mcpserver "github.com/dpopsuev/rh-rca/mcpconfig"
 	"github.com/dpopsuev/origami/subprocess/containertest"
 )
 

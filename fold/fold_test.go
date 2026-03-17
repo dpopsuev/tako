@@ -456,12 +456,12 @@ name: test-domain-only
 version: "0.1"
 schematics:
   rca:
-    path: schematics/rca
+    path: github.com/dpopsuev/rh-rca
     bindings:
       source: reportportal
 connectors:
   reportportal:
-    path: connectors/rp
+    path: github.com/dpopsuev/rh-rca/connectors/rp
 domain_serve:
   port: 9300
   assets:

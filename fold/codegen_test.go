@@ -150,10 +150,10 @@ func TestGenerateWiredBinary(t *testing.T) {
 		},
 		Schematics: map[string]SchematicRef{
 			"rca": {
-				Path: "schematics/rca",
+				Path: "github.com/dpopsuev/rh-rca",
 				Bindings: map[string]string{
-					"source":    "reportportal",
-					"harvester": "harvester",
+					"source": "reportportal",
+					"dsr":    "harvester",
 				},
 			},
 			"harvester": {
@@ -165,7 +165,7 @@ func TestGenerateWiredBinary(t *testing.T) {
 			},
 		},
 		Connectors: map[string]ConnectorRef{
-			"reportportal": {Path: "connectors/rp"},
+			"reportportal": {Path: "github.com/dpopsuev/rh-rca/connectors/rp"},
 			"github":       {Path: "connectors/github"},
 			"docs":         {Path: "connectors/docs"},
 		},
@@ -185,11 +185,11 @@ func TestGenerateWiredBinary(t *testing.T) {
 	for _, want := range []string{
 		"DO NOT EDIT",
 		"package main",
-		`"github.com/dpopsuev/origami/connectors/rp"`,
+		`"github.com/dpopsuev/rh-rca/connectors/rp"`,
 		`"github.com/dpopsuev/origami/connectors/github"`,
 		`"github.com/dpopsuev/origami/connectors/docs"`,
 		`"github.com/dpopsuev/rh-dsr"`,
-		`"github.com/dpopsuev/origami/schematics/rca/mcpconfig"`,
+		`"github.com/dpopsuev/rh-rca/mcpconfig"`,
 		"github.DefaultGitDriver()",
 		"docs.DefaultDocsDriver()",
 		"rhdsr.NewRouter(",
@@ -198,7 +198,7 @@ func TestGenerateWiredBinary(t *testing.T) {
 		"mcpconfig.NewServer(",
 		"mcpconfig.WithDomainFS(domainData)",
 		"mcpconfig.WithSourceReader(rp.NewSourceReader)",
-		"mcpconfig.WithHarvesterReader(rhdsrInstance)",
+		"mcpconfig.WithDSRReader(rhdsrInstance)",
 		"domainserve.New(domainData",
 		"NewStreamableHTTPHandler",
 		"server.CircuitServer.MCPServer",

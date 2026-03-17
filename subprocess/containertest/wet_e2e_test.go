@@ -15,7 +15,7 @@ import (
 
 	"github.com/dpopsuev/origami/gateway"
 	dsr "github.com/dpopsuev/rh-dsr"
-	mcpserver "github.com/dpopsuev/origami/schematics/rca/mcpconfig"
+	mcpserver "github.com/dpopsuev/rh-rca/mcpconfig"
 )
 
 // Wet E2E tests use real LLM providers to validate the full circuit loop:
