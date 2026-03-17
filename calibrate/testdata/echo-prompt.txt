@@ -1,0 +1,6 @@
+You are a test agent. Answer the following question with ONLY a JSON object, no other text.
+
+Question: What is 2+2?
+
+Respond with exactly this JSON format:
+{"answer": <your answer as a number>}

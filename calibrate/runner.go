@@ -71,6 +71,11 @@ type HarnessConfig struct {
 	// Adapters check this map at port boundaries.
 	PortStubs PortStubs
 
+	// Components are merged into Shared registries before BatchWalk.
+	// This lets callers pass pre-built components (e.g.,
+	// transformers.CoreComponent) without manually flattening them.
+	Components []*framework.Component
+
 	Scenario    string
 	Transformer string
 	Runs        int
@@ -112,6 +117,15 @@ func Run(ctx context.Context, cfg HarnessConfig) (*CalibrationReport, error) {
 		cfg.CircuitDef.Vars["_port_stubs"] = cfg.PortStubs
 	}
 
+	// Merge components into shared registries.
+	if len(cfg.Components) > 0 {
+		merged, err := framework.MergeComponents(cfg.Shared, cfg.Components...)
+		if err != nil {
+			return nil, fmt.Errorf("merge components: %w", err)
+		}
+		cfg.Shared = merged
+	}
+
 	logger := slog.Default().With("component", "calibrate")
 	var allRunMetrics []MetricSet
 
@@ -130,6 +144,25 @@ func Run(ctx context.Context, cfg HarnessConfig) (*CalibrationReport, error) {
 			Parallel:       cfg.Parallel,
 			OnCaseComplete: cfg.OnCaseComplete,
 		})
+
+		// Fail fast: if every case errored, the circuit is broken — don't
+		// silently produce a zero-score report.
+		var firstErr error
+		errCount := 0
+		for _, br := range batchResults {
+			if br.Error != nil {
+				errCount++
+				if firstErr == nil {
+					firstErr = br.Error
+				}
+			}
+		}
+		if errCount == len(batchResults) {
+			return nil, fmt.Errorf("run %d: all %d cases failed (first: %w)", run+1, errCount, firstErr)
+		}
+		if errCount > 0 {
+			logger.Warn("partial failures", "failed", errCount, "total", len(batchResults), "first_error", firstErr)
+		}
 
 		if cfg.Contract != nil {
 			cfg.ContractFields = make([]map[string]any, len(batchResults))

@@ -56,7 +56,9 @@ func testCircuitDef() *framework.CircuitDef {
 	return &framework.CircuitDef{
 		Circuit: "test-circuit",
 		Start:   "start",
-		Nodes:   []framework.NodeDef{{Name: "start", Family: "noop"}},
+		Done:    "done",
+		Nodes:   []framework.NodeDef{{Name: "start", HandlerType: "transformer", Handler: "passthrough"}},
+		Edges:   []framework.EdgeDef{{ID: "start-done", From: "start", To: "done"}},
 	}
 }
 

@@ -1,0 +1,15 @@
+name: echo-scorecard
+description: Simple scorecard for echo circuit calibration test
+version: 1
+
+metrics:
+  - id: M1
+    name: answer_accuracy
+    tier: outcome
+    direction: higher_is_better
+    threshold: 1.0
+    weight: 1.0
+    scorer: batch_field_match
+    params:
+      actual: answer
+      expected: expected_answer

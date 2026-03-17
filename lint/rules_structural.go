@@ -96,6 +96,34 @@ func (r *InvalidApproach) Check(ctx *LintContext) []Finding {
 	return out
 }
 
+// MissingEdgeID checks that every top-level edge has an explicit id.
+// Without an id the graph builder rejects the circuit at runtime —
+// catching this at lint time gives a faster, clearer error.
+type MissingEdgeID struct{}
+
+func (r *MissingEdgeID) ID() string          { return "S10/missing-edge-id" }
+func (r *MissingEdgeID) Description() string { return "every edge must have an explicit id" }
+func (r *MissingEdgeID) Severity() Severity  { return SeverityError }
+func (r *MissingEdgeID) Tags() []string      { return []string{"structural"} }
+
+func (r *MissingEdgeID) Check(ctx *LintContext) []Finding {
+	var out []Finding
+	for _, ed := range ctx.Def.Edges {
+		if ed.ID == "" {
+			msg := fmt.Sprintf("edge from %q to %q has no id", ed.From, ed.To)
+			out = append(out, Finding{
+				RuleID:       r.ID(),
+				Severity:     r.Severity(),
+				Message:      msg,
+				File:         ctx.File,
+				Suggestion:   fmt.Sprintf("add id: %s-%s", ed.From, ed.To),
+				FixAvailable: true,
+			})
+		}
+	}
+	return out
+}
+
 // InvalidMergeStrategy checks that edge merge values are valid strategies.
 type InvalidMergeStrategy struct{}
 

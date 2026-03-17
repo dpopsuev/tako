@@ -1,0 +1,7 @@
+name: echo-test
+cases:
+  - id: C1
+    input:
+      question: "What is 2+2?"
+    expected:
+      answer: 4

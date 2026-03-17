@@ -11,6 +11,7 @@ func AllRules() []Rule {
 
 func structuralRules() []Rule {
 	return []Rule{
+		&MissingEdgeID{},
 		&MissingNodeApproach{},
 		&InvalidApproach{},
 		&InvalidMergeStrategy{},
