@@ -13,15 +13,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"reflect"
-
 	framework "github.com/dpopsuev/origami"
 	"github.com/dpopsuev/origami/kami"
 	"github.com/dpopsuev/origami/lint"
 	originamilsp "github.com/dpopsuev/origami/lsp"
 	fwmcp "github.com/dpopsuev/origami/mcp"
 	"github.com/dpopsuev/origami/models"
-	"github.com/dpopsuev/origami/schematics/rca"
 	"github.com/dpopsuev/origami/ouroboros"
 	"github.com/dpopsuev/origami/ouroboros/mcp"
 	"github.com/dpopsuev/origami/ouroboros/probes"
@@ -516,17 +513,6 @@ func lintCmd(args []string) error {
 	p := lint.Profile(*profile)
 	exitCode := 0
 
-	paramType := reflect.TypeOf(rca.TemplateParams{})
-	funcMap := rca.PromptFuncMap
-	promptValidator := lint.PromptValidator(func(content string) []lint.PromptFieldError {
-		errs := rca.ValidateTemplateFields(content, paramType, funcMap)
-		out := make([]lint.PromptFieldError, len(errs))
-		for i, e := range errs {
-			out[i] = lint.PromptFieldError{Field: e.Field, Message: e.Message}
-		}
-		return out
-	})
-
 	// Build project file index for cross-reference validation.
 	// Collect all YAML files from directories containing the lint targets.
 	projectRaw := make(map[string][]byte)
@@ -550,9 +536,7 @@ func lintCmd(args []string) error {
 	}
 	projectFiles := lint.LoadProjectFiles(projectRaw)
 
-	promptOpts := []lint.Option{
-		lint.WithPromptFS(os.DirFS("internal/prompts")),
-		lint.WithPromptValidator(promptValidator),
+	lintOpts := []lint.Option{
 		lint.WithProjectFiles(projectFiles),
 	}
 
@@ -584,7 +568,7 @@ func lintCmd(args []string) error {
 			continue
 		}
 
-		opts := append([]lint.Option{lint.WithProfile(p)}, promptOpts...)
+		opts := append([]lint.Option{lint.WithProfile(p)}, lintOpts...)
 		findings, err := lint.Run(raw, file, opts...)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %s: %v\n", file, err)
