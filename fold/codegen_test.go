@@ -171,7 +171,7 @@ func TestGenerateWiredBinary(t *testing.T) {
 		},
 	}
 
-	g, err := Resolve(m, root)
+	g, err := Resolve(m, root, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

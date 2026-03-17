@@ -59,7 +59,7 @@ type ImportEntry struct {
 // Resolve reads component.yaml files for all declared schematics and
 // connectors, matches socket bindings, validates completeness, detects
 // cycles, and returns a topologically ordered instantiation plan.
-func Resolve(m *Manifest, origamiRoot string) (*ResolvedGraph, error) {
+func Resolve(m *Manifest, origamiRoot string, resolver ModuleResolver) (*ResolvedGraph, error) {
 	if !m.HasBindings() {
 		return nil, fmt.Errorf("manifest has no schematics section")
 	}
@@ -68,7 +68,8 @@ func Resolve(m *Manifest, origamiRoot string) (*ResolvedGraph, error) {
 	schemManifests := make(map[string]*framework.ComponentManifest)
 
 	for name, ref := range m.Connectors {
-		cm, err := framework.LoadComponentManifest(filepath.Join(origamiRoot, ref.Path, "component.yaml"))
+		cmPath := resolveComponentPath(ref.Path, origamiRoot, resolver)
+		cm, err := framework.LoadComponentManifest(cmPath)
 		if err != nil {
 			return nil, fmt.Errorf("connector %q: %w", name, err)
 		}
@@ -76,7 +77,8 @@ func Resolve(m *Manifest, origamiRoot string) (*ResolvedGraph, error) {
 	}
 
 	for name, ref := range m.Schematics {
-		cm, err := framework.LoadComponentManifest(filepath.Join(origamiRoot, ref.Path, "component.yaml"))
+		cmPath := resolveComponentPath(ref.Path, origamiRoot, resolver)
+		cm, err := framework.LoadComponentManifest(cmPath)
 		if err != nil {
 			return nil, fmt.Errorf("schematic %q: %w", name, err)
 		}
@@ -410,4 +412,21 @@ func sanitize(s string) string {
 	s = strings.ReplaceAll(s, "-", "")
 	s = strings.ReplaceAll(s, ".", "")
 	return s
+}
+
+// resolveComponentPath resolves a SchematicRef/ConnectorRef path to the
+// filesystem location of component.yaml. Supports both relative paths
+// (e.g. "schematics/rca") and module-qualified paths
+// (e.g. "github.com/dpopsuev/rh-rca").
+func resolveComponentPath(refPath, origamiRoot string, resolver ModuleResolver) string {
+	// Module path: first segment contains a dot (e.g. "github.com").
+	if parts := strings.SplitN(refPath, "/", 2); strings.Contains(parts[0], ".") {
+		if resolver != nil {
+			if root := resolver.FindLocalModule(refPath); root != "" {
+				return filepath.Join(root, "component.yaml")
+			}
+		}
+	}
+	// Relative path: join with origamiRoot (backward compatible).
+	return filepath.Join(origamiRoot, refPath, "component.yaml")
 }

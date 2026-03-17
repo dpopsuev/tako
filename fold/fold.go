@@ -184,7 +184,7 @@ func buildWiredBinary(ctx context.Context, m *Manifest, opts Options) error {
 		return fmt.Errorf("discover domain assets: %w", err)
 	}
 
-	g, err := Resolve(m, origamiRoot)
+	g, err := Resolve(m, origamiRoot, resolver)
 	if err != nil {
 		return fmt.Errorf("resolve bindings: %w", err)
 	}

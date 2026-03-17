@@ -49,7 +49,7 @@ func TestResolve_AsteriskLike(t *testing.T) {
 		},
 	}
 
-	g, err := Resolve(m, root)
+	g, err := Resolve(m, root, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +120,7 @@ func TestResolve_MissingBinding(t *testing.T) {
 		Connectors: map[string]ConnectorRef{},
 	}
 
-	_, err := Resolve(m, root)
+	_, err := Resolve(m, root, nil)
 	if err == nil {
 		t.Fatal("expected error for missing required binding")
 	}
