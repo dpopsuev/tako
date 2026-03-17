@@ -14,7 +14,7 @@ import (
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/dpopsuev/origami/gateway"
-	harvester "github.com/dpopsuev/origami/schematics/harvester"
+	dsr "github.com/dpopsuev/rh-dsr"
 	mcpserver "github.com/dpopsuev/origami/schematics/rca/mcpconfig"
 )
 
@@ -67,12 +67,12 @@ func requireGeminiKey(t *testing.T) {
 func wetGateway(t *testing.T) string {
 	t.Helper()
 
-	knRouter := harvester.NewRouter()
+	knRouter := dsr.NewRouter()
 	knServer := sdkmcp.NewServer(
 		&sdkmcp.Implementation{Name: "test-harvester", Version: "v0.1.0"},
 		nil,
 	)
-	harvester.RegisterTools(knServer, knRouter)
+	dsr.RegisterTools(knServer, knRouter)
 	knHandler := sdkmcp.NewStreamableHTTPHandler(
 		func(_ *http.Request) *sdkmcp.Server { return knServer },
 		&sdkmcp.StreamableHTTPOptions{Stateless: true},

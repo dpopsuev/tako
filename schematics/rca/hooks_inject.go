@@ -4,7 +4,7 @@ import (
 	"context"
 
 	framework "github.com/dpopsuev/origami"
-	"github.com/dpopsuev/origami/schematics/harvester"
+	dsr "github.com/dpopsuev/rh-dsr"
 	"github.com/dpopsuev/origami/schematics/rca/rcatype"
 	"github.com/dpopsuev/origami/schematics/rca/store"
 	"github.com/dpopsuev/origami/schematics/toolkit"
@@ -273,12 +273,12 @@ func extractSearchKeywords(walkerCtx map[string]any) []string {
 
 // newInjectCodeKeywordsHook creates a before-hook that extracts search
 // keywords from the walker context and writes them to
-// "harvester.search_keywords" so the Harvester sub-circuit can use them.
+// "dsr.search_keywords" so the Harvester sub-circuit can use them.
 func newInjectCodeKeywordsHook() framework.Hook {
 	return toolkit.NewContextInjector("inject.code-keywords", func(walkerCtx map[string]any) {
 		keywords := extractSearchKeywords(walkerCtx)
 		if len(keywords) > 0 {
-			walkerCtx["harvester.search_keywords"] = keywords
+			walkerCtx["dsr.search_keywords"] = keywords
 		}
 	})
 }
@@ -304,7 +304,7 @@ func newBridgeCodeContextHook() framework.Hook {
 			return nil
 		}
 
-		cc, ok := readArt.Raw().(*harvester.CodeContext)
+		cc, ok := readArt.Raw().(*dsr.CodeContext)
 		if !ok || cc == nil {
 			return nil
 		}

@@ -14,7 +14,7 @@ import (
 	cal "github.com/dpopsuev/origami/calibrate"
 	"github.com/dpopsuev/origami/dispatch"
 	fwmcp "github.com/dpopsuev/origami/mcp"
-	"github.com/dpopsuev/origami/schematics/harvester"
+	dsr "github.com/dpopsuev/rh-dsr"
 	"github.com/dpopsuev/origami/schematics/toolkit"
 	"github.com/dpopsuev/origami/schematics/rca"
 	"github.com/dpopsuev/origami/schematics/rca/rcatype"
@@ -305,7 +305,7 @@ func (s *Server) createSession(ctx context.Context, params fwmcp.StartParams, di
 			}
 			harvesterFS, kErr := fs.Sub(offlineFS, "harvester")
 			if kErr == nil {
-				harvesterReader = harvester.NewRouter(harvester.WithOfflineFS(harvesterFS))
+				harvesterReader = dsr.NewRouter(dsr.WithOfflineFS(harvesterFS))
 			}
 		}
 	default:

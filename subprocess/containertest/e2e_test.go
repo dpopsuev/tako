@@ -19,7 +19,7 @@ import (
 	"github.com/dpopsuev/origami/domainfs"
 	"github.com/dpopsuev/origami/domainserve"
 	"github.com/dpopsuev/origami/gateway"
-	harvester "github.com/dpopsuev/origami/schematics/harvester"
+	dsr "github.com/dpopsuev/rh-dsr"
 	mcpserver "github.com/dpopsuev/origami/schematics/rca/mcpconfig"
 	"github.com/dpopsuev/origami/subprocess/containertest"
 )
@@ -75,12 +75,12 @@ func connectDomainFS(t *testing.T, domainSrvURL string) *domainfs.MCPRemoteFS {
 
 func newHarvesterServer(t *testing.T) *httptest.Server {
 	t.Helper()
-	router := harvester.NewRouter()
+	router := dsr.NewRouter()
 	server := sdkmcp.NewServer(
 		&sdkmcp.Implementation{Name: "test-harvester", Version: "v0.1.0"},
 		nil,
 	)
-	harvester.RegisterTools(server, router)
+	dsr.RegisterTools(server, router)
 
 	mcpHandler := sdkmcp.NewStreamableHTTPHandler(
 		func(_ *http.Request) *sdkmcp.Server { return server },

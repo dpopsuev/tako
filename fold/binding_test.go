@@ -35,7 +35,7 @@ func TestResolve_AsteriskLike(t *testing.T) {
 				},
 			},
 			"harvester": {
-				Path: "schematics/harvester",
+				Path: "github.com/dpopsuev/rh-dsr",
 				Bindings: map[string]string{
 					"git":  "github",
 					"docs": "docs",
@@ -49,7 +49,7 @@ func TestResolve_AsteriskLike(t *testing.T) {
 		},
 	}
 
-	g, err := Resolve(m, root, nil)
+	g, err := Resolve(m, root, &DefaultModuleResolver{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +120,7 @@ func TestResolve_MissingBinding(t *testing.T) {
 		Connectors: map[string]ConnectorRef{},
 	}
 
-	_, err := Resolve(m, root, nil)
+	_, err := Resolve(m, root, &DefaultModuleResolver{})
 	if err == nil {
 		t.Fatal("expected error for missing required binding")
 	}
@@ -134,7 +134,7 @@ func TestResolve_CycleDetection(t *testing.T) {
 		Name: "test",
 		Schematics: map[string]SchematicRef{
 			"a": {Path: "schematics/rca", Bindings: map[string]string{"source": "b"}},
-			"b": {Path: "schematics/harvester", Bindings: map[string]string{"git": "a"}},
+			"b": {Path: "github.com/dpopsuev/rh-dsr", Bindings: map[string]string{"git": "a"}},
 		},
 		Connectors: map[string]ConnectorRef{},
 	}
@@ -153,7 +153,7 @@ func TestTopoSort_SingleRoot(t *testing.T) {
 		Name: "test",
 		Schematics: map[string]SchematicRef{
 			"rca":       {Path: "schematics/rca", Bindings: map[string]string{"harvester": "harvester"}},
-			"harvester": {Path: "schematics/harvester"},
+			"harvester": {Path: "github.com/dpopsuev/rh-dsr"},
 		},
 	}
 
@@ -174,7 +174,7 @@ func TestTopoSort_MultipleRoots(t *testing.T) {
 		Name: "test",
 		Schematics: map[string]SchematicRef{
 			"a": {Path: "schematics/rca"},
-			"b": {Path: "schematics/harvester"},
+			"b": {Path: "github.com/dpopsuev/rh-dsr"},
 		},
 	}
 
@@ -194,7 +194,7 @@ func TestImportAlias(t *testing.T) {
 	}{
 		{"github.com/dpopsuev/origami/connectors/rp", "rp"},
 		{"github.com/dpopsuev/origami/connectors/github", "github"},
-		{"github.com/dpopsuev/origami/schematics/harvester", "harvester"},
+		{"github.com/dpopsuev/rh-dsr", "rhdsr"},
 		{"github.com/dpopsuev/origami/schematics/rca/mcpconfig", "mcpconfig"},
 	}
 	for _, tt := range tests {
@@ -216,7 +216,7 @@ schematics:
       source: reportportal
       harvester: harvester
   harvester:
-    path: schematics/harvester
+    path: github.com/dpopsuev/rh-dsr
     bindings:
       git: github
       docs: docs

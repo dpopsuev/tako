@@ -157,7 +157,7 @@ func TestGenerateWiredBinary(t *testing.T) {
 				},
 			},
 			"harvester": {
-				Path: "schematics/harvester",
+				Path: "github.com/dpopsuev/rh-dsr",
 				Bindings: map[string]string{
 					"git":  "github",
 					"docs": "docs",
@@ -171,7 +171,7 @@ func TestGenerateWiredBinary(t *testing.T) {
 		},
 	}
 
-	g, err := Resolve(m, root, nil)
+	g, err := Resolve(m, root, &DefaultModuleResolver{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -188,17 +188,17 @@ func TestGenerateWiredBinary(t *testing.T) {
 		`"github.com/dpopsuev/origami/connectors/rp"`,
 		`"github.com/dpopsuev/origami/connectors/github"`,
 		`"github.com/dpopsuev/origami/connectors/docs"`,
-		`"github.com/dpopsuev/origami/schematics/harvester"`,
+		`"github.com/dpopsuev/rh-dsr"`,
 		`"github.com/dpopsuev/origami/schematics/rca/mcpconfig"`,
 		"github.DefaultGitDriver()",
 		"docs.DefaultDocsDriver()",
-		"harvester.NewRouter(",
-		"harvester.WithGitDriver(",
-		"harvester.WithDocsDriver(",
+		"rhdsr.NewRouter(",
+		"rhdsr.WithGitDriver(",
+		"rhdsr.WithDocsDriver(",
 		"mcpconfig.NewServer(",
 		"mcpconfig.WithDomainFS(domainData)",
 		"mcpconfig.WithSourceReader(rp.NewSourceReader)",
-		"mcpconfig.WithHarvesterReader(harvesterInstance)",
+		"mcpconfig.WithHarvesterReader(rhdsrInstance)",
 		"domainserve.New(domainData",
 		"NewStreamableHTTPHandler",
 		"server.CircuitServer.MCPServer",
