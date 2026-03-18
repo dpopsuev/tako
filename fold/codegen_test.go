@@ -199,6 +199,8 @@ func TestGenerateWiredBinary(t *testing.T) {
 		"mcpconfig.WithDomainFS(domainData)",
 		"mcpconfig.WithSourceReader(rp.NewSourceReader)",
 		"mcpconfig.WithDSRReader(rhdsrInstance)",
+		"mcpconfig.WithSubCircuitResolvers(map[string]origami.AssetResolver{",
+		`"harvester": rhdsr.SchematicResolver()`,
 		"domainserve.New(domainData",
 		"NewStreamableHTTPHandler",
 		"server.CircuitServer.MCPServer",

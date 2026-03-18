@@ -54,9 +54,10 @@ type ComponentManifest struct {
 	Namespace   string `yaml:"namespace"`
 	Version     string `yaml:"version"`
 	Description string `yaml:"description,omitempty"`
-	Factory     string `yaml:"factory,omitempty"` // schematic constructor (e.g. NewRouter, NewServer)
-	Adapter     string `yaml:"adapter,omitempty"` // optional adapter for subprocess mode
-	Serve       string `yaml:"serve,omitempty"`   // path to serve command for subprocess mode
+	Factory     string `yaml:"factory,omitempty"`  // schematic constructor (e.g. NewRouter, NewServer)
+	Resolver    string `yaml:"resolver,omitempty"` // circuit overlay resolver function (e.g. SchematicResolver)
+	Adapter     string `yaml:"adapter,omitempty"`  // optional adapter for subprocess mode
+	Serve       string `yaml:"serve,omitempty"`    // path to serve command for subprocess mode
 	Provides    struct {
 		Transformers []string `yaml:"transformers,omitempty"`
 		Extractors   []string `yaml:"extractors,omitempty"`

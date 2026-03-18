@@ -233,6 +233,24 @@ func renderServerCreation(g *ResolvedGraph, productName string) string {
 	for _, opt := range root.Options {
 		fmt.Fprintf(&b, "\t\t%s.%s(%s),\n", root.Alias, opt.OptionFunc, opt.Provider)
 	}
+
+	// Wire sub-circuit resolvers for schematics that declare a resolver function.
+	// This enables overlay import resolution (e.g., circuits/harvester.yaml → dsr base).
+	var resolverEntries []string
+	for _, s := range g.Schematics {
+		if s.Resolver != "" {
+			resolverEntries = append(resolverEntries,
+				fmt.Sprintf("\t\t\t%q: %s.%s(),", s.Name, s.Alias, s.Resolver))
+		}
+	}
+	if len(resolverEntries) > 0 {
+		fmt.Fprintf(&b, "\t\t%s.WithSubCircuitResolvers(map[string]origami.AssetResolver{\n", root.Alias)
+		for _, entry := range resolverEntries {
+			fmt.Fprintf(&b, "%s\n", entry)
+		}
+		fmt.Fprintf(&b, "\t\t}),\n")
+	}
+
 	fmt.Fprintf(&b, "\t)\n")
 	return b.String()
 }
@@ -246,6 +264,7 @@ import (
 	"net/http"
 	"os"
 
+	origami "github.com/dpopsuev/origami"
 	"github.com/dpopsuev/origami/domainserve"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 {{ .ImportBlock }})

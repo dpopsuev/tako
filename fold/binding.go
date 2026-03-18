@@ -26,11 +26,12 @@ type ResolvedSatisfy struct {
 
 // ResolvedSchematic is a schematic with all sockets resolved to providers.
 type ResolvedSchematic struct {
-	Name    string // manifest key (e.g. "harvester", "rca")
-	Module  string // Go import path
-	Alias   string // import alias for codegen
-	Factory string // constructor function (e.g. "NewRouter", "NewServer")
-	Options []ResolvedOption
+	Name     string // manifest key (e.g. "harvester", "rca")
+	Module   string // Go import path
+	Alias    string // import alias for codegen
+	Factory  string // constructor function (e.g. "NewRouter", "NewServer")
+	Resolver string // circuit overlay resolver function (e.g. "SchematicResolver"), empty if none
+	Options  []ResolvedOption
 }
 
 // ResolvedOption is one With* call on a schematic factory.
@@ -213,11 +214,12 @@ func resolveSchematic(
 	}
 
 	return &ResolvedSchematic{
-		Name:    name,
-		Module:  cm.Module,
-		Alias:   importAlias(cm.Module),
-		Factory: cm.Factory,
-		Options: options,
+		Name:     name,
+		Module:   cm.Module,
+		Alias:    importAlias(cm.Module),
+		Factory:  cm.Factory,
+		Resolver: cm.Resolver,
+		Options:  options,
 	}, nil
 }
 
