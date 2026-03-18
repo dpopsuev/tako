@@ -216,7 +216,7 @@ func buildWiredBinary(ctx context.Context, m *Manifest, opts Options) error {
 		return err
 	}
 
-	if err := createWiredBuildModule(tmpDir, m.Name, resolver); err != nil {
+	if err := createWiredBuildModule(tmpDir, m.Name, resolver, g); err != nil {
 		return fmt.Errorf("create build module: %w", err)
 	}
 
@@ -264,19 +264,49 @@ func buildWiredBinary(ctx context.Context, m *Manifest, opts Options) error {
 	return nil
 }
 
-func createWiredBuildModule(tmpDir, name string, resolver ModuleResolver) error {
+func createWiredBuildModule(tmpDir, name string, resolver ModuleResolver, g *ResolvedGraph) error {
 	var buf strings.Builder
 	buf.WriteString(fmt.Sprintf("module %s-build\n\ngo 1.24\n\nrequire (\n", name))
 	buf.WriteString(fmt.Sprintf("\t%s v0.0.0\n", origamiModule))
 	buf.WriteString(fmt.Sprintf("\t%s v0.0.0\n", mcpSDKModule))
+
+	// Collect unique external module roots from resolved imports.
+	seen := map[string]bool{origamiModule: true, mcpSDKModule: true}
+	var externalModules []string
+	if g != nil {
+		for _, imp := range g.Imports {
+			mod := moduleRoot(imp.Path)
+			if mod != "" && !seen[mod] {
+				seen[mod] = true
+				externalModules = append(externalModules, mod)
+				buf.WriteString(fmt.Sprintf("\t%s v0.0.0\n", mod))
+			}
+		}
+	}
 	buf.WriteString(")\n\n")
 
-	localPath := resolver.FindLocalModule(origamiModule)
-	if localPath != "" {
+	// Add replace directives for locally available modules.
+	if localPath := resolver.FindLocalModule(origamiModule); localPath != "" {
 		buf.WriteString(fmt.Sprintf("replace %s => %s\n", origamiModule, localPath))
+	}
+	for _, mod := range externalModules {
+		if localPath := resolver.FindLocalModule(mod); localPath != "" {
+			buf.WriteString(fmt.Sprintf("replace %s => %s\n", mod, localPath))
+		}
 	}
 
 	return os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(buf.String()), 0644)
+}
+
+// moduleRoot extracts the module root from a Go import path.
+// "github.com/dpopsuev/rh-rca/connectors/rp" → "github.com/dpopsuev/rh-rca"
+// Returns "" for standard library or origami-internal paths.
+func moduleRoot(importPath string) string {
+	parts := strings.Split(importPath, "/")
+	if len(parts) < 3 || !strings.Contains(parts[0], ".") {
+		return ""
+	}
+	return strings.Join(parts[:3], "/")
 }
 
 func buildDomainServe(ctx context.Context, m *Manifest, opts Options) error {
