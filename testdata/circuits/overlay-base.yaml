@@ -1,0 +1,22 @@
+# Base circuit for overlay testing.
+# Consumer overlays import this and add/replace nodes and edges.
+circuit: base
+start: intake
+done: done
+handler_type: transformer
+
+nodes:
+  - name: intake
+    handler: passthrough
+    description: "Base intake node"
+  - name: process
+    handler: passthrough
+    description: "Base processing node"
+
+edges:
+  - id: intake-process
+    from: intake
+    to: process
+  - id: process-done
+    from: process
+    to: done

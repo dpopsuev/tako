@@ -1,0 +1,37 @@
+# Looping circuit: analyze → refine (loop back if not converged) → done
+# Tests: loop counts, convergence thresholds, max iteration enforcement.
+circuit: looping
+start: analyze
+done: done
+handler_type: transformer
+
+vars:
+  max_refine_loops: 2
+  convergence_threshold: 0.7
+
+nodes:
+  - name: analyze
+    handler: context-echo
+    description: "Initial analysis — returns context as output (including convergence)"
+  - name: refine
+    handler: context-echo
+    description: "Iterative refinement — returns context as output, loops until converged"
+
+edges:
+  - id: analyze-refine
+    from: analyze
+    to: refine
+    when: "true"
+  - id: refine-converged
+    from: refine
+    to: done
+    when: "output.convergence >= config.convergence_threshold"
+  - id: refine-loop
+    from: refine
+    to: refine
+    loop: true
+    when: "output.convergence < config.convergence_threshold && state.loops.refine < config.max_refine_loops"
+  - id: refine-exhausted
+    from: refine
+    to: done
+    when: "output.convergence < config.convergence_threshold && state.loops.refine >= config.max_refine_loops"

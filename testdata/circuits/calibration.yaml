@@ -1,0 +1,25 @@
+# Calibration circuit: single node with calibration contract.
+# Tests: contract field extraction, ContractCollector, scorecard evaluation.
+circuit: calibration-test
+start: analyze
+done: done
+handler_type: transformer
+
+calibration:
+  outputs:
+    - field: analyze.result
+      scorer_name: actual_result
+      type: string
+    - field: analyze.score
+      scorer_name: actual_score
+      type: float
+
+nodes:
+  - name: analyze
+    handler: passthrough
+    description: "Analysis node — output fields mapped by calibration contract"
+
+edges:
+  - id: analyze-done
+    from: analyze
+    to: done

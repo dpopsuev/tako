@@ -1,0 +1,20 @@
+# Combined overlay + sub-circuit: imports base, adds a circuit handler node.
+# Tests: overlay merge + sub-circuit delegation in one circuit.
+# This is the pattern Asterisk uses (RCA base + gather-code DSR subgraph).
+import: base
+circuit: base
+
+nodes:
+  - name: delegate
+    handler_type: circuit
+    handler: child
+    description: "Overlay-added node that delegates to a sub-circuit"
+    edges:
+      - name: delegate-done
+        to: done
+        when: "true"
+
+edges:
+  - id: process-done
+    from: process
+    to: delegate

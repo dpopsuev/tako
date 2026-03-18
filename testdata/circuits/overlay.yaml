@@ -1,0 +1,19 @@
+# Consumer overlay: imports base, adds an enrichment node, reroutes edge.
+# Tests: overlay merge — base start/done inherited, overlay node added,
+# edge replaced (process → enrich instead of process → done).
+import: base
+circuit: base
+
+nodes:
+  - name: enrich
+    handler: passthrough
+    description: "Overlay-added enrichment step"
+    edges:
+      - name: enrich-done
+        to: done
+        when: "true"
+
+edges:
+  - id: process-done
+    from: process
+    to: enrich

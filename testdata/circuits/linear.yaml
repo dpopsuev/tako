@@ -1,0 +1,22 @@
+# Linear circuit: A → B → done
+# Tests: basic walk, passthrough transformer, artifact propagation between nodes.
+circuit: linear
+start: step-a
+done: done
+handler_type: transformer
+
+nodes:
+  - name: step-a
+    handler: passthrough
+    description: "First step — receives circuit input, passes through"
+  - name: step-b
+    handler: passthrough
+    description: "Second step — receives step-a output, passes through"
+
+edges:
+  - id: a-b
+    from: step-a
+    to: step-b
+  - id: b-done
+    from: step-b
+    to: done

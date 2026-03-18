@@ -1,0 +1,34 @@
+# Branching circuit: A → B (high confidence) or C (low confidence) → done
+# Tests: edge conditions (when expressions), shortcut paths, CEL evaluation.
+circuit: branching
+start: classify
+done: done
+handler_type: transformer
+
+nodes:
+  - name: classify
+    handler: context-echo
+    description: "Returns walker context as output — output.confidence determines the branch"
+  - name: fast-path
+    handler: passthrough
+    description: "High-confidence shortcut — skips detailed analysis"
+  - name: detailed
+    handler: passthrough
+    description: "Low-confidence path — full analysis"
+
+edges:
+  - id: classify-fast
+    from: classify
+    to: fast-path
+    shortcut: true
+    when: "output.confidence >= 0.8"
+  - id: classify-detailed
+    from: classify
+    to: detailed
+    when: "output.confidence < 0.8"
+  - id: fast-done
+    from: fast-path
+    to: done
+  - id: detailed-done
+    from: detailed
+    to: done
