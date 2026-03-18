@@ -2,6 +2,7 @@ package framework
 
 import (
 	"context"
+	"fmt"
 	"io/fs"
 	"strings"
 	"testing"
@@ -266,6 +267,57 @@ nodes:
 	}
 	if !nodeNames["s2"] {
 		t.Error("missing overlay node 's2'")
+	}
+}
+
+func TestBuildGraph_TopologyWithoutValidator_SkipsValidation(t *testing.T) {
+	// Save and clear the global topology validator.
+	saved := DefaultTopologyValidator
+	DefaultTopologyValidator = nil
+	defer func() { DefaultTopologyValidator = saved }()
+
+	def := &CircuitDef{
+		Circuit:     "test",
+		Topology:    "cascade",
+		Start:       "a",
+		Done:        "done",
+		HandlerType: "transformer",
+		Nodes:       []NodeDef{{Name: "a", HandlerType: "transformer", Handler: "passthrough"}},
+		Edges:       []EdgeDef{{ID: "a-done", From: "a", To: "done"}},
+	}
+	_, err := def.BuildGraph(GraphRegistries{
+		Transformers: TransformerRegistry{"passthrough": &passthroughTransformer{}},
+	})
+	if err != nil {
+		t.Fatalf("BuildGraph should skip topology validation when no validator registered: %v", err)
+	}
+}
+
+func TestBuildGraph_TopologyWithValidator_ValidatesGraph(t *testing.T) {
+	// Register a validator that always fails.
+	saved := DefaultTopologyValidator
+	DefaultTopologyValidator = func(name string, shape GraphShape) error {
+		return fmt.Errorf("mock topology violation: %s", name)
+	}
+	defer func() { DefaultTopologyValidator = saved }()
+
+	def := &CircuitDef{
+		Circuit:     "test",
+		Topology:    "cascade",
+		Start:       "a",
+		Done:        "done",
+		HandlerType: "transformer",
+		Nodes:       []NodeDef{{Name: "a", HandlerType: "transformer", Handler: "passthrough"}},
+		Edges:       []EdgeDef{{ID: "a-done", From: "a", To: "done"}},
+	}
+	_, err := def.BuildGraph(GraphRegistries{
+		Transformers: TransformerRegistry{"passthrough": &passthroughTransformer{}},
+	})
+	if err == nil {
+		t.Fatal("BuildGraph should fail when topology validator returns error")
+	}
+	if !strings.Contains(err.Error(), "mock topology violation") {
+		t.Errorf("error = %q, want to contain 'mock topology violation'", err.Error())
 	}
 }
 

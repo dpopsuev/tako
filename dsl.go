@@ -1022,7 +1022,12 @@ func RegisterTopologyValidator(v TopologyValidator) {
 func validateTopology(g *DefaultGraph, def *CircuitDef) error {
 	v := DefaultTopologyValidator
 	if v == nil {
-		return fmt.Errorf("topology %q declared but no topology validator registered (import topology package)", def.Topology)
+		slog.Warn("topology validator not registered, skipping validation",
+			"component", "build",
+			"topology", def.Topology,
+			"circuit", def.Circuit,
+		)
+		return nil
 	}
 	shape := buildGraphShape(g, def)
 	return v(def.Topology, shape)
