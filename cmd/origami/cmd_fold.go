@@ -14,6 +14,7 @@ func foldCmd(args []string) error {
 	container := fs.Bool("container", false, "build an OCI container image after compiling")
 	domainOnly := fs.Bool("domain-only", false, "build domain-serve binary only (ignore schematics/connectors)")
 	imageName := fs.String("image", "", "container image name (default: origami-<name>-domain)")
+	exportData := fs.String("export-data", "", "export flattened domain data to this directory (for volume mounts)")
 	verbose := fs.Bool("v", false, "verbose output")
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -25,12 +26,13 @@ func foldCmd(args []string) error {
 	}
 
 	return fold.Run(context.Background(), fold.Options{
-		ManifestPath: manifest,
-		Output:       *output,
-		Container:    *container,
-		DomainOnly:   *domainOnly,
-		ImageName:    *imageName,
-		Verbose:      *verbose,
+		ManifestPath:  manifest,
+		Output:        *output,
+		Container:     *container,
+		DomainOnly:    *domainOnly,
+		ImageName:     *imageName,
+		ExportDataDir: *exportData,
+		Verbose:       *verbose,
 	})
 }
 

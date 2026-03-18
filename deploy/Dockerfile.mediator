@@ -1,0 +1,23 @@
+# Origami Mediator — session-aware MCP router for schematic coordination.
+# Routes Papercup protocol calls by circuit_type and session affinity.
+#
+# Build: docker build -t origami-mediator -f deploy/Dockerfile.mediator .
+# Run:   docker run -p 9000:9000 origami-mediator --backend rca=http://rca:9200/mcp
+
+FROM golang:1.24 AS builder
+WORKDIR /src
+COPY go.mod go.sum ./
+# Strip local replace directives — mediator doesn't import rh-dsr/rh-rca.
+RUN go mod edit \
+    -dropreplace github.com/dpopsuev/rh-dsr \
+    -dropreplace github.com/dpopsuev/rh-rca \
+    -droprequire github.com/dpopsuev/rh-dsr \
+    -droprequire github.com/dpopsuev/rh-rca
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 go build -o /mediator ./cmd/mediator
+
+FROM gcr.io/distroless/static-debian12
+COPY --from=builder /mediator /mediator
+ENTRYPOINT ["/mediator"]
+EXPOSE 9000

@@ -1,38 +1,36 @@
-# Origami Cloud-Native — Local Development Stack
+# Origami — Local Development Stack
 #
-# Starts all four services + N LLM workers via docker compose.
+# Starts domain, DSR, RCA, and mediator services.
 #
 # Usage:
-#   docker compose up -d                    # start all services
-#   docker compose up -d --scale worker=5   # start with 5 workers
-#   curl http://localhost:9000/healthz      # verify gateway
+#   docker compose -f deploy/docker-compose.yaml up -d
+#   curl http://localhost:9000/healthz   # verify mediator
 #
-# Prerequisites:
-#   Build images first:
-#     podman build -t origami-harvester -f Dockerfile.harvester .
-#     podman build -t origami-rca -f Dockerfile.rca .
-#     podman build -t origami-gateway -f Dockerfile.gateway .
-#     podman build -t origami-asterisk-domain -f Dockerfile.asterisk-domain .
-#     podman build -t origami-llm-worker -f Dockerfile.llm-worker .
+# Prerequisites — build images first:
+#   just build-images   (from origami repo)
+#   origami fold --domain-only --container   (from asterisk repo)
 
 services:
-  harvester:
-    image: origami-harvester
+  domain:
+    image: origami-asterisk-domain
     ports:
-      - "9100:9100"
-    command: ["--port", "9100", "--drivers", "git,docs"]
+      - "9300:9300"
+    command: ["--data-dir", "/data"]
+    volumes:
+      - ${ASTERISK_DATA_DIR:-../../asterisk/.data}:/data:ro
     healthcheck:
-      test: ["CMD", "/harvester-serve", "--healthz"]
+      test: ["CMD", "/domain-serve", "--healthz"]
       interval: 5s
       timeout: 3s
       retries: 3
 
-  asterisk:
-    image: origami-asterisk-domain
+  dsr:
+    image: origami-dsr
     ports:
-      - "9300:9300"
+      - "9100:9100"
+    command: ["--port", "9100", "--drivers", "git,docs"]
     healthcheck:
-      test: ["CMD", "/domain-serve", "--healthz"]
+      test: ["CMD", "/dsr-serve", "--healthz"]
       interval: 5s
       timeout: 3s
       retries: 3
@@ -45,12 +43,14 @@ services:
       - "--port"
       - "9200"
       - "--domain-endpoint"
-      - "http://asterisk:9300/mcp"
+      - "http://domain:9300/mcp"
+      - "--mediator-endpoint"
+      - "http://mediator:9000/mcp"
     environment:
       - ASTERISK_RP_BASE_URL=${ASTERISK_RP_BASE_URL:-}
       - ASTERISK_RP_PROJECT=${ASTERISK_RP_PROJECT:-}
     depends_on:
-      asterisk:
+      domain:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "/rca-serve", "--healthz"]
@@ -58,8 +58,8 @@ services:
       timeout: 3s
       retries: 3
 
-  gateway:
-    image: origami-gateway
+  mediator:
+    image: origami-mediator
     ports:
       - "9000:9000"
     command:
@@ -67,29 +67,15 @@ services:
       - "9000"
       - "--backend"
       - "rca=http://rca:9200/mcp"
+      - "--backend"
+      - "dsr:dsr=http://dsr:9100/mcp"
     depends_on:
       rca:
         condition: service_healthy
+      dsr:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "/gateway", "--healthz"]
+      test: ["CMD", "/mediator", "--healthz"]
       interval: 5s
       timeout: 3s
       retries: 3
-
-  worker:
-    image: origami-llm-worker
-    environment:
-      - GATEWAY_ENDPOINT=http://gateway:9000/mcp
-      - LLM_PROVIDER=${LLM_PROVIDER:-ollama}
-      - LLM_MODEL=${LLM_MODEL:-llama3.2:3b}
-      - LLM_ENDPOINT=${LLM_ENDPOINT:-http://host.containers.internal:11434}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - SCENARIO=${SCENARIO:-ptp}
-      - BACKEND=${BACKEND:-stub}
-    depends_on:
-      gateway:
-        condition: service_healthy
-    deploy:
-      replicas: ${WORKER_REPLICAS:-1}

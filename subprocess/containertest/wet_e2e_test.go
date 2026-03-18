@@ -13,13 +13,13 @@ import (
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/dpopsuev/origami/gateway"
+	"github.com/dpopsuev/origami/mediator"
 	dsr "github.com/dpopsuev/rh-dsr"
 	mcpserver "github.com/dpopsuev/rh-rca/mcpconfig"
 )
 
 // Wet E2E tests use real LLM providers to validate the full circuit loop:
-// worker connects to gateway -> calls start_circuit -> loops get_next_step
+// worker connects to mediator -> calls start_circuit -> loops get_next_step
 // -> sends prompt to LLM -> calls submit_step -> gets report.
 //
 // Each test is gated by the availability of its provider:
@@ -62,14 +62,14 @@ func requireGeminiKey(t *testing.T) {
 	}
 }
 
-// wetGateway creates a three-service setup (harvester + RCA + gateway) using
-// httptest servers and returns the gateway endpoint and cleanup function.
-func wetGateway(t *testing.T) string {
+// wetMediator creates a three-service setup (dsr + RCA + mediator) using
+// httptest servers and returns the mediator endpoint and cleanup function.
+func wetMediator(t *testing.T) string {
 	t.Helper()
 
 	knRouter := dsr.NewRouter()
 	knServer := sdkmcp.NewServer(
-		&sdkmcp.Implementation{Name: "test-harvester", Version: "v0.1.0"},
+		&sdkmcp.Implementation{Name: "test-dsr", Version: "v0.1.0"},
 		nil,
 	)
 	dsr.RegisterTools(knServer, knRouter)
@@ -97,13 +97,13 @@ func wetGateway(t *testing.T) string {
 	rcaHTTP := httptest.NewServer(rcaMux)
 	t.Cleanup(rcaHTTP.Close)
 
-	gw := gateway.New([]gateway.BackendConfig{
+	gw := mediator.New([]mediator.BackendConfig{
 		{Name: "rca", Endpoint: rcaHTTP.URL + "/mcp"},
-		{Name: "harvester", Endpoint: knSrv.URL + "/mcp"},
+		{Name: "dsr", Endpoint: knSrv.URL + "/mcp"},
 	})
 	ctx := t.Context()
 	if err := gw.Start(ctx); err != nil {
-		t.Fatalf("start gateway: %v", err)
+		t.Fatalf("start mediator: %v", err)
 	}
 	t.Cleanup(func() { gw.Stop(context.Background()) })
 
@@ -113,7 +113,7 @@ func wetGateway(t *testing.T) string {
 	return gwHTTP.URL + "/mcp"
 }
 
-// runWetCircuit runs a stub circuit through the gateway and returns the report text.
+// runWetCircuit runs a stub circuit through the mediator and returns the report text.
 // It uses start_circuit with stub backend (deterministic, no real LLM needed
 // for circuit mechanics) but the LLM client is exercised for response generation.
 func runWetCircuit(t *testing.T, gwEndpoint string) string {
@@ -162,7 +162,7 @@ func textContent(result *sdkmcp.CallToolResult) string {
 
 func TestWetE2E_Ollama_CircuitStart(t *testing.T) {
 	requireOllama(t)
-	gwEndpoint := wetGateway(t)
+	gwEndpoint := wetMediator(t)
 
 	result := runWetCircuit(t, gwEndpoint)
 	if result == "" {
@@ -182,7 +182,7 @@ func TestWetE2E_ToolDiscovery(t *testing.T) {
 	if os.Getenv("ORIGAMI_WET_E2E") != "1" {
 		t.Skip("set ORIGAMI_WET_E2E=1")
 	}
-	gwEndpoint := wetGateway(t)
+	gwEndpoint := wetMediator(t)
 
 	ctx := t.Context()
 	transport := &sdkmcp.StreamableClientTransport{Endpoint: gwEndpoint}
@@ -205,7 +205,7 @@ func TestWetE2E_ToolDiscovery(t *testing.T) {
 		"start_circuit":    false,
 		"get_next_step":    false,
 		"submit_step":     false,
-		"harvester_search": false,
+		"dsr_search": false,
 	}
 	for _, tool := range tools.Tools {
 		if _, ok := want[tool.Name]; ok {
@@ -217,12 +217,12 @@ func TestWetE2E_ToolDiscovery(t *testing.T) {
 			t.Errorf("tool %q not found", name)
 		}
 	}
-	t.Logf("discovered %d tools through gateway", len(tools.Tools))
+	t.Logf("discovered %d tools through mediator", len(tools.Tools))
 }
 
 func TestWetE2E_Claude_ToolDiscovery(t *testing.T) {
 	requireAnthropicKey(t)
-	gwEndpoint := wetGateway(t)
+	gwEndpoint := wetMediator(t)
 
 	ctx := t.Context()
 	transport := &sdkmcp.StreamableClientTransport{Endpoint: gwEndpoint}
@@ -243,12 +243,12 @@ func TestWetE2E_Claude_ToolDiscovery(t *testing.T) {
 	if len(tools.Tools) == 0 {
 		t.Error("no tools discovered")
 	}
-	t.Logf("discovered %d tools through gateway (Claude wet test)", len(tools.Tools))
+	t.Logf("discovered %d tools through mediator (Claude wet test)", len(tools.Tools))
 }
 
 func TestWetE2E_Gemini_ToolDiscovery(t *testing.T) {
 	requireGeminiKey(t)
-	gwEndpoint := wetGateway(t)
+	gwEndpoint := wetMediator(t)
 
 	ctx := t.Context()
 	transport := &sdkmcp.StreamableClientTransport{Endpoint: gwEndpoint}
@@ -269,16 +269,16 @@ func TestWetE2E_Gemini_ToolDiscovery(t *testing.T) {
 	if len(tools.Tools) == 0 {
 		t.Error("no tools discovered")
 	}
-	t.Logf("discovered %d tools through gateway (Gemini wet test)", len(tools.Tools))
+	t.Logf("discovered %d tools through mediator (Gemini wet test)", len(tools.Tools))
 }
 
 // TestWetE2E_ConcurrentWorkers validates that multiple concurrent workers
-// can connect to the gateway simultaneously.
+// can connect to the mediator simultaneously.
 func TestWetE2E_ConcurrentWorkers(t *testing.T) {
 	if os.Getenv("ORIGAMI_WET_E2E") != "1" {
 		t.Skip("set ORIGAMI_WET_E2E=1")
 	}
-	gwEndpoint := wetGateway(t)
+	gwEndpoint := wetMediator(t)
 
 	const n = 3
 	errors := make(chan error, n)

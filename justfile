@@ -49,24 +49,22 @@ lint-pipelines:
 
 # ─── Container Images ─────────────────────────────────────
 
-# Build all OCI images
-build-images: build-gateway build-rca build-knowledge build-llm-worker
+workspace := justfile_directory() / ".."
 
-# Build gateway image
-build-gateway:
-    docker build -t origami-gateway -f deploy/Dockerfile.gateway .
+# Build all OCI images (mediator + rca + dsr from workspace root context)
+build-images: build-mediator build-rca build-dsr
 
-# Build RCA engine image
+# Build mediator image (origami-only context)
+build-mediator:
+    docker build -t origami-mediator -f deploy/Dockerfile.mediator .
+
+# Build RCA engine image (workspace root context for sibling repos)
 build-rca:
-    docker build -t origami-rca -f deploy/Dockerfile.rca .
+    docker build -t origami-rca -f {{ workspace }}/rh-rca/Dockerfile {{ workspace }}
 
-# Build knowledge engine image
-build-knowledge:
-    docker build -t origami-knowledge -f deploy/Dockerfile.knowledge .
-
-# Build LLM worker image
-build-llm-worker:
-    docker build -t origami-llm-worker -f deploy/Dockerfile.llm-worker .
+# Build DSR engine image (workspace root context for sibling repos)
+build-dsr:
+    docker build -t origami-dsr -f {{ workspace }}/rh-dsr/Dockerfile {{ workspace }}
 
 # ─── Clean ────────────────────────────────────────────────
 

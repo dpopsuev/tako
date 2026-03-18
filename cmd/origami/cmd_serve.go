@@ -10,7 +10,7 @@ import (
 	"os/signal"
 	"strings"
 
-	"github.com/dpopsuev/origami/gateway"
+	"github.com/dpopsuev/origami/mediator"
 )
 
 type serveBackendFlags []string
@@ -23,9 +23,9 @@ func (b *serveBackendFlags) Set(val string) error {
 
 func serveCmd(args []string) error {
 	fs := flag.NewFlagSet("serve", flag.ContinueOnError)
-	port := fs.Int("port", 9000, "HTTP port for the gateway")
+	port := fs.Int("port", 9000, "HTTP port for the mediator")
 	var backends serveBackendFlags
-	fs.Var(&backends, "backend", "Backend in name=url format (repeatable)")
+	fs.Var(&backends, "backend", "Backend: name=url or name:circuit_type=url (repeatable)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -34,34 +34,42 @@ func serveCmd(args []string) error {
 		return fmt.Errorf("at least one --backend is required\nusage: origami serve --port 9000 --backend rca=http://localhost:9200/mcp")
 	}
 
-	var configs []gateway.BackendConfig
+	var configs []mediator.BackendConfig
 	for _, b := range backends {
 		parts := strings.SplitN(b, "=", 2)
 		if len(parts) != 2 {
-			return fmt.Errorf("invalid backend format %q, expected name=url", b)
+			return fmt.Errorf("invalid backend format %q, expected name=url or name:circuit_type=url", b)
 		}
-		configs = append(configs, gateway.BackendConfig{Name: parts[0], Endpoint: parts[1]})
+		cfg := mediator.BackendConfig{Endpoint: parts[1]}
+		nameOrTyped := parts[0]
+		if typeParts := strings.SplitN(nameOrTyped, ":", 2); len(typeParts) == 2 {
+			cfg.Name = typeParts[0]
+			cfg.CircuitType = typeParts[1]
+		} else {
+			cfg.Name = nameOrTyped
+		}
+		configs = append(configs, cfg)
 	}
 
-	gw := gateway.New(configs)
+	m := mediator.New(configs)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	if err := gw.Start(ctx); err != nil {
-		return fmt.Errorf("start gateway: %w", err)
+	if err := m.Start(ctx); err != nil {
+		return fmt.Errorf("start mediator: %w", err)
 	}
-	defer gw.Stop(context.Background())
+	defer m.Stop(context.Background())
 
 	addr := fmt.Sprintf(":%d", *port)
-	httpServer := &http.Server{Addr: addr, Handler: gw.Handler()}
+	httpServer := &http.Server{Addr: addr, Handler: m.Handler()}
 
 	go func() {
 		<-ctx.Done()
 		httpServer.Shutdown(context.Background())
 	}()
 
-	log.Printf("origami gateway listening on %s", addr)
+	log.Printf("origami mediator listening on %s", addr)
 	if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		return fmt.Errorf("server error: %w", err)
 	}

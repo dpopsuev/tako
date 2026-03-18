@@ -21,8 +21,37 @@ func TestBuildGraph_CircuitHandler_NilRegistry(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for nil circuit registry")
 	}
-	if !strings.Contains(err.Error(), "circuit registry is nil") {
+	if !strings.Contains(err.Error(), "no local circuit and no mediator endpoint") {
 		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestBuildGraph_CircuitHandler_MediatorFallback(t *testing.T) {
+	def := &CircuitDef{
+		Circuit: "parent", Start: "main", Done: "done",
+		HandlerType: "transformer",
+		Nodes:       []NodeDef{{Name: "main", HandlerType: "circuit", Handler: "dsr"}},
+		Edges:       []EdgeDef{{ID: "main-done", From: "main", To: "done"}},
+	}
+	// No Circuits registry, but MediatorEndpoint is set → should succeed.
+	g, err := def.BuildGraph(GraphRegistries{
+		Transformers:     TransformerRegistry{"passthrough": &passthroughTransformer{}},
+		MediatorEndpoint: "http://localhost:9999/mcp",
+	})
+	if err != nil {
+		t.Fatalf("BuildGraph with mediator fallback: %v", err)
+	}
+
+	node, ok := g.NodeByName("main")
+	if !ok {
+		t.Fatal("node 'main' not found in graph")
+	}
+	// The node should be a transformerNode (not circuitRefNode).
+	if _, isDel := node.(DelegateNode); isDel {
+		t.Error("mediator fallback should create transformerNode, not DelegateNode")
+	}
+	if !IsTransformerNode(node) {
+		t.Error("mediator fallback node should be a transformer node")
 	}
 }
 

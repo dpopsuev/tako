@@ -881,7 +881,8 @@ type GraphRegistries struct {
 	Transformers TransformerRegistry
 	Hooks        HookRegistry
 	Components   ComponentLoader
-	Circuits     map[string]*CircuitDef
+	Circuits         map[string]*CircuitDef
+	MediatorEndpoint string // MCP endpoint for remote sub-circuit delegation
 }
 
 // BuildGraph constructs a Graph from a CircuitDef using the full registries bundle.
@@ -1150,19 +1151,28 @@ func (def *CircuitDef) resolveHandler(nd NodeDef, reg GraphRegistries, elem Elem
 		}, nil
 
 	case HandlerTypeCircuit:
-		if reg.Circuits == nil {
-			return nil, fmt.Errorf("node %q: circuit handler %q not found (circuit registry is nil)", nd.Name, nd.Handler)
+		// Local resolution first.
+		if reg.Circuits != nil {
+			if cd, ok := reg.Circuits[nd.Handler]; ok {
+				return &circuitRefNode{
+					name:       nd.Name,
+					element:    elem,
+					circuitDef: cd,
+					meta:       nd.Meta,
+				}, nil
+			}
 		}
-		cd, ok := reg.Circuits[nd.Handler]
-		if !ok {
-			return nil, fmt.Errorf("node %q: circuit %q not found in circuit registry", nd.Name, nd.Handler)
+		// Mediator fallback: delegate to remote schematic via MCP.
+		if reg.MediatorEndpoint != "" {
+			return &transformerNode{
+				name:    nd.Name,
+				element: elem,
+				trans:   &mcpCircuitTransformer{circuitType: nd.Handler, endpoint: reg.MediatorEndpoint},
+				config:  def.Vars,
+				meta:    nd.Meta,
+			}, nil
 		}
-		return &circuitRefNode{
-			name:       nd.Name,
-			element:    elem,
-			circuitDef: cd,
-			meta:       nd.Meta,
-		}, nil
+		return nil, fmt.Errorf("node %q: circuit handler %q not found (no local circuit and no mediator endpoint)", nd.Name, nd.Handler)
 
 	default:
 		return nil, fmt.Errorf("node %q: unknown handler_type %q", nd.Name, ht)

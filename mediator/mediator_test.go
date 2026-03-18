@@ -1,4 +1,4 @@
-package gateway_test
+package mediator_test
 
 import (
 	"context"
@@ -11,8 +11,8 @@ import (
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/dpopsuev/origami/dispatch"
-	"github.com/dpopsuev/origami/gateway"
 	"github.com/dpopsuev/origami/mcp"
+	"github.com/dpopsuev/origami/mediator"
 )
 
 func newTestBackend(t *testing.T, tools map[string]func(ctx context.Context, req *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error)) *httptest.Server {
@@ -58,7 +58,7 @@ func addHandler(_ context.Context, req *sdkmcp.CallToolRequest) (*sdkmcp.CallToo
 	}, nil
 }
 
-func connectGateway(t *testing.T, ts *httptest.Server) *sdkmcp.ClientSession {
+func connectMediator(t *testing.T, ts *httptest.Server) *sdkmcp.ClientSession {
 	t.Helper()
 	ctx := t.Context()
 	transport := &sdkmcp.StreamableClientTransport{Endpoint: ts.URL + "/mcp"}
@@ -68,7 +68,7 @@ func connectGateway(t *testing.T, ts *httptest.Server) *sdkmcp.ClientSession {
 	)
 	session, err := client.Connect(ctx, transport, nil)
 	if err != nil {
-		t.Fatalf("connect to gateway: %v", err)
+		t.Fatalf("connect to mediator: %v", err)
 	}
 	t.Cleanup(func() { session.Close() })
 	return session
@@ -85,7 +85,7 @@ func extractText(t *testing.T, result *sdkmcp.CallToolResult) string {
 	return ""
 }
 
-func TestGateway_RoutesToCorrectBackend(t *testing.T) {
+func TestMediator_RoutesToCorrectBackend(t *testing.T) {
 	backend1 := newTestBackend(t, map[string]func(context.Context, *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error){
 		"echo": echoHandler,
 	})
@@ -93,7 +93,7 @@ func TestGateway_RoutesToCorrectBackend(t *testing.T) {
 		"add": addHandler,
 	})
 
-	gw := gateway.New([]gateway.BackendConfig{
+	gw := mediator.New([]mediator.BackendConfig{
 		{Name: "svc1", Endpoint: backend1.URL + "/mcp"},
 		{Name: "svc2", Endpoint: backend2.URL + "/mcp"},
 	})
@@ -106,7 +106,7 @@ func TestGateway_RoutesToCorrectBackend(t *testing.T) {
 	ts := httptest.NewServer(gw.Handler())
 	defer ts.Close()
 
-	session := connectGateway(t, ts)
+	session := connectMediator(t, ts)
 
 	result, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
 		Name:      "echo",
@@ -131,7 +131,7 @@ func TestGateway_RoutesToCorrectBackend(t *testing.T) {
 	}
 }
 
-func TestGateway_ListToolsAggregation(t *testing.T) {
+func TestMediator_ListToolsAggregation(t *testing.T) {
 	backend1 := newTestBackend(t, map[string]func(context.Context, *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error){
 		"tool_a": echoHandler,
 		"tool_b": echoHandler,
@@ -140,7 +140,7 @@ func TestGateway_ListToolsAggregation(t *testing.T) {
 		"tool_c": echoHandler,
 	})
 
-	gw := gateway.New([]gateway.BackendConfig{
+	gw := mediator.New([]mediator.BackendConfig{
 		{Name: "svc1", Endpoint: backend1.URL + "/mcp"},
 		{Name: "svc2", Endpoint: backend2.URL + "/mcp"},
 	})
@@ -153,7 +153,7 @@ func TestGateway_ListToolsAggregation(t *testing.T) {
 	ts := httptest.NewServer(gw.Handler())
 	defer ts.Close()
 
-	session := connectGateway(t, ts)
+	session := connectMediator(t, ts)
 
 	tools, err := session.ListTools(ctx, nil)
 	if err != nil {
@@ -172,12 +172,12 @@ func TestGateway_ListToolsAggregation(t *testing.T) {
 	}
 }
 
-func TestGateway_Healthz(t *testing.T) {
+func TestMediator_Healthz(t *testing.T) {
 	backend := newTestBackend(t, map[string]func(context.Context, *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error){
 		"echo": echoHandler,
 	})
 
-	gw := gateway.New([]gateway.BackendConfig{
+	gw := mediator.New([]mediator.BackendConfig{
 		{Name: "svc1", Endpoint: backend.URL + "/mcp"},
 	})
 	ctx := t.Context()
@@ -199,12 +199,12 @@ func TestGateway_Healthz(t *testing.T) {
 	}
 }
 
-func TestGateway_Readyz_AllHealthy(t *testing.T) {
+func TestMediator_Readyz_AllHealthy(t *testing.T) {
 	backend := newTestBackend(t, map[string]func(context.Context, *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error){
 		"echo": echoHandler,
 	})
 
-	gw := gateway.New([]gateway.BackendConfig{
+	gw := mediator.New([]mediator.BackendConfig{
 		{Name: "svc1", Endpoint: backend.URL + "/mcp"},
 	})
 	ctx := t.Context()
@@ -226,12 +226,12 @@ func TestGateway_Readyz_AllHealthy(t *testing.T) {
 	}
 }
 
-func TestGateway_UnknownTool_ReturnsError(t *testing.T) {
+func TestMediator_UnknownTool_ReturnsError(t *testing.T) {
 	backend := newTestBackend(t, map[string]func(context.Context, *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error){
 		"echo": echoHandler,
 	})
 
-	gw := gateway.New([]gateway.BackendConfig{
+	gw := mediator.New([]mediator.BackendConfig{
 		{Name: "svc1", Endpoint: backend.URL + "/mcp"},
 	})
 	ctx := t.Context()
@@ -254,7 +254,7 @@ func mustJSON(v any) json.RawMessage {
 	return b
 }
 
-// --- Schema preservation through gateway proxy ---
+// --- Schema preservation through mediator proxy ---
 
 type typedEchoInput struct {
 	Message string `json:"message" jsonschema:"the message to echo"`
@@ -296,10 +296,10 @@ func newTypedBackend(t *testing.T) *httptest.Server {
 	return ts
 }
 
-func TestGateway_PreservesSchemaFromBackend(t *testing.T) {
+func TestMediator_PreservesSchemaFromBackend(t *testing.T) {
 	backend := newTypedBackend(t)
 
-	gw := gateway.New([]gateway.BackendConfig{
+	gw := mediator.New([]mediator.BackendConfig{
 		{Name: "svc1", Endpoint: backend.URL + "/mcp"},
 	})
 	ctx := t.Context()
@@ -311,7 +311,7 @@ func TestGateway_PreservesSchemaFromBackend(t *testing.T) {
 	ts := httptest.NewServer(gw.Handler())
 	defer ts.Close()
 
-	session := connectGateway(t, ts)
+	session := connectMediator(t, ts)
 
 	tools, err := session.ListTools(ctx, nil)
 	if err != nil {
@@ -353,10 +353,10 @@ func TestGateway_PreservesSchemaFromBackend(t *testing.T) {
 	}
 }
 
-func TestGateway_PreservesDescriptionFromBackend(t *testing.T) {
+func TestMediator_PreservesDescriptionFromBackend(t *testing.T) {
 	backend := newTypedBackend(t)
 
-	gw := gateway.New([]gateway.BackendConfig{
+	gw := mediator.New([]mediator.BackendConfig{
 		{Name: "svc1", Endpoint: backend.URL + "/mcp"},
 	})
 	ctx := t.Context()
@@ -368,7 +368,7 @@ func TestGateway_PreservesDescriptionFromBackend(t *testing.T) {
 	ts := httptest.NewServer(gw.Handler())
 	defer ts.Close()
 
-	session := connectGateway(t, ts)
+	session := connectMediator(t, ts)
 
 	tools, err := session.ListTools(ctx, nil)
 	if err != nil {
@@ -377,18 +377,18 @@ func TestGateway_PreservesDescriptionFromBackend(t *testing.T) {
 
 	for _, tool := range tools.Tools {
 		if tool.Name == "echo" && tool.Description == "" {
-			t.Error("echo tool description not preserved through gateway")
+			t.Error("echo tool description not preserved through mediator")
 		}
 		if tool.Name == "add" && tool.Description == "" {
-			t.Error("add tool description not preserved through gateway")
+			t.Error("add tool description not preserved through mediator")
 		}
 	}
 }
 
-func TestGateway_TypedBackendParamsReachBackend(t *testing.T) {
+func TestMediator_TypedBackendParamsReachBackend(t *testing.T) {
 	backend := newTypedBackend(t)
 
-	gw := gateway.New([]gateway.BackendConfig{
+	gw := mediator.New([]mediator.BackendConfig{
 		{Name: "svc1", Endpoint: backend.URL + "/mcp"},
 	})
 	ctx := t.Context()
@@ -400,7 +400,7 @@ func TestGateway_TypedBackendParamsReachBackend(t *testing.T) {
 	ts := httptest.NewServer(gw.Handler())
 	defer ts.Close()
 
-	session := connectGateway(t, ts)
+	session := connectMediator(t, ts)
 
 	result, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
 		Name:      "echo",
@@ -422,6 +422,214 @@ func TestGateway_TypedBackendParamsReachBackend(t *testing.T) {
 	}
 	if got := extractText(t, result); got != "33" {
 		t.Errorf("add = %q, want %q", got, "33")
+	}
+}
+
+// --- Session-affinity routing (Origami Mediator) ---
+
+// newNamedCircuitBackend creates a circuit backend that tags its report with the given label.
+func newNamedCircuitBackend(t *testing.T, label string) *httptest.Server {
+	t.Helper()
+	cfg := mcp.CircuitConfig{
+		Name:        label + "-circuit",
+		Version:     "dev",
+		StepSchemas: []mcp.StepSchema{
+			{
+				Name:   "STEP",
+				Fields: map[string]string{"value": "string"},
+				Defs:   []mcp.FieldDef{{Name: "value", Type: "string", Required: true}},
+			},
+		},
+		DefaultGetNextStepTimeout: 5000,
+		DefaultSessionTTL:         300000,
+		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus *dispatch.SignalBus) (mcp.RunFunc, mcp.SessionMeta, error) {
+			return func(ctx context.Context) (any, error) {
+				if _, err := disp.Dispatch(ctx, dispatch.DispatchContext{
+					CaseID: "C01", Step: "STEP",
+				}); err != nil {
+					return nil, err
+				}
+				return map[string]any{"backend": label}, nil
+			}, mcp.SessionMeta{TotalCases: 1, Scenario: label + "-scenario"}, nil
+		},
+		FormatReport: func(result any) (string, any, error) {
+			return fmt.Sprintf("report from %s", label), result, nil
+		},
+	}
+
+	srv := mcp.NewCircuitServer(cfg)
+	t.Cleanup(srv.Shutdown)
+
+	h := sdkmcp.NewStreamableHTTPHandler(
+		func(_ *http.Request) *sdkmcp.Server { return srv.MCPServer },
+		&sdkmcp.StreamableHTTPOptions{Stateless: false},
+	)
+	ts := httptest.NewServer(h)
+	t.Cleanup(ts.Close)
+	return ts
+}
+
+func TestMediator_SessionAffinityRouting(t *testing.T) {
+	rcaBackend := newNamedCircuitBackend(t, "rca")
+	dsrBackend := newNamedCircuitBackend(t, "dsr")
+
+	gw := mediator.New([]mediator.BackendConfig{
+		{Name: "rca", Endpoint: rcaBackend.URL + "/mcp"},
+		{Name: "dsr", Endpoint: dsrBackend.URL + "/mcp", CircuitType: "harvester"},
+	})
+	ctx := t.Context()
+	if err := gw.Start(ctx); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	defer gw.Stop(context.Background())
+
+	ts := httptest.NewServer(gw.Handler())
+	defer ts.Close()
+
+	session := connectMediator(t, ts)
+
+	// Start circuit on default backend (rca — no circuit_type).
+	rcaStart, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
+		Name:      "start_circuit",
+		Arguments: mustJSON(map[string]any{"force": true}),
+	})
+	if err != nil {
+		t.Fatalf("start_circuit (rca): %v", err)
+	}
+	rcaText := extractText(t, rcaStart)
+	var rcaOut map[string]any
+	json.Unmarshal([]byte(rcaText), &rcaOut)
+	rcaSessionID, _ := rcaOut["session_id"].(string)
+	if rcaSessionID == "" {
+		t.Fatalf("no session_id from rca start: %s", rcaText)
+	}
+
+	// Start circuit on dsr backend (circuit_type=harvester).
+	dsrStart, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
+		Name: "start_circuit",
+		Arguments: mustJSON(map[string]any{
+			"force": true,
+			"extra": map[string]any{"circuit_type": "harvester"},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("start_circuit (dsr): %v", err)
+	}
+	dsrText := extractText(t, dsrStart)
+	var dsrOut map[string]any
+	json.Unmarshal([]byte(dsrText), &dsrOut)
+	dsrSessionID, _ := dsrOut["session_id"].(string)
+	if dsrSessionID == "" {
+		t.Fatalf("no session_id from dsr start: %s", dsrText)
+	}
+
+	if rcaSessionID == dsrSessionID {
+		t.Fatal("rca and dsr should have different session IDs")
+	}
+
+	// Drive both sessions to completion.
+	drainSession := func(sessionID, label string) {
+		t.Helper()
+		for i := 0; i < 10; i++ {
+			res, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
+				Name:      "get_next_step",
+				Arguments: mustJSON(map[string]any{"session_id": sessionID, "timeout_ms": 3000}),
+			})
+			if err != nil {
+				t.Fatalf("get_next_step (%s): %v", label, err)
+			}
+			var out map[string]any
+			json.Unmarshal([]byte(extractText(t, res)), &out)
+			if done, _ := out["done"].(bool); done {
+				return
+			}
+			if avail, _ := out["available"].(bool); !avail {
+				continue
+			}
+			dispatchID := int64(out["dispatch_id"].(float64))
+			step, _ := out["step"].(string)
+			_, err = session.CallTool(ctx, &sdkmcp.CallToolParams{
+				Name: "submit_step",
+				Arguments: mustJSON(map[string]any{
+					"session_id": sessionID, "dispatch_id": dispatchID,
+					"step": step, "fields": map[string]any{"value": "test"},
+				}),
+			})
+			if err != nil {
+				t.Fatalf("submit_step (%s): %v", label, err)
+			}
+		}
+	}
+
+	drainSession(rcaSessionID, "rca")
+	drainSession(dsrSessionID, "dsr")
+
+	// Verify reports come from correct backends.
+	rcaReport, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
+		Name:      "get_report",
+		Arguments: mustJSON(map[string]any{"session_id": rcaSessionID}),
+	})
+	if err != nil {
+		t.Fatalf("get_report (rca): %v", err)
+	}
+	var rcaReportOut map[string]any
+	json.Unmarshal([]byte(extractText(t, rcaReport)), &rcaReportOut)
+	if structured, ok := rcaReportOut["structured"].(map[string]any); ok {
+		if structured["backend"] != "rca" {
+			t.Errorf("rca report backend = %v, want rca", structured["backend"])
+		}
+	} else {
+		t.Errorf("rca report missing structured field: %s", extractText(t, rcaReport))
+	}
+
+	dsrReport, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
+		Name:      "get_report",
+		Arguments: mustJSON(map[string]any{"session_id": dsrSessionID}),
+	})
+	if err != nil {
+		t.Fatalf("get_report (dsr): %v", err)
+	}
+	var dsrReportOut map[string]any
+	json.Unmarshal([]byte(extractText(t, dsrReport)), &dsrReportOut)
+	if structured, ok := dsrReportOut["structured"].(map[string]any); ok {
+		if structured["backend"] != "dsr" {
+			t.Errorf("dsr report backend = %v, want dsr", structured["backend"])
+		}
+	} else {
+		t.Errorf("dsr report missing structured field: %s", extractText(t, dsrReport))
+	}
+}
+
+func TestMediator_SingleBackend_NoPapercupCollision(t *testing.T) {
+	backend := newNamedCircuitBackend(t, "only")
+
+	gw := mediator.New([]mediator.BackendConfig{
+		{Name: "svc", Endpoint: backend.URL + "/mcp"},
+	})
+	ctx := t.Context()
+	if err := gw.Start(ctx); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	defer gw.Stop(context.Background())
+
+	ts := httptest.NewServer(gw.Handler())
+	defer ts.Close()
+
+	session := connectMediator(t, ts)
+
+	// Verify Papercup tools are listed exactly once.
+	tools, err := session.ListTools(ctx, nil)
+	if err != nil {
+		t.Fatalf("ListTools: %v", err)
+	}
+	counts := make(map[string]int)
+	for _, tool := range tools.Tools {
+		counts[tool.Name]++
+	}
+	for name := range mediator.PapercupTools {
+		if counts[name] != 1 {
+			t.Errorf("tool %q listed %d times, want 1", name, counts[name])
+		}
 	}
 }
 
@@ -475,10 +683,10 @@ func newCircuitBackend(t *testing.T) (*httptest.Server, *mcp.CircuitServer) {
 	return ts, srv
 }
 
-func TestGateway_MCPToolsReachableViaHTTP(t *testing.T) {
+func TestMediator_MCPToolsReachableViaHTTP(t *testing.T) {
 	backend, _ := newCircuitBackend(t)
 
-	gw := gateway.New([]gateway.BackendConfig{
+	gw := mediator.New([]mediator.BackendConfig{
 		{Name: "rca", Endpoint: backend.URL + "/mcp"},
 	})
 	ctx := t.Context()
@@ -490,7 +698,7 @@ func TestGateway_MCPToolsReachableViaHTTP(t *testing.T) {
 	ts := httptest.NewServer(gw.Handler())
 	defer ts.Close()
 
-	session := connectGateway(t, ts)
+	session := connectMediator(t, ts)
 
 	tools, err := session.ListTools(ctx, nil)
 	if err != nil {
@@ -510,7 +718,7 @@ func TestGateway_MCPToolsReachableViaHTTP(t *testing.T) {
 	}
 	for name, found := range wantTools {
 		if !found {
-			t.Errorf("circuit tool %q not found via HTTP gateway", name)
+			t.Errorf("circuit tool %q not found via HTTP mediator", name)
 		}
 	}
 }
@@ -518,7 +726,7 @@ func TestGateway_MCPToolsReachableViaHTTP(t *testing.T) {
 func TestWorker_CanCallToolsViaHTTPTransport(t *testing.T) {
 	backend, _ := newCircuitBackend(t)
 
-	gw := gateway.New([]gateway.BackendConfig{
+	gw := mediator.New([]mediator.BackendConfig{
 		{Name: "rca", Endpoint: backend.URL + "/mcp"},
 	})
 	ctx := t.Context()
@@ -530,7 +738,7 @@ func TestWorker_CanCallToolsViaHTTPTransport(t *testing.T) {
 	ts := httptest.NewServer(gw.Handler())
 	defer ts.Close()
 
-	session := connectGateway(t, ts)
+	session := connectMediator(t, ts)
 
 	// Start circuit
 	startRes, err := session.CallTool(ctx, &sdkmcp.CallToolParams{

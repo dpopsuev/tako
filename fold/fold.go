@@ -51,9 +51,10 @@ type Options struct {
 	Output         string
 	GoFlags        []string
 	Verbose        bool
-	Container      bool // build an OCI image instead of a local binary
-	DomainOnly     bool // force domain-serve build even when schematics are declared
+	Container      bool   // build an OCI image instead of a local binary
+	DomainOnly     bool   // force domain-serve build even when schematics are declared
 	ImageName      string
+	ExportDataDir  string // export flattened domain data to this directory (for volume mounts)
 	ModuleResolver ModuleResolver
 }
 
@@ -75,6 +76,10 @@ func Run(ctx context.Context, opts Options) error {
 	manifestDir := filepath.Dir(opts.ManifestPath)
 	if err := validateManifest(m, manifestDir, opts.Verbose); err != nil {
 		return err
+	}
+
+	if opts.ExportDataDir != "" {
+		return exportDataDir(m, manifestDir, opts)
 	}
 
 	if m.HasBindings() && !opts.DomainOnly {
@@ -528,6 +533,29 @@ func copyEmbedFiles(ds *DomainServeConfig, manifestDir, tmpDir string, verbose b
 	if verbose {
 		fmt.Fprintf(os.Stderr, "copied %d asset files\n", len(paths))
 	}
+	return nil
+}
+
+// exportDataDir copies flattened domain data to a directory for use with
+// the --data-dir runtime flag. This produces the same file layout that
+// go:embed would create, making it suitable for volume mounts.
+func exportDataDir(m *Manifest, manifestDir string, opts Options) error {
+	if err := m.MergeDiscoveredAssets(manifestDir); err != nil {
+		return fmt.Errorf("discover domain assets: %w", err)
+	}
+
+	if err := os.MkdirAll(opts.ExportDataDir, 0755); err != nil {
+		return fmt.Errorf("create export dir: %w", err)
+	}
+
+	if err := copyDomainFiles(m, manifestDir, opts.ExportDataDir, opts.Verbose); err != nil {
+		return err
+	}
+	if err := copyEmbedFiles(m.DomainServe, manifestDir, opts.ExportDataDir, opts.Verbose); err != nil {
+		return err
+	}
+
+	fmt.Fprintf(os.Stderr, "exported domain data to %s\n", opts.ExportDataDir)
 	return nil
 }
 

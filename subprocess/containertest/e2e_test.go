@@ -18,15 +18,15 @@ import (
 
 	"github.com/dpopsuev/origami/domainfs"
 	"github.com/dpopsuev/origami/domainserve"
-	"github.com/dpopsuev/origami/gateway"
+	"github.com/dpopsuev/origami/mediator"
 	dsr "github.com/dpopsuev/rh-dsr"
 	mcpserver "github.com/dpopsuev/rh-rca/mcpconfig"
 	"github.com/dpopsuev/origami/subprocess/containertest"
 )
 
 // These tests use httptest servers to simulate the four-service architecture
-// (Gateway, RCA engine, Harvester, Asterisk domain) without requiring real
-// container images. They validate Gateway routing, health probes, and
+// (Mediator, RCA engine, DSR, Asterisk domain) without requiring real
+// container images. They validate Mediator routing, health probes, and
 // concurrency patterns that container E2E tests would exercise.
 //
 // Real container E2E tests (requiring podman + built images) are gated by
@@ -73,11 +73,11 @@ func connectDomainFS(t *testing.T, domainSrvURL string) *domainfs.MCPRemoteFS {
 		WithTimeout(5 * time.Second)
 }
 
-func newHarvesterServer(t *testing.T) *httptest.Server {
+func newDSRServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	router := dsr.NewRouter()
 	server := sdkmcp.NewServer(
-		&sdkmcp.Implementation{Name: "test-harvester", Version: "v0.1.0"},
+		&sdkmcp.Implementation{Name: "test-dsr", Version: "v0.1.0"},
 		nil,
 	)
 	dsr.RegisterTools(server, router)
@@ -125,22 +125,22 @@ func newRCAServer(t *testing.T, opts ...mcpserver.ServerOption) *httptest.Server
 	return ts
 }
 
-func newFourServiceGateway(t *testing.T) (domainSrv, knSrv, rcaSrv, gwSrv *httptest.Server, gw *gateway.Gateway) {
+func newFourServiceMediator(t *testing.T) (domainSrv, knSrv, rcaSrv, gwSrv *httptest.Server, gw *mediator.Mediator) {
 	t.Helper()
 	domainSrv = newDomainServer(t)
-	knSrv = newHarvesterServer(t)
+	knSrv = newDSRServer(t)
 
 	remoteFS := connectDomainFS(t, domainSrv.URL)
 	rcaSrv = newRCAServer(t, mcpserver.WithDomainFS(remoteFS))
 
-	gw = gateway.New([]gateway.BackendConfig{
+	gw = mediator.New([]mediator.BackendConfig{
 		{Name: "rca", Endpoint: rcaSrv.URL + "/mcp"},
-		{Name: "harvester", Endpoint: knSrv.URL + "/mcp"},
+		{Name: "dsr", Endpoint: knSrv.URL + "/mcp"},
 		{Name: "asterisk", Endpoint: domainSrv.URL + "/mcp"},
 	})
 	ctx := t.Context()
 	if err := gw.Start(ctx); err != nil {
-		t.Fatalf("Start gateway: %v", err)
+		t.Fatalf("Start mediator: %v", err)
 	}
 	t.Cleanup(func() { gw.Stop(context.Background()) })
 
@@ -166,7 +166,7 @@ func connectMCP(t *testing.T, endpoint string) *sdkmcp.ClientSession {
 }
 
 func TestE2E_FourServices_ToolRouting(t *testing.T) {
-	_, _, _, gwSrv, _ := newFourServiceGateway(t)
+	_, _, _, gwSrv, _ := newFourServiceMediator(t)
 	ctx := t.Context()
 	session := connectMCP(t, gwSrv.URL+"/mcp")
 
@@ -176,31 +176,31 @@ func TestE2E_FourServices_ToolRouting(t *testing.T) {
 	}
 
 	hasRCA := false
-	hasHarvester := false
+	hasDSR := false
 	hasDomain := false
 	for _, tool := range tools.Tools {
 		switch tool.Name {
 		case "start_circuit", "get_next_step", "submit_step":
 			hasRCA = true
 		case "harvester_search", "harvester_read":
-			hasHarvester = true
+			hasDSR = true
 		case "domain_info", "domain_read", "domain_list":
 			hasDomain = true
 		}
 	}
 	if !hasRCA {
-		t.Error("gateway missing RCA tools")
+		t.Error("mediator missing RCA tools")
 	}
-	if !hasHarvester {
-		t.Error("gateway missing harvester tools")
+	if !hasDSR {
+		t.Error("mediator missing dsr tools")
 	}
 	if !hasDomain {
-		t.Error("gateway missing domain tools (domain_info, domain_read, domain_list)")
+		t.Error("mediator missing domain tools (domain_info, domain_read, domain_list)")
 	}
 }
 
 func TestE2E_FourServices_HealthProbes(t *testing.T) {
-	_, _, _, gwSrv, _ := newFourServiceGateway(t)
+	_, _, _, gwSrv, _ := newFourServiceMediator(t)
 
 	resp, err := http.Get(gwSrv.URL + "/healthz")
 	if err != nil {
@@ -221,8 +221,8 @@ func TestE2E_FourServices_HealthProbes(t *testing.T) {
 	}
 }
 
-func TestE2E_HarvesterFailure_ReadyzDegrades(t *testing.T) {
-	_, knSrv, _, gwSrv, _ := newFourServiceGateway(t)
+func TestE2E_DSRFailure_ReadyzDegrades(t *testing.T) {
+	_, knSrv, _, gwSrv, _ := newFourServiceMediator(t)
 
 	resp, _ := http.Get(gwSrv.URL + "/readyz")
 	resp.Body.Close()
@@ -239,12 +239,12 @@ func TestE2E_HarvesterFailure_ReadyzDegrades(t *testing.T) {
 	}
 	resp.Body.Close()
 	if resp.StatusCode != http.StatusServiceUnavailable {
-		t.Errorf("readyz after harvester kill = %d, want 503", resp.StatusCode)
+		t.Errorf("readyz after dsr kill = %d, want 503", resp.StatusCode)
 	}
 }
 
 func TestE2E_Concurrency_MultipleSessions(t *testing.T) {
-	_, _, _, gwSrv, _ := newFourServiceGateway(t)
+	_, _, _, gwSrv, _ := newFourServiceMediator(t)
 	ctx := t.Context()
 
 	const n = 5

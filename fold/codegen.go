@@ -201,7 +201,7 @@ func renderWiring(g *ResolvedGraph, productName string) string {
 
 func renderDomainConfig(m *Manifest) string {
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("\tdomainHandler := domainserve.New(domainData, domainserve.Config{\n"))
+	b.WriteString(fmt.Sprintf("\tdomainHandler := domainserve.New(domainFS, domainserve.Config{\n"))
 	b.WriteString(fmt.Sprintf("\t\tName:    %q,\n", m.Name))
 	b.WriteString(fmt.Sprintf("\t\tVersion: %q,\n", m.Version))
 
@@ -229,7 +229,7 @@ func renderServerCreation(g *ResolvedGraph, productName string) string {
 	root := g.Root
 
 	fmt.Fprintf(&b, "\tserver := %s.%s(%q,\n", root.Alias, root.Factory, productName)
-	fmt.Fprintf(&b, "\t\t%s.WithDomainFS(domainData),\n", root.Alias)
+	fmt.Fprintf(&b, "\t\t%s.WithDomainFS(domainFS),\n", root.Alias)
 	for _, opt := range root.Options {
 		fmt.Fprintf(&b, "\t\t%s.%s(%s),\n", root.Alias, opt.OptionFunc, opt.Provider)
 	}
@@ -260,7 +260,9 @@ package main
 
 import (
 	"embed"
+	"flag"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"os"
 
@@ -279,6 +281,15 @@ import (
 var domainData embed.FS
 
 func main() {
+	dataDir := flag.String("data-dir", "", "serve domain data from this directory instead of embedded assets")
+	flag.Parse()
+
+	var domainFS fs.FS = domainData
+	if *dataDir != "" {
+		domainFS = os.DirFS(*dataDir)
+		fmt.Fprintf(os.Stderr, "using data dir: %s\n", *dataDir)
+	}
+
 {{ .WiringBlock }}
 {{ .DomainConfig }}
 {{ .ServerBlock }}
@@ -305,7 +316,9 @@ package main
 
 import (
 	"embed"
+	"flag"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"os"
 
@@ -322,17 +335,25 @@ import (
 var domainData embed.FS
 
 func main() {
-	for _, arg := range os.Args[1:] {
-		if arg == "--healthz" {
-			resp, err := http.Get(fmt.Sprintf("http://localhost:%d/healthz", {{ .Port }}))
-			if err != nil || resp.StatusCode != http.StatusOK {
-				os.Exit(1)
-			}
-			os.Exit(0)
+	dataDir := flag.String("data-dir", "", "serve domain data from this directory instead of embedded assets")
+	healthz := flag.Bool("healthz", false, "probe /healthz and exit")
+	flag.Parse()
+
+	if *healthz {
+		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/healthz", {{ .Port }}))
+		if err != nil || resp.StatusCode != http.StatusOK {
+			os.Exit(1)
 		}
+		os.Exit(0)
 	}
 
-	handler := domainserve.New(domainData, domainserve.Config{
+	var domainFS fs.FS = domainData
+	if *dataDir != "" {
+		domainFS = os.DirFS(*dataDir)
+		fmt.Fprintf(os.Stderr, "using data dir: %s\n", *dataDir)
+	}
+
+	handler := domainserve.New(domainFS, domainserve.Config{
 		Name:    {{ printf "%q" .Name }},
 		Version: {{ printf "%q" .Version }},
 {{ if .HasAssets -}}

@@ -602,8 +602,8 @@ func TestBuildGraph_CircuitRefNode_MissingCircuit(t *testing.T) {
 	if err == nil {
 		t.Fatal("BuildGraph() should fail for missing circuit reference")
 	}
-	if !strings.Contains(err.Error(), "not found in circuit registry") {
-		t.Errorf("error = %q, want to contain 'not found in circuit registry'", err.Error())
+	if !strings.Contains(err.Error(), "no local circuit and no mediator endpoint") {
+		t.Errorf("error = %q, want to contain 'no local circuit and no mediator endpoint'", err.Error())
 	}
 }
 
@@ -622,9 +622,9 @@ func TestBuildGraph_CircuitRefNode_NilRegistry(t *testing.T) {
 
 	_, err := def.BuildGraph(GraphRegistries{})
 	if err == nil {
-		t.Fatal("BuildGraph() should fail when circuit registry is nil")
+		t.Fatal("BuildGraph() should fail when no local circuit and no mediator")
 	}
-	if !strings.Contains(err.Error(), "circuit registry is nil") {
-		t.Errorf("error = %q, want to contain 'circuit registry is nil'", err.Error())
+	if !strings.Contains(err.Error(), "no local circuit and no mediator endpoint") {
+		t.Errorf("error = %q, want to contain 'no local circuit and no mediator endpoint'", err.Error())
 	}
 }

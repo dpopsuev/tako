@@ -430,6 +430,74 @@ domain_serve:
 	}
 }
 
+// TestExportDataDir_MatchesEmbedLayout verifies that --export-data produces
+// the same flattened file layout that go:embed would create. This ensures
+// --data-dir at runtime sees the same paths as the embedded FS.
+func TestExportDataDir_MatchesEmbedLayout(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	writeFile := func(rel, content string) {
+		t.Helper()
+		p := filepath.Join(tmpDir, rel)
+		os.MkdirAll(filepath.Dir(p), 0755)
+		os.WriteFile(p, []byte(content), 0644)
+	}
+
+	// Create domain files at the un-flattened paths (like a real workspace).
+	writeFile("circuits/rca.yaml", "circuit: rca\n")
+	writeFile("prompts/recall/judge.md", "prompt: recall\n")
+	writeFile("vocabulary.yaml", "metrics:\n  M1: accuracy\n")
+	writeFile("domains/ocp/ptp/scenarios/ptp.yaml", "scenario: ptp\ncases: []\n")
+	writeFile("domains/ocp/ptp/offline/rp/12345.json", `{"id": 12345}`)
+
+	manifest := filepath.Join(tmpDir, "origami.yaml")
+	os.WriteFile(manifest, []byte(`
+name: test-export
+version: "0.1"
+domains: [ocp/ptp]
+domain_serve:
+  port: 9300
+  assets:
+    vocabulary: vocabulary.yaml
+    circuits:
+      rca: circuits/rca.yaml
+    prompts:
+      recall: prompts/recall/judge.md
+`), 0644)
+
+	exportDir := filepath.Join(t.TempDir(), "exported")
+
+	err := Run(context.Background(), Options{
+		ManifestPath:  manifest,
+		ExportDataDir: exportDir,
+		Verbose:       true,
+	})
+	if err != nil {
+		t.Fatalf("export-data: %v", err)
+	}
+
+	// Verify flattened domain files exist at the expected paths.
+	wantFiles := map[string]string{
+		"circuits/rca.yaml":          "circuit: rca\n",
+		"prompts/recall/judge.md":    "prompt: recall\n",
+		"vocabulary.yaml":            "metrics:\n  M1: accuracy\n",
+		"scenarios/ptp.yaml":         "scenario: ptp\ncases: []\n",
+		"offline/rp/12345.json":      `{"id": 12345}`,
+	}
+
+	for relPath, wantContent := range wantFiles {
+		fullPath := filepath.Join(exportDir, relPath)
+		got, err := os.ReadFile(fullPath)
+		if err != nil {
+			t.Errorf("missing exported file %q: %v", relPath, err)
+			continue
+		}
+		if string(got) != wantContent {
+			t.Errorf("file %q: got %q, want %q", relPath, string(got), wantContent)
+		}
+	}
+}
+
 func TestRun_DomainOnly_SkipsBindings(t *testing.T) {
 	if testing.Short() {
 		t.Skip("integration test skipped in short mode")

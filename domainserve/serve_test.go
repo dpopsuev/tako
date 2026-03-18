@@ -2,8 +2,13 @@ package domainserve_test
 
 import (
 	"encoding/json"
+	"fmt"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"testing/fstest"
 
@@ -354,6 +359,124 @@ func TestDomainResolve_MissingKey(t *testing.T) {
 	if !result.IsError {
 		t.Fatal("expected error for missing key")
 	}
+}
+
+// setupFS creates a domain-serve from any fs.FS (not just fstest.MapFS).
+func setupFS(t *testing.T, fsys fs.FS, cfg domainserve.Config) *sdkmcp.ClientSession {
+	t.Helper()
+	handler := domainserve.New(fsys, cfg)
+	srv := httptest.NewServer(handler)
+	t.Cleanup(srv.Close)
+
+	transport := &sdkmcp.StreamableClientTransport{Endpoint: srv.URL + "/mcp"}
+	client := sdkmcp.NewClient(
+		&sdkmcp.Implementation{Name: "test-client", Version: "v0.1.0"},
+		nil,
+	)
+	session, err := client.Connect(t.Context(), transport, nil)
+	if err != nil {
+		t.Fatalf("connect: %v", err)
+	}
+	t.Cleanup(func() { session.Close() })
+	return session
+}
+
+// TestEmbedVsMounted_FunctionalEquivalence proves that domainserve.New
+// produces identical MCP responses whether backed by an in-memory FS
+// (simulating embed.FS) or an os.DirFS (simulating --data-dir).
+func TestEmbedVsMounted_FunctionalEquivalence(t *testing.T) {
+	// --- shared test data ---
+	files := map[string]string{
+		"circuits/rca.yaml":       "circuit: rca\ntopology: cascade\ndescription: Root-cause analysis\n",
+		"prompts/recall/judge.md": "You are a recall judge.",
+		"vocabulary.yaml":         "defects:\n  pb001: product bug\n",
+		"scenarios/ptp.yaml":      "scenario: ptp\ncases: [C01]\n",
+	}
+	assets := &domainserve.AssetIndex{
+		Sections: map[string]map[string]string{
+			"circuits": {"rca": "circuits/rca.yaml"},
+			"prompts":  {"recall": "prompts/recall/judge.md"},
+		},
+		Files: map[string]string{
+			"vocabulary": "vocabulary.yaml",
+		},
+	}
+	cfg := domainserve.Config{
+		Name:    "test-domain",
+		Version: "v0.1.0",
+		Assets:  assets,
+	}
+
+	// --- build in-memory FS (simulates embed.FS) ---
+	memFS := fstest.MapFS{}
+	for path, content := range files {
+		memFS[path] = &fstest.MapFile{Data: []byte(content)}
+	}
+
+	// --- build os.DirFS (simulates --data-dir) ---
+	diskDir := t.TempDir()
+	for path, content := range files {
+		full := filepath.Join(diskDir, path)
+		if err := os.MkdirAll(filepath.Dir(full), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(full, []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	diskFS := os.DirFS(diskDir)
+
+	embedSession := setupFS(t, memFS, cfg)
+	mountSession := setupFS(t, diskFS, cfg)
+
+	// --- tool calls to compare ---
+	type toolCall struct {
+		name string
+		args map[string]any
+	}
+	calls := []toolCall{
+		{"domain_info", nil},
+		{"domain_read", map[string]any{"path": "circuits/rca.yaml"}},
+		{"domain_read", map[string]any{"path": "prompts/recall/judge.md"}},
+		{"domain_read", map[string]any{"path": "vocabulary.yaml"}},
+		{"domain_read", map[string]any{"path": "scenarios/ptp.yaml"}},
+		{"domain_list", map[string]any{"path": "."}},
+		{"domain_list", map[string]any{"path": "circuits"}},
+		{"domain_list", map[string]any{"path": "prompts/recall"}},
+		{"domain_resolve", map[string]any{"section": "circuits", "key": "rca"}},
+		{"domain_resolve", map[string]any{"section": "prompts", "key": "recall"}},
+		{"domain_resolve", map[string]any{"section": "vocabulary"}},
+	}
+
+	for _, tc := range calls {
+		t.Run(tc.name+"_"+argsKey(tc.args), func(t *testing.T) {
+			embedResult := callTool(t, embedSession, tc.name, tc.args)
+			mountResult := callTool(t, mountSession, tc.name, tc.args)
+
+			embedText := resultText(embedResult)
+			mountText := resultText(mountResult)
+
+			if embedResult.IsError != mountResult.IsError {
+				t.Fatalf("error mismatch: embed=%v mount=%v\nembed: %s\nmount: %s",
+					embedResult.IsError, mountResult.IsError, embedText, mountText)
+			}
+
+			if embedText != mountText {
+				t.Errorf("response mismatch:\nembed: %s\nmount: %s", embedText, mountText)
+			}
+		})
+	}
+}
+
+func argsKey(args map[string]any) string {
+	if args == nil {
+		return "nil"
+	}
+	parts := make([]string, 0, len(args))
+	for k, v := range args {
+		parts = append(parts, fmt.Sprintf("%s=%v", k, v))
+	}
+	return strings.Join(parts, ",")
 }
 
 func TestDomainInfo_WithAssets(t *testing.T) {

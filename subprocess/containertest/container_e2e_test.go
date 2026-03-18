@@ -44,15 +44,15 @@ func TestContainerE2E_BuildImages(t *testing.T) {
 	}
 }
 
-// TestContainerE2E_GatewayHarvester builds and starts the gateway +
+// TestContainerE2E_MediatorDSR builds and starts the mediator +
 // dsr containers on host network, then validates tool routing.
 // Uses host networking so containers can reach each other via localhost.
 //
 // Requires: podman, not -short.
-// NOTE: DSR (formerly harvester) has moved to github.com/dpopsuev/rh-dsr.
+// NOTE: DSR (formerly dsr) has moved to github.com/dpopsuev/rh-dsr.
 // This test is temporarily skipped until the Dockerfile is rebuilt for rh-dsr.
-func TestContainerE2E_GatewayHarvester(t *testing.T) {
-	t.Skip("harvester moved to rh-dsr — container E2E needs Dockerfile update")
+func TestContainerE2E_MediatorDSR(t *testing.T) {
+	t.Skip("dsr moved to rh-dsr — container E2E needs Dockerfile update")
 	env := containertest.NewEnv(t)
 	root := repoRoot()
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Minute)
@@ -60,35 +60,35 @@ func TestContainerE2E_GatewayHarvester(t *testing.T) {
 
 	t.Log("building dsr image...")
 	env.BuildImageFromDockerfile(ctx,
-		filepath.Join(root, "deploy/Dockerfile.harvester"),
-		"origami-harvester-e2e", root)
+		filepath.Join(root, "deploy/Dockerfile.dsr"),
+		"origami-dsr-e2e", root)
 
-	t.Log("building gateway image...")
+	t.Log("building mediator image...")
 	env.BuildImageFromDockerfile(ctx,
-		filepath.Join(root, "deploy/Dockerfile.gateway"),
-		"origami-gateway-e2e", root)
+		filepath.Join(root, "deploy/Dockerfile.mediator"),
+		"origami-mediator-e2e", root)
 
 	knPort := 19100
 	gwPort := 19000
 
-	t.Log("starting harvester engine...")
+	t.Log("starting dsr engine...")
 	env.StartServiceWithConfig(ctx, containertest.ServiceConfig{
-		Name:    "e2e-harvester",
-		Image:   "origami-harvester-e2e",
+		Name:    "e2e-dsr",
+		Image:   "origami-dsr-e2e",
 		Port:    knPort,
 		Network: "host",
 		Args:    []string{"--port", fmt.Sprintf("%d", knPort)},
 	})
 
-	t.Log("starting gateway...")
+	t.Log("starting mediator...")
 	env.StartServiceWithConfig(ctx, containertest.ServiceConfig{
-		Name:    "e2e-gateway",
-		Image:   "origami-gateway-e2e",
+		Name:    "e2e-mediator",
+		Image:   "origami-mediator-e2e",
 		Port:    gwPort,
 		Network: "host",
 		Args: []string{
 			"--port", fmt.Sprintf("%d", gwPort),
-			"--backend", fmt.Sprintf("harvester=http://127.0.0.1:%d/mcp", knPort),
+			"--backend", fmt.Sprintf("dsr=http://127.0.0.1:%d/mcp", knPort),
 		},
 	})
 
@@ -124,15 +124,15 @@ func TestContainerE2E_GatewayHarvester(t *testing.T) {
 			t.Fatalf("ListTools: %v", err)
 		}
 
-		hasHarvester := false
+		hasDSR := false
 		for _, tool := range tools.Tools {
-			if tool.Name == "harvester_search" || tool.Name == "harvester_read" {
-				hasHarvester = true
+			if tool.Name == "dsr_search" || tool.Name == "dsr_read" {
+				hasDSR = true
 			}
 		}
-		if !hasHarvester {
-			t.Error("missing harvester tools through gateway")
+		if !hasDSR {
+			t.Error("missing dsr tools through mediator")
 		}
-		t.Logf("discovered %d tools through gateway", len(tools.Tools))
+		t.Logf("discovered %d tools through mediator", len(tools.Tools))
 	})
 }
