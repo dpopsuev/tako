@@ -5,6 +5,7 @@ package framework
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 )
 
@@ -167,6 +168,7 @@ func (g *DefaultGraph) Walk(ctx context.Context, walker Walker, startNode string
 		}
 
 		emitEvent(obs, WalkEvent{Type: EventNodeEnter, Node: node.Name(), Walker: walkerName})
+		slog.Debug(LogNodeEnter, LogKeyComponent, LogComponentWalk, "node", node.Name(), "walker", walkerName)
 		nodeStart := time.Now()
 
 		nc := NodeContext{
@@ -214,6 +216,7 @@ func (g *DefaultGraph) Walk(ctx context.Context, walker Walker, startNode string
 			exitMeta["snr"] = evidenceSNR(ca.InputCount(), ca.OutputCount())
 		}
 		emitEvent(obs, WalkEvent{Type: EventNodeExit, Node: node.Name(), Walker: walkerName, Artifact: artifact, Elapsed: nodeElapsed, Metadata: exitMeta})
+		slog.Debug(LogNodeExit, LogKeyComponent, LogComponentWalk, "node", node.Name(), "elapsed_ms", nodeElapsed.Milliseconds())
 
 		if artifact != nil && artifact.Confidence() > 0 {
 			state.RecordConfidence(artifact.Confidence())
@@ -289,9 +292,11 @@ func (g *DefaultGraph) Walk(ctx context.Context, walker Walker, startNode string
 		}
 
 		emitEvent(obs, WalkEvent{Type: EventTransition, Node: node.Name(), Edge: matchedEdge.ID()})
+		slog.Debug(LogEdgeTaken, LogKeyComponent, LogComponentWalk, LogKeyFrom, node.Name(), LogKeyEdge, matchedEdge.ID(), LogKeyTo, matched.NextNode, LogKeyLoop, matchedEdge.IsLoop(), LogKeyShortcut, matchedEdge.IsShortcut())
 
 		if matchedEdge.IsLoop() {
 			state.IncrementLoop(node.Name())
+			slog.Debug(LogLoopIncremented, LogKeyComponent, LogComponentWalk, LogKeyNode, node.Name(), LogKeyCount, state.LoopCounts[node.Name()])
 		}
 
 		state.RecordStep(node.Name(), matchedEdge.ID(), matchedEdge.ID(), time.Now().UTC().Format(time.RFC3339))
@@ -552,6 +557,7 @@ func (g *DefaultGraph) walkDelegate(ctx context.Context, walker Walker, obs Walk
 		Node:   dn.Name(),
 		Walker: walker.Identity().PersonaName,
 	})
+	slog.Debug(LogDelegateStart, LogKeyComponent, LogComponentWalk, LogKeyNode, dn.Name(), LogKeyCircuit, "delegate")
 
 	circuitDef, err := dn.GenerateCircuit(ctx, nc)
 	if err != nil {

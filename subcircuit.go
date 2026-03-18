@@ -2,6 +2,7 @@ package framework
 
 import (
 	"io/fs"
+	"log/slog"
 	"path/filepath"
 	"strings"
 )
@@ -51,6 +52,8 @@ func LoadSubCircuitsFromFS(fsys fs.FS, resolvers map[string]AssetResolver) map[s
 		}
 
 		circuits[name] = def
+		slog.Debug(LogSubCircuitLoaded, LogKeyComponent, LogComponentDSL,
+			LogKeyCircuit, name, "nodes", len(def.Nodes))
 	}
 
 	if len(circuits) == 0 {
