@@ -1151,9 +1151,22 @@ func (def *CircuitDef) resolveHandler(nd NodeDef, reg GraphRegistries, elem Elem
 		}, nil
 
 	case HandlerTypeCircuit:
+		slog.Debug("resolve circuit handler",
+			"component", "build",
+			"node", nd.Name,
+			"handler", nd.Handler,
+			"circuits_nil", reg.Circuits == nil,
+			"circuits_count", len(reg.Circuits),
+			"mediator_endpoint", reg.MediatorEndpoint,
+		)
 		// Local resolution first.
 		if reg.Circuits != nil {
 			if cd, ok := reg.Circuits[nd.Handler]; ok {
+				slog.Debug("circuit handler resolved locally",
+					"component", "build",
+					"node", nd.Name,
+					"handler", nd.Handler,
+				)
 				return &circuitRefNode{
 					name:       nd.Name,
 					element:    elem,
@@ -1164,6 +1177,12 @@ func (def *CircuitDef) resolveHandler(nd NodeDef, reg GraphRegistries, elem Elem
 		}
 		// Mediator fallback: delegate to remote schematic via MCP.
 		if reg.MediatorEndpoint != "" {
+			slog.Debug("circuit handler delegating to mediator",
+				"component", "build",
+				"node", nd.Name,
+				"handler", nd.Handler,
+				"endpoint", reg.MediatorEndpoint,
+			)
 			return &transformerNode{
 				name:    nd.Name,
 				element: elem,

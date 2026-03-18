@@ -437,6 +437,88 @@ func TestBuildGraph_ImportFailure(t *testing.T) {
 	}
 }
 
+func TestMergeComponents_PreservesCircuits(t *testing.T) {
+	child := &CircuitDef{Circuit: "child", Start: "s", Done: "d"}
+	base := GraphRegistries{
+		Circuits: map[string]*CircuitDef{"child": child},
+	}
+
+	comp := &Component{
+		Namespace: "test",
+		Transformers: map[string]Transformer{
+			"echo": &passthroughTransformer{},
+		},
+	}
+
+	merged, err := MergeComponents(base, comp)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if merged.Circuits == nil {
+		t.Fatal("MergeComponents lost Circuits")
+	}
+	if _, ok := merged.Circuits["child"]; !ok {
+		t.Error("MergeComponents lost circuit 'child'")
+	}
+}
+
+func TestMergeComponents_PreservesMediatorEndpoint(t *testing.T) {
+	base := GraphRegistries{
+		MediatorEndpoint: "http://mediator:9000/mcp",
+	}
+
+	comp := &Component{
+		Namespace: "test",
+		Transformers: map[string]Transformer{
+			"echo": &passthroughTransformer{},
+		},
+	}
+
+	merged, err := MergeComponents(base, comp)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if merged.MediatorEndpoint != "http://mediator:9000/mcp" {
+		t.Errorf("MediatorEndpoint = %q, want http://mediator:9000/mcp", merged.MediatorEndpoint)
+	}
+}
+
+func TestMergeComponents_PreservesBothCircuitsAndMediator(t *testing.T) {
+	child := &CircuitDef{Circuit: "dsr", Start: "s", Done: "d"}
+	base := GraphRegistries{
+		Circuits:         map[string]*CircuitDef{"dsr": child},
+		MediatorEndpoint: "http://mediator:9000/mcp",
+		Transformers:     TransformerRegistry{"base": &passthroughTransformer{}},
+	}
+
+	comp := &Component{
+		Namespace: "rca",
+		Transformers: map[string]Transformer{
+			"analyze": &passthroughTransformer{},
+		},
+	}
+
+	merged, err := MergeComponents(base, comp)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if merged.Circuits == nil || merged.Circuits["dsr"] == nil {
+		t.Error("MergeComponents lost circuit 'dsr'")
+	}
+	if merged.MediatorEndpoint != "http://mediator:9000/mcp" {
+		t.Errorf("MediatorEndpoint = %q, want http://mediator:9000/mcp", merged.MediatorEndpoint)
+	}
+	if _, ok := merged.Transformers["rca.analyze"]; !ok {
+		t.Error("MergeComponents lost component transformer 'rca.analyze'")
+	}
+	if _, ok := merged.Transformers["base"]; !ok {
+		t.Error("MergeComponents lost base transformer 'base'")
+	}
+}
+
 func TestCircuitDef_ImportsField(t *testing.T) {
 	yaml := `
 circuit: test

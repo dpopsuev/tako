@@ -4,6 +4,7 @@ package framework
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 
 	"gopkg.in/yaml.v3"
@@ -92,12 +93,21 @@ func LoadComponentManifest(path string) (*ComponentManifest, error) {
 // Returns an error if two components provide the same FQCN.
 func MergeComponents(base GraphRegistries, components ...*Component) (GraphRegistries, error) {
 	merged := GraphRegistries{
-		Transformers: cloneMap(base.Transformers),
-		Extractors:   cloneMap(base.Extractors),
-		Hooks:        cloneMap(base.Hooks),
-		Nodes:        base.Nodes,
-		Edges:        base.Edges,
+		Transformers:     cloneMap(base.Transformers),
+		Extractors:       cloneMap(base.Extractors),
+		Hooks:            cloneMap(base.Hooks),
+		Nodes:            base.Nodes,
+		Edges:            base.Edges,
+		Circuits:         base.Circuits,
+		MediatorEndpoint: base.MediatorEndpoint,
 	}
+
+	slog.Debug("merge components",
+		"component", "registry",
+		"base_circuits", len(base.Circuits),
+		"mediator_endpoint", base.MediatorEndpoint,
+		"components", len(components),
+	)
 
 	for _, a := range components {
 		if err := mergeTransformers(merged.Transformers, a); err != nil {
