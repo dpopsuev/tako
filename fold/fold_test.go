@@ -498,6 +498,66 @@ domain_serve:
 	}
 }
 
+func TestExportDataDir_OverwritesStaleFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	writeFile := func(rel, content string) {
+		t.Helper()
+		p := filepath.Join(tmpDir, rel)
+		os.MkdirAll(filepath.Dir(p), 0755)
+		os.WriteFile(p, []byte(content), 0644)
+	}
+
+	writeFile("prompts/recall/judge.md", "version: 1\n")
+	writeFile("vocabulary.yaml", "old vocab\n")
+
+	manifest := filepath.Join(tmpDir, "origami.yaml")
+	os.WriteFile(manifest, []byte(`
+name: test-overwrite
+version: "0.1"
+domain_serve:
+  port: 9300
+  assets:
+    vocabulary: vocabulary.yaml
+    prompts:
+      recall: prompts/recall/judge.md
+`), 0644)
+
+	exportDir := filepath.Join(t.TempDir(), "exported")
+
+	// First export.
+	err := Run(context.Background(), Options{
+		ManifestPath:  manifest,
+		ExportDataDir: exportDir,
+	})
+	if err != nil {
+		t.Fatalf("first export: %v", err)
+	}
+
+	got, _ := os.ReadFile(filepath.Join(exportDir, "prompts/recall/judge.md"))
+	if string(got) != "version: 1\n" {
+		t.Fatalf("first export content = %q, want 'version: 1\\n'", string(got))
+	}
+
+	// Modify source file.
+	writeFile("prompts/recall/judge.md", "version: 2\n")
+
+	// Re-export to same directory.
+	err = Run(context.Background(), Options{
+		ManifestPath:  manifest,
+		ExportDataDir: exportDir,
+	})
+	if err != nil {
+		t.Fatalf("second export: %v", err)
+	}
+
+	// Verify the exported file has the updated content.
+	got, _ = os.ReadFile(filepath.Join(exportDir, "prompts/recall/judge.md"))
+	if string(got) != "version: 2\n" {
+		t.Errorf("re-export did not overwrite stale file: got %q, want 'version: 2\\n'", string(got))
+	}
+}
+
 func TestRun_DomainOnly_SkipsBindings(t *testing.T) {
 	if testing.Short() {
 		t.Skip("integration test skipped in short mode")

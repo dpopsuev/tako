@@ -539,11 +539,16 @@ func copyEmbedFiles(ds *DomainServeConfig, manifestDir, tmpDir string, verbose b
 // exportDataDir copies flattened domain data to a directory for use with
 // the --data-dir runtime flag. This produces the same file layout that
 // go:embed would create, making it suitable for volume mounts.
+// The target directory is cleaned before each export to prevent stale files.
 func exportDataDir(m *Manifest, manifestDir string, opts Options) error {
 	if err := m.MergeDiscoveredAssets(manifestDir); err != nil {
 		return fmt.Errorf("discover domain assets: %w", err)
 	}
 
+	// Clean target to prevent stale files from prior exports.
+	if err := os.RemoveAll(opts.ExportDataDir); err != nil {
+		return fmt.Errorf("clean export dir: %w", err)
+	}
 	if err := os.MkdirAll(opts.ExportDataDir, 0755); err != nil {
 		return fmt.Errorf("create export dir: %w", err)
 	}
