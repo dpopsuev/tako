@@ -235,7 +235,7 @@ func renderServerCreation(g *ResolvedGraph, productName string) string {
 	}
 
 	// Wire sub-circuit resolvers for schematics that declare a resolver function.
-	// This enables overlay import resolution (e.g., circuits/harvester.yaml → dsr base).
+	// This enables overlay import resolution (e.g., circuits/gnd.yaml → GND base).
 	var resolverEntries []string
 	for _, s := range g.Schematics {
 		if s.Resolver != "" {

@@ -1,6 +1,6 @@
 # Origami — Local Development Stack
 #
-# Starts domain, DSR, RCA, and mediator services.
+# Starts domain, GND, RCA, and mediator services.
 #
 # Usage:
 #   docker compose -f deploy/docker-compose.yaml up -d
@@ -24,13 +24,13 @@ services:
       timeout: 3s
       retries: 3
 
-  dsr:
-    image: origami-dsr
+  gnd:
+    image: origami-gnd
     ports:
       - "9100:9100"
     command: ["--port", "9100", "--drivers", "git,docs"]
     healthcheck:
-      test: ["CMD", "/dsr-serve", "--healthz"]
+      test: ["CMD", "/gnd-serve", "--healthz"]
       interval: 5s
       timeout: 3s
       retries: 3
@@ -49,6 +49,10 @@ services:
     environment:
       - ASTERISK_RP_BASE_URL=${ASTERISK_RP_BASE_URL:-}
       - ASTERISK_RP_PROJECT=${ASTERISK_RP_PROJECT:-}
+      - ASTERISK_RP_API_KEY_PATH=/run/secrets/rp-api-key
+    volumes:
+      - ${ASTERISK_DIR:-../../asterisk}/.rp-api-key:/run/secrets/rp-api-key:ro,z
+      - /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:/etc/ssl/certs/ca-certificates.crt:ro,z
     depends_on:
       domain:
         condition: service_healthy
@@ -68,11 +72,11 @@ services:
       - "--backend"
       - "rca=http://rca:9200/mcp"
       - "--backend"
-      - "dsr:dsr=http://dsr:9100/mcp"
+      - "gnd:gnd=http://gnd:9100/mcp"
     depends_on:
       rca:
         condition: service_healthy
-      dsr:
+      gnd:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "/mediator", "--healthz"]

@@ -51,8 +51,8 @@ lint-pipelines:
 
 workspace := justfile_directory() / ".."
 
-# Build all OCI images (mediator + rca + dsr from workspace root context)
-build-images: build-mediator build-rca build-dsr
+# Build all OCI images (mediator + rca + gnd from workspace root context)
+build-images: build-mediator build-rca build-gnd
 
 # Build mediator image (origami-only context)
 build-mediator:
@@ -62,9 +62,9 @@ build-mediator:
 build-rca:
     docker build -t origami-rca -f {{ workspace }}/rh-rca/Dockerfile {{ workspace }}
 
-# Build DSR engine image (workspace root context for sibling repos)
-build-dsr:
-    docker build -t origami-dsr -f {{ workspace }}/rh-dsr/Dockerfile {{ workspace }}
+# Build GND engine image (workspace root context for sibling repos)
+build-gnd:
+    docker build -t origami-gnd -f {{ workspace }}/rh-dsr/Dockerfile {{ workspace }}
 
 # ─── Clean ────────────────────────────────────────────────
 

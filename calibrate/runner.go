@@ -76,6 +76,16 @@ type HarnessConfig struct {
 	// transformers.CoreComponent) without manually flattening them.
 	Components []*framework.Component
 
+	// WalkerContext is injected into every walker's context before walking.
+	// Populated automatically by Run() when PromptRelayer is set.
+	WalkerContext map[string]any
+
+	// PromptRelayer enables mediator prompt relay for sub-circuit
+	// delegation with LLM backends. When set alongside Shared.MediatorEndpoint,
+	// Run() automatically injects it into every walker's context.
+	// The MCP session layer provides this — circuit developers don't set it.
+	PromptRelayer framework.PromptRelayer
+
 	Scenario    string
 	Transformer string
 	Runs        int
@@ -135,6 +145,26 @@ func Run(ctx context.Context, cfg HarnessConfig) (*CalibrationReport, error) {
 		cases, err := cfg.Loader.Load(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("run %d: load: %w", run+1, err)
+		}
+
+		// Auto-inject PromptRelayer for mediator delegation.
+		if cfg.PromptRelayer != nil {
+			if cfg.WalkerContext == nil {
+				cfg.WalkerContext = make(map[string]any)
+			}
+			cfg.WalkerContext[framework.ContextKeyPromptRelayer] = cfg.PromptRelayer
+		}
+
+		// Inject session-scoped walker context.
+		if len(cfg.WalkerContext) > 0 {
+			for i := range cases {
+				if cases[i].Context == nil {
+					cases[i].Context = make(map[string]any)
+				}
+				for k, v := range cfg.WalkerContext {
+					cases[i].Context[k] = v
+				}
+			}
 		}
 
 		batchResults := framework.BatchWalk(ctx, framework.BatchWalkConfig{
