@@ -985,6 +985,8 @@ func (def *CircuitDef) BuildGraph(reg GraphRegistries) (Graph, error) {
 		}
 	}
 
+	runBuildDiagnostics(def, reg)
+
 	return g, nil
 }
 
