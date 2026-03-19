@@ -20,8 +20,8 @@ spec:
           args:
             - "--port"
             - "9200"
-            - "--harvester-endpoint"
-            - "http://harvester:9100/mcp"
+            - "--gnd-endpoint"
+            - "http://gnd:9100/mcp"
             - "--domain-endpoint"
             - "http://asterisk:9300/mcp"
           ports:

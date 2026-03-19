@@ -175,10 +175,10 @@ func asAnyMap(v any) map[string]any {
 //
 // Example: FoldContracts(map[string]*CalibrationContract{
 //
-//	"rca":       rcaContract,
-//	"harvester": harvesterContract,
+//	"rca": rcaContract,
+//	"gnd": gndContract,
 //
-// }) produces outputs like "rca.actual_defect_type", "harvester.actual_files_found".
+// }) produces outputs like "rca.actual_defect_type", "gnd.actual_files_found".
 func FoldContracts(contracts map[string]*CalibrationContract) *CalibrationContract {
 	if len(contracts) == 0 {
 		return nil

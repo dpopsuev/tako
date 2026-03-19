@@ -19,7 +19,7 @@ func TestStoreRegistry_ResolveByName(t *testing.T) {
 	wiring := &StoreWiring{
 		Stores: map[string]StoreBinding{
 			"rca":       {Engine: "memory"},
-			"harvester": {Engine: "memory", Config: map[string]string{"mode": "ephemeral"}},
+			"gnd": {Engine: "memory", Config: map[string]string{"mode": "ephemeral"}},
 		},
 	}
 	reg := NewStoreRegistry(wiring)
@@ -33,12 +33,12 @@ func TestStoreRegistry_ResolveByName(t *testing.T) {
 		t.Error("rca engine should be opened")
 	}
 
-	harv, err := reg.Resolve("harvester")
+	gnd, err := reg.Resolve("gnd")
 	if err != nil {
-		t.Fatalf("resolve harvester: %v", err)
+		t.Fatalf("resolve gnd: %v", err)
 	}
-	if harv.(*memoryEngine).config["mode"] != "ephemeral" {
-		t.Error("harvester config should have mode=ephemeral")
+	if gnd.(*memoryEngine).config["mode"] != "ephemeral" {
+		t.Error("gnd config should have mode=ephemeral")
 	}
 
 	// Second resolve returns same instance.

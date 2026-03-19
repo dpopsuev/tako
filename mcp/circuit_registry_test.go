@@ -23,13 +23,13 @@ func makeTestType(name string) *CircuitType {
 func TestCircuitTypeRegistry_Register(t *testing.T) {
 	reg := NewCircuitTypeRegistry()
 	reg.Register(makeTestType("rca"))
-	reg.Register(makeTestType("harvester"))
+	reg.Register(makeTestType("gnd"))
 
 	names := reg.Names()
 	if len(names) != 2 {
 		t.Fatalf("expected 2 types, got %d", len(names))
 	}
-	if names[0] != "harvester" || names[1] != "rca" {
+	if names[0] != "gnd" || names[1] != "rca" {
 		t.Errorf("names should be sorted: got %v", names)
 	}
 }
@@ -82,22 +82,22 @@ func TestCircuitTypeRegistry_RouteSession_SingleType(t *testing.T) {
 func TestCircuitTypeRegistry_RouteSession_ExplicitType(t *testing.T) {
 	reg := NewCircuitTypeRegistry()
 	reg.Register(makeTestType("rca"))
-	reg.Register(makeTestType("harvester"))
+	reg.Register(makeTestType("gnd"))
 
-	params := StartParams{Extra: map[string]any{"circuit_type": "harvester"}}
+	params := StartParams{Extra: map[string]any{"circuit_type": "gnd"}}
 	_, meta, err := reg.RouteSession(context.Background(), params, nil, nil)
 	if err != nil {
 		t.Fatalf("route explicit type: %v", err)
 	}
-	if meta.Scenario != "harvester" {
-		t.Errorf("meta.Scenario: got %s, want harvester", meta.Scenario)
+	if meta.Scenario != "gnd" {
+		t.Errorf("meta.Scenario: got %s, want gnd", meta.Scenario)
 	}
 }
 
 func TestCircuitTypeRegistry_RouteSession_MissingTypeMultiple(t *testing.T) {
 	reg := NewCircuitTypeRegistry()
 	reg.Register(makeTestType("rca"))
-	reg.Register(makeTestType("harvester"))
+	reg.Register(makeTestType("gnd"))
 
 	_, _, err := reg.RouteSession(context.Background(), StartParams{}, nil, nil)
 	if err == nil {
@@ -119,7 +119,7 @@ func TestCircuitTypeRegistry_RouteSession_UnknownType(t *testing.T) {
 func TestCircuitTypeRegistry_MergedStepSchemas(t *testing.T) {
 	reg := NewCircuitTypeRegistry()
 	reg.Register(makeTestType("rca"))
-	reg.Register(makeTestType("harvester"))
+	reg.Register(makeTestType("gnd"))
 
 	merged := reg.MergedStepSchemas()
 	if len(merged) != 2 {

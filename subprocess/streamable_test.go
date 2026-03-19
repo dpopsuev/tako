@@ -12,12 +12,12 @@ import (
 
 func TestStreamableHTTP_RoundTrip(t *testing.T) {
 	server := sdkmcp.NewServer(
-		&sdkmcp.Implementation{Name: "test-harvester", Version: "v0.1.0"},
+		&sdkmcp.Implementation{Name: "test-gnd", Version: "v0.1.0"},
 		nil,
 	)
 	server.AddTool(
 		&sdkmcp.Tool{
-			Name:        "harvester_search",
+			Name:        "gnd_search",
 			InputSchema: json.RawMessage(`{"type":"object","properties":{"query":{"type":"string"}}}`),
 		},
 		func(_ context.Context, req *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error) {
@@ -52,7 +52,7 @@ func TestStreamableHTTP_RoundTrip(t *testing.T) {
 	defer session.Close()
 
 	result, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-		Name:      "harvester_search",
+		Name:      "gnd_search",
 		Arguments: map[string]any{"query": "ptp holdover"},
 	})
 	if err != nil {
@@ -69,12 +69,12 @@ func TestStreamableHTTP_RoundTrip(t *testing.T) {
 
 func TestStreamableHTTP_MultipleTools(t *testing.T) {
 	server := sdkmcp.NewServer(
-		&sdkmcp.Implementation{Name: "test-harvester", Version: "v0.1.0"},
+		&sdkmcp.Implementation{Name: "test-gnd", Version: "v0.1.0"},
 		nil,
 	)
 	server.AddTool(
 		&sdkmcp.Tool{
-			Name:        "harvester_ensure",
+			Name:        "gnd_ensure",
 			InputSchema: json.RawMessage(`{"type":"object","properties":{}}`),
 		},
 		func(_ context.Context, _ *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error) {
@@ -85,7 +85,7 @@ func TestStreamableHTTP_MultipleTools(t *testing.T) {
 	)
 	server.AddTool(
 		&sdkmcp.Tool{
-			Name:        "harvester_list",
+			Name:        "gnd_list",
 			InputSchema: json.RawMessage(`{"type":"object","properties":{"root":{"type":"string"}}}`),
 		},
 		func(_ context.Context, req *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error) {
@@ -116,7 +116,7 @@ func TestStreamableHTTP_MultipleTools(t *testing.T) {
 	}
 	defer session.Close()
 
-	r1, err := session.CallTool(ctx, &sdkmcp.CallToolParams{Name: "harvester_ensure"})
+	r1, err := session.CallTool(ctx, &sdkmcp.CallToolParams{Name: "gnd_ensure"})
 	if err != nil {
 		t.Fatalf("ensure: %v", err)
 	}
@@ -125,7 +125,7 @@ func TestStreamableHTTP_MultipleTools(t *testing.T) {
 	}
 
 	r2, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-		Name:      "harvester_list",
+		Name:      "gnd_list",
 		Arguments: map[string]any{"root": "/src"},
 	})
 	if err != nil {

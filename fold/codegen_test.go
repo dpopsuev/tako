@@ -211,17 +211,11 @@ func TestGenerateWiredBinary_DataDirFlag(t *testing.T) {
 		Schematics: map[string]SchematicRef{
 			"rca": {
 				Path:     "github.com/dpopsuev/rh-rca",
-				Bindings: map[string]string{"source": "reportportal", "dsr": "harvester"},
-			},
-			"harvester": {
-				Path:     "github.com/dpopsuev/rh-dsr",
-				Bindings: map[string]string{"git": "github", "docs": "docs"},
+				Bindings: map[string]string{"source": "reportportal"},
 			},
 		},
 		Connectors: map[string]ConnectorRef{
 			"reportportal": {Path: "github.com/dpopsuev/rh-rca/connectors/rp"},
-			"github":       {Path: "connectors/github"},
-			"docs":         {Path: "connectors/docs"},
 		},
 	}
 
@@ -269,21 +263,11 @@ func TestGenerateWiredBinary(t *testing.T) {
 				Path: "github.com/dpopsuev/rh-rca",
 				Bindings: map[string]string{
 					"source": "reportportal",
-					"dsr":    "harvester",
-				},
-			},
-			"harvester": {
-				Path: "github.com/dpopsuev/rh-dsr",
-				Bindings: map[string]string{
-					"git":  "github",
-					"docs": "docs",
 				},
 			},
 		},
 		Connectors: map[string]ConnectorRef{
 			"reportportal": {Path: "github.com/dpopsuev/rh-rca/connectors/rp"},
-			"github":       {Path: "connectors/github"},
-			"docs":         {Path: "connectors/docs"},
 		},
 	}
 
@@ -302,21 +286,10 @@ func TestGenerateWiredBinary(t *testing.T) {
 		"DO NOT EDIT",
 		"package main",
 		`"github.com/dpopsuev/rh-rca/connectors/rp"`,
-		`"github.com/dpopsuev/origami/connectors/github"`,
-		`"github.com/dpopsuev/origami/connectors/docs"`,
-		`"github.com/dpopsuev/rh-dsr"`,
 		`"github.com/dpopsuev/rh-rca/mcpconfig"`,
-		"github.DefaultGitDriver()",
-		"docs.DefaultDocsDriver()",
-		"rhdsr.NewRouter(",
-		"rhdsr.WithGitDriver(",
-		"rhdsr.WithDocsDriver(",
 		"mcpconfig.NewServer(",
 		"mcpconfig.WithDomainFS(domainFS)",
 		"mcpconfig.WithSourceReader(rp.NewSourceReader)",
-		"mcpconfig.WithDSRReader(rhdsrInstance)",
-		"mcpconfig.WithSubCircuitResolvers(map[string]origami.AssetResolver{",
-		`"harvester": rhdsr.SchematicResolver()`,
 		"domainserve.New(domainFS",
 		"NewStreamableHTTPHandler",
 		"server.CircuitServer.MCPServer",

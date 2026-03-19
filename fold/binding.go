@@ -26,7 +26,7 @@ type ResolvedSatisfy struct {
 
 // ResolvedSchematic is a schematic with all sockets resolved to providers.
 type ResolvedSchematic struct {
-	Name     string // manifest key (e.g. "harvester", "rca")
+	Name     string // manifest key (e.g. "gnd", "rca")
 	Module   string // Go import path
 	Alias    string // import alias for codegen
 	Factory  string // constructor function (e.g. "NewRouter", "NewServer")

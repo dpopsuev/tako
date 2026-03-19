@@ -475,7 +475,7 @@ func TestMediator_SessionAffinityRouting(t *testing.T) {
 
 	gw := mediator.New([]mediator.BackendConfig{
 		{Name: "rca", Endpoint: rcaBackend.URL + "/mcp"},
-		{Name: "dsr", Endpoint: dsrBackend.URL + "/mcp", CircuitType: "harvester"},
+		{Name: "dsr", Endpoint: dsrBackend.URL + "/mcp", CircuitType: "gnd"},
 	})
 	ctx := t.Context()
 	if err := gw.Start(ctx); err != nil {
@@ -504,12 +504,12 @@ func TestMediator_SessionAffinityRouting(t *testing.T) {
 		t.Fatalf("no session_id from rca start: %s", rcaText)
 	}
 
-	// Start circuit on dsr backend (circuit_type=harvester).
+	// Start circuit on dsr backend (circuit_type=gnd).
 	dsrStart, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
 		Name: "start_circuit",
 		Arguments: mustJSON(map[string]any{
 			"force": true,
-			"extra": map[string]any{"circuit_type": "harvester"},
+			"extra": map[string]any{"circuit_type": "gnd"},
 		}),
 	})
 	if err != nil {

@@ -99,7 +99,7 @@ Commands:
   fold       Compile a YAML manifest into a standalone binary
   serve      Run the MCP gateway proxy (routes to backend engines)
   autodoc    Generate documentation tree from circuit YAML
-  capture    Capture an offline bundle for a schematic (e.g. harvester)
+  capture    Capture an offline bundle for a schematic (e.g. gnd)
   validate-bundle  Validate a captured bundle against its manifest
   version    Print version`)
 }

@@ -28,7 +28,7 @@ func TestContainerE2E_BuildImages(t *testing.T) {
 	defer cancel()
 
 	// Dockerfiles strip local replace directives before go mod download.
-	// RCA container build requires published rh-dsr module — skip until available.
+	// RCA container build requires published rh-gnd module — skip until available.
 	images := []struct {
 		dockerfile string
 		tag        string
@@ -49,10 +49,10 @@ func TestContainerE2E_BuildImages(t *testing.T) {
 // Uses host networking so containers can reach each other via localhost.
 //
 // Requires: podman, not -short.
-// NOTE: DSR (formerly dsr) has moved to github.com/dpopsuev/rh-dsr.
-// This test is temporarily skipped until the Dockerfile is rebuilt for rh-dsr.
+// NOTE: DSR (formerly dsr) has moved to github.com/dpopsuev/rh-gnd.
+// This test is temporarily skipped until the Dockerfile is rebuilt for rh-gnd.
 func TestContainerE2E_MediatorDSR(t *testing.T) {
-	t.Skip("dsr moved to rh-dsr — container E2E needs Dockerfile update")
+	t.Skip("dsr moved to rh-gnd — container E2E needs Dockerfile update")
 	env := containertest.NewEnv(t)
 	root := repoRoot()
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Minute)

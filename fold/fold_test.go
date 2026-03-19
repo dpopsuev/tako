@@ -267,23 +267,23 @@ func TestValidateCircuitRefs_ValidRef(t *testing.T) {
 nodes:
   - name: gather-code
     handler_type: circuit
-    handler: harvester
+    handler: gnd
   - name: resolve
     handler_type: transformer
     handler: resolve
 `)
-	writeFile("circuits/harvester.yaml", `
+	writeFile("circuits/gnd.yaml", `
 nodes:
   - name: tree
-    handler: harvester.tree
+    handler: gnd.tree
 `)
 
 	m := &Manifest{
 		DomainServe: &DomainServeConfig{
 			Assets: &AssetMap{
 				Circuits: map[string]string{
-					"rca":       "circuits/rca.yaml",
-					"harvester": "circuits/harvester.yaml",
+					"rca": "circuits/rca.yaml",
+					"gnd": "circuits/gnd.yaml",
 				},
 			},
 		},

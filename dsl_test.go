@@ -126,7 +126,7 @@ ports:
     type: "map[string]any"
 wiring:
   - from: "rca.out:post-triage"
-    to: "harvester.in:keywords"
+    to: "gnd.in:keywords"
     adapter: "keyword-extractor"
 start: a
 done: _done
@@ -147,8 +147,8 @@ done: _done
 	if len(def.Wiring) != 1 {
 		t.Fatalf("len(Wiring) = %d, want 1", len(def.Wiring))
 	}
-	if def.Wiring[0].From != "rca.out:post-triage" || def.Wiring[0].To != "harvester.in:keywords" || def.Wiring[0].Adapter != "keyword-extractor" {
-		t.Errorf("Wiring[0] = %+v, want from=rca.out:post-triage to=harvester.in:keywords adapter=keyword-extractor", def.Wiring[0])
+	if def.Wiring[0].From != "rca.out:post-triage" || def.Wiring[0].To != "gnd.in:keywords" || def.Wiring[0].Adapter != "keyword-extractor" {
+		t.Errorf("Wiring[0] = %+v, want from=rca.out:post-triage to=gnd.in:keywords adapter=keyword-extractor", def.Wiring[0])
 	}
 
 	// Test that overlay merges ports and wiring correctly
@@ -1607,9 +1607,9 @@ zones:
 
 nodes:
   - name: gather-code
-    description: "Gather code context from source repositories via Harvester circuit"
+    description: "Gather code context from source repositories via GND circuit"
     handler_type: circuit
-    handler: harvester
+    handler: gnd
     approach: methodical
     before: [inject.code-keywords]
     after: [bridge.code-context]

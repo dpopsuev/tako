@@ -64,7 +64,7 @@ type PortDef struct {
 // WiringDef declares a consumer-level port connection between circuits.
 type WiringDef struct {
 	From    string `yaml:"from"`              // e.g. "rca.out:post-triage"
-	To      string `yaml:"to"`                // e.g. "harvester.in:keywords"
+	To      string `yaml:"to"`                // e.g. "gnd.in:keywords"
 	Adapter string `yaml:"adapter,omitempty"` // optional bridge transformer
 }
 

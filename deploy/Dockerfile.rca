@@ -8,7 +8,7 @@ FROM golang:1.24 AS builder
 WORKDIR /src
 COPY go.mod go.sum ./
 # Strip local replace directives — container builds use published modules.
-RUN go mod edit -dropreplace github.com/dpopsuev/rh-dsr
+RUN go mod edit -dropreplace github.com/dpopsuev/rh-gnd
 RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 go build -o /rca-serve ./cmd/rca-serve

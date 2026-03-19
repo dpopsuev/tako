@@ -14,7 +14,7 @@ import (
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/dpopsuev/origami/mediator"
-	dsr "github.com/dpopsuev/rh-dsr"
+	dsr "github.com/dpopsuev/rh-gnd"
 	mcpserver "github.com/dpopsuev/rh-rca/mcpconfig"
 )
 

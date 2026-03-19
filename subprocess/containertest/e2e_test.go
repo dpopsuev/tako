@@ -19,7 +19,7 @@ import (
 	"github.com/dpopsuev/origami/domainfs"
 	"github.com/dpopsuev/origami/domainserve"
 	"github.com/dpopsuev/origami/mediator"
-	dsr "github.com/dpopsuev/rh-dsr"
+	dsr "github.com/dpopsuev/rh-gnd"
 	mcpserver "github.com/dpopsuev/rh-rca/mcpconfig"
 	"github.com/dpopsuev/origami/subprocess/containertest"
 )
@@ -182,7 +182,7 @@ func TestE2E_FourServices_ToolRouting(t *testing.T) {
 		switch tool.Name {
 		case "start_circuit", "get_next_step", "submit_step":
 			hasRCA = true
-		case "harvester_search", "harvester_read":
+		case "gnd_search", "gnd_read":
 			hasDSR = true
 		case "domain_info", "domain_read", "domain_list":
 			hasDomain = true

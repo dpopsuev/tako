@@ -1,4 +1,4 @@
-// Package docs implements the HTTP documentation harvester driver.
+// Package docs implements the HTTP documentation GND driver.
 // It searches docs.redhat.com (or any similarly structured doc site),
 // fetches individual pages, and converts HTML to plain text. Results
 // are cached locally with a configurable TTL.

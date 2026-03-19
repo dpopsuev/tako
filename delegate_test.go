@@ -375,7 +375,7 @@ func TestCircuitRefNode_Interface(t *testing.T) {
 }
 
 func TestCircuitRefNode_GenerateCircuit(t *testing.T) {
-	inner := &CircuitDef{Circuit: "harvester", Start: "X", Done: "_done"}
+	inner := &CircuitDef{Circuit: "gnd", Start: "X", Done: "_done"}
 	n := &circuitRefNode{name: "gather", circuitDef: inner}
 
 	got, err := n.GenerateCircuit(context.Background(), NodeContext{})
@@ -389,7 +389,7 @@ func TestCircuitRefNode_GenerateCircuit(t *testing.T) {
 
 func TestBuildGraph_CircuitRefNode(t *testing.T) {
 	innerDef := &CircuitDef{
-		Circuit: "harvester",
+		Circuit: "gnd",
 		Start:   "K1",
 		Done:    "_done",
 		Nodes: []NodeDef{
@@ -407,7 +407,7 @@ func TestBuildGraph_CircuitRefNode(t *testing.T) {
 		HandlerType: HandlerTypeTransformer,
 		Nodes: []NodeDef{
 			{Name: "A", Handler: "passthrough"},
-			{Name: "B", HandlerType: HandlerTypeCircuit, Handler: "harvester"},
+			{Name: "B", HandlerType: HandlerTypeCircuit, Handler: "gnd"},
 			{Name: "C", Handler: "passthrough"},
 		},
 		Edges: []EdgeDef{
@@ -422,7 +422,7 @@ func TestBuildGraph_CircuitRefNode(t *testing.T) {
 			"passthrough": &passthroughTransformer{},
 		},
 		Circuits: map[string]*CircuitDef{
-			"harvester": innerDef,
+			"gnd": innerDef,
 		},
 	}
 
@@ -442,7 +442,7 @@ func TestBuildGraph_CircuitRefNode(t *testing.T) {
 
 func TestWalk_CircuitRefNode_SubWalk(t *testing.T) {
 	innerDef := &CircuitDef{
-		Circuit: "harvester",
+		Circuit: "gnd",
 		Start:   "K1",
 		Done:    "_done",
 		Nodes: []NodeDef{
@@ -460,7 +460,7 @@ func TestWalk_CircuitRefNode_SubWalk(t *testing.T) {
 		HandlerType: HandlerTypeTransformer,
 		Nodes: []NodeDef{
 			{Name: "A", Handler: "passthrough"},
-			{Name: "B", HandlerType: HandlerTypeCircuit, Handler: "harvester"},
+			{Name: "B", HandlerType: HandlerTypeCircuit, Handler: "gnd"},
 			{Name: "C", Handler: "passthrough"},
 		},
 		Edges: []EdgeDef{
@@ -475,7 +475,7 @@ func TestWalk_CircuitRefNode_SubWalk(t *testing.T) {
 			"passthrough": &passthroughTransformer{},
 		},
 		Circuits: map[string]*CircuitDef{
-			"harvester": innerDef,
+			"gnd": innerDef,
 		},
 	}
 
@@ -498,8 +498,8 @@ func TestWalk_CircuitRefNode_SubWalk(t *testing.T) {
 	if !ok {
 		t.Fatalf("output type = %T, want *DelegateArtifact", da)
 	}
-	if delArt.GeneratedCircuit.Circuit != "harvester" {
-		t.Errorf("inner circuit = %q, want %q", delArt.GeneratedCircuit.Circuit, "harvester")
+	if delArt.GeneratedCircuit.Circuit != "gnd" {
+		t.Errorf("inner circuit = %q, want %q", delArt.GeneratedCircuit.Circuit, "gnd")
 	}
 
 	// Inner artifact namespaced into outer outputs.

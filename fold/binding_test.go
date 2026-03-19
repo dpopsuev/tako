@@ -31,21 +31,11 @@ func TestResolve_AsteriskLike(t *testing.T) {
 				Path: "github.com/dpopsuev/rh-rca",
 				Bindings: map[string]string{
 					"source": "reportportal",
-					"dsr":    "harvester",
-				},
-			},
-			"harvester": {
-				Path: "github.com/dpopsuev/rh-dsr",
-				Bindings: map[string]string{
-					"git":  "github",
-					"docs": "docs",
 				},
 			},
 		},
 		Connectors: map[string]ConnectorRef{
 			"reportportal": {Path: "github.com/dpopsuev/rh-rca/connectors/rp"},
-			"github":       {Path: "connectors/github"},
-			"docs":         {Path: "connectors/docs"},
 		},
 	}
 
@@ -61,31 +51,17 @@ func TestResolve_AsteriskLike(t *testing.T) {
 		t.Errorf("root factory = %q, want NewServer", g.Root.Factory)
 	}
 
-	if len(g.Schematics) != 1 {
-		t.Fatalf("sub-schematics = %d, want 1", len(g.Schematics))
-	}
-	if g.Schematics[0].Name != "harvester" {
-		t.Errorf("sub-schematic = %q, want harvester", g.Schematics[0].Name)
-	}
-	if g.Schematics[0].Factory != "NewRouter" {
-		t.Errorf("harvester factory = %q, want NewRouter", g.Schematics[0].Factory)
+	if len(g.Schematics) != 0 {
+		t.Fatalf("sub-schematics = %d, want 0 (gnd is a separate service)", len(g.Schematics))
 	}
 
-	// Harvester should have 2 options: WithGitDriver, WithDocsDriver
-	if len(g.Schematics[0].Options) != 2 {
-		t.Fatalf("harvester options = %d, want 2", len(g.Schematics[0].Options))
-	}
-
-	// Root should have options for source and harvester (writer/discoverer/store are optional)
+	// Root should have options for source (writer/discoverer/store are optional)
 	var optNames []string
 	for _, o := range g.Root.Options {
 		optNames = append(optNames, o.OptionFunc)
 	}
 	if !contains(optNames, "WithSourceReader") {
 		t.Errorf("root options %v missing WithSourceReader", optNames)
-	}
-	if !contains(optNames, "WithDSRReader") {
-		t.Errorf("root options %v missing WithDSRReader", optNames)
 	}
 
 	// Source binding should be factory-mode (RP)
@@ -100,9 +76,9 @@ func TestResolve_AsteriskLike(t *testing.T) {
 		}
 	}
 
-	// Imports should include all 5 modules
-	if len(g.Imports) < 5 {
-		t.Errorf("imports = %d, want >= 5", len(g.Imports))
+	// Imports should include rca + rp connector modules
+	if len(g.Imports) < 2 {
+		t.Errorf("imports = %d, want >= 2", len(g.Imports))
 	}
 }
 
@@ -134,7 +110,7 @@ func TestResolve_CycleDetection(t *testing.T) {
 		Name: "test",
 		Schematics: map[string]SchematicRef{
 			"a": {Path: "github.com/dpopsuev/rh-rca", Bindings: map[string]string{"source": "b"}},
-			"b": {Path: "github.com/dpopsuev/rh-dsr", Bindings: map[string]string{"git": "a"}},
+			"b": {Path: "github.com/dpopsuev/rh-gnd", Bindings: map[string]string{"git": "a"}},
 		},
 		Connectors: map[string]ConnectorRef{},
 	}
@@ -152,8 +128,8 @@ func TestTopoSort_SingleRoot(t *testing.T) {
 	m := &Manifest{
 		Name: "test",
 		Schematics: map[string]SchematicRef{
-			"rca":       {Path: "github.com/dpopsuev/rh-rca", Bindings: map[string]string{"harvester": "harvester"}},
-			"harvester": {Path: "github.com/dpopsuev/rh-dsr"},
+			"rca":       {Path: "github.com/dpopsuev/rh-rca", Bindings: map[string]string{"gnd": "gnd"}},
+			"gnd": {Path: "github.com/dpopsuev/rh-gnd"},
 		},
 	}
 
@@ -164,8 +140,8 @@ func TestTopoSort_SingleRoot(t *testing.T) {
 	if root != "rca" {
 		t.Errorf("root = %q, want rca", root)
 	}
-	if len(order) != 1 || order[0] != "harvester" {
-		t.Errorf("order = %v, want [harvester]", order)
+	if len(order) != 1 || order[0] != "gnd" {
+		t.Errorf("order = %v, want [gnd]", order)
 	}
 }
 
@@ -174,7 +150,7 @@ func TestTopoSort_MultipleRoots(t *testing.T) {
 		Name: "test",
 		Schematics: map[string]SchematicRef{
 			"a": {Path: "github.com/dpopsuev/rh-rca"},
-			"b": {Path: "github.com/dpopsuev/rh-dsr"},
+			"b": {Path: "github.com/dpopsuev/rh-gnd"},
 		},
 	}
 
@@ -194,7 +170,7 @@ func TestImportAlias(t *testing.T) {
 	}{
 		{"github.com/dpopsuev/rh-rca/connectors/rp", "rp"},
 		{"github.com/dpopsuev/origami/connectors/github", "github"},
-		{"github.com/dpopsuev/rh-dsr", "rhdsr"},
+		{"github.com/dpopsuev/rh-gnd", "rhgnd"},
 		{"github.com/dpopsuev/rh-rca/mcpconfig", "mcpconfig"},
 	}
 	for _, tt := range tests {
@@ -214,9 +190,9 @@ schematics:
     path: github.com/dpopsuev/rh-rca
     bindings:
       source: reportportal
-      dsr: harvester
-  harvester:
-    path: github.com/dpopsuev/rh-dsr
+      dsr: gnd
+  gnd:
+    path: github.com/dpopsuev/rh-gnd
     bindings:
       git: github
       docs: docs

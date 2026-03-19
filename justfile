@@ -64,7 +64,7 @@ build-rca:
 
 # Build GND engine image (workspace root context for sibling repos)
 build-gnd:
-    docker build -t origami-gnd -f {{ workspace }}/rh-dsr/Dockerfile {{ workspace }}
+    docker build -t origami-gnd -f {{ workspace }}/rh-gnd/Dockerfile {{ workspace }}
 
 # ─── Clean ────────────────────────────────────────────────
 

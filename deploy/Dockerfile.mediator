@@ -7,11 +7,11 @@
 FROM golang:1.24 AS builder
 WORKDIR /src
 COPY go.mod go.sum ./
-# Strip local replace directives — mediator doesn't import rh-dsr/rh-rca.
+# Strip local replace directives — mediator doesn't import rh-gnd/rh-rca.
 RUN go mod edit \
-    -dropreplace github.com/dpopsuev/rh-dsr \
+    -dropreplace github.com/dpopsuev/rh-gnd \
     -dropreplace github.com/dpopsuev/rh-rca \
-    -droprequire github.com/dpopsuev/rh-dsr \
+    -droprequire github.com/dpopsuev/rh-gnd \
     -droprequire github.com/dpopsuev/rh-rca
 RUN go mod download
 COPY . .

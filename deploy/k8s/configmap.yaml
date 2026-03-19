@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: origami-config
 data:
-  HARVESTER_ENDPOINT: "http://harvester:9100/mcp"
+  GND_ENDPOINT: "http://gnd:9100/mcp"
   ASTERISK_DOMAIN_ENDPOINT: "http://asterisk:9300/mcp"
   RCA_ENDPOINT: "http://rca:9200/mcp"
   GATEWAY_ENDPOINT: "http://gateway:9000/mcp"

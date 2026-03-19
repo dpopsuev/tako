@@ -142,7 +142,7 @@ func TestFoldContracts_MultiCircuit(t *testing.T) {
 	}
 	folded := FoldContracts(map[string]*CalibrationContract{
 		"rca":       rca,
-		"harvester": harv,
+		"gnd": harv,
 	})
 
 	if len(folded.Inputs) != 1 {
@@ -159,8 +159,8 @@ func TestFoldContracts_MultiCircuit(t *testing.T) {
 	if !outNames["rca.defect_type"] {
 		t.Error("missing rca.defect_type")
 	}
-	if !outNames["harvester.files_found"] {
-		t.Error("missing harvester.files_found")
+	if !outNames["gnd.files_found"] {
+		t.Error("missing gnd.files_found")
 	}
 }
 
