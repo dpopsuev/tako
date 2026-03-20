@@ -552,16 +552,26 @@ func (g *DefaultGraph) nodeCtx(parent context.Context, nodeName string) (context
 // schema validation and hooks), walks it, and returns a DelegateArtifact
 // wrapping the inner walk's results.
 func (g *DefaultGraph) walkDelegate(ctx context.Context, walker Walker, obs WalkObserver, dn DelegateNode, nc NodeContext) (*DelegateArtifact, error) {
+	circuitType := delegateCircuitType(dn)
+
 	emitEvent(obs, WalkEvent{
 		Type:   EventDelegateStart,
 		Node:   dn.Name(),
 		Walker: walker.Identity().PersonaName,
+		Metadata: map[string]any{
+			"circuit_type": circuitType,
+		},
 	})
-	slog.Debug(LogDelegateStart, LogKeyComponent, LogComponentWalk, LogKeyNode, dn.Name(), LogKeyCircuit, "delegate")
+	slog.Debug(LogDelegateStart, LogKeyComponent, LogComponentWalk, LogKeyNode, dn.Name(), LogKeyCircuit, circuitType)
 
 	circuitDef, err := dn.GenerateCircuit(ctx, nc)
 	if err != nil {
 		return nil, fmt.Errorf("delegate %s: generate circuit: %w", dn.Name(), err)
+	}
+
+	// Update circuit type from the generated def if the node didn't provide it.
+	if circuitType == "" && circuitDef != nil {
+		circuitType = circuitDef.Circuit
 	}
 
 	var reg GraphRegistries
@@ -614,8 +624,9 @@ func (g *DefaultGraph) walkDelegate(ctx context.Context, walker Walker, obs Walk
 		Artifact: da,
 		Error:    walkErr,
 		Metadata: map[string]any{
-			"node_count":  da.NodeCount,
-			"inner_error": walkErr != nil,
+			"circuit_type": circuitType,
+			"node_count":   da.NodeCount,
+			"inner_error":  walkErr != nil,
 		},
 	})
 
@@ -623,6 +634,20 @@ func (g *DefaultGraph) walkDelegate(ctx context.Context, walker Walker, obs Walk
 		return da, fmt.Errorf("delegate %s: sub-walk: %w", dn.Name(), walkErr)
 	}
 	return da, nil
+}
+
+// delegateCircuitType extracts the target circuit name from a DelegateNode
+// when available. For circuitRefNode the name is known statically; for
+// dslDelegateNode it is only determined after GenerateCircuit runs, so
+// this function returns "" in that case (the caller backfills after generation).
+func delegateCircuitType(dn DelegateNode) string {
+	switch n := dn.(type) {
+	case *circuitRefNode:
+		if n.circuitDef != nil {
+			return n.circuitDef.Circuit
+		}
+	}
+	return ""
 }
 
 // delegateObserver wraps a WalkObserver and prefixes all node/edge names

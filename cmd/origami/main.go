@@ -69,6 +69,8 @@ func main() {
 		err = traceCmd(os.Stdout, os.Args[2:])
 	case "report":
 		err = reportCmd(os.Stdout, os.Args[2:])
+	case "diff":
+		err = diffCmd(os.Stdout, os.Args[2:])
 	case "validate-bundle":
 		err = validateBundleCmd(os.Args[2:])
 	case "version":
@@ -106,6 +108,7 @@ Commands:
   capture    Capture an offline bundle for a schematic (e.g. gnd)
   trace      Read and render a JSONL execution trace
   report     Read and render a run report scorecard
+  diff       Compare metrics between two runs
   validate-bundle  Validate a captured bundle against its manifest
   version    Print version`)
 }

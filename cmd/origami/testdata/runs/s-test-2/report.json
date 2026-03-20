@@ -1,0 +1,16 @@
+{
+  "metrics": {
+    "metrics": [
+      {"id": "M1", "name": "defect_type_accuracy", "score": 0.77, "threshold": 0.85, "passed": false},
+      {"id": "M2", "name": "category_accuracy", "score": 0.85, "threshold": 0.80, "passed": true},
+      {"id": "M15", "name": "component_identification", "score": 0.61, "threshold": 0.75, "passed": false}
+    ],
+    "summary": {"passed": 1, "total": 3, "score": 0.74}
+  },
+  "case_results": [
+    {"case_id": "C04", "version": "4.18", "job": "[BC/OC]", "component_correct": true, "defect_type_correct": false, "category_correct": true, "path_correct": false, "step_count": 7, "actual_convergence": 0.55, "circuit_error": ""},
+    {"case_id": "C05", "version": "4.17", "job": "[GM]", "component_correct": false, "defect_type_correct": true, "category_correct": true, "path_correct": true, "step_count": 7, "actual_convergence": 0.65, "circuit_error": ""},
+    {"case_id": "C06", "version": "4.14", "job": "[GM]", "component_correct": false, "defect_type_correct": false, "category_correct": false, "path_correct": false, "step_count": 4, "actual_convergence": 0, "circuit_error": "node report: transformer error"},
+    {"case_id": "C07", "version": "4.16", "job": "[BC]", "component_correct": true, "defect_type_correct": true, "category_correct": true, "path_correct": true, "step_count": 5, "actual_convergence": 0.80, "circuit_error": ""}
+  ]
+}

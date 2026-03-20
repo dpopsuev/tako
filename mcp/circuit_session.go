@@ -57,8 +57,9 @@ type CircuitSession struct {
 
 	Supervisor *dispatch.SupervisorTracker
 
-	recorder *framework.TraceRecorder // nil when tracing disabled
-	runDir   string                   // {StateDir}/runs/{sessID}
+	recorder  *framework.TraceRecorder // nil when tracing disabled
+	runDir    string                   // {StateDir}/runs/{sessID}
+	startedAt time.Time               // set when session is created
 
 	mu sync.Mutex
 }
@@ -88,6 +89,7 @@ func NewCircuitSession(
 		doneCh:          make(chan struct{}),
 		cancel:          cancel,
 		Supervisor:      dispatch.NewSupervisorTracker(bus),
+		startedAt:       time.Now(),
 	}
 
 	go sess.run(ctx, runFn)
@@ -370,6 +372,7 @@ func (s *CircuitSession) run(ctx context.Context, runFn RunFunc) {
 		s.Bus.Emit("session_error", "server", "", "", map[string]string{"error": err.Error()})
 		s.log.Error("circuit run failed", "error", err)
 		s.writeReport(result) // write partial report even on error
+		s.writeRunRecord()
 		return
 	}
 	s.state = StateDone
@@ -377,6 +380,7 @@ func (s *CircuitSession) run(ctx context.Context, runFn RunFunc) {
 	s.Bus.Emit("session_done", "server", "", "", map[string]string{})
 	s.log.Info("circuit run complete")
 	s.writeReport(result)
+	s.writeRunRecord()
 }
 
 // writeReport persists the run result as report.json if tracing is enabled.
@@ -394,6 +398,42 @@ func (s *CircuitSession) writeReport(result any) {
 		s.log.Warn("failed to write report.json", "path", path, "error", err)
 	} else {
 		s.log.Info("report written", "path", path)
+	}
+}
+
+// writeRunRecord persists the run envelope as run.json alongside report.json.
+func (s *CircuitSession) writeRunRecord() {
+	if s.runDir == "" {
+		return
+	}
+
+	now := time.Now()
+	errCount := 0
+	if s.err != nil {
+		errCount = 1
+	}
+
+	traceEvents := 0
+	if s.recorder != nil {
+		traceEvents = s.recorder.EventCount()
+	}
+
+	rec := framework.RunRecord{
+		ID:          s.ID,
+		Scenario:    s.Scenario,
+		Parallel:    s.DesiredCapacity,
+		StartedAt:   s.startedAt,
+		CompletedAt: now,
+		DurationMs:  now.Sub(s.startedAt).Milliseconds(),
+		CaseCount:   s.TotalCases,
+		ErrorCount:  errCount,
+		TraceEvents: traceEvents,
+	}
+
+	if err := framework.SaveRunRecord(s.runDir, rec); err != nil {
+		s.log.Warn("failed to write run.json", "error", err)
+	} else {
+		s.log.Info("run record written", "path", s.runDir)
 	}
 }
 

@@ -607,6 +607,143 @@ func TestBuildGraph_CircuitRefNode_MissingCircuit(t *testing.T) {
 	}
 }
 
+func TestDelegateEvents_CarryCircuitType_CircuitRef(t *testing.T) {
+	innerDef := &CircuitDef{
+		Circuit: "gnd",
+		Start:   "K1",
+		Done:    "_done",
+		Nodes: []NodeDef{
+			{Name: "K1", HandlerType: HandlerTypeTransformer, Handler: "passthrough"},
+		},
+		Edges: []EdgeDef{
+			{ID: "k1-done", From: "K1", To: "_done"},
+		},
+	}
+
+	outerDef := &CircuitDef{
+		Circuit:     "rca",
+		Start:       "A",
+		Done:        "_done",
+		HandlerType: HandlerTypeTransformer,
+		Nodes: []NodeDef{
+			{Name: "A", Handler: "passthrough"},
+			{Name: "B", HandlerType: HandlerTypeCircuit, Handler: "gnd"},
+			{Name: "C", Handler: "passthrough"},
+		},
+		Edges: []EdgeDef{
+			{ID: "a-b", From: "A", To: "B"},
+			{ID: "b-c", From: "B", To: "C"},
+			{ID: "c-done", From: "C", To: "_done"},
+		},
+	}
+
+	reg := GraphRegistries{
+		Transformers: TransformerRegistry{
+			"passthrough": &passthroughTransformer{},
+		},
+		Circuits: map[string]*CircuitDef{
+			"gnd": innerDef,
+		},
+	}
+
+	g, err := outerDef.BuildGraph(reg)
+	if err != nil {
+		t.Fatalf("BuildGraph() error: %v", err)
+	}
+
+	trace := &TraceCollector{}
+	g.(*DefaultGraph).SetObserver(trace)
+
+	walker := NewProcessWalker("test")
+	if err := g.Walk(context.Background(), walker, "A"); err != nil {
+		t.Fatalf("Walk() error: %v", err)
+	}
+
+	// EventDelegateStart must carry circuit_type.
+	starts := trace.EventsOfType(EventDelegateStart)
+	if len(starts) != 1 {
+		t.Fatalf("delegate_start events = %d, want 1", len(starts))
+	}
+	if ct, _ := starts[0].Metadata["circuit_type"].(string); ct != "gnd" {
+		t.Errorf("delegate_start circuit_type = %q, want %q", ct, "gnd")
+	}
+
+	// EventDelegateEnd must carry circuit_type.
+	ends := trace.EventsOfType(EventDelegateEnd)
+	if len(ends) != 1 {
+		t.Fatalf("delegate_end events = %d, want 1", len(ends))
+	}
+	if ct, _ := ends[0].Metadata["circuit_type"].(string); ct != "gnd" {
+		t.Errorf("delegate_end circuit_type = %q, want %q", ct, "gnd")
+	}
+}
+
+func TestDelegateEvents_CarryCircuitType_DSLDelegate(t *testing.T) {
+	planGen := TransformerFunc("plan", func(_ context.Context, _ *TransformerContext) (any, error) {
+		return &CircuitDef{
+			Circuit: "generated",
+			Start:   "W1",
+			Done:    "_done",
+			Nodes:   []NodeDef{{Name: "W1", Transformer: "passthrough"}},
+			Edges:   []EdgeDef{{ID: "w1-done", From: "W1", To: "_done"}},
+		}, nil
+	})
+
+	outerDef := &CircuitDef{
+		Circuit: "outer",
+		Start:   "A",
+		Done:    "_done",
+		Nodes: []NodeDef{
+			{Name: "A", Transformer: "passthrough"},
+			{Name: "B", Delegate: true, Generator: "plan"},
+			{Name: "C", Transformer: "passthrough"},
+		},
+		Edges: []EdgeDef{
+			{ID: "a-b", From: "A", To: "B"},
+			{ID: "b-c", From: "B", To: "C"},
+			{ID: "c-done", From: "C", To: "_done"},
+		},
+	}
+
+	reg := GraphRegistries{
+		Transformers: TransformerRegistry{
+			"passthrough": &passthroughTransformer{},
+			"plan":        planGen,
+		},
+	}
+
+	g, err := outerDef.BuildGraph(reg)
+	if err != nil {
+		t.Fatalf("BuildGraph() error: %v", err)
+	}
+
+	trace := &TraceCollector{}
+	g.(*DefaultGraph).SetObserver(trace)
+
+	walker := NewProcessWalker("test")
+	if err := g.Walk(context.Background(), walker, "A"); err != nil {
+		t.Fatalf("Walk() error: %v", err)
+	}
+
+	// For dslDelegateNode, circuit_type is empty at start (not known until generation).
+	starts := trace.EventsOfType(EventDelegateStart)
+	if len(starts) != 1 {
+		t.Fatalf("delegate_start events = %d, want 1", len(starts))
+	}
+	if starts[0].Metadata == nil {
+		t.Fatal("delegate_start metadata is nil")
+	}
+
+	// EventDelegateEnd must carry circuit_type from the generated circuit.
+	ends := trace.EventsOfType(EventDelegateEnd)
+	if len(ends) != 1 {
+		t.Fatalf("delegate_end events = %d, want 1", len(ends))
+	}
+	if ct, _ := ends[0].Metadata["circuit_type"].(string); ct != "generated" {
+		t.Errorf("delegate_end circuit_type = %q, want %q", ct, "generated")
+	}
+}
+
 func TestBuildGraph_CircuitRefNode_NilRegistry(t *testing.T) {
 	def := &CircuitDef{
 		Circuit: "outer",

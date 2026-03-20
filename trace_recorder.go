@@ -51,10 +51,11 @@ type TraceEvent struct {
 //	})
 //	batchWalkConfig.Observer = recorder
 type TraceRecorder struct {
-	mu     sync.Mutex
-	w      *bufio.Writer
-	file   *os.File
-	caseID string
+	mu         sync.Mutex
+	w          *bufio.Writer
+	file       *os.File
+	caseID     string
+	eventCount int
 }
 
 // NewTraceRecorder creates a recorder that writes JSONL to path.
@@ -146,6 +147,13 @@ func (r *TraceRecorder) Close() error {
 	return nil
 }
 
+// EventCount returns the number of trace events written so far.
+func (r *TraceRecorder) EventCount() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.eventCount
+}
+
 func (r *TraceRecorder) write(te TraceEvent) {
 	data, err := json.Marshal(te)
 	if err != nil {
@@ -154,5 +162,6 @@ func (r *TraceRecorder) write(te TraceEvent) {
 	data = append(data, '\n')
 	r.mu.Lock()
 	r.w.Write(data)
+	r.eventCount++
 	r.mu.Unlock()
 }
