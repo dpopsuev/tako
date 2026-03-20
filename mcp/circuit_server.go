@@ -320,12 +320,6 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 		parallel = 1
 	}
 
-	params := StartParams{
-		Parallel: parallel,
-		Force:    input.Force,
-		Extra:    input.Extra,
-	}
-
 	var runCtx context.Context
 	var runCancel context.CancelFunc
 	if s.Config.MaxSessionDuration > 0 {
@@ -337,29 +331,14 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 	bus := dispatch.NewSignalBus()
 	disp := dispatch.NewMuxDispatcher(runCtx, dispatch.WithMuxSignalBus(bus))
 
-	startTime := time.Now()
-	runFn, meta, err := s.Config.CreateSession(ctx, params, disp, bus)
-	if err != nil {
-		runCancel()
-		paramSummary := fmt.Sprintf("parallel=%d, force=%v", parallel, input.Force)
-		if len(input.Extra) > 0 {
-			extraJSON, _ := json.Marshal(input.Extra)
-			paramSummary += fmt.Sprintf(", extra=%s", extraJSON)
-		}
-		logger.Error("circuit session failed",
-			"error", err.Error(),
-			"params", paramSummary,
-			"elapsed_ms", time.Since(startTime).Milliseconds())
-		return nil, startCircuitOutput{}, fmt.Errorf("create session (%s): %w", paramSummary, err)
-	}
-
+	// Generate session ID and set up trace recording BEFORE CreateSession
+	// so the recorder is available as StartParams.Observer for walker events.
 	s.mu.Lock()
 	s.sessCount++
 	seqN := s.sessCount
 	s.mu.Unlock()
 	sessID := fmt.Sprintf("s-%d-%d", time.Now().UnixMilli(), seqN)
 
-	// Set up trace recording if StateDir is configured.
 	var recorder *framework.TraceRecorder
 	var runDir string
 	if s.Config.StateDir != "" {
@@ -379,6 +358,32 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 				})
 			}
 		}
+	}
+
+	params := StartParams{
+		Parallel: parallel,
+		Force:    input.Force,
+		Extra:    input.Extra,
+		Observer: recorder, // nil when tracing disabled — safe
+	}
+
+	startTime := time.Now()
+	runFn, meta, err := s.Config.CreateSession(ctx, params, disp, bus)
+	if err != nil {
+		runCancel()
+		if recorder != nil {
+			recorder.Close()
+		}
+		paramSummary := fmt.Sprintf("parallel=%d, force=%v", parallel, input.Force)
+		if len(input.Extra) > 0 {
+			extraJSON, _ := json.Marshal(input.Extra)
+			paramSummary += fmt.Sprintf(", extra=%s", extraJSON)
+		}
+		logger.Error("circuit session failed",
+			"error", err.Error(),
+			"params", paramSummary,
+			"elapsed_ms", time.Since(startTime).Milliseconds())
+		return nil, startCircuitOutput{}, fmt.Errorf("create session (%s): %w", paramSummary, err)
 	}
 
 	sess := NewCircuitSession(runCtx, sessID, meta, parallel, disp, bus, runFn, runCancel)
