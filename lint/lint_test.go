@@ -495,9 +495,9 @@ func TestFinding_String(t *testing.T) {
 
 func TestAllRules_Count(t *testing.T) {
 	rules := AllRules()
-	// 21 structural + 9 semantic + 11 best-practice + 1 prompt + 1 crossref + 5 scenario = 48
-	if len(rules) != 48 {
-		t.Errorf("expected 48 rules, got %d", len(rules))
+	// 24 structural + 9 semantic + 11 best-practice + 1 prompt + 1 crossref + 5 scenario = 51
+	if len(rules) != 51 {
+		t.Errorf("expected 51 rules, got %d", len(rules))
 	}
 
 	ids := make(map[string]bool)
@@ -1031,6 +1031,380 @@ tables:
 	}
 	if len(b10) != 1 {
 		t.Fatalf("expected 1 B10 finding, got %d: %+v", len(b10), b10)
+	}
+}
+
+// --- S21: edge-node-reference ---
+
+func TestS21_EdgeNodeReference_InvalidFrom(t *testing.T) {
+	yml := []byte(`
+circuit: test
+description: test
+nodes:
+  - name: recall
+    approach: rapid
+  - name: triage
+    approach: methodical
+edges:
+  - id: e1
+    name: e1
+    from: recal
+    to: triage
+  - id: e2
+    name: e2
+    from: triage
+    to: _done
+start: recall
+done: _done
+`)
+	findings, err := Run(yml, "test.yaml")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	found := false
+	for _, f := range findings {
+		if f.RuleID == "S21/edge-node-reference" {
+			found = true
+			if !strings.Contains(f.Message, "recal") {
+				t.Errorf("expected message to mention 'recal', got %q", f.Message)
+			}
+			if f.Suggestion == "" {
+				t.Error("expected suggestion for 'recal' (close to 'recall')")
+			}
+		}
+	}
+	if !found {
+		t.Error("expected S21/edge-node-reference finding for from=recal")
+	}
+}
+
+func TestS21_EdgeNodeReference_InvalidTo(t *testing.T) {
+	yml := []byte(`
+circuit: test
+description: test
+nodes:
+  - name: recall
+    approach: rapid
+  - name: triage
+    approach: methodical
+edges:
+  - id: e1
+    name: e1
+    from: recall
+    to: triag
+  - id: e2
+    name: e2
+    from: triage
+    to: _done
+start: recall
+done: _done
+`)
+	findings, err := Run(yml, "test.yaml")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	found := false
+	for _, f := range findings {
+		if f.RuleID == "S21/edge-node-reference" {
+			found = true
+			if !strings.Contains(f.Message, "triag") {
+				t.Errorf("expected message to mention 'triag', got %q", f.Message)
+			}
+		}
+	}
+	if !found {
+		t.Error("expected S21/edge-node-reference finding for to=triag")
+	}
+}
+
+func TestS21_EdgeNodeReference_DoneSentinelValid(t *testing.T) {
+	yml := []byte(`
+circuit: test
+description: test
+nodes:
+  - name: recall
+    approach: rapid
+edges:
+  - id: e1
+    name: e1
+    from: recall
+    to: _done
+start: recall
+done: _done
+`)
+	findings, err := Run(yml, "test.yaml")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	for _, f := range findings {
+		if f.RuleID == "S21/edge-node-reference" {
+			t.Errorf("unexpected S21 finding for valid circuit: %s", f.Message)
+		}
+	}
+}
+
+// --- S22: hook-reference ---
+
+func TestS22_HookReference_WhitespaceHook(t *testing.T) {
+	yml := []byte(`
+circuit: test
+description: test
+handler_type: transformer
+nodes:
+  - name: recall
+    approach: rapid
+    handler: core.jq
+    meta:
+      expr: "input"
+    before: ["inject failure"]
+edges:
+  - id: e1
+    name: e1
+    from: recall
+    to: _done
+start: recall
+done: _done
+`)
+	findings, err := Run(yml, "test.yaml")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	found := false
+	for _, f := range findings {
+		if f.RuleID == "S22/hook-reference" && strings.Contains(f.Message, "whitespace") {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("expected S22/hook-reference finding for hook with whitespace")
+	}
+}
+
+func TestS22_HookReference_EmptySegment(t *testing.T) {
+	yml := []byte(`
+circuit: test
+description: test
+handler_type: transformer
+nodes:
+  - name: recall
+    approach: rapid
+    handler: core.jq
+    meta:
+      expr: "input"
+    before: ["inject."]
+edges:
+  - id: e1
+    name: e1
+    from: recall
+    to: _done
+start: recall
+done: _done
+`)
+	findings, err := Run(yml, "test.yaml")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	found := false
+	for _, f := range findings {
+		if f.RuleID == "S22/hook-reference" && strings.Contains(f.Message, "empty segment") {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("expected S22/hook-reference finding for hook with empty segment")
+	}
+}
+
+func TestS22_HookReference_SimilarNames(t *testing.T) {
+	yml := []byte(`
+circuit: test
+description: test
+handler_type: transformer
+nodes:
+  - name: recall
+    approach: rapid
+    handler: core.jq
+    meta:
+      expr: "input"
+    before: ["inject.failure"]
+  - name: triage
+    approach: methodical
+    handler: core.jq
+    meta:
+      expr: "input"
+    before: ["inject.failurre"]
+edges:
+  - id: e1
+    name: e1
+    from: recall
+    to: triage
+  - id: e2
+    name: e2
+    from: triage
+    to: _done
+start: recall
+done: _done
+`)
+	findings, err := Run(yml, "test.yaml")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	found := false
+	for _, f := range findings {
+		if f.RuleID == "S22/hook-reference" && strings.Contains(f.Message, "similar") {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("expected S22/hook-reference finding for similar hook names")
+	}
+}
+
+func TestS22_HookReference_ValidHooks(t *testing.T) {
+	yml := []byte(`
+circuit: test
+description: test
+handler_type: transformer
+nodes:
+  - name: recall
+    approach: rapid
+    handler: core.jq
+    meta:
+      expr: "input"
+    before: ["inject.failure"]
+    after: ["extract.result"]
+edges:
+  - id: e1
+    name: e1
+    from: recall
+    to: _done
+start: recall
+done: _done
+`)
+	findings, err := Run(yml, "test.yaml")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	for _, f := range findings {
+		if f.RuleID == "S22/hook-reference" {
+			t.Errorf("unexpected S22 finding for valid hooks: %s", f.Message)
+		}
+	}
+}
+
+// --- S23: invalid-handler-type ---
+
+func TestS23_InvalidHandlerType_CircuitLevel(t *testing.T) {
+	yml := []byte(`
+circuit: test
+description: test
+handler_type: transformr
+nodes:
+  - name: recall
+    approach: rapid
+    handler: core.jq
+    meta:
+      expr: "input"
+edges:
+  - id: e1
+    name: e1
+    from: recall
+    to: _done
+start: recall
+done: _done
+`)
+	findings, err := Run(yml, "test.yaml")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	found := false
+	for _, f := range findings {
+		if f.RuleID == "S23/invalid-handler-type" {
+			found = true
+			if !strings.Contains(f.Message, "transformr") {
+				t.Errorf("expected message to mention 'transformr', got %q", f.Message)
+			}
+			if f.Suggestion == "" {
+				t.Error("expected suggestion for 'transformr'")
+			}
+		}
+	}
+	if !found {
+		t.Error("expected S23/invalid-handler-type finding")
+	}
+}
+
+func TestS23_InvalidHandlerType_NodeLevel(t *testing.T) {
+	yml := []byte(`
+circuit: test
+description: test
+handler_type: transformer
+nodes:
+  - name: recall
+    approach: rapid
+    handler_type: circit
+    handler: sub-circuit
+edges:
+  - id: e1
+    name: e1
+    from: recall
+    to: _done
+start: recall
+done: _done
+`)
+	findings, err := Run(yml, "test.yaml")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	found := false
+	for _, f := range findings {
+		if f.RuleID == "S23/invalid-handler-type" {
+			found = true
+			if !strings.Contains(f.Message, "circit") {
+				t.Errorf("expected message to mention 'circit', got %q", f.Message)
+			}
+		}
+	}
+	if !found {
+		t.Error("expected S23/invalid-handler-type finding for node-level handler_type")
+	}
+}
+
+func TestS23_InvalidHandlerType_ValidTypes(t *testing.T) {
+	yml := []byte(`
+circuit: test
+description: test
+handler_type: transformer
+nodes:
+  - name: recall
+    approach: rapid
+    handler: core.jq
+    meta:
+      expr: "input"
+  - name: sub
+    approach: analytical
+    handler_type: circuit
+    handler: sub-circuit
+edges:
+  - id: e1
+    name: e1
+    from: recall
+    to: sub
+  - id: e2
+    name: e2
+    from: sub
+    to: _done
+start: recall
+done: _done
+`)
+	findings, err := Run(yml, "test.yaml")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	for _, f := range findings {
+		if f.RuleID == "S23/invalid-handler-type" {
+			t.Errorf("unexpected S23 finding for valid handler types: %s", f.Message)
+		}
 	}
 }
 

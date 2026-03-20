@@ -3,6 +3,7 @@ package framework
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -76,5 +77,60 @@ func TestRunRecord_LoadMissingFile(t *testing.T) {
 	_, err := LoadRunRecord(dir)
 	if err == nil {
 		t.Fatal("expected error for missing run.json, got nil")
+	}
+}
+
+func TestRunRecord_TraceIDRoundTrip(t *testing.T) {
+	dir := t.TempDir()
+
+	now := time.Now().Truncate(time.Second)
+	rec := RunRecord{
+		ID:          "s-456-1",
+		TraceID:     "tr-parent-99",
+		Scenario:    "gnd",
+		Parallel:    1,
+		StartedAt:   now,
+		CompletedAt: now.Add(10 * time.Second),
+		DurationMs:  10000,
+		CaseCount:   5,
+	}
+
+	if err := SaveRunRecord(dir, rec); err != nil {
+		t.Fatalf("SaveRunRecord: %v", err)
+	}
+
+	got, err := LoadRunRecord(dir)
+	if err != nil {
+		t.Fatalf("LoadRunRecord: %v", err)
+	}
+
+	if got.TraceID != "tr-parent-99" {
+		t.Errorf("TraceID: got %q, want %q", got.TraceID, "tr-parent-99")
+	}
+}
+
+func TestRunRecord_TraceIDOmittedWhenEmpty(t *testing.T) {
+	dir := t.TempDir()
+
+	rec := RunRecord{
+		ID:          "s-789-1",
+		Scenario:    "test",
+		Parallel:    1,
+		StartedAt:   time.Now(),
+		CompletedAt: time.Now(),
+	}
+
+	if err := SaveRunRecord(dir, rec); err != nil {
+		t.Fatalf("SaveRunRecord: %v", err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(dir, "run.json"))
+	if err != nil {
+		t.Fatalf("read run.json: %v", err)
+	}
+
+	// When TraceID is empty, it should be omitted from JSON.
+	if strings.Contains(string(data), "trace_id") {
+		t.Errorf("run.json should omit trace_id when empty; got: %s", data)
 	}
 }

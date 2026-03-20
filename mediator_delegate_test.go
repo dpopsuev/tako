@@ -166,3 +166,128 @@ func TestMCPCircuitTransformer_CircuitError(t *testing.T) {
 		t.Errorf("error = %q, want to contain remote error message", err.Error())
 	}
 }
+
+// --- TSK-186: trace_id propagation ---
+
+// newCapturingCircuitServer creates a mock server that captures start_circuit extra params.
+func newCapturingCircuitServer(t *testing.T, captured *map[string]any) *httptest.Server {
+	t.Helper()
+	server := sdkmcp.NewServer(
+		&sdkmcp.Implementation{Name: "capturing-circuit", Version: "v0.1.0"},
+		nil,
+	)
+
+	server.AddTool(
+		&sdkmcp.Tool{
+			Name:        "start_circuit",
+			InputSchema: json.RawMessage(`{"type":"object"}`),
+		},
+		func(_ context.Context, req *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error) {
+			var input struct {
+				Extra map[string]any `json:"extra"`
+			}
+			if req.Params.Arguments != nil {
+				json.Unmarshal(req.Params.Arguments, &input)
+			}
+			*captured = input.Extra
+			return textResult(map[string]any{
+				"session_id":  "cap-session-1",
+				"total_cases": 1,
+				"status":      "running",
+			}), nil
+		},
+	)
+
+	server.AddTool(
+		&sdkmcp.Tool{
+			Name:        "get_next_step",
+			InputSchema: json.RawMessage(`{"type":"object"}`),
+		},
+		func(_ context.Context, _ *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error) {
+			return textResult(map[string]any{"done": true}), nil
+		},
+	)
+
+	server.AddTool(
+		&sdkmcp.Tool{
+			Name:        "get_report",
+			InputSchema: json.RawMessage(`{"type":"object"}`),
+		},
+		func(_ context.Context, _ *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error) {
+			return textResult(map[string]any{
+				"status":     "done",
+				"structured": map[string]any{"ok": true},
+			}), nil
+		},
+	)
+
+	h := sdkmcp.NewStreamableHTTPHandler(
+		func(_ *http.Request) *sdkmcp.Server { return server },
+		&sdkmcp.StreamableHTTPOptions{Stateless: true},
+	)
+	ts := httptest.NewServer(h)
+	t.Cleanup(ts.Close)
+	return ts
+}
+
+func TestMCPCircuitTransformer_PropagatesTraceID(t *testing.T) {
+	var captured map[string]any
+	ts := newCapturingCircuitServer(t, &captured)
+
+	trans := &mcpCircuitTransformer{
+		circuitType: "gnd",
+		endpoint:    ts.URL + "/mcp",
+	}
+
+	tc := &TransformerContext{
+		NodeName:    "gather-code",
+		WalkerState: NewWalkerState("test"),
+	}
+	tc.WalkerState.Context["_trace_id"] = "tr-parent-42"
+
+	_, err := trans.Transform(context.Background(), tc)
+	if err != nil {
+		t.Fatalf("Transform: %v", err)
+	}
+
+	// Verify trace_id was forwarded in extra params.
+	if captured == nil {
+		t.Fatal("captured extra is nil — start_circuit not called?")
+	}
+	traceID, ok := captured["trace_id"].(string)
+	if !ok {
+		t.Fatalf("trace_id not found in extra params; got: %v", captured)
+	}
+	if traceID != "tr-parent-42" {
+		t.Errorf("trace_id = %q, want %q", traceID, "tr-parent-42")
+	}
+}
+
+func TestMCPCircuitTransformer_GeneratesTraceIDWhenMissing(t *testing.T) {
+	var captured map[string]any
+	ts := newCapturingCircuitServer(t, &captured)
+
+	trans := &mcpCircuitTransformer{
+		circuitType: "gnd",
+		endpoint:    ts.URL + "/mcp",
+	}
+
+	tc := &TransformerContext{
+		NodeName:    "gather-code",
+		WalkerState: NewWalkerState("test"),
+	}
+	// No _trace_id in context — should auto-generate.
+
+	_, err := trans.Transform(context.Background(), tc)
+	if err != nil {
+		t.Fatalf("Transform: %v", err)
+	}
+
+	traceID, ok := captured["trace_id"].(string)
+	if !ok {
+		t.Fatalf("trace_id not found in extra params; got: %v", captured)
+	}
+	if !strings.HasPrefix(traceID, "tr-") {
+		t.Errorf("auto-generated trace_id = %q, expected prefix 'tr-'", traceID)
+	}
+}

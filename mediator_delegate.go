@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"time"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 
@@ -74,6 +75,13 @@ func (t *mcpCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 			}
 			extra[k] = v
 		}
+	}
+
+	// Propagate or generate trace_id for cross-circuit correlation.
+	if traceID, ok := tc.WalkerState.Context["_trace_id"].(string); ok {
+		extra["trace_id"] = traceID
+	} else {
+		extra["trace_id"] = fmt.Sprintf("tr-%d", time.Now().UnixMilli())
 	}
 
 	// start_circuit

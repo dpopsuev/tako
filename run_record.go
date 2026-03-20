@@ -11,6 +11,7 @@ import (
 // It is written alongside report.json and trace.jsonl in the run directory.
 type RunRecord struct {
 	ID          string    `json:"id"`
+	TraceID     string    `json:"trace_id,omitempty"`
 	Scenario    string    `json:"scenario"`
 	Backend     string    `json:"backend,omitempty"`
 	Parallel    int       `json:"parallel"`

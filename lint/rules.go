@@ -34,6 +34,9 @@ func structuralRules() []Rule {
 		&ImportOverlay{},
 		&PortValidation{},
 		&CalibrationContract{},
+		&EdgeNodeReference{},
+		&HookReference{},
+		&InvalidHandlerType{},
 	}
 }
 

@@ -10,10 +10,14 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sync"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 
+	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/subprocess"
 )
 
@@ -40,6 +44,15 @@ type BackendConfig struct {
 	CircuitType string // if set, route start_circuit(circuit_type=X) to this backend
 }
 
+// Option configures a Mediator.
+type Option func(*Mediator)
+
+// WithStateDir sets the directory for trace recording. When set, each
+// routing session writes a JSONL trace of routing decisions.
+func WithStateDir(dir string) Option {
+	return func(gw *Mediator) { gw.stateDir = dir }
+}
+
 // Mediator proxies MCP tool calls to backend services.
 // Papercup tools are routed by circuit_type (start_circuit) and
 // session affinity (all other Papercup calls). Non-Papercup tools
@@ -57,10 +70,15 @@ type Mediator struct {
 
 	// Papercup tool schemas (registered once from first backend that has them).
 	papercupSchemas map[string]sdkmcp.Tool
+
+	// Observability: routing signals and optional trace recording.
+	Bus      *dispatch.SignalBus
+	stateDir string                            // empty = tracing disabled
+	recorder *framework.TraceRecorder          // nil when tracing disabled
 }
 
 // New creates a Mediator that will connect to the given backends.
-func New(configs []BackendConfig) *Mediator {
+func New(configs []BackendConfig, opts ...Option) *Mediator {
 	gw := &Mediator{
 		backends:        make(map[string]*subprocess.RemoteBackend, len(configs)),
 		sessions:        make(map[string]*sdkmcp.ClientSession, len(configs)),
@@ -68,6 +86,7 @@ func New(configs []BackendConfig) *Mediator {
 		circuitBackends: make(map[string]string),
 		sessionAffinity: make(map[string]string),
 		papercupSchemas: make(map[string]sdkmcp.Tool),
+		Bus:             dispatch.NewSignalBus(),
 	}
 	for _, cfg := range configs {
 		gw.backends[cfg.Name] = &subprocess.RemoteBackend{Endpoint: cfg.Endpoint}
@@ -77,11 +96,34 @@ func New(configs []BackendConfig) *Mediator {
 			gw.defaultBackend = cfg.Name
 		}
 	}
+	for _, opt := range opts {
+		opt(gw)
+	}
 	return gw
 }
 
 // Start connects to all backends and builds the routing tables.
+// If StateDir is configured, creates a trace recorder for routing decisions.
 func (gw *Mediator) Start(ctx context.Context) error {
+	// Set up trace recording if StateDir is configured.
+	if gw.stateDir != "" {
+		if err := os.MkdirAll(gw.stateDir, 0755); err != nil {
+			slog.Warn("failed to create mediator state dir, tracing disabled",
+				"state_dir", gw.stateDir, "error", err)
+		} else {
+			tracePath := filepath.Join(gw.stateDir, "mediator-trace.jsonl")
+			rec, err := framework.NewTraceRecorder(tracePath)
+			if err != nil {
+				slog.Warn("failed to create mediator trace recorder", "error", err)
+			} else {
+				gw.recorder = rec
+				gw.Bus.SetOnEmit(func(sig dispatch.Signal) {
+					rec.HandleSignal(sig.Timestamp, sig.Event, sig.Agent, sig.CaseID, sig.Step, sig.Meta)
+				})
+			}
+		}
+	}
+
 	for name, rb := range gw.backends {
 		if err := rb.Start(ctx); err != nil {
 			return fmt.Errorf("backend %q: %w", name, err)
@@ -123,13 +165,16 @@ func (gw *Mediator) Start(ctx context.Context) error {
 	return nil
 }
 
-// Stop closes all discovery sessions and backend connections.
+// Stop closes all discovery sessions, backend connections, and the trace recorder.
 func (gw *Mediator) Stop(ctx context.Context) {
 	for _, s := range gw.sessions {
 		s.Close()
 	}
 	for _, rb := range gw.backends {
 		rb.Stop(ctx)
+	}
+	if gw.recorder != nil {
+		gw.recorder.Close()
 	}
 }
 
@@ -203,6 +248,12 @@ func (gw *Mediator) routeStartCircuit(ctx context.Context, args map[string]any) 
 		return errResult(fmt.Sprintf("backend %q not found", backendName)), nil
 	}
 
+	// Emit route signal.
+	gw.Bus.Emit("route", "mediator", "", "", map[string]string{
+		"backend":      backendName,
+		"circuit_type": circuitType,
+	})
+
 	// Forward to backend.
 	result, err := rb.CallTool(ctx, "start_circuit", args)
 	if err != nil {
@@ -214,6 +265,13 @@ func (gw *Mediator) routeStartCircuit(ctx context.Context, args map[string]any) 
 		gw.mu.Lock()
 		gw.sessionAffinity[sessionID] = backendName
 		gw.mu.Unlock()
+
+		gw.Bus.Emit("session_start", "mediator", "", "", map[string]string{
+			"session_id":   sessionID,
+			"backend":      backendName,
+			"circuit_type": circuitType,
+		})
+
 		slog.Debug("session affinity registered",
 			"session_id", sessionID,
 			"backend", backendName,
@@ -222,6 +280,15 @@ func (gw *Mediator) routeStartCircuit(ctx context.Context, args map[string]any) 
 	}
 
 	return result, nil
+}
+
+// NotifySessionDone emits a session_done signal for observability.
+// Called externally when a child session completes (e.g., after get_report).
+func (gw *Mediator) NotifySessionDone(sessionID, backendName string) {
+	gw.Bus.Emit("session_done", "mediator", "", "", map[string]string{
+		"session_id": sessionID,
+		"backend":    backendName,
+	})
 }
 
 // extractSessionID parses session_id from a CallToolResult.

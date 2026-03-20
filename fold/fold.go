@@ -100,7 +100,10 @@ func validateManifest(m *Manifest, manifestDir string, verbose bool) error {
 	if err := validateAssetPaths(m, manifestDir); err != nil {
 		return err
 	}
-	return validateCircuitRefs(m, manifestDir)
+	if err := validateCircuitRefs(m, manifestDir); err != nil {
+		return err
+	}
+	return validatePortWiring(m, manifestDir)
 }
 
 func validateNoDuplicateDomains(m *Manifest) error {
@@ -665,6 +668,136 @@ func detectCircuitCycle(deps map[string][]string) string {
 		}
 	}
 	return ""
+}
+
+// circuitPortsForValidation is a minimal struct for extracting port and wiring
+// declarations from circuit YAML files during fold validation.
+type circuitPortsForValidation struct {
+	Circuit string `yaml:"circuit"`
+	Ports   []struct {
+		Name string `yaml:"name"`
+		Type string `yaml:"type"`
+	} `yaml:"ports"`
+	Wiring []struct {
+		From string `yaml:"from"`
+		To   string `yaml:"to"`
+	} `yaml:"wiring"`
+}
+
+// validatePortWiring checks that wiring entries across circuits connect ports
+// with matching type declarations. A type mismatch (e.g. TriageResult vs
+// []string) is reported as an error at fold time rather than at runtime.
+func validatePortWiring(m *Manifest, manifestDir string) error {
+	if m.DomainServe == nil || m.DomainServe.Assets == nil {
+		return nil
+	}
+	circuits := m.DomainServe.Assets.Circuits
+	if len(circuits) == 0 {
+		return nil
+	}
+
+	// Load all circuit files and collect port types + wiring entries.
+	type portInfo struct {
+		circuitName string
+		portName    string
+		portType    string
+	}
+	// circuitName → portName → type
+	portIndex := make(map[string]map[string]string)
+
+	type wiringEntry struct {
+		from        string
+		to          string
+		circuitFile string
+	}
+	var allWiring []wiringEntry
+
+	for name, path := range circuits {
+		data, err := os.ReadFile(filepath.Join(manifestDir, path))
+		if err != nil {
+			continue // file-not-found is handled by validateAssetPaths
+		}
+		var cf circuitPortsForValidation
+		if err := yaml.Unmarshal(data, &cf); err != nil {
+			continue // parse errors are reported elsewhere
+		}
+
+		circuitName := cf.Circuit
+		if circuitName == "" {
+			circuitName = name
+		}
+
+		if len(cf.Ports) > 0 {
+			ports := make(map[string]string, len(cf.Ports))
+			for _, p := range cf.Ports {
+				ports[p.Name] = p.Type
+			}
+			portIndex[circuitName] = ports
+		}
+
+		for _, w := range cf.Wiring {
+			allWiring = append(allWiring, wiringEntry{
+				from:        w.From,
+				to:          w.To,
+				circuitFile: path,
+			})
+		}
+	}
+
+	if len(allWiring) == 0 {
+		return nil
+	}
+
+	// Check each wiring entry for port type compatibility.
+	for _, w := range allWiring {
+		fromCircuit, _, fromPort := parseWiringRef(w.from)
+		toCircuit, _, toPort := parseWiringRef(w.to)
+
+		if fromCircuit == "" || fromPort == "" || toCircuit == "" || toPort == "" {
+			continue // malformed — skip
+		}
+
+		fromPorts, fromOK := portIndex[fromCircuit]
+		toPorts, toOK := portIndex[toCircuit]
+		if !fromOK || !toOK {
+			continue // circuit not in manifest — can't check
+		}
+
+		fromType, fromExists := fromPorts[fromPort]
+		toType, toExists := toPorts[toPort]
+		if !fromExists || !toExists {
+			continue // port not declared — can't check
+		}
+
+		if fromType == "" || toType == "" {
+			continue // no type declared — nothing to compare
+		}
+
+		if fromType != toType {
+			return fmt.Errorf("port wiring %s → %s: type mismatch: %s has type %q but %s has type %q",
+				w.from, w.to, w.from, fromType, w.to, toType)
+		}
+	}
+
+	return nil
+}
+
+// parseWiringRef parses a wiring reference like "rca.out:post-triage"
+// into (circuit, direction, port_name).
+func parseWiringRef(ref string) (circuit, direction, port string) {
+	dotIdx := strings.Index(ref, ".")
+	if dotIdx < 0 {
+		return "", "", ""
+	}
+	circuit = ref[:dotIdx]
+	rest := ref[dotIdx+1:]
+	colonIdx := strings.Index(rest, ":")
+	if colonIdx < 0 {
+		return circuit, rest, ""
+	}
+	direction = rest[:colonIdx]
+	port = rest[colonIdx+1:]
+	return circuit, direction, port
 }
 
 func copyFile(src, dst string) error {

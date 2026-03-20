@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"strings"
 	"testing"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
@@ -252,6 +254,179 @@ func TestMediator_UnknownTool_ReturnsError(t *testing.T) {
 func mustJSON(v any) json.RawMessage {
 	b, _ := json.Marshal(v)
 	return b
+}
+
+// --- TSK-185: Routing signal emission ---
+
+func TestMediator_EmitsRouteSignal(t *testing.T) {
+	backend := newNamedCircuitBackend(t, "rca")
+
+	gw := mediator.New([]mediator.BackendConfig{
+		{Name: "rca", Endpoint: backend.URL + "/mcp"},
+	})
+	ctx := t.Context()
+	if err := gw.Start(ctx); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	defer gw.Stop(context.Background())
+
+	ts := httptest.NewServer(gw.Handler())
+	defer ts.Close()
+
+	session := connectMediator(t, ts)
+
+	// Start a circuit — should emit "route" and "session_start" signals.
+	startRes, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
+		Name:      "start_circuit",
+		Arguments: mustJSON(map[string]any{"force": true}),
+	})
+	if err != nil {
+		t.Fatalf("start_circuit: %v", err)
+	}
+	if startRes.IsError {
+		t.Fatalf("start_circuit error: %s", extractText(t, startRes))
+	}
+
+	// Check that the SignalBus has the expected signals.
+	signals := gw.Bus.Since(0)
+	if len(signals) < 2 {
+		t.Fatalf("expected at least 2 signals (route + session_start), got %d", len(signals))
+	}
+
+	// First signal should be "route".
+	if signals[0].Event != "route" {
+		t.Errorf("signals[0].Event = %q, want %q", signals[0].Event, "route")
+	}
+	if signals[0].Agent != "mediator" {
+		t.Errorf("signals[0].Agent = %q, want %q", signals[0].Agent, "mediator")
+	}
+	if signals[0].Meta["backend"] != "rca" {
+		t.Errorf("signals[0].Meta[backend] = %q, want %q", signals[0].Meta["backend"], "rca")
+	}
+
+	// Second signal should be "session_start".
+	if signals[1].Event != "session_start" {
+		t.Errorf("signals[1].Event = %q, want %q", signals[1].Event, "session_start")
+	}
+	if signals[1].Meta["backend"] != "rca" {
+		t.Errorf("signals[1].Meta[backend] = %q, want %q", signals[1].Meta["backend"], "rca")
+	}
+	if signals[1].Meta["session_id"] == "" {
+		t.Error("signals[1].Meta[session_id] is empty, expected a session ID")
+	}
+}
+
+func TestMediator_EmitsRouteSignalWithCircuitType(t *testing.T) {
+	rcaBackend := newNamedCircuitBackend(t, "rca")
+	gndBackend := newNamedCircuitBackend(t, "gnd")
+
+	gw := mediator.New([]mediator.BackendConfig{
+		{Name: "rca", Endpoint: rcaBackend.URL + "/mcp"},
+		{Name: "gnd", Endpoint: gndBackend.URL + "/mcp", CircuitType: "gnd"},
+	})
+	ctx := t.Context()
+	if err := gw.Start(ctx); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	defer gw.Stop(context.Background())
+
+	ts := httptest.NewServer(gw.Handler())
+	defer ts.Close()
+
+	session := connectMediator(t, ts)
+
+	// Route to gnd backend via circuit_type.
+	_, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
+		Name: "start_circuit",
+		Arguments: mustJSON(map[string]any{
+			"force": true,
+			"extra": map[string]any{"circuit_type": "gnd"},
+		}),
+	})
+	if err != nil {
+		t.Fatalf("start_circuit: %v", err)
+	}
+
+	signals := gw.Bus.Since(0)
+	if len(signals) < 2 {
+		t.Fatalf("expected at least 2 signals, got %d", len(signals))
+	}
+
+	// Route signal should reference gnd backend and circuit_type.
+	if signals[0].Meta["backend"] != "gnd" {
+		t.Errorf("route signal backend = %q, want %q", signals[0].Meta["backend"], "gnd")
+	}
+	if signals[0].Meta["circuit_type"] != "gnd" {
+		t.Errorf("route signal circuit_type = %q, want %q", signals[0].Meta["circuit_type"], "gnd")
+	}
+}
+
+func TestMediator_NotifySessionDone(t *testing.T) {
+	gw := mediator.New(nil)
+	gw.NotifySessionDone("s-abc-1", "rca")
+
+	signals := gw.Bus.Since(0)
+	if len(signals) != 1 {
+		t.Fatalf("expected 1 signal, got %d", len(signals))
+	}
+	if signals[0].Event != "session_done" {
+		t.Errorf("event = %q, want %q", signals[0].Event, "session_done")
+	}
+	if signals[0].Meta["session_id"] != "s-abc-1" {
+		t.Errorf("session_id = %q, want %q", signals[0].Meta["session_id"], "s-abc-1")
+	}
+	if signals[0].Meta["backend"] != "rca" {
+		t.Errorf("backend = %q, want %q", signals[0].Meta["backend"], "rca")
+	}
+}
+
+func TestMediator_TraceRecorderWritesFile(t *testing.T) {
+	backend := newNamedCircuitBackend(t, "traced")
+
+	stateDir := t.TempDir()
+	gw := mediator.New(
+		[]mediator.BackendConfig{
+			{Name: "traced", Endpoint: backend.URL + "/mcp"},
+		},
+		mediator.WithStateDir(stateDir),
+	)
+	ctx := t.Context()
+	if err := gw.Start(ctx); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+
+	ts := httptest.NewServer(gw.Handler())
+	defer ts.Close()
+
+	session := connectMediator(t, ts)
+
+	_, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
+		Name:      "start_circuit",
+		Arguments: mustJSON(map[string]any{"force": true}),
+	})
+	if err != nil {
+		t.Fatalf("start_circuit: %v", err)
+	}
+
+	gw.Stop(context.Background())
+
+	// Verify trace file was created and contains the routing events.
+	tracePath := stateDir + "/mediator-trace.jsonl"
+	data, err := os.ReadFile(tracePath)
+	if err != nil {
+		t.Fatalf("read trace file: %v", err)
+	}
+	if len(data) == 0 {
+		t.Fatal("trace file is empty")
+	}
+
+	content := string(data)
+	if !strings.Contains(content, `"route"`) {
+		t.Error("trace file missing 'route' event")
+	}
+	if !strings.Contains(content, `"session_start"`) {
+		t.Error("trace file missing 'session_start' event")
+	}
 }
 
 // --- Schema preservation through mediator proxy ---

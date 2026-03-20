@@ -60,6 +60,7 @@ type CircuitSession struct {
 	recorder  *framework.TraceRecorder // nil when tracing disabled
 	runDir    string                   // {StateDir}/runs/{sessID}
 	startedAt time.Time               // set when session is created
+	traceID   string                   // cross-circuit correlation ID
 
 	mu sync.Mutex
 }
@@ -420,6 +421,7 @@ func (s *CircuitSession) writeRunRecord() {
 
 	rec := framework.RunRecord{
 		ID:          s.ID,
+		TraceID:     s.traceID,
 		Scenario:    s.Scenario,
 		Parallel:    s.DesiredCapacity,
 		StartedAt:   s.startedAt,

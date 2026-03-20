@@ -558,6 +558,252 @@ domain_serve:
 	}
 }
 
+// --- Port wiring validation tests ---
+
+func TestPortWiring_MatchingTypes(t *testing.T) {
+	tmpDir := t.TempDir()
+	writeFile := func(rel, content string) {
+		t.Helper()
+		p := filepath.Join(tmpDir, rel)
+		os.MkdirAll(filepath.Dir(p), 0755)
+		os.WriteFile(p, []byte(content), 0644)
+	}
+
+	writeFile("circuits/rca.yaml", `
+circuit: rca
+ports:
+  - name: post-triage
+    direction: out
+    type: "[]string"
+nodes:
+  - name: triage
+edges:
+  - id: e1
+    from: triage
+    to: _done
+start: triage
+done: _done
+`)
+
+	writeFile("circuits/gnd.yaml", `
+circuit: gnd
+ports:
+  - name: keywords
+    direction: in
+    type: "[]string"
+nodes:
+  - name: search
+edges:
+  - id: e1
+    from: search
+    to: _done
+start: search
+done: _done
+`)
+
+	writeFile("circuits/orchestrator.yaml", `
+circuit: orchestrator
+wiring:
+  - from: "rca.out:post-triage"
+    to: "gnd.in:keywords"
+nodes:
+  - name: init
+edges:
+  - id: e1
+    from: init
+    to: _done
+start: init
+done: _done
+`)
+
+	m := &Manifest{
+		DomainServe: &DomainServeConfig{
+			Assets: &AssetMap{
+				Circuits: map[string]string{
+					"rca":          "circuits/rca.yaml",
+					"gnd":          "circuits/gnd.yaml",
+					"orchestrator": "circuits/orchestrator.yaml",
+				},
+			},
+		},
+	}
+
+	if err := validatePortWiring(m, tmpDir); err != nil {
+		t.Fatalf("matching port types should pass validation: %v", err)
+	}
+}
+
+func TestPortWiring_MismatchedTypes(t *testing.T) {
+	tmpDir := t.TempDir()
+	writeFile := func(rel, content string) {
+		t.Helper()
+		p := filepath.Join(tmpDir, rel)
+		os.MkdirAll(filepath.Dir(p), 0755)
+		os.WriteFile(p, []byte(content), 0644)
+	}
+
+	writeFile("circuits/rca.yaml", `
+circuit: rca
+ports:
+  - name: post-triage
+    direction: out
+    type: TriageResult
+nodes:
+  - name: triage
+edges:
+  - id: e1
+    from: triage
+    to: _done
+start: triage
+done: _done
+`)
+
+	writeFile("circuits/gnd.yaml", `
+circuit: gnd
+ports:
+  - name: keywords
+    direction: in
+    type: "[]string"
+nodes:
+  - name: search
+edges:
+  - id: e1
+    from: search
+    to: _done
+start: search
+done: _done
+`)
+
+	writeFile("circuits/orchestrator.yaml", `
+circuit: orchestrator
+wiring:
+  - from: "rca.out:post-triage"
+    to: "gnd.in:keywords"
+nodes:
+  - name: init
+edges:
+  - id: e1
+    from: init
+    to: _done
+start: init
+done: _done
+`)
+
+	m := &Manifest{
+		DomainServe: &DomainServeConfig{
+			Assets: &AssetMap{
+				Circuits: map[string]string{
+					"rca":          "circuits/rca.yaml",
+					"gnd":          "circuits/gnd.yaml",
+					"orchestrator": "circuits/orchestrator.yaml",
+				},
+			},
+		},
+	}
+
+	err := validatePortWiring(m, tmpDir)
+	if err == nil {
+		t.Fatal("expected error for mismatched port types")
+	}
+	if !strings.Contains(err.Error(), "type mismatch") {
+		t.Errorf("error should mention type mismatch: %v", err)
+	}
+	if !strings.Contains(err.Error(), "TriageResult") {
+		t.Errorf("error should mention TriageResult: %v", err)
+	}
+	if !strings.Contains(err.Error(), "[]string") {
+		t.Errorf("error should mention []string: %v", err)
+	}
+}
+
+func TestPortWiring_NoWiring(t *testing.T) {
+	tmpDir := t.TempDir()
+	writeFile := func(rel, content string) {
+		t.Helper()
+		p := filepath.Join(tmpDir, rel)
+		os.MkdirAll(filepath.Dir(p), 0755)
+		os.WriteFile(p, []byte(content), 0644)
+	}
+
+	writeFile("circuits/rca.yaml", `
+circuit: rca
+nodes:
+  - name: triage
+`)
+
+	m := &Manifest{
+		DomainServe: &DomainServeConfig{
+			Assets: &AssetMap{
+				Circuits: map[string]string{"rca": "circuits/rca.yaml"},
+			},
+		},
+	}
+
+	if err := validatePortWiring(m, tmpDir); err != nil {
+		t.Fatalf("no wiring should pass: %v", err)
+	}
+}
+
+func TestPortWiring_NilManifest(t *testing.T) {
+	m := &Manifest{}
+	if err := validatePortWiring(m, t.TempDir()); err != nil {
+		t.Fatalf("nil domain_serve should pass: %v", err)
+	}
+}
+
+func TestPortWiring_UntypedPortsSkipped(t *testing.T) {
+	tmpDir := t.TempDir()
+	writeFile := func(rel, content string) {
+		t.Helper()
+		p := filepath.Join(tmpDir, rel)
+		os.MkdirAll(filepath.Dir(p), 0755)
+		os.WriteFile(p, []byte(content), 0644)
+	}
+
+	writeFile("circuits/rca.yaml", `
+circuit: rca
+ports:
+  - name: post-triage
+    direction: out
+nodes:
+  - name: triage
+`)
+
+	writeFile("circuits/gnd.yaml", `
+circuit: gnd
+ports:
+  - name: keywords
+    direction: in
+nodes:
+  - name: search
+`)
+
+	writeFile("circuits/orchestrator.yaml", `
+circuit: orchestrator
+wiring:
+  - from: "rca.out:post-triage"
+    to: "gnd.in:keywords"
+nodes:
+  - name: init
+`)
+
+	m := &Manifest{
+		DomainServe: &DomainServeConfig{
+			Assets: &AssetMap{
+				Circuits: map[string]string{
+					"rca":          "circuits/rca.yaml",
+					"gnd":          "circuits/gnd.yaml",
+					"orchestrator": "circuits/orchestrator.yaml",
+				},
+			},
+		},
+	}
+
+	if err := validatePortWiring(m, tmpDir); err != nil {
+		t.Fatalf("untyped ports should be skipped: %v", err)
+	}
+}
+
 func TestRun_DomainOnly_SkipsBindings(t *testing.T) {
 	if testing.Short() {
 		t.Skip("integration test skipped in short mode")

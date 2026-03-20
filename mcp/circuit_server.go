@@ -413,6 +413,11 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 	sess := NewCircuitSession(runCtx, sessID, meta, parallel, disp, bus, runFn, runCancel)
 	sess.recorder = recorder
 	sess.runDir = runDir
+	if tid, ok := input.Extra["trace_id"].(string); ok && tid != "" {
+		sess.traceID = tid
+	} else {
+		sess.traceID = fmt.Sprintf("tr-%d", time.Now().UnixMilli())
+	}
 	sess.SetTTL(s.defaultSessionTTL)
 
 	bus.Emit("session_started", "server", "", "", map[string]string{

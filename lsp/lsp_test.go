@@ -1034,6 +1034,131 @@ done: DONE`
 	}
 }
 
+// --- S21/S22/S23: real-time diagnostic rules via LSP ---
+
+func TestComputeDiagnostics_EdgeNodeReference(t *testing.T) {
+	raw := `circuit: test
+description: "edge node reference test"
+nodes:
+  - name: recall
+  - name: triage
+edges:
+  - id: E1
+    name: go
+    from: recal
+    to: triage
+    when: "true"
+  - id: E2
+    name: done
+    from: triage
+    to: DONE
+    when: "true"
+start: recall
+done: DONE`
+
+	doc := &document{
+		URI:     uri.URI("file:///test.yaml"),
+		Content: raw,
+	}
+
+	diags := computeDiagnostics(doc)
+	found := false
+	for _, d := range diags {
+		code, _ := d.Code.(string)
+		if code == "S21/edge-node-reference" {
+			found = true
+			if !strings.Contains(d.Message, "recal") {
+				t.Errorf("expected diagnostic to mention 'recal', got %q", d.Message)
+			}
+			if d.Severity != protocol.DiagnosticSeverityError {
+				t.Errorf("expected error severity, got %v", d.Severity)
+			}
+		}
+	}
+	if !found {
+		t.Error("expected S21/edge-node-reference diagnostic for from=recal in LSP")
+	}
+}
+
+func TestComputeDiagnostics_InvalidHandlerType(t *testing.T) {
+	raw := `circuit: test
+description: "handler type test"
+handler_type: transformr
+nodes:
+  - name: recall
+    handler: core.jq
+    meta:
+      expr: "input"
+edges:
+  - id: E1
+    name: done
+    from: recall
+    to: DONE
+    when: "true"
+start: recall
+done: DONE`
+
+	doc := &document{
+		URI:     uri.URI("file:///test.yaml"),
+		Content: raw,
+	}
+
+	diags := computeDiagnostics(doc)
+	found := false
+	for _, d := range diags {
+		code, _ := d.Code.(string)
+		if code == "S23/invalid-handler-type" {
+			found = true
+			if !strings.Contains(d.Message, "transformr") {
+				t.Errorf("expected diagnostic to mention 'transformr', got %q", d.Message)
+			}
+		}
+	}
+	if !found {
+		t.Error("expected S23/invalid-handler-type diagnostic in LSP")
+	}
+}
+
+func TestComputeDiagnostics_HookReference(t *testing.T) {
+	raw := `circuit: test
+description: "hook reference test"
+handler_type: transformer
+nodes:
+  - name: recall
+    handler: core.jq
+    meta:
+      expr: "input"
+    before: ["inject failure"]
+edges:
+  - id: E1
+    name: done
+    from: recall
+    to: DONE
+    when: "true"
+start: recall
+done: DONE`
+
+	doc := &document{
+		URI:     uri.URI("file:///test.yaml"),
+		Content: raw,
+	}
+
+	diags := computeDiagnostics(doc)
+	found := false
+	for _, d := range diags {
+		code, _ := d.Code.(string)
+		if code == "S22/hook-reference" {
+			found = true
+			if !strings.Contains(d.Message, "whitespace") {
+				t.Errorf("expected diagnostic to mention whitespace, got %q", d.Message)
+			}
+		}
+	}
+	if !found {
+		t.Error("expected S22/hook-reference diagnostic in LSP for hook with whitespace")
+	}
+}
+
 func TestKamiBridge_LastTransitionHint(t *testing.T) {
 	kb := NewKamiBridge(0)
 
