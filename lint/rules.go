@@ -7,6 +7,7 @@ func AllRules() []Rule {
 	all = append(all, bestPracticeRules()...)
 	all = append(all, promptRules()...)
 	all = append(all, crossRefRules()...)
+	all = append(all, scenarioRules()...)
 	return all
 }
 
@@ -75,5 +76,15 @@ func promptRules() []Rule {
 func crossRefRules() []Rule {
 	return []Rule{
 		&CrossRefEngine{Rules: DefaultCrossRefRules()},
+	}
+}
+
+func scenarioRules() []Rule {
+	return []Rule{
+		&ExpectedPathNodeNames{},
+		&CircuitHandlerResolution{},
+		&DeadNodeDetection{},
+		&MediatorBackendCoverage{},
+		&PortTypeConsistency{},
 	}
 }

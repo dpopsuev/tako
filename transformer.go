@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"reflect"
 	"strings"
 	"time"
 )
@@ -34,6 +35,14 @@ func IsDeterministic(t Transformer) bool {
 		return dt.Deterministic()
 	}
 	return false
+}
+
+// TypedTransformer is optionally implemented by transformers that declare
+// their expected input type. When set, the framework validates input types
+// before calling Transform(), producing clear errors instead of nil panics.
+type TypedTransformer interface {
+	Transformer
+	InputType() reflect.Type // expected input type; nil = accept any
 }
 
 // TransformerContext carries all inputs needed by a transformer.
@@ -153,6 +162,18 @@ func (n *transformerNode) Process(ctx context.Context, nc NodeContext) (Artifact
 		NodeName:    n.name,
 		Meta:        meta,
 		WalkerState: nc.WalkerState,
+	}
+
+	if typed, ok := n.trans.(TypedTransformer); ok {
+		if expected := typed.InputType(); expected != nil {
+			if tc.Input == nil {
+				return nil, fmt.Errorf("node %s: expected input type %s but got nil", tc.NodeName, expected)
+			}
+			actual := reflect.TypeOf(tc.Input)
+			if !actual.AssignableTo(expected) {
+				return nil, fmt.Errorf("node %s: input type %s not assignable to expected %s", tc.NodeName, actual, expected)
+			}
+		}
 	}
 
 	logger.Debug("transformer executing",

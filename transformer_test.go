@@ -3,6 +3,8 @@ package framework
 import (
 	"context"
 	"errors"
+	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -655,5 +657,116 @@ func TestIsTransformerNode(t *testing.T) {
 	}
 	if IsTransformerNode(plain) {
 		t.Error("expected false for testNode")
+	}
+}
+
+// --- TypedTransformer tests ---
+
+// typedEchoTransformer expects a map[string]any input.
+type typedEchoTransformer struct {
+	inputType reflect.Type
+}
+
+func (t *typedEchoTransformer) Name() string { return "typed-echo" }
+func (t *typedEchoTransformer) InputType() reflect.Type { return t.inputType }
+func (t *typedEchoTransformer) Transform(_ context.Context, tc *TransformerContext) (any, error) {
+	return map[string]any{"echoed": tc.Input, "node": tc.NodeName}, nil
+}
+
+func TestTypedTransformer_MatchingInput(t *testing.T) {
+	trans := &typedEchoTransformer{inputType: reflect.TypeOf(map[string]any{})}
+	node := &transformerNode{
+		name:  "typed-node",
+		trans: trans,
+	}
+
+	nc := NodeContext{
+		PriorArtifact: &testArtifact{raw: map[string]any{"key": "value"}},
+	}
+	artifact, err := node.Process(context.Background(), nc)
+	if err != nil {
+		t.Fatalf("Process should succeed with matching type: %v", err)
+	}
+	m := artifact.Raw().(map[string]any)
+	if m["node"] != "typed-node" {
+		t.Errorf("node = %v, want typed-node", m["node"])
+	}
+}
+
+func TestTypedTransformer_NilInput(t *testing.T) {
+	trans := &typedEchoTransformer{inputType: reflect.TypeOf(map[string]any{})}
+	node := &transformerNode{
+		name:  "typed-node",
+		trans: trans,
+	}
+
+	_, err := node.Process(context.Background(), NodeContext{})
+	if err == nil {
+		t.Fatal("Process should fail with nil input for TypedTransformer")
+	}
+	if !strings.Contains(err.Error(), "expected input type") {
+		t.Errorf("error should mention expected type, got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "got nil") {
+		t.Errorf("error should mention nil, got: %v", err)
+	}
+}
+
+func TestTypedTransformer_WrongInputType(t *testing.T) {
+	trans := &typedEchoTransformer{inputType: reflect.TypeOf(map[string]any{})}
+	node := &transformerNode{
+		name:  "typed-node",
+		trans: trans,
+	}
+
+	nc := NodeContext{
+		PriorArtifact: &testArtifact{raw: "wrong-type-string"},
+	}
+	_, err := node.Process(context.Background(), nc)
+	if err == nil {
+		t.Fatal("Process should fail with wrong input type for TypedTransformer")
+	}
+	if !strings.Contains(err.Error(), "not assignable to expected") {
+		t.Errorf("error should mention assignability, got: %v", err)
+	}
+}
+
+func TestTypedTransformer_RegularTransformer_NoValidation(t *testing.T) {
+	// echoTransformer does NOT implement TypedTransformer — no validation should occur.
+	trans := &echoTransformer{}
+	node := &transformerNode{
+		name:  "untyped-node",
+		trans: trans,
+	}
+
+	// nil input should pass through without error (backward compatible).
+	artifact, err := node.Process(context.Background(), NodeContext{})
+	if err != nil {
+		t.Fatalf("Process should succeed for regular Transformer with nil input: %v", err)
+	}
+	m := artifact.Raw().(map[string]any)
+	if m["echoed"] != nil {
+		t.Errorf("expected nil echoed, got %v", m["echoed"])
+	}
+}
+
+func TestTypedTransformer_NilInputType_AcceptsAny(t *testing.T) {
+	// TypedTransformer that returns nil InputType — accepts any input.
+	trans := &typedEchoTransformer{inputType: nil}
+	node := &transformerNode{
+		name:  "any-node",
+		trans: trans,
+	}
+
+	nc := NodeContext{
+		PriorArtifact: &testArtifact{raw: "anything"},
+	}
+	artifact, err := node.Process(context.Background(), nc)
+	if err != nil {
+		t.Fatalf("Process should succeed when InputType() returns nil: %v", err)
+	}
+	m := artifact.Raw().(map[string]any)
+	if m["echoed"] != "anything" {
+		t.Errorf("echoed = %v, want anything", m["echoed"])
 	}
 }
