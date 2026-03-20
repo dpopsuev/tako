@@ -55,6 +55,9 @@ func NewCircuitServer(cfg CircuitConfig) *CircuitServer {
 		defaultSessionTTL:         sessionTTL,
 	}
 	s.registerTools()
+	if cfg.StateDir != "" {
+		s.registerTraceTools()
+	}
 	return s
 }
 

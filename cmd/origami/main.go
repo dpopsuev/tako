@@ -65,6 +65,10 @@ func main() {
 		err = autodocCmd(os.Args[2:])
 	case "capture":
 		err = captureCmd(os.Args[2:])
+	case "trace":
+		err = traceCmd(os.Args[2:])
+	case "report":
+		err = reportCmd(os.Args[2:])
 	case "validate-bundle":
 		err = validateBundleCmd(os.Args[2:])
 	case "version":
@@ -100,6 +104,8 @@ Commands:
   serve      Run the MCP gateway proxy (routes to backend engines)
   autodoc    Generate documentation tree from circuit YAML
   capture    Capture an offline bundle for a schematic (e.g. gnd)
+  trace      Read and render a JSONL execution trace
+  report     Read and render a run report scorecard
   validate-bundle  Validate a captured bundle against its manifest
   version    Print version`)
 }
