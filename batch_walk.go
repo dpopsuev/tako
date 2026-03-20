@@ -33,6 +33,7 @@ type BatchWalkConfig struct {
 	Cases          []BatchCase
 	Parallel       int
 	OnCaseComplete func(index int, result BatchWalkResult)
+	Observer       WalkObserver // external observer, composed with internal path/artifact collector
 }
 
 // BatchWalk walks a circuit once per case, optionally in parallel.
@@ -61,6 +62,11 @@ func BatchWalk(ctx context.Context, cfg BatchWalkConfig) []BatchWalkResult {
 		walker := NewProcessWalker(bc.ID)
 		walker.State().MergeContext(bc.Context)
 
+		// Set case ID on TraceRecorder if the observer supports it.
+		if tr, ok := cfg.Observer.(interface{ SetCaseID(string) }); ok {
+			tr.SetCaseID(bc.ID)
+		}
+
 		var mu sync.Mutex
 		var path []string
 		stepArtifacts := map[string]Artifact{}
@@ -76,7 +82,11 @@ func BatchWalk(ctx context.Context, cfg BatchWalkConfig) []BatchWalkResult {
 			}
 		})
 		if dg, ok := runner.Graph.(*DefaultGraph); ok {
-			dg.SetObserver(obs)
+			if cfg.Observer != nil {
+				dg.SetObserver(MultiObserver{obs, cfg.Observer})
+			} else {
+				dg.SetObserver(obs)
+			}
 		}
 
 		walkErr := runner.Walk(ctx, walker, cfg.Def.Start)

@@ -92,6 +92,10 @@ type HarnessConfig struct {
 	Parallel    int
 
 	OnCaseComplete func(index int, result framework.BatchWalkResult)
+
+	// Observer is an optional WalkObserver that receives debug/trace
+	// events from every case walk. Used by TraceRecorder.
+	Observer framework.WalkObserver
 }
 
 // Run orchestrates a generic calibration: load → walk → collect → score → aggregate.
@@ -173,6 +177,7 @@ func Run(ctx context.Context, cfg HarnessConfig) (*CalibrationReport, error) {
 			Cases:          cases,
 			Parallel:       cfg.Parallel,
 			OnCaseComplete: cfg.OnCaseComplete,
+			Observer:       cfg.Observer,
 		})
 
 		// Fail fast: if every case errored, the circuit is broken — don't

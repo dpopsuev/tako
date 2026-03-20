@@ -19,6 +19,7 @@ type Signal struct {
 type SignalBus struct {
 	mu      sync.Mutex
 	signals []Signal
+	onEmit  func(Signal) // optional callback, called inside Emit under lock
 }
 
 // NewSignalBus returns a new SignalBus.
@@ -26,18 +27,32 @@ func NewSignalBus() *SignalBus {
 	return &SignalBus{}
 }
 
+// SetOnEmit registers an optional callback that fires on every Emit.
+// Used by TraceRecorder to subscribe to info-level signals without
+// modifying the SignalBus API. The callback runs under the bus lock —
+// keep it fast (buffered write, not I/O).
+func (b *SignalBus) SetOnEmit(fn func(Signal)) {
+	b.mu.Lock()
+	b.onEmit = fn
+	b.mu.Unlock()
+}
+
 // Emit appends a signal with the given event, agent, caseID, step, and meta.
 func (b *SignalBus) Emit(event, agent, caseID, step string, meta map[string]string) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	b.signals = append(b.signals, Signal{
+	sig := Signal{
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
 		Event:     event,
 		Agent:     agent,
 		CaseID:    caseID,
 		Step:      step,
 		Meta:      meta,
-	})
+	}
+	b.signals = append(b.signals, sig)
+	if b.onEmit != nil {
+		b.onEmit(sig)
+	}
 }
 
 // Since returns a copy of signals from index idx onward. If idx is negative it is clamped to 0.
