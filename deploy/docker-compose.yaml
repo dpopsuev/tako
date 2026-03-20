@@ -53,6 +53,7 @@ services:
     volumes:
       - ${ASTERISK_DIR:-../../asterisk}/.rp-api-key:/run/secrets/rp-api-key:ro,z
       - /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:/etc/ssl/certs/ca-certificates.crt:ro,z
+      - ${STATE_DIR:-.origami/state}:/root/.local/state/asterisk
     depends_on:
       domain:
         condition: service_healthy

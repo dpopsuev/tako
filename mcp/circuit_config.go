@@ -122,6 +122,12 @@ type CircuitConfig struct {
 	// includes a Connection section so Task subagents — which don't
 	// inherit project-level MCP configs — know where to connect.
 	GatewayEndpoint string
+
+	// StateDir is the base directory for persistent run data (traces,
+	// artifacts, reports). When set, each session creates a run directory
+	// at {StateDir}/runs/{session-id}/ with trace.jsonl, report.json,
+	// and artifacts. When empty, tracing is disabled.
+	StateDir string
 }
 
 // FindSchema returns the StepSchema for the given step name, or an error

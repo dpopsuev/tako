@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
-	"log/slog"
-
+	framework "github.com/dpopsuev/origami"
 	"github.com/dpopsuev/origami/dispatch"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
@@ -354,7 +355,32 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 	seqN := s.sessCount
 	s.mu.Unlock()
 	sessID := fmt.Sprintf("s-%d-%d", time.Now().UnixMilli(), seqN)
+
+	// Set up trace recording if StateDir is configured.
+	var recorder *framework.TraceRecorder
+	var runDir string
+	if s.Config.StateDir != "" {
+		runDir = filepath.Join(s.Config.StateDir, "runs", sessID)
+		if err := os.MkdirAll(runDir, 0755); err != nil {
+			logger.Warn("failed to create run dir, tracing disabled",
+				"run_dir", runDir, "error", err)
+		} else {
+			var recErr error
+			recorder, recErr = framework.NewTraceRecorder(filepath.Join(runDir, "trace.jsonl"))
+			if recErr != nil {
+				logger.Warn("failed to create trace recorder",
+					"error", recErr)
+			} else {
+				bus.SetOnEmit(func(sig dispatch.Signal) {
+					recorder.HandleSignal(sig.Timestamp, sig.Event, sig.Agent, sig.CaseID, sig.Step, sig.Meta)
+				})
+			}
+		}
+	}
+
 	sess := NewCircuitSession(runCtx, sessID, meta, parallel, disp, bus, runFn, runCancel)
+	sess.recorder = recorder
+	sess.runDir = runDir
 	sess.SetTTL(s.defaultSessionTTL)
 
 	bus.Emit("session_started", "server", "", "", map[string]string{

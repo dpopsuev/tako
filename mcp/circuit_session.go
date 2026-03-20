@@ -3,12 +3,16 @@ package mcp
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
+	framework "github.com/dpopsuev/origami"
 	"github.com/dpopsuev/origami/dispatch"
 )
 
@@ -52,6 +56,9 @@ type CircuitSession struct {
 	registeredWorkers map[string]string
 
 	Supervisor *dispatch.SupervisorTracker
+
+	recorder *framework.TraceRecorder // nil when tracing disabled
+	runDir   string                   // {StateDir}/runs/{sessID}
 
 	mu sync.Mutex
 }
@@ -350,6 +357,7 @@ func (s *CircuitSession) Done() <-chan struct{} {
 func (s *CircuitSession) run(ctx context.Context, runFn RunFunc) {
 	defer close(s.doneCh)
 	defer s.cancel()
+	defer s.closeRecorder()
 
 	result, err := runFn(ctx)
 
@@ -361,12 +369,39 @@ func (s *CircuitSession) run(ctx context.Context, runFn RunFunc) {
 		s.err = err
 		s.Bus.Emit("session_error", "server", "", "", map[string]string{"error": err.Error()})
 		s.log.Error("circuit run failed", "error", err)
+		s.writeReport(result) // write partial report even on error
 		return
 	}
 	s.state = StateDone
 	s.result = result
 	s.Bus.Emit("session_done", "server", "", "", map[string]string{})
 	s.log.Info("circuit run complete")
+	s.writeReport(result)
+}
+
+// writeReport persists the run result as report.json if tracing is enabled.
+func (s *CircuitSession) writeReport(result any) {
+	if s.runDir == "" || result == nil {
+		return
+	}
+	data, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		s.log.Warn("failed to marshal report", "error", err)
+		return
+	}
+	path := filepath.Join(s.runDir, "report.json")
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		s.log.Warn("failed to write report.json", "path", path, "error", err)
+	} else {
+		s.log.Info("report written", "path", path)
+	}
+}
+
+// closeRecorder flushes and closes the trace recorder.
+func (s *CircuitSession) closeRecorder() {
+	if s.recorder != nil {
+		s.recorder.Close()
+	}
 }
 
 // GetNextStep blocks until the runner produces the next prompt, the run
