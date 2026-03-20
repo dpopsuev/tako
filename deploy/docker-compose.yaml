@@ -29,6 +29,8 @@ services:
     ports:
       - "9100:9100"
     command: ["--port", "9100", "--drivers", "git,docs"]
+    volumes:
+      - ${STATE_DIR:-.origami/state}/gnd:/root/.local/state/gnd
     healthcheck:
       test: ["CMD", "/gnd-serve", "--healthz"]
       interval: 5s

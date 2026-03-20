@@ -37,6 +37,20 @@ type CircuitServer struct {
 // The config provides domain hooks (session factory, step schemas, report
 // formatter) while the server handles all protocol mechanics.
 func NewCircuitServer(cfg CircuitConfig) *CircuitServer {
+	// Validate required fields — fail loudly, not silently at runtime.
+	if cfg.CreateSession == nil {
+		panic("CircuitConfig.CreateSession is required; start_circuit will panic without it")
+	}
+	if cfg.Name == "" {
+		slog.Warn("CircuitConfig.Name is empty; affects logging and state directory naming")
+	}
+	if len(cfg.StepSchemas) == 0 {
+		slog.Warn("CircuitConfig.StepSchemas is empty; submit_step will reject all steps")
+	}
+	if cfg.StateDir == "" {
+		slog.Warn("CircuitConfig.StateDir is empty; walker tracing disabled — set StateDir to enable trace recording")
+	}
+
 	fw := NewServer(cfg.Name, cfg.Version)
 
 	getNextTimeout := 10 * time.Second
