@@ -129,6 +129,12 @@ type CircuitConfig struct {
 	// at {StateDir}/runs/{session-id}/ with trace.jsonl, report.json,
 	// and artifacts. When empty, tracing is disabled.
 	StateDir string
+
+	// Preflight is called before CreateSession to validate circuit
+	// configuration. When set, start_circuit fails fast if the preflight
+	// detects issues (e.g., missing transformers, broken edge conditions).
+	// Defaults to nil (no preflight). Set by calibrate.WithPreflight().
+	Preflight func(ctx context.Context) error
 }
 
 // FindSchema returns the StepSchema for the given step name, or an error

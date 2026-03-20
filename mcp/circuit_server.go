@@ -367,6 +367,16 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 		Observer: recorder, // nil when tracing disabled — safe
 	}
 
+	if s.Config.Preflight != nil {
+		if err := s.Config.Preflight(ctx); err != nil {
+			runCancel()
+			if recorder != nil {
+				recorder.Close()
+			}
+			return nil, startCircuitOutput{}, fmt.Errorf("preflight failed: %w", err)
+		}
+	}
+
 	startTime := time.Now()
 	runFn, meta, err := s.Config.CreateSession(ctx, params, disp, bus)
 	if err != nil {

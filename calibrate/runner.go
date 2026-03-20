@@ -86,6 +86,11 @@ type HarnessConfig struct {
 	// The MCP session layer provides this — circuit developers don't set it.
 	PromptRelayer framework.PromptRelayer
 
+	// MaxErrorRate is the maximum allowed fraction of cases with circuit errors.
+	// When set (> 0), Run() fails if the error rate exceeds this threshold.
+	// Default 0 = no gate (backward compatible). Recommended: 0.10 (10%).
+	MaxErrorRate float64
+
 	Scenario    string
 	Transformer string
 	Runs        int
@@ -197,6 +202,15 @@ func Run(ctx context.Context, cfg HarnessConfig) (*CalibrationReport, error) {
 		}
 		if errCount > 0 {
 			logger.Warn("partial failures", "failed", errCount, "total", len(batchResults), "first_error", firstErr)
+		}
+
+		// Error rate gate: fail if the fraction of errored cases exceeds the threshold.
+		if cfg.MaxErrorRate > 0 && len(batchResults) > 0 {
+			errorRate := float64(errCount) / float64(len(batchResults))
+			if errorRate > cfg.MaxErrorRate {
+				return nil, fmt.Errorf("circuit error rate %.0f%% (%d/%d cases) exceeds threshold %.0f%%; "+
+					"first error: %v", errorRate*100, errCount, len(batchResults), cfg.MaxErrorRate*100, firstErr)
+			}
 		}
 
 		if cfg.Contract != nil {

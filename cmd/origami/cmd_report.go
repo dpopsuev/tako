@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
 )
 
-func reportCmd(args []string) error {
+func reportCmd(w io.Writer, args []string) error {
 	fs := flag.NewFlagSet("report", flag.ContinueOnError)
 	stateDir := fs.String("state-dir", "", "state directory (default: .origami/state or $ORIGAMI_STATE_DIR)")
 	runID := fs.String("run", "", "run ID (default: most recent)")
@@ -31,10 +32,10 @@ func reportCmd(args []string) error {
 	switch *format {
 	case "json":
 		// Pass through raw JSON.
-		_, err := os.Stdout.Write(data)
+		_, err := w.Write(data)
 		return err
 	case "text":
-		return renderReportText(data)
+		return renderReportText(w, data)
 	default:
 		return fmt.Errorf("unknown format: %s", *format)
 	}
@@ -117,28 +118,28 @@ type caseResult struct {
 	CircuitError       string  `json:"circuit_error"`
 }
 
-func renderReportText(data []byte) error {
+func renderReportText(w io.Writer, data []byte) error {
 	var report reportData
 	if err := json.Unmarshal(data, &report); err != nil {
 		return fmt.Errorf("parse report: %w", err)
 	}
 
 	// Scorecard.
-	fmt.Println("=== SCORECARD ===")
-	fmt.Printf("%-6s %-30s %6s  %6s  %4s\n", "ID", "NAME", "SCORE", "THRESH", "PASS")
+	fmt.Fprintln(w, "=== SCORECARD ===")
+	fmt.Fprintf(w, "%-6s %-30s %6s  %6s  %4s\n", "ID", "NAME", "SCORE", "THRESH", "PASS")
 	for _, m := range report.Metrics.Metrics {
 		pass := "N"
 		if m.Passed {
 			pass = "Y"
 		}
-		fmt.Printf("%-6s %-30s %6.2f  %6.2f    %s\n", m.ID, m.Name, m.Score, m.Threshold, pass)
+		fmt.Fprintf(w, "%-6s %-30s %6.2f  %6.2f    %s\n", m.ID, m.Name, m.Score, m.Threshold, pass)
 	}
-	fmt.Printf("Passed: %d/%d  Score: %.2f\n", report.Metrics.Summary.Passed, report.Metrics.Summary.Total, report.Metrics.Summary.Score)
+	fmt.Fprintf(w, "Passed: %d/%d  Score: %.2f\n", report.Metrics.Summary.Passed, report.Metrics.Summary.Total, report.Metrics.Summary.Score)
 
 	// Cases.
 	if len(report.CaseResults) > 0 {
-		fmt.Printf("\n=== CASES (%d) ===\n", len(report.CaseResults))
-		fmt.Printf("%-6s %-7s %-10s %4s  %5s  %3s  %5s  %4s  %s\n",
+		fmt.Fprintf(w, "\n=== CASES (%d) ===\n", len(report.CaseResults))
+		fmt.Fprintf(w, "%-6s %-7s %-10s %4s  %5s  %3s  %5s  %4s  %s\n",
 			"CASE", "VER", "JOB", "COMP", "DEFCT", "CAT", "STEPS", "CONV", "ERROR")
 
 		var compOK, defOK, catOK int
@@ -181,7 +182,7 @@ func renderReportText(data []byte) error {
 				job = job[:10]
 			}
 
-			fmt.Printf("%-6s %-7s %-10s    %s      %s    %s  %5d  %4s  %s\n",
+			fmt.Fprintf(w, "%-6s %-7s %-10s    %s      %s    %s  %5d  %4s  %s\n",
 				c.CaseID, ver, job, comp, def, cat, c.StepCount, conv, errStr)
 		}
 
@@ -193,7 +194,7 @@ func renderReportText(data []byte) error {
 			return n * 100 / total
 		}
 
-		fmt.Printf("\nComponent: %d/%d (%d%%)  Defect: %d/%d (%d%%)  Category: %d/%d (%d%%)\n",
+		fmt.Fprintf(w, "\nComponent: %d/%d (%d%%)  Defect: %d/%d (%d%%)  Category: %d/%d (%d%%)\n",
 			compOK, total, pct(compOK),
 			defOK, total, pct(defOK),
 			catOK, total, pct(catOK))

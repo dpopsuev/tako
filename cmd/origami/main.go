@@ -66,9 +66,9 @@ func main() {
 	case "capture":
 		err = captureCmd(os.Args[2:])
 	case "trace":
-		err = traceCmd(os.Args[2:])
+		err = traceCmd(os.Stdout, os.Args[2:])
 	case "report":
-		err = reportCmd(os.Args[2:])
+		err = reportCmd(os.Stdout, os.Args[2:])
 	case "validate-bundle":
 		err = validateBundleCmd(os.Args[2:])
 	case "version":

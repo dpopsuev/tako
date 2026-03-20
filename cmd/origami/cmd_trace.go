@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -13,7 +14,7 @@ import (
 	framework "github.com/dpopsuev/origami"
 )
 
-func traceCmd(args []string) error {
+func traceCmd(w io.Writer, args []string) error {
 	fs := flag.NewFlagSet("trace", flag.ContinueOnError)
 	stateDir := fs.String("state-dir", "", "state directory (default: .origami/state or $ORIGAMI_STATE_DIR)")
 	runID := fs.String("run", "", "run ID (default: most recent)")
@@ -50,9 +51,9 @@ func traceCmd(args []string) error {
 
 	switch *format {
 	case "json":
-		return renderTraceJSON(filtered)
+		return renderTraceJSON(w, filtered)
 	case "text":
-		return renderTraceText(filtered)
+		return renderTraceText(w, filtered)
 	default:
 		return fmt.Errorf("unknown format: %s", *format)
 	}
@@ -155,8 +156,8 @@ func filterEvents(events []framework.TraceEvent, maxLevel framework.TraceLevel, 
 	return out
 }
 
-func renderTraceJSON(events []framework.TraceEvent) error {
-	enc := json.NewEncoder(os.Stdout)
+func renderTraceJSON(w io.Writer, events []framework.TraceEvent) error {
+	enc := json.NewEncoder(w)
 	for _, ev := range events {
 		if err := enc.Encode(ev); err != nil {
 			return err
@@ -165,7 +166,7 @@ func renderTraceJSON(events []framework.TraceEvent) error {
 	return nil
 }
 
-func renderTraceText(events []framework.TraceEvent) error {
+func renderTraceText(w io.Writer, events []framework.TraceEvent) error {
 	for _, ev := range events {
 		ts := formatTimestamp(ev.Timestamp)
 		level := strings.ToUpper(string(ev.Level))
@@ -213,7 +214,7 @@ func renderTraceText(events []framework.TraceEvent) error {
 			line += "   " + strings.Join(extras, " ")
 		}
 
-		fmt.Println(line)
+		fmt.Fprintln(w, line)
 	}
 	return nil
 }

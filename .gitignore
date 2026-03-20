@@ -32,3 +32,5 @@ lsp/vscode/node_modules/
 
 # Sensitive / non-distributable assets
 rh-presentation-assets.pdf
+deploy/.origami/
+.claude/scheduled_tasks.lock

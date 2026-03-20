@@ -1,0 +1,9 @@
+{"ts":"2026-03-20T19:22:35Z","level":"info","event":"session_started","agent":"server","meta":{"scenario":"ptp","total_cases":"3"}}
+{"ts":"2026-03-20T19:22:36Z","level":"debug","event":"node_enter","case_id":"C04","node":"recall","walker":"w1"}
+{"ts":"2026-03-20T19:22:37Z","level":"debug","event":"edge_evaluate","case_id":"C04","node":"recall","edge":"recall-triage"}
+{"ts":"2026-03-20T19:22:37Z","level":"trace","event":"node_exit","case_id":"C04","node":"recall","walker":"w1","elapsed_ms":1200}
+{"ts":"2026-03-20T19:22:38Z","level":"info","event":"step_completed","case_id":"C04","step":"recall","agent":"server"}
+{"ts":"2026-03-20T19:22:39Z","level":"debug","event":"node_enter","case_id":"C04","node":"triage","walker":"w1"}
+{"ts":"2026-03-20T19:22:40Z","level":"info","event":"step_completed","case_id":"C04","step":"triage","agent":"server"}
+{"ts":"2026-03-20T19:22:41Z","level":"info","event":"session_started","case_id":"C05","agent":"server","meta":{"scenario":"ptp"}}
+{"ts":"2026-03-20T19:22:45Z","level":"debug","event":"node_enter","case_id":"C05","node":"recall","walker":"w2","error":"transformer failed"}
