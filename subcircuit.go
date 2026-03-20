@@ -51,6 +51,20 @@ func LoadSubCircuitsFromFS(fsys fs.FS, resolvers map[string]AssetResolver) map[s
 			continue
 		}
 
+		// Skip circuits with unresolved imports — they can't be walked
+		// locally. The mediator fallback in resolveHandler will handle
+		// these via remote delegation instead.
+		if def.Import != "" {
+			if _, hasResolver := resolvers[name]; !hasResolver {
+				slog.Debug("skipping sub-circuit with unresolved import",
+					LogKeyComponent, LogComponentDSL,
+					LogKeyCircuit, name,
+					"import", def.Import,
+				)
+				continue
+			}
+		}
+
 		circuits[name] = def
 		slog.Debug(LogSubCircuitLoaded, LogKeyComponent, LogComponentDSL,
 			LogKeyCircuit, name, "nodes", len(def.Nodes))
