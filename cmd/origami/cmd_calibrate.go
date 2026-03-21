@@ -1,0 +1,285 @@
+package main
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"flag"
+	"fmt"
+	"log/slog"
+	"os"
+	"os/exec"
+	"strings"
+	"sync"
+	"time"
+
+	framework "github.com/dpopsuev/origami"
+	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
+)
+
+func calibrateCmd(args []string) error {
+	fs := flag.NewFlagSet("calibrate", flag.ContinueOnError)
+	endpoint := fs.String("endpoint", "http://localhost:9300/mcp", "MCP endpoint to calibrate against")
+	scenario := fs.String("scenario", "ptp", "Scenario name passed in start_circuit extra")
+	backend := fs.String("backend", "llm", "Backend type passed in start_circuit extra")
+	parallel := fs.Int("parallel", 4, "Number of parallel workers")
+	timeout := fs.Duration("timeout", 30*time.Minute, "Overall calibration timeout")
+	cliCommand := fs.String("cli", "claude", "CLI command for LLM processing")
+	cliArgs := fs.String("cli-args", "--print", "Arguments for CLI command (space-separated)")
+	mode := fs.String("mode", "offline", "Calibration mode: offline or online")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+
+	logger := slog.Default().With("component", "calibrate")
+
+	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
+	defer cancel()
+
+	// Connect to the MCP server.
+	transport := &sdkmcp.StreamableClientTransport{Endpoint: *endpoint}
+	client := sdkmcp.NewClient(
+		&sdkmcp.Implementation{Name: "origami-calibrate", Version: "v0.1.0"},
+		nil,
+	)
+	session, err := client.Connect(ctx, transport, nil)
+	if err != nil {
+		return fmt.Errorf("connect to %s: %w", *endpoint, err)
+	}
+	defer session.Close()
+	logger.Info("connected", "endpoint", *endpoint)
+
+	// Start circuit.
+	extra := map[string]any{
+		"scenario": *scenario,
+		"backend":  *backend,
+		"mode":     *mode,
+	}
+	startResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
+		Name:      "start_circuit",
+		Arguments: mustMarshalCal(map[string]any{"parallel": *parallel, "extra": extra}),
+	})
+	if err != nil {
+		return fmt.Errorf("start_circuit: %w", err)
+	}
+	if startResult.IsError {
+		return fmt.Errorf("start_circuit: %s", calTextContent(startResult))
+	}
+
+	var startOut struct {
+		SessionID    string `json:"session_id"`
+		TotalCases   int    `json:"total_cases"`
+		Scenario     string `json:"scenario"`
+		WorkerPrompt string `json:"worker_prompt"`
+	}
+	if err := json.Unmarshal([]byte(calTextContent(startResult)), &startOut); err != nil {
+		return fmt.Errorf("parse start_circuit: %w", err)
+	}
+	sessionID := startOut.SessionID
+	logger.Info("circuit started",
+		"session_id", sessionID,
+		"total_cases", startOut.TotalCases,
+		"scenario", startOut.Scenario,
+		"parallel", *parallel,
+	)
+
+	// Spawn parallel workers.
+	var cliArgList []string
+	if *cliArgs != "" {
+		cliArgList = strings.Fields(*cliArgs)
+	}
+
+	var wg sync.WaitGroup
+	errCh := make(chan error, *parallel)
+	stepsCompleted := 0
+	var mu sync.Mutex
+
+	for i := range *parallel {
+		wg.Add(1)
+		go func(workerID int) {
+			defer wg.Done()
+			err := runCalibrateWorker(ctx, session, sessionID, workerID,
+				*cliCommand, cliArgList, logger, &mu, &stepsCompleted)
+			if err != nil {
+				errCh <- fmt.Errorf("worker-%d: %w", workerID, err)
+			}
+		}(i)
+	}
+
+	wg.Wait()
+	close(errCh)
+	for err := range errCh {
+		logger.Error("worker failed", "error", err)
+	}
+
+	logger.Info("all workers done", "steps_completed", stepsCompleted)
+
+	// Get report.
+	reportResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
+		Name:      "get_report",
+		Arguments: mustMarshalCal(map[string]any{framework.ProtoKeySessionID: sessionID}),
+	})
+	if err != nil {
+		return fmt.Errorf("get_report: %w", err)
+	}
+	if reportResult.IsError {
+		return fmt.Errorf("get_report: %s", calTextContent(reportResult))
+	}
+
+	fmt.Println(calTextContent(reportResult))
+	return nil
+}
+
+func runCalibrateWorker(
+	ctx context.Context,
+	session *sdkmcp.ClientSession,
+	sessionID string,
+	workerID int,
+	cliCommand string, cliArgs []string,
+	logger *slog.Logger,
+	mu *sync.Mutex, stepsCompleted *int,
+) error {
+	wlog := logger.With("worker_id", workerID)
+
+	// Emit worker_started signal.
+	session.CallTool(ctx, &sdkmcp.CallToolParams{
+		Name: "emit_signal",
+		Arguments: mustMarshalCal(map[string]any{
+			framework.ProtoKeySessionID: sessionID,
+			"event":                     "worker_started",
+			"agent":                     "worker",
+			"meta":                      map[string]any{"worker_id": fmt.Sprintf("w%d", workerID)},
+		}),
+	})
+
+	defer func() {
+		session.CallTool(ctx, &sdkmcp.CallToolParams{
+			Name: "emit_signal",
+			Arguments: mustMarshalCal(map[string]any{
+				framework.ProtoKeySessionID: sessionID,
+				"event":                     "worker_stopped",
+				"agent":                     "worker",
+				"meta":                      map[string]any{"worker_id": fmt.Sprintf("w%d", workerID)},
+			}),
+		})
+	}()
+
+	for {
+		// Pull next step.
+		nextResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
+			Name: "get_next_step",
+			Arguments: mustMarshalCal(map[string]any{
+				framework.ProtoKeySessionID: sessionID,
+				framework.ProtoKeyTimeoutMS: 30000,
+			}),
+		})
+		if err != nil {
+			if ctx.Err() != nil {
+				return nil
+			}
+			return fmt.Errorf("get_next_step: %w", err)
+		}
+
+		var step struct {
+			Done          bool   `json:"done"`
+			Available     bool   `json:"available"`
+			CaseID        string `json:"case_id"`
+			Step          string `json:"step"`
+			PromptContent string `json:"prompt_content"`
+			DispatchID    int64  `json:"dispatch_id"`
+			Error         string `json:"error"`
+		}
+		if err := json.Unmarshal([]byte(calTextContent(nextResult)), &step); err != nil {
+			return fmt.Errorf("parse get_next_step: %w", err)
+		}
+
+		if step.Done {
+			if step.Error != "" {
+				wlog.Warn("circuit done with error", "error", step.Error)
+			}
+			return nil
+		}
+
+		if !step.Available {
+			continue
+		}
+
+		wlog.Info("processing", "case_id", step.CaseID, "step", step.Step, "dispatch_id", step.DispatchID)
+
+		// Execute CLI with prompt.
+		artifact, err := execCLI(ctx, cliCommand, cliArgs, step.PromptContent)
+		if err != nil {
+			wlog.Error("CLI failed", "case_id", step.CaseID, "step", step.Step, "error", err)
+			continue
+		}
+
+		// Parse artifact as JSON fields.
+		var fields map[string]any
+		cleaned := cleanArtifactJSON(artifact)
+		if err := json.Unmarshal(cleaned, &fields); err != nil {
+			fields = map[string]any{"content": string(artifact)}
+		}
+
+		// Submit.
+		submitResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
+			Name: "submit_step",
+			Arguments: mustMarshalCal(map[string]any{
+				framework.ProtoKeySessionID:  sessionID,
+				framework.ProtoKeyDispatchID: step.DispatchID,
+				framework.ProtoKeyStep:       step.Step,
+				framework.ProtoKeyFields:     fields,
+			}),
+		})
+		if err != nil {
+			return fmt.Errorf("submit_step %s/%s: %w", step.CaseID, step.Step, err)
+		}
+		if submitResult.IsError {
+			wlog.Warn("submit_step error", "case_id", step.CaseID, "step", step.Step,
+				"error", calTextContent(submitResult))
+		}
+
+		mu.Lock()
+		*stepsCompleted++
+		mu.Unlock()
+		wlog.Info("submitted", "case_id", step.CaseID, "step", step.Step)
+	}
+}
+
+func execCLI(ctx context.Context, command string, args []string, prompt string) ([]byte, error) {
+	cmd := exec.CommandContext(ctx, command, args...)
+	cmd.Stdin = strings.NewReader(prompt)
+	cmd.Stderr = os.Stderr
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("exec %s: %w", command, err)
+	}
+	return out, nil
+}
+
+func cleanArtifactJSON(data []byte) []byte {
+	s := bytes.TrimSpace(data)
+	if bytes.HasPrefix(s, []byte("```")) {
+		if idx := bytes.IndexByte(s, '\n'); idx >= 0 {
+			s = s[idx+1:]
+		}
+		if bytes.HasSuffix(s, []byte("```")) {
+			s = s[:len(s)-3]
+		}
+		s = bytes.TrimSpace(s)
+	}
+	return s
+}
+
+func calTextContent(result *sdkmcp.CallToolResult) string {
+	for _, c := range result.Content {
+		if tc, ok := c.(*sdkmcp.TextContent); ok {
+			return tc.Text
+		}
+	}
+	return ""
+}
+
+func mustMarshalCal(v any) json.RawMessage {
+	b, _ := json.Marshal(v)
+	return b
+}

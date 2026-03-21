@@ -73,6 +73,8 @@ func main() {
 		err = diffCmd(os.Stdout, os.Args[2:])
 	case "validate-bundle":
 		err = validateBundleCmd(os.Args[2:])
+	case "calibrate":
+		err = calibrateCmd(os.Args[2:])
 	case "version":
 		fmt.Println("origami v1.0.0")
 	default:
