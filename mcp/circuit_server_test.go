@@ -1783,3 +1783,148 @@ func TestWorkerPrompt_NoEndpoint_OmitsConnectionSection(t *testing.T) {
 		t.Error("worker prompt should not have Connection section when GatewayEndpoint is empty")
 	}
 }
+
+// --- TSK-193: MCP tool contract tests ---
+//
+// Verify each Papercup tool accepts valid input and returns
+// well-formed output with expected fields present.
+
+func TestToolContract_StartCircuit(t *testing.T) {
+	srv := newTestServer(t, newTestConfigStub(3))
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	session := connectInMemory(t, ctx, srv)
+	defer session.Close()
+
+	out := callTool(t, ctx, session, "start_circuit", map[string]any{})
+	requireField(t, out, "session_id", "start_circuit")
+	requireField(t, out, "total_cases", "start_circuit")
+	requireField(t, out, "status", "start_circuit")
+}
+
+func TestToolContract_GetNextStep(t *testing.T) {
+	srv := newTestServer(t, newTestConfigStub(1))
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	session := connectInMemory(t, ctx, srv)
+	defer session.Close()
+
+	start := callTool(t, ctx, session, "start_circuit", map[string]any{})
+	sid := start["session_id"].(string)
+	time.Sleep(300 * time.Millisecond)
+
+	out := callTool(t, ctx, session, "get_next_step", map[string]any{
+		"session_id": sid,
+	})
+	// Stub completes immediately — should return done=true.
+	if _, ok := out["done"]; !ok {
+		t.Error("get_next_step missing 'done' field")
+	}
+}
+
+func TestToolContract_EmitSignal(t *testing.T) {
+	srv := newTestServer(t, newTestConfigStub(1))
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	session := connectInMemory(t, ctx, srv)
+	defer session.Close()
+
+	start := callTool(t, ctx, session, "start_circuit", map[string]any{})
+	sid := start["session_id"].(string)
+
+	out := callTool(t, ctx, session, "emit_signal", map[string]any{
+		"session_id": sid,
+		"event":      "test_event",
+		"agent":      "test_agent",
+	})
+	requireField(t, out, "ok", "emit_signal")
+	requireField(t, out, "index", "emit_signal")
+}
+
+func TestToolContract_GetSignals(t *testing.T) {
+	srv := newTestServer(t, newTestConfigStub(1))
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	session := connectInMemory(t, ctx, srv)
+	defer session.Close()
+
+	start := callTool(t, ctx, session, "start_circuit", map[string]any{})
+	sid := start["session_id"].(string)
+
+	out := callTool(t, ctx, session, "get_signals", map[string]any{
+		"session_id": sid,
+	})
+	requireField(t, out, "signals", "get_signals")
+	requireField(t, out, "total", "get_signals")
+}
+
+func TestToolContract_GetWorkerHealth(t *testing.T) {
+	srv := newTestServer(t, newTestConfigStub(1))
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	session := connectInMemory(t, ctx, srv)
+	defer session.Close()
+
+	start := callTool(t, ctx, session, "start_circuit", map[string]any{})
+	sid := start["session_id"].(string)
+
+	out := callTool(t, ctx, session, "get_worker_health", map[string]any{
+		"session_id": sid,
+	})
+	// Worker health returns summary even with no workers.
+	if out == nil {
+		t.Error("get_worker_health returned nil")
+	}
+}
+
+func TestToolContract_GetReport(t *testing.T) {
+	srv := newTestServer(t, newTestConfigStub(1))
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	session := connectInMemory(t, ctx, srv)
+	defer session.Close()
+
+	start := callTool(t, ctx, session, "start_circuit", map[string]any{})
+	sid := start["session_id"].(string)
+	time.Sleep(300 * time.Millisecond)
+
+	out := callTool(t, ctx, session, "get_report", map[string]any{
+		"session_id": sid,
+	})
+	requireField(t, out, "status", "get_report")
+}
+
+func TestToolContract_SubmitStep_RequiresDispatchID(t *testing.T) {
+	srv := newTestServer(t, newTestConfig(1, 1, ""))
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	session := connectInMemory(t, ctx, srv)
+	defer session.Close()
+
+	start := callTool(t, ctx, session, "start_circuit", map[string]any{})
+	sid := start["session_id"].(string)
+
+	// dispatch_id=0 should fail (zero value treated as missing).
+	res, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
+		Name: "submit_step",
+		Arguments: map[string]any{
+			"session_id":  sid,
+			"dispatch_id": 0,
+			"step":        "STEP_A",
+			"fields":      map[string]any{"x": 1},
+		},
+	})
+	if err != nil {
+		t.Fatalf("transport error: %v", err)
+	}
+	if !res.IsError {
+		t.Error("submit_step with dispatch_id=0 should return error")
+	}
+}
+
+func requireField(t *testing.T, out map[string]any, field, tool string) {
+	t.Helper()
+	if _, ok := out[field]; !ok {
+		t.Errorf("%s response missing required field %q", tool, field)
+	}
+}
