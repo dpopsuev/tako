@@ -67,7 +67,7 @@ func (t *mcpCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 	defer session.Close()
 
 	// Build extra params: circuit_type + forwarded walker context.
-	extra := map[string]any{"circuit_type": t.circuitType}
+	extra := map[string]any{ExtraKeyCircuitType: t.circuitType}
 	if tc.WalkerState != nil {
 		for k, v := range tc.WalkerState.Context {
 			if k == ContextKeyPromptRelayer {
@@ -78,10 +78,10 @@ func (t *mcpCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 	}
 
 	// Propagate or generate trace_id for cross-circuit correlation.
-	if traceID, ok := tc.WalkerState.Context["_trace_id"].(string); ok {
-		extra["trace_id"] = traceID
+	if traceID, ok := tc.WalkerState.Context[ContextKeyTraceID].(string); ok {
+		extra[ExtraKeyTraceID] = traceID
 	} else {
-		extra["trace_id"] = fmt.Sprintf("tr-%d", time.Now().UnixMilli())
+		extra[ExtraKeyTraceID] = fmt.Sprintf("tr-%d", time.Now().UnixMilli())
 	}
 
 	// start_circuit

@@ -90,49 +90,49 @@ func (s *SupervisorTracker) Process() {
 
 	for _, sig := range signals {
 		s.lastProcessed++
-		wid := sig.Meta["worker_id"]
-		if wid == "" && sig.Event != "should_stop" && sig.Event != "budget_update" {
+		wid := sig.Meta[MetaKeyWorkerID]
+		if wid == "" && sig.Event != EventShouldStop && sig.Event != EventBudgetUpdate {
 			continue
 		}
 
 		switch sig.Event {
-		case "worker_started":
+		case EventWorkerStarted:
 			s.workers[wid] = &WorkerState{
 				WorkerID: wid,
 				Status:   "active",
 				LastSeen: s.parseTime(sig.Timestamp),
 			}
 
-		case "worker_stopped":
+		case EventWorkerStopped:
 			if w, ok := s.workers[wid]; ok {
 				w.Status = "stopped"
 				w.LastSeen = s.parseTime(sig.Timestamp)
 			}
 
-		case "start", "done":
+		case EventWorkerStart, EventWorkerDone:
 			if w, ok := s.workers[wid]; ok {
 				w.LastSeen = s.parseTime(sig.Timestamp)
 				w.Status = "active"
-				if sig.Event == "done" {
+				if sig.Event == EventWorkerDone {
 					w.StepsComplete++
 				}
 			}
 
-		case "error":
+		case EventWorkerError:
 			if w, ok := s.workers[wid]; ok {
 				w.ErrorCount++
-				w.LastError = sig.Meta["error"]
+				w.LastError = sig.Meta[MetaKeyError]
 				w.LastSeen = s.parseTime(sig.Timestamp)
 				if w.ErrorCount >= s.errorThreshold {
 					w.Status = "errored"
 				}
 			}
 
-		case "should_stop":
+		case EventShouldStop:
 			s.shouldStop = true
 
-		case "budget_update":
-			if v, ok := sig.Meta["used"]; ok {
+		case EventBudgetUpdate:
+			if v, ok := sig.Meta[MetaKeyUsed]; ok {
 				n, _ := parseFloat(v)
 				s.budgetUsed = n
 			}
@@ -178,7 +178,7 @@ func (s *SupervisorTracker) Health() HealthSummary {
 // EmitShouldStop emits a should_stop signal on the bus, instructing workers
 // to finish their current step and exit.
 func (s *SupervisorTracker) EmitShouldStop() {
-	s.bus.Emit("should_stop", "supervisor", "", "", nil)
+	s.bus.Emit(EventShouldStop, AgentSupervisor, "", "", nil)
 }
 
 // ShouldStop returns true if a should_stop signal has been processed.

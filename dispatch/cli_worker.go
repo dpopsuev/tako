@@ -107,8 +107,8 @@ func (d *CLIWorkerDispatcher) Run(ctx context.Context) error {
 }
 
 func (d *CLIWorkerDispatcher) workerLoop(ctx context.Context, workerID string) error {
-	d.emit("worker_started", "worker", "", "", map[string]string{"worker_id": workerID})
-	defer d.emit("worker_stopped", "worker", "", "", map[string]string{"worker_id": workerID})
+	d.emit(EventWorkerStarted, AgentWorker, "", "", map[string]string{MetaKeyWorkerID: workerID})
+	defer d.emit(EventWorkerStopped, AgentWorker, "", "", map[string]string{MetaKeyWorkerID: workerID})
 
 	for {
 		dc, err := d.mux.GetNextStep(ctx)
@@ -119,13 +119,13 @@ func (d *CLIWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 			return fmt.Errorf("get_next_step: %w", err)
 		}
 
-		d.emit("start", "worker", dc.CaseID, dc.Step, map[string]string{"worker_id": workerID})
+		d.emit(EventWorkerStart, AgentWorker, dc.CaseID, dc.Step, map[string]string{MetaKeyWorkerID: workerID})
 
 		artifact, err := d.execCLI(ctx, dc)
 		if err != nil {
-			d.emit("error", "worker", dc.CaseID, dc.Step, map[string]string{
-				"worker_id": workerID,
-				"error":     err.Error(),
+			d.emit(EventWorkerError, AgentWorker, dc.CaseID, dc.Step, map[string]string{
+				MetaKeyWorkerID: workerID,
+				MetaKeyError:    err.Error(),
 			})
 			d.log.Error("CLI execution failed",
 				slog.String("worker_id", workerID),
@@ -137,15 +137,15 @@ func (d *CLIWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 		}
 
 		if err := d.mux.SubmitArtifact(ctx, dc.DispatchID, artifact); err != nil {
-			d.emit("error", "worker", dc.CaseID, dc.Step, map[string]string{
-				"worker_id": workerID,
-				"error":     err.Error(),
+			d.emit(EventWorkerError, AgentWorker, dc.CaseID, dc.Step, map[string]string{
+				MetaKeyWorkerID: workerID,
+				MetaKeyError:    err.Error(),
 			})
 			return fmt.Errorf("submit_artifact dispatch_id=%d: %w", dc.DispatchID, err)
 		}
 
-		d.emit("done", "worker", dc.CaseID, dc.Step, map[string]string{
-			"worker_id": workerID,
+		d.emit(EventWorkerDone, AgentWorker, dc.CaseID, dc.Step, map[string]string{
+			MetaKeyWorkerID: workerID,
 			"bytes":     fmt.Sprintf("%d", len(artifact)),
 		})
 

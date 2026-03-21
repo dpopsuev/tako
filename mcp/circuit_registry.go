@@ -6,6 +6,7 @@ import (
 	"sort"
 	"sync"
 
+	framework "github.com/dpopsuev/origami"
 	"github.com/dpopsuev/origami/dispatch"
 )
 
@@ -78,7 +79,7 @@ func (r *CircuitTypeRegistry) RouteSession(
 	disp *dispatch.MuxDispatcher,
 	bus *dispatch.SignalBus,
 ) (RunFunc, SessionMeta, error) {
-	typeName, _ := params.Extra["circuit_type"].(string)
+	typeName, _ := params.Extra[framework.ExtraKeyCircuitType].(string)
 
 	r.mu.RLock()
 	defer r.mu.RUnlock()

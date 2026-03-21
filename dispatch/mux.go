@@ -310,9 +310,9 @@ func (d *MuxDispatcher) emitZoneShift(hints PullHints, dc DispatchContext) {
 	if fromZone == "" {
 		fromZone = hints.PreferredCaseID
 	}
-	d.bus.Emit("zone_shift", "worker", dc.CaseID, dc.Step, map[string]string{
-		"from_zone": fromZone,
-		"to_zone":   dc.Provider,
+	d.bus.Emit(EventZoneShift, AgentWorker, dc.CaseID, dc.Step, map[string]string{
+		MetaKeyFromZone: fromZone,
+		MetaKeyToZone:   dc.Provider,
 	})
 }
 

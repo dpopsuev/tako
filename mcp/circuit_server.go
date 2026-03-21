@@ -51,6 +51,39 @@ func NewCircuitServer(cfg CircuitConfig) *CircuitServer {
 		slog.Warn("CircuitConfig.StateDir is empty; walker tracing disabled — set StateDir to enable trace recording")
 	}
 
+	// Auto-wire observer to lifecycle callbacks. Consumer-set callbacks compose.
+	if cfg.Observer != nil {
+		obs := cfg.Observer
+		origDispatched := cfg.OnStepDispatched
+		cfg.OnStepDispatched = func(caseID, step string) {
+			obs.OnStepDispatched(caseID, step)
+			if origDispatched != nil {
+				origDispatched(caseID, step)
+			}
+		}
+		origCompleted := cfg.OnStepCompleted
+		cfg.OnStepCompleted = func(caseID, step string, dispatchID int64) {
+			obs.OnStepCompleted(caseID, step, dispatchID)
+			if origCompleted != nil {
+				origCompleted(caseID, step, dispatchID)
+			}
+		}
+		origDone := cfg.OnCircuitDone
+		cfg.OnCircuitDone = func() {
+			obs.OnCircuitDone()
+			if origDone != nil {
+				origDone()
+			}
+		}
+		origEnd := cfg.OnSessionEnd
+		cfg.OnSessionEnd = func() {
+			obs.OnSessionEnd()
+			if origEnd != nil {
+				origEnd()
+			}
+		}
+	}
+
 	fw := NewServer(cfg.Name, cfg.Version)
 
 	getNextTimeout := 10 * time.Second
@@ -413,14 +446,14 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 	sess := NewCircuitSession(runCtx, sessID, meta, parallel, disp, bus, runFn, runCancel)
 	sess.recorder = recorder
 	sess.runDir = runDir
-	if tid, ok := input.Extra["trace_id"].(string); ok && tid != "" {
+	if tid, ok := input.Extra[framework.ExtraKeyTraceID].(string); ok && tid != "" {
 		sess.traceID = tid
 	} else {
 		sess.traceID = fmt.Sprintf("tr-%d", time.Now().UnixMilli())
 	}
 	sess.SetTTL(s.defaultSessionTTL)
 
-	bus.Emit("session_started", "server", "", "", map[string]string{
+	bus.Emit(EventSessionStarted, dispatch.AgentServer, "", "", map[string]string{
 		"scenario":    meta.Scenario,
 		"total_cases": fmt.Sprintf("%d", meta.TotalCases),
 	})
@@ -489,7 +522,7 @@ func (s *CircuitServer) handleGetNextStep(ctx context.Context, _ *sdkmcp.CallToo
 			out.Error = sessErr.Error()
 		}
 		logger.Info("circuit complete", "session_id", input.SessionID)
-		sess.Bus.Emit("circuit_done", "server", "", "", nil)
+		sess.Bus.Emit(EventCircuitDone, dispatch.AgentServer, "", "", nil)
 		if s.Config.OnCircuitDone != nil {
 			s.Config.OnCircuitDone()
 		}
@@ -507,7 +540,7 @@ func (s *CircuitServer) handleGetNextStep(ctx context.Context, _ *sdkmcp.CallToo
 		"step", dc.Step,
 		"dispatch_id", dc.DispatchID)
 
-	sess.Bus.Emit("step_ready", "server", dc.CaseID, dc.Step, map[string]string{
+	sess.Bus.Emit(EventStepReady, dispatch.AgentServer, dc.CaseID, dc.Step, map[string]string{
 		"prompt_path": dc.PromptPath,
 	})
 
@@ -565,11 +598,11 @@ func (s *CircuitServer) handleSubmitStep(ctx context.Context, _ *sdkmcp.CallTool
 	}
 
 	if input.DispatchID == 0 {
-		return nil, submitStepOutput{}, fmt.Errorf("dispatch_id is required (got 0); did you submit after available=false?")
+		return nil, submitStepOutput{}, ErrDispatchIDRequired
 	}
 
 	if input.Step == "" {
-		return nil, submitStepOutput{}, fmt.Errorf("step is required")
+		return nil, submitStepOutput{}, ErrStepRequired
 	}
 
 	schema, err := s.Config.FindSchema(input.Step)
@@ -595,7 +628,7 @@ func (s *CircuitServer) handleSubmitStep(ctx context.Context, _ *sdkmcp.CallTool
 	}
 
 	remaining := sess.AgentSubmit()
-	sess.Bus.Emit("artifact_submitted", "server", "", input.Step, map[string]string{
+	sess.Bus.Emit(EventArtifactSubmitted, dispatch.AgentServer, "", input.Step, map[string]string{
 		"bytes":     fmt.Sprintf("%d", len(data)),
 		"in_flight": fmt.Sprintf("%d", remaining),
 		"via":       "submit_step",
@@ -672,11 +705,11 @@ func (s *CircuitServer) handleEmitSignal(ctx context.Context, _ *sdkmcp.CallTool
 	logger := slog.Default().With("component", "signal-bus")
 	if input.Event == "" {
 		logger.Warn("emit_signal rejected: empty event field")
-		return nil, emitSignalOutput{}, fmt.Errorf("event is required")
+		return nil, emitSignalOutput{}, ErrEventRequired
 	}
 	if input.Agent == "" {
 		logger.Warn("emit_signal rejected: empty agent field")
-		return nil, emitSignalOutput{}, fmt.Errorf("agent is required")
+		return nil, emitSignalOutput{}, ErrAgentRequired
 	}
 
 	sess, err := s.getSession(input.SessionID)
@@ -687,7 +720,7 @@ func (s *CircuitServer) handleEmitSignal(ctx context.Context, _ *sdkmcp.CallTool
 	sess.Bus.Emit(input.Event, input.Agent, input.CaseID, input.Step, input.Meta)
 	idx := sess.Bus.Len()
 
-	if input.Event == "worker_started" {
+	if input.Event == dispatch.EventWorkerStarted {
 		workerID := input.Meta["worker_id"]
 		mode := input.Meta["mode"]
 		if workerID != "" {
@@ -784,7 +817,7 @@ func (s *CircuitServer) getSession(id string) (*CircuitSession, error) {
 	defer s.mu.Unlock()
 
 	if s.session == nil {
-		return nil, fmt.Errorf("no active session; call start_circuit first to create one")
+		return nil, ErrNoActiveSession
 	}
 	if s.session.ID != id {
 		return nil, fmt.Errorf("session_id %q does not match active session %q; the session may have been replaced or expired", id, s.session.ID)

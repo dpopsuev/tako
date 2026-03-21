@@ -21,6 +21,13 @@ import (
 	"github.com/dpopsuev/origami/subprocess"
 )
 
+// Signal event name constants emitted by the Mediator.
+const (
+	EventRoute        = "route"
+	EventSessionStart = "session_start"
+	EventSessionDone  = "session_done"
+)
+
 // PapercupTools enumerates the Papercup protocol tool names.
 var PapercupTools = map[string]bool{
 	"start_circuit":    true,
@@ -225,7 +232,7 @@ func (gw *Mediator) routeStartCircuit(ctx context.Context, args map[string]any) 
 	// Extract circuit_type from extra params.
 	var circuitType string
 	if extra, ok := args["extra"].(map[string]any); ok {
-		circuitType, _ = extra["circuit_type"].(string)
+		circuitType, _ = extra[framework.ExtraKeyCircuitType].(string)
 	}
 
 	// Resolve backend.
@@ -249,7 +256,7 @@ func (gw *Mediator) routeStartCircuit(ctx context.Context, args map[string]any) 
 	}
 
 	// Emit route signal.
-	gw.Bus.Emit("route", "mediator", "", "", map[string]string{
+	gw.Bus.Emit(EventRoute, "mediator", "", "", map[string]string{
 		"backend":      backendName,
 		"circuit_type": circuitType,
 	})
@@ -266,7 +273,7 @@ func (gw *Mediator) routeStartCircuit(ctx context.Context, args map[string]any) 
 		gw.sessionAffinity[sessionID] = backendName
 		gw.mu.Unlock()
 
-		gw.Bus.Emit("session_start", "mediator", "", "", map[string]string{
+		gw.Bus.Emit(EventSessionStart, "mediator", "", "", map[string]string{
 			"session_id":   sessionID,
 			"backend":      backendName,
 			"circuit_type": circuitType,
@@ -285,7 +292,7 @@ func (gw *Mediator) routeStartCircuit(ctx context.Context, args map[string]any) 
 // NotifySessionDone emits a session_done signal for observability.
 // Called externally when a child session completes (e.g., after get_report).
 func (gw *Mediator) NotifySessionDone(sessionID, backendName string) {
-	gw.Bus.Emit("session_done", "mediator", "", "", map[string]string{
+	gw.Bus.Emit(EventSessionDone, "mediator", "", "", map[string]string{
 		"session_id": sessionID,
 		"backend":    backendName,
 	})

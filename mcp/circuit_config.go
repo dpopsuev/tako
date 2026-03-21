@@ -54,6 +54,17 @@ type ExtraParamDef struct {
 	Enum        []string // If non-empty, allowed values (e.g. ["offline","online"])
 }
 
+// SessionObserver receives lifecycle events from the circuit server.
+// When set on CircuitConfig.Observer, the framework auto-wires
+// OnStepDispatched/OnStepCompleted/OnCircuitDone/OnSessionEnd callbacks.
+// Consumer-set callbacks compose (explicit callbacks still fire).
+type SessionObserver interface {
+	OnStepDispatched(caseID, step string)
+	OnStepCompleted(caseID, step string, dispatchID int64)
+	OnCircuitDone()
+	OnSessionEnd()
+}
+
 // CircuitConfig is the domain-injection entry point. Implementations register
 // three hooks (session creation, step schemas, report formatting) and the
 // generic CircuitServer handles all protocol mechanics.
@@ -135,6 +146,12 @@ type CircuitConfig struct {
 	// detects issues (e.g., missing transformers, broken edge conditions).
 	// Defaults to nil (no preflight). Set by calibrate.WithPreflight().
 	Preflight func(ctx context.Context) error
+
+	// Observer receives lifecycle events (step dispatched/completed,
+	// circuit done, session end). When set, the framework auto-wires
+	// the four On* callbacks. Consumer-set callbacks compose — both
+	// the observer and any explicit callback fire.
+	Observer SessionObserver
 }
 
 // FindSchema returns the StepSchema for the given step name, or an error
