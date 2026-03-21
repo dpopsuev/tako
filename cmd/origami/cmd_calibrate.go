@@ -27,6 +27,7 @@ func calibrateCmd(args []string) error {
 	cliCommand := fs.String("cli", "claude", "CLI command for LLM processing")
 	cliArgs := fs.String("cli-args", "--print", "Arguments for CLI command (space-separated)")
 	mode := fs.String("mode", "offline", "Calibration mode: offline or online")
+	traceLevel := fs.String("trace-level", "debug", "Trace recording level: info, debug, or trace")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -51,9 +52,10 @@ func calibrateCmd(args []string) error {
 
 	// Start circuit.
 	extra := map[string]any{
-		"scenario": *scenario,
-		"backend":  *backend,
-		"mode":     *mode,
+		"scenario":    *scenario,
+		"backend":     *backend,
+		"mode":        *mode,
+		"trace_level": *traceLevel,
 	}
 	startResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
 		Name:      "start_circuit",
