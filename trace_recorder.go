@@ -97,12 +97,23 @@ func (r *TraceRecorder) OnEvent(e WalkEvent) {
 		te.Metadata = e.Metadata
 	}
 
-	// Artifact details get trace level.
-	if e.Type == EventNodeExit && e.Artifact != nil {
-		te.Level = LevelTrace
-	}
-
 	r.write(te)
+
+	// Emit a separate trace-level event for artifact details on node exit.
+	// The node_exit event itself stays at debug so debug queries see the
+	// complete node lifecycle (enter + exit with elapsed time).
+	if e.Type == EventNodeExit && e.Artifact != nil {
+		artEvent := TraceEvent{
+			Timestamp: te.Timestamp,
+			Level:     LevelTrace,
+			Event:     "artifact_detail",
+			Node:      e.Node,
+			Walker:    e.Walker,
+			CaseID:    e.Walker,
+			ElapsedMs: te.ElapsedMs,
+		}
+		r.write(artEvent)
+	}
 }
 
 // HandleSignal maps a SignalBus signal to a TraceEvent at info level.

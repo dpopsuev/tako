@@ -56,15 +56,24 @@ func TestTraceRecorder_ArtifactGetsTraceLevel(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	rec.OnEvent(WalkEvent{Type: EventNodeExit, Node: "recall", Artifact: &testRecArtifact{}})
+	rec.OnEvent(WalkEvent{Type: EventNodeExit, Node: "recall", Walker: "C04", Artifact: &testRecArtifact{}})
 	rec.Close()
 
 	events := readTraceEvents(t, path)
-	if len(events) != 1 {
-		t.Fatalf("got %d events, want 1", len(events))
+	if len(events) != 2 {
+		t.Fatalf("got %d events, want 2 (node_exit at debug + artifact_detail at trace)", len(events))
 	}
-	if events[0].Level != LevelTrace {
-		t.Errorf("node_exit with artifact: level = %s, want trace", events[0].Level)
+	if events[0].Level != LevelDebug {
+		t.Errorf("node_exit: level = %s, want debug", events[0].Level)
+	}
+	if events[0].Event != "node_exit" {
+		t.Errorf("events[0].Event = %s, want node_exit", events[0].Event)
+	}
+	if events[1].Level != LevelTrace {
+		t.Errorf("artifact_detail: level = %s, want trace", events[1].Level)
+	}
+	if events[1].Event != "artifact_detail" {
+		t.Errorf("events[1].Event = %s, want artifact_detail", events[1].Event)
 	}
 }
 

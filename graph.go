@@ -240,7 +240,7 @@ func (g *DefaultGraph) Walk(ctx context.Context, walker Walker, startNode string
 		var seqMatch *Transition
 		var seqEdge Edge
 		for _, e := range edges {
-			emitEvent(obs, WalkEvent{Type: EventEdgeEvaluate, Node: node.Name(), Edge: e.ID()})
+			emitEvent(obs, WalkEvent{Type: EventEdgeEvaluate, Node: node.Name(), Edge: e.ID(), Walker: walkerName})
 			t := e.Evaluate(artifact, state)
 			if t == nil {
 				continue
@@ -267,7 +267,7 @@ func (g *DefaultGraph) Walk(ctx context.Context, walker Walker, startNode string
 			if !ok {
 				state.Status = "error"
 				err := fmt.Errorf("%w: merge target %q", ErrNodeNotFound, mergeNodeName)
-				emitEvent(obs, WalkEvent{Type: EventWalkError, Error: err})
+				emitEvent(obs, WalkEvent{Type: EventWalkError, Error: err, Walker: walkerName})
 				return err
 			}
 			priorArtifact = artifact
@@ -291,7 +291,7 @@ func (g *DefaultGraph) Walk(ctx context.Context, walker Walker, startNode string
 			return err
 		}
 
-		emitEvent(obs, WalkEvent{Type: EventTransition, Node: node.Name(), Edge: matchedEdge.ID()})
+		emitEvent(obs, WalkEvent{Type: EventTransition, Node: node.Name(), Edge: matchedEdge.ID(), Walker: walkerName})
 		slog.Debug(LogEdgeTaken, LogKeyComponent, LogComponentWalk, LogKeyFrom, node.Name(), LogKeyEdge, matchedEdge.ID(), LogKeyTo, matched.NextNode, LogKeyLoop, matchedEdge.IsLoop(), LogKeyShortcut, matchedEdge.IsShortcut())
 
 		if matchedEdge.IsLoop() {
@@ -449,7 +449,8 @@ func (g *DefaultGraph) WalkTeam(ctx context.Context, team *Team, startNode strin
 		var matched *Transition
 		var matchedEdge Edge
 		for _, e := range edges {
-			emitEvent(obs, WalkEvent{Type: EventEdgeEvaluate, Node: node.Name(), Edge: e.ID()})
+			wName := walker.Identity().PersonaName
+			emitEvent(obs, WalkEvent{Type: EventEdgeEvaluate, Node: node.Name(), Edge: e.ID(), Walker: wName})
 			t := e.Evaluate(artifact, state)
 			if t != nil {
 				matched = t
@@ -461,11 +462,11 @@ func (g *DefaultGraph) WalkTeam(ctx context.Context, team *Team, startNode strin
 		if matched == nil {
 			state.Status = "error"
 			err := fmt.Errorf("%w: node %q, artifact type %q", ErrNoEdge, node.Name(), artifact.Type())
-			emitEvent(obs, WalkEvent{Type: EventWalkError, Node: node.Name(), Error: err})
+			emitEvent(obs, WalkEvent{Type: EventWalkError, Node: node.Name(), Error: err, Walker: walker.Identity().PersonaName})
 			return err
 		}
 
-		emitEvent(obs, WalkEvent{Type: EventTransition, Node: node.Name(), Edge: matchedEdge.ID()})
+		emitEvent(obs, WalkEvent{Type: EventTransition, Node: node.Name(), Edge: matchedEdge.ID(), Walker: walker.Identity().PersonaName})
 
 		if matchedEdge.IsLoop() {
 			state.IncrementLoop(node.Name())
