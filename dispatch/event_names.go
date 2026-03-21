@@ -17,11 +17,16 @@ const (
 // Signal meta key constants used in bus.Emit meta maps and read by
 // SupervisorTracker.Process and other signal consumers.
 const (
-	MetaKeyWorkerID = "worker_id"
-	MetaKeyError    = "error"
-	MetaKeyUsed     = "used"
-	MetaKeyFromZone = "from_zone"
-	MetaKeyToZone   = "to_zone"
+	MetaKeyWorkerID  = "worker_id"
+	MetaKeyError     = "error"
+	MetaKeyUsed      = "used"
+	MetaKeyFromZone  = "from_zone"
+	MetaKeyToZone    = "to_zone"
+	MetaKeyMode      = "mode"
+	MetaKeyBytes     = "bytes"
+	MetaKeyInFlight  = "in_flight"
+	MetaKeyVia       = "via"
+	MetaKeyPromptPath = "prompt_path"
 )
 
 // Agent name constants used as the agent parameter in bus.Emit calls.
@@ -29,4 +34,5 @@ const (
 	AgentWorker     = "worker"
 	AgentSupervisor = "supervisor"
 	AgentServer     = "server"
+	AgentMediator   = "mediator"
 )

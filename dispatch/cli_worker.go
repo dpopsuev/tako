@@ -146,7 +146,7 @@ func (d *CLIWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 
 		d.emit(EventWorkerDone, AgentWorker, dc.CaseID, dc.Step, map[string]string{
 			MetaKeyWorkerID: workerID,
-			"bytes":     fmt.Sprintf("%d", len(artifact)),
+			MetaKeyBytes:    fmt.Sprintf("%d", len(artifact)),
 		})
 
 		d.log.Info("step complete",

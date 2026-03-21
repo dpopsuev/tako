@@ -9,3 +9,9 @@ const (
 	EventStepReady         = "step_ready"
 	EventArtifactSubmitted = "artifact_submitted"
 )
+
+// Signal meta key constants specific to circuit server events.
+const (
+	MetaKeyScenario   = "scenario"
+	MetaKeyTotalCases = "total_cases"
+)

@@ -28,6 +28,12 @@ const (
 	EventSessionDone  = "session_done"
 )
 
+// Signal meta key constants used in mediator routing signals.
+const (
+	MetaKeyBackend    = "backend"
+	MetaKeySessionID  = "session_id"
+)
+
 // PapercupTools enumerates the Papercup protocol tool names.
 var PapercupTools = map[string]bool{
 	"start_circuit":    true,
@@ -256,9 +262,9 @@ func (gw *Mediator) routeStartCircuit(ctx context.Context, args map[string]any) 
 	}
 
 	// Emit route signal.
-	gw.Bus.Emit(EventRoute, "mediator", "", "", map[string]string{
-		"backend":      backendName,
-		"circuit_type": circuitType,
+	gw.Bus.Emit(EventRoute, dispatch.AgentMediator, "", "", map[string]string{
+		MetaKeyBackend:              backendName,
+		framework.ExtraKeyCircuitType: circuitType,
 	})
 
 	// Forward to backend.
@@ -273,10 +279,10 @@ func (gw *Mediator) routeStartCircuit(ctx context.Context, args map[string]any) 
 		gw.sessionAffinity[sessionID] = backendName
 		gw.mu.Unlock()
 
-		gw.Bus.Emit(EventSessionStart, "mediator", "", "", map[string]string{
-			"session_id":   sessionID,
-			"backend":      backendName,
-			"circuit_type": circuitType,
+		gw.Bus.Emit(EventSessionStart, dispatch.AgentMediator, "", "", map[string]string{
+			MetaKeySessionID:              sessionID,
+			MetaKeyBackend:                backendName,
+			framework.ExtraKeyCircuitType: circuitType,
 		})
 
 		slog.Debug("session affinity registered",
@@ -292,9 +298,9 @@ func (gw *Mediator) routeStartCircuit(ctx context.Context, args map[string]any) 
 // NotifySessionDone emits a session_done signal for observability.
 // Called externally when a child session completes (e.g., after get_report).
 func (gw *Mediator) NotifySessionDone(sessionID, backendName string) {
-	gw.Bus.Emit(EventSessionDone, "mediator", "", "", map[string]string{
-		"session_id": sessionID,
-		"backend":    backendName,
+	gw.Bus.Emit(EventSessionDone, dispatch.AgentMediator, "", "", map[string]string{
+		MetaKeySessionID: sessionID,
+		MetaKeyBackend:   backendName,
 	})
 }
 

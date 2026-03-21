@@ -252,7 +252,7 @@ func mergeChildTraces(events []framework.TraceEvent, stateDir string) []framewor
 
 	var out []framework.TraceEvent
 	for _, ev := range events {
-		ct, _ := ev.Metadata["circuit_type"].(string)
+		ct, _ := ev.Metadata[framework.ExtraKeyCircuitType].(string)
 		switch ev.Event {
 		case "delegate_start":
 			label := ct
@@ -262,12 +262,12 @@ func mergeChildTraces(events []framework.TraceEvent, stateDir string) []framewor
 			if ev.Metadata == nil {
 				ev.Metadata = make(map[string]any)
 			}
-			ev.Metadata["delegation"] = label
+			ev.Metadata[framework.TraceMetaDelegation] = label
 
 			out = append(out, ev)
 
 			// Try to inline child trace events.
-			traceID, _ := ev.Metadata["trace_id"].(string)
+			traceID, _ := ev.Metadata[framework.ExtraKeyTraceID].(string)
 			if traceID == "" {
 				continue
 			}
@@ -278,7 +278,7 @@ func mergeChildTraces(events []framework.TraceEvent, stateDir string) []framewor
 					if ce.Metadata == nil {
 						ce.Metadata = make(map[string]any)
 					}
-					ce.Metadata["source"] = label
+					ce.Metadata[framework.TraceMetaSource] = label
 					out = append(out, ce)
 				}
 			}
@@ -291,7 +291,7 @@ func mergeChildTraces(events []framework.TraceEvent, stateDir string) []framewor
 			if ev.Metadata == nil {
 				ev.Metadata = make(map[string]any)
 			}
-			ev.Metadata["delegation"] = label
+			ev.Metadata[framework.TraceMetaDelegation] = label
 			out = append(out, ev)
 
 		default:

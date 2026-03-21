@@ -10,3 +10,9 @@ const (
 	ExtraKeyCircuitType = "circuit_type"
 	ExtraKeyTraceID     = "trace_id"
 )
+
+// TraceEvent metadata keys used in delegation event annotation.
+const (
+	TraceMetaDelegation  = "delegation"
+	TraceMetaSource      = "source"
+)

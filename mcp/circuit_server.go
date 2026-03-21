@@ -454,8 +454,8 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 	sess.SetTTL(s.defaultSessionTTL)
 
 	bus.Emit(EventSessionStarted, dispatch.AgentServer, "", "", map[string]string{
-		"scenario":    meta.Scenario,
-		"total_cases": fmt.Sprintf("%d", meta.TotalCases),
+		MetaKeyScenario:   meta.Scenario,
+		MetaKeyTotalCases: fmt.Sprintf("%d", meta.TotalCases),
 	})
 
 	s.mu.Lock()
@@ -541,7 +541,7 @@ func (s *CircuitServer) handleGetNextStep(ctx context.Context, _ *sdkmcp.CallToo
 		"dispatch_id", dc.DispatchID)
 
 	sess.Bus.Emit(EventStepReady, dispatch.AgentServer, dc.CaseID, dc.Step, map[string]string{
-		"prompt_path": dc.PromptPath,
+		dispatch.MetaKeyPromptPath: dc.PromptPath,
 	})
 
 	if s.Config.OnStepDispatched != nil {
@@ -629,9 +629,9 @@ func (s *CircuitServer) handleSubmitStep(ctx context.Context, _ *sdkmcp.CallTool
 
 	remaining := sess.AgentSubmit()
 	sess.Bus.Emit(EventArtifactSubmitted, dispatch.AgentServer, "", input.Step, map[string]string{
-		"bytes":     fmt.Sprintf("%d", len(data)),
-		"in_flight": fmt.Sprintf("%d", remaining),
-		"via":       "submit_step",
+		dispatch.MetaKeyBytes:    fmt.Sprintf("%d", len(data)),
+		dispatch.MetaKeyInFlight: fmt.Sprintf("%d", remaining),
+		dispatch.MetaKeyVia:      "submit_step",
 	})
 
 	if s.Config.OnStepCompleted != nil {
@@ -721,8 +721,8 @@ func (s *CircuitServer) handleEmitSignal(ctx context.Context, _ *sdkmcp.CallTool
 	idx := sess.Bus.Len()
 
 	if input.Event == dispatch.EventWorkerStarted {
-		workerID := input.Meta["worker_id"]
-		mode := input.Meta["mode"]
+		workerID := input.Meta[dispatch.MetaKeyWorkerID]
+		mode := input.Meta[dispatch.MetaKeyMode]
 		if workerID != "" {
 			sess.RegisterWorker(workerID, mode)
 			logger.Debug("worker registered", "worker_id", workerID, "mode", mode)

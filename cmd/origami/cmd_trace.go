@@ -263,7 +263,7 @@ func annotateDelegations(events []framework.TraceEvent, stateDir string) []frame
 
 	var out []framework.TraceEvent
 	for _, ev := range events {
-		ct, _ := ev.Metadata["circuit_type"].(string)
+		ct, _ := ev.Metadata[framework.ExtraKeyCircuitType].(string)
 		switch ev.Event {
 		case "delegate_start":
 			label := ct
@@ -274,7 +274,7 @@ func annotateDelegations(events []framework.TraceEvent, stateDir string) []frame
 			out = append(out, ev)
 
 			// Try to inline child trace events.
-			traceID, _ := ev.Metadata["trace_id"].(string)
+			traceID, _ := ev.Metadata[framework.ExtraKeyTraceID].(string)
 			if traceID == "" {
 				// No trace_id in the event metadata — can't look up child.
 				continue

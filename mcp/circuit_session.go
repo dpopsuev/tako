@@ -331,7 +331,7 @@ func (s *CircuitSession) watchdog() {
 				s.log.Warn("TTL watchdog triggered, aborting session",
 					"stale", stale, "ttl", currentTTL, "session_id", s.ID)
 				s.Bus.Emit(EventSessionError, dispatch.AgentServer, "", "", map[string]string{
-					"error": fmt.Sprintf("session TTL expired: no activity for %v", stale),
+					dispatch.MetaKeyError: fmt.Sprintf("session TTL expired: no activity for %v", stale),
 				})
 				s.dispatcher.Abort(fmt.Errorf("session TTL expired: no activity for %v", stale))
 				s.mu.Lock()
@@ -370,7 +370,7 @@ func (s *CircuitSession) run(ctx context.Context, runFn RunFunc) {
 	if err != nil {
 		s.state = StateError
 		s.err = err
-		s.Bus.Emit(EventSessionError, dispatch.AgentServer, "", "", map[string]string{"error": err.Error()})
+		s.Bus.Emit(EventSessionError, dispatch.AgentServer, "", "", map[string]string{dispatch.MetaKeyError: err.Error()})
 		s.log.Error("circuit run failed", "error", err)
 		s.writeReport(result) // write partial report even on error
 		s.writeRunRecord()

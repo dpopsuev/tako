@@ -10,19 +10,28 @@ import (
 
 const findingEventPrefix = "enforcer:"
 
+// Finding meta key constants for EmitFinding/DecodeFinding.
+const (
+	MetaKeyDomain   = "domain"
+	MetaKeySource   = "source"
+	MetaKeyNodeName = "node_name"
+	MetaKeyMessage  = "message"
+	MetaKeyEvidence = "evidence"
+)
+
 // EmitFinding encodes a Finding as a Signal on the bus.
 // Event format: "enforcer:<severity>". Meta carries domain, source,
 // node_name, message, and JSON-encoded evidence.
 func EmitFinding(bus *SignalBus, f framework.Finding) {
 	meta := map[string]string{
-		"domain":    f.Domain,
-		"source":    f.Source,
-		"node_name": f.NodeName,
-		"message":   f.Message,
+		MetaKeyDomain:   f.Domain,
+		MetaKeySource:   f.Source,
+		MetaKeyNodeName: f.NodeName,
+		MetaKeyMessage:  f.Message,
 	}
 	if len(f.Evidence) > 0 {
 		if data, err := json.Marshal(f.Evidence); err == nil {
-			meta["evidence"] = string(data)
+			meta[MetaKeyEvidence] = string(data)
 		}
 	}
 	bus.Emit(findingEventPrefix+string(f.Severity), f.Source, "", f.NodeName, meta)
@@ -37,7 +46,7 @@ func DecodeFinding(s Signal) (framework.Finding, bool) {
 	severity := framework.FindingSeverity(strings.TrimPrefix(s.Event, findingEventPrefix))
 
 	var evidence map[string]any
-	if raw := s.Meta["evidence"]; raw != "" {
+	if raw := s.Meta[MetaKeyEvidence]; raw != "" {
 		_ = json.Unmarshal([]byte(raw), &evidence)
 	}
 
@@ -45,10 +54,10 @@ func DecodeFinding(s Signal) (framework.Finding, bool) {
 
 	return framework.Finding{
 		Severity:  severity,
-		Domain:    s.Meta["domain"],
-		Source:    s.Meta["source"],
-		NodeName:  s.Meta["node_name"],
-		Message:   s.Meta["message"],
+		Domain:    s.Meta[MetaKeyDomain],
+		Source:    s.Meta[MetaKeySource],
+		NodeName:  s.Meta[MetaKeyNodeName],
+		Message:   s.Meta[MetaKeyMessage],
 		Evidence:  evidence,
 		Timestamp: ts,
 	}, true

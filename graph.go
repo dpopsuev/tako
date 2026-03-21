@@ -559,7 +559,7 @@ func (g *DefaultGraph) walkDelegate(ctx context.Context, walker Walker, obs Walk
 		Node:   dn.Name(),
 		Walker: walker.Identity().PersonaName,
 		Metadata: map[string]any{
-			"circuit_type": circuitType,
+			ExtraKeyCircuitType: circuitType,
 		},
 	})
 	slog.Debug(LogDelegateStart, LogKeyComponent, LogComponentWalk, LogKeyNode, dn.Name(), LogKeyCircuit, circuitType)
@@ -624,7 +624,7 @@ func (g *DefaultGraph) walkDelegate(ctx context.Context, walker Walker, obs Walk
 		Artifact: da,
 		Error:    walkErr,
 		Metadata: map[string]any{
-			"circuit_type": circuitType,
+			ExtraKeyCircuitType: circuitType,
 			"node_count":   da.NodeCount,
 			"inner_error":  walkErr != nil,
 		},
