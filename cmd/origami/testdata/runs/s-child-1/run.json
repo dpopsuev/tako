@@ -1,0 +1,12 @@
+{
+  "id": "s-child-1",
+  "trace_id": "tr-child-42",
+  "scenario": "gnd",
+  "parallel": 1,
+  "started_at": "2026-03-20T10:00:04Z",
+  "completed_at": "2026-03-20T10:00:09Z",
+  "duration_ms": 5000,
+  "case_count": 1,
+  "error_count": 0,
+  "trace_events": 3
+}

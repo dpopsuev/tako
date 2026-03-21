@@ -106,6 +106,67 @@ func TestTraceCmd_JsonFormat(t *testing.T) {
 	}
 }
 
+// --- TSK-189: --follow flag for delegation annotation ---
+
+func TestTraceCmd_FollowAnnotatesDelegations(t *testing.T) {
+	var buf bytes.Buffer
+	args := []string{"--state-dir", testdataStateDir(t), "--run", "s-parent-1", "--follow"}
+	if err := traceCmd(&buf, args); err != nil {
+		t.Fatalf("traceCmd error: %v", err)
+	}
+	out := buf.String()
+
+	// Should contain delegation markers.
+	mustContain(t, out, "[DELEGATION START: gnd]")
+	mustContain(t, out, "[DELEGATION END: gnd]")
+
+	// Should inline child trace events (indented with circuit label).
+	mustContain(t, out, "[gnd]")
+	mustContain(t, out, "tree")
+	mustContain(t, out, "search")
+}
+
+func TestTraceCmd_FollowInlinesChildTrace(t *testing.T) {
+	var buf bytes.Buffer
+	args := []string{"--state-dir", testdataStateDir(t), "--run", "s-parent-1", "--follow", "--format", "json"}
+	if err := traceCmd(&buf, args); err != nil {
+		t.Fatalf("traceCmd error: %v", err)
+	}
+	out := buf.String()
+	lines := nonEmptyLines(out)
+
+	// Parent has 5 events; child has 3 inlined = 8 total.
+	if len(lines) != 8 {
+		t.Errorf("expected 8 JSON lines (5 parent + 3 child), got %d:\n%s", len(lines), out)
+	}
+
+	// Each line should be valid JSON.
+	for i, line := range lines {
+		var m map[string]any
+		if err := json.Unmarshal([]byte(line), &m); err != nil {
+			t.Errorf("line %d is not valid JSON: %v\nline: %s", i, err, line)
+		}
+	}
+}
+
+func TestTraceCmd_FollowWithoutDelegations(t *testing.T) {
+	// --follow on a trace without delegation events should pass through unchanged.
+	var buf bytes.Buffer
+	args := []string{"--state-dir", testdataStateDir(t), "--run", "s-test-1", "--follow"}
+	if err := traceCmd(&buf, args); err != nil {
+		t.Fatalf("traceCmd error: %v", err)
+	}
+	out := buf.String()
+
+	// Same 4 info-level lines as default (no delegation events).
+	lines := nonEmptyLines(out)
+	if len(lines) != 4 {
+		t.Errorf("expected 4 info lines, got %d:\n%s", len(lines), out)
+	}
+
+	mustNotContain(t, out, "DELEGATION")
+}
+
 // --- helpers ---
 
 func nonEmptyLines(s string) []string {

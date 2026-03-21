@@ -18,12 +18,13 @@ import (
 // --- MCP tool input/output types for trace tools ---
 
 type getTraceInput struct {
-	SessionID string `json:"session_id" jsonschema:"session ID from start_circuit"`
-	Level     string `json:"level,omitempty" jsonschema:"filter: info, debug, or trace (default: info)"`
-	CaseID    string `json:"case_id,omitempty" jsonschema:"filter by case ID"`
-	Node      string `json:"node,omitempty" jsonschema:"filter by node name"`
-	Since     int    `json:"since,omitempty" jsonschema:"return events from this index onward"`
-	Limit     int    `json:"limit,omitempty" jsonschema:"max events to return (default: 500)"`
+	SessionID         string `json:"session_id" jsonschema:"session ID from start_circuit"`
+	Level             string `json:"level,omitempty" jsonschema:"filter: info, debug, or trace (default: info)"`
+	CaseID            string `json:"case_id,omitempty" jsonschema:"filter by case ID"`
+	Node              string `json:"node,omitempty" jsonschema:"filter by node name"`
+	Since             int    `json:"since,omitempty" jsonschema:"return events from this index onward"`
+	Limit             int    `json:"limit,omitempty" jsonschema:"max events to return (default: 500)"`
+	FollowDelegations bool   `json:"follow_delegations,omitempty" jsonschema:"when true, annotate delegation events and inline child traces from the same StateDir"`
 }
 
 type getTraceOutput struct {
@@ -97,8 +98,7 @@ func (s *CircuitServer) handleGetTrace(_ context.Context, _ *sdkmcp.CallToolRequ
 		limit = 500
 	}
 
-	var events []framework.TraceEvent
-	total := 0
+	var allEvents []framework.TraceEvent
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		var te framework.TraceEvent
@@ -114,13 +114,26 @@ func (s *CircuitServer) handleGetTrace(_ context.Context, _ *sdkmcp.CallToolRequ
 		if input.Node != "" && te.Node != input.Node {
 			continue
 		}
-		total++
-		if total <= input.Since {
+		allEvents = append(allEvents, te)
+	}
+
+	// When follow_delegations is set, annotate delegation events and
+	// inline child traces found in the same StateDir.
+	if input.FollowDelegations {
+		allEvents = mergeChildTraces(allEvents, s.Config.StateDir)
+	}
+
+	// Apply pagination.
+	total := len(allEvents)
+	var events []framework.TraceEvent
+	for i, ev := range allEvents {
+		if i < input.Since {
 			continue
 		}
-		if len(events) < limit {
-			events = append(events, te)
+		if len(events) >= limit {
+			break
 		}
+		events = append(events, ev)
 	}
 
 	return nil, getTraceOutput{Events: events, Total: total}, nil
@@ -225,4 +238,118 @@ func levelIncludes(max, event framework.TraceLevel) bool {
 		framework.LevelTrace: 2,
 	}
 	return order[event] <= order[max]
+}
+
+// mergeChildTraces annotates delegate_start/delegate_end events and inlines
+// child trace events from the same StateDir when a matching trace_id is found.
+// Child events are annotated with source metadata for identification.
+//
+// Limitation: child traces in different StateDirs (cross-service via mediator)
+// are not resolved. The annotation markers still appear so the caller knows
+// a delegation occurred.
+func mergeChildTraces(events []framework.TraceEvent, stateDir string) []framework.TraceEvent {
+	childByTraceID := indexRunsByTraceID(stateDir)
+
+	var out []framework.TraceEvent
+	for _, ev := range events {
+		ct, _ := ev.Metadata["circuit_type"].(string)
+		switch ev.Event {
+		case "delegate_start":
+			label := ct
+			if label == "" {
+				label = "unknown"
+			}
+			if ev.Metadata == nil {
+				ev.Metadata = make(map[string]any)
+			}
+			ev.Metadata["delegation"] = label
+
+			out = append(out, ev)
+
+			// Try to inline child trace events.
+			traceID, _ := ev.Metadata["trace_id"].(string)
+			if traceID == "" {
+				continue
+			}
+			if childDir, ok := childByTraceID[traceID]; ok {
+				childPath := filepath.Join(childDir, "trace.jsonl")
+				childEvents := readTraceFile(childPath)
+				for _, ce := range childEvents {
+					if ce.Metadata == nil {
+						ce.Metadata = make(map[string]any)
+					}
+					ce.Metadata["source"] = label
+					out = append(out, ce)
+				}
+			}
+
+		case "delegate_end":
+			label := ct
+			if label == "" {
+				label = "unknown"
+			}
+			if ev.Metadata == nil {
+				ev.Metadata = make(map[string]any)
+			}
+			ev.Metadata["delegation"] = label
+			out = append(out, ev)
+
+		default:
+			out = append(out, ev)
+		}
+	}
+
+	// Sort by timestamp for interleaved child events.
+	sort.SliceStable(out, func(i, j int) bool {
+		return out[i].Timestamp < out[j].Timestamp
+	})
+
+	return out
+}
+
+// indexRunsByTraceID scans {stateDir}/runs/*/run.json and returns a map
+// from trace_id to run directory. Only runs with a non-empty TraceID are indexed.
+func indexRunsByTraceID(stateDir string) map[string]string {
+	result := make(map[string]string)
+	if stateDir == "" {
+		return result
+	}
+	runsDir := filepath.Join(stateDir, "runs")
+	entries, err := os.ReadDir(runsDir)
+	if err != nil {
+		return result
+	}
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		runDir := filepath.Join(runsDir, e.Name())
+		rec, err := framework.LoadRunRecord(runDir)
+		if err != nil || rec.TraceID == "" {
+			continue
+		}
+		result[rec.TraceID] = runDir
+	}
+	return result
+}
+
+// readTraceFile reads all trace events from a JSONL file. Returns nil on error.
+func readTraceFile(path string) []framework.TraceEvent {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil
+	}
+	defer f.Close()
+
+	var events []framework.TraceEvent
+	scanner := bufio.NewScanner(f)
+	scanner.Buffer(make([]byte, 0, 256*1024), 1024*1024)
+	for scanner.Scan() {
+		var ev framework.TraceEvent
+		if err := json.Unmarshal(scanner.Bytes(), &ev); err != nil {
+			continue
+		}
+		events = append(events, ev)
+	}
+	return events
 }

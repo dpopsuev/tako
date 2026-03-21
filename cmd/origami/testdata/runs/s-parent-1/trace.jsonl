@@ -1,0 +1,5 @@
+{"ts":"2026-03-20T10:00:01Z","level":"info","event":"session_started","agent":"server","meta":{"scenario":"rca"}}
+{"ts":"2026-03-20T10:00:02Z","level":"info","event":"step_completed","case_id":"C01","step":"recall","agent":"server"}
+{"ts":"2026-03-20T10:00:03Z","level":"info","event":"delegate_start","node":"gather-code","walker":"w1","meta":{"circuit_type":"gnd","trace_id":"tr-child-42"}}
+{"ts":"2026-03-20T10:00:10Z","level":"info","event":"delegate_end","node":"gather-code","walker":"w1","meta":{"circuit_type":"gnd","trace_id":"tr-child-42"}}
+{"ts":"2026-03-20T10:00:11Z","level":"info","event":"step_completed","case_id":"C01","step":"triage","agent":"server"}

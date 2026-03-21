@@ -24,11 +24,20 @@ func traceCmd(w io.Writer, args []string) error {
 	nodeFilter := fs.String("node", "", "filter by Node")
 	errorsOnly := fs.Bool("errors", false, "show only events with non-empty Error")
 	format := fs.String("format", "text", "output format: text, json")
+	follow := fs.Bool("follow", false, "annotate delegation events and inline child traces when available")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 
-	tracePath, err := resolveTracePath(*stateDir, *runID)
+	sd := *stateDir
+	if sd == "" {
+		sd = os.Getenv("ORIGAMI_STATE_DIR")
+	}
+	if sd == "" {
+		sd = ".origami/state"
+	}
+
+	tracePath, err := resolveTracePath(sd, *runID)
 	if err != nil {
 		return err
 	}
@@ -48,6 +57,10 @@ func traceCmd(w io.Writer, args []string) error {
 	}
 
 	filtered := filterEvents(events, maxLevel, *caseFilter, *nodeFilter, *errorsOnly)
+
+	if *follow {
+		filtered = annotateDelegations(filtered, sd)
+	}
 
 	switch *format {
 	case "json":
@@ -235,4 +248,91 @@ func formatTimestamp(ts string) string {
 		return ts[:8]
 	}
 	return ts
+}
+
+// annotateDelegations annotates delegate_start/delegate_end events with
+// [DELEGATION: <circuit_type>] markers and inlines child trace events when
+// a matching child run is found in the same StateDir.
+//
+// Limitation: child traces in different StateDirs (cross-service, e.g. mediator
+// routing to a remote backend) are not resolved. The annotation markers still
+// appear so the user knows to look at the child service's trace.
+func annotateDelegations(events []framework.TraceEvent, stateDir string) []framework.TraceEvent {
+	// Build a trace_id → run directory index for child trace lookup.
+	childByTraceID := indexChildRuns(stateDir)
+
+	var out []framework.TraceEvent
+	for _, ev := range events {
+		ct, _ := ev.Metadata["circuit_type"].(string)
+		switch ev.Event {
+		case "delegate_start":
+			label := ct
+			if label == "" {
+				label = "unknown"
+			}
+			ev = annotateEvent(ev, fmt.Sprintf("[DELEGATION START: %s]", label))
+			out = append(out, ev)
+
+			// Try to inline child trace events.
+			traceID, _ := ev.Metadata["trace_id"].(string)
+			if traceID == "" {
+				// No trace_id in the event metadata — can't look up child.
+				continue
+			}
+			if childDir, ok := childByTraceID[traceID]; ok {
+				childPath := filepath.Join(childDir, "trace.jsonl")
+				childEvents, err := readTraceEvents(childPath)
+				if err == nil {
+					for _, ce := range childEvents {
+						ce = annotateEvent(ce, fmt.Sprintf("  [%s]", label))
+						out = append(out, ce)
+					}
+				}
+			}
+
+		case "delegate_end":
+			label := ct
+			if label == "" {
+				label = "unknown"
+			}
+			ev = annotateEvent(ev, fmt.Sprintf("[DELEGATION END: %s]", label))
+			out = append(out, ev)
+
+		default:
+			out = append(out, ev)
+		}
+	}
+	return out
+}
+
+// annotateEvent prepends a marker to an event's Event field.
+func annotateEvent(ev framework.TraceEvent, marker string) framework.TraceEvent {
+	ev.Event = marker + " " + ev.Event
+	return ev
+}
+
+// indexChildRuns scans {stateDir}/runs/*/run.json and returns a map from
+// trace_id to run directory path. Only runs with a non-empty TraceID are indexed.
+func indexChildRuns(stateDir string) map[string]string {
+	result := make(map[string]string)
+	if stateDir == "" {
+		return result
+	}
+	runsDir := filepath.Join(stateDir, "runs")
+	entries, err := os.ReadDir(runsDir)
+	if err != nil {
+		return result
+	}
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		runDir := filepath.Join(runsDir, e.Name())
+		rec, err := framework.LoadRunRecord(runDir)
+		if err != nil || rec.TraceID == "" {
+			continue
+		}
+		result[rec.TraceID] = runDir
+	}
+	return result
 }

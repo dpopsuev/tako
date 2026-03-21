@@ -346,6 +346,10 @@ func (gw *Mediator) ListTools() []sdkmcp.Tool {
 	return tools
 }
 
+// Signals returns the mediator's SignalBus for observability integration.
+// MCP servers hosting the mediator can register get_signals on this bus.
+func (gw *Mediator) Signals() *dispatch.SignalBus { return gw.Bus }
+
 // Healthy returns true if all backends respond to ping.
 func (gw *Mediator) Healthy(ctx context.Context) bool {
 	for _, rb := range gw.backends {

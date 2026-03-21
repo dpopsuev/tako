@@ -429,6 +429,25 @@ func TestMediator_TraceRecorderWritesFile(t *testing.T) {
 	}
 }
 
+// --- TSK-187: Signals() accessor ---
+
+func TestMediator_Signals_ReturnsBus(t *testing.T) {
+	gw := mediator.New(nil)
+	bus := gw.Signals()
+	if bus == nil {
+		t.Fatal("Signals() returned nil")
+	}
+	// Verify it's the same bus that receives emitted signals.
+	gw.Bus.Emit("test_event", "test_agent", "", "", nil)
+	signals := bus.Since(0)
+	if len(signals) != 1 {
+		t.Fatalf("expected 1 signal via Signals(), got %d", len(signals))
+	}
+	if signals[0].Event != "test_event" {
+		t.Errorf("signal event = %q, want %q", signals[0].Event, "test_event")
+	}
+}
+
 // --- Schema preservation through mediator proxy ---
 
 type typedEchoInput struct {
