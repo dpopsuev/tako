@@ -5,17 +5,18 @@
 circuit: ouroboros-probe
 description: "3-node dichotomous behavioral probe circuit"
 topology: cascade
+handler_type: node
 
 nodes:
   - name: generate
     element: earth
-    family: ouroboros-generate
+    handler: ouroboros-generate
   - name: subject
     element: fire
-    family: ouroboros-subject
+    handler: ouroboros-subject
   - name: judge
     element: diamond
-    family: ouroboros-judge
+    handler: ouroboros-judge
 
 edges:
   - id: OP1

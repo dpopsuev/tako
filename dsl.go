@@ -69,7 +69,7 @@ type WiringDef struct {
 }
 
 // ExtractorDef declares a reusable extractor at the circuit level.
-// Nodes reference extractors by name via NodeDef.Extractor.
+// Nodes reference extractors by name via handler: + handler_type: extractor.
 // Type must be a built-in extractor type (json-schema, regex).
 type ExtractorDef struct {
 	Name    string          `yaml:"name"`
@@ -127,23 +127,15 @@ type OutputField struct {
 
 // NodeDef declares a node in the circuit.
 //
-// New-style resolution uses handler_type + handler (explicit, no cascade).
-// Old-style fields (family, transformer, extractor, renderer, delegate+generator)
-// are deprecated and trigger lint warnings; they remain for backward compat.
+// Resolution uses handler_type + handler (explicit, no cascade).
+// Legacy fields (family, transformer, extractor, renderer, delegate+generator)
+// were removed in TSK-218; YAML files using them will fail to resolve.
 type NodeDef struct {
 	Name        string          `yaml:"name"`
 	Description string          `yaml:"description,omitempty"`
 	Approach    string          `yaml:"approach,omitempty"`
 	HandlerType string          `yaml:"handler_type,omitempty"`
 	Handler     string          `yaml:"handler,omitempty"`
-
-	// Deprecated: use handler_type + handler instead.
-	Family      string          `yaml:"family,omitempty"`
-	Extractor   string          `yaml:"extractor,omitempty"`
-	Renderer    string          `yaml:"renderer,omitempty"`
-	Transformer string          `yaml:"transformer,omitempty"`
-	Delegate    bool            `yaml:"delegate,omitempty"`
-	Generator   string          `yaml:"generator,omitempty"`
 
 	Timeout      string          `yaml:"timeout,omitempty"`
 	Provider     string          `yaml:"provider,omitempty"`
@@ -163,7 +155,7 @@ type NodeDef struct {
 }
 
 // EffectiveHandlerType returns the handler type for this node, resolving
-// the node-level override, circuit-level default, or legacy field fallback.
+// the node-level override or circuit-level default.
 func (nd NodeDef) EffectiveHandlerType(circuitDefault string) string {
 	if nd.HandlerType != "" {
 		return nd.HandlerType
@@ -171,45 +163,14 @@ func (nd NodeDef) EffectiveHandlerType(circuitDefault string) string {
 	if nd.Handler != "" && circuitDefault != "" {
 		return circuitDefault
 	}
-	// Legacy fallback: infer from old fields
-	if nd.Delegate {
-		return HandlerTypeDelegate
-	}
-	if nd.Transformer != "" {
-		return HandlerTypeTransformer
-	}
-	if nd.Extractor != "" {
-		return HandlerTypeExtractor
-	}
-	if nd.Renderer != "" {
-		return HandlerTypeRenderer
-	}
-	if nd.Family != "" {
-		return HandlerTypeNode
-	}
 	return ""
 }
 
-// EffectiveHandler returns the handler name for this node, resolving
-// new-style handler field or legacy field fallback.
+// EffectiveHandler returns the handler name for this node.
+// Falls back to the node name when handler is not set.
 func (nd NodeDef) EffectiveHandler() string {
 	if nd.Handler != "" {
 		return nd.Handler
-	}
-	if nd.Delegate && nd.Generator != "" {
-		return nd.Generator
-	}
-	if nd.Transformer != "" {
-		return nd.Transformer
-	}
-	if nd.Extractor != "" {
-		return nd.Extractor
-	}
-	if nd.Renderer != "" {
-		return nd.Renderer
-	}
-	if nd.Family != "" {
-		return nd.Family
 	}
 	return nd.Name
 }
@@ -406,11 +367,7 @@ func (raw *rawCircuitDef) normalize() (*CircuitDef, error) {
 
 	def.Nodes = make([]NodeDef, 0, len(raw.Nodes))
 	for i := range raw.Nodes {
-		nd := raw.Nodes[i].NodeDef
-		if nd.Family == "" {
-			nd.Family = nd.Name
-		}
-		def.Nodes = append(def.Nodes, nd)
+		def.Nodes = append(def.Nodes, raw.Nodes[i].NodeDef)
 	}
 
 	edgeIDs := make(map[string]int)
@@ -1063,32 +1020,29 @@ func buildGraphShape(g *DefaultGraph, def *CircuitDef) GraphShape {
 	}
 }
 
-// resolveNode creates a Node from a NodeDef.
-//
-// New-style: handler + handler_type (explicit, no cascade).
-// Legacy fallback: Transformer > Extractor > Renderer > NodeRegistry (Family/Name).
+// resolveNode creates a Node from a NodeDef using handler + handler_type.
 func (def *CircuitDef) resolveNode(nd NodeDef, reg GraphRegistries) (Node, error) {
 	elem, _ := ResolveApproach(strings.ToLower(nd.Approach))
-
-	if nd.Handler != "" {
-		return def.resolveHandler(nd, reg, elem)
-	}
-	return def.resolveNodeLegacy(nd, reg, elem)
+	return def.resolveHandler(nd, reg, elem)
 }
 
 // resolveHandler resolves a node using the explicit handler + handler_type path.
 func (def *CircuitDef) resolveHandler(nd NodeDef, reg GraphRegistries, elem Element) (Node, error) {
+	handler := nd.Handler
+	if handler == "" {
+		handler = nd.Name
+	}
 	ht := nd.HandlerType
 	if ht == "" {
 		ht = def.HandlerType
 	}
 	if ht == "" {
-		return nil, fmt.Errorf("node %q: handler %q specified but no handler_type on node or circuit", nd.Name, nd.Handler)
+		return nil, fmt.Errorf("node %q: handler %q specified but no handler_type on node or circuit", nd.Name, handler)
 	}
 
 	switch ht {
 	case HandlerTypeTransformer:
-		t, err := def.resolveTransformerByName(nd.Handler, nd.Name, reg)
+		t, err := def.resolveTransformerByName(handler, nd.Name, reg)
 		if err != nil {
 			return nil, err
 		}
@@ -1104,9 +1058,7 @@ func (def *CircuitDef) resolveHandler(nd NodeDef, reg GraphRegistries, elem Elem
 		}, nil
 
 	case HandlerTypeExtractor:
-		ndCopy := nd
-		ndCopy.Extractor = nd.Handler
-		ext, err := def.resolveExtractor(ndCopy, reg)
+		ext, err := def.resolveExtractor(handler, nd, reg)
 		if err != nil {
 			return nil, err
 		}
@@ -1118,9 +1070,7 @@ func (def *CircuitDef) resolveHandler(nd NodeDef, reg GraphRegistries, elem Elem
 		}, nil
 
 	case HandlerTypeRenderer:
-		ndCopy := nd
-		ndCopy.Renderer = nd.Handler
-		rnd, err := def.resolveRenderer(ndCopy, reg)
+		rnd, err := def.resolveRenderer(handler, nd, reg)
 		if err != nil {
 			return nil, err
 		}
@@ -1133,19 +1083,19 @@ func (def *CircuitDef) resolveHandler(nd NodeDef, reg GraphRegistries, elem Elem
 
 	case HandlerTypeNode:
 		if reg.Nodes == nil {
-			return nil, fmt.Errorf("node %q: handler %q not found (node registry is nil)", nd.Name, nd.Handler)
+			return nil, fmt.Errorf("node %q: handler %q not found (node registry is nil)", nd.Name, handler)
 		}
-		factory, ok := reg.Nodes[nd.Handler]
+		factory, ok := reg.Nodes[handler]
 		if !ok {
-			return nil, fmt.Errorf("node %q: handler %q not found in node registry", nd.Name, nd.Handler)
+			return nil, fmt.Errorf("node %q: handler %q not found in node registry", nd.Name, handler)
 		}
 		return factory(nd), nil
 
 	case HandlerTypeDelegate:
 		if reg.Transformers == nil {
-			return nil, fmt.Errorf("node %q: delegate handler %q not found (transformer registry is nil)", nd.Name, nd.Handler)
+			return nil, fmt.Errorf("node %q: delegate handler %q not found (transformer registry is nil)", nd.Name, handler)
 		}
-		gen, err := reg.Transformers.Get(nd.Handler)
+		gen, err := reg.Transformers.Get(handler)
 		if err != nil {
 			return nil, fmt.Errorf("node %q: delegate handler: %w", nd.Name, err)
 		}
@@ -1161,18 +1111,18 @@ func (def *CircuitDef) resolveHandler(nd NodeDef, reg GraphRegistries, elem Elem
 		slog.Debug("resolve circuit handler",
 			"component", "build",
 			"node", nd.Name,
-			"handler", nd.Handler,
+			"handler", handler,
 			"circuits_nil", reg.Circuits == nil,
 			"circuits_count", len(reg.Circuits),
 			"mediator_endpoint", reg.MediatorEndpoint,
 		)
 		// Local resolution first.
 		if reg.Circuits != nil {
-			if cd, ok := reg.Circuits[nd.Handler]; ok {
+			if cd, ok := reg.Circuits[handler]; ok {
 				slog.Debug("circuit handler resolved locally",
 					"component", "build",
 					"node", nd.Name,
-					"handler", nd.Handler,
+					"handler", handler,
 				)
 				return &circuitRefNode{
 					name:       nd.Name,
@@ -1187,18 +1137,18 @@ func (def *CircuitDef) resolveHandler(nd NodeDef, reg GraphRegistries, elem Elem
 			slog.Debug("circuit handler delegating to mediator",
 				"component", "build",
 				"node", nd.Name,
-				"handler", nd.Handler,
+				"handler", handler,
 				"endpoint", reg.MediatorEndpoint,
 			)
 			return &transformerNode{
 				name:    nd.Name,
 				element: elem,
-				trans:   &mcpCircuitTransformer{circuitType: nd.Handler, endpoint: reg.MediatorEndpoint},
+				trans:   &mcpCircuitTransformer{circuitType: handler, endpoint: reg.MediatorEndpoint},
 				config:  def.Vars,
 				meta:    nd.Meta,
 			}, nil
 		}
-		return nil, fmt.Errorf("node %q: circuit handler %q not found (no local circuit and no mediator endpoint)", nd.Name, nd.Handler)
+		return nil, fmt.Errorf("node %q: circuit handler %q not found (no local circuit and no mediator endpoint)", nd.Name, handler)
 
 	default:
 		return nil, fmt.Errorf("node %q: unknown handler_type %q", nd.Name, ht)
@@ -1217,85 +1167,6 @@ func (def *CircuitDef) resolveTransformerByName(name, nodeName string, reg Graph
 		return nil, fmt.Errorf("node %q: transformer %q not found (registry is nil)", nodeName, name)
 	}
 	return reg.Transformers.Get(name)
-}
-
-// resolveNodeLegacy is the deprecated resolution cascade.
-// Kept for backward compatibility; use handler + handler_type instead.
-func (def *CircuitDef) resolveNodeLegacy(nd NodeDef, reg GraphRegistries, elem Element) (Node, error) {
-	if nd.Delegate {
-		if nd.Generator == "" {
-			return nil, fmt.Errorf("node %q: delegate node requires a generator transformer", nd.Name)
-		}
-		if reg.Transformers == nil {
-			return nil, fmt.Errorf("node %q: generator %q not found (registry is nil)", nd.Name, nd.Generator)
-		}
-		gen, err := reg.Transformers.Get(nd.Generator)
-		if err != nil {
-			return nil, fmt.Errorf("node %q: generator: %w", nd.Name, err)
-		}
-		return &dslDelegateNode{
-			name:    nd.Name,
-			element: elem,
-			gen:     gen,
-			config:  def.Vars,
-			meta:    nd.Meta,
-		}, nil
-	}
-
-	if nd.Transformer != "" {
-		t, err := def.resolveTransformerByName(nd.Transformer, nd.Name, reg)
-		if err != nil {
-			return nil, fmt.Errorf("node %q: %w", nd.Name, err)
-		}
-		return &transformerNode{
-			name:     nd.Name,
-			element:  elem,
-			trans:    t,
-			prompt:   nd.Prompt,
-			input:    nd.Input,
-			provider: nd.Provider,
-			config:   def.Vars,
-			meta:     nd.Meta,
-		}, nil
-	}
-
-	if nd.Extractor != "" {
-		ext, err := def.resolveExtractor(nd, reg)
-		if err != nil {
-			return nil, err
-		}
-		return &extractorNode{
-			name:    nd.Name,
-			element: elem,
-			ext:     ext,
-			meta:    nd.Meta,
-		}, nil
-	}
-
-	if nd.Renderer != "" {
-		rnd, err := def.resolveRenderer(nd, reg)
-		if err != nil {
-			return nil, err
-		}
-		return &rendererNode{
-			name:    nd.Name,
-			element: elem,
-			rnd:     rnd,
-			meta:    nd.Meta,
-		}, nil
-	}
-
-	if reg.Nodes == nil {
-		return nil, fmt.Errorf("no node factory for family %q (node %q): node registry is nil", nd.Family, nd.Name)
-	}
-	factory, ok := reg.Nodes[nd.Family]
-	if !ok {
-		factory = reg.Nodes[nd.Name]
-	}
-	if factory == nil {
-		return nil, fmt.Errorf("no node factory for family %q (node %q)", nd.Family, nd.Name)
-	}
-	return factory(nd), nil
 }
 
 // dslEdge is a default Edge implementation created from an EdgeDef when
@@ -1317,10 +1188,10 @@ func (e *dslEdge) Evaluate(_ Artifact, _ *WalkerState) *Transition {
 	}
 }
 
-// resolveExtractor resolves an extractor reference from a NodeDef.
+// resolveExtractor resolves an extractor by name.
 // Priority: built-in name → circuit-level ExtractorDef → ExtractorRegistry.
-func (def *CircuitDef) resolveExtractor(nd NodeDef, reg GraphRegistries) (Extractor, error) {
-	switch nd.Extractor {
+func (def *CircuitDef) resolveExtractor(name string, nd NodeDef, reg GraphRegistries) (Extractor, error) {
+	switch name {
 	case BuiltinExtractorJSONSchema:
 		return &JSONSchemaExtractor{schema: nd.Schema}, nil
 	case BuiltinExtractorRegex:
@@ -1332,7 +1203,7 @@ func (def *CircuitDef) resolveExtractor(nd NodeDef, reg GraphRegistries) (Extrac
 	}
 
 	for _, ed := range def.Extractors {
-		if ed.Name != nd.Extractor {
+		if ed.Name != name {
 			continue
 		}
 		switch ed.Type {
@@ -1353,25 +1224,25 @@ func (def *CircuitDef) resolveExtractor(nd NodeDef, reg GraphRegistries) (Extrac
 	}
 
 	if reg.Extractors != nil {
-		ext, err := reg.Extractors.Get(nd.Extractor)
+		ext, err := reg.Extractors.Get(name)
 		if err == nil {
 			return ext, nil
 		}
 	}
-	return nil, fmt.Errorf("node %q: extractor %q not found", nd.Name, nd.Extractor)
+	return nil, fmt.Errorf("node %q: extractor %q not found", nd.Name, name)
 }
 
-// resolveRenderer resolves a renderer reference from a NodeDef.
+// resolveRenderer resolves a renderer by name.
 // Priority: built-in name → RendererRegistry.
-func (def *CircuitDef) resolveRenderer(nd NodeDef, reg GraphRegistries) (Renderer, error) {
-	if nd.Renderer == BuiltinRendererTemplate {
+func (def *CircuitDef) resolveRenderer(name string, nd NodeDef, reg GraphRegistries) (Renderer, error) {
+	if name == BuiltinRendererTemplate {
 		return &TemplateRenderer{Template: nd.Prompt}, nil
 	}
 	if reg.Renderers != nil {
-		rnd, err := reg.Renderers.Get(nd.Renderer)
+		rnd, err := reg.Renderers.Get(name)
 		if err == nil {
 			return rnd, nil
 		}
 	}
-	return nil, fmt.Errorf("node %q: renderer %q not found", nd.Name, nd.Renderer)
+	return nil, fmt.Errorf("node %q: renderer %q not found", nd.Name, name)
 }

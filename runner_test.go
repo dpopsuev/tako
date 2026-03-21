@@ -48,8 +48,8 @@ func TestRunner_Walk_NoSchema(t *testing.T) {
 	def := &CircuitDef{
 		Circuit: "no-schema",
 		Nodes: []NodeDef{
-			{Name: "a", Family: "stub"},
-			{Name: "b", Family: "stub"},
+			{Name: "a", Handler: "stub", HandlerType: "node"},
+			{Name: "b", Handler: "stub", HandlerType: "node"},
 		},
 		Edges: []EdgeDef{
 			{ID: "E1", From: "a", To: "b", Name: "a-b"},
@@ -86,7 +86,7 @@ func TestRunner_Walk_SchemaPass(t *testing.T) {
 		Nodes: []NodeDef{
 			{
 				Name:   "a",
-				Family: "stub",
+				Handler: "stub", HandlerType: "node",
 				Schema: &ArtifactSchema{
 					Type:     "object",
 					Required: []string{"id"},
@@ -126,7 +126,7 @@ func TestRunner_Walk_SchemaFail(t *testing.T) {
 		Nodes: []NodeDef{
 			{
 				Name:   "a",
-				Family: "stub",
+				Handler: "stub", HandlerType: "node",
 				Schema: &ArtifactSchema{
 					Type:     "object",
 					Required: []string{"score"},
@@ -164,7 +164,7 @@ func TestRunner_Walk_NodeError(t *testing.T) {
 	def := &CircuitDef{
 		Circuit: "node-error",
 		Nodes: []NodeDef{
-			{Name: "a", Family: "failing"},
+			{Name: "a", Handler: "failing", HandlerType: "node"},
 		},
 		Edges: []EdgeDef{
 			{ID: "E1", From: "a", To: "_done", Name: "a-done"},
@@ -197,7 +197,7 @@ func TestRunner_Walk_MultiNodeWithSchema(t *testing.T) {
 		Nodes: []NodeDef{
 			{
 				Name:   "a",
-				Family: "stub",
+				Handler: "stub", HandlerType: "node",
 				Schema: &ArtifactSchema{
 					Type:     "object",
 					Required: []string{"name"},
@@ -206,11 +206,11 @@ func TestRunner_Walk_MultiNodeWithSchema(t *testing.T) {
 			},
 			{
 				Name:   "b",
-				Family: "stub",
+				Handler: "stub", HandlerType: "node",
 			},
 			{
 				Name:   "c",
-				Family: "stub",
+				Handler: "stub", HandlerType: "node",
 				Schema: &ArtifactSchema{
 					Type: "object",
 					Fields: map[string]FieldSchema{
@@ -261,10 +261,11 @@ func TestNewRunner_InvalidCircuit(t *testing.T) {
 
 func TestRunner_Walk_NilWalker(t *testing.T) {
 	def := &CircuitDef{
-		Circuit: "nil-walker",
+		Circuit:     "nil-walker",
+		HandlerType: "transformer",
 		Nodes: []NodeDef{
-			{Name: "a", Approach: "rapid", Transformer: "echo"},
-			{Name: "b", Approach: "analytical", Transformer: "echo"},
+			{Name: "a", Approach: "rapid", Handler: "echo"},
+			{Name: "b", Approach: "analytical", Handler: "echo"},
 		},
 		Edges: []EdgeDef{
 			{ID: "E1", From: "a", To: "b", Name: "a-b", When: "true"},
@@ -314,8 +315,8 @@ func TestRunner_SchemasExtracted(t *testing.T) {
 	def := &CircuitDef{
 		Circuit: "schemas",
 		Nodes: []NodeDef{
-			{Name: "a", Family: "stub", Schema: schema},
-			{Name: "b", Family: "stub"},
+			{Name: "a", Handler: "stub", HandlerType: "node", Schema: schema},
+			{Name: "b", Handler: "stub", HandlerType: "node"},
 		},
 		Edges: []EdgeDef{
 			{ID: "E1", From: "a", To: "b", Name: "a-b"},

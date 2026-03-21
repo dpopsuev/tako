@@ -11,6 +11,7 @@
 #   - shortcut edge      → skip enrichment for high-confidence classifications
 circuit: intent-classifier
 description: "Classify user intent with provider fallback and caching"
+handler_type: node
 
 zones:
   ingestion:
@@ -33,12 +34,12 @@ zones:
 nodes:
   - name: preprocess
     approach: analytical
-    family: transform
+    handler: transform
     prompt: "Normalize and tokenize the user input."
 
   - name: classify
     approach: rapid
-    family: classify
+    handler: classify
     provider: primary-llm
     prompt: "Classify the user's intent into one of: question, command, feedback, other."
     cache:
@@ -46,18 +47,18 @@ nodes:
 
   - name: reclassify
     approach: rapid
-    family: classify
+    handler: classify
     provider: primary-llm
     prompt: "Re-classify with additional context from enrichment."
 
   - name: enrich
     approach: methodical
-    family: enrich
+    handler: enrich
     prompt: "Add context from user history and knowledge base."
 
   - name: respond
     approach: holistic
-    family: respond
+    handler: respond
     prompt: "Generate a response appropriate to the classified intent."
 
 edges:

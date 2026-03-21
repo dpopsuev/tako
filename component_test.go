@@ -374,8 +374,9 @@ func TestBuildGraph_ImportsWiring(t *testing.T) {
 	def := &CircuitDef{
 		Circuit: "test",
 		Imports:  []string{"vendor"},
+		HandlerType: "transformer",
 		Nodes: []NodeDef{
-			{Name: "start", Transformer: "my-t"},
+			{Name: "start", Handler: "my-t"},
 		},
 		Edges: []EdgeDef{
 			{ID: "e1", From: "start", To: "done"},

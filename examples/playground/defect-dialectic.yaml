@@ -3,6 +3,7 @@
 # Edge evaluation logic is registered via BuildDialecticEdgeFactory in Go.
 circuit: defect-dialectic
 description: "D0-D4 adversarial dialectic review circuit"
+handler_type: node
 
 zones:
   thesis:
@@ -21,19 +22,19 @@ zones:
 nodes:
   - name: indict
     element: fire
-    family: indict
+    handler: indict
   - name: discover
     element: earth
-    family: discover
+    handler: discover
   - name: defend
     element: water
-    family: defend
+    handler: defend
   - name: hearing
     element: air
-    family: hearing
+    handler: hearing
   - name: verdict
     element: diamond
-    family: verdict
+    handler: verdict
 
 edges:
   - id: HD1

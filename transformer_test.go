@@ -65,10 +65,11 @@ func TestTransformerNode_NilInput(t *testing.T) {
 func TestBuildGraphWith_TransformerNode(t *testing.T) {
 	trans := &echoTransformer{}
 	def := &CircuitDef{
-		Circuit: "test",
+		Circuit:     "test",
+		HandlerType: "transformer",
 		Nodes: []NodeDef{
-			{Name: "a", Approach: "rapid", Transformer: "echo"},
-			{Name: "b", Approach: "analytical", Transformer: "echo"},
+			{Name: "a", Approach: "rapid", Handler: "echo"},
+			{Name: "b", Approach: "analytical", Handler: "echo"},
 		},
 		Edges: []EdgeDef{
 			{ID: "E1", Name: "a-to-b", From: "a", To: "b", When: "true"},
@@ -103,8 +104,8 @@ func TestBuildGraphWith_MixedTransformerAndWalker(t *testing.T) {
 	def := &CircuitDef{
 		Circuit: "test",
 		Nodes: []NodeDef{
-			{Name: "a", Approach: "rapid", Transformer: "echo"},
-			{Name: "b", Approach: "analytical", Family: "legacy"},
+			{Name: "a", Approach: "rapid", Handler: "echo", HandlerType: "transformer"},
+			{Name: "b", Approach: "analytical", Handler: "legacy", HandlerType: "node"},
 		},
 		Edges: []EdgeDef{
 			{ID: "E1", Name: "a-to-b", From: "a", To: "b", When: "true"},
@@ -338,13 +339,14 @@ func TestBuildGraph_MetaReachesTransformerContext(t *testing.T) {
 	})
 
 	def := &CircuitDef{
-		Circuit: "test",
+		Circuit:     "test",
+		HandlerType: "transformer",
 		Nodes: []NodeDef{
 			{
-				Name:        "a",
-				Approach:   "rapid",
-				Transformer: "capture",
-				Meta:        map[string]any{"key1": "val1", "key2": 42},
+				Name:     "a",
+				Approach: "rapid",
+				Handler:  "capture",
+				Meta:     map[string]any{"key1": "val1", "key2": 42},
 			},
 		},
 		Edges: []EdgeDef{
@@ -379,13 +381,14 @@ func TestBuildGraph_MetaReachesTransformerContext(t *testing.T) {
 
 func TestBuiltinGoTemplate_RendersPrompt(t *testing.T) {
 	def := &CircuitDef{
-		Circuit: "test",
+		Circuit:     "test",
+		HandlerType: "transformer",
 		Nodes: []NodeDef{
 			{
-				Name:        "render",
-				Approach:   "rapid",
-				Transformer: "go-template",
-				Prompt:      "Hello from {{.Node}}",
+				Name:     "render",
+				Approach: "rapid",
+				Handler:  "go-template",
+				Prompt:   "Hello from {{.Node}}",
 			},
 		},
 		Edges: []EdgeDef{
@@ -422,10 +425,11 @@ func TestBuiltinGoTemplate_RendersPrompt(t *testing.T) {
 
 func TestBuiltinPassthrough_ReturnsInput(t *testing.T) {
 	def := &CircuitDef{
-		Circuit: "test",
+		Circuit:     "test",
+		HandlerType: "transformer",
 		Nodes: []NodeDef{
-			{Name: "source", Approach: "methodical", Transformer: "go-template", Prompt: "data"},
-			{Name: "pass", Approach: "rapid", Transformer: "passthrough"},
+			{Name: "source", Approach: "methodical", Handler: "go-template", Prompt: "data"},
+			{Name: "pass", Approach: "rapid", Handler: "passthrough"},
 		},
 		Edges: []EdgeDef{
 			{ID: "E1", Name: "to-pass", From: "source", To: "pass", When: "true"},
@@ -462,9 +466,10 @@ func TestBuiltinPassthrough_ReturnsInput(t *testing.T) {
 
 func TestBuiltinGoTemplate_NoRegistry(t *testing.T) {
 	def := &CircuitDef{
-		Circuit: "test",
+		Circuit:     "test",
+		HandlerType: "transformer",
 		Nodes: []NodeDef{
-			{Name: "a", Approach: "rapid", Transformer: "go-template"},
+			{Name: "a", Approach: "rapid", Handler: "go-template"},
 		},
 		Edges: []EdgeDef{
 			{ID: "E1", Name: "done", From: "a", To: "_done", When: "true"},
@@ -487,13 +492,14 @@ func TestBuiltinGoTemplate_WithMeta(t *testing.T) {
 	})
 
 	def := &CircuitDef{
-		Circuit: "test",
+		Circuit:     "test",
+		HandlerType: "transformer",
 		Nodes: []NodeDef{
 			{
-				Name:        "a",
-				Approach:   "rapid",
-				Transformer: "meta-capture",
-				Meta:        map[string]any{"template_dir": "/prompts", "max_tokens": 1000},
+				Name:     "a",
+				Approach: "rapid",
+				Handler:  "meta-capture",
+				Meta:     map[string]any{"template_dir": "/prompts", "max_tokens": 1000},
 			},
 		},
 		Edges: []EdgeDef{
@@ -566,9 +572,10 @@ func TestTransformerNode_SlowTransform_ContextDeadline(t *testing.T) {
 	})
 
 	def := &CircuitDef{
-		Circuit: "timeout-test",
+		Circuit:     "timeout-test",
+		HandlerType: "transformer",
 		Nodes: []NodeDef{
-			{Name: "slow", Approach: "rapid", Transformer: "slow"},
+			{Name: "slow", Approach: "rapid", Handler: "slow"},
 		},
 		Edges: []EdgeDef{
 			{ID: "E1", Name: "done", From: "slow", To: "_done", When: "true"},
@@ -609,9 +616,10 @@ func TestTransformerNode_ContextCancellation_PropagatesError(t *testing.T) {
 	})
 
 	def := &CircuitDef{
-		Circuit: "cancel-test",
+		Circuit:     "cancel-test",
+		HandlerType: "transformer",
 		Nodes: []NodeDef{
-			{Name: "block", Approach: "rapid", Transformer: "blocking"},
+			{Name: "block", Approach: "rapid", Handler: "blocking"},
 		},
 		Edges: []EdgeDef{
 			{ID: "E1", Name: "done", From: "block", To: "_done", When: "true"},

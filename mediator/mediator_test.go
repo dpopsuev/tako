@@ -629,9 +629,8 @@ func newNamedCircuitBackend(t *testing.T, label string) *httptest.Server {
 		Version:     "dev",
 		StepSchemas: []mcp.StepSchema{
 			{
-				Name:   "STEP",
-				Fields: map[string]string{"value": "string"},
-				Defs:   []mcp.FieldDef{{Name: "value", Type: "string", Required: true}},
+				Name: "STEP",
+				Defs: []mcp.FieldDef{{Name: "value", Type: "string", Required: true}},
 			},
 		},
 		DefaultGetNextStepTimeout: 5000,
@@ -836,8 +835,7 @@ func newCircuitBackend(t *testing.T) (*httptest.Server, *mcp.CircuitServer) {
 		Version:     "dev",
 		StepSchemas: []mcp.StepSchema{
 			{
-				Name:   "STEP_A",
-				Fields: map[string]string{"value": "string", "score": "float"},
+				Name: "STEP_A",
 				Defs: []mcp.FieldDef{
 					{Name: "value", Type: "string", Required: true},
 					{Name: "score", Type: "float", Required: true},

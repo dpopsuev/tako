@@ -27,23 +27,20 @@ func TestMain(m *testing.M) {
 // testStepSchemas defines a simple 3-step circuit for generic tests.
 var testStepSchemas = []mcp.StepSchema{
 	{
-		Name:   "STEP_A",
-		Fields: map[string]string{"value": "string", "score": "float"},
+		Name: "STEP_A",
 		Defs: []mcp.FieldDef{
 			{Name: "value", Type: "string", Required: true},
 			{Name: "score", Type: "float", Required: true},
 		},
 	},
 	{
-		Name:   "STEP_B",
-		Fields: map[string]string{"result": "bool"},
+		Name: "STEP_B",
 		Defs: []mcp.FieldDef{
 			{Name: "result", Type: "bool", Required: true},
 		},
 	},
 	{
-		Name:   "STEP_C",
-		Fields: map[string]string{"summary": "string"},
+		Name: "STEP_C",
 		Defs: []mcp.FieldDef{
 			{Name: "summary", Type: "string", Required: true},
 		},
@@ -1165,10 +1162,10 @@ func TestStepSchema_ValidateFields(t *testing.T) {
 	})
 
 	t.Run("no defs passes anything", func(t *testing.T) {
-		legacy := mcp.StepSchema{Name: "LEGACY", Fields: map[string]string{"x": "any"}}
-		err := legacy.ValidateFields(map[string]any{"whatever": 42})
+		empty := mcp.StepSchema{Name: "EMPTY"}
+		err := empty.ValidateFields(map[string]any{"whatever": 42})
 		if err != nil {
-			t.Errorf("legacy schema with no defs should pass: %v", err)
+			t.Errorf("schema with no defs should pass: %v", err)
 		}
 	})
 }

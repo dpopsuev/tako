@@ -150,10 +150,11 @@ func TestRenderGraph_NodeStates(t *testing.T) {
 func TestRenderGraph_DSBadges(t *testing.T) {
 	def := &framework.CircuitDef{
 		Circuit: "badges",
+		HandlerType: "transformer",
 		Nodes: []framework.NodeDef{
-			{Name: "det", Transformer: "core.jq"},
-			{Name: "stoch", Transformer: "core.llm"},
-			{Name: "dial", Transformer: "core.dialectic"},
+			{Name: "det", Handler: "core.jq"},
+			{Name: "stoch", Handler: "core.llm"},
+			{Name: "dial", Handler: "core.dialectic"},
 		},
 		Edges: []framework.EdgeDef{
 			{From: "det", To: "stoch"},

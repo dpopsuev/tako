@@ -48,28 +48,28 @@ func TestIsCircuitDeterministic(t *testing.T) {
 		{
 			name: "all deterministic",
 			nodes: []NodeDef{
-				{Name: "a", Transformer: "core.jq"},
-				{Name: "b", Transformer: "core.jq"},
+				{Name: "a", Handler: "core.jq", HandlerType: "transformer"},
+				{Name: "b", Handler: "core.jq", HandlerType: "transformer"},
 			},
 			want: true,
 		},
 		{
 			name: "one stochastic",
 			nodes: []NodeDef{
-				{Name: "a", Transformer: "core.jq"},
-				{Name: "b", Transformer: "core.llm"},
+				{Name: "a", Handler: "core.jq", HandlerType: "transformer"},
+				{Name: "b", Handler: "core.llm", HandlerType: "transformer"},
 			},
 			want: false,
 		},
 		{
 			name: "unresolvable transformer",
 			nodes: []NodeDef{
-				{Name: "a", Transformer: "unknown.thing"},
+				{Name: "a", Handler: "unknown.thing", HandlerType: "transformer"},
 			},
 			want: false,
 		},
 		{
-			name: "no transformer field — skipped",
+			name: "no handler field — skipped",
 			nodes: []NodeDef{
 				{Name: "a"},
 				{Name: "b"},
@@ -95,7 +95,7 @@ func TestIsCircuitDeterministic(t *testing.T) {
 }
 
 func TestIsCircuitDeterministic_NilRegistry(t *testing.T) {
-	def := &CircuitDef{Nodes: []NodeDef{{Name: "a", Transformer: "core.jq"}}}
+	def := &CircuitDef{Nodes: []NodeDef{{Name: "a", Handler: "core.jq", HandlerType: "transformer"}}}
 	if isCircuitDeterministic(def, nil) {
 		t.Error("expected false with nil registry")
 	}

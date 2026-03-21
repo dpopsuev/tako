@@ -506,19 +506,6 @@ func copyDomainFiles(m *Manifest, manifestDir, tmpDir string, verbose bool) erro
 }
 
 func copyEmbedFiles(ds *DomainServeConfig, manifestDir, tmpDir string, verbose bool) error {
-	if ds.Embed != "" {
-		embedDir := strings.TrimRight(ds.Embed, "/")
-		srcEmbed := filepath.Join(manifestDir, embedDir)
-		dstEmbed := filepath.Join(tmpDir, embedDir)
-		if err := copyDir(srcEmbed, dstEmbed); err != nil {
-			return fmt.Errorf("copy embed dir %q: %w", embedDir, err)
-		}
-		if verbose {
-			fmt.Fprintf(os.Stderr, "copied embed dir: %s -> %s\n", srcEmbed, dstEmbed)
-		}
-		return nil
-	}
-
 	paths := ds.Assets.AllPaths()
 	if ds.Store != nil && ds.Store.Schema != "" {
 		paths = append(paths, ds.Store.Schema)

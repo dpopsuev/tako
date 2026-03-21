@@ -10,9 +10,9 @@ func TestBuildGraph_SimpleWalk(t *testing.T) {
 	def := &CircuitDef{
 		Circuit: "simple",
 		Nodes: []NodeDef{
-			{Name: "a", Family: "stub"},
-			{Name: "b", Family: "stub"},
-			{Name: "c", Family: "stub"},
+			{Name: "a", Handler: "stub", HandlerType: "node"},
+			{Name: "b", Handler: "stub", HandlerType: "node"},
+			{Name: "c", Handler: "stub", HandlerType: "node"},
 		},
 		Edges: []EdgeDef{
 			{ID: "E1", Name: "a-to-b", From: "a", To: "b"},
@@ -59,8 +59,8 @@ func TestBuildGraph_WithZones(t *testing.T) {
 	def := &CircuitDef{
 		Circuit: "zoned",
 		Nodes: []NodeDef{
-			{Name: "a", Family: "stub"},
-			{Name: "b", Family: "stub"},
+			{Name: "a", Handler: "stub", HandlerType: "node"},
+			{Name: "b", Handler: "stub", HandlerType: "node"},
 		},
 		Edges: []EdgeDef{
 			{ID: "E1", From: "a", To: "b", Name: "a-b"},
@@ -91,8 +91,8 @@ func TestBuildGraph_CustomEdgeFactory(t *testing.T) {
 	def := &CircuitDef{
 		Circuit: "custom-edges",
 		Nodes: []NodeDef{
-			{Name: "a", Family: "stub"},
-			{Name: "b", Family: "stub"},
+			{Name: "a", Handler: "stub", HandlerType: "node"},
+			{Name: "b", Handler: "stub", HandlerType: "node"},
 		},
 		Edges: []EdgeDef{
 			{ID: "E1", From: "a", To: "b", Name: "custom"},
@@ -136,7 +136,7 @@ func TestBuildGraph_CustomEdgeFactory(t *testing.T) {
 func TestBuildGraph_MissingNodeFactory(t *testing.T) {
 	def := &CircuitDef{
 		Circuit: "missing",
-		Nodes:    []NodeDef{{Name: "a", Family: "nonexistent"}},
+		Nodes:    []NodeDef{{Name: "a", Handler: "nonexistent", HandlerType: "node"}},
 		Edges:    []EdgeDef{{ID: "E1", From: "a", To: "_done"}},
 		Start:    "a",
 		Done:     "_done",

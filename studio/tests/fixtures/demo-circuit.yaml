@@ -1,18 +1,19 @@
 circuit: demo
 description: "Demo circuit for E2E testing"
+handler_type: node
 nodes:
   - name: ingest
     element: fire
-    family: ingest
+    handler: ingest
   - name: triage
     element: water
-    family: classify
+    handler: classify
   - name: analyze
     element: earth
-    family: analyze
+    handler: analyze
   - name: review
     element: diamond
-    family: review
+    handler: review
 edges:
   - id: E1
     name: ingested

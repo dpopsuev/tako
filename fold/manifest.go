@@ -41,13 +41,9 @@ type ConnectorRef struct {
 // DomainServeConfig controls generation of a domain data MCP server binary.
 // When present, origami fold produces a binary (<name>-domain-serve)
 // that embeds the specified directory and serves it via domainserve.New().
-//
-// Exactly one of Embed or Assets must be set. Embed is the legacy mode
-// (single directory). Assets is the preferred mode (keyed file map).
 type DomainServeConfig struct {
 	Port   int          `yaml:"port"`             // listen port (default 9300)
-	Embed  string       `yaml:"embed,omitempty"`  // legacy: directory to embed (e.g. "internal/")
-	Assets *AssetMap    `yaml:"assets,omitempty"` // preferred: keyed file map
+	Assets *AssetMap    `yaml:"assets,omitempty"` // keyed file map
 	Store  *StoreConfig `yaml:"store,omitempty"`  // storage engine config
 }
 
@@ -157,11 +153,8 @@ func ParseManifest(data []byte) (*Manifest, error) {
 		return nil, fmt.Errorf("manifest: name is required")
 	}
 	if ds := m.DomainServe; ds != nil {
-		if ds.Embed != "" && ds.Assets != nil {
-			return nil, fmt.Errorf("domain_serve: embed and assets are mutually exclusive")
-		}
-		if ds.Embed == "" && ds.Assets == nil {
-			return nil, fmt.Errorf("domain_serve: one of embed or assets is required")
+		if ds.Assets == nil {
+			return nil, fmt.Errorf("domain_serve: assets is required")
 		}
 	}
 	for name, s := range m.Schematics {

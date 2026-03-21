@@ -13,9 +13,10 @@ import (
 func testInspectorCircuit() (*framework.CircuitDef, *view.CircuitSnapshot) {
 	def := &framework.CircuitDef{
 		Circuit: "test",
+		HandlerType: "transformer",
 		Nodes: []framework.NodeDef{
-			{Name: "recall", Approach: "rapid", Transformer: "core.llm", Extractor: "rca.recall", Family: "rca", Description: "Recall phase retrieves candidate issues from RP"},
-			{Name: "triage", Approach: "analytical", Transformer: "core.jq", Family: "rca"},
+			{Name: "recall", Approach: "rapid", Handler: "core.llm", Description: "Recall phase retrieves candidate issues from RP"},
+			{Name: "triage", Approach: "analytical", Handler: "core.jq"},
 			{Name: "report", Approach: "rigorous"},
 		},
 		Edges: []framework.EdgeDef{

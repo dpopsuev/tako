@@ -29,7 +29,9 @@ name: asterisk
 version: "1.0"
 domain_serve:
   port: 9300
-  embed: internal/
+  assets:
+    circuits:
+      rca: circuits/rca.yaml
 `)
 	m, err := ParseManifest(data)
 	if err != nil {
@@ -41,8 +43,8 @@ domain_serve:
 	if m.DomainServe.Port != 9300 {
 		t.Errorf("port = %d, want 9300", m.DomainServe.Port)
 	}
-	if m.DomainServe.Embed != "internal/" {
-		t.Errorf("embed = %q, want internal/", m.DomainServe.Embed)
+	if m.DomainServe.Assets == nil {
+		t.Fatal("assets is nil")
 	}
 }
 
@@ -88,9 +90,6 @@ domain_serve:
 	if m.DomainServe == nil {
 		t.Fatal("domain_serve is nil")
 	}
-	if m.DomainServe.Embed != "" {
-		t.Errorf("embed should be empty, got %q", m.DomainServe.Embed)
-	}
 	a := m.DomainServe.Assets
 	if a == nil {
 		t.Fatal("assets is nil")
@@ -109,26 +108,7 @@ domain_serve:
 	}
 }
 
-func TestParseManifest_BothEmbedAndAssets(t *testing.T) {
-	data := []byte(`
-name: bad
-version: "1.0"
-domain_serve:
-  embed: internal/
-  assets:
-    circuits:
-      rca: circuits/rca.yaml
-`)
-	_, err := ParseManifest(data)
-	if err == nil {
-		t.Fatal("expected error for both embed and assets")
-	}
-	if !strings.Contains(err.Error(), "mutually exclusive") {
-		t.Errorf("error = %q, want mention of mutually exclusive", err.Error())
-	}
-}
-
-func TestParseManifest_NeitherEmbedNorAssets(t *testing.T) {
+func TestParseManifest_NoAssets(t *testing.T) {
 	data := []byte(`
 name: bad
 version: "1.0"
@@ -137,10 +117,10 @@ domain_serve:
 `)
 	_, err := ParseManifest(data)
 	if err == nil {
-		t.Fatal("expected error for neither embed nor assets")
+		t.Fatal("expected error for missing assets")
 	}
-	if !strings.Contains(err.Error(), "one of embed or assets") {
-		t.Errorf("error = %q, want mention of one of embed or assets", err.Error())
+	if !strings.Contains(err.Error(), "assets is required") {
+		t.Errorf("error = %q, want mention of assets is required", err.Error())
 	}
 }
 

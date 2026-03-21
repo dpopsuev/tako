@@ -2,6 +2,7 @@
 # This is NOT the production RCA circuit — it's a teaching example.
 circuit: bug-triage
 description: "Classify a bug, investigate it, decide, and close."
+handler_type: node
 
 zones:
   intake:
@@ -16,16 +17,16 @@ zones:
 nodes:
   - name: classify
     element: fire
-    family: classify
+    handler: classify
   - name: investigate
     element: water
-    family: investigate
+    handler: investigate
   - name: decide
     element: diamond
-    family: decide
+    handler: decide
   - name: close
     element: air
-    family: close
+    handler: close
 
 edges:
   - id: E1

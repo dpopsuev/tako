@@ -28,19 +28,20 @@ func (n *topoTestNode) Process(_ context.Context, _ framework.NodeContext) (fram
 func TestBuildGraph_TopologyCascadeValid(t *testing.T) {
 	yaml := `
 circuit: test
+handler_type: node
 topology: cascade
 nodes:
   - name: A
     approach: analytical
-    family: _default
+    handler: _default
     edges: [B]
   - name: B
     approach: analytical
-    family: _default
+    handler: _default
     edges: [C]
   - name: C
     approach: analytical
-    family: _default
+    handler: _default
     edges: [DONE]
 start: A
 done: DONE
@@ -62,19 +63,20 @@ done: DONE
 func TestBuildGraph_TopologyCascadeViolation(t *testing.T) {
 	yaml := `
 circuit: test
+handler_type: node
 topology: cascade
 nodes:
   - name: A
     approach: analytical
-    family: _default
+    handler: _default
     edges: [B, C]
   - name: B
     approach: analytical
-    family: _default
+    handler: _default
     edges: [C]
   - name: C
     approach: analytical
-    family: _default
+    handler: _default
     edges: [DONE]
 start: A
 done: DONE
@@ -99,18 +101,19 @@ done: DONE
 func TestBuildGraph_NoTopologySkipsValidation(t *testing.T) {
 	yaml := `
 circuit: test
+handler_type: node
 nodes:
   - name: A
     approach: analytical
-    family: _default
+    handler: _default
     edges: [B, C]
   - name: B
     approach: analytical
-    family: _default
+    handler: _default
     edges: [DONE]
   - name: C
     approach: analytical
-    family: _default
+    handler: _default
     edges: [DONE]
 start: A
 done: DONE
@@ -132,11 +135,12 @@ done: DONE
 func TestBuildGraph_UnknownTopology(t *testing.T) {
 	yaml := `
 circuit: test
+handler_type: node
 topology: invalid-topology
 nodes:
   - name: A
     approach: analytical
-    family: _default
+    handler: _default
     edges: [DONE]
 start: A
 done: DONE
@@ -158,11 +162,12 @@ done: DONE
 func TestBuildGraph_CascadeWithShortcuts(t *testing.T) {
 	yaml := `
 circuit: test
+handler_type: node
 topology: cascade
 nodes:
   - name: recall
     approach: analytical
-    family: _default
+    handler: _default
     edges:
       - name: normal
         to: triage
@@ -171,11 +176,11 @@ nodes:
         shortcut: true
   - name: triage
     approach: analytical
-    family: _default
+    handler: _default
     edges: [review]
   - name: review
     approach: analytical
-    family: _default
+    handler: _default
     edges: [DONE]
 start: recall
 done: DONE

@@ -16,8 +16,8 @@ func GenerateDomainServe(m *Manifest) ([]byte, error) {
 		return nil, fmt.Errorf("manifest has no domain_serve section")
 	}
 	ds := m.DomainServe
-	if ds.Embed == "" && ds.Assets == nil {
-		return nil, fmt.Errorf("domain_serve: one of embed or assets is required")
+	if ds.Assets == nil {
+		return nil, fmt.Errorf("domain_serve: assets is required")
 	}
 
 	port := ds.Port
@@ -26,17 +26,12 @@ func GenerateDomainServe(m *Manifest) ([]byte, error) {
 	}
 
 	ctx := domainServeContext{
-		Name:    m.Name,
-		Version: m.Version,
-		Port:    port,
-	}
-
-	if ds.Embed != "" {
-		ctx.EmbedDir = strings.TrimRight(ds.Embed, "/")
-	} else {
-		ctx.EmbedPaths = ds.Assets.AllPaths()
-		ctx.AssetSections = ds.Assets.Sections()
-		ctx.AssetFiles = ds.Assets.ScalarFiles()
+		Name:          m.Name,
+		Version:       m.Version,
+		Port:          port,
+		EmbedPaths:    ds.Assets.AllPaths(),
+		AssetSections: ds.Assets.Sections(),
+		AssetFiles:    ds.Assets.ScalarFiles(),
 	}
 
 	tmpl, err := template.New("domain-serve").Funcs(template.FuncMap{
@@ -59,14 +54,9 @@ type domainServeContext struct {
 	Name          string
 	Version       string
 	Port          int
-	EmbedDir      string                       // legacy mode
 	EmbedPaths    []string                     // assets mode: sorted file list
 	AssetSections map[string]map[string]string // assets mode: section -> key -> path
 	AssetFiles    map[string]string            // assets mode: singleton files
-}
-
-func (c domainServeContext) HasAssets() bool {
-	return len(c.EmbedPaths) > 0
 }
 
 // goStringMap formats map[string]string as a Go literal.
@@ -131,9 +121,7 @@ func GenerateWiredBinary(m *Manifest, g *ResolvedGraph) ([]byte, error) {
 		ServerBlock:  renderServerCreation(g, m.Name),
 	}
 
-	if ds.Embed != "" {
-		ctx.EmbedDir = strings.TrimRight(ds.Embed, "/")
-	} else if ds.Assets != nil {
+	if ds.Assets != nil {
 		ctx.EmbedPaths = ds.Assets.AllPaths()
 	}
 
@@ -154,16 +142,11 @@ type wiredBinaryContext struct {
 	Name         string
 	Version      string
 	Port         int
-	EmbedDir     string
 	EmbedPaths   []string
 	ImportBlock  string
 	WiringBlock  string
 	DomainConfig string
 	ServerBlock  string
-}
-
-func (c wiredBinaryContext) HasAssets() bool {
-	return len(c.EmbedPaths) > 0
 }
 
 func renderImports(g *ResolvedGraph) string {
@@ -271,12 +254,8 @@ import (
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 {{ .ImportBlock }})
 
-{{ if .HasAssets -}}
 {{ range .EmbedPaths -}}
 //go:embed {{ . }}
-{{ end -}}
-{{ else -}}
-//go:embed {{ .EmbedDir }}
 {{ end -}}
 var domainData embed.FS
 
@@ -325,12 +304,8 @@ import (
 	"github.com/dpopsuev/origami/domainserve"
 )
 
-{{ if .HasAssets -}}
 {{ range .EmbedPaths -}}
 //go:embed {{ . }}
-{{ end -}}
-{{ else -}}
-//go:embed {{ .EmbedDir }}
 {{ end -}}
 var domainData embed.FS
 
@@ -356,12 +331,10 @@ func main() {
 	handler := domainserve.New(domainFS, domainserve.Config{
 		Name:    {{ printf "%q" .Name }},
 		Version: {{ printf "%q" .Version }},
-{{ if .HasAssets -}}
 		Assets: &domainserve.AssetIndex{
 			Sections: {{ goNestedMap .AssetSections }},
 			Files:    {{ goStringMap .AssetFiles }},
 		},
-{{ end -}}
 	})
 	addr := fmt.Sprintf(":%d", {{ .Port }})
 	fmt.Fprintf(os.Stderr, "domain-serve listening on %s\n", addr)

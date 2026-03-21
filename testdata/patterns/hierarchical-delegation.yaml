@@ -14,6 +14,7 @@
 #   - merge node       → collects parallel results into final output
 circuit: hierarchical-delegation
 description: "Coordinator fans out to specialists, merges results"
+handler_type: node
 
 zones:
   coordination:
@@ -50,16 +51,16 @@ walkers:
 nodes:
   - name: plan
     approach: methodical
-    family: plan
+    handler: plan
   - name: research_code
     approach: analytical
-    family: research
+    handler: research
   - name: research_logs
     approach: rapid
-    family: research
+    handler: research
   - name: synthesize
     approach: methodical
-    family: synthesize
+    handler: synthesize
 
 edges:
   - id: fan-out-code

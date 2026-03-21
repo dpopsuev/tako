@@ -10,8 +10,8 @@ func TestWrap_PreservesTopology(t *testing.T) {
 	base := &framework.CircuitDef{
 		Circuit: "test",
 		Nodes: []framework.NodeDef{
-			{Name: "a", Family: "a"},
-			{Name: "b", Family: "b"},
+			{Name: "a", Handler: "a", HandlerType: "node"},
+			{Name: "b", Handler: "b", HandlerType: "node"},
 		},
 		Edges: []framework.EdgeDef{
 			{ID: "a-b", From: "a", To: "b"},
@@ -43,7 +43,7 @@ func TestWrap_PreservesTopology(t *testing.T) {
 func TestWrap_MarksAsCalibration(t *testing.T) {
 	base := &framework.CircuitDef{
 		Circuit: "test",
-		Nodes:   []framework.NodeDef{{Name: "a", Family: "a"}},
+		Nodes:   []framework.NodeDef{{Name: "a", Handler: "a", HandlerType: "node"}},
 		Edges:   []framework.EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 		Start:   "a",
 		Done:    "done",
@@ -59,7 +59,7 @@ func TestWrap_MarksAsCalibration(t *testing.T) {
 func TestIsCalibrationWrapped_FalseForUnwrapped(t *testing.T) {
 	def := &framework.CircuitDef{
 		Circuit: "test",
-		Nodes:   []framework.NodeDef{{Name: "a", Family: "a"}},
+		Nodes:   []framework.NodeDef{{Name: "a", Handler: "a", HandlerType: "node"}},
 		Edges:   []framework.EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 		Start:   "a",
 		Done:    "done",

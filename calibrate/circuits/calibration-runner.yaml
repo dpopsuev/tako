@@ -11,6 +11,7 @@
 # or on aggregate to see the final metric evaluation.
 circuit: calibration-runner
 description: "Run domain calibration against ground truth scenarios"
+handler_type: node
 
 zones:
   setup:
@@ -33,31 +34,31 @@ zones:
 nodes:
   - name: load_scenario
     element: earth
-    family: calibrate.load
+    handler: calibrate.load
 
   - name: fan_out
     element: water
-    family: calibrate.fan_out
+    handler: calibrate.fan_out
 
   - name: walk_case
     element: fire
-    family: calibrate.walk_case
+    handler: calibrate.walk_case
 
   - name: score_case
     element: earth
-    family: calibrate.score_case
+    handler: calibrate.score_case
 
   - name: fan_in
     element: water
-    family: calibrate.fan_in
+    handler: calibrate.fan_in
 
   - name: aggregate
     element: earth
-    family: calibrate.aggregate
+    handler: calibrate.aggregate
 
   - name: report
     element: air
-    family: calibrate.report
+    handler: calibrate.report
 
 edges:
   - id: E1

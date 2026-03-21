@@ -1,5 +1,6 @@
 circuit: agentic-workflow
 description: "Multi-walker agentic circuit for E2E testing"
+handler_type: node
 zones:
   fast:
     nodes: [scan, classify]
@@ -12,19 +13,19 @@ zones:
 nodes:
   - name: scan
     element: fire
-    family: scan
+    handler: scan
   - name: classify
     element: fire
-    family: classify
+    handler: classify
   - name: analyze
     element: water
-    family: analyze
+    handler: analyze
   - name: review
     element: diamond
-    family: review
+    handler: review
   - name: report
     element: earth
-    family: report
+    handler: report
 walkers:
   - name: scout
     element: fire

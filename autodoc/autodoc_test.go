@@ -44,11 +44,12 @@ func zonedCircuit() *framework.CircuitDef {
 			"analysis":  {Nodes: []string{"classify", "assess"}, Approach: "rapid"},
 			"output":    {Nodes: []string{"report"}, Approach: "holistic"},
 		},
+		HandlerType: "node",
 		Nodes: []framework.NodeDef{
-			{Name: "scan", Approach: "methodical", Family: "scan"},
-			{Name: "classify", Approach: "rapid", Family: "classify"},
-			{Name: "assess", Approach: "rigorous", Family: "assess"},
-			{Name: "report", Approach: "holistic", Family: "report"},
+			{Name: "scan", Approach: "methodical", Handler: "scan"},
+			{Name: "classify", Approach: "rapid", Handler: "classify"},
+			{Name: "assess", Approach: "rigorous", Handler: "assess"},
+			{Name: "report", Approach: "holistic", Handler: "report"},
 		},
 		Edges: []framework.EdgeDef{
 			{ID: "V1", Name: "findings-ready", From: "scan", To: "classify"},
@@ -67,10 +68,11 @@ func dsCircuit() *framework.CircuitDef {
 	return &framework.CircuitDef{
 		Circuit:     "mixed-ds",
 		Description: "Circuit with mixed deterministic/stochastic nodes",
+		HandlerType: "transformer",
 		Nodes: []framework.NodeDef{
-			{Name: "filter", Transformer: "core.jq"},
-			{Name: "analyze", Transformer: "core.llm"},
-			{Name: "format", Transformer: "core.jq"},
+			{Name: "filter", Handler: "core.jq"},
+			{Name: "analyze", Handler: "core.llm"},
+			{Name: "format", Handler: "core.jq"},
 		},
 		Edges: []framework.EdgeDef{
 			{ID: "E1", Name: "to-analyze", From: "filter", To: "analyze"},
@@ -231,9 +233,10 @@ func TestRenderDSBoundary(t *testing.T) {
 
 func TestRenderDSBoundary_NoBoundary(t *testing.T) {
 	def := &framework.CircuitDef{
+		HandlerType: "transformer",
 		Nodes: []framework.NodeDef{
-			{Name: "a", Transformer: "core.jq"},
-			{Name: "b", Transformer: "core.jq"},
+			{Name: "a", Handler: "core.jq"},
+			{Name: "b", Handler: "core.jq"},
 		},
 		Edges: []framework.EdgeDef{{ID: "E1", From: "a", To: "b"}},
 	}
@@ -250,9 +253,10 @@ func TestRenderDSBoundary_WithZones(t *testing.T) {
 			"prep":    {Nodes: []string{"filter"}},
 			"analyze": {Nodes: []string{"llm-node"}},
 		},
+		HandlerType: "transformer",
 		Nodes: []framework.NodeDef{
-			{Name: "filter", Transformer: "core.jq"},
-			{Name: "llm-node", Transformer: "core.llm"},
+			{Name: "filter", Handler: "core.jq"},
+			{Name: "llm-node", Handler: "core.llm"},
 		},
 		Edges: []framework.EdgeDef{{ID: "E1", From: "filter", To: "llm-node"}},
 	}

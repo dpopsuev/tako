@@ -11,9 +11,10 @@ func batchTestDef() *CircuitDef {
 		Circuit: "batch-test",
 		Start:   "step-a",
 		Done:    "_done",
+		HandlerType: "transformer",
 		Nodes: []NodeDef{
-			{Name: "step-a", Transformer: "echo"},
-			{Name: "step-b", Transformer: "echo"},
+			{Name: "step-a", Handler: "echo"},
+			{Name: "step-b", Handler: "echo"},
 		},
 		Edges: []EdgeDef{
 			{ID: "E1", From: "step-a", To: "step-b", When: "true"},
@@ -118,8 +119,9 @@ func TestBatchWalk_PerCaseComponents(t *testing.T) {
 		Circuit: "hook-test",
 		Start:   "step-a",
 		Done:    "_done",
+		HandlerType: "transformer",
 		Nodes: []NodeDef{
-			{Name: "step-a", Transformer: "echo", After: []string{"track"}},
+			{Name: "step-a", Handler: "echo", After: []string{"track"}},
 		},
 		Edges: []EdgeDef{
 			{ID: "E1", From: "step-a", To: "_done", When: "true"},
@@ -193,7 +195,8 @@ func TestBatchWalk_CaseError(t *testing.T) {
 		Circuit: "bad",
 		Start:   "missing-node",
 		Done:    "_done",
-		Nodes:   []NodeDef{{Name: "step-a", Transformer: "echo"}},
+		HandlerType: "transformer",
+		Nodes:   []NodeDef{{Name: "step-a", Handler: "echo"}},
 		Edges:   []EdgeDef{{ID: "E1", From: "step-a", To: "_done", When: "true"}},
 	}
 

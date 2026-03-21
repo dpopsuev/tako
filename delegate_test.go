@@ -93,12 +93,13 @@ func TestWalk_DelegateNode_SubWalk(t *testing.T) {
 	// Outer circuit: A → Delegate → C
 	// Delegate generates inner circuit: X → Y
 	innerDef := &CircuitDef{
-		Circuit: "inner",
-		Start:   "X",
-		Done:    "_done",
+		Circuit:     "inner",
+		HandlerType: "transformer",
+		Start:       "X",
+		Done:        "_done",
 		Nodes: []NodeDef{
-			{Name: "X", Transformer: "passthrough"},
-			{Name: "Y", Transformer: "passthrough"},
+			{Name: "X", Handler: "passthrough"},
+			{Name: "Y", Handler: "passthrough"},
 		},
 		Edges: []EdgeDef{
 			{ID: "x-y", From: "X", To: "Y"},
@@ -195,7 +196,8 @@ func TestWalk_DelegateNode_ContextCancellation(t *testing.T) {
 		Circuit: "inner",
 		Start:   "X",
 		Done:    "_done",
-		Nodes:   []NodeDef{{Name: "X", Transformer: "passthrough"}},
+		HandlerType: "transformer",
+		Nodes:   []NodeDef{{Name: "X", Handler: "passthrough"}},
 		Edges:   []EdgeDef{{ID: "x-done", From: "X", To: "_done"}},
 	}
 
@@ -260,9 +262,9 @@ func TestBuildGraph_DelegateNode_DSL(t *testing.T) {
 		Start:   "A",
 		Done:    "_done",
 		Nodes: []NodeDef{
-			{Name: "A", Transformer: "passthrough"},
-			{Name: "B", Delegate: true, Generator: "plan"},
-			{Name: "C", Transformer: "passthrough"},
+			{Name: "A", Handler: "passthrough", HandlerType: "transformer"},
+			{Name: "B", Handler: "plan", HandlerType: "delegate"},
+			{Name: "C", Handler: "passthrough", HandlerType: "transformer"},
 		},
 		Edges: []EdgeDef{
 			{ID: "a-b", From: "A", To: "B"},
@@ -273,11 +275,12 @@ func TestBuildGraph_DelegateNode_DSL(t *testing.T) {
 
 	planGen := TransformerFunc("plan", func(_ context.Context, _ *TransformerContext) (any, error) {
 		return &CircuitDef{
-			Circuit: "generated",
-			Start:   "W1",
-			Done:    "_done",
+			Circuit:     "generated",
+			HandlerType: "transformer",
+			Start:       "W1",
+			Done:        "_done",
 			Nodes: []NodeDef{
-				{Name: "W1", Transformer: "passthrough"},
+				{Name: "W1", Handler: "passthrough"},
 			},
 			Edges: []EdgeDef{
 				{ID: "w1-done", From: "W1", To: "_done"},
@@ -326,13 +329,13 @@ func TestBuildGraph_DelegateNode_DSL(t *testing.T) {
 	}
 }
 
-func TestBuildGraph_DelegateNode_MissingGenerator(t *testing.T) {
+func TestBuildGraph_DelegateNode_MissingHandler(t *testing.T) {
 	def := &CircuitDef{
 		Circuit: "outer",
 		Start:   "A",
 		Done:    "_done",
 		Nodes: []NodeDef{
-			{Name: "A", Delegate: true},
+			{Name: "A", HandlerType: "delegate"},
 		},
 		Edges: []EdgeDef{
 			{ID: "a-done", From: "A", To: "_done"},
@@ -341,10 +344,10 @@ func TestBuildGraph_DelegateNode_MissingGenerator(t *testing.T) {
 
 	_, err := def.BuildGraph(GraphRegistries{})
 	if err == nil {
-		t.Fatal("BuildGraph() should fail for delegate without generator")
+		t.Fatal("BuildGraph() should fail for delegate without handler")
 	}
-	if !strings.Contains(err.Error(), "requires a generator") {
-		t.Errorf("error = %q, want to contain 'requires a generator'", err.Error())
+	if !strings.Contains(err.Error(), "transformer registry is nil") {
+		t.Errorf("error = %q, want to contain 'transformer registry is nil'", err.Error())
 	}
 }
 
@@ -681,11 +684,12 @@ func TestDelegateEvents_CarryCircuitType_CircuitRef(t *testing.T) {
 func TestDelegateEvents_CarryCircuitType_DSLDelegate(t *testing.T) {
 	planGen := TransformerFunc("plan", func(_ context.Context, _ *TransformerContext) (any, error) {
 		return &CircuitDef{
-			Circuit: "generated",
-			Start:   "W1",
-			Done:    "_done",
-			Nodes:   []NodeDef{{Name: "W1", Transformer: "passthrough"}},
-			Edges:   []EdgeDef{{ID: "w1-done", From: "W1", To: "_done"}},
+			Circuit:     "generated",
+			HandlerType: "transformer",
+			Start:       "W1",
+			Done:        "_done",
+			Nodes:       []NodeDef{{Name: "W1", Handler: "passthrough"}},
+			Edges:       []EdgeDef{{ID: "w1-done", From: "W1", To: "_done"}},
 		}, nil
 	})
 
@@ -694,9 +698,9 @@ func TestDelegateEvents_CarryCircuitType_DSLDelegate(t *testing.T) {
 		Start:   "A",
 		Done:    "_done",
 		Nodes: []NodeDef{
-			{Name: "A", Transformer: "passthrough"},
-			{Name: "B", Delegate: true, Generator: "plan"},
-			{Name: "C", Transformer: "passthrough"},
+			{Name: "A", Handler: "passthrough", HandlerType: "transformer"},
+			{Name: "B", Handler: "plan", HandlerType: "delegate"},
+			{Name: "C", Handler: "passthrough", HandlerType: "transformer"},
 		},
 		Edges: []EdgeDef{
 			{ID: "a-b", From: "A", To: "B"},

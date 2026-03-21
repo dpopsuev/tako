@@ -3,6 +3,7 @@
 # Edge evaluation logic is registered via EdgeFactory in Go (internal/curate/circuit.go).
 circuit: curation
 description: "Generic unstructured-to-structured curation circuit"
+handler_type: node
 
 zones:
   intake:
@@ -21,19 +22,19 @@ zones:
 nodes:
   - name: fetch
     element: water
-    family: fetch
+    handler: fetch
   - name: extract
     element: earth
-    family: extract
+    handler: extract
   - name: validate
     element: earth
-    family: validate
+    handler: validate
   - name: enrich
     element: fire
-    family: enrich
+    handler: enrich
   - name: promote
     element: fire
-    family: promote
+    handler: promote
 
 edges:
   - id: CE1

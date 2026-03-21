@@ -120,11 +120,12 @@ func (m *mockOperator) Evaluate(_ context.Context, _ Goal, _ WalkResult) (Evalua
 // testCircuitDef returns a minimal 2-node circuit: A -> _done.
 func testCircuitDef() *CircuitDef {
 	return &CircuitDef{
-		Circuit: "test",
-		Start:   "A",
-		Done:    "_done",
+		Circuit:     "test",
+		HandlerType: "transformer",
+		Start:       "A",
+		Done:        "_done",
 		Nodes: []NodeDef{
-			{Name: "A", Transformer: "passthrough"},
+			{Name: "A", Handler: "passthrough"},
 		},
 		Edges: []EdgeDef{
 			{ID: "a-done", From: "A", To: "_done"},

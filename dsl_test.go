@@ -11,13 +11,14 @@ func TestLoadCircuit_ValidYAML(t *testing.T) {
 	data := []byte(`
 circuit: test-pipe
 description: "A test circuit"
+handler_type: node
 nodes:
   - name: a
     element: fire
-    family: start
+    handler: start
   - name: b
     element: water
-    family: finish
+    handler: finish
 edges:
   - id: E1
     name: a-to-b
@@ -59,11 +60,12 @@ done: _done
 func TestLoadCircuit_WithZones(t *testing.T) {
 	data := []byte(`
 circuit: zoned
+handler_type: node
 nodes:
   - name: x
-    family: x
+    handler: x
   - name: y
-    family: y
+    handler: y
 zones:
   front:
     nodes: [x]
@@ -104,11 +106,12 @@ func TestLoadCircuit_Ports(t *testing.T) {
 	// Test that ports are parsed from YAML
 	data := []byte(`
 circuit: ports-test
+handler_type: node
 nodes:
   - name: a
-    family: a
+    handler: a
   - name: b
-    family: b
+    handler: b
 edges:
   - id: E1
     from: a
@@ -156,7 +159,7 @@ done: _done
 circuit: base
 nodes:
   - name: a
-    family: a
+    handler: a
 edges:
   - id: E1
     from: a
@@ -180,7 +183,7 @@ wiring:
     to: "other.in:input"
 nodes:
   - name: b
-    family: b
+    handler: b
 edges:
   - id: E2
     from: a
@@ -229,7 +232,7 @@ ports:
     direction: out
 nodes:
   - name: c
-    family: c
+    handler: c
 edges:
   - id: E4
     from: a
@@ -374,7 +377,8 @@ func TestRoundTripFidelity(t *testing.T) {
 	original := &CircuitDef{
 		Circuit:    "roundtrip",
 		Description: "test round trip",
-		Nodes:       []NodeDef{{Name: "a", Approach: "rapid", Family: "start"}, {Name: "b", Family: "end"}},
+		HandlerType: "node",
+		Nodes:       []NodeDef{{Name: "a", Approach: "rapid", Handler: "start"}, {Name: "b", Handler: "end"}},
 		Edges:       []EdgeDef{{ID: "E1", Name: "a-b", From: "a", To: "b"}, {ID: "E2", Name: "b-done", From: "b", To: "_done"}},
 		Start:       "a",
 		Done:        "_done",
@@ -605,13 +609,13 @@ func TestLoadCircuit_CompactVerboseEquivalence(t *testing.T) {
 circuit: equiv
 nodes:
   - name: a
-    family: start
+    handler: start
     edges:
       - name: proceed
         to: b
         when: "true"
   - name: b
-    family: finish
+    handler: finish
     edges:
       - name: done
         to: _done
@@ -623,9 +627,9 @@ done: _done
 circuit: equiv
 nodes:
   - name: a
-    family: start
+    handler: start
   - name: b
-    family: finish
+    handler: finish
 edges:
   - id: a-proceed
     name: proceed
@@ -663,14 +667,15 @@ done: _done
 	}
 }
 
-func TestLoadCircuit_ImplicitFamily(t *testing.T) {
+func TestLoadCircuit_HandlerFallsBackToName(t *testing.T) {
 	data := []byte(`
 circuit: fam
+handler_type: node
 nodes:
   - name: recall
     edges: [triage]
   - name: triage
-    family: triage-custom
+    handler: triage-custom
     edges: [_done]
 start: recall
 done: _done
@@ -679,11 +684,11 @@ done: _done
 	if err != nil {
 		t.Fatalf("LoadCircuit: %v", err)
 	}
-	if def.Nodes[0].Family != "recall" {
-		t.Errorf("Nodes[0].Family = %q, want %q (implicit from name)", def.Nodes[0].Family, "recall")
+	if h := def.Nodes[0].EffectiveHandler(); h != "recall" {
+		t.Errorf("Nodes[0].EffectiveHandler() = %q, want %q (implicit from name)", h, "recall")
 	}
-	if def.Nodes[1].Family != "triage-custom" {
-		t.Errorf("Nodes[1].Family = %q, want %q (explicit)", def.Nodes[1].Family, "triage-custom")
+	if h := def.Nodes[1].EffectiveHandler(); h != "triage-custom" {
+		t.Errorf("Nodes[1].EffectiveHandler() = %q, want %q (explicit)", h, "triage-custom")
 	}
 }
 
@@ -982,16 +987,14 @@ func (s *stubTransformer) Transform(_ context.Context, _ *TransformerContext) (a
 	return map[string]any{"stub": s.id}, nil
 }
 
-// TestResolveNode_LegacyFamily_FailsWithTransformerRegistry demonstrates the
-// latent bug: when a circuit uses `family: recall` but the consumer only
-// registers TransformerRegistry entries (not NodeRegistry), BuildGraph falls
-// through to the NodeRegistry lookup and fails.
-func TestResolveNode_LegacyFamily_FailsWithTransformerRegistry(t *testing.T) {
+// TestResolveNode_NoHandlerType_Fails verifies that a node with handler:
+// but no handler_type (and no circuit default) produces a clear error.
+func TestResolveNode_NoHandlerType_Fails(t *testing.T) {
 	yaml := `
 circuit: bug-demo
 nodes:
   - name: recall
-    family: recall
+    handler: recall
     prompt: test.md
 edges:
   - id: E1
@@ -1014,9 +1017,9 @@ done: _done
 
 	_, err = def.BuildGraph(reg)
 	if err == nil {
-		t.Fatal("expected BuildGraph to fail with family: + TransformerRegistry, but it succeeded")
+		t.Fatal("expected BuildGraph to fail without handler_type, but it succeeded")
 	}
-	if !contains(err.Error(), "no node factory for family") {
+	if !contains(err.Error(), "no handler_type") {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
@@ -1259,36 +1262,6 @@ func TestEffectiveHandlerType(t *testing.T) {
 			want:           "transformer",
 		},
 		{
-			name:           "legacy delegate",
-			nd:             NodeDef{Delegate: true, Generator: "g"},
-			circuitDefault: "",
-			want:           "delegate",
-		},
-		{
-			name:           "legacy transformer",
-			nd:             NodeDef{Transformer: "t"},
-			circuitDefault: "",
-			want:           "transformer",
-		},
-		{
-			name:           "legacy extractor",
-			nd:             NodeDef{Extractor: "e"},
-			circuitDefault: "",
-			want:           "extractor",
-		},
-		{
-			name:           "legacy renderer",
-			nd:             NodeDef{Renderer: "r"},
-			circuitDefault: "",
-			want:           "renderer",
-		},
-		{
-			name:           "legacy family falls back to node",
-			nd:             NodeDef{Family: "f"},
-			circuitDefault: "",
-			want:           "node",
-		},
-		{
 			name:           "empty returns empty",
 			nd:             NodeDef{},
 			circuitDefault: "",
@@ -1346,9 +1319,9 @@ circuit: timeout-test
 timeout: "30s"
 nodes:
   - name: fast
-    family: fast
+    handler: fast
   - name: slow
-    family: slow
+    handler: slow
     timeout: "2m"
 edges:
   - id: E1
@@ -1382,13 +1355,9 @@ func TestEffectiveHandler(t *testing.T) {
 		nd   NodeDef
 		want string
 	}{
-		{name: "new handler wins", nd: NodeDef{Handler: "x", Transformer: "old"}, want: "x"},
-		{name: "delegate+generator", nd: NodeDef{Delegate: true, Generator: "g"}, want: "g"},
-		{name: "legacy transformer", nd: NodeDef{Transformer: "t"}, want: "t"},
-		{name: "legacy extractor", nd: NodeDef{Extractor: "e"}, want: "e"},
-		{name: "legacy renderer", nd: NodeDef{Renderer: "r"}, want: "r"},
-		{name: "legacy family", nd: NodeDef{Family: "f"}, want: "f"},
+		{name: "handler wins", nd: NodeDef{Handler: "x"}, want: "x"},
 		{name: "falls back to name", nd: NodeDef{Name: "n"}, want: "n"},
+		{name: "empty name and handler", nd: NodeDef{}, want: ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1407,7 +1376,7 @@ func TestLoadCircuitWithOverlay_NoImport(t *testing.T) {
 circuit: plain
 nodes:
   - name: a
-    family: a
+    handler: a
 edges:
   - id: E1
     from: a
@@ -1576,7 +1545,7 @@ import: something
 circuit: overlay
 nodes:
   - name: a
-    family: a
+    handler: a
 edges:
   - id: E1
     from: a
@@ -1692,7 +1661,7 @@ nodes:
     code: F1
     display_name: Triage
   - name: plain
-    family: plain
+    handler: plain
 edges:
   - id: recall-triage
     name: proceed
@@ -1770,7 +1739,7 @@ func TestLoadCircuit_OutputFields_Parsed(t *testing.T) {
 circuit: output-test
 nodes:
   - name: extract
-    family: extract
+    handler: extract
     output:
       - name: result
         type: string
@@ -1780,7 +1749,7 @@ nodes:
       - name: tags
         type: array
   - name: plain
-    family: plain
+    handler: plain
 edges:
   - id: E1
     from: extract

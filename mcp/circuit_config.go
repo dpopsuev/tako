@@ -20,17 +20,12 @@ type FieldDef struct {
 // Used for runtime validation in submit_step and to auto-generate worker
 // prompt step-schema tables.
 type StepSchema struct {
-	Name   string            // e.g. "F0_RECALL", "scan"
-	Fields map[string]string // field name -> type/description (legacy, used for prompt rendering)
-	Defs   []FieldDef        // structured field definitions for runtime validation
+	Name string     // e.g. "F0_RECALL", "scan"
+	Defs []FieldDef // structured field definitions for runtime validation
 }
 
 // ValidateFields checks that fields satisfies the schema's Defs.
-// Returns nil if Defs is empty (legacy schemas pass without validation).
 func (s StepSchema) ValidateFields(fields map[string]any) error {
-	if len(s.Defs) == 0 {
-		return nil
-	}
 	for _, def := range s.Defs {
 		v, ok := fields[def.Name]
 		if !ok && def.Required {

@@ -108,7 +108,8 @@ func TestArtifactCaptureObserver_FilteredNodes(t *testing.T) {
 
 func twoNodeCircuit() *CircuitDef {
 	return &CircuitDef{
-		Circuit: "test-work",
+		Circuit:     "test-work",
+		HandlerType: "node",
 		Nodes: []NodeDef{
 			{Name: "step1"},
 			{Name: "step2"},
@@ -123,7 +124,8 @@ func twoNodeCircuit() *CircuitDef {
 
 func twoNodeEnforcerCircuit() *CircuitDef {
 	return &CircuitDef{
-		Circuit: "test-enforcer",
+		Circuit:     "test-enforcer",
+		HandlerType: "node",
 		Nodes: []NodeDef{
 			{Name: "check"},
 			{Name: "report"},
@@ -187,7 +189,8 @@ func TestRunWithEnforcer_EnforcerCancelledOnWorkComplete(t *testing.T) {
 	workDef := twoNodeCircuit()
 
 	enforcerDef := &CircuitDef{
-		Circuit: "test-enforcer",
+		Circuit:     "test-enforcer",
+		HandlerType: "node",
 		Nodes: []NodeDef{
 			{Name: "slow-check"},
 			{Name: "done"},
@@ -284,7 +287,8 @@ func TestRunWithEnforcer_ErrorFinding(t *testing.T) {
 	workDef := twoNodeCircuit()
 
 	enforcerDef := &CircuitDef{
-		Circuit: "test-enforcer",
+		Circuit:     "test-enforcer",
+		HandlerType: "node",
 		Nodes: []NodeDef{
 			{Name: "audit"},
 			{Name: "done"},

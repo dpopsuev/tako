@@ -217,19 +217,17 @@ func (r *EmptyPrompt) Check(ctx *LintContext) []Finding {
 	var out []Finding
 	for _, nd := range ctx.Def.Nodes {
 		ht := nd.EffectiveHandlerType(ctx.Def.HandlerType)
-		// node/delegate handler types provide their own logic
-		if ht == framework.HandlerTypeNode || ht == framework.HandlerTypeDelegate {
+		// node/delegate/circuit/extractor/renderer handler types provide their own logic
+		if ht == framework.HandlerTypeNode || ht == framework.HandlerTypeDelegate ||
+			ht == framework.HandlerTypeCircuit || ht == framework.HandlerTypeExtractor ||
+			ht == framework.HandlerTypeRenderer {
 			continue
 		}
 		// handler: set means resolution is explicit — skip this check
 		if nd.Handler != "" {
 			continue
 		}
-		// Legacy: family-based nodes are resolved by NodeRegistry
-		if nd.Family != "" {
-			continue
-		}
-		if nd.Prompt == "" && nd.Transformer == "" && nd.Extractor == "" && nd.Renderer == "" {
+		if nd.Prompt == "" {
 			out = append(out, Finding{
 				RuleID:   r.ID(),
 				Severity: r.Severity(),
@@ -514,7 +512,7 @@ func (r *InvalidWalkerRole) Check(ctx *LintContext) []Finding {
 type DelegateWithoutGenerator struct{}
 
 func (r *DelegateWithoutGenerator) ID() string        { return "S15/delegate-without-generator" }
-func (r *DelegateWithoutGenerator) Description() string { return "delegate node requires a generator transformer" }
+func (r *DelegateWithoutGenerator) Description() string { return "delegate node requires a handler (generator transformer)" }
 func (r *DelegateWithoutGenerator) Severity() Severity { return SeverityWarning }
 func (r *DelegateWithoutGenerator) Tags() []string     { return []string{"structural"} }
 
@@ -522,23 +520,11 @@ func (r *DelegateWithoutGenerator) Check(ctx *LintContext) []Finding {
 	var out []Finding
 	for _, nd := range ctx.Def.Nodes {
 		ht := nd.EffectiveHandlerType(ctx.Def.HandlerType)
-		if ht == framework.HandlerTypeDelegate && nd.Handler != "" {
-			continue
-		}
-		if nd.Delegate && nd.Generator == "" {
+		if ht == framework.HandlerTypeDelegate && nd.Handler == "" {
 			out = append(out, Finding{
 				RuleID:   r.ID(),
 				Severity: r.Severity(),
-				Message:  fmt.Sprintf("delegate node %q requires a generator: field (or use handler_type: delegate + handler: <name>)", nd.Name),
-				File:     ctx.File,
-				Line:     ctx.NodeLine(nd.Name),
-			})
-		}
-		if nd.Delegate && nd.Transformer != "" {
-			out = append(out, Finding{
-				RuleID:   r.ID(),
-				Severity: SeverityWarning,
-				Message:  fmt.Sprintf("delegate node %q has both transformer: and delegate: true; use generator: instead", nd.Name),
+				Message:  fmt.Sprintf("delegate node %q requires handler: <name> (generator transformer)", nd.Name),
 				File:     ctx.File,
 				Line:     ctx.NodeLine(nd.Name),
 			})
@@ -547,45 +533,36 @@ func (r *DelegateWithoutGenerator) Check(ctx *LintContext) []Finding {
 	return out
 }
 
-// DeprecatedHandlerFields warns when nodes use legacy handler fields instead of
-// the explicit handler + handler_type syntax.
+// DeprecatedHandlerFields errors when nodes use removed legacy handler fields
+// (family, transformer, extractor, renderer, delegate, generator) in YAML.
+// These fields are no longer recognised; use handler: + handler_type: instead.
 type DeprecatedHandlerFields struct{}
 
 func (r *DeprecatedHandlerFields) ID() string        { return "S17/deprecated-handler-fields" }
 func (r *DeprecatedHandlerFields) Description() string { return "use handler: + handler_type: instead of family/transformer/extractor/renderer/delegate+generator" }
-func (r *DeprecatedHandlerFields) Severity() Severity { return SeverityWarning }
+func (r *DeprecatedHandlerFields) Severity() Severity { return SeverityError }
 func (r *DeprecatedHandlerFields) Tags() []string     { return []string{"structural"} }
+
+var removedNodeFields = []string{"family", "transformer", "extractor", "renderer", "delegate", "generator"}
 
 func (r *DeprecatedHandlerFields) Check(ctx *LintContext) []Finding {
 	var out []Finding
 	for _, nd := range ctx.Def.Nodes {
-		if nd.Handler != "" {
+		keys := ctx.NodeYAMLKeys(nd.Name)
+		if keys == nil {
 			continue
 		}
 		var deprecated []string
-		if nd.Family != "" {
-			deprecated = append(deprecated, "family")
-		}
-		if nd.Transformer != "" {
-			deprecated = append(deprecated, "transformer")
-		}
-		if nd.Extractor != "" {
-			deprecated = append(deprecated, "extractor")
-		}
-		if nd.Renderer != "" {
-			deprecated = append(deprecated, "renderer")
-		}
-		if nd.Delegate {
-			deprecated = append(deprecated, "delegate")
-		}
-		if nd.Generator != "" {
-			deprecated = append(deprecated, "generator")
+		for _, f := range removedNodeFields {
+			if keys[f] {
+				deprecated = append(deprecated, f)
+			}
 		}
 		if len(deprecated) > 0 {
 			out = append(out, Finding{
 				RuleID:   r.ID(),
 				Severity: r.Severity(),
-				Message:  fmt.Sprintf("node %q uses deprecated field(s) %s; migrate to handler: + handler_type:", nd.Name, strings.Join(deprecated, ", ")),
+				Message:  fmt.Sprintf("node %q uses removed field(s) %s; migrate to handler: + handler_type:", nd.Name, strings.Join(deprecated, ", ")),
 				File:     ctx.File,
 				Line:     ctx.NodeLine(nd.Name),
 			})

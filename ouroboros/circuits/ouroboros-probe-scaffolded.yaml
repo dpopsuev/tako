@@ -5,20 +5,21 @@
 # it routes to _done with a final PoleResult.
 circuit: ouroboros-probe-scaffolded
 description: "Scaffolded behavioral probe with progressive hint chain"
+handler_type: node
 
 nodes:
   - name: generate
     element: earth
-    family: ouroboros-generate
+    handler: ouroboros-generate
   - name: subject
     element: fire
-    family: ouroboros-subject-scaffolded
+    handler: ouroboros-subject-scaffolded
   - name: judge
     element: diamond
-    family: ouroboros-judge-scaffolded
+    handler: ouroboros-judge-scaffolded
   - name: hint
     element: water
-    family: ouroboros-hint
+    handler: ouroboros-hint
 
 edges:
   - id: SC1

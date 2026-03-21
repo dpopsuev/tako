@@ -54,8 +54,10 @@ func stepSchemasFromDef(def framework.CircuitDef) []fwmcp.StepSchema {
 			continue
 		}
 		schemas = append(schemas, fwmcp.StepSchema{
-			Name:   node.Name,
-			Fields: map[string]string{"response": "raw LLM response"},
+			Name: node.Name,
+			Defs: []fwmcp.FieldDef{
+				{Name: "response", Type: "string", Desc: "raw LLM response"},
+			},
 		})
 	}
 	return schemas

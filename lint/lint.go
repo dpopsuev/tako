@@ -202,6 +202,54 @@ func (c *LintContext) TopLevelLine(key string) int {
 	return c.fieldLineMap["top:"+key]
 }
 
+// NodeYAMLKeys returns the set of YAML mapping keys present on a node
+// identified by name. This inspects the raw YAML tree, so it can detect
+// keys that are not mapped to Go struct fields (e.g. removed legacy fields).
+// Returns nil if the node or YAML tree is not available.
+func (c *LintContext) NodeYAMLKeys(nodeName string) map[string]bool {
+	if c.yamlRoot == nil {
+		return nil
+	}
+	nodesSeq := findYAMLKey(c.yamlRoot, "nodes")
+	if nodesSeq == nil || nodesSeq.Kind != yaml.SequenceNode {
+		return nil
+	}
+	for _, item := range nodesSeq.Content {
+		if item.Kind != yaml.MappingNode {
+			continue
+		}
+		var name string
+		for j := 0; j+1 < len(item.Content); j += 2 {
+			if item.Content[j].Value == "name" {
+				name = item.Content[j+1].Value
+				break
+			}
+		}
+		if name != nodeName {
+			continue
+		}
+		keys := make(map[string]bool)
+		for j := 0; j+1 < len(item.Content); j += 2 {
+			keys[item.Content[j].Value] = true
+		}
+		return keys
+	}
+	return nil
+}
+
+// findYAMLKey returns the value node for a given key in a mapping node.
+func findYAMLKey(mapping *yaml.Node, key string) *yaml.Node {
+	if mapping == nil || mapping.Kind != yaml.MappingNode {
+		return nil
+	}
+	for i := 0; i+1 < len(mapping.Content); i += 2 {
+		if mapping.Content[i].Value == key {
+			return mapping.Content[i+1]
+		}
+	}
+	return nil
+}
+
 // buildFieldLineMap walks the yaml.Node tree and maps DSL entities to
 // their source line numbers. Keys follow the pattern "node:<name>",
 // "edge:<id>", "walker:<name>", "top:<key>".

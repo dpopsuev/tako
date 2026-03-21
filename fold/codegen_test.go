@@ -5,43 +5,6 @@ import (
 	"testing"
 )
 
-func TestGenerateDomainServe(t *testing.T) {
-	m := &Manifest{
-		Name:    "asterisk",
-		Version: "1.0",
-		DomainServe: &DomainServeConfig{
-			Port:  9300,
-			Embed: "internal/",
-		},
-	}
-
-	src, err := GenerateDomainServe(m)
-	if err != nil {
-		t.Fatal(err)
-	}
-	code := string(src)
-
-	for _, want := range []string{
-		"DO NOT EDIT",
-		"package main",
-		"domainserve.New(",
-		`"github.com/dpopsuev/origami/domainserve"`,
-		"//go:embed internal",
-		"var domainData embed.FS",
-		`"asterisk"`,
-		`"1.0"`,
-		"9300",
-	} {
-		if !strings.Contains(code, want) {
-			t.Errorf("missing %q in generated code:\n%s", want, code)
-		}
-	}
-
-	if strings.Contains(code, "AssetIndex") {
-		t.Errorf("legacy embed mode should not produce AssetIndex")
-	}
-}
-
 func TestGenerateDomainServe_Assets(t *testing.T) {
 	m := &Manifest{
 		Name:    "asterisk",
@@ -95,7 +58,9 @@ func TestGenerateDomainServe_DefaultPort(t *testing.T) {
 		Name:    "myapp",
 		Version: "2.0",
 		DomainServe: &DomainServeConfig{
-			Embed: "data/",
+			Assets: &AssetMap{
+				Files: map[string]string{"data": "data.yaml"},
+			},
 		},
 	}
 
@@ -121,17 +86,17 @@ func TestGenerateDomainServe_NilConfig(t *testing.T) {
 	}
 }
 
-func TestGenerateDomainServe_NeitherEmbedNorAssets(t *testing.T) {
+func TestGenerateDomainServe_NoAssets(t *testing.T) {
 	m := &Manifest{
 		Name:        "test",
 		DomainServe: &DomainServeConfig{Port: 9300},
 	}
 	_, err := GenerateDomainServe(m)
 	if err == nil {
-		t.Fatal("expected error for missing embed and assets")
+		t.Fatal("expected error for missing assets")
 	}
-	if !strings.Contains(err.Error(), "one of embed or assets") {
-		t.Errorf("error = %q, want mention of embed or assets", err.Error())
+	if !strings.Contains(err.Error(), "assets is required") {
+		t.Errorf("error = %q, want mention of assets", err.Error())
 	}
 }
 
@@ -140,8 +105,10 @@ func TestGenerateDomainServe_DataDirFlag(t *testing.T) {
 		Name:    "asterisk",
 		Version: "1.0",
 		DomainServe: &DomainServeConfig{
-			Port:  9300,
-			Embed: "internal/",
+			Port: 9300,
+			Assets: &AssetMap{
+				Circuits: map[string]string{"rca": "circuits/rca.yaml"},
+			},
 		},
 	}
 
@@ -170,8 +137,10 @@ func TestGenerateDomainServe_HealthzFlag(t *testing.T) {
 		Name:    "asterisk",
 		Version: "1.0",
 		DomainServe: &DomainServeConfig{
-			Port:  9300,
-			Embed: "internal/",
+			Port: 9300,
+			Assets: &AssetMap{
+				Circuits: map[string]string{"rca": "circuits/rca.yaml"},
+			},
 		},
 	}
 

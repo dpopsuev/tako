@@ -89,7 +89,7 @@ func (r TransformerRegistry) Register(t Transformer) {
 }
 
 // transformerNode is a Node that delegates to a Transformer.
-// Created by BuildGraph when NodeDef.Transformer is set.
+// Created by BuildGraph when handler_type is "transformer".
 type transformerNode struct {
 	name     string
 	element  Element

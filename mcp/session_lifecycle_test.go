@@ -82,19 +82,16 @@ edges:
 
 var lifecycleStepSchemas = []mcp.StepSchema{
 	{
-		Name:   "step-a",
-		Fields: map[string]string{"ok": "bool"},
-		Defs:   []mcp.FieldDef{{Name: "ok", Type: "bool", Required: true}},
+		Name: "step-a",
+		Defs: []mcp.FieldDef{{Name: "ok", Type: "bool", Required: true}},
 	},
 	{
-		Name:   "step-b",
-		Fields: map[string]string{"ok": "bool"},
-		Defs:   []mcp.FieldDef{{Name: "ok", Type: "bool", Required: true}},
+		Name: "step-b",
+		Defs: []mcp.FieldDef{{Name: "ok", Type: "bool", Required: true}},
 	},
 	{
-		Name:   "step-x",
-		Fields: map[string]string{"ok": "bool"},
-		Defs:   []mcp.FieldDef{{Name: "ok", Type: "bool", Required: true}},
+		Name: "step-x",
+		Defs: []mcp.FieldDef{{Name: "ok", Type: "bool", Required: true}},
 	},
 }
 

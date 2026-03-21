@@ -32,8 +32,8 @@ func NewOuroborosConfig(runsDir string) fwmcp.CircuitConfig {
 		Version: "dev",
 		StepSchemas: []fwmcp.StepSchema{{
 			Name: "discover",
-			Fields: map[string]string{
-				"response": "raw LLM response text (identity JSON + probe output)",
+			Defs: []fwmcp.FieldDef{
+				{Name: "response", Type: "string", Desc: "raw LLM response text (identity JSON + probe output)"},
 			},
 		}},
 		WorkerPreamble: `You are an Ouroboros discovery worker probing AI models to discover their identity.

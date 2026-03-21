@@ -165,9 +165,11 @@ circuit: ext-test
 nodes:
   - name: parse
     element: earth
-    extractor: my-ext
+    handler: my-ext
+    handler_type: extractor
   - name: done_node
-    family: finish
+    handler: finish
+    handler_type: node
 edges:
   - id: E1
     name: parse-to-done
@@ -211,7 +213,8 @@ func TestBuildGraph_ExtractorNotRegistered(t *testing.T) {
 circuit: fail-test
 nodes:
   - name: parse
-    extractor: missing
+    handler: missing
+    handler_type: extractor
 edges:
   - id: E1
     name: parse-done
@@ -231,12 +234,13 @@ done: _done
 	}
 }
 
-func TestLoadCircuit_ExtractorField_RoundTrip(t *testing.T) {
+func TestLoadCircuit_ExtractorHandler_RoundTrip(t *testing.T) {
 	original := &CircuitDef{
-		Circuit: "ext-roundtrip",
+		Circuit:     "ext-roundtrip",
+		HandlerType: "extractor",
 		Nodes: []NodeDef{
-			{Name: "parse", Approach: "methodical", Extractor: "json-v1"},
-			{Name: "process", Family: "compute"},
+			{Name: "parse", Approach: "methodical", Handler: "json-v1", HandlerType: "extractor"},
+			{Name: "process", Handler: "compute", HandlerType: "node"},
 		},
 		Edges: []EdgeDef{
 			{ID: "E1", Name: "parse-process", From: "parse", To: "process"},
@@ -256,11 +260,11 @@ func TestLoadCircuit_ExtractorField_RoundTrip(t *testing.T) {
 		t.Fatalf("LoadCircuit: %v", err)
 	}
 
-	if restored.Nodes[0].Extractor != "json-v1" {
-		t.Errorf("Nodes[0].Extractor = %q, want %q", restored.Nodes[0].Extractor, "json-v1")
+	if restored.Nodes[0].Handler != "json-v1" {
+		t.Errorf("Nodes[0].Handler = %q, want %q", restored.Nodes[0].Handler, "json-v1")
 	}
-	if restored.Nodes[1].Extractor != "" {
-		t.Errorf("Nodes[1].Extractor = %q, want empty", restored.Nodes[1].Extractor)
+	if restored.Nodes[1].HandlerType != "node" {
+		t.Errorf("Nodes[1].HandlerType = %q, want %q", restored.Nodes[1].HandlerType, "node")
 	}
 }
 
@@ -349,7 +353,8 @@ circuit: json-schema-test
 nodes:
   - name: parse
     element: earth
-    extractor: json-schema
+    handler: json-schema
+    handler_type: extractor
     schema:
       type: object
       required: [name]
@@ -402,7 +407,7 @@ func TestBuildGraph_BuiltinJSONSchemaExtractor_NoRegistry(t *testing.T) {
 	def := &CircuitDef{
 		Circuit: "test",
 		Nodes: []NodeDef{
-			{Name: "parse", Approach: "methodical", Extractor: "json-schema"},
+			{Name: "parse", Approach: "methodical", Handler: "json-schema", HandlerType: "extractor"},
 		},
 		Edges: []EdgeDef{
 			{ID: "E1", Name: "done", From: "parse", To: "_done"},

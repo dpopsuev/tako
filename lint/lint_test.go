@@ -68,9 +68,10 @@ func TestRun_InvalidApproach(t *testing.T) {
 	yml := []byte(`
 circuit: test
 description: test
+handler_type: node
 nodes:
   - name: recall
-    family: recall
+    handler: recall
     approach: rapd
 edges:
   - id: e1
@@ -597,14 +598,15 @@ func TestRun_StochasticTransformer_Fallback(t *testing.T) {
 	yml := []byte(`
 circuit: test
 description: test
+handler_type: transformer
 nodes:
   - name: recall
     approach: rapid
-    transformer: core.llm
+    handler: core.llm
     prompt: "recall items"
   - name: triage
     approach: methodical
-    transformer: core.jq
+    handler: core.jq
     meta:
       expr: "input"
 edges:
@@ -644,13 +646,14 @@ func TestRun_StochasticTransformer_WithRegistry(t *testing.T) {
 	yml := []byte(`
 circuit: test
 description: test
+handler_type: transformer
 nodes:
   - name: a
     approach: rapid
-    transformer: custom.stochastic
+    handler: custom.stochastic
   - name: b
     approach: methodical
-    transformer: custom.deterministic
+    handler: custom.deterministic
 edges:
   - id: e1
     name: e1
@@ -693,10 +696,11 @@ func TestRun_StochasticTransformer_AllDeterministic(t *testing.T) {
 	yml := []byte(`
 circuit: test
 description: test
+handler_type: transformer
 nodes:
   - name: a
     approach: rapid
-    transformer: core.jq
+    handler: core.jq
     meta:
       expr: "input"
 edges:
@@ -722,19 +726,20 @@ func TestRun_StochasticSummary(t *testing.T) {
 	yml := []byte(`
 circuit: test
 description: test
+handler_type: transformer
 nodes:
   - name: recall
     approach: rapid
-    transformer: core.llm
+    handler: core.llm
     prompt: "recall items"
   - name: triage
     approach: methodical
-    transformer: core.jq
+    handler: core.jq
     meta:
       expr: "input"
   - name: assess
     approach: analytical
-    transformer: llm
+    handler: llm
     prompt: "assess"
 edges:
   - id: e1
@@ -780,10 +785,11 @@ func TestRun_StochasticSummary_NoneWhenAllDeterministic(t *testing.T) {
 	yml := []byte(`
 circuit: test
 description: test
+handler_type: transformer
 nodes:
   - name: a
     approach: rapid
-    transformer: core.jq
+    handler: core.jq
     meta:
       expr: "input"
 edges:

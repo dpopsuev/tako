@@ -265,9 +265,9 @@ func (s *CircuitSession) WorkerPrompt(cfg *CircuitConfig) string {
 	if len(cfg.StepSchemas) > 0 {
 		sb.WriteString("| Step | Required fields |\n|------|----------------|\n")
 		for _, schema := range cfg.StepSchemas {
-			fields := make([]string, 0, len(schema.Fields))
-			for name, desc := range schema.Fields {
-				fields = append(fields, fmt.Sprintf("%s (%s)", name, desc))
+			fields := make([]string, 0, len(schema.Defs))
+			for _, def := range schema.Defs {
+				fields = append(fields, fmt.Sprintf("%s (%s)", def.Name, def.Type))
 			}
 			sb.WriteString(fmt.Sprintf("| %s | %s |\n", schema.Name, strings.Join(fields, ", ")))
 		}

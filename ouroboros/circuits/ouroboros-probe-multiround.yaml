@@ -4,17 +4,18 @@
 # not set, this circuit degrades to the standard cascade.
 circuit: ouroboros-probe-multiround
 description: "Multi-round behavioral probe with judge feedback loop"
+handler_type: node
 
 nodes:
   - name: generate
     element: earth
-    family: ouroboros-generate
+    handler: ouroboros-generate
   - name: subject
     element: fire
-    family: ouroboros-subject-multiround
+    handler: ouroboros-subject-multiround
   - name: judge
     element: diamond
-    family: ouroboros-judge-multiround
+    handler: ouroboros-judge-multiround
 
 edges:
   - id: MR1
