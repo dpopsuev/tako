@@ -89,6 +89,10 @@ func calibrateCmd(args []string) error {
 		cliArgList = strings.Fields(*cliArgs)
 	}
 
+	// Worker prompt contains step schemas and protocol instructions.
+	// Prepend it to each step's prompt so the CLI knows the expected output format.
+	workerPreamble := startOut.WorkerPrompt
+
 	var wg sync.WaitGroup
 	errCh := make(chan error, *parallel)
 	stepsCompleted := 0
@@ -99,7 +103,7 @@ func calibrateCmd(args []string) error {
 		go func(workerID int) {
 			defer wg.Done()
 			err := runCalibrateWorker(ctx, session, sessionID, workerID,
-				*cliCommand, cliArgList, logger, &mu, &stepsCompleted)
+				*cliCommand, cliArgList, workerPreamble, logger, &mu, &stepsCompleted)
 			if err != nil {
 				errCh <- fmt.Errorf("worker-%d: %w", workerID, err)
 			}
@@ -136,6 +140,7 @@ func runCalibrateWorker(
 	sessionID string,
 	workerID int,
 	cliCommand string, cliArgs []string,
+	workerPreamble string,
 	logger *slog.Logger,
 	mu *sync.Mutex, stepsCompleted *int,
 ) error {
@@ -206,8 +211,15 @@ func runCalibrateWorker(
 
 		wlog.Info("processing", "case_id", step.CaseID, "step", step.Step, "dispatch_id", step.DispatchID)
 
+		// Prepend worker preamble (step schemas + output format instructions)
+		// so the CLI knows what JSON fields to produce.
+		fullPrompt := step.PromptContent
+		if workerPreamble != "" {
+			fullPrompt = workerPreamble + "\n---\n\n## Current Step: " + step.Step + "\n\n" + step.PromptContent
+		}
+
 		// Execute CLI with prompt.
-		artifact, err := execCLI(ctx, cliCommand, cliArgs, step.PromptContent)
+		artifact, err := execCLI(ctx, cliCommand, cliArgs, fullPrompt)
 		if err != nil {
 			wlog.Error("CLI failed", "case_id", step.CaseID, "step", step.Step, "error", err)
 			continue
@@ -234,8 +246,9 @@ func runCalibrateWorker(
 			return fmt.Errorf("submit_step %s/%s: %w", step.CaseID, step.Step, err)
 		}
 		if submitResult.IsError {
-			wlog.Warn("submit_step error", "case_id", step.CaseID, "step", step.Step,
+			wlog.Warn("submit_step rejected", "case_id", step.CaseID, "step", step.Step,
 				"error", calTextContent(submitResult))
+			continue
 		}
 
 		mu.Lock()
