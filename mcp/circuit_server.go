@@ -452,6 +452,7 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 		sess.traceID = fmt.Sprintf("tr-%d", time.Now().UnixMilli())
 	}
 	sess.SetTTL(s.defaultSessionTTL)
+	sess.Start() // launch run goroutine after all fields are set
 
 	bus.Emit(EventSessionStarted, dispatch.AgentServer, "", "", map[string]string{
 		MetaKeyScenario:   meta.Scenario,

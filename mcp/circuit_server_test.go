@@ -1564,6 +1564,7 @@ func TestCircuitSession_LateWorker_StillGetsSteps(t *testing.T) {
 		mcp.SessionMeta{TotalCases: nCases, Scenario: "late-worker"},
 		1, disp, bus, runFn, runCancel)
 	sess.SetTTL(300 * time.Second)
+	sess.Start()
 
 	// Simulate worker startup latency.
 	time.Sleep(2 * time.Second)
@@ -1745,6 +1746,7 @@ func TestWorkerPrompt_ContainsEndpointURL(t *testing.T) {
 	sess := mcp.NewCircuitSession(runCtx, "test-endpoint",
 		mcp.SessionMeta{TotalCases: 1, Scenario: "endpoint-test"},
 		1, disp, bus, runFn, runCancel)
+	sess.Start()
 
 	prompt := sess.WorkerPrompt(cfg)
 
@@ -1776,6 +1778,7 @@ func TestWorkerPrompt_NoEndpoint_OmitsConnectionSection(t *testing.T) {
 	sess := mcp.NewCircuitSession(runCtx, "test-no-endpoint",
 		mcp.SessionMeta{TotalCases: 1, Scenario: "no-endpoint-test"},
 		1, disp, bus, runFn, runCancel)
+	sess.Start()
 
 	prompt := sess.WorkerPrompt(cfg)
 

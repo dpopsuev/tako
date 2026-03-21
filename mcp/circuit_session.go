@@ -62,12 +62,17 @@ type CircuitSession struct {
 	startedAt time.Time               // set when session is created
 	traceID   string                   // cross-circuit correlation ID
 
+	runCtx context.Context // stored for deferred Start()
+	runFn  RunFunc         // stored for deferred Start()
+
 	mu sync.Mutex
 }
 
-// NewCircuitSession creates a circuit session, calls the domain RunFunc
-// in a goroutine, and returns immediately. The caller (CircuitServer)
-// manages the session lifecycle.
+// NewCircuitSession creates a circuit session but does NOT start the run
+// goroutine. The caller must set recorder, runDir, and traceID on the
+// returned session, then call Start() to launch the goroutine. This
+// two-phase init prevents a data race between the goroutine reading
+// those fields and the caller writing them.
 func NewCircuitSession(
 	ctx context.Context,
 	id string,
@@ -78,7 +83,7 @@ func NewCircuitSession(
 	runFn RunFunc,
 	cancel context.CancelFunc,
 ) *CircuitSession {
-	sess := &CircuitSession{
+	return &CircuitSession{
 		ID:              id,
 		log:             slog.Default().With("component", "circuit-session"),
 		state:           StateRunning,
@@ -91,10 +96,15 @@ func NewCircuitSession(
 		cancel:          cancel,
 		Supervisor:      dispatch.NewSupervisorTracker(bus),
 		startedAt:       time.Now(),
+		runCtx:          ctx,
+		runFn:           runFn,
 	}
+}
 
-	go sess.run(ctx, runFn)
-	return sess
+// Start launches the run goroutine. Must be called after setting
+// recorder, runDir, and traceID on the session.
+func (s *CircuitSession) Start() {
+	go s.run(s.runCtx, s.runFn)
 }
 
 // GetState returns the current session state in a thread-safe manner.
