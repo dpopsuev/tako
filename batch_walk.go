@@ -62,11 +62,6 @@ func BatchWalk(ctx context.Context, cfg BatchWalkConfig) []BatchWalkResult {
 		walker := NewProcessWalker(bc.ID)
 		walker.State().MergeContext(bc.Context)
 
-		// Set case ID on TraceRecorder if the observer supports it.
-		if tr, ok := cfg.Observer.(interface{ SetCaseID(string) }); ok {
-			tr.SetCaseID(bc.ID)
-		}
-
 		var mu sync.Mutex
 		var path []string
 		stepArtifacts := map[string]Artifact{}

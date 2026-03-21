@@ -16,12 +16,11 @@ func TestTraceRecorder_WalkEvents(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rec.SetCaseID("C04")
-
-	rec.OnEvent(WalkEvent{Type: EventNodeEnter, Node: "recall", Walker: "w1"})
-	rec.OnEvent(WalkEvent{Type: EventNodeExit, Node: "recall", Walker: "w1", Elapsed: 5 * time.Second})
-	rec.OnEvent(WalkEvent{Type: EventEdgeEvaluate, Node: "recall", Edge: "recall-triage"})
-	rec.OnEvent(WalkEvent{Type: EventTransition, Node: "recall", Edge: "recall-triage"})
+	// Walker name IS the case ID (BatchWalk uses NewProcessWalker(caseID)).
+	rec.OnEvent(WalkEvent{Type: EventNodeEnter, Node: "recall", Walker: "C04"})
+	rec.OnEvent(WalkEvent{Type: EventNodeExit, Node: "recall", Walker: "C04", Elapsed: 5 * time.Second})
+	rec.OnEvent(WalkEvent{Type: EventEdgeEvaluate, Node: "recall", Edge: "recall-triage", Walker: "C04"})
+	rec.OnEvent(WalkEvent{Type: EventTransition, Node: "recall", Edge: "recall-triage", Walker: "C04"})
 
 	if err := rec.Close(); err != nil {
 		t.Fatal(err)

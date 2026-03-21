@@ -54,7 +54,6 @@ type TraceRecorder struct {
 	mu         sync.Mutex
 	w          *bufio.Writer
 	file       *os.File
-	caseID     string
 	eventCount int
 }
 
@@ -71,16 +70,12 @@ func NewTraceRecorder(path string) (*TraceRecorder, error) {
 	}, nil
 }
 
-// SetCaseID sets the case ID for subsequent walker events. Called by
-// BatchWalk before each case walk so trace events carry the case context.
-func (r *TraceRecorder) SetCaseID(id string) {
-	r.mu.Lock()
-	r.caseID = id
-	r.mu.Unlock()
-}
-
 // OnEvent implements WalkObserver. Maps WalkEvents to TraceEvents at
 // debug level (or trace for artifact details on node exit).
+//
+// Case ID is derived from e.Walker (which BatchWalk sets to the case ID
+// via NewProcessWalker(bc.ID)), not from mutable recorder state. This
+// makes OnEvent safe for concurrent walkers sharing one recorder.
 func (r *TraceRecorder) OnEvent(e WalkEvent) {
 	te := TraceEvent{
 		Timestamp: time.Now().UTC().Format(time.RFC3339Nano),
@@ -89,11 +84,8 @@ func (r *TraceRecorder) OnEvent(e WalkEvent) {
 		Node:      e.Node,
 		Walker:    e.Walker,
 		Edge:      e.Edge,
+		CaseID:    e.Walker, // Walker name IS the case ID in BatchWalk
 	}
-
-	r.mu.Lock()
-	te.CaseID = r.caseID
-	r.mu.Unlock()
 
 	if e.Elapsed > 0 {
 		te.ElapsedMs = e.Elapsed.Milliseconds()
