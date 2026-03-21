@@ -254,9 +254,9 @@ func formatTimestamp(ts string) string {
 // [DELEGATION: <circuit_type>] markers and inlines child trace events when
 // a matching child run is found in the same StateDir.
 //
-// Limitation: child traces in different StateDirs (cross-service, e.g. mediator
-// routing to a remote backend) are not resolved. The annotation markers still
-// appear so the user knows to look at the child service's trace.
+// For cross-service traces (mediator routing to remote backends), use the MCP
+// get_trace tool with follow_delegations=true, which fetches child traces
+// from remote backends via the mediator. The CLI only resolves local children.
 func annotateDelegations(events []framework.TraceEvent, stateDir string) []framework.TraceEvent {
 	// Build a trace_id → run directory index for child trace lookup.
 	childByTraceID := indexChildRuns(stateDir)

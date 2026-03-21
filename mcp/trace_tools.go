@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	framework "github.com/dpopsuev/origami"
 
@@ -120,7 +121,7 @@ func (s *CircuitServer) handleGetTrace(_ context.Context, _ *sdkmcp.CallToolRequ
 	// When follow_delegations is set, annotate delegation events and
 	// inline child traces found in the same StateDir.
 	if input.FollowDelegations {
-		allEvents = mergeChildTraces(allEvents, s.Config.StateDir)
+		allEvents = mergeChildTraces(allEvents, s.Config.StateDir, s.Config.GatewayEndpoint)
 	}
 
 	// Apply pagination.
@@ -244,10 +245,9 @@ func levelIncludes(max, event framework.TraceLevel) bool {
 // child trace events from the same StateDir when a matching trace_id is found.
 // Child events are annotated with source metadata for identification.
 //
-// Limitation: child traces in different StateDirs (cross-service via mediator)
-// are not resolved. The annotation markers still appear so the caller knows
-// a delegation occurred.
-func mergeChildTraces(events []framework.TraceEvent, stateDir string) []framework.TraceEvent {
+// When mediatorEndpoint is set and a child trace is not found locally,
+// mergeChildTraces attempts to fetch it via the mediator's get_trace tool.
+func mergeChildTraces(events []framework.TraceEvent, stateDir, mediatorEndpoint string) []framework.TraceEvent {
 	childByTraceID := indexRunsByTraceID(stateDir)
 
 	var out []framework.TraceEvent
@@ -272,6 +272,7 @@ func mergeChildTraces(events []framework.TraceEvent, stateDir string) []framewor
 				continue
 			}
 			if childDir, ok := childByTraceID[traceID]; ok {
+				// Local child trace found.
 				childPath := filepath.Join(childDir, "trace.jsonl")
 				childEvents := readTraceFile(childPath)
 				for _, ce := range childEvents {
@@ -279,6 +280,16 @@ func mergeChildTraces(events []framework.TraceEvent, stateDir string) []framewor
 						ce.Metadata = make(map[string]any)
 					}
 					ce.Metadata[framework.TraceMetaSource] = label
+					out = append(out, ce)
+				}
+			} else if mediatorEndpoint != "" {
+				// Cross-service: fetch child trace via mediator.
+				childEvents := fetchRemoteTrace(mediatorEndpoint, traceID)
+				for _, ce := range childEvents {
+					if ce.Metadata == nil {
+						ce.Metadata = make(map[string]any)
+					}
+					ce.Metadata[framework.TraceMetaSource] = label + " (remote)"
 					out = append(out, ce)
 				}
 			}
@@ -331,6 +342,56 @@ func indexRunsByTraceID(stateDir string) map[string]string {
 		result[rec.TraceID] = runDir
 	}
 	return result
+}
+
+// fetchRemoteTrace calls get_trace on a remote MCP endpoint to fetch child
+// trace events for cross-service trace merging. Returns nil on any error
+// (best-effort — remote service may be offline).
+func fetchRemoteTrace(endpoint, traceID string) []framework.TraceEvent {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	transport := &sdkmcp.StreamableClientTransport{Endpoint: endpoint}
+	client := sdkmcp.NewClient(
+		&sdkmcp.Implementation{Name: "origami-trace-merge", Version: "v0.1.0"},
+		nil,
+	)
+	session, err := client.Connect(ctx, transport, nil)
+	if err != nil {
+		return nil
+	}
+	defer session.Close()
+
+	result, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
+		Name: "get_trace",
+		Arguments: mustMarshalJSON(map[string]any{
+			framework.ProtoKeySessionID: traceID,
+			"follow_delegations":        true,
+			"level":                     "info",
+			"limit":                     1000,
+		}),
+	})
+	if err != nil || result.IsError {
+		return nil
+	}
+
+	for _, c := range result.Content {
+		tc, ok := c.(*sdkmcp.TextContent)
+		if !ok {
+			continue
+		}
+		var out getTraceOutput
+		if err := json.Unmarshal([]byte(tc.Text), &out); err != nil {
+			continue
+		}
+		return out.Events
+	}
+	return nil
+}
+
+func mustMarshalJSON(v any) json.RawMessage {
+	b, _ := json.Marshal(v)
+	return b
 }
 
 // readTraceFile reads all trace events from a JSONL file. Returns nil on error.

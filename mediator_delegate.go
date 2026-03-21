@@ -124,24 +124,24 @@ func (t *mcpCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 			return nil, fmt.Errorf("mediator get_next_step(%s) parse: %w", t.circuitType, err)
 		}
 
-		if done, _ := stepOut["done"].(bool); done {
-			if errMsg, ok := stepOut["error"].(string); ok && errMsg != "" {
+		if done, _ := stepOut[ProtoKeyDone].(bool); done {
+			if errMsg, ok := stepOut[ProtoKeyError].(string); ok && errMsg != "" {
 				return nil, fmt.Errorf("mediator circuit %q failed: %s", t.circuitType, errMsg)
 			}
 			break
 		}
 
-		available, _ := stepOut["available"].(bool)
+		available, _ := stepOut[ProtoKeyAvailable].(bool)
 		if !available {
 			continue
 		}
 
 		// Subgraph has a prompt — relay through integrated circuit's dispatcher.
-		childStep, _ := stepOut["step"].(string)
-		childDispatchID, _ := stepOut["dispatch_id"].(float64)
-		childPrompt, _ := stepOut["prompt_content"].(string)
-		childCaseID, _ := stepOut["case_id"].(string)
-		childArtifactPath, _ := stepOut["artifact_path"].(string)
+		childStep, _ := stepOut[ProtoKeyStep].(string)
+		childDispatchID, _ := stepOut[ProtoKeyDispatchID].(float64)
+		childPrompt, _ := stepOut[ProtoKeyPromptContent].(string)
+		childCaseID, _ := stepOut[ProtoKeyCaseID].(string)
+		childArtifactPath, _ := stepOut[ProtoKeyArtifactPath].(string)
 
 		slog.Debug("mediator relay child prompt",
 			"circuit_type", t.circuitType,
@@ -177,10 +177,10 @@ func (t *mcpCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 		_, err = session.CallTool(ctx, &sdkmcp.CallToolParams{
 			Name: "submit_step",
 			Arguments: mustMarshal(map[string]any{
-				"session_id":  sessionID,
-				"dispatch_id": int64(childDispatchID),
-				"step":        childStep,
-				"fields":      fields,
+				ProtoKeySessionID:  sessionID,
+				ProtoKeyDispatchID: int64(childDispatchID),
+				ProtoKeyStep:       childStep,
+				ProtoKeyFields:     fields,
 			}),
 		})
 		if err != nil {
@@ -191,7 +191,7 @@ func (t *mcpCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 	// get_report
 	reportResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
 		Name:      "get_report",
-		Arguments: mustMarshal(map[string]any{"session_id": sessionID}),
+		Arguments: mustMarshal(map[string]any{ProtoKeySessionID: sessionID}),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("mediator get_report(%s): %w", t.circuitType, err)
@@ -201,18 +201,18 @@ func (t *mcpCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 		return nil, fmt.Errorf("mediator get_report(%s) parse: %w", t.circuitType, err)
 	}
 
-	if errMsg, ok := reportOut["error"].(string); ok && errMsg != "" {
+	if errMsg, ok := reportOut[ProtoKeyError].(string); ok && errMsg != "" {
 		return nil, fmt.Errorf("mediator circuit %q error: %s", t.circuitType, errMsg)
 	}
 
 	slog.Debug("mediator delegate complete",
 		"circuit_type", t.circuitType,
 		"session_id", sessionID,
-		"status", reportOut["status"],
+		"status", reportOut[ProtoKeyStatus],
 	)
 
 	// Return the structured report as the node's artifact.
-	if structured, ok := reportOut["structured"]; ok {
+	if structured, ok := reportOut[ProtoKeyStructured]; ok {
 		return structured, nil
 	}
 	return reportOut, nil

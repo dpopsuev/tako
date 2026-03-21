@@ -218,7 +218,7 @@ func (gw *Mediator) callPapercup(ctx context.Context, name string, args map[stri
 	}
 
 	// All other Papercup tools: route by session_id affinity.
-	sessionID, _ := args["session_id"].(string)
+	sessionID, _ := args[framework.ProtoKeySessionID].(string)
 	if sessionID == "" {
 		return errResult("session_id is required"), nil
 	}
@@ -318,7 +318,7 @@ func extractSessionID(result *sdkmcp.CallToolResult) string {
 		if err := json.Unmarshal([]byte(tc.Text), &out); err != nil {
 			continue
 		}
-		if sid, ok := out["session_id"].(string); ok {
+		if sid, ok := out[framework.ProtoKeySessionID].(string); ok {
 			return sid
 		}
 	}

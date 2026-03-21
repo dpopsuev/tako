@@ -111,6 +111,25 @@ func (sc *ScoreCard) FindDef(id string) *MetricDef {
 	return nil
 }
 
+// ValidateScorers checks that every MetricDef with a non-empty Scorer field
+// references a scorer that exists in the given registry. Returns an error
+// listing ALL missing scorer names (not just the first).
+func (sc *ScoreCard) ValidateScorers(reg ScorerRegistry) error {
+	var missing []string
+	for _, def := range sc.MetricDefs {
+		if def.Scorer == "" {
+			continue
+		}
+		if _, err := reg.Get(def.Scorer); err != nil {
+			missing = append(missing, def.Scorer)
+		}
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("scorecard %q references unknown scorers: %v", sc.Name, missing)
+	}
+	return nil
+}
+
 // Evaluate takes a map of metric ID → computed value (with optional detail)
 // and produces a MetricSet with direction-aware pass/fail for each defined metric.
 func (sc *ScoreCard) Evaluate(values map[string]float64, details map[string]string) MetricSet {

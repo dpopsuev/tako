@@ -3,9 +3,28 @@ package calibrate
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strings"
+	"time"
 
 	framework "github.com/dpopsuev/origami"
 )
+
+// PreflightReport captures structured diagnostics from a preflight check.
+// On success all phases appear in Passed with nil error. On partial failure
+// the report contains both Passed entries and the failing PreflightErrors.
+type PreflightReport struct {
+	Passed   []string
+	Warnings []string
+	Errors   []PreflightError
+	Elapsed  time.Duration
+}
+
+// PreflightError describes a single failure during preflight.
+type PreflightError struct {
+	Phase  string // "validate", "components", "build", "walk"
+	Detail string
+}
 
 // Preflight performs a lightweight validation of a circuit configuration
 // before running a full calibration. It catches handler resolution failures,
@@ -17,31 +36,77 @@ import (
 //  2. Build the graph (handler resolution, transformer lookup, edge compilation)
 //  3. Walk the start node with a stub walker (exits after first node)
 //
-// Returns nil if preflight passes, or an error describing the failure point.
-func Preflight(ctx context.Context, cfg HarnessConfig) error {
+// Returns a structured PreflightReport with Passed/Warnings/Errors.
+// On fatal error the report is partial and error is non-nil.
+func Preflight(ctx context.Context, cfg HarnessConfig) (*PreflightReport, error) {
+	start := time.Now()
+	report := &PreflightReport{}
+
 	if cfg.CircuitDef == nil {
-		return fmt.Errorf("preflight: CircuitDef is required")
+		report.Errors = append(report.Errors, PreflightError{
+			Phase:  "validate",
+			Detail: "CircuitDef is required",
+		})
+		report.Elapsed = time.Since(start)
+		return report, fmt.Errorf("preflight: CircuitDef is required")
 	}
 
 	// Step 1: Validate the CircuitDef (YAML structure, referential integrity).
 	if err := cfg.CircuitDef.Validate(); err != nil {
-		return fmt.Errorf("preflight: circuit definition invalid: %w", err)
+		report.Errors = append(report.Errors, PreflightError{
+			Phase:  "validate",
+			Detail: err.Error(),
+		})
+		report.Elapsed = time.Since(start)
+		return report, fmt.Errorf("preflight: circuit definition invalid: %w", err)
 	}
+	report.Passed = append(report.Passed, "validate")
 
 	// Merge components into shared registries (same as Run does).
 	shared := cfg.Shared
 	if len(cfg.Components) > 0 {
 		merged, err := framework.MergeComponents(shared, cfg.Components...)
 		if err != nil {
-			return fmt.Errorf("preflight: merge components: %w", err)
+			report.Errors = append(report.Errors, PreflightError{
+				Phase:  "components",
+				Detail: err.Error(),
+			})
+			report.Elapsed = time.Since(start)
+			return report, fmt.Errorf("preflight: merge components: %w", err)
 		}
 		shared = merged
 	}
+	report.Passed = append(report.Passed, "components")
 
 	// Step 2: Build the graph (handler resolution, transformer lookup, edge compilation).
 	runner, err := framework.NewRunnerWith(cfg.CircuitDef, shared)
 	if err != nil {
-		return fmt.Errorf("preflight: build graph: %w", err)
+		report.Errors = append(report.Errors, PreflightError{
+			Phase:  "build",
+			Detail: err.Error(),
+		})
+		report.Elapsed = time.Since(start)
+		return report, fmt.Errorf("preflight: build graph: %w", err)
+	}
+	report.Passed = append(report.Passed, "build")
+
+	// TSK-206: Mediator connectivity check (warning only).
+	if shared.MediatorEndpoint != "" {
+		healthURL := strings.TrimSuffix(shared.MediatorEndpoint, "/mcp") + "/healthz"
+		client := &http.Client{Timeout: 2 * time.Second}
+		resp, hErr := client.Get(healthURL)
+		if hErr != nil {
+			report.Warnings = append(report.Warnings,
+				fmt.Sprintf("mediator at %s may be unreachable: %v", shared.MediatorEndpoint, hErr))
+		} else {
+			resp.Body.Close()
+			if resp.StatusCode != http.StatusOK {
+				report.Warnings = append(report.Warnings,
+					fmt.Sprintf("mediator at %s returned status %d", shared.MediatorEndpoint, resp.StatusCode))
+			} else {
+				report.Passed = append(report.Passed, "mediator connectivity")
+			}
+		}
 	}
 
 	// Step 3: Walk the start node with a stub walker that cancels the
@@ -61,10 +126,17 @@ func Preflight(ctx context.Context, cfg HarnessConfig) error {
 	// That is the expected outcome. Any other error (except Interrupt)
 	// means the start node itself is broken.
 	if walkErr != nil && walkErr != context.Canceled && !framework.IsInterrupt(walkErr) {
-		return fmt.Errorf("preflight: start node walk: %w", walkErr)
+		report.Errors = append(report.Errors, PreflightError{
+			Phase:  "walk",
+			Detail: walkErr.Error(),
+		})
+		report.Elapsed = time.Since(start)
+		return report, fmt.Errorf("preflight: start node walk: %w", walkErr)
 	}
+	report.Passed = append(report.Passed, "walk")
 
-	return nil
+	report.Elapsed = time.Since(start)
+	return report, nil
 }
 
 // preflightWalker is a stub Walker that returns a minimal artifact on Handle

@@ -50,6 +50,13 @@ func NewCircuitServer(cfg CircuitConfig) *CircuitServer {
 	if cfg.StateDir == "" {
 		slog.Warn("CircuitConfig.StateDir is empty; walker tracing disabled — set StateDir to enable trace recording")
 	}
+	if len(cfg.StepSchemas) > 0 {
+		names := make([]string, len(cfg.StepSchemas))
+		for i, s := range cfg.StepSchemas {
+			names[i] = s.Name
+		}
+		slog.Info("step schemas registered", "names", names, "count", len(names))
+	}
 
 	// Auto-wire observer to lifecycle callbacks. Consumer-set callbacks compose.
 	if cfg.Observer != nil {

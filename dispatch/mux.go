@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -181,13 +182,19 @@ func (d *MuxDispatcher) GetNextStepWithHints(ctx context.Context, hints PullHint
 	hasPreference := hints.PreferredCaseID != "" || hints.PreferredZone != ""
 
 	if !hasPreference {
-		return d.getNextFIFO(ctx)
+		dc, err := d.getNextFIFO(ctx)
+		if err != nil {
+			return dc, err
+		}
+		d.emitDispatchRouted(dc, "fifo")
+		return dc, nil
 	}
 
 	// Drain all immediately-available items so we can search the full snapshot.
 	d.drainAvailable()
 
 	if dc, ok := d.tryMatchFromQueue(hints); ok {
+		d.emitDispatchRouted(dc, "hint_match")
 		return dc, nil
 	}
 
@@ -195,6 +202,7 @@ func (d *MuxDispatcher) GetNextStepWithHints(ctx context.Context, hints PullHint
 	if d.shouldSteal(hints) {
 		if dc, ok := d.dequeueAny(); ok {
 			d.emitZoneShift(hints, dc)
+			d.emitDispatchRouted(dc, "steal")
 			return dc, nil
 		}
 		// Queue empty — block for the next item and return it regardless.
@@ -204,6 +212,9 @@ func (d *MuxDispatcher) GetNextStepWithHints(ctx context.Context, hints PullHint
 		}
 		if !d.matchesHints(dc, hints) {
 			d.emitZoneShift(hints, dc)
+			d.emitDispatchRouted(dc, "steal")
+		} else {
+			d.emitDispatchRouted(dc, "hint_match")
 		}
 		return dc, nil
 	}
@@ -215,6 +226,7 @@ func (d *MuxDispatcher) GetNextStepWithHints(ctx context.Context, hints PullHint
 			return DispatchContext{}, err
 		}
 		if d.matchesHints(dc, hints) {
+			d.emitDispatchRouted(dc, "channel")
 			return dc, nil
 		}
 		d.enqueue(dc)
@@ -314,6 +326,22 @@ func (d *MuxDispatcher) emitZoneShift(hints PullHints, dc DispatchContext) {
 		MetaKeyFromZone: fromZone,
 		MetaKeyToZone:   dc.Provider,
 	})
+}
+
+func (d *MuxDispatcher) emitDispatchRouted(dc DispatchContext, reason string) {
+	if d.bus == nil {
+		return
+	}
+	d.bus.Emit(EventDispatchRouted, AgentWorker, dc.CaseID, dc.Step, map[string]string{
+		MetaKeyDispatchReason: reason,
+		MetaKeyQueueDepth:     strconv.Itoa(d.queueLen()),
+	})
+}
+
+func (d *MuxDispatcher) queueLen() int {
+	d.queueMu.Lock()
+	defer d.queueMu.Unlock()
+	return len(d.queue)
 }
 
 func (d *MuxDispatcher) tryMatchFromQueue(hints PullHints) (DispatchContext, bool) {

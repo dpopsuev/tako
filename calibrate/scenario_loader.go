@@ -59,3 +59,59 @@ func LoadGenericScenario(data []byte) (*GenericScenario, error) {
 	}
 	return &s, nil
 }
+
+// CompositeScenarioLoader merges cases from multiple loaders into one run.
+// Case IDs must be unique across all loaders.
+type CompositeScenarioLoader struct {
+	Loaders []ScenarioLoader
+}
+
+// Load loads and merges cases from all loaders. Returns an error if any
+// case IDs collide.
+func (c *CompositeScenarioLoader) Load(ctx context.Context) ([]framework.BatchCase, error) {
+	var all []framework.BatchCase
+	seen := make(map[string]bool)
+	for i, loader := range c.Loaders {
+		cases, err := loader.Load(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("loader %d: %w", i, err)
+		}
+		for _, bc := range cases {
+			if seen[bc.ID] {
+				return nil, fmt.Errorf("duplicate case ID %q across loaders", bc.ID)
+			}
+			seen[bc.ID] = true
+		}
+		all = append(all, cases...)
+	}
+	if len(all) == 0 {
+		return nil, fmt.Errorf("composite scenario has no cases")
+	}
+	return all, nil
+}
+
+// LoadAndMergeScenarios loads multiple YAML scenario files and merges
+// their cases. Returns a single GenericScenario with concatenated cases.
+func LoadAndMergeScenarios(datasets ...[]byte) (*GenericScenario, error) {
+	merged := &GenericScenario{}
+	seen := make(map[string]bool)
+	for i, data := range datasets {
+		s, err := LoadGenericScenario(data)
+		if err != nil {
+			return nil, fmt.Errorf("scenario %d: %w", i, err)
+		}
+		if merged.Name == "" {
+			merged.Name = s.Name
+		} else {
+			merged.Name += "+" + s.Name
+		}
+		for _, c := range s.Cases {
+			if seen[c.ID] {
+				return nil, fmt.Errorf("duplicate case ID %q in scenario %d", c.ID, i)
+			}
+			seen[c.ID] = true
+		}
+		merged.Cases = append(merged.Cases, s.Cases...)
+	}
+	return merged, nil
+}

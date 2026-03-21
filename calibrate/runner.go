@@ -136,6 +136,11 @@ func Run(ctx context.Context, cfg HarnessConfig) (*CalibrationReport, error) {
 		cfg.CircuitDef.Vars["_port_stubs"] = cfg.PortStubs
 	}
 
+	// Validate scorer references at config time — fail fast before walking.
+	if err := cfg.ScoreCard.ValidateScorers(DefaultScorerRegistry()); err != nil {
+		return nil, err
+	}
+
 	// Merge components into shared registries.
 	if len(cfg.Components) > 0 {
 		merged, err := framework.MergeComponents(cfg.Shared, cfg.Components...)
@@ -162,6 +167,15 @@ func Run(ctx context.Context, cfg HarnessConfig) (*CalibrationReport, error) {
 				cfg.WalkerContext = make(map[string]any)
 			}
 			cfg.WalkerContext[framework.ContextKeyPromptRelayer] = cfg.PromptRelayer
+		}
+
+		// Fail-fast: detect circuit delegate nodes that need PromptRelayer.
+		if cfg.PromptRelayer == nil && cfg.Shared.MediatorEndpoint != "" && cfg.CircuitDef != nil {
+			for _, nd := range cfg.CircuitDef.Nodes {
+				if nd.EffectiveHandlerType(cfg.CircuitDef.HandlerType) == framework.HandlerTypeCircuit {
+					return nil, fmt.Errorf("circuit has handler_type:circuit node %q but no PromptRelayer configured; set HarnessConfig.PromptRelayer for mediator delegation", nd.Name)
+				}
+			}
 		}
 
 		// Inject session-scoped walker context.

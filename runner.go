@@ -190,6 +190,11 @@ type hookingWalker struct {
 	nodeHooks  map[string][]string // node name -> after-hook names
 	hooks      HookRegistry
 	log        *slog.Logger
+
+	// onHookEvent is an optional callback fired after each hook execution.
+	// Parameters: hook name, phase ("before"/"after"/"veto"), error (nil on success).
+	// Used to bridge hook events to a SignalBus without importing dispatch/.
+	onHookEvent func(name, phase string, err error)
 }
 
 func (hw *hookingWalker) Identity() AgentIdentity      { return hw.inner.Identity() }
@@ -211,6 +216,9 @@ func (hw *hookingWalker) Handle(ctx context.Context, node Node, nc NodeContext) 
 				hw.log.Warn("before-hook error", slog.String("hook", name), slog.String("node", node.Name()), slog.String("error", hErr.Error()))
 			}
 		}
+		if hw.onHookEvent != nil {
+			hw.onHookEvent(name, "before", hErr)
+		}
 	}
 
 	artifact, err := hw.inner.Handle(ctx, node, nc)
@@ -229,11 +237,17 @@ func (hw *hookingWalker) Handle(ctx context.Context, node Node, nc NodeContext) 
 		if hErr = hook.Run(hookCtx, node.Name(), artifact); hErr != nil {
 			if errors.Is(hErr, ErrFindingVeto) {
 				artifact = &vetoArtifact{inner: artifact}
+				if hw.onHookEvent != nil {
+					hw.onHookEvent(name, "veto", hErr)
+				}
 				continue
 			}
 			if hw.log != nil {
 				hw.log.Warn("hook error", slog.String("hook", name), slog.String("node", node.Name()), slog.String("error", hErr.Error()))
 			}
+		}
+		if hw.onHookEvent != nil {
+			hw.onHookEvent(name, "after", hErr)
 		}
 	}
 

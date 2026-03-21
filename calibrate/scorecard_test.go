@@ -4,6 +4,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/dpopsuev/origami/calibrate"
@@ -200,6 +201,47 @@ func TestScoreCard_Report(t *testing.T) {
 	}
 	if len(r.Metrics.Metrics) != 4 {
 		t.Errorf("want 4 metrics (3 + agg), got %d", len(r.Metrics.Metrics))
+	}
+}
+
+// --- ValidateScorers ---
+
+func TestScoreCard_ValidateScorers_AllExist(t *testing.T) {
+	sc := calibrate.NewScoreCardBuilder("test").
+		WithMetrics(
+			calibrate.MetricDef{ID: "M1", Name: "Accuracy", Scorer: "accuracy", Params: map[string]any{"predicted": "a", "expected": "b"}},
+			calibrate.MetricDef{ID: "M2", Name: "Rate", Scorer: "rate", Params: map[string]any{"field": "items"}},
+			calibrate.MetricDef{ID: "M3", Name: "NoScorer"},
+		).
+		Build()
+
+	reg := calibrate.DefaultScorerRegistry()
+	if err := sc.ValidateScorers(reg); err != nil {
+		t.Errorf("expected no error, got: %v", err)
+	}
+}
+
+func TestScoreCard_ValidateScorers_MissingScorers(t *testing.T) {
+	sc := calibrate.NewScoreCardBuilder("test").
+		WithMetrics(
+			calibrate.MetricDef{ID: "M1", Name: "Good", Scorer: "accuracy"},
+			calibrate.MetricDef{ID: "M2", Name: "Bad1", Scorer: "nonexistent_alpha"},
+			calibrate.MetricDef{ID: "M3", Name: "Bad2", Scorer: "nonexistent_beta"},
+			calibrate.MetricDef{ID: "M4", Name: "NoScorer"},
+		).
+		Build()
+
+	reg := calibrate.DefaultScorerRegistry()
+	err := sc.ValidateScorers(reg)
+	if err == nil {
+		t.Fatal("expected error for missing scorers")
+	}
+	errStr := err.Error()
+	if !strings.Contains(errStr, "nonexistent_alpha") {
+		t.Errorf("error should mention nonexistent_alpha, got: %s", errStr)
+	}
+	if !strings.Contains(errStr, "nonexistent_beta") {
+		t.Errorf("error should mention nonexistent_beta, got: %s", errStr)
 	}
 }
 
