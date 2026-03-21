@@ -290,8 +290,8 @@ func TestRunner_Walk_NilWalker(t *testing.T) {
 
 func TestProcessWalker(t *testing.T) {
 	pw := NewProcessWalker("test-id")
-	if pw.Identity().PersonaName != "process" {
-		t.Errorf("PersonaName = %q, want process", pw.Identity().PersonaName)
+	if pw.Identity().PersonaName != "test-id" {
+		t.Errorf("PersonaName = %q, want test-id", pw.Identity().PersonaName)
 	}
 	if pw.State().ID != "test-id" {
 		t.Errorf("State.ID = %q, want test-id", pw.State().ID)

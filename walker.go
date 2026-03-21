@@ -150,7 +150,7 @@ type ProcessWalker struct {
 // NewProcessWalker creates a Walker that delegates to node.Process().
 func NewProcessWalker(id string) *ProcessWalker {
 	return &ProcessWalker{
-		identity: AgentIdentity{PersonaName: "process"},
+		identity: AgentIdentity{PersonaName: id},
 		state:    NewWalkerState(id),
 	}
 }
