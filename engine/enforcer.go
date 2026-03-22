@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/internal/finding"
 )
 
 // ArtifactStoreKey is the well-known key for a shared ArtifactStore
@@ -81,7 +80,7 @@ type ParallelEnforcerConfig struct {
 	Registries    GraphRegistries
 	ObservedNodes []string
 	CheckInterval time.Duration
-	Router        *finding.FindingRouter
+	Router        *FindingRouter
 	DrainTimeout  time.Duration
 }
 
@@ -95,7 +94,7 @@ func RunWithEnforcer(
 
 	router := enforcerCfg.Router
 	if router == nil {
-		router = finding.NewFindingRouter(nil, finding.FindingHandlers{})
+		router = NewFindingRouter(nil, FindingHandlers{})
 	}
 
 	store := &ArtifactStore{}

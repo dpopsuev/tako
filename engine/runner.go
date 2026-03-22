@@ -238,7 +238,7 @@ func (hw *hookingWalker) Handle(ctx context.Context, node circuit.Node, nc circu
 		}
 		if hErr = hook.Run(hookCtx, node.Name(), artifact); hErr != nil {
 			if errors.Is(hErr, circuit.ErrFindingVeto) {
-				artifact = &vetoArtifact{Inner: artifact}
+				artifact = &VetoArtifact{Inner: artifact}
 				if hw.onHookEvent != nil {
 					hw.onHookEvent(name, "veto", hErr)
 				}

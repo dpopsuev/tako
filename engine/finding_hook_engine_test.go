@@ -1,4 +1,4 @@
-package finding
+package engine
 
 import (
 	"context"
@@ -7,16 +7,6 @@ import (
 
 	"github.com/dpopsuev/origami/circuit"
 )
-
-type stubArtifact struct {
-	typ        string
-	confidence float64
-	raw        any
-}
-
-func (s *stubArtifact) Type() string        { return s.typ }
-func (s *stubArtifact) Confidence() float64 { return s.confidence }
-func (s *stubArtifact) Raw() any            { return s.raw }
 
 func TestVetoHook_FindingError_ReturnsVeto(t *testing.T) {
 	c := &InMemoryFindingCollector{}

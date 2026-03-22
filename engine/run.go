@@ -9,7 +9,6 @@ import (
 	"os"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/internal/state"
 )
 
 // RunOption configures a Run invocation.
@@ -100,7 +99,7 @@ func WithMemory(store circuit.MemoryStore) RunOption {
 // walk automatically attaches the given tags.
 func WithTaggedMemory(store circuit.MemoryStore, tags ...string) RunOption {
 	return func(c *runConfig) {
-		c.memory = &state.TaggedMemoryStore{Inner: store, Tags: tags}
+		c.memory = &TaggedMemoryStore{Inner: store, Tags: tags}
 	}
 }
 
@@ -322,17 +321,6 @@ func WithOutputCapture(capture circuit.WalkObserver) RunOption {
 			c.observer = circuit.MultiObserver{c.observer, capture}
 		}
 	}
-}
-
-// --- Checkpoint re-exports (internal/state) ---
-
-// JSONCheckpointer persists WalkerState to a JSON file between nodes,
-// enabling resume-from-failure for circuits.
-type JSONCheckpointer = state.JSONCheckpointer
-
-// NewJSONCheckpointer creates a checkpointer that writes to the given directory.
-func NewJSONCheckpointer(dir string) (*JSONCheckpointer, error) {
-	return state.NewJSONCheckpointer(dir)
 }
 
 // applyOffsetPreamble appends a corrective preamble to a walker's

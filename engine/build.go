@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/internal/finding"
 )
 
 // Type aliases — definitions live in circuit/ sub-package.
@@ -43,9 +42,6 @@ const (
 	MergeAppend = circuit.MergeAppend
 	MergeLatest = circuit.MergeLatest
 )
-
-// vetoArtifact wraps an artifact and overrides Confidence to 0.
-type vetoArtifact = finding.VetoArtifact
 
 // NodeRegistry maps node family names to Node factory functions.
 type NodeRegistry map[string]func(def NodeDef) circuit.Node

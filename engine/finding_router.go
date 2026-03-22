@@ -1,4 +1,4 @@
-package finding
+package engine
 
 // Category: Processing & Support
 
@@ -25,8 +25,8 @@ const (
 // Rules are evaluated in order; first match wins.
 type RouteRule struct {
 	Severity circuit.FindingSeverity `json:"severity" yaml:"severity"`
-	Domain   string               `json:"domain" yaml:"domain"`
-	Target   RouteTarget          `json:"target" yaml:"target"`
+	Domain   string                  `json:"domain" yaml:"domain"`
+	Target   RouteTarget             `json:"target" yaml:"target"`
 }
 
 // FindingHandlers holds callbacks invoked when a finding is routed to a target.
