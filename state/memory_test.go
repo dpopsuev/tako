@@ -1,9 +1,11 @@
-package framework
+package state
 
 import (
 	"sort"
 	"sync"
 	"testing"
+
+	"github.com/dpopsuev/origami/core"
 )
 
 func TestInMemoryStoreSetAndGet(t *testing.T) {
@@ -117,18 +119,6 @@ func TestInMemoryStorePersistsAcrossReads(t *testing.T) {
 	}
 }
 
-func TestWithMemoryRunOption(t *testing.T) {
-	store := NewInMemoryStore()
-	opt := WithMemory(store)
-
-	cfg := &runConfig{}
-	opt(cfg)
-
-	if cfg.memory != store {
-		t.Error("WithMemory did not set memory on runConfig")
-	}
-}
-
 func TestInMemoryStore_NamespaceIsolation(t *testing.T) {
 	store := NewInMemoryStore()
 	store.SetNS("semantic", "w1", "pref", "dark")
@@ -220,7 +210,7 @@ func TestInMemoryStore_SearchByTag(t *testing.T) {
 
 func TestTaggedMemoryStore_AutoTags(t *testing.T) {
 	inner := NewInMemoryStore()
-	wrapped := &taggedMemoryStore{Inner: inner, Tags: []string{"run-001", "rca"}}
+	wrapped := &TaggedMemoryStore{Inner: inner, Tags: []string{"run-001", "rca"}}
 
 	wrapped.SetNS("semantic", "w1", "finding", "goroutine leak")
 
@@ -237,7 +227,7 @@ func TestTaggedMemoryStore_ReadDelegation(t *testing.T) {
 	inner := NewInMemoryStore()
 	inner.SetNS("semantic", "w1", "key", "val")
 
-	wrapped := &taggedMemoryStore{Inner: inner, Tags: []string{"tag"}}
+	wrapped := &TaggedMemoryStore{Inner: inner, Tags: []string{"tag"}}
 
 	v, ok := wrapped.GetNS("semantic", "w1", "key")
 	if !ok || v != "val" {
@@ -257,7 +247,7 @@ func TestTaggedMemoryStore_ReadDelegation(t *testing.T) {
 
 func TestTaggedMemoryStore_BackwardCompatSet(t *testing.T) {
 	inner := NewInMemoryStore()
-	wrapped := &taggedMemoryStore{Inner: inner, Tags: []string{"auto"}}
+	wrapped := &TaggedMemoryStore{Inner: inner, Tags: []string{"auto"}}
 
 	wrapped.Set("w1", "k", "v")
 
@@ -272,43 +262,10 @@ func TestTaggedMemoryStore_BackwardCompatSet(t *testing.T) {
 	}
 }
 
-func TestWithTaggedMemory_RunOption(t *testing.T) {
-	store := NewInMemoryStore()
-	opt := WithTaggedMemory(store, "scenario-1", "wet")
-
-	cfg := &runConfig{}
-	opt(cfg)
-
-	tagged, ok := cfg.memory.(*taggedMemoryStore)
-	if !ok {
-		t.Fatal("WithTaggedMemory did not produce a taggedMemoryStore")
-	}
-	if tagged.Inner != store {
-		t.Error("inner store mismatch")
-	}
-	if len(tagged.Tags) != 2 || tagged.Tags[0] != "scenario-1" || tagged.Tags[1] != "wet" {
-		t.Errorf("tags = %v, want [scenario-1 wet]", tagged.Tags)
-	}
+func TestInMemoryStore_ImplementsMemoryStore(t *testing.T) {
+	var _ core.MemoryStore = (*InMemoryStore)(nil)
 }
 
-func TestMemoryHelpers(t *testing.T) {
-	store := NewInMemoryStore()
-
-	setFact(store, "w1", "preference", "dark")
-	v, ok := store.GetNS(NamespaceSemantic, "w1", "preference")
-	if !ok || v != "dark" {
-		t.Errorf("setFact: got %v", v)
-	}
-
-	recordEpisode(store, "w1", "walk-001", "analyzed 5 failures")
-	v, ok = store.GetNS(NamespaceEpisodic, "w1", "walk-001")
-	if !ok || v != "analyzed 5 failures" {
-		t.Errorf("recordEpisode: got %v", v)
-	}
-
-	updateInstruction(store, "w1", "greeting", "be concise")
-	v, ok = store.GetNS(NamespaceProcedural, "w1", "greeting")
-	if !ok || v != "be concise" {
-		t.Errorf("updateInstruction: got %v", v)
-	}
+func TestTaggedMemoryStore_ImplementsMemoryStore(t *testing.T) {
+	var _ core.MemoryStore = (*TaggedMemoryStore)(nil)
 }

@@ -236,7 +236,7 @@ func (hw *hookingWalker) Handle(ctx context.Context, node Node, nc NodeContext) 
 		}
 		if hErr = hook.Run(hookCtx, node.Name(), artifact); hErr != nil {
 			if errors.Is(hErr, ErrFindingVeto) {
-				artifact = &vetoArtifact{inner: artifact}
+				artifact = &vetoArtifact{Inner: artifact}
 				if hw.onHookEvent != nil {
 					hw.onHookEvent(name, "veto", hErr)
 				}

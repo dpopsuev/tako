@@ -104,7 +104,7 @@ func WithMemory(store MemoryStore) RunOption {
 // all memories produced during a specific calibration run, scenario, or walk.
 func WithTaggedMemory(store MemoryStore, tags ...string) RunOption {
 	return func(c *runConfig) {
-		c.memory = &taggedMemoryStore{inner: store, tags: tags}
+		c.memory = &taggedMemoryStore{Inner: store, Tags: tags}
 	}
 }
 

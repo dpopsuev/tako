@@ -1,226 +1,37 @@
 package framework
 
-// Category: Execution
+// Category: Execution — aliases to core/ (interface) and state/ (implementation).
 
 import (
-	"strings"
-	"sync"
-	"time"
+	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/state"
 )
 
 // MemoryStore provides cross-walk, identity-scoped key-value persistence.
-// Walker identity (walkerID) is the scoping dimension: each walker has
-// its own namespace. Values persist across multiple graph walks when
-// the same MemoryStore instance is reused.
-//
-// The namespace-aware methods (GetNS, SetNS, KeysNS, Search) add a second
-// scoping dimension. The original Get/Set/Keys use a default namespace ("").
-type MemoryStore interface {
-	Get(walkerID, key string) (any, bool)
-	Set(walkerID, key string, value any)
-	Keys(walkerID string) []string
+type MemoryStore = core.MemoryStore
 
-	GetNS(namespace, walkerID, key string) (any, bool)
-	SetNS(namespace, walkerID, key string, value any)
-	KeysNS(namespace, walkerID string) []string
-	Search(namespace, query string) []MemoryItem
-}
+// MemoryItem represents a stored memory entry with metadata.
+type MemoryItem = core.MemoryItem
 
 // Conventional namespace constants for the three memory types.
 const (
-	NamespaceSemantic   = "semantic"
-	NamespaceEpisodic   = "episodic"
-	NamespaceProcedural = "procedural"
+	NamespaceSemantic   = core.NamespaceSemantic
+	NamespaceEpisodic   = core.NamespaceEpisodic
+	NamespaceProcedural = core.NamespaceProcedural
 )
 
-// MemoryItem represents a stored memory entry with metadata.
-type MemoryItem struct {
-	Namespace string    `json:"namespace"`
-	WalkerID  string    `json:"walker_id"`
-	Key       string    `json:"key"`
-	Value     any       `json:"value"`
-	Tags      []string  `json:"tags,omitempty"`
-	CreatedAt time.Time `json:"created_at"`
-}
-
 // InMemoryStore is a thread-safe in-process MemoryStore with namespace support.
-type InMemoryStore struct {
-	mu   sync.RWMutex
-	data map[string]map[string]map[string]MemoryItem // namespace -> walkerID -> key -> item
-}
+type InMemoryStore = state.InMemoryStore
 
 // NewInMemoryStore creates a ready-to-use InMemoryStore.
-func NewInMemoryStore() *InMemoryStore {
-	return &InMemoryStore{
-		data: make(map[string]map[string]map[string]MemoryItem),
-	}
-}
-
-// --- Backward-compatible methods (default namespace "")  ---
-
-func (s *InMemoryStore) Get(walkerID, key string) (any, bool) {
-	return s.GetNS("", walkerID, key)
-}
-
-func (s *InMemoryStore) Set(walkerID, key string, value any) {
-	s.SetNS("", walkerID, key, value)
-}
-
-func (s *InMemoryStore) Keys(walkerID string) []string {
-	return s.KeysNS("", walkerID)
-}
-
-// --- Namespace-aware methods ---
-
-func (s *InMemoryStore) GetNS(namespace, walkerID, key string) (any, bool) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	ns := s.data[namespace]
-	if ns == nil {
-		return nil, false
-	}
-	wk := ns[walkerID]
-	if wk == nil {
-		return nil, false
-	}
-	item, ok := wk[key]
-	if !ok {
-		return nil, false
-	}
-	return item.Value, true
-}
-
-func (s *InMemoryStore) SetNS(namespace, walkerID, key string, value any) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.data[namespace] == nil {
-		s.data[namespace] = make(map[string]map[string]MemoryItem)
-	}
-	if s.data[namespace][walkerID] == nil {
-		s.data[namespace][walkerID] = make(map[string]MemoryItem)
-	}
-	s.data[namespace][walkerID][key] = MemoryItem{
-		Namespace: namespace,
-		WalkerID:  walkerID,
-		Key:       key,
-		Value:     value,
-		CreatedAt: time.Now(),
-	}
-}
-
-func (s *InMemoryStore) KeysNS(namespace, walkerID string) []string {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	ns := s.data[namespace]
-	if ns == nil {
-		return nil
-	}
-	wk := ns[walkerID]
-	if wk == nil {
-		return nil
-	}
-	keys := make([]string, 0, len(wk))
-	for k := range wk {
-		keys = append(keys, k)
-	}
-	return keys
-}
-
-// Search does substring matching on keys and string values across all walkers
-// in the given namespace.
-func (s *InMemoryStore) Search(namespace, query string) []MemoryItem {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	ns := s.data[namespace]
-	if ns == nil {
-		return nil
-	}
-	lower := strings.ToLower(query)
-	var results []MemoryItem
-	for _, wk := range ns {
-		for _, item := range wk {
-			if strings.Contains(strings.ToLower(item.Key), lower) {
-				results = append(results, item)
-				continue
-			}
-			if sv, ok := item.Value.(string); ok && strings.Contains(strings.ToLower(sv), lower) {
-				results = append(results, item)
-				continue
-			}
-			for _, tag := range item.Tags {
-				if strings.Contains(strings.ToLower(tag), lower) {
-					results = append(results, item)
-					break
-				}
-			}
-		}
-	}
-	return results
-}
-
-// SetNSTagged is like SetNS but also attaches tags to the memory item.
-func (s *InMemoryStore) SetNSTagged(namespace, walkerID, key string, value any, tags []string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.data[namespace] == nil {
-		s.data[namespace] = make(map[string]map[string]MemoryItem)
-	}
-	if s.data[namespace][walkerID] == nil {
-		s.data[namespace][walkerID] = make(map[string]MemoryItem)
-	}
-	s.data[namespace][walkerID][key] = MemoryItem{
-		Namespace: namespace,
-		WalkerID:  walkerID,
-		Key:       key,
-		Value:     value,
-		Tags:      tags,
-		CreatedAt: time.Now(),
-	}
-}
+func NewInMemoryStore() *InMemoryStore { return state.NewInMemoryStore() }
 
 // taggedSetter is implemented by MemoryStore backends that support tagged writes.
-type taggedSetter interface {
-	SetNSTagged(namespace, walkerID, key string, value any, tags []string)
-}
+type taggedSetter = state.TaggedSetter
 
 // taggedMemoryStore wraps a MemoryStore and auto-appends tags to every SetNS call.
 // Read operations are delegated unchanged.
-type taggedMemoryStore struct {
-	inner MemoryStore
-	tags  []string
-}
-
-func (t *taggedMemoryStore) Get(walkerID, key string) (any, bool) {
-	return t.inner.Get(walkerID, key)
-}
-
-func (t *taggedMemoryStore) Set(walkerID, key string, value any) {
-	t.SetNS("", walkerID, key, value)
-}
-
-func (t *taggedMemoryStore) Keys(walkerID string) []string {
-	return t.inner.Keys(walkerID)
-}
-
-func (t *taggedMemoryStore) GetNS(namespace, walkerID, key string) (any, bool) {
-	return t.inner.GetNS(namespace, walkerID, key)
-}
-
-func (t *taggedMemoryStore) SetNS(namespace, walkerID, key string, value any) {
-	if ts, ok := t.inner.(taggedSetter); ok {
-		ts.SetNSTagged(namespace, walkerID, key, value, t.tags)
-		return
-	}
-	t.inner.SetNS(namespace, walkerID, key, value)
-}
-
-func (t *taggedMemoryStore) KeysNS(namespace, walkerID string) []string {
-	return t.inner.KeysNS(namespace, walkerID)
-}
-
-func (t *taggedMemoryStore) Search(namespace, query string) []MemoryItem {
-	return t.inner.Search(namespace, query)
-}
+type taggedMemoryStore = state.TaggedMemoryStore
 
 // --- Memory type helper functions ---
 

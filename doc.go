@@ -49,10 +49,10 @@
 //   - [Identity]     — walker identity (persona + element + role) (identity.go)
 //   - [IsDeterministic] — determinism analysis for nodes/circuits (determinism.go)
 //   - models/        — LLM model registry (models/registry.go)
-//   - [Finding], [FindingSeverity]       — typed enforcer observations (finding.go)
-//   - [FindingCollector], [InMemoryFindingCollector] — finding accumulation (finding.go)
-//   - [FindingRouter], [RouteRule]       — severity+domain routing to authorities (finding_router.go)
-//   - [VetoHook]     — after-hook that vetoes on FindingError (finding_hook.go)
+//   - [Finding], [FindingSeverity]       — typed enforcer observations (core/ + finding/)
+//   - [FindingCollector], [InMemoryFindingCollector] — finding accumulation (finding/)
+//   - [FindingRouter], [RouteRule]       — severity+domain routing to authorities (finding/)
+//   - [VetoHook]     — after-hook that vetoes on FindingError (finding/)
 //   - [Errors]       — sentinel errors (errors.go)
 //   - [Extractors]   — built-in extractor implementations (extractors.go)
 //
@@ -79,6 +79,7 @@
 // Optional capabilities extracted into their own packages. None are
 // required for basic usage; import only what you need.
 //
+//   - finding/   — finding collector, router, veto hook, veto artifact
 //   - element/   — behavioral archetypes (Approach, Element, SpeedClass, traits)
 //   - models/    — foundation LLM model registry
 //   - topology/  — circuit topology validation (cascade, fan-out, fan-in, etc.)
