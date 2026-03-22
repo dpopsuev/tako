@@ -67,7 +67,7 @@ func NewRunner(def *CircuitDef, nodes NodeRegistry, edges EdgeFactory, extractor
 
 // NewRunnerWith constructs a Runner using the full registries bundle.
 func NewRunnerWith(def *CircuitDef, reg GraphRegistries) (*Runner, error) {
-	graph, err := def.BuildGraph(reg)
+	graph, err := BuildGraph(def, reg)
 	if err != nil {
 		return nil, fmt.Errorf("build graph: %w", err)
 	}

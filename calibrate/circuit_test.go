@@ -41,7 +41,7 @@ func TestCircuitDef_LoadsAndBuilds(t *testing.T) {
 		Edges: forwardEdgeFactory(edgeIDs...),
 	}
 
-	graph, err := def.BuildGraph(reg)
+	graph, err := framework.BuildGraph(def, reg)
 	if err != nil {
 		t.Fatalf("BuildGraphWith: %v", err)
 	}

@@ -512,7 +512,7 @@ func TestOllamaE2E_DelegatedCircuit(t *testing.T) {
 					Transformers: framework.TransformerRegistry{"dispatch": dt},
 					Circuits:     map[string]*framework.CircuitDef{"analysis": innerDef},
 				}
-				g, err := outerDef.BuildGraph(reg)
+				g, err := framework.BuildGraph(outerDef, reg)
 				if err != nil {
 					return nil, fmt.Errorf("build graph: %w", err)
 				}

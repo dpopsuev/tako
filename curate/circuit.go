@@ -180,5 +180,5 @@ func BuildCurationGraph(yamlData []byte) (framework.Graph, error) {
 	if err != nil {
 		return nil, err
 	}
-	return def.BuildGraph(framework.GraphRegistries{Nodes: DefaultNodeRegistry(), Edges: DefaultEdgeFactory()})
+	return framework.BuildGraph(def, framework.GraphRegistries{Nodes: DefaultNodeRegistry(), Edges: DefaultEdgeFactory()})
 }

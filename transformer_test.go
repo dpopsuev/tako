@@ -83,7 +83,7 @@ func TestBuildGraphWith_TransformerNode(t *testing.T) {
 		Transformers: TransformerRegistry{"echo": trans},
 	}
 
-	graph, err := def.BuildGraph(reg)
+	graph, err := BuildGraph(def, reg)
 	if err != nil {
 		t.Fatalf("BuildGraphWith: %v", err)
 	}
@@ -124,7 +124,7 @@ func TestBuildGraphWith_MixedTransformerAndWalker(t *testing.T) {
 		Nodes:        NodeRegistry{"legacy": nodeFactory},
 	}
 
-	graph, err := def.BuildGraph(reg)
+	graph, err := BuildGraph(def, reg)
 	if err != nil {
 		t.Fatalf("BuildGraphWith: %v", err)
 	}
@@ -478,7 +478,7 @@ func TestBuiltinGoTemplate_NoRegistry(t *testing.T) {
 		Done:  "_done",
 	}
 
-	_, err := def.BuildGraph(GraphRegistries{})
+	_, err := BuildGraph(def, GraphRegistries{})
 	if err != nil {
 		t.Fatalf("BuildGraph should succeed for built-in transformer without registry: %v", err)
 	}

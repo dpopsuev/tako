@@ -295,7 +295,7 @@ func TestBuildGraph_DelegateNode_DSL(t *testing.T) {
 		},
 	}
 
-	g, err := def.BuildGraph(reg)
+	g, err := BuildGraph(def, reg)
 	if err != nil {
 		t.Fatalf("BuildGraph() error: %v", err)
 	}
@@ -342,7 +342,7 @@ func TestBuildGraph_DelegateNode_MissingHandler(t *testing.T) {
 		},
 	}
 
-	_, err := def.BuildGraph(GraphRegistries{})
+	_, err := BuildGraph(def, GraphRegistries{})
 	if err == nil {
 		t.Fatal("BuildGraph() should fail for delegate without handler")
 	}
@@ -429,7 +429,7 @@ func TestBuildGraph_CircuitRefNode(t *testing.T) {
 		},
 	}
 
-	g, err := outerDef.BuildGraph(reg)
+	g, err := BuildGraph(outerDef, reg)
 	if err != nil {
 		t.Fatalf("BuildGraph() error: %v", err)
 	}
@@ -482,7 +482,7 @@ func TestWalk_CircuitRefNode_SubWalk(t *testing.T) {
 		},
 	}
 
-	g, err := outerDef.BuildGraph(reg)
+	g, err := BuildGraph(outerDef, reg)
 	if err != nil {
 		t.Fatalf("BuildGraph() error: %v", err)
 	}
@@ -560,7 +560,7 @@ func TestWalk_CircuitRefNode_ContextInheritance(t *testing.T) {
 		},
 	}
 
-	g, err := outerDef.BuildGraph(reg)
+	g, err := BuildGraph(outerDef, reg)
 	if err != nil {
 		t.Fatalf("BuildGraph() error: %v", err)
 	}
@@ -599,7 +599,7 @@ func TestBuildGraph_CircuitRefNode_MissingCircuit(t *testing.T) {
 		},
 	}
 
-	_, err := def.BuildGraph(GraphRegistries{
+	_, err := BuildGraph(def, GraphRegistries{
 		Circuits: map[string]*CircuitDef{},
 	})
 	if err == nil {
@@ -649,7 +649,7 @@ func TestDelegateEvents_CarryCircuitType_CircuitRef(t *testing.T) {
 		},
 	}
 
-	g, err := outerDef.BuildGraph(reg)
+	g, err := BuildGraph(outerDef, reg)
 	if err != nil {
 		t.Fatalf("BuildGraph() error: %v", err)
 	}
@@ -716,7 +716,7 @@ func TestDelegateEvents_CarryCircuitType_DSLDelegate(t *testing.T) {
 		},
 	}
 
-	g, err := outerDef.BuildGraph(reg)
+	g, err := BuildGraph(outerDef, reg)
 	if err != nil {
 		t.Fatalf("BuildGraph() error: %v", err)
 	}
@@ -761,7 +761,7 @@ func TestBuildGraph_CircuitRefNode_NilRegistry(t *testing.T) {
 		},
 	}
 
-	_, err := def.BuildGraph(GraphRegistries{})
+	_, err := BuildGraph(def, GraphRegistries{})
 	if err == nil {
 		t.Fatal("BuildGraph() should fail when no local circuit and no mediator")
 	}

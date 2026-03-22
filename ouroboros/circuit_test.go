@@ -66,7 +66,7 @@ func TestCircuitWalk_FullFlow(t *testing.T) {
 	}
 
 	nodes := CircuitNodes(seed, dispatcher)
-	g, err := def.BuildGraph(framework.GraphRegistries{Nodes: nodes})
+	g, err := framework.BuildGraph(def, framework.GraphRegistries{Nodes: nodes})
 	if err != nil {
 		t.Fatalf("build graph: %v", err)
 	}

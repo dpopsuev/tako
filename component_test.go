@@ -401,7 +401,7 @@ func TestBuildGraph_ImportsWiring(t *testing.T) {
 		Components:   loader,
 	}
 
-	g, err := def.BuildGraph(reg)
+	g, err := BuildGraph(def, reg)
 	if err != nil {
 		t.Fatalf("BuildGraph with imports: %v", err)
 	}
@@ -429,7 +429,7 @@ func TestBuildGraph_ImportFailure(t *testing.T) {
 		Components: loader,
 	}
 
-	_, err := def.BuildGraph(reg)
+	_, err := BuildGraph(def, reg)
 	if err == nil {
 		t.Fatal("expected error for missing component import")
 	}

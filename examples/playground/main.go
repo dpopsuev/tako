@@ -281,7 +281,7 @@ func walkTriageCircuit(def *fw.CircuitDef) {
 		"E7": func(d fw.EdgeDef) fw.Edge { return &demoEdge{def: d, scenario: scenario} },
 	}
 
-	graph, err := def.BuildGraph(fw.GraphRegistries{Nodes: nodeReg, Edges: edgeFactory})
+	graph, err := fw.BuildGraph(def, fw.GraphRegistries{Nodes: nodeReg, Edges: edgeFactory})
 	if err != nil {
 		fmt.Printf("  %sBuild error: %v%s\n", red, err, reset)
 		return
@@ -606,7 +606,7 @@ func teamWalkDemo(def *fw.CircuitDef) {
 		"E7": func(d fw.EdgeDef) fw.Edge { return &demoEdge{def: d, scenario: scenario} },
 	}
 
-	graph, err := def.BuildGraph(fw.GraphRegistries{Nodes: nodeReg, Edges: edgeFactory})
+	graph, err := fw.BuildGraph(def, fw.GraphRegistries{Nodes: nodeReg, Edges: edgeFactory})
 	if err != nil {
 		fmt.Printf("  %sBuild error: %v%s\n", red, err, reset)
 		return

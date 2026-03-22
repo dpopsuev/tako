@@ -134,7 +134,7 @@ func runSeedCircuit(
 
 	nodes := ouroboros.CircuitNodes(seed, dispatcher)
 
-	g, err := def.BuildGraph(framework.GraphRegistries{Nodes: nodes})
+	g, err := framework.BuildGraph(&def, framework.GraphRegistries{Nodes: nodes})
 	if err != nil {
 		return nil, fmt.Errorf("build graph: %w", err)
 	}

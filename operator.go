@@ -183,7 +183,7 @@ func (c *InMemoryContainer) Walk(ctx context.Context, reg GraphRegistries) (*Wal
 	defer cancel()
 
 	walkStart := time.Now()
-	graph, err := c.def.BuildGraph(reg)
+	graph, err := BuildGraph(c.def, reg)
 	if err != nil {
 		c.setFailed()
 		return nil, fmt.Errorf("container %s: build graph: %w", c.id, err)

@@ -170,7 +170,7 @@ func TestE2E_RealYAML_RCAInvestigation(t *testing.T) {
 		edgeIDs[i] = ed.ID
 	}
 
-	graph, err := def.BuildGraph(GraphRegistries{Nodes: stubNodeReg(families...), Edges: forwardEdgeFactory(edgeIDs...)})
+	graph, err := BuildGraph(def, GraphRegistries{Nodes: stubNodeReg(families...), Edges: forwardEdgeFactory(edgeIDs...)})
 	if err != nil {
 		t.Fatalf("BuildGraph: %v", err)
 	}
@@ -209,7 +209,7 @@ func TestE2E_RealYAML_DefectDialectic(t *testing.T) {
 		edgeIDs[i] = ed.ID
 	}
 
-	graph, err := def.BuildGraph(GraphRegistries{Nodes: stubNodeReg(families...), Edges: forwardEdgeFactory(edgeIDs...)})
+	graph, err := BuildGraph(def, GraphRegistries{Nodes: stubNodeReg(families...), Edges: forwardEdgeFactory(edgeIDs...)})
 	if err != nil {
 		t.Fatalf("BuildGraph: %v", err)
 	}
@@ -245,7 +245,7 @@ func TestE2E_RealYAML_HierarchicalDelegation(t *testing.T) {
 		edgeIDs[i] = ed.ID
 	}
 
-	graph, err := def.BuildGraph(GraphRegistries{Nodes: stubNodeReg(families...), Edges: forwardEdgeFactory(edgeIDs...)})
+	graph, err := BuildGraph(def, GraphRegistries{Nodes: stubNodeReg(families...), Edges: forwardEdgeFactory(edgeIDs...)})
 	if err != nil {
 		t.Fatalf("BuildGraph: %v", err)
 	}
@@ -292,7 +292,7 @@ func TestE2E_RealYAML_IntentClassifier(t *testing.T) {
 		edgeIDs[i] = ed.ID
 	}
 
-	graph, err := def.BuildGraph(GraphRegistries{Nodes: stubNodeReg(families...), Edges: forwardEdgeFactory(edgeIDs...)})
+	graph, err := BuildGraph(def, GraphRegistries{Nodes: stubNodeReg(families...), Edges: forwardEdgeFactory(edgeIDs...)})
 	if err != nil {
 		t.Fatalf("BuildGraph: %v", err)
 	}

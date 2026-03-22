@@ -54,7 +54,7 @@ done: DONE
 		t.Fatalf("Topology = %q, want cascade", def.Topology)
 	}
 
-	_, err = def.BuildGraph(topoTestRegistries())
+	_, err = framework.BuildGraph(def, topoTestRegistries())
 	if err != nil {
 		t.Fatalf("BuildGraph should pass for valid cascade: %v", err)
 	}
@@ -86,7 +86,7 @@ done: DONE
 		t.Fatalf("LoadCircuit: %v", err)
 	}
 
-	_, err = def.BuildGraph(topoTestRegistries())
+	_, err = framework.BuildGraph(def, topoTestRegistries())
 	if err == nil {
 		t.Fatal("BuildGraph should fail: entry node A has 2 outputs, cascade requires 1")
 	}
@@ -126,7 +126,7 @@ done: DONE
 		t.Fatalf("Topology = %q, want empty", def.Topology)
 	}
 
-	_, err = def.BuildGraph(topoTestRegistries())
+	_, err = framework.BuildGraph(def, topoTestRegistries())
 	if err != nil {
 		t.Fatalf("BuildGraph should pass without topology: %v", err)
 	}
@@ -150,7 +150,7 @@ done: DONE
 		t.Fatalf("LoadCircuit: %v", err)
 	}
 
-	_, err = def.BuildGraph(topoTestRegistries())
+	_, err = framework.BuildGraph(def, topoTestRegistries())
 	if err == nil {
 		t.Fatal("BuildGraph should fail for unknown topology")
 	}
@@ -190,7 +190,7 @@ done: DONE
 		t.Fatalf("LoadCircuit: %v", err)
 	}
 
-	_, err = def.BuildGraph(topoTestRegistries())
+	_, err = framework.BuildGraph(def, topoTestRegistries())
 	if err != nil {
 		t.Fatalf("BuildGraph should pass: shortcuts are excluded from cardinality: %v", err)
 	}

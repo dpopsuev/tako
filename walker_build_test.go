@@ -239,7 +239,7 @@ func TestHierarchicalDelegationPatternParsesAndBuilds(t *testing.T) {
 		"research":   func(nd NodeDef) Node { return &stubNode{name: nd.Name} },
 		"synthesize": func(nd NodeDef) Node { return &stubNode{name: nd.Name} },
 	}
-	_, err = def.BuildGraph(GraphRegistries{Nodes: stubNodes})
+	_, err = BuildGraph(def, GraphRegistries{Nodes: stubNodes})
 	if err != nil {
 		t.Fatalf("BuildGraph: %v", err)
 	}

@@ -36,7 +36,7 @@ func TestDiag_D1_UnreferencedHook(t *testing.T) {
 	}
 
 	logs := captureDiagLogs(func() {
-		_, err := def.BuildGraph(reg)
+		_, err := BuildGraph(def, reg)
 		if err != nil {
 			t.Fatalf("BuildGraph: %v", err)
 		}
@@ -67,7 +67,7 @@ func TestDiag_D2_MissingHookRef(t *testing.T) {
 	}
 
 	logs := captureDiagLogs(func() {
-		_, err := def.BuildGraph(reg)
+		_, err := BuildGraph(def, reg)
 		if err != nil {
 			t.Fatalf("BuildGraph: %v", err)
 		}
@@ -99,7 +99,7 @@ func TestDiag_D4_PartialHookWiring(t *testing.T) {
 	}
 
 	logs := captureDiagLogs(func() {
-		_, err := def.BuildGraph(reg)
+		_, err := BuildGraph(def, reg)
 		if err != nil {
 			t.Fatalf("BuildGraph: %v", err)
 		}
@@ -132,7 +132,7 @@ func TestDiag_AllHooksReferenced_NoWarnings(t *testing.T) {
 	}
 
 	logs := captureDiagLogs(func() {
-		_, err := def.BuildGraph(reg)
+		_, err := BuildGraph(def, reg)
 		if err != nil {
 			t.Fatalf("BuildGraph: %v", err)
 		}
@@ -157,7 +157,7 @@ func TestDiag_NoHooksRegistered_NoWarnings(t *testing.T) {
 	}
 
 	logs := captureDiagLogs(func() {
-		_, err := def.BuildGraph(reg)
+		_, err := BuildGraph(def, reg)
 		if err != nil {
 			t.Fatalf("BuildGraph: %v", err)
 		}

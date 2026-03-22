@@ -1015,7 +1015,7 @@ done: _done
 		},
 	}
 
-	_, err = def.BuildGraph(reg)
+	_, err = BuildGraph(def, reg)
 	if err == nil {
 		t.Fatal("expected BuildGraph to fail without handler_type, but it succeeded")
 	}
@@ -1053,7 +1053,7 @@ done: _done
 		},
 	}
 
-	g, err := def.BuildGraph(reg)
+	g, err := BuildGraph(def, reg)
 	if err != nil {
 		t.Fatalf("BuildGraph with handler: recall failed: %v", err)
 	}
@@ -1097,7 +1097,7 @@ done: _done
 		},
 	}
 
-	_, err = def.BuildGraph(reg)
+	_, err = BuildGraph(def, reg)
 	if err != nil {
 		t.Fatalf("BuildGraph with handler_type: node failed: %v", err)
 	}
@@ -1133,7 +1133,7 @@ done: _done
 		},
 	}
 
-	g, err := def.BuildGraph(reg)
+	g, err := BuildGraph(def, reg)
 	if err != nil {
 		t.Fatalf("BuildGraph with handler_type: delegate failed: %v", err)
 	}
@@ -1173,7 +1173,7 @@ done: _done
 		},
 	}
 
-	_, err = def.BuildGraph(reg)
+	_, err = BuildGraph(def, reg)
 	if err == nil {
 		t.Fatal("expected error when handler is set but handler_type is missing")
 	}
@@ -1219,7 +1219,7 @@ done: _done
 		},
 	}
 
-	g, err := def.BuildGraph(reg)
+	g, err := BuildGraph(def, reg)
 	if err != nil {
 		t.Fatalf("BuildGraph failed: %v", err)
 	}

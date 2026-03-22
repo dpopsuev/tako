@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 	"testing/fstest"
+
+	"github.com/dpopsuev/origami/circuit"
 )
 
 func TestBuildGraph_CircuitHandler_NilRegistry(t *testing.T) {
@@ -16,7 +18,7 @@ func TestBuildGraph_CircuitHandler_NilRegistry(t *testing.T) {
 		Nodes:       []NodeDef{{Name: "main", HandlerType: "circuit", Handler: "child"}},
 		Edges:       []EdgeDef{{ID: "main-done", From: "main", To: "done"}},
 	}
-	_, err := def.BuildGraph(GraphRegistries{
+	_, err := BuildGraph(def, GraphRegistries{
 		Transformers: TransformerRegistry{"passthrough": &passthroughTransformer{}},
 	})
 	if err == nil {
@@ -35,7 +37,7 @@ func TestBuildGraph_CircuitHandler_MediatorFallback(t *testing.T) {
 		Edges:       []EdgeDef{{ID: "main-done", From: "main", To: "done"}},
 	}
 	// No Circuits registry, but MediatorEndpoint is set → should succeed.
-	g, err := def.BuildGraph(GraphRegistries{
+	g, err := BuildGraph(def, GraphRegistries{
 		Transformers:     TransformerRegistry{"passthrough": &passthroughTransformer{}},
 		MediatorEndpoint: "http://localhost:9999/mcp",
 	})
@@ -69,7 +71,7 @@ func TestBuildGraph_CircuitHandler_WithRegistry(t *testing.T) {
 		Nodes:       []NodeDef{{Name: "main", HandlerType: "circuit", Handler: "child"}},
 		Edges:       []EdgeDef{{ID: "main-done", From: "main", To: "done"}},
 	}
-	g, err := parent.BuildGraph(GraphRegistries{
+	g, err := BuildGraph(parent, GraphRegistries{
 		Transformers: TransformerRegistry{"passthrough": &passthroughTransformer{}},
 		Circuits:     map[string]*CircuitDef{"child": child},
 	})
@@ -272,9 +274,9 @@ nodes:
 
 func TestBuildGraph_TopologyWithoutValidator_SkipsValidation(t *testing.T) {
 	// Save and clear the global topology validator.
-	saved := DefaultTopologyValidator
-	DefaultTopologyValidator = nil
-	defer func() { DefaultTopologyValidator = saved }()
+	saved := circuit.DefaultTopologyValidator
+	circuit.DefaultTopologyValidator = nil
+	defer func() { circuit.DefaultTopologyValidator = saved }()
 
 	def := &CircuitDef{
 		Circuit:     "test",
@@ -285,7 +287,7 @@ func TestBuildGraph_TopologyWithoutValidator_SkipsValidation(t *testing.T) {
 		Nodes:       []NodeDef{{Name: "a", HandlerType: "transformer", Handler: "passthrough"}},
 		Edges:       []EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 	}
-	_, err := def.BuildGraph(GraphRegistries{
+	_, err := BuildGraph(def, GraphRegistries{
 		Transformers: TransformerRegistry{"passthrough": &passthroughTransformer{}},
 	})
 	if err != nil {
@@ -295,11 +297,11 @@ func TestBuildGraph_TopologyWithoutValidator_SkipsValidation(t *testing.T) {
 
 func TestBuildGraph_TopologyWithValidator_ValidatesGraph(t *testing.T) {
 	// Register a validator that always fails.
-	saved := DefaultTopologyValidator
-	DefaultTopologyValidator = func(name string, shape GraphShape) error {
+	saved := circuit.DefaultTopologyValidator
+	circuit.DefaultTopologyValidator = func(name string, shape GraphShape) error {
 		return fmt.Errorf("mock topology violation: %s", name)
 	}
-	defer func() { DefaultTopologyValidator = saved }()
+	defer func() { circuit.DefaultTopologyValidator = saved }()
 
 	def := &CircuitDef{
 		Circuit:     "test",
@@ -310,7 +312,7 @@ func TestBuildGraph_TopologyWithValidator_ValidatesGraph(t *testing.T) {
 		Nodes:       []NodeDef{{Name: "a", HandlerType: "transformer", Handler: "passthrough"}},
 		Edges:       []EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 	}
-	_, err := def.BuildGraph(GraphRegistries{
+	_, err := BuildGraph(def, GraphRegistries{
 		Transformers: TransformerRegistry{"passthrough": &passthroughTransformer{}},
 	})
 	if err == nil {

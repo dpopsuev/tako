@@ -60,7 +60,7 @@ func RunCircuit(ctx context.Context, input *CalibrationInput, opts ...CircuitOpt
 		Edges: forwardEdgeFactory(edgeIDs...),
 	}
 
-	graph, err := def.BuildGraph(reg)
+	graph, err := framework.BuildGraph(def, reg)
 	if err != nil {
 		return nil, fmt.Errorf("build graph: %w", err)
 	}

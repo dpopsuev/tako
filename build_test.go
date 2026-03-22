@@ -28,7 +28,7 @@ func TestBuildGraph_SimpleWalk(t *testing.T) {
 	}
 	edgeFactory := EdgeFactory{}
 
-	graph, err := def.BuildGraph(GraphRegistries{Nodes: nodeReg, Edges: edgeFactory})
+	graph, err := BuildGraph(def, GraphRegistries{Nodes: nodeReg, Edges: edgeFactory})
 	if err != nil {
 		t.Fatalf("BuildGraph: %v", err)
 	}
@@ -78,7 +78,7 @@ func TestBuildGraph_WithZones(t *testing.T) {
 		"stub": func(d NodeDef) Node { return &stubBuildNode{name: d.Name} },
 	}
 
-	graph, err := def.BuildGraph(GraphRegistries{Nodes: nodeReg, Edges: EdgeFactory{}})
+	graph, err := BuildGraph(def, GraphRegistries{Nodes: nodeReg, Edges: EdgeFactory{}})
 	if err != nil {
 		t.Fatalf("BuildGraph: %v", err)
 	}
@@ -119,7 +119,7 @@ func TestBuildGraph_CustomEdgeFactory(t *testing.T) {
 		"stub": func(d NodeDef) Node { return &stubBuildNode{name: d.Name} },
 	}
 
-	graph, err := def.BuildGraph(GraphRegistries{Nodes: nodeReg, Edges: edgeFactory})
+	graph, err := BuildGraph(def, GraphRegistries{Nodes: nodeReg, Edges: edgeFactory})
 	if err != nil {
 		t.Fatalf("BuildGraph: %v", err)
 	}
@@ -141,7 +141,7 @@ func TestBuildGraph_MissingNodeFactory(t *testing.T) {
 		Start:    "a",
 		Done:     "_done",
 	}
-	_, err := def.BuildGraph(GraphRegistries{Nodes: NodeRegistry{}, Edges: EdgeFactory{}})
+	_, err := BuildGraph(def, GraphRegistries{Nodes: NodeRegistry{}, Edges: EdgeFactory{}})
 	if err == nil {
 		t.Fatal("expected error for missing node factory")
 	}
@@ -167,7 +167,7 @@ func TestBuildGraph_RealF0F6_Structure(t *testing.T) {
 		"report":      func(d NodeDef) Node { return &stubBuildNode{name: d.Name} },
 	}
 
-	graph, err := def.BuildGraph(GraphRegistries{Nodes: nodeReg, Edges: EdgeFactory{}})
+	graph, err := BuildGraph(def, GraphRegistries{Nodes: nodeReg, Edges: EdgeFactory{}})
 	if err != nil {
 		t.Fatalf("BuildGraph: %v", err)
 	}
