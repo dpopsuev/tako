@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // RenderNodeTable generates a Markdown table with per-node reference information.
-func RenderNodeTable(def *framework.CircuitDef, opts *MermaidOptions) string {
+func RenderNodeTable(def *circuit.CircuitDef, opts *MermaidOptions) string {
 	nodeDS := classifyNodes(def, opts)
 	zoneOf := buildZoneMap(def)
 
@@ -58,7 +58,7 @@ func RenderNodeTable(def *framework.CircuitDef, opts *MermaidOptions) string {
 }
 
 // RenderSummary generates a summary section with aggregate statistics.
-func RenderSummary(def *framework.CircuitDef, opts *MermaidOptions) string {
+func RenderSummary(def *circuit.CircuitDef, opts *MermaidOptions) string {
 	nodeDS := classifyNodes(def, opts)
 
 	detCount, stochCount, unknownCount := 0, 0, 0

@@ -6,7 +6,8 @@ import (
 	"math"
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 )
 
 const floatTolerance = 1e-9
@@ -36,12 +37,12 @@ func TestCircuitDef_LoadsAndBuilds(t *testing.T) {
 		edgeIDs[i] = ed.ID
 	}
 
-	reg := framework.GraphRegistries{
+	reg := engine.GraphRegistries{
 		Nodes: CalibrationNodeRegistry(),
 		Edges: forwardEdgeFactory(edgeIDs...),
 	}
 
-	graph, err := framework.BuildGraph(def, reg)
+	graph, err := engine.BuildGraph(def, reg)
 	if err != nil {
 		t.Fatalf("BuildGraphWith: %v", err)
 	}
@@ -216,8 +217,8 @@ func TestRunCircuit_WithObserver(t *testing.T) {
 		WithMetrics(MetricDef{ID: "m1", Name: "M1", Tier: TierOutcome, Direction: HigherIsBetter, Threshold: 0.0, Weight: 1.0}).
 		Build()
 
-	var events []framework.WalkEvent
-	obs := framework.WalkObserverFunc(func(e framework.WalkEvent) {
+	var events []circuit.WalkEvent
+	obs := circuit.WalkObserverFunc(func(e circuit.WalkEvent) {
 		events = append(events, e)
 	})
 

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/spf13/cobra"
 )
 
@@ -256,7 +256,7 @@ func TestBuild_WithObservabilityEmpty(t *testing.T) {
 
 func TestBuild_WithObservabilityCustom(t *testing.T) {
 	var events []string
-	custom := framework.WalkObserverFunc(func(e framework.WalkEvent) {
+	custom := circuit.WalkObserverFunc(func(e circuit.WalkEvent) {
 		events = append(events, string(e.Type))
 	})
 
@@ -272,7 +272,7 @@ func TestBuild_WithObservabilityCustom(t *testing.T) {
 		t.Fatalf("observers count = %d, want 1", len(obs))
 	}
 
-	obs[0].OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter})
+	obs[0].OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter})
 	if len(events) != 1 {
 		t.Errorf("custom observer should have received 1 event, got %d", len(events))
 	}

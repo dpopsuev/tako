@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"sync"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/element"
 )
 
@@ -86,7 +87,7 @@ type LoadScenarioNode struct{}
 func (n *LoadScenarioNode) Name() string                 { return "load_scenario" }
 func (n *LoadScenarioNode) ElementAffinity() element.Element { return element.ElementEarth }
 
-func (n *LoadScenarioNode) Process(_ context.Context, nc framework.NodeContext) (framework.Artifact, error) {
+func (n *LoadScenarioNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	raw, ok := nc.WalkerState.Context["input"]
 	if !ok {
 		return nil, fmt.Errorf("load_scenario: no input in walker context")
@@ -117,7 +118,7 @@ type FanOutCasesNode struct{}
 func (n *FanOutCasesNode) Name() string                 { return "fan_out" }
 func (n *FanOutCasesNode) ElementAffinity() element.Element { return element.ElementWater }
 
-func (n *FanOutCasesNode) Process(_ context.Context, nc framework.NodeContext) (framework.Artifact, error) {
+func (n *FanOutCasesNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	ci := extractInput(nc)
 	if ci == nil {
 		return nil, fmt.Errorf("fan_out: no CalibrationInput in context")
@@ -133,7 +134,7 @@ type WalkCaseNode struct{}
 func (n *WalkCaseNode) Name() string                 { return "walk_case" }
 func (n *WalkCaseNode) ElementAffinity() element.Element { return element.ElementFire }
 
-func (n *WalkCaseNode) Process(ctx context.Context, nc framework.NodeContext) (framework.Artifact, error) {
+func (n *WalkCaseNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	ci := extractInput(nc)
 	if ci == nil {
 		return nil, fmt.Errorf("walk_case: no CalibrationInput in context")
@@ -178,7 +179,7 @@ type ScoreCaseNode struct{}
 func (n *ScoreCaseNode) Name() string                 { return "score_case" }
 func (n *ScoreCaseNode) ElementAffinity() element.Element { return element.ElementEarth }
 
-func (n *ScoreCaseNode) Process(_ context.Context, nc framework.NodeContext) (framework.Artifact, error) {
+func (n *ScoreCaseNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	ci := extractInput(nc)
 	if ci == nil {
 		return nil, fmt.Errorf("score_case: no CalibrationInput in context")
@@ -216,7 +217,7 @@ type FanInResultsNode struct{}
 func (n *FanInResultsNode) Name() string                 { return "fan_in" }
 func (n *FanInResultsNode) ElementAffinity() element.Element { return element.ElementWater }
 
-func (n *FanInResultsNode) Process(_ context.Context, nc framework.NodeContext) (framework.Artifact, error) {
+func (n *FanInResultsNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	prior := nc.PriorArtifact
 	if prior == nil {
 		return nil, fmt.Errorf("fan_in: no prior artifact")
@@ -256,7 +257,7 @@ type AggregateNode struct{}
 func (n *AggregateNode) Name() string                 { return "aggregate" }
 func (n *AggregateNode) ElementAffinity() element.Element { return element.ElementEarth }
 
-func (n *AggregateNode) Process(_ context.Context, nc framework.NodeContext) (framework.Artifact, error) {
+func (n *AggregateNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	ci := extractInput(nc)
 	if ci == nil {
 		return nil, fmt.Errorf("aggregate: no CalibrationInput in context")
@@ -289,7 +290,7 @@ type ReportNode struct{}
 func (n *ReportNode) Name() string                 { return "report" }
 func (n *ReportNode) ElementAffinity() element.Element { return element.ElementAir }
 
-func (n *ReportNode) Process(_ context.Context, nc framework.NodeContext) (framework.Artifact, error) {
+func (n *ReportNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	ci := extractInput(nc)
 	if ci == nil {
 		return nil, fmt.Errorf("report: no CalibrationInput in context")
@@ -316,26 +317,26 @@ func (n *ReportNode) Process(_ context.Context, nc framework.NodeContext) (frame
 // CalibrationNodeRegistry returns a NodeRegistry pre-loaded with all 7
 // calibration circuit nodes, keyed by both family and name for flexible
 // resolution. Consumers register this with BuildGraphWith.
-func CalibrationNodeRegistry() framework.NodeRegistry {
-	return framework.NodeRegistry{
-		"calibrate.load":      func(_ framework.NodeDef) framework.Node { return &LoadScenarioNode{} },
-		"calibrate.fan_out":   func(_ framework.NodeDef) framework.Node { return &FanOutCasesNode{} },
-		"calibrate.walk_case": func(_ framework.NodeDef) framework.Node { return &WalkCaseNode{} },
-		"calibrate.score_case": func(_ framework.NodeDef) framework.Node { return &ScoreCaseNode{} },
-		"calibrate.fan_in":    func(_ framework.NodeDef) framework.Node { return &FanInResultsNode{} },
-		"calibrate.aggregate": func(_ framework.NodeDef) framework.Node { return &AggregateNode{} },
-		"calibrate.report":    func(_ framework.NodeDef) framework.Node { return &ReportNode{} },
-		"load_scenario":       func(_ framework.NodeDef) framework.Node { return &LoadScenarioNode{} },
-		"fan_out":             func(_ framework.NodeDef) framework.Node { return &FanOutCasesNode{} },
-		"walk_case":           func(_ framework.NodeDef) framework.Node { return &WalkCaseNode{} },
-		"score_case":          func(_ framework.NodeDef) framework.Node { return &ScoreCaseNode{} },
-		"fan_in":              func(_ framework.NodeDef) framework.Node { return &FanInResultsNode{} },
-		"aggregate":           func(_ framework.NodeDef) framework.Node { return &AggregateNode{} },
-		"report":              func(_ framework.NodeDef) framework.Node { return &ReportNode{} },
+func CalibrationNodeRegistry() engine.NodeRegistry {
+	return engine.NodeRegistry{
+		"calibrate.load":      func(_ circuit.NodeDef) circuit.Node { return &LoadScenarioNode{} },
+		"calibrate.fan_out":   func(_ circuit.NodeDef) circuit.Node { return &FanOutCasesNode{} },
+		"calibrate.walk_case": func(_ circuit.NodeDef) circuit.Node { return &WalkCaseNode{} },
+		"calibrate.score_case": func(_ circuit.NodeDef) circuit.Node { return &ScoreCaseNode{} },
+		"calibrate.fan_in":    func(_ circuit.NodeDef) circuit.Node { return &FanInResultsNode{} },
+		"calibrate.aggregate": func(_ circuit.NodeDef) circuit.Node { return &AggregateNode{} },
+		"calibrate.report":    func(_ circuit.NodeDef) circuit.Node { return &ReportNode{} },
+		"load_scenario":       func(_ circuit.NodeDef) circuit.Node { return &LoadScenarioNode{} },
+		"fan_out":             func(_ circuit.NodeDef) circuit.Node { return &FanOutCasesNode{} },
+		"walk_case":           func(_ circuit.NodeDef) circuit.Node { return &WalkCaseNode{} },
+		"score_case":          func(_ circuit.NodeDef) circuit.Node { return &ScoreCaseNode{} },
+		"fan_in":              func(_ circuit.NodeDef) circuit.Node { return &FanInResultsNode{} },
+		"aggregate":           func(_ circuit.NodeDef) circuit.Node { return &AggregateNode{} },
+		"report":              func(_ circuit.NodeDef) circuit.Node { return &ReportNode{} },
 	}
 }
 
-func extractInput(nc framework.NodeContext) *CalibrationInput {
+func extractInput(nc circuit.NodeContext) *CalibrationInput {
 	raw, ok := nc.WalkerState.Context["input"]
 	if !ok {
 		return nil

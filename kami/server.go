@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/ouroboros"
 	"github.com/dpopsuev/origami/ouroboros/review"
 	"github.com/dpopsuev/origami/view"
@@ -32,7 +32,7 @@ type Config struct {
 	SPA          http.FileSystem            // embedded frontend (nil = no SPA)
 	Theme        Theme                      // consumer theme (nil = default)
 	Kabuki       KabukiConfig               // Kabuki presentation sections (nil = debugger-only mode)
-	Vocab        framework.RichVocabulary   // rich vocabulary for node tooltips (nil = Theme only)
+	Vocab        circuit.RichVocabulary   // rich vocabulary for node tooltips (nil = Theme only)
 	MetricsHandler http.Handler             // Prometheus /metrics handler (nil = no metrics)
 	Review       ReviewConfig               // ouroboros review subsystem (empty Dir = disabled)
 }

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 func TestPreflight_ValidCircuit(t *testing.T) {
@@ -35,15 +35,15 @@ func TestPreflight_ValidCircuit(t *testing.T) {
 }
 
 func TestPreflight_MissingTransformer(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit:     "broken-circuit",
 		HandlerType: "transformer",
 		Start:       "start",
 		Done:        "done",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "start", HandlerType: "transformer", Handler: "nonexistent-transformer"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "start-done", From: "start", To: "done"},
 		},
 	}
@@ -64,14 +64,14 @@ func TestPreflight_MissingTransformer(t *testing.T) {
 }
 
 func TestPreflight_InvalidStartNode(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "bad-start",
 		Start:   "nonexistent",
 		Done:    "done",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "start", HandlerType: "transformer", Handler: "passthrough"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "start-done", From: "start", To: "done"},
 		},
 	}
@@ -129,16 +129,16 @@ func TestPreflight_CompletesQuickly(t *testing.T) {
 func TestPreflight_MultiNodeCircuit(t *testing.T) {
 	// Circuit with multiple nodes; preflight should still pass because
 	// it only validates graph construction and enters the start node.
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit:     "multi-node",
 		HandlerType: "transformer",
 		Start:       "a",
 		Done:        "done",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "a", HandlerType: "transformer", Handler: "passthrough"},
 			{Name: "b", HandlerType: "transformer", Handler: "passthrough"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "a-b", From: "a", To: "b"},
 			{ID: "b-done", From: "b", To: "done"},
 		},
@@ -156,15 +156,15 @@ func TestPreflight_MultiNodeCircuit(t *testing.T) {
 }
 
 func TestPreflight_BrokenEdgeExpression(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit:     "broken-edge",
 		HandlerType: "transformer",
 		Start:       "start",
 		Done:        "done",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "start", HandlerType: "transformer", Handler: "passthrough"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "start-done", From: "start", To: "done", When: "invalid_func(!!!"},
 		},
 	}
@@ -187,15 +187,15 @@ func TestPreflight_BrokenEdgeExpression(t *testing.T) {
 func TestPreflight_PartialReport_OnBuildError(t *testing.T) {
 	// A circuit that passes validation but fails on build should have
 	// "validate" and "components" in Passed, and "build" in Errors.
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit:     "broken-build",
 		HandlerType: "transformer",
 		Start:       "start",
 		Done:        "done",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "start", HandlerType: "transformer", Handler: "nonexistent-transformer"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "start-done", From: "start", To: "done"},
 		},
 	}

@@ -4,60 +4,60 @@ import (
 	"testing"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/testkit/assertions"
 )
 
 func TestAssertEventOrder_Pass(t *testing.T) {
-	events := []framework.WalkEvent{
-		{Type: framework.EventNodeEnter, Node: "A"},
-		{Type: framework.EventNodeExit, Node: "A"},
-		{Type: framework.EventTransition, Edge: "A-B"},
-		{Type: framework.EventNodeEnter, Node: "B"},
-		{Type: framework.EventNodeExit, Node: "B"},
+	events := []circuit.WalkEvent{
+		{Type: circuit.EventNodeEnter, Node: "A"},
+		{Type: circuit.EventNodeExit, Node: "A"},
+		{Type: circuit.EventTransition, Edge: "A-B"},
+		{Type: circuit.EventNodeEnter, Node: "B"},
+		{Type: circuit.EventNodeExit, Node: "B"},
 	}
 
-	assertions.AssertEventOrder(t, events, []framework.WalkEventType{
-		framework.EventNodeEnter,
-		framework.EventNodeExit,
-		framework.EventNodeEnter,
+	assertions.AssertEventOrder(t, events, []circuit.WalkEventType{
+		circuit.EventNodeEnter,
+		circuit.EventNodeExit,
+		circuit.EventNodeEnter,
 	})
 }
 
 func TestAssertEventOrder_Subsequence(t *testing.T) {
-	events := []framework.WalkEvent{
-		{Type: framework.EventNodeEnter, Node: "A"},
-		{Type: framework.EventEdgeEvaluate},
-		{Type: framework.EventTransition},
-		{Type: framework.EventNodeEnter, Node: "B"},
+	events := []circuit.WalkEvent{
+		{Type: circuit.EventNodeEnter, Node: "A"},
+		{Type: circuit.EventEdgeEvaluate},
+		{Type: circuit.EventTransition},
+		{Type: circuit.EventNodeEnter, Node: "B"},
 	}
 
 	// Should find node_enter -> node_enter even with intervening events.
-	assertions.AssertEventOrder(t, events, []framework.WalkEventType{
-		framework.EventNodeEnter,
-		framework.EventNodeEnter,
+	assertions.AssertEventOrder(t, events, []circuit.WalkEventType{
+		circuit.EventNodeEnter,
+		circuit.EventNodeEnter,
 	})
 }
 
 func TestAssertEventOrder_EmptyExpected(t *testing.T) {
-	events := []framework.WalkEvent{
-		{Type: framework.EventNodeEnter, Node: "A"},
+	events := []circuit.WalkEvent{
+		{Type: circuit.EventNodeEnter, Node: "A"},
 	}
 	// Empty expected should always pass.
 	assertions.AssertEventOrder(t, events, nil)
 }
 
 func TestAssertNoEvent_Pass(t *testing.T) {
-	events := []framework.WalkEvent{
-		{Type: framework.EventNodeEnter, Node: "A"},
-		{Type: framework.EventNodeExit, Node: "A"},
+	events := []circuit.WalkEvent{
+		{Type: circuit.EventNodeEnter, Node: "A"},
+		{Type: circuit.EventNodeExit, Node: "A"},
 	}
-	assertions.AssertNoEvent(t, events, framework.EventWalkError)
+	assertions.AssertNoEvent(t, events, circuit.EventWalkError)
 }
 
 func TestAssertNoEvent_EmptyEvents(t *testing.T) {
-	assertions.AssertNoEvent(t, nil, framework.EventWalkError)
+	assertions.AssertNoEvent(t, nil, circuit.EventWalkError)
 }
 
 func TestWaitForSignal_Found(t *testing.T) {

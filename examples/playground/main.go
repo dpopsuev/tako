@@ -16,7 +16,8 @@ import (
 	"runtime"
 	"strings"
 
-	fw "github.com/dpopsuev/origami"
+	fw "github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/cycle"
 	"github.com/dpopsuev/origami/dialectic"
 	"github.com/dpopsuev/origami/element"
@@ -262,7 +263,7 @@ func findCircuitsDir() string {
 func walkTriageCircuit(def *fw.CircuitDef) {
 	fmt.Printf("  Building a graph from the circuit DSL, then walking it with a Herald.\n\n")
 
-	nodeReg := fw.NodeRegistry{
+	nodeReg := engine.NodeRegistry{
 		"classify":    func(d fw.NodeDef) fw.Node { return &demoNode{name: d.Name, element: resolveNodeElement(d)} },
 		"investigate": func(d fw.NodeDef) fw.Node { return &demoNode{name: d.Name, element: resolveNodeElement(d)} },
 		"decide":      func(d fw.NodeDef) fw.Node { return &demoNode{name: d.Name, element: resolveNodeElement(d)} },
@@ -271,7 +272,7 @@ func walkTriageCircuit(def *fw.CircuitDef) {
 
 	scenario := newDemoScenario()
 
-	edgeFactory := fw.EdgeFactory{
+	edgeFactory := engine.EdgeFactory{
 		"E1": func(d fw.EdgeDef) fw.Edge { return &demoEdge{def: d, scenario: scenario} },
 		"E2": func(d fw.EdgeDef) fw.Edge { return &demoEdge{def: d, scenario: scenario} },
 		"E3": func(d fw.EdgeDef) fw.Edge { return &demoEdge{def: d, scenario: scenario} },
@@ -281,7 +282,7 @@ func walkTriageCircuit(def *fw.CircuitDef) {
 		"E7": func(d fw.EdgeDef) fw.Edge { return &demoEdge{def: d, scenario: scenario} },
 	}
 
-	graph, err := fw.BuildGraph(def, fw.GraphRegistries{Nodes: nodeReg, Edges: edgeFactory})
+	graph, err := engine.BuildGraph(def, engine.GraphRegistries{Nodes: nodeReg, Edges: edgeFactory})
 	if err != nil {
 		fmt.Printf("  %sBuild error: %v%s\n", red, err, reset)
 		return
@@ -329,7 +330,7 @@ func newDemoScenario() *demoScenario {
 	}
 }
 
-// demoNode implements framework.Node for the playground.
+// demoNode implements circuit.Node for the playground.
 type demoNode struct {
 	name    string
 	element element.Element
@@ -341,7 +342,7 @@ func (n *demoNode) Process(ctx context.Context, nc fw.NodeContext) (fw.Artifact,
 	return &demoArtifact{typ: n.name, conf: 0.75}, nil
 }
 
-// demoArtifact implements framework.Artifact.
+// demoArtifact implements circuit.Artifact.
 type demoArtifact struct {
 	typ  string
 	conf float64
@@ -351,7 +352,7 @@ func (a *demoArtifact) Type() string       { return a.typ }
 func (a *demoArtifact) Confidence() float64 { return a.conf }
 func (a *demoArtifact) Raw() any            { return a }
 
-// demoWalker implements framework.Walker with annotated output.
+// demoWalker implements circuit.Walker with annotated output.
 type demoWalker struct {
 	identity fw.AgentIdentity
 	state    *fw.WalkerState
@@ -397,7 +398,7 @@ func (w *demoWalker) Handle(ctx context.Context, node fw.Node, nc fw.NodeContext
 	return &demoArtifact{typ: node.Name(), conf: conf}, nil
 }
 
-// demoEdge implements framework.Edge with scenario-driven evaluation.
+// demoEdge implements circuit.Edge with scenario-driven evaluation.
 type demoEdge struct {
 	def      fw.EdgeDef
 	scenario *demoScenario
@@ -587,7 +588,7 @@ func teamWalkDemo(def *fw.CircuitDef) {
 	fmt.Printf("  A %sScheduler%s picks the best walker per node based on affinity.\n", bold, reset)
 	fmt.Printf("  An %sObserver%s traces every event in real time.\n\n", bold, reset)
 
-	nodeReg := fw.NodeRegistry{
+	nodeReg := engine.NodeRegistry{
 		"classify":    func(d fw.NodeDef) fw.Node { return &demoNode{name: d.Name, element: resolveNodeElement(d)} },
 		"investigate": func(d fw.NodeDef) fw.Node { return &demoNode{name: d.Name, element: resolveNodeElement(d)} },
 		"decide":      func(d fw.NodeDef) fw.Node { return &demoNode{name: d.Name, element: resolveNodeElement(d)} },
@@ -596,7 +597,7 @@ func teamWalkDemo(def *fw.CircuitDef) {
 
 	scenario := newDemoScenario()
 
-	edgeFactory := fw.EdgeFactory{
+	edgeFactory := engine.EdgeFactory{
 		"E1": func(d fw.EdgeDef) fw.Edge { return &demoEdge{def: d, scenario: scenario} },
 		"E2": func(d fw.EdgeDef) fw.Edge { return &demoEdge{def: d, scenario: scenario} },
 		"E3": func(d fw.EdgeDef) fw.Edge { return &demoEdge{def: d, scenario: scenario} },
@@ -606,7 +607,7 @@ func teamWalkDemo(def *fw.CircuitDef) {
 		"E7": func(d fw.EdgeDef) fw.Edge { return &demoEdge{def: d, scenario: scenario} },
 	}
 
-	graph, err := fw.BuildGraph(def, fw.GraphRegistries{Nodes: nodeReg, Edges: edgeFactory})
+	graph, err := engine.BuildGraph(def, engine.GraphRegistries{Nodes: nodeReg, Edges: edgeFactory})
 	if err != nil {
 		fmt.Printf("  %sBuild error: %v%s\n", red, err, reset)
 		return
@@ -664,11 +665,11 @@ func teamWalkDemo(def *fw.CircuitDef) {
 		}
 	})
 
-	trace := &fw.TraceCollector{}
+	trace := &engine.TraceCollector{}
 
-	team := &fw.Team{
+	team := &engine.Team{
 		Walkers:   walkers,
-		Scheduler: &fw.AffinityScheduler{},
+		Scheduler: &engine.AffinityScheduler{},
 		Observer:  fw.MultiObserver{liveObserver, trace},
 		MaxSteps:  20,
 	}

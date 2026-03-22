@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/view"
 )
 
@@ -14,7 +14,7 @@ func TestE2E_NoColorOutput_DialecticCircuit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read circuit: %v", err)
 	}
-	def, err := framework.LoadCircuit(data)
+	def, err := circuit.LoadCircuit(data)
 	if err != nil {
 		t.Fatalf("load circuit: %v", err)
 	}
@@ -69,7 +69,7 @@ func TestE2E_NoColorOutput_RCACircuit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read circuit: %v", err)
 	}
-	def, err := framework.LoadCircuit(data)
+	def, err := circuit.LoadCircuit(data)
 	if err != nil {
 		t.Fatalf("load circuit: %v", err)
 	}

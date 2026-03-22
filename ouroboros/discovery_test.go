@@ -7,7 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/models"
 )
 
@@ -20,7 +21,7 @@ func TestBuildExclusionPrompt_NoExclusions(t *testing.T) {
 }
 
 func TestBuildExclusionPrompt_WithExclusions(t *testing.T) {
-	seen := []framework.ModelIdentity{
+	seen := []circuit.ModelIdentity{
 		{ModelName: "claude-4-opus", Provider: "Anthropic", Version: "20250514"},
 		{ModelName: "gpt-4o", Provider: "OpenAI"},
 	}
@@ -257,7 +258,7 @@ func TestParseProbeResponse_NoCode(t *testing.T) {
 }
 
 func TestModelKey(t *testing.T) {
-	mi := framework.ModelIdentity{ModelName: "Claude-Sonnet-4"}
+	mi := circuit.ModelIdentity{ModelName: "Claude-Sonnet-4"}
 	if got := ModelKey(mi); got != "claude-sonnet-4" {
 		t.Errorf("got %q, want claude-sonnet-4", got)
 	}
@@ -354,7 +355,7 @@ func TestDiscoverModels_StubRecursive(t *testing.T) {
 // --- Extractor interface compliance tests ---
 
 func TestIdentityExtractor_ImplementsExtractor(t *testing.T) {
-	var ext framework.Extractor = &IdentityExtractor{}
+	var ext engine.Extractor = &IdentityExtractor{}
 	if ext.Name() != "identity-v1" {
 		t.Errorf("Name() = %q, want %q", ext.Name(), "identity-v1")
 	}
@@ -370,7 +371,7 @@ Some probe output here`
 	if err != nil {
 		t.Fatalf("Extract: %v", err)
 	}
-	mi, ok := result.(framework.ModelIdentity)
+	mi, ok := result.(circuit.ModelIdentity)
 	if !ok {
 		t.Fatalf("result type = %T, want ModelIdentity", result)
 	}
@@ -393,7 +394,7 @@ func TestIdentityExtractor_WrongType(t *testing.T) {
 }
 
 func TestProbeTextExtractor_ImplementsExtractor(t *testing.T) {
-	var ext framework.Extractor = &ProbeTextExtractor{}
+	var ext engine.Extractor = &ProbeTextExtractor{}
 	if ext.Name() != "probe-text-v1" {
 		t.Errorf("Name() = %q, want %q", ext.Name(), "probe-text-v1")
 	}
@@ -421,7 +422,7 @@ Second line.`
 }
 
 func TestCodeBlockProbeExtractor_ImplementsExtractor(t *testing.T) {
-	var ext framework.Extractor = &CodeBlockProbeExtractor{}
+	var ext engine.Extractor = &CodeBlockProbeExtractor{}
 	if ext.Name() != "probe-code-v1" {
 		t.Errorf("Name() = %q, want %q", ext.Name(), "probe-code-v1")
 	}

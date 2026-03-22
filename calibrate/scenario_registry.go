@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sort"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/engine"
 )
 
 // ScenarioRegistry maps scenario names to loaders. When registered,
@@ -36,7 +36,7 @@ func (r *ScenarioRegistry) List() []string {
 }
 
 // Load loads cases for the named scenario.
-func (r *ScenarioRegistry) Load(ctx context.Context, name string) ([]framework.BatchCase, error) {
+func (r *ScenarioRegistry) Load(ctx context.Context, name string) ([]engine.BatchCase, error) {
 	loader, ok := r.loaders[name]
 	if !ok {
 		return nil, fmt.Errorf("unknown scenario %q; available: %v", name, r.List())

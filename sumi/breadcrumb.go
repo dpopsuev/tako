@@ -3,7 +3,7 @@ package sumi
 import (
 	"strings"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/view"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -12,14 +12,14 @@ import (
 // a composite node (marble) to view its sub-circuit.
 type DrillDownRequest struct {
 	ParentNode string
-	CircuitDef *framework.CircuitDef
+	CircuitDef *circuit.CircuitDef
 	Layout     view.CircuitLayout
 }
 
 // BreadcrumbEntry represents one level in the navigation stack.
 type BreadcrumbEntry struct {
 	Label      string
-	CircuitDef *framework.CircuitDef
+	CircuitDef *circuit.CircuitDef
 	Layout     view.CircuitLayout
 }
 
@@ -30,7 +30,7 @@ type BreadcrumbBar struct {
 }
 
 // NewBreadcrumbBar creates a breadcrumb bar with the root circuit.
-func NewBreadcrumbBar(rootLabel string, def *framework.CircuitDef, layout view.CircuitLayout, noColor bool) *BreadcrumbBar {
+func NewBreadcrumbBar(rootLabel string, def *circuit.CircuitDef, layout view.CircuitLayout, noColor bool) *BreadcrumbBar {
 	return &BreadcrumbBar{
 		stack: []BreadcrumbEntry{
 			{Label: rootLabel, CircuitDef: def, Layout: layout},
@@ -40,7 +40,7 @@ func NewBreadcrumbBar(rootLabel string, def *framework.CircuitDef, layout view.C
 }
 
 // Push adds a sub-circuit level to the navigation stack.
-func (b *BreadcrumbBar) Push(label string, def *framework.CircuitDef, layout view.CircuitLayout) {
+func (b *BreadcrumbBar) Push(label string, def *circuit.CircuitDef, layout view.CircuitLayout) {
 	b.stack = append(b.stack, BreadcrumbEntry{
 		Label:      label,
 		CircuitDef: def,

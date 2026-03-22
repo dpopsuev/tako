@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/element"
 	"github.com/dpopsuev/origami/persona"
 	"gopkg.in/yaml.v3"
@@ -19,7 +19,7 @@ type PersonaSheet struct {
 	DimensionScores   map[Dimension]float64          `yaml:"dimension_scores"   json:"dimension_scores"`
 	ElementScores     map[element.Element]float64  `yaml:"element_scores"     json:"element_scores"`
 	SuggestedPersonas map[string]string              `yaml:"suggested_personas" json:"suggested_personas"`
-	CostProfile       framework.CostProfile          `yaml:"cost_profile"       json:"cost_profile"`
+	CostProfile       circuit.CostProfile          `yaml:"cost_profile"       json:"cost_profile"`
 	GeneratedAt       time.Time                      `yaml:"generated_at"       json:"generated_at"`
 }
 
@@ -29,7 +29,7 @@ type PersonaSheet struct {
 // dimension-specific element suggestion; steps absent from the map (or when
 // stepDims is nil) receive a generalist assignment based on the profile's
 // overall ElementMatch.
-func EmitPersonaSheet(profile ModelProfile, circuit framework.CircuitDef, stepDims StepDimensionMap) (*PersonaSheet, error) {
+func EmitPersonaSheet(profile ModelProfile, circuit circuit.CircuitDef, stepDims StepDimensionMap) (*PersonaSheet, error) {
 	if profile.Model.ModelName == "" {
 		return nil, fmt.Errorf("model identity is empty")
 	}

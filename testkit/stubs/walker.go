@@ -4,36 +4,36 @@ import (
 	"context"
 	"sync"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
-// StubWalker implements framework.Walker with canned artifacts per node.
+// StubWalker implements circuit.Walker with canned artifacts per node.
 // Thread-safe, supports error injection and visit tracking.
 type StubWalker struct {
 	mu        sync.Mutex
 	id        string
-	artifacts map[string]framework.Artifact
+	artifacts map[string]circuit.Artifact
 	err       error
 	visited   []string
-	identity  framework.AgentIdentity
-	state     *framework.WalkerState
+	identity  circuit.AgentIdentity
+	state     *circuit.WalkerState
 }
 
 // NewStubWalker creates a walker that returns canned artifacts per node name.
-func NewStubWalker(id string, artifacts map[string]framework.Artifact) *StubWalker {
+func NewStubWalker(id string, artifacts map[string]circuit.Artifact) *StubWalker {
 	if artifacts == nil {
-		artifacts = make(map[string]framework.Artifact)
+		artifacts = make(map[string]circuit.Artifact)
 	}
 	return &StubWalker{
 		id:        id,
 		artifacts: artifacts,
-		identity:  framework.AgentIdentity{PersonaName: id},
-		state:     framework.NewWalkerState(id),
+		identity:  circuit.AgentIdentity{PersonaName: id},
+		state:     circuit.NewWalkerState(id),
 	}
 }
 
 // Handle returns the canned artifact for the given node, or an error if SetError was called.
-func (w *StubWalker) Handle(_ context.Context, node framework.Node, _ framework.NodeContext) (framework.Artifact, error) {
+func (w *StubWalker) Handle(_ context.Context, node circuit.Node, _ circuit.NodeContext) (circuit.Artifact, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -51,21 +51,21 @@ func (w *StubWalker) Handle(_ context.Context, node framework.Node, _ framework.
 }
 
 // Identity returns the walker's AgentIdentity.
-func (w *StubWalker) Identity() framework.AgentIdentity {
+func (w *StubWalker) Identity() circuit.AgentIdentity {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	return w.identity
 }
 
 // SetIdentity sets the walker's AgentIdentity.
-func (w *StubWalker) SetIdentity(id framework.AgentIdentity) {
+func (w *StubWalker) SetIdentity(id circuit.AgentIdentity) {
 	w.mu.Lock()
 	w.identity = id
 	w.mu.Unlock()
 }
 
 // State returns the walker's state.
-func (w *StubWalker) State() *framework.WalkerState {
+func (w *StubWalker) State() *circuit.WalkerState {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	return w.state
@@ -88,7 +88,7 @@ func (w *StubWalker) Visited() []string {
 }
 
 // WithArtifact sets the canned artifact for a specific node.
-func (w *StubWalker) WithArtifact(node string, art framework.Artifact) {
+func (w *StubWalker) WithArtifact(node string, art circuit.Artifact) {
 	w.mu.Lock()
 	w.artifacts[node] = art
 	w.mu.Unlock()

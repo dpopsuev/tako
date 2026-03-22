@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // ResolvedConnector is a connector ready for codegen instantiation.
@@ -65,12 +65,12 @@ func Resolve(m *Manifest, origamiRoot string, resolver ModuleResolver) (*Resolve
 		return nil, fmt.Errorf("manifest has no schematics section")
 	}
 
-	connManifests := make(map[string]*framework.ComponentManifest)
-	schemManifests := make(map[string]*framework.ComponentManifest)
+	connManifests := make(map[string]*circuit.ComponentManifest)
+	schemManifests := make(map[string]*circuit.ComponentManifest)
 
 	for name, ref := range m.Connectors {
 		cmPath := resolveComponentPath(ref.Path, origamiRoot, resolver)
-		cm, err := framework.LoadComponentManifest(cmPath)
+		cm, err := circuit.LoadComponentManifest(cmPath)
 		if err != nil {
 			return nil, fmt.Errorf("connector %q: %w", name, err)
 		}
@@ -79,7 +79,7 @@ func Resolve(m *Manifest, origamiRoot string, resolver ModuleResolver) (*Resolve
 
 	for name, ref := range m.Schematics {
 		cmPath := resolveComponentPath(ref.Path, origamiRoot, resolver)
-		cm, err := framework.LoadComponentManifest(cmPath)
+		cm, err := circuit.LoadComponentManifest(cmPath)
 		if err != nil {
 			return nil, fmt.Errorf("schematic %q: %w", name, err)
 		}
@@ -131,15 +131,15 @@ func Resolve(m *Manifest, origamiRoot string, resolver ModuleResolver) (*Resolve
 
 type connectorEntry struct {
 	name     string
-	manifest *framework.ComponentManifest
+	manifest *circuit.ComponentManifest
 }
 
 type schematicEntry struct {
 	name     string
-	manifest *framework.ComponentManifest
+	manifest *circuit.ComponentManifest
 }
 
-func buildConnectorIndex(m *Manifest, cms map[string]*framework.ComponentManifest) map[string]connectorEntry {
+func buildConnectorIndex(m *Manifest, cms map[string]*circuit.ComponentManifest) map[string]connectorEntry {
 	idx := make(map[string]connectorEntry, len(cms))
 	for name, cm := range cms {
 		idx[name] = connectorEntry{name: name, manifest: cm}
@@ -147,7 +147,7 @@ func buildConnectorIndex(m *Manifest, cms map[string]*framework.ComponentManifes
 	return idx
 }
 
-func buildSchematicIndex(m *Manifest, cms map[string]*framework.ComponentManifest) map[string]schematicEntry {
+func buildSchematicIndex(m *Manifest, cms map[string]*circuit.ComponentManifest) map[string]schematicEntry {
 	idx := make(map[string]schematicEntry, len(cms))
 	for name, cm := range cms {
 		idx[name] = schematicEntry{name: name, manifest: cm}
@@ -158,7 +158,7 @@ func buildSchematicIndex(m *Manifest, cms map[string]*framework.ComponentManifes
 func resolveSchematic(
 	name string,
 	m *Manifest,
-	cm *framework.ComponentManifest,
+	cm *circuit.ComponentManifest,
 	connIdx map[string]connectorEntry,
 	schemIdx map[string]schematicEntry,
 	varNames map[string]string,
@@ -223,7 +223,7 @@ func resolveSchematic(
 	}, nil
 }
 
-func findSatisfy(cm *framework.ComponentManifest, socketName string) *framework.SatisfiesDef {
+func findSatisfy(cm *circuit.ComponentManifest, socketName string) *circuit.SatisfiesDef {
 	for i := range cm.Satisfies {
 		if cm.Satisfies[i].Socket == socketName {
 			return &cm.Satisfies[i]
@@ -370,7 +370,7 @@ func buildResolvedConnectors(connIdx map[string]connectorEntry) []ResolvedConnec
 }
 
 func collectImports(
-	connManifests map[string]*framework.ComponentManifest,
+	connManifests map[string]*circuit.ComponentManifest,
 	schematics []ResolvedSchematic,
 	root *ResolvedSchematic,
 ) []ImportEntry {

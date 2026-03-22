@@ -7,7 +7,8 @@ import (
 	"strings"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 )
 
 // PreflightReport captures structured diagnostics from a preflight check.
@@ -65,7 +66,7 @@ func Preflight(ctx context.Context, cfg HarnessConfig) (*PreflightReport, error)
 	// Merge components into shared registries (same as Run does).
 	shared := cfg.Shared
 	if len(cfg.Components) > 0 {
-		merged, err := framework.MergeComponents(shared, cfg.Components...)
+		merged, err := engine.MergeComponents(shared, cfg.Components...)
 		if err != nil {
 			report.Errors = append(report.Errors, PreflightError{
 				Phase:  "components",
@@ -79,7 +80,7 @@ func Preflight(ctx context.Context, cfg HarnessConfig) (*PreflightReport, error)
 	report.Passed = append(report.Passed, "components")
 
 	// Step 2: Build the graph (handler resolution, transformer lookup, edge compilation).
-	runner, err := framework.NewRunnerWith(cfg.CircuitDef, shared)
+	runner, err := engine.NewRunnerWith(cfg.CircuitDef, shared)
 	if err != nil {
 		report.Errors = append(report.Errors, PreflightError{
 			Phase:  "build",
@@ -116,7 +117,7 @@ func Preflight(ctx context.Context, cfg HarnessConfig) (*PreflightReport, error)
 	defer probeCancel()
 
 	stub := &preflightWalker{
-		state:  framework.NewWalkerState("preflight"),
+		state:  circuit.NewWalkerState("preflight"),
 		cancel: probeCancel,
 	}
 	walkErr := runner.Walk(probeCtx, stub, cfg.CircuitDef.Start)
@@ -125,7 +126,7 @@ func Preflight(ctx context.Context, cfg HarnessConfig) (*PreflightReport, error)
 	// the walk loop to return context.Canceled on the next iteration.
 	// That is the expected outcome. Any other error (except Interrupt)
 	// means the start node itself is broken.
-	if walkErr != nil && walkErr != context.Canceled && !framework.IsInterrupt(walkErr) {
+	if walkErr != nil && walkErr != context.Canceled && !engine.IsInterrupt(walkErr) {
 		report.Errors = append(report.Errors, PreflightError{
 			Phase:  "walk",
 			Detail: walkErr.Error(),
@@ -142,16 +143,16 @@ func Preflight(ctx context.Context, cfg HarnessConfig) (*PreflightReport, error)
 // preflightWalker is a stub Walker that returns a minimal artifact on Handle
 // and then cancels the walk context, causing a clean exit after the first node.
 type preflightWalker struct {
-	identity framework.AgentIdentity
-	state    *framework.WalkerState
+	identity circuit.AgentIdentity
+	state    *circuit.WalkerState
 	cancel   context.CancelFunc
 }
 
-func (w *preflightWalker) Identity() framework.AgentIdentity      { return w.identity }
-func (w *preflightWalker) SetIdentity(id framework.AgentIdentity)  { w.identity = id }
-func (w *preflightWalker) State() *framework.WalkerState           { return w.state }
+func (w *preflightWalker) Identity() circuit.AgentIdentity      { return w.identity }
+func (w *preflightWalker) SetIdentity(id circuit.AgentIdentity)  { w.identity = id }
+func (w *preflightWalker) State() *circuit.WalkerState           { return w.state }
 
-func (w *preflightWalker) Handle(_ context.Context, _ framework.Node, _ framework.NodeContext) (framework.Artifact, error) {
+func (w *preflightWalker) Handle(_ context.Context, _ circuit.Node, _ circuit.NodeContext) (circuit.Artifact, error) {
 	// Cancel the context so the walk loop exits cleanly after this node.
 	w.cancel()
 	return &preflightArtifact{}, nil

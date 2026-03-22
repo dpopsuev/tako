@@ -3,7 +3,8 @@ package calibrate
 import (
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 )
 
 type fakeArtifact struct{ data any }
@@ -20,9 +21,9 @@ func TestExtractFields_BasicOutputMapping(t *testing.T) {
 			{Field: "triage.symptom_category", ScorerName: "actual_category", Type: "string"},
 		},
 	}
-	result := framework.BatchWalkResult{
+	result := engine.BatchWalkResult{
 		Path: []string{"recall", "triage", "investigate"},
-		StepArtifacts: map[string]framework.Artifact{
+		StepArtifacts: map[string]circuit.Artifact{
 			"investigate": fakeArtifact{data: map[string]any{
 				"defect_type":       "pb001",
 				"convergence_score": 0.85,
@@ -55,8 +56,8 @@ func TestExtractFields_MissingNode(t *testing.T) {
 			{Field: "resolve.selected_repos", ScorerName: "actual_repos", Type: "array"},
 		},
 	}
-	result := framework.BatchWalkResult{
-		StepArtifacts: map[string]framework.Artifact{},
+	result := engine.BatchWalkResult{
+		StepArtifacts: map[string]circuit.Artifact{},
 	}
 
 	fields := ExtractFields(contract, result)
@@ -72,8 +73,8 @@ func TestExtractFields_NestedPath(t *testing.T) {
 			{Field: "investigate.gap_brief.verdict", ScorerName: "verdict_confidence", Type: "string"},
 		},
 	}
-	result := framework.BatchWalkResult{
-		StepArtifacts: map[string]framework.Artifact{
+	result := engine.BatchWalkResult{
+		StepArtifacts: map[string]circuit.Artifact{
 			"investigate": fakeArtifact{data: map[string]any{
 				"gap_brief": map[string]any{
 					"verdict": "confident",
@@ -96,8 +97,8 @@ func TestExtractFields_StatePath(t *testing.T) {
 			{Field: "state.status", ScorerName: "walk_status", Type: "string"},
 		},
 	}
-	result := framework.BatchWalkResult{
-		State: &framework.WalkerState{
+	result := engine.BatchWalkResult{
+		State: &circuit.WalkerState{
 			LoopCounts:  map[string]int{"investigate": 2},
 			CurrentNode: "done",
 			Status:      "complete",
@@ -115,7 +116,7 @@ func TestExtractFields_StatePath(t *testing.T) {
 }
 
 func TestExtractFields_NilContract(t *testing.T) {
-	result := framework.BatchWalkResult{}
+	result := engine.BatchWalkResult{}
 	fields := ExtractFields(nil, result)
 	if fields != nil {
 		t.Error("nil contract should return nil")
@@ -184,8 +185,8 @@ func TestExtractFields_ArrayProjection(t *testing.T) {
 			{Field: "tree.trees[].repo", ScorerName: "actual_repos", Type: "array"},
 		},
 	}
-	result := framework.BatchWalkResult{
-		StepArtifacts: map[string]framework.Artifact{
+	result := engine.BatchWalkResult{
+		StepArtifacts: map[string]circuit.Artifact{
 			"read": fakeArtifact{data: map[string]any{
 				"files": []any{
 					map[string]any{"repo": "linuxptp-daemon", "path": "daemon.go"},
@@ -225,8 +226,8 @@ func TestExtractFields_ArrayProjection(t *testing.T) {
 }
 
 func TestContractFromDef_Converts(t *testing.T) {
-	def := &framework.CalibrationContractDef{
-		Outputs: []framework.CalibrationFieldDef{
+	def := &circuit.CalibrationContractDef{
+		Outputs: []circuit.CalibrationFieldDef{
 			{Field: "investigate.defect_type", ScorerName: "actual_defect_type", Type: "string"},
 		},
 	}

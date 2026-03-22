@@ -3,7 +3,7 @@ package dialectic
 import (
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -180,7 +180,7 @@ func TestBuildEdgeFactory_EdgesImplementInterface(t *testing.T) {
 	cfg := DefaultConfig()
 	factory := BuildEdgeFactory(cfg)
 	for id, fn := range factory {
-		edge := fn(framework.EdgeDef{ID: id, From: "a", To: "b"})
+		edge := fn(circuit.EdgeDef{ID: id, From: "a", To: "b"})
 		if edge.ID() != id {
 			t.Errorf("edge %s: ID() = %q, want %q", id, edge.ID(), id)
 		}
@@ -193,10 +193,10 @@ func TestBuildEdgeFactory_EdgesImplementInterface(t *testing.T) {
 func TestDialecticEdge_HD1_FastTrack(t *testing.T) {
 	cfg := DefaultConfig()
 	factory := BuildEdgeFactory(cfg)
-	edge := factory["HD1"](framework.EdgeDef{ID: "HD1", From: "indict", To: "defend"})
+	edge := factory["HD1"](circuit.EdgeDef{ID: "HD1", From: "indict", To: "defend"})
 
 	high := &ThesisChallenge{ConfidenceScore: 0.96}
-	tr := edge.Evaluate(high, &framework.WalkerState{})
+	tr := edge.Evaluate(high, &circuit.WalkerState{})
 	if tr == nil {
 		t.Fatal("HD1 should trigger for confidence >= 0.95")
 	}
@@ -205,7 +205,7 @@ func TestDialecticEdge_HD1_FastTrack(t *testing.T) {
 	}
 
 	low := &ThesisChallenge{ConfidenceScore: 0.80}
-	tr = edge.Evaluate(low, &framework.WalkerState{})
+	tr = edge.Evaluate(low, &circuit.WalkerState{})
 	if tr != nil {
 		t.Error("HD1 should not trigger for confidence < 0.95")
 	}
@@ -214,16 +214,16 @@ func TestDialecticEdge_HD1_FastTrack(t *testing.T) {
 func TestDialecticEdge_HD2_Concession(t *testing.T) {
 	cfg := DefaultConfig()
 	factory := BuildEdgeFactory(cfg)
-	edge := factory["HD2"](framework.EdgeDef{ID: "HD2", From: "defend", To: "verdict"})
+	edge := factory["HD2"](circuit.EdgeDef{ID: "HD2", From: "defend", To: "verdict"})
 
 	concede := &AntithesisResponse{Concession: true, ConfidenceScore: 0.5}
-	tr := edge.Evaluate(concede, &framework.WalkerState{})
+	tr := edge.Evaluate(concede, &circuit.WalkerState{})
 	if tr == nil {
 		t.Fatal("HD2 should trigger on concession")
 	}
 
 	noConcede := &AntithesisResponse{Concession: false, ConfidenceScore: 0.5}
-	tr = edge.Evaluate(noConcede, &framework.WalkerState{})
+	tr = edge.Evaluate(noConcede, &circuit.WalkerState{})
 	if tr != nil {
 		t.Error("HD2 should not trigger without concession")
 	}
@@ -232,22 +232,22 @@ func TestDialecticEdge_HD2_Concession(t *testing.T) {
 func TestDialecticEdge_HD5_DialecticComplete(t *testing.T) {
 	cfg := DefaultConfig()
 	factory := BuildEdgeFactory(cfg)
-	edge := factory["HD5"](framework.EdgeDef{ID: "HD5", From: "hearing", To: "verdict"})
+	edge := factory["HD5"](circuit.EdgeDef{ID: "HD5", From: "hearing", To: "verdict"})
 
 	converged := &Record{Converged: true, MaxRounds: 3, Rounds: []Round{{Round: 1}}}
-	tr := edge.Evaluate(converged, &framework.WalkerState{})
+	tr := edge.Evaluate(converged, &circuit.WalkerState{})
 	if tr == nil {
 		t.Fatal("HD5 should trigger when converged")
 	}
 
 	maxRounds := &Record{Converged: false, MaxRounds: 2, Rounds: []Round{{Round: 1}, {Round: 2}}}
-	tr = edge.Evaluate(maxRounds, &framework.WalkerState{})
+	tr = edge.Evaluate(maxRounds, &circuit.WalkerState{})
 	if tr == nil {
 		t.Fatal("HD5 should trigger when max rounds reached")
 	}
 
 	inProgress := &Record{Converged: false, MaxRounds: 5, Rounds: []Round{{Round: 1}}}
-	tr = edge.Evaluate(inProgress, &framework.WalkerState{})
+	tr = edge.Evaluate(inProgress, &circuit.WalkerState{})
 	if tr != nil {
 		t.Error("HD5 should not trigger mid-dialectic")
 	}
@@ -256,16 +256,16 @@ func TestDialecticEdge_HD5_DialecticComplete(t *testing.T) {
 func TestDialecticEdge_HD6_Affirm(t *testing.T) {
 	cfg := DefaultConfig()
 	factory := BuildEdgeFactory(cfg)
-	edge := factory["HD6"](framework.EdgeDef{ID: "HD6", From: "verdict", To: "_done"})
+	edge := factory["HD6"](circuit.EdgeDef{ID: "HD6", From: "verdict", To: "_done"})
 
 	s := &Synthesis{Decision: SynthesisAffirm}
-	tr := edge.Evaluate(s, &framework.WalkerState{})
+	tr := edge.Evaluate(s, &circuit.WalkerState{})
 	if tr == nil || tr.NextNode != "_done" {
 		t.Fatal("HD6 should route affirm to _done")
 	}
 
 	s2 := &Synthesis{Decision: SynthesisAmend}
-	tr = edge.Evaluate(s2, &framework.WalkerState{})
+	tr = edge.Evaluate(s2, &circuit.WalkerState{})
 	if tr != nil {
 		t.Error("HD6 should not trigger for amend")
 	}
@@ -274,9 +274,9 @@ func TestDialecticEdge_HD6_Affirm(t *testing.T) {
 func TestDialecticEdge_HD8_Remand_WithLimit(t *testing.T) {
 	cfg := Config{MaxNegations: 2}
 	factory := BuildEdgeFactory(cfg)
-	edge := factory["HD8"](framework.EdgeDef{ID: "HD8", From: "verdict", To: "indict", Loop: true})
+	edge := factory["HD8"](circuit.EdgeDef{ID: "HD8", From: "verdict", To: "indict", Loop: true})
 
-	state := &framework.WalkerState{LoopCounts: map[string]int{"verdict": 0}}
+	state := &circuit.WalkerState{LoopCounts: map[string]int{"verdict": 0}}
 	s := &Synthesis{Decision: SynthesisRemand}
 	tr := edge.Evaluate(s, state)
 	if tr == nil {
@@ -296,10 +296,10 @@ func TestDialecticEdge_HD8_Remand_WithLimit(t *testing.T) {
 func TestDialecticEdge_HD9_Acquit(t *testing.T) {
 	cfg := DefaultConfig()
 	factory := BuildEdgeFactory(cfg)
-	edge := factory["HD9"](framework.EdgeDef{ID: "HD9", From: "verdict", To: "_done"})
+	edge := factory["HD9"](circuit.EdgeDef{ID: "HD9", From: "verdict", To: "_done"})
 
 	s := &Synthesis{Decision: SynthesisAcquit}
-	tr := edge.Evaluate(s, &framework.WalkerState{})
+	tr := edge.Evaluate(s, &circuit.WalkerState{})
 	if tr == nil || tr.NextNode != "_done" {
 		t.Fatal("HD9 should route acquit to _done")
 	}
@@ -308,10 +308,10 @@ func TestDialecticEdge_HD9_Acquit(t *testing.T) {
 func TestDialecticEdge_HD12_Unresolved(t *testing.T) {
 	cfg := DefaultConfig()
 	factory := BuildEdgeFactory(cfg)
-	edge := factory["HD12"](framework.EdgeDef{ID: "HD12", From: "verdict", To: "_done"})
+	edge := factory["HD12"](circuit.EdgeDef{ID: "HD12", From: "verdict", To: "_done"})
 
 	s := &Synthesis{Decision: SynthesisUnresolved}
-	tr := edge.Evaluate(s, &framework.WalkerState{})
+	tr := edge.Evaluate(s, &circuit.WalkerState{})
 	if tr == nil || tr.NextNode != "_done" {
 		t.Fatal("HD12 should route unresolved contradiction to _done")
 	}
@@ -321,22 +321,22 @@ func TestDialecticEdge_HD5_GapClosure(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.GapClosureThreshold = 0.15
 	factory := BuildEdgeFactory(cfg)
-	edge := factory["HD5"](framework.EdgeDef{ID: "HD5", From: "hearing", To: "verdict"})
+	edge := factory["HD5"](circuit.EdgeDef{ID: "HD5", From: "hearing", To: "verdict"})
 
 	closed := &Record{GapClosure: 0.10, MaxRounds: 10, Rounds: []Round{{Round: 1}}}
-	tr := edge.Evaluate(closed, &framework.WalkerState{})
+	tr := edge.Evaluate(closed, &circuit.WalkerState{})
 	if tr == nil {
 		t.Fatal("HD5 should trigger when gap closure < threshold")
 	}
 
 	open := &Record{GapClosure: 0.50, MaxRounds: 10, Rounds: []Round{{Round: 1}}}
-	tr = edge.Evaluate(open, &framework.WalkerState{})
+	tr = edge.Evaluate(open, &circuit.WalkerState{})
 	if tr != nil {
 		t.Error("HD5 should not trigger when gap closure > threshold")
 	}
 
 	noGap := &Record{GapClosure: 0, MaxRounds: 10, Rounds: []Round{{Round: 1}}}
-	tr = edge.Evaluate(noGap, &framework.WalkerState{})
+	tr = edge.Evaluate(noGap, &circuit.WalkerState{})
 	if tr != nil {
 		t.Error("HD5 should not trigger when gap closure is zero (not set)")
 	}
@@ -345,15 +345,15 @@ func TestDialecticEdge_HD5_GapClosure(t *testing.T) {
 func TestDialecticEdge_HD10_SafetyCeiling(t *testing.T) {
 	cfg := Config{MaxTurns: 3}
 	factory := BuildEdgeFactory(cfg)
-	edge := factory["HD10"](framework.EdgeDef{ID: "HD10", From: "hearing", To: "_done"})
+	edge := factory["HD10"](circuit.EdgeDef{ID: "HD10", From: "hearing", To: "_done"})
 
-	state := &framework.WalkerState{LoopCounts: map[string]int{"verdict": 2, "hearing": 2}}
+	state := &circuit.WalkerState{LoopCounts: map[string]int{"verdict": 2, "hearing": 2}}
 	tr := edge.Evaluate(&Record{GapClosure: 0.45}, state)
 	if tr == nil {
 		t.Fatal("HD10 should trigger when combined loops exceed MaxTurns")
 	}
 
-	state = &framework.WalkerState{LoopCounts: map[string]int{"verdict": 1, "hearing": 1}}
+	state = &circuit.WalkerState{LoopCounts: map[string]int{"verdict": 1, "hearing": 1}}
 	tr = edge.Evaluate(&Record{}, state)
 	if tr != nil {
 		t.Error("HD10 should not trigger when combined loops are under MaxTurns")
@@ -364,10 +364,10 @@ func TestDialecticEdge_HD13_CMRR(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.CMRREnabled = true
 	factory := BuildEdgeFactory(cfg)
-	edge := factory["HD13"](framework.EdgeDef{ID: "HD13", From: "hearing", To: "hearing"})
+	edge := factory["HD13"](circuit.EdgeDef{ID: "HD13", From: "hearing", To: "hearing"})
 
 	cmrr := &CMRRCheck{SharedPremises: []string{"both assume stable network"}, SuspicionScore: 0.7}
-	tr := edge.Evaluate(cmrr, &framework.WalkerState{})
+	tr := edge.Evaluate(cmrr, &circuit.WalkerState{})
 	if tr == nil {
 		t.Fatal("HD13 should trigger when CMRR detects shared assumptions")
 	}
@@ -376,7 +376,7 @@ func TestDialecticEdge_HD13_CMRR(t *testing.T) {
 	}
 
 	clean := &CMRRCheck{SharedPremises: nil, SuspicionScore: 0}
-	tr = edge.Evaluate(clean, &framework.WalkerState{})
+	tr = edge.Evaluate(clean, &circuit.WalkerState{})
 	if tr != nil {
 		t.Error("HD13 should not trigger when suspicion is zero")
 	}
@@ -386,10 +386,10 @@ func TestDialecticEdge_HD13_CMRRDisabled(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.CMRREnabled = false
 	factory := BuildEdgeFactory(cfg)
-	edge := factory["HD13"](framework.EdgeDef{ID: "HD13", From: "hearing", To: "hearing"})
+	edge := factory["HD13"](circuit.EdgeDef{ID: "HD13", From: "hearing", To: "hearing"})
 
 	cmrr := &CMRRCheck{SharedPremises: []string{"test"}, SuspicionScore: 0.9}
-	tr := edge.Evaluate(cmrr, &framework.WalkerState{})
+	tr := edge.Evaluate(cmrr, &circuit.WalkerState{})
 	if tr != nil {
 		t.Error("HD13 should not trigger when CMRR is disabled")
 	}
@@ -409,8 +409,8 @@ func TestDialecticEdge_NilArtifact(t *testing.T) {
 	cfg := DefaultConfig()
 	factory := BuildEdgeFactory(cfg)
 	for id, fn := range factory {
-		edge := fn(framework.EdgeDef{ID: id})
-		tr := edge.Evaluate(nil, &framework.WalkerState{LoopCounts: map[string]int{}})
+		edge := fn(circuit.EdgeDef{ID: id})
+		tr := edge.Evaluate(nil, &circuit.WalkerState{LoopCounts: map[string]int{}})
 		if tr != nil {
 			t.Errorf("edge %s should return nil for nil artifact", id)
 		}

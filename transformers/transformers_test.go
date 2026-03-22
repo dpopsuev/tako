@@ -9,7 +9,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	fw "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/engine"
+
 	"github.com/dpopsuev/origami/dispatch"
 )
 
@@ -21,7 +22,7 @@ func TestJQ_Transform(t *testing.T) {
 		t.Fatalf("Name() = %q, want jq", jq.Name())
 	}
 
-	tc := &fw.TransformerContext{
+	tc := &engine.TransformerContext{
 		Input:  map[string]any{"items": []any{1.0, 2.0, 3.0}},
 		Config: map[string]any{"multiplier": 10.0},
 		Meta:   map[string]any{"expr": "len(input.items)"},
@@ -37,7 +38,7 @@ func TestJQ_Transform(t *testing.T) {
 
 func TestJQ_TransformWithConfig(t *testing.T) {
 	jq := NewJQ()
-	tc := &fw.TransformerContext{
+	tc := &engine.TransformerContext{
 		Input:  map[string]any{"value": 5.0},
 		Config: map[string]any{"threshold": 3.0},
 		Meta:   map[string]any{"expr": "input.value > config.threshold"},
@@ -53,7 +54,7 @@ func TestJQ_TransformWithConfig(t *testing.T) {
 
 func TestJQ_NoExpression(t *testing.T) {
 	jq := NewJQ()
-	tc := &fw.TransformerContext{Meta: map[string]any{}}
+	tc := &engine.TransformerContext{Meta: map[string]any{}}
 	_, err := jq.Transform(context.Background(), tc)
 	if err == nil {
 		t.Fatal("expected error for missing expr")
@@ -62,7 +63,7 @@ func TestJQ_NoExpression(t *testing.T) {
 
 func TestJQ_InvalidExpression(t *testing.T) {
 	jq := NewJQ()
-	tc := &fw.TransformerContext{
+	tc := &engine.TransformerContext{
 		Input: map[string]any{},
 		Meta:  map[string]any{"expr": ">>>invalid"},
 	}
@@ -85,7 +86,7 @@ func TestFile_ReadJSON(t *testing.T) {
 		t.Fatalf("Name() = %q, want file", ft.Name())
 	}
 
-	tc := &fw.TransformerContext{Prompt: "test.json"}
+	tc := &engine.TransformerContext{Prompt: "test.json"}
 	result, err := ft.Transform(context.Background(), tc)
 	if err != nil {
 		t.Fatalf("Transform: %v", err)
@@ -104,7 +105,7 @@ func TestFile_ReadText(t *testing.T) {
 	os.WriteFile(filepath.Join(dir, "readme.txt"), []byte("hello world"), 0644)
 
 	ft := NewFile(WithRootDir(dir))
-	tc := &fw.TransformerContext{Prompt: "readme.txt"}
+	tc := &engine.TransformerContext{Prompt: "readme.txt"}
 	result, err := ft.Transform(context.Background(), tc)
 	if err != nil {
 		t.Fatalf("Transform: %v", err)
@@ -121,7 +122,7 @@ func TestFile_ReadText(t *testing.T) {
 func TestFile_PathTraversal(t *testing.T) {
 	dir := t.TempDir()
 	ft := NewFile(WithRootDir(dir))
-	tc := &fw.TransformerContext{Prompt: "../../../etc/passwd"}
+	tc := &engine.TransformerContext{Prompt: "../../../etc/passwd"}
 	_, err := ft.Transform(context.Background(), tc)
 	if err == nil {
 		t.Fatal("expected error for path traversal")
@@ -130,7 +131,7 @@ func TestFile_PathTraversal(t *testing.T) {
 
 func TestFile_NoPath(t *testing.T) {
 	ft := NewFile()
-	tc := &fw.TransformerContext{}
+	tc := &engine.TransformerContext{}
 	_, err := ft.Transform(context.Background(), tc)
 	if err == nil {
 		t.Fatal("expected error for missing path")
@@ -151,7 +152,7 @@ func TestHTTP_Get(t *testing.T) {
 		t.Fatalf("Name() = %q, want http", ht.Name())
 	}
 
-	tc := &fw.TransformerContext{
+	tc := &engine.TransformerContext{
 		Meta: map[string]any{"url": ts.URL},
 	}
 	result, err := ht.Transform(context.Background(), tc)
@@ -169,7 +170,7 @@ func TestHTTP_Get(t *testing.T) {
 
 func TestHTTP_NoURL(t *testing.T) {
 	ht := NewHTTP()
-	tc := &fw.TransformerContext{Meta: map[string]any{}}
+	tc := &engine.TransformerContext{Meta: map[string]any{}}
 	_, err := ht.Transform(context.Background(), tc)
 	if err == nil {
 		t.Fatal("expected error for missing url")
@@ -178,7 +179,7 @@ func TestHTTP_NoURL(t *testing.T) {
 
 func TestHTTP_AllowedHosts(t *testing.T) {
 	ht := NewHTTP(WithAllowedHosts("api.example.com"))
-	tc := &fw.TransformerContext{
+	tc := &engine.TransformerContext{
 		Meta: map[string]any{"url": "https://evil.com/steal"},
 	}
 	_, err := ht.Transform(context.Background(), tc)
@@ -195,7 +196,7 @@ func TestHTTP_ServerError(t *testing.T) {
 	defer ts.Close()
 
 	ht := NewHTTP()
-	tc := &fw.TransformerContext{Meta: map[string]any{"url": ts.URL}}
+	tc := &engine.TransformerContext{Meta: map[string]any{"url": ts.URL}}
 	_, err := ht.Transform(context.Background(), tc)
 	if err == nil {
 		t.Fatal("expected error for 500 response")
@@ -222,7 +223,7 @@ func TestLLM_Transform(t *testing.T) {
 		t.Fatalf("Name() = %q, want llm", llm.Name())
 	}
 
-	tc := &fw.TransformerContext{
+	tc := &engine.TransformerContext{
 		NodeName: "test-node",
 		Prompt:   "test-prompt.md",
 		Meta:     map[string]any{"case_id": "C1"},
@@ -243,7 +244,7 @@ func TestLLM_Transform(t *testing.T) {
 func TestLLM_InvalidJSON(t *testing.T) {
 	d := &mockDispatcher{response: []byte("not json")}
 	llm := NewLLM(d)
-	tc := &fw.TransformerContext{NodeName: "test"}
+	tc := &engine.TransformerContext{NodeName: "test"}
 	_, err := llm.Transform(context.Background(), tc)
 	if err == nil {
 		t.Fatal("expected error for invalid JSON response")
@@ -253,7 +254,7 @@ func TestLLM_InvalidJSON(t *testing.T) {
 // --- Transformer Registry ---
 
 func TestTransformerRegistry(t *testing.T) {
-	reg := fw.TransformerRegistry{}
+	reg := engine.TransformerRegistry{}
 	jq := NewJQ()
 	reg.Register(jq)
 
@@ -272,7 +273,7 @@ func TestTransformerRegistry(t *testing.T) {
 }
 
 func TestTransformerRegistry_Nil(t *testing.T) {
-	var reg fw.TransformerRegistry
+	var reg engine.TransformerRegistry
 	_, err := reg.Get("jq")
 	if err == nil {
 		t.Fatal("expected error for nil registry")
@@ -285,7 +286,7 @@ func TestTransformerRegistry_DuplicatePanic(t *testing.T) {
 			t.Fatal("expected panic on duplicate registration")
 		}
 	}()
-	reg := fw.TransformerRegistry{}
+	reg := engine.TransformerRegistry{}
 	jq := NewJQ()
 	reg.Register(jq)
 	reg.Register(jq)

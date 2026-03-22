@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/engine"
 )
 
 // ContractCollector is a generic CaseCollector that uses a CalibrationContract
@@ -34,7 +34,7 @@ func NewContractCollector(contract *CalibrationContract, sc *ScoreCard, scenario
 
 // Collect extracts values from BatchWalkResults using the contract, merges
 // with expected values from the scenario, and runs each scorecard scorer.
-func (c *ContractCollector) Collect(_ context.Context, results []framework.BatchWalkResult) (
+func (c *ContractCollector) Collect(_ context.Context, results []engine.BatchWalkResult) (
 	map[string]float64, map[string]string, error,
 ) {
 	// Build batch: one item per case with actual (contract) + expected (scenario).

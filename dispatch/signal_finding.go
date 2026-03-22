@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 const findingEventPrefix = "enforcer:"
@@ -22,7 +22,7 @@ const (
 // EmitFinding encodes a Finding as a Signal on the bus.
 // Event format: "enforcer:<severity>". Meta carries domain, source,
 // node_name, message, and JSON-encoded evidence.
-func EmitFinding(bus *SignalBus, f framework.Finding) {
+func EmitFinding(bus *SignalBus, f circuit.Finding) {
 	meta := map[string]string{
 		MetaKeyDomain:   f.Domain,
 		MetaKeySource:   f.Source,
@@ -39,11 +39,11 @@ func EmitFinding(bus *SignalBus, f framework.Finding) {
 
 // DecodeFinding converts a Signal back to a Finding.
 // Returns false if the signal is not a finding signal.
-func DecodeFinding(s Signal) (framework.Finding, bool) {
+func DecodeFinding(s Signal) (circuit.Finding, bool) {
 	if !strings.HasPrefix(s.Event, findingEventPrefix) {
-		return framework.Finding{}, false
+		return circuit.Finding{}, false
 	}
-	severity := framework.FindingSeverity(strings.TrimPrefix(s.Event, findingEventPrefix))
+	severity := circuit.FindingSeverity(strings.TrimPrefix(s.Event, findingEventPrefix))
 
 	var evidence map[string]any
 	if raw := s.Meta[MetaKeyEvidence]; raw != "" {
@@ -52,7 +52,7 @@ func DecodeFinding(s Signal) (framework.Finding, bool) {
 
 	ts, _ := time.Parse(time.RFC3339, s.Timestamp)
 
-	return framework.Finding{
+	return circuit.Finding{
 		Severity:  severity,
 		Domain:    s.Meta[MetaKeyDomain],
 		Source:    s.Meta[MetaKeySource],
@@ -65,9 +65,9 @@ func DecodeFinding(s Signal) (framework.Finding, bool) {
 
 // FindingsSince returns all findings emitted on the bus since index idx.
 // Non-finding signals are skipped.
-func FindingsSince(bus *SignalBus, idx int) []framework.Finding {
+func FindingsSince(bus *SignalBus, idx int) []circuit.Finding {
 	signals := bus.Since(idx)
-	var findings []framework.Finding
+	var findings []circuit.Finding
 	for _, s := range signals {
 		if f, ok := DecodeFinding(s); ok {
 			findings = append(findings, f)

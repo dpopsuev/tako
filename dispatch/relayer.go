@@ -3,19 +3,19 @@ package dispatch
 import (
 	"context"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/engine"
 )
 
-// MuxRelayer wraps a MuxDispatcher as a framework.PromptRelayer.
+// MuxRelayer wraps a MuxDispatcher as a engine.PromptRelayer.
 // This bridges the mediator delegate's prompt relay interface with
 // the MuxDispatcher's concrete Dispatch method.
 type MuxRelayer struct {
 	Disp *MuxDispatcher
 }
 
-var _ framework.PromptRelayer = (*MuxRelayer)(nil)
+var _ engine.PromptRelayer = (*MuxRelayer)(nil)
 
-func (r *MuxRelayer) Dispatch(ctx context.Context, rc framework.PromptRelayContext) ([]byte, error) {
+func (r *MuxRelayer) Dispatch(ctx context.Context, rc engine.PromptRelayContext) ([]byte, error) {
 	return r.Disp.Dispatch(ctx, DispatchContext{
 		CaseID:        rc.CaseID,
 		Step:          rc.Step,

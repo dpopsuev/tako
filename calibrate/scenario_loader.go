@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/engine"
 	"gopkg.in/yaml.v3"
 )
 
@@ -23,7 +23,7 @@ type GenericScenario struct {
 }
 
 // GenericScenarioLoader implements ScenarioLoader by converting
-// GenericCases into framework.BatchCases.
+// GenericCases into circuit.BatchCases.
 type GenericScenarioLoader struct {
 	Scenario *GenericScenario
 }
@@ -31,13 +31,13 @@ type GenericScenarioLoader struct {
 // Load returns BatchCases from the generic scenario. Each case's context
 // contains the input fields, which circuit nodes can reference via
 // template variables.
-func (l *GenericScenarioLoader) Load(_ context.Context) ([]framework.BatchCase, error) {
+func (l *GenericScenarioLoader) Load(_ context.Context) ([]engine.BatchCase, error) {
 	if l.Scenario == nil || len(l.Scenario.Cases) == 0 {
 		return nil, fmt.Errorf("scenario has no cases")
 	}
-	cases := make([]framework.BatchCase, len(l.Scenario.Cases))
+	cases := make([]engine.BatchCase, len(l.Scenario.Cases))
 	for i, c := range l.Scenario.Cases {
-		cases[i] = framework.BatchCase{
+		cases[i] = engine.BatchCase{
 			ID:      c.ID,
 			Context: c.Input,
 		}
@@ -68,8 +68,8 @@ type CompositeScenarioLoader struct {
 
 // Load loads and merges cases from all loaders. Returns an error if any
 // case IDs collide.
-func (c *CompositeScenarioLoader) Load(ctx context.Context) ([]framework.BatchCase, error) {
-	var all []framework.BatchCase
+func (c *CompositeScenarioLoader) Load(ctx context.Context) ([]engine.BatchCase, error) {
+	var all []engine.BatchCase
 	seen := make(map[string]bool)
 	for i, loader := range c.Loaders {
 		cases, err := loader.Load(ctx)

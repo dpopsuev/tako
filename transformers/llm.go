@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	fw "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/dispatch"
 )
 
@@ -41,7 +41,7 @@ func NewLLM(d dispatch.Dispatcher, opts ...LLMOption) *LLMTransformer {
 func (t *LLMTransformer) Name() string        { return "llm" }
 func (t *LLMTransformer) Deterministic() bool { return false }
 
-func (t *LLMTransformer) Transform(ctx context.Context, tc *fw.TransformerContext) (any, error) {
+func (t *LLMTransformer) Transform(ctx context.Context, tc *engine.TransformerContext) (any, error) {
 	promptPath := tc.Prompt
 	if promptPath != "" && !filepath.IsAbs(promptPath) {
 		promptPath = filepath.Join(t.baseDir, promptPath)

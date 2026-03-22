@@ -13,7 +13,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/kami"
 	"github.com/dpopsuev/origami/lint"
 	originamilsp "github.com/dpopsuev/origami/lsp"
@@ -148,20 +149,20 @@ func runCmd(args []string) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	builtins := framework.TransformerRegistry{
+	builtins := engine.TransformerRegistry{
 		"file": transformers.NewFile(transformers.WithRootDir(filepath.Dir(circuitPath))),
 	}
 
-	opts := []framework.RunOption{
-		framework.WithLogger(logger),
-		framework.WithTransformers(builtins),
+	opts := []engine.RunOption{
+		engine.WithLogger(logger),
+		engine.WithTransformers(builtins),
 	}
 	if len(sets) > 0 {
-		opts = append(opts, framework.WithOverrides(map[string]any(sets)))
+		opts = append(opts, engine.WithOverrides(map[string]any(sets)))
 	}
 
 	logger.Info("running circuit", "path", circuitPath)
-	if err := framework.Run(ctx, circuitPath, nil, opts...); err != nil {
+	if err := engine.Run(ctx, circuitPath, nil, opts...); err != nil {
 		return err
 	}
 	logger.Info("circuit completed")
@@ -177,7 +178,7 @@ func validateCmd(args []string) error {
 	}
 	circuitPath := fs.Arg(0)
 
-	if err := framework.Validate(circuitPath); err != nil {
+	if err := engine.Validate(circuitPath); err != nil {
 		return err
 	}
 	fmt.Printf("OK: %s is valid\n", circuitPath)
@@ -351,9 +352,9 @@ func ouroborosRun(args []string) error {
 	defer cancel()
 
 	nodes := ouroboros.CircuitNodes(seed, dispatcher)
-	if err := framework.Run(ctx, circuitPath, nil,
-		framework.WithNodes(nodes),
-		framework.WithLogger(logger),
+	if err := engine.Run(ctx, circuitPath, nil,
+		engine.WithNodes(nodes),
+		engine.WithLogger(logger),
 	); err != nil {
 		return err
 	}
@@ -369,7 +370,7 @@ func ouroborosPrompt(args []string) error {
 		return err
 	}
 
-	var exclude []framework.ModelIdentity
+	var exclude []circuit.ModelIdentity
 	if *excludeFile != "" {
 		data, err := os.ReadFile(*excludeFile)
 		if err != nil {
@@ -385,7 +386,7 @@ func ouroborosPrompt(args []string) error {
 }
 
 type analyzeResult struct {
-	Identity framework.ModelIdentity `json:"identity"`
+	Identity circuit.ModelIdentity `json:"identity"`
 	Key      string                  `json:"key"`
 	Code     string                  `json:"code"`
 	Score    ouroboros.ProbeScore      `json:"score"`

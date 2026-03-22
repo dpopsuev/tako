@@ -7,7 +7,7 @@ import (
 	"strings"
 	"text/template"
 
-	fw "github.com/dpopsuev/origami"
+	fw "github.com/dpopsuev/origami/circuit"
 )
 
 // ExecHook is a framework Hook that executes SQL statements on step completion.

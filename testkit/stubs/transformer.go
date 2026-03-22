@@ -6,24 +6,25 @@ import (
 	"context"
 	"sync"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 )
 
-// StubTransformer implements framework.Transformer with canned artifacts.
+// StubTransformer implements engine.Transformer with canned artifacts.
 // Configure per-node responses via WithArtifact/SetError before use.
 type StubTransformer struct {
 	mu        sync.Mutex
 	name      string
-	artifacts map[string]framework.Artifact
+	artifacts map[string]circuit.Artifact
 	errors    map[string]error
 	calls     []string
 }
 
 // NewStubTransformer creates a transformer that returns canned artifacts
 // for each node name. Pass artifacts as name/artifact pairs.
-func NewStubTransformer(name string, artifacts map[string]framework.Artifact) *StubTransformer {
+func NewStubTransformer(name string, artifacts map[string]circuit.Artifact) *StubTransformer {
 	if artifacts == nil {
-		artifacts = make(map[string]framework.Artifact)
+		artifacts = make(map[string]circuit.Artifact)
 	}
 	return &StubTransformer{
 		name:      name,
@@ -34,7 +35,7 @@ func NewStubTransformer(name string, artifacts map[string]framework.Artifact) *S
 
 func (s *StubTransformer) Name() string { return s.name }
 
-func (s *StubTransformer) Transform(_ context.Context, tc *framework.TransformerContext) (any, error) {
+func (s *StubTransformer) Transform(_ context.Context, tc *engine.TransformerContext) (any, error) {
 	s.mu.Lock()
 	s.calls = append(s.calls, tc.NodeName)
 	err := s.errors[tc.NodeName]
@@ -59,7 +60,7 @@ func (s *StubTransformer) SetError(node string, err error) {
 }
 
 // WithArtifact sets the canned artifact for a specific node.
-func (s *StubTransformer) WithArtifact(node string, art framework.Artifact) {
+func (s *StubTransformer) WithArtifact(node string, art circuit.Artifact) {
 	s.mu.Lock()
 	s.artifacts[node] = art
 	s.mu.Unlock()

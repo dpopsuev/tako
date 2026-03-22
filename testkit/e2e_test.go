@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/calibrate"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/mcp"
@@ -33,7 +33,7 @@ type stubCaseCollector struct {
 	casesProcessed int
 }
 
-func (c *stubCaseCollector) Collect(_ context.Context, results []framework.BatchWalkResult) (
+func (c *stubCaseCollector) Collect(_ context.Context, results []engine.BatchWalkResult) (
 	map[string]float64, map[string]string, error,
 ) {
 	c.casesProcessed = len(results)
@@ -63,9 +63,9 @@ func TestE2E_Calibration_AllStubs(t *testing.T) {
 	stubTx := stubs.NewStubTransformer("stub", nil)
 
 	// Step 3: Create a Component that registers the stub transformer.
-	comp := &framework.Component{
+	comp := &engine.Component{
 		Namespace: "testkit",
-		Transformers: framework.TransformerRegistry{
+		Transformers: engine.TransformerRegistry{
 			"stub": stubTx,
 		},
 	}
@@ -101,7 +101,7 @@ func TestE2E_Calibration_AllStubs(t *testing.T) {
 		Collector:   collector,
 		CircuitDef:  def,
 		ScoreCard:   scoreCard,
-		Components:  []*framework.Component{comp},
+		Components:  []*engine.Component{comp},
 		Parallel:    4,
 		Runs:        1,
 		Scenario:    "e2e-all-stubs",

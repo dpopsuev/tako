@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/element"
 	"github.com/dpopsuev/origami/view"
 	"github.com/charmbracelet/lipgloss"
@@ -26,7 +26,7 @@ const (
 // RenderGraph produces a static box-drawing representation of a circuit.
 // It uses GridLayout positions for cell placement, draws zone borders,
 // node rectangles with D/S badges, element colors, and edge lines.
-func RenderGraph(def *framework.CircuitDef, layout view.CircuitLayout, snap view.CircuitSnapshot, opts RenderOpts) string {
+func RenderGraph(def *circuit.CircuitDef, layout view.CircuitLayout, snap view.CircuitSnapshot, opts RenderOpts) string {
 	result, _ := RenderGraphWithHitMap(def, layout, snap, opts)
 	return result
 }
@@ -34,7 +34,7 @@ func RenderGraph(def *framework.CircuitDef, layout view.CircuitLayout, snap view
 // RenderGraphWithHitMap renders the graph and returns both the rendered string
 // and a hit-map that maps canvas (x,y) coordinates to node names. The hit-map
 // enables mouse interaction: given a click coordinate, look up the node.
-func RenderGraphWithHitMap(def *framework.CircuitDef, layout view.CircuitLayout, snap view.CircuitSnapshot, opts RenderOpts) (string, map[[2]int]string) {
+func RenderGraphWithHitMap(def *circuit.CircuitDef, layout view.CircuitLayout, snap view.CircuitSnapshot, opts RenderOpts) (string, map[[2]int]string) {
 	if len(layout.Grid) == 0 {
 		return "(empty circuit)", nil
 	}
@@ -74,7 +74,7 @@ func RenderGraphWithHitMap(def *framework.CircuitDef, layout view.CircuitLayout,
 // isVirtualDone returns true if the done node is a virtual terminal
 // (not declared in the nodes list). Real nodes that happen to be the
 // terminal (e.g. "report") should still be rendered.
-func isVirtualDone(def *framework.CircuitDef) bool {
+func isVirtualDone(def *circuit.CircuitDef) bool {
 	if def.Done == "" {
 		return false
 	}
@@ -86,7 +86,7 @@ func isVirtualDone(def *framework.CircuitDef) bool {
 	return true
 }
 
-func filterDoneNode(grid map[string]view.GridCell, def *framework.CircuitDef) map[string]view.GridCell {
+func filterDoneNode(grid map[string]view.GridCell, def *circuit.CircuitDef) map[string]view.GridCell {
 	if !isVirtualDone(def) {
 		return grid
 	}
@@ -100,7 +100,7 @@ func filterDoneNode(grid map[string]view.GridCell, def *framework.CircuitDef) ma
 }
 
 // buildHitMap maps every (x, y) cell inside a node box to the node's name.
-func buildHitMap(def *framework.CircuitDef, layout view.CircuitLayout) map[[2]int]string {
+func buildHitMap(def *circuit.CircuitDef, layout view.CircuitLayout) map[[2]int]string {
 	hm := make(map[[2]int]string)
 	virtualDone := isVirtualDone(def)
 	for _, nd := range def.Nodes {
@@ -229,8 +229,8 @@ type RenderOpts struct {
 
 // --- Node drawing ---
 
-func drawNodes(c *canvas, def *framework.CircuitDef, layout view.CircuitLayout, snap view.CircuitSnapshot, opts RenderOpts) {
-	nodeMap := make(map[string]*framework.NodeDef, len(def.Nodes))
+func drawNodes(c *canvas, def *circuit.CircuitDef, layout view.CircuitLayout, snap view.CircuitSnapshot, opts RenderOpts) {
+	nodeMap := make(map[string]*circuit.NodeDef, len(def.Nodes))
 	for i := range def.Nodes {
 		nodeMap[def.Nodes[i].Name] = &def.Nodes[i]
 	}
@@ -250,7 +250,7 @@ func drawNodes(c *canvas, def *framework.CircuitDef, layout view.CircuitLayout, 
 	}
 }
 
-func drawNode(c *canvas, x, y int, nd *framework.NodeDef, ns view.NodeState, snap view.CircuitSnapshot, opts RenderOpts, circuitHandlerType string) {
+func drawNode(c *canvas, x, y int, nd *circuit.NodeDef, ns view.NodeState, snap view.CircuitSnapshot, opts RenderOpts, circuitHandlerType string) {
 	selected := opts.SelectedNode == nd.Name
 	style := nodeStyle(ns, opts)
 	elemStyle := ElementFg(ns.Element)
@@ -268,7 +268,7 @@ func drawNode(c *canvas, x, y int, nd *framework.NodeDef, ns view.NodeState, sna
 	}
 
 	badge := ""
-	if nd.EffectiveHandlerType(circuitHandlerType) == framework.HandlerTypeTransformer {
+	if nd.EffectiveHandlerType(circuitHandlerType) == circuit.HandlerTypeTransformer {
 		badge = DSBadge(nd.EffectiveHandler())
 	}
 	stateIcon := stateIndicator(ns.State, opts.AnimFrame)
@@ -405,7 +405,7 @@ type EdgeRouting struct {
 // ComputeEdgeRouting deduplicates edges by (from,to) and classifies them
 // into inline (adjacent), below-path (non-adjacent forward), and loop categories.
 // Below-path edges get channel assignments via interval graph coloring.
-func ComputeEdgeRouting(def *framework.CircuitDef, layout view.CircuitLayout, doneNode string) EdgeRouting {
+func ComputeEdgeRouting(def *circuit.CircuitDef, layout view.CircuitLayout, doneNode string) EdgeRouting {
 	virtualDone := isVirtualDone(def)
 
 	type edgeKey struct{ from, to string }
@@ -689,7 +689,7 @@ func drawLoopEdges(c *canvas, edges []RoutedEdge, layout view.CircuitLayout, bas
 // Below-path edges and loops are drawn below the node grid.
 // This output is stable across cosmetic rendering changes and is used for
 // algorithmic validation in tests.
-func RenderAbstract(def *framework.CircuitDef, layout view.CircuitLayout) string {
+func RenderAbstract(def *circuit.CircuitDef, layout view.CircuitLayout) string {
 	if len(layout.Grid) == 0 {
 		return "(empty)"
 	}
@@ -700,7 +700,7 @@ func RenderAbstract(def *framework.CircuitDef, layout view.CircuitLayout) string
 	}
 
 	compositeNodes := make(map[string]bool)
-	nodeByName := make(map[string]*framework.NodeDef, len(def.Nodes))
+	nodeByName := make(map[string]*circuit.NodeDef, len(def.Nodes))
 	for i := range def.Nodes {
 		nd := &def.Nodes[i]
 		nodeByName[nd.Name] = nd
@@ -877,7 +877,7 @@ type zoneBounds struct {
 	maxCol  int
 }
 
-func drawZones(c *canvas, def *framework.CircuitDef, layout view.CircuitLayout, opts RenderOpts) {
+func drawZones(c *canvas, def *circuit.CircuitDef, layout view.CircuitLayout, opts RenderOpts) {
 	zones := make(map[string]*zoneBounds)
 
 	sortedZoneNames := make([]string, 0, len(def.Zones))

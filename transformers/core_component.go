@@ -1,20 +1,20 @@
 package transformers
 
 import (
-	fw "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/dispatch"
 )
 
 // CoreComponent returns a Component bundling the four built-in transformers
 // (llm, http, jq, file) under the "core" namespace.
 // The llm transformer requires a Dispatcher; pass nil to omit it.
-func CoreComponent(d dispatch.Dispatcher, opts ...CoreComponentOption) *fw.Component {
+func CoreComponent(d dispatch.Dispatcher, opts ...CoreComponentOption) *engine.Component {
 	cfg := &coreComponentConfig{}
 	for _, opt := range opts {
 		opt(cfg)
 	}
 
-	reg := fw.TransformerRegistry{}
+	reg := engine.TransformerRegistry{}
 	if d != nil {
 		var llmOpts []LLMOption
 		if cfg.baseDir != "" {
@@ -33,7 +33,7 @@ func CoreComponent(d dispatch.Dispatcher, opts ...CoreComponentOption) *fw.Compo
 	reg["template-params"] = NewTemplateParams()
 	reg["match"] = NewMatch()
 
-	return &fw.Component{
+	return &engine.Component{
 		Namespace:    "core",
 		Name:         "origami-core",
 		Version:      "1.0.0",

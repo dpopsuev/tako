@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 const (
@@ -19,7 +19,7 @@ type ScaffoldConfig struct {
 	ProjectRoot string
 	OutputDir   string // defaults to "docs" relative to ProjectRoot
 	Manifest    *Manifest
-	Circuits    []*framework.CircuitDef
+	Circuits    []*circuit.CircuitDef
 	Scorecards  []string // paths to scorecard YAML files
 }
 
@@ -99,7 +99,7 @@ func writeReadme(cfg ScaffoldConfig) error {
 	return writeIdempotent(filepath.Join(cfg.ProjectRoot, "README.md"), b.String())
 }
 
-func writeCircuitPage(cfg ScaffoldConfig, def *framework.CircuitDef) error {
+func writeCircuitPage(cfg ScaffoldConfig, def *circuit.CircuitDef) error {
 	path := filepath.Join(cfg.OutputDir, "circuits", def.Circuit+".md")
 
 	var b strings.Builder

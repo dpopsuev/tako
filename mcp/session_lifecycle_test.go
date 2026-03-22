@@ -7,7 +7,8 @@ import (
 	"testing"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/mcp"
 )
@@ -22,7 +23,7 @@ type lifecycleTransformer struct {
 }
 
 func (t *lifecycleTransformer) Name() string { return "dispatch-lifecycle" }
-func (t *lifecycleTransformer) Transform(ctx context.Context, tc *framework.TransformerContext) (any, error) {
+func (t *lifecycleTransformer) Transform(ctx context.Context, tc *engine.TransformerContext) (any, error) {
 	prompt := fmt.Sprintf(`{"node":"%s","step":"test"}`, tc.NodeName)
 	data, err := t.disp.Dispatch(ctx, dispatch.DispatchContext{
 		CaseID:        tc.WalkerState.ID,
@@ -95,7 +96,7 @@ var lifecycleStepSchemas = []mcp.StepSchema{
 	},
 }
 
-// lifecycleConfig creates a CircuitConfig that runs framework.BatchWalk with
+// lifecycleConfig creates a CircuitConfig that runs engine.BatchWalk with
 // a lifecycleTransformer, proving the full path: YAML circuit → graph walk →
 // transformer dispatch → MCP handler loop.
 func lifecycleConfig(circuitYAML string, nCases int) mcp.CircuitConfig {
@@ -106,28 +107,28 @@ func lifecycleConfig(circuitYAML string, nCases int) mcp.CircuitConfig {
 		DefaultGetNextStepTimeout: 3000,
 		DefaultSessionTTL:         30000,
 		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus *dispatch.SignalBus) (mcp.RunFunc, mcp.SessionMeta, error) {
-			def, err := framework.LoadCircuit([]byte(circuitYAML))
+			def, err := circuit.LoadCircuit([]byte(circuitYAML))
 			if err != nil {
 				return nil, mcp.SessionMeta{}, fmt.Errorf("load circuit: %w", err)
 			}
 
 			dt := &lifecycleTransformer{disp: disp}
-			reg := framework.GraphRegistries{
-				Transformers: framework.TransformerRegistry{
+			reg := engine.GraphRegistries{
+				Transformers: engine.TransformerRegistry{
 					"dispatch-lifecycle": dt,
 				},
 			}
 
-			cases := make([]framework.BatchCase, nCases)
+			cases := make([]engine.BatchCase, nCases)
 			for i := range cases {
-				cases[i] = framework.BatchCase{
+				cases[i] = engine.BatchCase{
 					ID:      fmt.Sprintf("C%02d", i+1),
 					Context: map[string]any{"input": "test"},
 				}
 			}
 
 			runFn := func(ctx context.Context) (any, error) {
-				results := framework.BatchWalk(ctx, framework.BatchWalkConfig{
+				results := engine.BatchWalk(ctx, engine.BatchWalkConfig{
 					Def:      def,
 					Shared:   reg,
 					Cases:    cases,
@@ -155,7 +156,7 @@ func lifecycleConfig(circuitYAML string, nCases int) mcp.CircuitConfig {
 
 // TestSessionLifecycle_StartGetSubmitReport proves the full MCP session
 // lifecycle: start_circuit → get_next_step → submit_step (repeat) → get_report.
-// Uses a 2-node linear circuit with 1 case, driven by framework.BatchWalk.
+// Uses a 2-node linear circuit with 1 case, driven by engine.BatchWalk.
 func TestSessionLifecycle_StartGetSubmitReport(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

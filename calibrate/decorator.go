@@ -1,7 +1,7 @@
 package calibrate
 
 import (
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // CalibrationContract declares how a circuit's inputs and outputs map to
@@ -37,14 +37,14 @@ type ScorecardDef struct {
 //
 // The decorator approach means the circuit itself is unchanged in production.
 // Only when wrapped for calibration does measurement infrastructure activate.
-func Wrap(base *framework.CircuitDef, config DecoratorConfig) *framework.CircuitDef {
+func Wrap(base *circuit.CircuitDef, config DecoratorConfig) *circuit.CircuitDef {
 	wrapped := *base
 
 	// Shallow-copy slices to avoid mutating base
-	wrapped.Nodes = make([]framework.NodeDef, len(base.Nodes))
+	wrapped.Nodes = make([]circuit.NodeDef, len(base.Nodes))
 	copy(wrapped.Nodes, base.Nodes)
 
-	wrapped.Edges = make([]framework.EdgeDef, len(base.Edges))
+	wrapped.Edges = make([]circuit.EdgeDef, len(base.Edges))
 	copy(wrapped.Edges, base.Edges)
 
 	// Mark as calibration-wrapped via vars
@@ -61,7 +61,7 @@ func Wrap(base *framework.CircuitDef, config DecoratorConfig) *framework.Circuit
 }
 
 // IsCalibrationWrapped returns true if the circuit was decorated by Wrap.
-func IsCalibrationWrapped(def *framework.CircuitDef) bool {
+func IsCalibrationWrapped(def *circuit.CircuitDef) bool {
 	if def.Vars == nil {
 		return false
 	}

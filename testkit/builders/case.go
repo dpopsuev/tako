@@ -1,16 +1,18 @@
 package builders
 
-import framework "github.com/dpopsuev/origami"
+import (
+	"github.com/dpopsuev/origami/engine"
+)
 
-// BatchCaseBuilder constructs a framework.BatchCase incrementally for tests.
+// BatchCaseBuilder constructs a engine.BatchCase incrementally for tests.
 type BatchCaseBuilder struct {
-	bc framework.BatchCase
+	bc engine.BatchCase
 }
 
 // NewBatchCase creates a new BatchCaseBuilder with the given case ID.
 func NewBatchCase(id string) *BatchCaseBuilder {
 	return &BatchCaseBuilder{
-		bc: framework.BatchCase{
+		bc: engine.BatchCase{
 			ID:      id,
 			Context: make(map[string]any),
 		},
@@ -36,12 +38,12 @@ func (b *BatchCaseBuilder) WithExpected(key string, val any) *BatchCaseBuilder {
 }
 
 // WithComponent adds a component to the batch case.
-func (b *BatchCaseBuilder) WithComponent(c *framework.Component) *BatchCaseBuilder {
+func (b *BatchCaseBuilder) WithComponent(c *engine.Component) *BatchCaseBuilder {
 	b.bc.Components = append(b.bc.Components, c)
 	return b
 }
 
 // Build returns the constructed BatchCase.
-func (b *BatchCaseBuilder) Build() framework.BatchCase {
+func (b *BatchCaseBuilder) Build() engine.BatchCase {
 	return b.bc
 }

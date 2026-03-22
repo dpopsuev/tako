@@ -4,7 +4,8 @@ import (
 	"context"
 	"testing"
 
-	fw "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/engine"
+
 	"github.com/dpopsuev/origami/dispatch"
 )
 
@@ -68,7 +69,7 @@ func TestTemplateParamsTransformer_Basic(t *testing.T) {
 		t.Error("Deterministic() should return true")
 	}
 
-	tc := &fw.TransformerContext{
+	tc := &engine.TransformerContext{
 		NodeName: "build-context",
 		Config:   map[string]any{"env": "prod"},
 		Meta: map[string]any{
@@ -100,7 +101,7 @@ func TestTemplateParamsTransformer_Basic(t *testing.T) {
 func TestTemplateParamsTransformer_IncludeState(t *testing.T) {
 	tp := NewTemplateParams()
 
-	tc := &fw.TransformerContext{
+	tc := &engine.TransformerContext{
 		NodeName: "merge",
 		Input:    map[string]any{"findings": []string{"f1"}},
 		Meta: map[string]any{
@@ -122,7 +123,7 @@ func TestTemplateParamsTransformer_IncludeState(t *testing.T) {
 func TestTemplateParamsTransformer_Pick(t *testing.T) {
 	tp := NewTemplateParams()
 
-	tc := &fw.TransformerContext{
+	tc := &engine.TransformerContext{
 		NodeName: "filter",
 		Config:   map[string]any{"env": "prod", "debug": true, "region": "us"},
 		Meta: map[string]any{

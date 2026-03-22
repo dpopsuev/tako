@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/kami"
 	"github.com/dpopsuev/origami/view"
 )
@@ -91,9 +91,9 @@ func rebootstrapStore(addr string, store *view.CircuitStore, log *slog.Logger) {
 
 	def := snap.Def
 	if def == nil {
-		def = &framework.CircuitDef{Circuit: snap.CircuitName}
+		def = &circuit.CircuitDef{Circuit: snap.CircuitName}
 		for name := range snap.Nodes {
-			def.Nodes = append(def.Nodes, framework.NodeDef{Name: name})
+			def.Nodes = append(def.Nodes, circuit.NodeDef{Name: name})
 		}
 	}
 
@@ -101,22 +101,22 @@ func rebootstrapStore(addr string, store *view.CircuitStore, log *slog.Logger) {
 
 	for name, ns := range snap.Nodes {
 		if ns.State == view.NodeActive || ns.State == view.NodeCompleted || ns.State == view.NodeError {
-			var evtType framework.WalkEventType
+			var evtType circuit.WalkEventType
 			switch ns.State {
 			case view.NodeActive:
-				evtType = framework.EventNodeEnter
+				evtType = circuit.EventNodeEnter
 			case view.NodeCompleted:
-				evtType = framework.EventNodeExit
+				evtType = circuit.EventNodeExit
 			case view.NodeError:
-				evtType = framework.EventWalkError
+				evtType = circuit.EventWalkError
 			}
-			store.OnEvent(framework.WalkEvent{Type: evtType, Node: name})
+			store.OnEvent(circuit.WalkEvent{Type: evtType, Node: name})
 		}
 	}
 
 	for walkerID, wp := range snap.Walkers {
-		store.OnEvent(framework.WalkEvent{
-			Type:   framework.EventNodeEnter,
+		store.OnEvent(circuit.WalkEvent{
+			Type:   circuit.EventNodeEnter,
 			Node:   wp.Node,
 			Walker: walkerID,
 		})

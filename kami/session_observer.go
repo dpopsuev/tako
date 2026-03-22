@@ -3,7 +3,7 @@ package kami
 import (
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/view"
 )
@@ -24,7 +24,7 @@ func NewSessionObserver(srv *Server) *SessionObserver {
 
 // OnSessionCreate builds a fresh CircuitStore and EventBridge for the
 // new session, replacing any previous ones.
-func (o *SessionObserver) OnSessionCreate(def *framework.CircuitDef, bus *dispatch.SignalBus) {
+func (o *SessionObserver) OnSessionCreate(def *circuit.CircuitDef, bus *dispatch.SignalBus) {
 	if o.bridge != nil {
 		o.bridge.Close()
 	}
@@ -39,8 +39,8 @@ func (o *SessionObserver) OnSessionCreate(def *framework.CircuitDef, bus *dispat
 // OnStepDispatched emits a node-enter event for the given case/step.
 func (o *SessionObserver) OnStepDispatched(caseID, step string) {
 	if o.store != nil {
-		o.store.OnEvent(framework.WalkEvent{
-			Type:   framework.EventNodeEnter,
+		o.store.OnEvent(circuit.WalkEvent{
+			Type:   circuit.EventNodeEnter,
 			Node:   step,
 			Walker: caseID,
 		})
@@ -50,8 +50,8 @@ func (o *SessionObserver) OnStepDispatched(caseID, step string) {
 // OnStepCompleted emits a node-exit event for the given case/step.
 func (o *SessionObserver) OnStepCompleted(caseID, step string, _ int64) {
 	if o.store != nil {
-		o.store.OnEvent(framework.WalkEvent{
-			Type:   framework.EventNodeExit,
+		o.store.OnEvent(circuit.WalkEvent{
+			Type:   circuit.EventNodeExit,
 			Node:   step,
 			Walker: caseID,
 		})
@@ -61,8 +61,8 @@ func (o *SessionObserver) OnStepCompleted(caseID, step string, _ int64) {
 // OnCircuitDone emits a walk-complete event.
 func (o *SessionObserver) OnCircuitDone() {
 	if o.store != nil {
-		o.store.OnEvent(framework.WalkEvent{
-			Type: framework.EventWalkComplete,
+		o.store.OnEvent(circuit.WalkEvent{
+			Type: circuit.EventWalkComplete,
 		})
 	}
 }
@@ -70,8 +70,8 @@ func (o *SessionObserver) OnCircuitDone() {
 // OnSessionEnd emits a walk-complete event when the session is torn down.
 func (o *SessionObserver) OnSessionEnd() {
 	if o.store != nil {
-		o.store.OnEvent(framework.WalkEvent{
-			Type: framework.EventWalkComplete,
+		o.store.OnEvent(circuit.WalkEvent{
+			Type: circuit.EventWalkComplete,
 		})
 	}
 }

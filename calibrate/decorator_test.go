@@ -3,17 +3,17 @@ package calibrate
 import (
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 func TestWrap_PreservesTopology(t *testing.T) {
-	base := &framework.CircuitDef{
+	base := &circuit.CircuitDef{
 		Circuit: "test",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "a", Handler: "a", HandlerType: "node"},
 			{Name: "b", Handler: "b", HandlerType: "node"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "a-b", From: "a", To: "b"},
 		},
 		Start: "a",
@@ -41,10 +41,10 @@ func TestWrap_PreservesTopology(t *testing.T) {
 }
 
 func TestWrap_MarksAsCalibration(t *testing.T) {
-	base := &framework.CircuitDef{
+	base := &circuit.CircuitDef{
 		Circuit: "test",
-		Nodes:   []framework.NodeDef{{Name: "a", Handler: "a", HandlerType: "node"}},
-		Edges:   []framework.EdgeDef{{ID: "a-done", From: "a", To: "done"}},
+		Nodes:   []circuit.NodeDef{{Name: "a", Handler: "a", HandlerType: "node"}},
+		Edges:   []circuit.EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 		Start:   "a",
 		Done:    "done",
 	}
@@ -57,10 +57,10 @@ func TestWrap_MarksAsCalibration(t *testing.T) {
 }
 
 func TestIsCalibrationWrapped_FalseForUnwrapped(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "test",
-		Nodes:   []framework.NodeDef{{Name: "a", Handler: "a", HandlerType: "node"}},
-		Edges:   []framework.EdgeDef{{ID: "a-done", From: "a", To: "done"}},
+		Nodes:   []circuit.NodeDef{{Name: "a", Handler: "a", HandlerType: "node"}},
+		Edges:   []circuit.EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 		Start:   "a",
 		Done:    "done",
 	}

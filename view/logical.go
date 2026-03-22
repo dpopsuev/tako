@@ -3,7 +3,7 @@ package view
 import (
 	"strings"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/element"
 )
 
@@ -23,7 +23,7 @@ const (
 // (dagre, ELK) or for direct rendering in a canvas.
 type LogicalLayout struct{}
 
-func (LogicalLayout) Layout(def *framework.CircuitDef) (CircuitLayout, error) {
+func (LogicalLayout) Layout(def *circuit.CircuitDef) (CircuitLayout, error) {
 	if len(def.Nodes) == 0 {
 		return CircuitLayout{}, nil
 	}

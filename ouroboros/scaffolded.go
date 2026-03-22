@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/element"
 )
 
@@ -19,13 +20,13 @@ type HintFeedback struct {
 }
 
 // ScaffoldedNodes returns a NodeRegistry for the scaffolded prompt-chain circuit.
-func ScaffoldedNodes(seed *Seed, dispatch ProbeDispatcher) framework.NodeRegistry {
+func ScaffoldedNodes(seed *Seed, dispatch ProbeDispatcher) engine.NodeRegistry {
 	return ScaffoldedNodesWithOpts(seed, dispatch, CircuitOpts{})
 }
 
 // ScaffoldedNodesWithOpts returns a scaffolded NodeRegistry with optional
 // mechanical verification, self-verification scoring, and transcript recording.
-func ScaffoldedNodesWithOpts(seed *Seed, dispatch ProbeDispatcher, opts CircuitOpts) framework.NodeRegistry {
+func ScaffoldedNodesWithOpts(seed *Seed, dispatch ProbeDispatcher, opts CircuitOpts) engine.NodeRegistry {
 	hintState := &hintTracker{
 		hints:     seed.Hints,
 		nextIndex: 0,
@@ -36,11 +37,11 @@ func ScaffoldedNodesWithOpts(seed *Seed, dispatch ProbeDispatcher, opts CircuitO
 		tl, _ = time.ParseDuration(seed.TimeLimit)
 	}
 
-	return framework.NodeRegistry{
-		"ouroboros-generate": func(_ framework.NodeDef) framework.Node {
+	return engine.NodeRegistry{
+		"ouroboros-generate": func(_ circuit.NodeDef) circuit.Node {
 			return &generateNode{seed: seed, dispatch: dispatch, recorder: opts.Recorder}
 		},
-		"ouroboros-subject-scaffolded": func(_ framework.NodeDef) framework.Node {
+		"ouroboros-subject-scaffolded": func(_ circuit.NodeDef) circuit.Node {
 			return &scaffoldedSubjectNode{
 				dispatch:     dispatch,
 				outputFormat: seed.OutputFormat,
@@ -49,7 +50,7 @@ func ScaffoldedNodesWithOpts(seed *Seed, dispatch ProbeDispatcher, opts CircuitO
 				recorder:     opts.Recorder,
 			}
 		},
-		"ouroboros-judge-scaffolded": func(_ framework.NodeDef) framework.Node {
+		"ouroboros-judge-scaffolded": func(_ circuit.NodeDef) circuit.Node {
 			return &scaffoldedJudgeNode{
 				seed:       seed,
 				dispatch:   dispatch,
@@ -59,7 +60,7 @@ func ScaffoldedNodesWithOpts(seed *Seed, dispatch ProbeDispatcher, opts CircuitO
 				recorder:   opts.Recorder,
 			}
 		},
-		"ouroboros-hint": func(_ framework.NodeDef) framework.Node {
+		"ouroboros-hint": func(_ circuit.NodeDef) circuit.Node {
 			return &hintNode{tracker: hintState}
 		},
 	}
@@ -102,9 +103,9 @@ type scaffoldedSubjectNode struct {
 }
 
 func (n *scaffoldedSubjectNode) Name() string                       { return "subject" }
-func (n *scaffoldedSubjectNode) ElementAffinity() framework.Element { return framework.ElementFire }
+func (n *scaffoldedSubjectNode) ElementAffinity() circuit.Element { return circuit.ElementFire }
 
-func (n *scaffoldedSubjectNode) Process(ctx context.Context, nc framework.NodeContext) (framework.Artifact, error) {
+func (n *scaffoldedSubjectNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	if nc.PriorArtifact == nil {
 		return nil, fmt.Errorf("scaffolded subject: no prior artifact")
 	}
@@ -186,7 +187,7 @@ type scaffoldedJudgeNode struct {
 func (n *scaffoldedJudgeNode) Name() string                       { return "judge" }
 func (n *scaffoldedJudgeNode) ElementAffinity() element.Element { return element.ElementDiamond }
 
-func (n *scaffoldedJudgeNode) Process(ctx context.Context, nc framework.NodeContext) (framework.Artifact, error) {
+func (n *scaffoldedJudgeNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	if nc.PriorArtifact == nil {
 		return nil, fmt.Errorf("scaffolded judge: no prior artifact (expected subject response)")
 	}
@@ -317,9 +318,9 @@ type hintNode struct {
 }
 
 func (n *hintNode) Name() string                       { return "hint" }
-func (n *hintNode) ElementAffinity() framework.Element { return framework.ElementWater }
+func (n *hintNode) ElementAffinity() circuit.Element { return circuit.ElementWater }
 
-func (n *hintNode) Process(_ context.Context, nc framework.NodeContext) (framework.Artifact, error) {
+func (n *hintNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	if nc.PriorArtifact == nil {
 		return nil, fmt.Errorf("hint node: no prior artifact")
 	}

@@ -3,7 +3,7 @@ package builders_test
 import (
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/testkit/builders"
 )
 
@@ -77,7 +77,7 @@ func TestCircuitDefBuilder_WithVar(t *testing.T) {
 }
 
 func TestCircuitDefBuilder_AddNodeDef(t *testing.T) {
-	nd := framework.NodeDef{
+	nd := circuit.NodeDef{
 		Name:    "custom",
 		Handler: "h",
 		Prompt:  "Do the thing",
@@ -97,7 +97,7 @@ func TestCircuitDefBuilder_AddNodeDef(t *testing.T) {
 }
 
 func TestCircuitDefBuilder_AddEdgeDef(t *testing.T) {
-	ed := framework.EdgeDef{
+	ed := circuit.EdgeDef{
 		ID:   "custom-edge",
 		From: "A",
 		To:   "B",

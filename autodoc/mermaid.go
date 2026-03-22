@@ -5,18 +5,19 @@ import (
 	"sort"
 	"strings"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 )
 
 // MermaidOptions configures Mermaid rendering.
 type MermaidOptions struct {
-	Registry framework.TransformerRegistry // optional; enables D/S boundary visualization
+	Registry engine.TransformerRegistry // optional; enables D/S boundary visualization
 }
 
 // RenderMermaid generates a Mermaid flowchart from a CircuitDef with zone
 // subgraphs, labeled edges (conditions, shortcuts, loops), and optional D/S
 // boundary visualization.
-func RenderMermaid(def *framework.CircuitDef, opts *MermaidOptions) string {
+func RenderMermaid(def *circuit.CircuitDef, opts *MermaidOptions) string {
 	var b strings.Builder
 	b.WriteString("graph LR\n")
 
@@ -35,7 +36,7 @@ func RenderMermaid(def *framework.CircuitDef, opts *MermaidOptions) string {
 // RenderDSBoundary generates a Mermaid flowchart with D/S boundary emphasis:
 // deterministic nodes as rectangles, stochastic as stadium shapes, boundary
 // edges labeled.
-func RenderDSBoundary(def *framework.CircuitDef, opts *MermaidOptions) string {
+func RenderDSBoundary(def *circuit.CircuitDef, opts *MermaidOptions) string {
 	var b strings.Builder
 	b.WriteString("graph LR\n")
 
@@ -53,7 +54,7 @@ func RenderDSBoundary(def *framework.CircuitDef, opts *MermaidOptions) string {
 
 // RenderContextFlow generates a Mermaid data-flow diagram showing context key
 // propagation through zones based on context_filter definitions.
-func RenderContextFlow(def *framework.CircuitDef) string {
+func RenderContextFlow(def *circuit.CircuitDef) string {
 	var b strings.Builder
 	b.WriteString("graph TD\n")
 
@@ -108,18 +109,18 @@ var knownStochastic = map[string]bool{
 	"llm":      true,
 }
 
-func classifyNodes(def *framework.CircuitDef, opts *MermaidOptions) map[string]dsClass {
+func classifyNodes(def *circuit.CircuitDef, opts *MermaidOptions) map[string]dsClass {
 	m := make(map[string]dsClass, len(def.Nodes))
 	for _, nd := range def.Nodes {
 		ht := nd.EffectiveHandlerType(def.HandlerType)
 		name := nd.EffectiveHandler()
-		if ht != framework.HandlerTypeTransformer || name == "" {
+		if ht != circuit.HandlerTypeTransformer || name == "" {
 			m[nd.Name] = dsUnknown
 			continue
 		}
 		if opts != nil && opts.Registry != nil {
 			if t, err := opts.Registry.Get(name); err == nil {
-				if framework.IsDeterministic(t) {
+				if engine.IsDeterministic(t) {
 					m[nd.Name] = dsDeterministic
 				} else {
 					m[nd.Name] = dsStochastic
@@ -136,7 +137,7 @@ func classifyNodes(def *framework.CircuitDef, opts *MermaidOptions) map[string]d
 	return m
 }
 
-func renderZonesEnhanced(b *strings.Builder, def *framework.CircuitDef, nodeDS map[string]dsClass) {
+func renderZonesEnhanced(b *strings.Builder, def *circuit.CircuitDef, nodeDS map[string]dsClass) {
 	zoneNames := sortedZoneNames(def)
 	zonedNodes := make(map[string]bool)
 
@@ -157,13 +158,13 @@ func renderZonesEnhanced(b *strings.Builder, def *framework.CircuitDef, nodeDS m
 	}
 }
 
-func renderFlatNodes(b *strings.Builder, def *framework.CircuitDef, nodeDS map[string]dsClass) {
+func renderFlatNodes(b *strings.Builder, def *circuit.CircuitDef, nodeDS map[string]dsClass) {
 	for _, nd := range def.Nodes {
 		fmt.Fprintf(b, "    %s\n", nodeShape(nd.Name, nodeDS[nd.Name], false))
 	}
 }
 
-func renderEdgesEnhanced(b *strings.Builder, def *framework.CircuitDef) {
+func renderEdgesEnhanced(b *strings.Builder, def *circuit.CircuitDef) {
 	for _, e := range def.Edges {
 		from := sanitize(e.From)
 		to := sanitize(e.To)
@@ -179,7 +180,7 @@ func renderEdgesEnhanced(b *strings.Builder, def *framework.CircuitDef) {
 	}
 }
 
-func renderZonesDS(b *strings.Builder, def *framework.CircuitDef, nodeDS map[string]dsClass) {
+func renderZonesDS(b *strings.Builder, def *circuit.CircuitDef, nodeDS map[string]dsClass) {
 	zoneNames := sortedZoneNames(def)
 	zonedNodes := make(map[string]bool)
 
@@ -207,13 +208,13 @@ func renderZonesDS(b *strings.Builder, def *framework.CircuitDef, nodeDS map[str
 	}
 }
 
-func renderFlatNodesDS(b *strings.Builder, def *framework.CircuitDef, nodeDS map[string]dsClass) {
+func renderFlatNodesDS(b *strings.Builder, def *circuit.CircuitDef, nodeDS map[string]dsClass) {
 	for _, nd := range def.Nodes {
 		fmt.Fprintf(b, "    %s\n", nodeShape(nd.Name, nodeDS[nd.Name], true))
 	}
 }
 
-func renderEdgesDS(b *strings.Builder, def *framework.CircuitDef, nodeDS map[string]dsClass) {
+func renderEdgesDS(b *strings.Builder, def *circuit.CircuitDef, nodeDS map[string]dsClass) {
 	for _, e := range def.Edges {
 		from := sanitize(e.From)
 		to := sanitize(e.To)
@@ -249,7 +250,7 @@ func nodeShape(name string, ds dsClass, useDSShapes bool) string {
 	}
 }
 
-func edgeLabel(e framework.EdgeDef) string {
+func edgeLabel(e circuit.EdgeDef) string {
 	parts := []string{}
 	if e.Name != "" {
 		parts = append(parts, e.Name)
@@ -277,7 +278,7 @@ func zoneDSCount(nodes []string, nodeDS map[string]dsClass) (det, stoch int) {
 	return
 }
 
-func sortedZoneNames(def *framework.CircuitDef) []string {
+func sortedZoneNames(def *circuit.CircuitDef) []string {
 	names := make([]string, 0, len(def.Zones))
 	for n := range def.Zones {
 		names = append(names, n)
@@ -286,7 +287,7 @@ func sortedZoneNames(def *framework.CircuitDef) []string {
 	return names
 }
 
-func buildZoneMap(def *framework.CircuitDef) map[string]string {
+func buildZoneMap(def *circuit.CircuitDef) map[string]string {
 	m := make(map[string]string)
 	for zn, z := range def.Zones {
 		for _, n := range z.Nodes {

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 func TestBuildResolutionPlans_OneCircuit(t *testing.T) {
@@ -127,10 +127,10 @@ func TestBuildResolutionPlans_ThreeCircuits(t *testing.T) {
 }
 
 func TestWrapForResolution_SetsResolutionMetadata(t *testing.T) {
-	base := &framework.CircuitDef{
+	base := &circuit.CircuitDef{
 		Circuit: "test",
-		Nodes:   []framework.NodeDef{{Name: "a", Handler: "a", HandlerType: "node"}},
-		Edges:   []framework.EdgeDef{{ID: "a-done", From: "a", To: "done"}},
+		Nodes:   []circuit.NodeDef{{Name: "a", Handler: "a", HandlerType: "node"}},
+		Edges:   []circuit.EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 		Start:   "a",
 		Done:    "done",
 	}
@@ -236,7 +236,7 @@ func TestPortStubs_NilSafe(t *testing.T) {
 }
 
 func TestGetPortStubs_FromCircuit(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Vars: map[string]any{
 			"_port_stubs": PortStubs{"test.in:x": "hello"},
 		},
@@ -257,7 +257,7 @@ func TestGetPortStubs_NilDef(t *testing.T) {
 }
 
 func TestGetResolution_FromCircuit(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Vars: map[string]any{
 			"_calibration_resolution": "unit",
 		},
@@ -268,7 +268,7 @@ func TestGetResolution_FromCircuit(t *testing.T) {
 }
 
 func TestGetResolution_NotSet(t *testing.T) {
-	def := &framework.CircuitDef{}
+	def := &circuit.CircuitDef{}
 	if GetResolution(def) != "" {
 		t.Error("expected empty resolution for unwrapped circuit")
 	}

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // DebugState represents the execution state of a debugged circuit.
@@ -181,11 +181,11 @@ func (d *DebugController) RunAssertions() []error {
 	return errs
 }
 
-// OnEvent implements framework.WalkObserver. It intercepts walk events
+// OnEvent implements circuit.WalkObserver. It intercepts walk events
 // to implement breakpoint and pause semantics, then forwards to the bridge.
-func (d *DebugController) OnEvent(we framework.WalkEvent) {
+func (d *DebugController) OnEvent(we circuit.WalkEvent) {
 	switch we.Type {
-	case framework.EventNodeEnter:
+	case circuit.EventNodeEnter:
 		d.mu.Lock()
 		d.currentNode = we.Node
 		d.visited = append(d.visited, we.Node)
@@ -216,7 +216,7 @@ func (d *DebugController) OnEvent(we framework.WalkEvent) {
 			// it becomes paused again at the next node_enter)
 		}
 
-	case framework.EventNodeExit:
+	case circuit.EventNodeExit:
 		d.mu.Lock()
 		if we.Artifact != nil {
 			d.artifacts[we.Node] = we.Artifact.Type()

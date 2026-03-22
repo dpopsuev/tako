@@ -8,7 +8,8 @@ import (
 	"strings"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/element"
 )
 
@@ -69,23 +70,23 @@ type CircuitOpts struct {
 
 // CircuitNodes returns a NodeRegistry for the ouroboros-probe circuit.
 // Each node is constructed with the seed and dispatcher it needs.
-func CircuitNodes(seed *Seed, dispatch ProbeDispatcher) framework.NodeRegistry {
+func CircuitNodes(seed *Seed, dispatch ProbeDispatcher) engine.NodeRegistry {
 	return CircuitNodesWithOpts(seed, dispatch, CircuitOpts{})
 }
 
 // CircuitNodesWithOpts returns a NodeRegistry with optional mechanical
 // verification and self-verification scoring injected into the Judge.
-func CircuitNodesWithOpts(seed *Seed, dispatch ProbeDispatcher, opts CircuitOpts) framework.NodeRegistry {
+func CircuitNodesWithOpts(seed *Seed, dispatch ProbeDispatcher, opts CircuitOpts) engine.NodeRegistry {
 	var tl time.Duration
 	if seed.TimeLimit != "" {
 		tl, _ = time.ParseDuration(seed.TimeLimit)
 	}
 
-	return framework.NodeRegistry{
-		"ouroboros-generate": func(_ framework.NodeDef) framework.Node {
+	return engine.NodeRegistry{
+		"ouroboros-generate": func(_ circuit.NodeDef) circuit.Node {
 			return &generateNode{seed: seed, dispatch: dispatch, recorder: opts.Recorder}
 		},
-		"ouroboros-subject": func(_ framework.NodeDef) framework.Node {
+		"ouroboros-subject": func(_ circuit.NodeDef) circuit.Node {
 			return &subjectNode{
 				dispatch:     dispatch,
 				outputFormat: seed.OutputFormat,
@@ -94,7 +95,7 @@ func CircuitNodesWithOpts(seed *Seed, dispatch ProbeDispatcher, opts CircuitOpts
 				recorder:     opts.Recorder,
 			}
 		},
-		"ouroboros-judge": func(_ framework.NodeDef) framework.Node {
+		"ouroboros-judge": func(_ circuit.NodeDef) circuit.Node {
 			return &judgeNode{
 				seed:       seed,
 				dispatch:   dispatch,
@@ -119,7 +120,7 @@ type generateNode struct {
 func (n *generateNode) Name() string                       { return "generate" }
 func (n *generateNode) ElementAffinity() element.Element { return element.ElementEarth }
 
-func (n *generateNode) Process(ctx context.Context, nc framework.NodeContext) (framework.Artifact, error) {
+func (n *generateNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	prompt := n.buildPrompt()
 	start := time.Now()
 	raw, err := n.dispatch(ctx, "generate", prompt)
@@ -225,7 +226,7 @@ type subjectNode struct {
 func (n *subjectNode) Name() string                       { return "subject" }
 func (n *subjectNode) ElementAffinity() element.Element { return element.ElementFire }
 
-func (n *subjectNode) Process(ctx context.Context, nc framework.NodeContext) (framework.Artifact, error) {
+func (n *subjectNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	if nc.PriorArtifact == nil {
 		return nil, fmt.Errorf("subject node: no prior artifact (expected generator output)")
 	}
@@ -299,7 +300,7 @@ type judgeNode struct {
 func (n *judgeNode) Name() string                       { return "judge" }
 func (n *judgeNode) ElementAffinity() element.Element { return element.ElementDiamond }
 
-func (n *judgeNode) Process(ctx context.Context, nc framework.NodeContext) (framework.Artifact, error) {
+func (n *judgeNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	if nc.PriorArtifact == nil {
 		return nil, fmt.Errorf("judge node: no prior artifact (expected subject response)")
 	}

@@ -13,15 +13,15 @@ import (
 	"testing"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/kami"
 	"github.com/dpopsuev/origami/view"
 )
 
-func testDef() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func testDef() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit: "test",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "recall"},
 			{Name: "triage"},
 		},
@@ -330,7 +330,7 @@ func TestSSE_Logging_RebootstrapSuccess(t *testing.T) {
 		t.Fatalf("kami start: %v", err)
 	}
 
-	clientStore := view.NewCircuitStore(&framework.CircuitDef{Circuit: "empty"})
+	clientStore := view.NewCircuitStore(&circuit.CircuitDef{Circuit: "empty"})
 	defer clientStore.Close()
 
 	log, entries := capturingLog()
@@ -354,7 +354,7 @@ func TestSSE_Logging_RebootstrapSuccess(t *testing.T) {
 }
 
 func TestSSE_Logging_RebootstrapFailure(t *testing.T) {
-	clientStore := view.NewCircuitStore(&framework.CircuitDef{Circuit: "empty"})
+	clientStore := view.NewCircuitStore(&circuit.CircuitDef{Circuit: "empty"})
 	defer clientStore.Close()
 
 	log, entries := capturingLog()

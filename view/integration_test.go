@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // TestIntegration_WalkSequence simulates a full walk through a circuit
@@ -16,19 +16,19 @@ func TestIntegration_WalkSequence(t *testing.T) {
 	id, ch := store.Subscribe()
 	defer store.Unsubscribe(id)
 
-	events := []framework.WalkEvent{
-		{Type: framework.EventNodeEnter, Node: "recall", Walker: "w1"},
-		{Type: framework.EventNodeExit, Node: "recall", Walker: "w1"},
-		{Type: framework.EventTransition, Node: "triage", Edge: "e1", Walker: "w1"},
-		{Type: framework.EventNodeEnter, Node: "triage", Walker: "w1"},
-		{Type: framework.EventNodeExit, Node: "triage", Walker: "w1"},
-		{Type: framework.EventTransition, Node: "investigate", Edge: "e2", Walker: "w1"},
-		{Type: framework.EventNodeEnter, Node: "investigate", Walker: "w1"},
-		{Type: framework.EventNodeExit, Node: "investigate", Walker: "w1"},
-		{Type: framework.EventTransition, Node: "report", Edge: "e3", Walker: "w1"},
-		{Type: framework.EventNodeEnter, Node: "report", Walker: "w1"},
-		{Type: framework.EventNodeExit, Node: "report", Walker: "w1"},
-		{Type: framework.EventWalkComplete},
+	events := []circuit.WalkEvent{
+		{Type: circuit.EventNodeEnter, Node: "recall", Walker: "w1"},
+		{Type: circuit.EventNodeExit, Node: "recall", Walker: "w1"},
+		{Type: circuit.EventTransition, Node: "triage", Edge: "e1", Walker: "w1"},
+		{Type: circuit.EventNodeEnter, Node: "triage", Walker: "w1"},
+		{Type: circuit.EventNodeExit, Node: "triage", Walker: "w1"},
+		{Type: circuit.EventTransition, Node: "investigate", Edge: "e2", Walker: "w1"},
+		{Type: circuit.EventNodeEnter, Node: "investigate", Walker: "w1"},
+		{Type: circuit.EventNodeExit, Node: "investigate", Walker: "w1"},
+		{Type: circuit.EventTransition, Node: "report", Edge: "e3", Walker: "w1"},
+		{Type: circuit.EventNodeEnter, Node: "report", Walker: "w1"},
+		{Type: circuit.EventNodeExit, Node: "report", Walker: "w1"},
+		{Type: circuit.EventWalkComplete},
 	}
 
 	for _, e := range events {
@@ -90,11 +90,11 @@ func TestIntegration_WalkWithError(t *testing.T) {
 	id, ch := store.Subscribe()
 	defer store.Unsubscribe(id)
 
-	store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "recall", Walker: "w1"})
-	store.OnEvent(framework.WalkEvent{Type: framework.EventNodeExit, Node: "recall", Walker: "w1"})
-	store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "triage", Walker: "w1"})
-	store.OnEvent(framework.WalkEvent{
-		Type:   framework.EventWalkError,
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall", Walker: "w1"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "recall", Walker: "w1"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "triage", Walker: "w1"})
+	store.OnEvent(circuit.WalkEvent{
+		Type:   circuit.EventWalkError,
 		Node:   "triage",
 		Walker: "w1",
 		Error:  errTimeout{},
@@ -142,7 +142,7 @@ func TestIntegration_TwoSubscribers(t *testing.T) {
 	defer store.Unsubscribe(id1)
 	defer store.Unsubscribe(id2)
 
-	store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "recall", Walker: "w1"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall", Walker: "w1"})
 
 	diffs1 := collectDiffs(ch1, 50*time.Millisecond)
 	diffs2 := collectDiffs(ch2, 50*time.Millisecond)

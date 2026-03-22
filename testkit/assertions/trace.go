@@ -3,12 +3,13 @@ package assertions
 import (
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 )
 
 // AssertTraceContains verifies that at least one TraceEvent exists matching
 // the given caseID, event type, and node name.
-func AssertTraceContains(t testing.TB, events []framework.TraceEvent, caseID, eventType, node string) {
+func AssertTraceContains(t testing.TB, events []engine.TraceEvent, caseID, eventType, node string) {
 	t.Helper()
 
 	for _, e := range events {
@@ -21,12 +22,12 @@ func AssertTraceContains(t testing.TB, events []framework.TraceEvent, caseID, ev
 
 // AssertPath verifies that the trace events for a given caseID contain
 // the expected node sequence (based on node_enter events, in order).
-func AssertPath(t testing.TB, events []framework.TraceEvent, caseID string, expectedNodes []string) {
+func AssertPath(t testing.TB, events []engine.TraceEvent, caseID string, expectedNodes []string) {
 	t.Helper()
 
 	var actualNodes []string
 	for _, e := range events {
-		if e.CaseID == caseID && e.Event == string(framework.EventNodeEnter) {
+		if e.CaseID == caseID && e.Event == string(circuit.EventNodeEnter) {
 			actualNodes = append(actualNodes, e.Node)
 		}
 	}

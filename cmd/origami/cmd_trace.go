@@ -11,7 +11,8 @@ import (
 	"sort"
 	"strings"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 )
 
 func traceCmd(w io.Writer, args []string) error {
@@ -48,12 +49,12 @@ func traceCmd(w io.Writer, args []string) error {
 	}
 
 	// Determine max level to show.
-	maxLevel := framework.LevelInfo
+	maxLevel := engine.LevelInfo
 	if *v {
-		maxLevel = framework.LevelDebug
+		maxLevel = engine.LevelDebug
 	}
 	if *vv {
-		maxLevel = framework.LevelTrace
+		maxLevel = engine.LevelTrace
 	}
 
 	filtered := filterEvents(events, maxLevel, *caseFilter, *nodeFilter, *errorsOnly)
@@ -108,14 +109,14 @@ func resolveTracePath(stateDir, runID string) (string, error) {
 	return filepath.Join(runsDir, runID, "trace.jsonl"), nil
 }
 
-func readTraceEvents(path string) ([]framework.TraceEvent, error) {
+func readTraceEvents(path string) ([]engine.TraceEvent, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("open trace file: %w", err)
 	}
 	defer f.Close()
 
-	var events []framework.TraceEvent
+	var events []engine.TraceEvent
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 0, 256*1024), 1024*1024)
 	for scanner.Scan() {
@@ -123,7 +124,7 @@ func readTraceEvents(path string) ([]framework.TraceEvent, error) {
 		if len(line) == 0 {
 			continue
 		}
-		var ev framework.TraceEvent
+		var ev engine.TraceEvent
 		if err := json.Unmarshal(line, &ev); err != nil {
 			continue // skip malformed lines
 		}
@@ -135,22 +136,22 @@ func readTraceEvents(path string) ([]framework.TraceEvent, error) {
 	return events, nil
 }
 
-func traceLevelRank(l framework.TraceLevel) int {
+func traceLevelRank(l engine.TraceLevel) int {
 	switch l {
-	case framework.LevelInfo:
+	case engine.LevelInfo:
 		return 0
-	case framework.LevelDebug:
+	case engine.LevelDebug:
 		return 1
-	case framework.LevelTrace:
+	case engine.LevelTrace:
 		return 2
 	default:
 		return 3
 	}
 }
 
-func filterEvents(events []framework.TraceEvent, maxLevel framework.TraceLevel, caseID, node string, errorsOnly bool) []framework.TraceEvent {
+func filterEvents(events []engine.TraceEvent, maxLevel engine.TraceLevel, caseID, node string, errorsOnly bool) []engine.TraceEvent {
 	maxRank := traceLevelRank(maxLevel)
-	var out []framework.TraceEvent
+	var out []engine.TraceEvent
 	for _, ev := range events {
 		if traceLevelRank(ev.Level) > maxRank {
 			continue
@@ -169,7 +170,7 @@ func filterEvents(events []framework.TraceEvent, maxLevel framework.TraceLevel, 
 	return out
 }
 
-func renderTraceJSON(w io.Writer, events []framework.TraceEvent) error {
+func renderTraceJSON(w io.Writer, events []engine.TraceEvent) error {
 	enc := json.NewEncoder(w)
 	for _, ev := range events {
 		if err := enc.Encode(ev); err != nil {
@@ -179,7 +180,7 @@ func renderTraceJSON(w io.Writer, events []framework.TraceEvent) error {
 	return nil
 }
 
-func renderTraceText(w io.Writer, events []framework.TraceEvent) error {
+func renderTraceText(w io.Writer, events []engine.TraceEvent) error {
 	for _, ev := range events {
 		ts := formatTimestamp(ev.Timestamp)
 		level := strings.ToUpper(string(ev.Level))
@@ -257,13 +258,13 @@ func formatTimestamp(ts string) string {
 // For cross-service traces (mediator routing to remote backends), use the MCP
 // get_trace tool with follow_delegations=true, which fetches child traces
 // from remote backends via the mediator. The CLI only resolves local children.
-func annotateDelegations(events []framework.TraceEvent, stateDir string) []framework.TraceEvent {
+func annotateDelegations(events []engine.TraceEvent, stateDir string) []engine.TraceEvent {
 	// Build a trace_id → run directory index for child trace lookup.
 	childByTraceID := indexChildRuns(stateDir)
 
-	var out []framework.TraceEvent
+	var out []engine.TraceEvent
 	for _, ev := range events {
-		ct, _ := ev.Metadata[framework.ExtraKeyCircuitType].(string)
+		ct, _ := ev.Metadata[circuit.ExtraKeyCircuitType].(string)
 		switch ev.Event {
 		case "delegate_start":
 			label := ct
@@ -274,7 +275,7 @@ func annotateDelegations(events []framework.TraceEvent, stateDir string) []frame
 			out = append(out, ev)
 
 			// Try to inline child trace events.
-			traceID, _ := ev.Metadata[framework.ExtraKeyTraceID].(string)
+			traceID, _ := ev.Metadata[circuit.ExtraKeyTraceID].(string)
 			if traceID == "" {
 				// No trace_id in the event metadata — can't look up child.
 				continue
@@ -306,7 +307,7 @@ func annotateDelegations(events []framework.TraceEvent, stateDir string) []frame
 }
 
 // annotateEvent prepends a marker to an event's Event field.
-func annotateEvent(ev framework.TraceEvent, marker string) framework.TraceEvent {
+func annotateEvent(ev engine.TraceEvent, marker string) engine.TraceEvent {
 	ev.Event = marker + " " + ev.Event
 	return ev
 }
@@ -328,7 +329,7 @@ func indexChildRuns(stateDir string) map[string]string {
 			continue
 		}
 		runDir := filepath.Join(runsDir, e.Name())
-		rec, err := framework.LoadRunRecord(runDir)
+		rec, err := engine.LoadRunRecord(runDir)
 		if err != nil || rec.TraceID == "" {
 			continue
 		}

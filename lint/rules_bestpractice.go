@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 	"gopkg.in/yaml.v3"
 )
 
@@ -255,7 +256,7 @@ func (r *StochasticTransformer) Severity() Severity   { return SeverityInfo }
 func (r *StochasticTransformer) Tags() []string       { return []string{"best-practice", "determinism"} }
 
 func (r *StochasticTransformer) Check(ctx *LintContext) []Finding {
-	var reg framework.TransformerRegistry
+	var reg engine.TransformerRegistry
 	if ctx.Registries != nil {
 		reg = ctx.Registries.Transformers
 	}
@@ -264,7 +265,7 @@ func (r *StochasticTransformer) Check(ctx *LintContext) []Finding {
 	for _, nd := range ctx.Def.Nodes {
 		ht := nd.EffectiveHandlerType(ctx.Def.HandlerType)
 		name := nd.EffectiveHandler()
-		if ht == framework.HandlerTypeTransformer && name != "" {
+		if ht == circuit.HandlerTypeTransformer && name != "" {
 			if isStochastic(name, reg) {
 				out = append(out, Finding{
 					RuleID:   r.ID(),
@@ -279,10 +280,10 @@ func (r *StochasticTransformer) Check(ctx *LintContext) []Finding {
 	return out
 }
 
-func isStochastic(name string, reg framework.TransformerRegistry) bool {
+func isStochastic(name string, reg engine.TransformerRegistry) bool {
 	if reg != nil {
 		if t, err := reg.Get(name); err == nil {
-			return !framework.IsDeterministic(t)
+			return !engine.IsDeterministic(t)
 		}
 	}
 	return knownStochasticTransformers[name]
@@ -298,7 +299,7 @@ func (r *StochasticSummary) Severity() Severity   { return SeverityInfo }
 func (r *StochasticSummary) Tags() []string       { return []string{"best-practice", "determinism"} }
 
 func (r *StochasticSummary) Check(ctx *LintContext) []Finding {
-	var reg framework.TransformerRegistry
+	var reg engine.TransformerRegistry
 	if ctx.Registries != nil {
 		reg = ctx.Registries.Transformers
 	}
@@ -308,7 +309,7 @@ func (r *StochasticSummary) Check(ctx *LintContext) []Finding {
 	for _, nd := range ctx.Def.Nodes {
 		ht := nd.EffectiveHandlerType(ctx.Def.HandlerType)
 		name := nd.EffectiveHandler()
-		isTransformer := ht == framework.HandlerTypeTransformer
+		isTransformer := ht == circuit.HandlerTypeTransformer
 		if !isTransformer || name == "" {
 			continue
 		}
@@ -346,7 +347,7 @@ func (r *MissingKind) Check(ctx *LintContext) []Finding {
 	for i := 0; i+1 < len(ctx.yamlRoot.Content); i += 2 {
 		if ctx.yamlRoot.Content[i].Kind == yaml.ScalarNode && ctx.yamlRoot.Content[i].Value == "kind" {
 			val := ctx.yamlRoot.Content[i+1].Value
-			if val != "" && !framework.KnownKinds[val] {
+			if val != "" && !circuit.KnownKinds[val] {
 				return []Finding{{
 					RuleID:   r.ID(),
 					Severity: SeverityInfo,

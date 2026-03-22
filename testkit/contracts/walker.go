@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // RunWalkerContract runs the walker compliance suite.
-func RunWalkerContract(t *testing.T, factory func() framework.Walker) {
+func RunWalkerContract(t *testing.T, factory func() circuit.Walker) {
 	t.Helper()
 
 	t.Run("Identity_NonEmpty", func(t *testing.T) {
@@ -40,7 +40,7 @@ func RunWalkerContract(t *testing.T, factory func() framework.Walker) {
 	t.Run("Handle_ProducesArtifact", func(t *testing.T) {
 		w := factory()
 		node := &contractNode{name: "test"}
-		nc := framework.NodeContext{
+		nc := circuit.NodeContext{
 			WalkerState: w.State(),
 			Meta:        make(map[string]any),
 		}
@@ -59,8 +59,8 @@ type contractNode struct {
 }
 
 func (n *contractNode) Name() string                     { return n.name }
-func (n *contractNode) ElementAffinity() framework.Element { return "" }
-func (n *contractNode) Process(_ context.Context, _ framework.NodeContext) (framework.Artifact, error) {
+func (n *contractNode) ElementAffinity() circuit.Element { return "" }
+func (n *contractNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return &contractArt{typ: n.name}, nil
 }
 

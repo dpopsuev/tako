@@ -11,7 +11,8 @@ import (
 	"sort"
 	"strings"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 	"gopkg.in/yaml.v3"
 )
 
@@ -104,10 +105,10 @@ type PromptValidator func(content string) []PromptFieldError
 
 // LintContext holds all data available to lint rules during checking.
 type LintContext struct {
-	Def             *framework.CircuitDef
+	Def             *circuit.CircuitDef
 	Raw             []byte
 	File            string
-	Registries      *framework.GraphRegistries
+	Registries      *engine.GraphRegistries
 	PromptFS        fs.FS
 	PromptValidator PromptValidator
 
@@ -124,7 +125,7 @@ type LintContext struct {
 // It parses both the typed CircuitDef and the raw yaml.Node tree
 // for line-number resolution.
 func NewLintContext(raw []byte, file string) (*LintContext, error) {
-	def, err := framework.LoadCircuit(raw)
+	def, err := circuit.LoadCircuit(raw)
 	if err != nil {
 		return nil, fmt.Errorf("parse circuit: %w", err)
 	}
@@ -167,7 +168,7 @@ func NewGenericLintContext(raw []byte, file string) (*LintContext, error) {
 
 // NewLintContextFromDef creates a LintContext from an already-parsed CircuitDef.
 // Line numbers are unavailable (all zero).
-func NewLintContextFromDef(def *framework.CircuitDef, file string) *LintContext {
+func NewLintContextFromDef(def *circuit.CircuitDef, file string) *LintContext {
 	return &LintContext{Def: def, File: file}
 }
 
@@ -415,7 +416,7 @@ type Option func(*runConfig)
 type runConfig struct {
 	profile         Profile
 	tags            []string
-	registries      *framework.GraphRegistries
+	registries      *engine.GraphRegistries
 	promptFS        fs.FS
 	promptValidator PromptValidator
 	projectFiles    map[string][]ProjectFile
@@ -432,7 +433,7 @@ func WithTags(tags ...string) Option {
 }
 
 // WithRegistries provides graph registries for deeper semantic checks.
-func WithRegistries(reg *framework.GraphRegistries) Option {
+func WithRegistries(reg *engine.GraphRegistries) Option {
 	return func(c *runConfig) { c.registries = reg }
 }
 
@@ -535,7 +536,7 @@ func matchesTags(ruleTags []string, want map[string]bool) bool {
 // For circuit files (kind: circuit or no kind), all rules run.
 // For non-circuit YAML (kind is set but not "circuit"), only envelope rules run.
 func Run(raw []byte, file string, opts ...Option) ([]Finding, error) {
-	env, _ := framework.ParseEnvelope(raw)
+	env, _ := circuit.ParseEnvelope(raw)
 	isCircuit := env == nil || env.Kind == "" || env.Kind == "circuit"
 
 	if isCircuit {

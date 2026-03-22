@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"gopkg.in/yaml.v3"
 )
 
@@ -18,20 +18,20 @@ import (
 // models or create custom registries via NewModelRegistry().
 type ModelRegistry struct {
 	mu       sync.RWMutex
-	models   map[string]framework.ModelIdentity
+	models   map[string]circuit.ModelIdentity
 	wrappers map[string]bool
 }
 
 // NewModelRegistry creates an empty registry.
 func NewModelRegistry() *ModelRegistry {
 	return &ModelRegistry{
-		models:   make(map[string]framework.ModelIdentity),
+		models:   make(map[string]circuit.ModelIdentity),
 		wrappers: make(map[string]bool),
 	}
 }
 
 // Register adds a foundation model to the registry.
-func (r *ModelRegistry) Register(mi framework.ModelIdentity) {
+func (r *ModelRegistry) Register(mi circuit.ModelIdentity) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.models[strings.ToLower(mi.ModelName)] = mi
@@ -46,7 +46,7 @@ func (r *ModelRegistry) RegisterWrapper(name string) {
 
 // IsKnown checks whether a probed ModelIdentity matches a registered
 // foundation model. Matches on ModelName (case-insensitive).
-func (r *ModelRegistry) IsKnown(mi framework.ModelIdentity) bool {
+func (r *ModelRegistry) IsKnown(mi circuit.ModelIdentity) bool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	_, ok := r.models[strings.ToLower(mi.ModelName)]
@@ -72,7 +72,7 @@ func (r *ModelRegistry) IsWrapper(name string) bool {
 }
 
 // Lookup returns the registered identity for a foundation model name.
-func (r *ModelRegistry) Lookup(modelName string) (framework.ModelIdentity, bool) {
+func (r *ModelRegistry) Lookup(modelName string) (circuit.ModelIdentity, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	mi, ok := r.models[strings.ToLower(modelName)]
@@ -80,10 +80,10 @@ func (r *ModelRegistry) Lookup(modelName string) (framework.ModelIdentity, bool)
 }
 
 // Models returns a copy of all registered foundation models.
-func (r *ModelRegistry) Models() map[string]framework.ModelIdentity {
+func (r *ModelRegistry) Models() map[string]circuit.ModelIdentity {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	out := make(map[string]framework.ModelIdentity, len(r.models))
+	out := make(map[string]circuit.ModelIdentity, len(r.models))
 	for k, v := range r.models {
 		out[k] = v
 	}
@@ -122,7 +122,7 @@ func (r *ModelRegistry) LoadModels(path string) error {
 		return fmt.Errorf("parse models file %s: %w", path, err)
 	}
 	for _, m := range f.Models {
-		r.Register(framework.ModelIdentity{
+		r.Register(circuit.ModelIdentity{
 			ModelName: m.ModelName,
 			Provider:  m.Provider,
 			Version:   m.Version,
@@ -137,9 +137,9 @@ func (r *ModelRegistry) LoadModels(path string) error {
 // defaultRegistry is the singleton pre-populated with built-in models.
 var defaultRegistry = func() *ModelRegistry {
 	r := NewModelRegistry()
-	r.Register(framework.ModelIdentity{ModelName: "stub", Provider: "origami"})
-	r.Register(framework.ModelIdentity{ModelName: "basic-heuristic", Provider: "origami"})
-	r.Register(framework.ModelIdentity{ModelName: "claude-sonnet-4-20250514", Provider: "Anthropic", Version: "20250514"})
+	r.Register(circuit.ModelIdentity{ModelName: "stub", Provider: "origami"})
+	r.Register(circuit.ModelIdentity{ModelName: "basic-heuristic", Provider: "origami"})
+	r.Register(circuit.ModelIdentity{ModelName: "claude-sonnet-4-20250514", Provider: "Anthropic", Version: "20250514"})
 	for _, w := range []string{"auto", "composer", "copilot", "cursor", "azure"} {
 		r.RegisterWrapper(w)
 	}
@@ -151,12 +151,12 @@ var defaultRegistry = func() *ModelRegistry {
 func DefaultModelRegistry() *ModelRegistry { return defaultRegistry }
 
 // IsKnownModel delegates to the default registry.
-func IsKnownModel(mi framework.ModelIdentity) bool { return defaultRegistry.IsKnown(mi) }
+func IsKnownModel(mi circuit.ModelIdentity) bool { return defaultRegistry.IsKnown(mi) }
 
 // IsWrapperName delegates to the default registry.
 func IsWrapperName(name string) bool { return defaultRegistry.IsWrapper(name) }
 
 // LookupModel delegates to the default registry.
-func LookupModel(modelName string) (framework.ModelIdentity, bool) {
+func LookupModel(modelName string) (circuit.ModelIdentity, bool) {
 	return defaultRegistry.Lookup(modelName)
 }

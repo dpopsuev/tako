@@ -4,7 +4,8 @@ import (
 	"context"
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/calibrate"
 )
 
@@ -15,11 +16,11 @@ func RunCaseCollectorContract(t *testing.T, factory func() calibrate.CaseCollect
 
 	t.Run("Collect_ReturnsValuesMap", func(t *testing.T) {
 		collector := factory()
-		results := []framework.BatchWalkResult{
+		results := []engine.BatchWalkResult{
 			{
 				CaseID:        "C01",
 				Path:          []string{"start", "done"},
-				StepArtifacts: map[string]framework.Artifact{},
+				StepArtifacts: map[string]circuit.Artifact{},
 			},
 		}
 		values, _, err := collector.Collect(context.Background(), results)
@@ -51,7 +52,7 @@ func RunCaseCollectorContract(t *testing.T, factory func() calibrate.CaseCollect
 					t.Errorf("Collect panicked on empty slice: %v", r)
 				}
 			}()
-			_, _, _ = collector.Collect(context.Background(), []framework.BatchWalkResult{})
+			_, _, _ = collector.Collect(context.Background(), []engine.BatchWalkResult{})
 		}()
 	})
 }

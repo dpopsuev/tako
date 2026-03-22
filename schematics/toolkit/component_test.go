@@ -4,13 +4,14 @@ import (
 	"context"
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 )
 
 type stubTransformer struct{ name string }
 
 func (s *stubTransformer) Name() string { return s.name }
-func (s *stubTransformer) Transform(_ context.Context, _ *framework.TransformerContext) (any, error) {
+func (s *stubTransformer) Transform(_ context.Context, _ *engine.TransformerContext) (any, error) {
 	return nil, nil
 }
 
@@ -48,7 +49,7 @@ func TestTransformerForAllNodes_Empty(t *testing.T) {
 func TestExtractorForAllNodes(t *testing.T) {
 	t.Parallel()
 	nodes := []string{"x", "y"}
-	factory := func(name string) framework.Extractor {
+	factory := func(name string) engine.Extractor {
 		return &stubExtractor{name: name}
 	}
 
@@ -70,8 +71,8 @@ func TestExtractorForAllNodes(t *testing.T) {
 
 func TestNodeNamesFromCircuit(t *testing.T) {
 	t.Parallel()
-	cd := &framework.CircuitDef{
-		Nodes: []framework.NodeDef{
+	cd := &circuit.CircuitDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "recall"},
 			{Name: "triage"},
 			{Name: "resolve"},
@@ -99,7 +100,7 @@ func TestNodeNamesFromCircuit_Nil(t *testing.T) {
 
 func TestNodeNamesFromCircuit_Empty(t *testing.T) {
 	t.Parallel()
-	cd := &framework.CircuitDef{}
+	cd := &circuit.CircuitDef{}
 	got := NodeNamesFromCircuit(cd)
 	if len(got) != 0 {
 		t.Errorf("empty nodes should return empty slice, got %v", got)

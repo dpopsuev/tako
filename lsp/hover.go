@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/element"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
@@ -62,7 +62,7 @@ func (s *Server) handleHover(ctx context.Context, reply jsonrpc2.Replier, req js
 	return reply(ctx, hover, nil)
 }
 
-func computeHover(doc *document, pos protocol.Position, vocab framework.RichVocabulary) *protocol.Hover {
+func computeHover(doc *document, pos protocol.Position, vocab circuit.RichVocabulary) *protocol.Hover {
 	lines := strings.Split(doc.Content, "\n")
 	if int(pos.Line) >= len(lines) {
 		return nil
@@ -176,7 +176,7 @@ func computeHover(doc *document, pos protocol.Position, vocab framework.RichVoca
 	return nil
 }
 
-func connectedEdges(def *framework.CircuitDef, nodeName string) string {
+func connectedEdges(def *circuit.CircuitDef, nodeName string) string {
 	var inbound, outbound []string
 	for _, e := range def.Edges {
 		label := formatEdgeLabel(e)
@@ -201,7 +201,7 @@ func connectedEdges(def *framework.CircuitDef, nodeName string) string {
 	return md
 }
 
-func formatEdgeLabel(e framework.EdgeDef) string {
+func formatEdgeLabel(e circuit.EdgeDef) string {
 	var tags []string
 	if e.Shortcut {
 		tags = append(tags, "shortcut")

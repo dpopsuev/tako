@@ -1,18 +1,18 @@
 package curate
 
 import (
-	"github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"context"
 	"fmt"
 	"log/slog"
 )
 
-// CurationWalker is a framework.Walker that walks the curation circuit.
+// CurationWalker is a circuit.Walker that walks the curation circuit.
 // It uses configured EvidenceSources and Extractors to fetch raw data, extract
 // fields, validate against a Schema, and promote complete records.
 type CurationWalker struct {
-	identity   framework.AgentIdentity
-	state      *framework.WalkerState
+	identity   circuit.AgentIdentity
+	state      *circuit.WalkerState
 	schema     Schema
 	sources    []EvidenceSource
 	extractors []Extractor
@@ -38,11 +38,11 @@ func NewCurationWalker(cfg CurationWalkerConfig) *CurationWalker {
 	}
 
 	return &CurationWalker{
-		identity: framework.AgentIdentity{
+		identity: circuit.AgentIdentity{
 			PersonaName: "curator",
-			Alignment:   framework.AlignmentThesis,
+			Alignment:   circuit.AlignmentThesis,
 		},
-		state:      framework.NewWalkerState(cfg.RecordID),
+		state:      circuit.NewWalkerState(cfg.RecordID),
 		schema:     cfg.Schema,
 		sources:    cfg.Sources,
 		extractors: cfg.Extractors,
@@ -50,9 +50,9 @@ func NewCurationWalker(cfg CurationWalkerConfig) *CurationWalker {
 	}
 }
 
-func (w *CurationWalker) Identity() framework.AgentIdentity      { return w.identity }
-func (w *CurationWalker) SetIdentity(id framework.AgentIdentity)  { w.identity = id }
-func (w *CurationWalker) State() *framework.WalkerState           { return w.state }
+func (w *CurationWalker) Identity() circuit.AgentIdentity      { return w.identity }
+func (w *CurationWalker) SetIdentity(id circuit.AgentIdentity)  { w.identity = id }
+func (w *CurationWalker) State() *circuit.WalkerState           { return w.state }
 
 // Record returns the curated record after walking.
 func (w *CurationWalker) Record() Record { return w.record }
@@ -62,7 +62,7 @@ func (w *CurationWalker) Promoted() bool { return w.promoted }
 
 // Handle processes each node in the curation circuit, producing
 // CurationArtifact outputs that the edge evaluators use for routing.
-func (w *CurationWalker) Handle(ctx context.Context, node framework.Node, nc framework.NodeContext) (framework.Artifact, error) {
+func (w *CurationWalker) Handle(ctx context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
 	switch node.Name() {
 	case "fetch":
 		return w.handleFetch(ctx)
@@ -79,7 +79,7 @@ func (w *CurationWalker) Handle(ctx context.Context, node framework.Node, nc fra
 	}
 }
 
-func (w *CurationWalker) handleFetch(ctx context.Context) (framework.Artifact, error) {
+func (w *CurationWalker) handleFetch(ctx context.Context) (circuit.Artifact, error) {
 	var lastRaw *RawEvidence
 	for _, src := range w.sources {
 		if !src.CanHandle(w.record.ID) {
@@ -105,7 +105,7 @@ func (w *CurationWalker) handleFetch(ctx context.Context) (framework.Artifact, e
 	}, nil
 }
 
-func (w *CurationWalker) handleExtract(ctx context.Context, nc framework.NodeContext) (framework.Artifact, error) {
+func (w *CurationWalker) handleExtract(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	var raw *RawEvidence
 	if prior, ok := nc.PriorArtifact.(*CurationArtifact); ok {
 		raw = prior.RawEvid
@@ -134,7 +134,7 @@ func (w *CurationWalker) handleExtract(ctx context.Context, nc framework.NodeCon
 	}, nil
 }
 
-func (w *CurationWalker) handleValidate() (framework.Artifact, error) {
+func (w *CurationWalker) handleValidate() (circuit.Artifact, error) {
 	cr := CheckCompleteness(w.record, w.schema)
 
 	moreSources := false
@@ -154,7 +154,7 @@ func (w *CurationWalker) handleValidate() (framework.Artifact, error) {
 	}, nil
 }
 
-func (w *CurationWalker) handleEnrich(_ context.Context) (framework.Artifact, error) {
+func (w *CurationWalker) handleEnrich(_ context.Context) (circuit.Artifact, error) {
 	cr := CheckCompleteness(w.record, w.schema)
 	return &CurationArtifact{
 		ArtifactType: "enrich",
@@ -164,7 +164,7 @@ func (w *CurationWalker) handleEnrich(_ context.Context) (framework.Artifact, er
 	}, nil
 }
 
-func (w *CurationWalker) handlePromote() (framework.Artifact, error) {
+func (w *CurationWalker) handlePromote() (circuit.Artifact, error) {
 	w.promoted = true
 	slog.Info("record promoted",
 		slog.String("record_id", w.record.ID),
@@ -179,4 +179,4 @@ func (w *CurationWalker) handlePromote() (framework.Artifact, error) {
 }
 
 // Verify compile-time interface compliance.
-var _ framework.Walker = (*CurationWalker)(nil)
+var _ circuit.Walker = (*CurationWalker)(nil)

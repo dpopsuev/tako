@@ -1,6 +1,8 @@
 package view
 
-import framework "github.com/dpopsuev/origami"
+import (
+	"github.com/dpopsuev/origami/circuit"
+)
 
 // GridCell is a cell-based position in a row/column grid.
 type GridCell struct {
@@ -43,5 +45,5 @@ type CircuitLayout struct {
 // Implementations provide different strategies: grid-based for TUI,
 // coordinate-based for GUI.
 type LayoutEngine interface {
-	Layout(def *framework.CircuitDef) (CircuitLayout, error)
+	Layout(def *circuit.CircuitDef) (CircuitLayout, error)
 }

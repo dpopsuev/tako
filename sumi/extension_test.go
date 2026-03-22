@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/view"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -250,7 +250,7 @@ func TestBreadcrumbBar_PushAndPop(t *testing.T) {
 
 	bb := NewBreadcrumbBar("Root", def, layout, true)
 
-	subDef := &framework.CircuitDef{Circuit: "sub"}
+	subDef := &circuit.CircuitDef{Circuit: "sub"}
 	bb.Push("SubCircuit", subDef, layout)
 
 	if !bb.Visible() {

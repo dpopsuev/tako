@@ -8,7 +8,7 @@ import (
 	"strings"
 	"text/template"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 func skillCmd(args []string) error {
@@ -41,7 +41,7 @@ func skillScaffold(args []string) error {
 		return fmt.Errorf("read circuit: %w", err)
 	}
 
-	def, err := framework.LoadCircuit(data)
+	def, err := circuit.LoadCircuit(data)
 	if err != nil {
 		return fmt.Errorf("parse circuit: %w", err)
 	}
@@ -94,8 +94,8 @@ type scaffoldContext struct {
 	Tool         string
 	CircuitName string
 	CircuitPath string
-	Nodes        []framework.NodeDef
-	Edges        []framework.EdgeDef
+	Nodes        []circuit.NodeDef
+	Edges        []circuit.EdgeDef
 	Start        string
 	Done         string
 }

@@ -3,7 +3,7 @@ package ouroboros
 import (
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/element"
 )
 
@@ -68,7 +68,7 @@ type SeedResult struct {
 // ProfileFromPoleResults aggregates multiple seed circuit PoleResults into
 // a ModelProfile, using difficulty-weighted dimension averaging.
 func ProfileFromPoleResults(
-	model framework.ModelIdentity,
+	model circuit.ModelIdentity,
 	results []SeedResult,
 ) ModelProfile {
 	profile := ModelProfile{

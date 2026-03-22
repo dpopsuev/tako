@@ -5,7 +5,7 @@
 // Usage:
 //
 //	func TestMyTransformer(t *testing.T) {
-//	    contracts.RunTransformerContract(t, func() framework.Transformer {
+//	    contracts.RunTransformerContract(t, func() engine.Transformer {
 //	        return &MyTransformer{}
 //	    })
 //	}
@@ -16,12 +16,13 @@ import (
 	"testing"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 )
 
 // RunTransformerContract runs the transformer compliance suite against
 // any Transformer implementation produced by the factory.
-func RunTransformerContract(t *testing.T, factory func() framework.Transformer) {
+func RunTransformerContract(t *testing.T, factory func() engine.Transformer) {
 	t.Helper()
 
 	t.Run("Name_NonEmpty", func(t *testing.T) {
@@ -34,9 +35,9 @@ func RunTransformerContract(t *testing.T, factory func() framework.Transformer) 
 	t.Run("Transform_ReturnsResult", func(t *testing.T) {
 		tr := factory()
 		ctx := context.Background()
-		tc := &framework.TransformerContext{
+		tc := &engine.TransformerContext{
 			NodeName: "test-node",
-			WalkerState: framework.NewWalkerState("test"),
+			WalkerState: circuit.NewWalkerState("test"),
 		}
 		result, err := tr.Transform(ctx, tc)
 		if err != nil {
@@ -52,9 +53,9 @@ func RunTransformerContract(t *testing.T, factory func() framework.Transformer) 
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel() // cancel immediately
 
-		tc := &framework.TransformerContext{
+		tc := &engine.TransformerContext{
 			NodeName: "test-node",
-			WalkerState: framework.NewWalkerState("test"),
+			WalkerState: circuit.NewWalkerState("test"),
 		}
 		// Should either return an error or complete quickly — must not hang.
 		done := make(chan struct{})
@@ -74,7 +75,7 @@ func RunTransformerContract(t *testing.T, factory func() framework.Transformer) 
 	t.Run("Transform_NilWalkerState_NoPanic", func(t *testing.T) {
 		tr := factory()
 		ctx := context.Background()
-		tc := &framework.TransformerContext{
+		tc := &engine.TransformerContext{
 			NodeName: "test-node",
 			// WalkerState intentionally nil
 		}

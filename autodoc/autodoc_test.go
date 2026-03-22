@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 func testManifest() *Manifest {
@@ -18,15 +18,15 @@ func testManifest() *Manifest {
 	}
 }
 
-func simpleCircuit() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func simpleCircuit() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit:     "simple",
 		Description: "A simple test circuit",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "start-node", Approach: "rapid"},
 			{Name: "end-node", Approach: "methodical"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "E1", Name: "proceed", From: "start-node", To: "end-node"},
 			{ID: "E2", Name: "done", From: "end-node", To: "_done"},
 		},
@@ -35,23 +35,23 @@ func simpleCircuit() *framework.CircuitDef {
 	}
 }
 
-func zonedCircuit() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func zonedCircuit() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit:     "zoned",
 		Description: "A circuit with zones",
-		Zones: map[string]framework.ZoneDef{
+		Zones: map[string]circuit.ZoneDef{
 			"discovery": {Nodes: []string{"scan"}, Approach: "methodical"},
 			"analysis":  {Nodes: []string{"classify", "assess"}, Approach: "rapid"},
 			"output":    {Nodes: []string{"report"}, Approach: "holistic"},
 		},
 		HandlerType: "node",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "scan", Approach: "methodical", Handler: "scan"},
 			{Name: "classify", Approach: "rapid", Handler: "classify"},
 			{Name: "assess", Approach: "rigorous", Handler: "assess"},
 			{Name: "report", Approach: "holistic", Handler: "report"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "V1", Name: "findings-ready", From: "scan", To: "classify"},
 			{ID: "V2", Name: "no-findings", From: "scan", To: "report", Shortcut: true},
 			{ID: "V3", Name: "classified", From: "classify", To: "assess"},
@@ -64,17 +64,17 @@ func zonedCircuit() *framework.CircuitDef {
 	}
 }
 
-func dsCircuit() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func dsCircuit() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit:     "mixed-ds",
 		Description: "Circuit with mixed deterministic/stochastic nodes",
 		HandlerType: "transformer",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "filter", Handler: "core.jq"},
 			{Name: "analyze", Handler: "core.llm"},
 			{Name: "format", Handler: "core.jq"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "E1", Name: "to-analyze", From: "filter", To: "analyze"},
 			{ID: "E2", Name: "to-format", From: "analyze", To: "format"},
 			{ID: "E3", Name: "done", From: "format", To: "_done"},
@@ -84,29 +84,29 @@ func dsCircuit() *framework.CircuitDef {
 	}
 }
 
-func contextFilterCircuit() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func contextFilterCircuit() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit:     "ctx-flow",
 		Description: "Circuit with context filters",
-		Zones: map[string]framework.ZoneDef{
+		Zones: map[string]circuit.ZoneDef{
 			"intake": {
 				Nodes: []string{"ingest"},
-				ContextFilter: &framework.ContextFilterDef{
+				ContextFilter: &circuit.ContextFilterDef{
 					Pass: []string{"case_id", "launch_id"},
 				},
 			},
 			"analysis": {
 				Nodes: []string{"analyze"},
-				ContextFilter: &framework.ContextFilterDef{
+				ContextFilter: &circuit.ContextFilterDef{
 					Block: []string{"raw_logs"},
 				},
 			},
 		},
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "ingest"},
 			{Name: "analyze"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "E1", From: "ingest", To: "analyze"},
 		},
 		Start: "ingest",
@@ -232,13 +232,13 @@ func TestRenderDSBoundary(t *testing.T) {
 }
 
 func TestRenderDSBoundary_NoBoundary(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		HandlerType: "transformer",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "a", Handler: "core.jq"},
 			{Name: "b", Handler: "core.jq"},
 		},
-		Edges: []framework.EdgeDef{{ID: "E1", From: "a", To: "b"}},
+		Edges: []circuit.EdgeDef{{ID: "E1", From: "a", To: "b"}},
 	}
 	out := RenderDSBoundary(def, nil)
 	if strings.Contains(out, "[D→S]") {
@@ -247,18 +247,18 @@ func TestRenderDSBoundary_NoBoundary(t *testing.T) {
 }
 
 func TestRenderDSBoundary_WithZones(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "zoned-ds",
-		Zones: map[string]framework.ZoneDef{
+		Zones: map[string]circuit.ZoneDef{
 			"prep":    {Nodes: []string{"filter"}},
 			"analyze": {Nodes: []string{"llm-node"}},
 		},
 		HandlerType: "transformer",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "filter", Handler: "core.jq"},
 			{Name: "llm-node", Handler: "core.llm"},
 		},
-		Edges: []framework.EdgeDef{{ID: "E1", From: "filter", To: "llm-node"}},
+		Edges: []circuit.EdgeDef{{ID: "E1", From: "filter", To: "llm-node"}},
 	}
 	out := RenderDSBoundary(def, nil)
 	if !strings.Contains(out, "deterministic") {
@@ -288,12 +288,12 @@ func TestRenderNodeTable(t *testing.T) {
 }
 
 func TestRenderNodeTable_WithDescription(t *testing.T) {
-	def := &framework.CircuitDef{
-		Nodes: []framework.NodeDef{
+	def := &circuit.CircuitDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "a", Description: "First node"},
 			{Name: "b"},
 		},
-		Edges: []framework.EdgeDef{{ID: "E1", From: "a", To: "b"}},
+		Edges: []circuit.EdgeDef{{ID: "E1", From: "a", To: "b"}},
 	}
 	out := RenderNodeTable(def, nil)
 	if !strings.Contains(out, "First node") {
@@ -376,7 +376,7 @@ func TestScaffold(t *testing.T) {
 	cfg := ScaffoldConfig{
 		ProjectRoot: dir,
 		Manifest:    testManifest(),
-		Circuits:    []*framework.CircuitDef{simpleCircuit(), zonedCircuit()},
+		Circuits:    []*circuit.CircuitDef{simpleCircuit(), zonedCircuit()},
 	}
 
 	if err := Scaffold(cfg); err != nil {
@@ -434,7 +434,7 @@ func TestScaffold_Idempotent(t *testing.T) {
 	cfg := ScaffoldConfig{
 		ProjectRoot: dir,
 		Manifest:    testManifest(),
-		Circuits:    []*framework.CircuitDef{simpleCircuit()},
+		Circuits:    []*circuit.CircuitDef{simpleCircuit()},
 	}
 
 	if err := Scaffold(cfg); err != nil {
@@ -471,7 +471,7 @@ func TestScaffold_WithScorecards(t *testing.T) {
 	cfg := ScaffoldConfig{
 		ProjectRoot: dir,
 		Manifest:    testManifest(),
-		Circuits:    []*framework.CircuitDef{simpleCircuit()},
+		Circuits:    []*circuit.CircuitDef{simpleCircuit()},
 		Scorecards:  []string{scPath},
 	}
 

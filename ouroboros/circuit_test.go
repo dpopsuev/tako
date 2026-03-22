@@ -6,7 +6,8 @@ import (
 	"os"
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 	_ "github.com/dpopsuev/origami/topology"
 )
 
@@ -60,18 +61,18 @@ func TestCircuitWalk_FullFlow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read circuit YAML: %v", err)
 	}
-	def, err := framework.LoadCircuit(circuitYAML)
+	def, err := circuit.LoadCircuit(circuitYAML)
 	if err != nil {
 		t.Fatalf("load circuit: %v", err)
 	}
 
 	nodes := CircuitNodes(seed, dispatcher)
-	g, err := framework.BuildGraph(def, framework.GraphRegistries{Nodes: nodes})
+	g, err := engine.BuildGraph(def, engine.GraphRegistries{Nodes: nodes})
 	if err != nil {
 		t.Fatalf("build graph: %v", err)
 	}
 
-	walker := framework.NewProcessWalker("test-walk")
+	walker := circuit.NewProcessWalker("test-walk")
 	ctx := context.Background()
 
 	if err := g.Walk(ctx, walker, def.Start); err != nil {
@@ -131,7 +132,7 @@ func TestCircuitNodes_AllRegistered(t *testing.T) {
 			t.Errorf("missing node factory for family %q", family)
 			continue
 		}
-		node := factory(framework.NodeDef{})
+		node := factory(circuit.NodeDef{})
 		if node == nil {
 			t.Errorf("factory for %q returned nil", family)
 		}
@@ -157,7 +158,7 @@ func TestSubjectNode_OnlySeesQuestion(t *testing.T) {
 		},
 	}
 
-	nc := framework.NodeContext{
+	nc := circuit.NodeContext{
 		PriorArtifact: &seedArtifact{
 			typeName:   "generator-output",
 			confidence: 1.0,
@@ -182,7 +183,7 @@ func TestJudgeNode_ProducesPoleResult(t *testing.T) {
 	})
 
 	node := &judgeNode{seed: s, dispatch: dispatcher}
-	nc := framework.NodeContext{
+	nc := circuit.NodeContext{
 		PriorArtifact: &seedArtifact{
 			typeName:   "subject-response",
 			confidence: 1.0,
@@ -237,7 +238,7 @@ func TestJudgeNode_MechanicalVerify(t *testing.T) {
 		dispatch: dispatcher,
 		verifier: verifier,
 	}
-	nc := framework.NodeContext{
+	nc := circuit.NodeContext{
 		PriorArtifact: &seedArtifact{
 			typeName:   "subject-response",
 			confidence: 1.0,
@@ -279,7 +280,7 @@ func TestJudgeNode_SelfVerify(t *testing.T) {
 			return 0.6
 		},
 	}
-	nc := framework.NodeContext{
+	nc := circuit.NodeContext{
 		PriorArtifact: &seedArtifact{
 			typeName:   "subject-response",
 			confidence: 1.0,
@@ -320,9 +321,9 @@ func TestCircuitNodesWithOpts_InjectsCallbacks(t *testing.T) {
 	}), opts)
 
 	judgeFactory := nodes["ouroboros-judge"]
-	judge := judgeFactory(framework.NodeDef{})
+	judge := judgeFactory(circuit.NodeDef{})
 
-	nc := framework.NodeContext{
+	nc := circuit.NodeContext{
 		PriorArtifact: &seedArtifact{typeName: "subject-response", confidence: 1.0, raw: "code here"},
 	}
 	_, err := judge.Process(context.Background(), nc)
@@ -353,7 +354,7 @@ func TestSubjectNode_VerifyHint(t *testing.T) {
 		PoleAnswers: map[string]string{"a": "x", "b": "y"},
 	}
 
-	nc := framework.NodeContext{
+	nc := circuit.NodeContext{
 		PriorArtifact: &seedArtifact{typeName: "generator-output", confidence: 1.0, raw: genOutput},
 	}
 	_, err := node.Process(context.Background(), nc)

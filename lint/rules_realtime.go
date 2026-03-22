@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // --- S21: edge-node-reference ---
@@ -192,12 +192,12 @@ func (r *InvalidHandlerType) Severity() Severity  { return SeverityError }
 func (r *InvalidHandlerType) Tags() []string      { return []string{"structural"} }
 
 var validHandlerTypes = map[string]bool{
-	framework.HandlerTypeTransformer: true,
-	framework.HandlerTypeExtractor:   true,
-	framework.HandlerTypeRenderer:    true,
-	framework.HandlerTypeNode:        true,
-	framework.HandlerTypeDelegate:    true,
-	framework.HandlerTypeCircuit:     true,
+	circuit.HandlerTypeTransformer: true,
+	circuit.HandlerTypeExtractor:   true,
+	circuit.HandlerTypeRenderer:    true,
+	circuit.HandlerTypeNode:        true,
+	circuit.HandlerTypeDelegate:    true,
+	circuit.HandlerTypeCircuit:     true,
 }
 
 func (r *InvalidHandlerType) Check(ctx *LintContext) []Finding {

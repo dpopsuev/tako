@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/element"
 )
 
@@ -16,7 +16,7 @@ type stubMaskNode struct {
 
 func (n *stubMaskNode) Name() string            { return n.name }
 func (n *stubMaskNode) ElementAffinity() element.Element { return n.element }
-func (n *stubMaskNode) Process(ctx context.Context, nc framework.NodeContext) (framework.Artifact, error) {
+func (n *stubMaskNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	n.called = true
 	return &stubMaskArtifact{meta: nc.Meta}, nil
 }
@@ -64,7 +64,7 @@ func TestMaskedNode_Process_InjectsMeta(t *testing.T) {
 		t.Fatalf("Equip: %v", err)
 	}
 
-	nc := framework.NodeContext{Meta: make(map[string]any)}
+	nc := circuit.NodeContext{Meta: make(map[string]any)}
 	artifact, err := mn.Process(context.Background(), nc)
 	if err != nil {
 		t.Fatalf("Process: %v", err)
@@ -88,7 +88,7 @@ func TestMaskedNode_Process_NilMetaHandled(t *testing.T) {
 		t.Fatalf("Equip: %v", err)
 	}
 
-	nc := framework.NodeContext{}
+	nc := circuit.NodeContext{}
 	artifact, err := mn.Process(context.Background(), nc)
 	if err != nil {
 		t.Fatalf("Process: %v", err)
@@ -109,7 +109,7 @@ func (m *orderTrackingMask) Name() string        { return m.name }
 func (m *orderTrackingMask) Description() string  { return "order tracker" }
 func (m *orderTrackingMask) ValidNodes() []string { return m.validNodes }
 func (m *orderTrackingMask) Wrap(next NodeProcessor) NodeProcessor {
-	return func(ctx context.Context, nc framework.NodeContext) (framework.Artifact, error) {
+	return func(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 		*m.order = append(*m.order, m.name+":pre")
 		artifact, err := next(ctx, nc)
 		*m.order = append(*m.order, m.name+":post")
@@ -128,7 +128,7 @@ func TestMiddlewareChain_Ordering(t *testing.T) {
 		t.Fatalf("EquipMany: %v", err)
 	}
 
-	nc := framework.NodeContext{Meta: make(map[string]any)}
+	nc := circuit.NodeContext{Meta: make(map[string]any)}
 	if _, err := mn.Process(context.Background(), nc); err != nil {
 		t.Fatalf("Process: %v", err)
 	}

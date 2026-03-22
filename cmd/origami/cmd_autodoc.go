@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/autodoc"
 )
 
@@ -41,13 +41,13 @@ func autodocCmd(args []string) error {
 		return fmt.Errorf("no circuits found in %s/circuits/", projectRoot)
 	}
 
-	circuits := make([]*framework.CircuitDef, 0, len(circuitPaths))
+	circuits := make([]*circuit.CircuitDef, 0, len(circuitPaths))
 	for _, cp := range circuitPaths {
 		data, err := os.ReadFile(cp)
 		if err != nil {
 			return fmt.Errorf("read circuit %s: %w", cp, err)
 		}
-		def, err := framework.LoadCircuit(data)
+		def, err := circuit.LoadCircuit(data)
 		if err != nil {
 			return fmt.Errorf("parse circuit %s: %w", cp, err)
 		}

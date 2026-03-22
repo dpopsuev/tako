@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/view"
 )
 
@@ -80,9 +80,9 @@ func TestStress_200SessionsWithConcurrentSSE(t *testing.T) {
 	}
 
 	for i := 0; i < sessions; i++ {
-		def := &framework.CircuitDef{
+		def := &circuit.CircuitDef{
 			Circuit: fmt.Sprintf("stress-%d", i),
-			Nodes: []framework.NodeDef{
+			Nodes: []circuit.NodeDef{
 				{Name: "recall"},
 				{Name: "triage"},
 				{Name: "resolve"},
@@ -93,9 +93,9 @@ func TestStress_200SessionsWithConcurrentSSE(t *testing.T) {
 
 		time.Sleep(2 * time.Millisecond)
 
-		store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "recall", Walker: "w1"})
-		store.OnEvent(framework.WalkEvent{Type: framework.EventNodeExit, Node: "recall"})
-		store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "triage", Walker: "w1"})
+		store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall", Walker: "w1"})
+		store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "recall"})
+		store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "triage", Walker: "w1"})
 	}
 
 	// Close last store.
@@ -169,7 +169,7 @@ func TestStress_200SessionsWithConcurrentSSE(t *testing.T) {
 	}()
 
 	time.Sleep(50 * time.Millisecond)
-	freshStore.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "recall", Walker: "w1"})
+	freshStore.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall", Walker: "w1"})
 
 	select {
 	case evt := <-evtCh:

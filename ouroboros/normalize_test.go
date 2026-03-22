@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 func approxEq(a, b, eps float64) bool {
@@ -15,19 +15,19 @@ func approxEq(a, b, eps float64) bool {
 func TestNormalizeProfile_MedianIsHalf(t *testing.T) {
 	profiles := []ModelProfile{
 		{
-			Model: framework.ModelIdentity{ModelName: "slow"},
+			Model: circuit.ModelIdentity{ModelName: "slow"},
 			Dimensions: map[Dimension]float64{
 				DimSpeed: 0.2,
 			},
 		},
 		{
-			Model: framework.ModelIdentity{ModelName: "medium"},
+			Model: circuit.ModelIdentity{ModelName: "medium"},
 			Dimensions: map[Dimension]float64{
 				DimSpeed: 0.5,
 			},
 		},
 		{
-			Model: framework.ModelIdentity{ModelName: "fast"},
+			Model: circuit.ModelIdentity{ModelName: "fast"},
 			Dimensions: map[Dimension]float64{
 				DimSpeed: 0.9,
 			},

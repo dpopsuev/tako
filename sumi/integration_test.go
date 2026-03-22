@@ -5,23 +5,23 @@ import (
 	"strings"
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/view"
 )
 
 func TestIntegration_WalkAndRender(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "integration",
-		Zones: map[string]framework.ZoneDef{
+		Zones: map[string]circuit.ZoneDef{
 			"input":  {Nodes: []string{"recall", "triage"}, Approach: "rapid"},
 			"output": {Nodes: []string{"report"}, Approach: "rigorous"},
 		},
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "recall", Approach: "rapid"},
 			{Name: "triage", Approach: "analytical"},
 			{Name: "report", Approach: "rigorous"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{From: "recall", To: "triage"},
 			{From: "triage", To: "report"},
 		},
@@ -42,8 +42,8 @@ func TestIntegration_WalkAndRender(t *testing.T) {
 	_, ch := store.Subscribe()
 
 	// Step 1: walker enters recall
-	store.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeEnter, Node: "recall", Walker: "sentinel",
+	store.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeEnter, Node: "recall", Walker: "sentinel",
 	})
 	diff := <-ch
 	if diff.Type != view.DiffNodeState || diff.Node != "recall" || diff.State != view.NodeActive {
@@ -62,8 +62,8 @@ func TestIntegration_WalkAndRender(t *testing.T) {
 	}
 
 	// Step 2: walker exits recall
-	store.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeExit, Node: "recall",
+	store.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeExit, Node: "recall",
 	})
 	diff = <-ch
 	if diff.Type != view.DiffNodeState || diff.State != view.NodeCompleted {
@@ -71,8 +71,8 @@ func TestIntegration_WalkAndRender(t *testing.T) {
 	}
 
 	// Step 3: walker enters triage
-	store.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeEnter, Node: "triage", Walker: "sentinel",
+	store.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeEnter, Node: "triage", Walker: "sentinel",
 	})
 	<-ch // node state
 	<-ch // walker moved
@@ -84,24 +84,24 @@ func TestIntegration_WalkAndRender(t *testing.T) {
 	}
 
 	// Step 4: walk completes
-	store.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeExit, Node: "triage",
+	store.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeExit, Node: "triage",
 	})
 	<-ch
 
-	store.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeEnter, Node: "report", Walker: "sentinel",
+	store.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeEnter, Node: "report", Walker: "sentinel",
 	})
 	<-ch // node state
 	<-ch // walker moved
 
-	store.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeExit, Node: "report",
+	store.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeExit, Node: "report",
 	})
 	<-ch
 
-	store.OnEvent(framework.WalkEvent{
-		Type: framework.EventWalkComplete,
+	store.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventWalkComplete,
 	})
 	// walk_complete now clears walkers first, then emits DiffCompleted
 	diff = <-ch
@@ -128,14 +128,14 @@ func TestIntegration_WalkAndRender(t *testing.T) {
 }
 
 func TestIntegration_BreakpointRendering(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "bp-test",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "a"},
 			{Name: "b"},
 			{Name: "c"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{From: "a", To: "b"},
 			{From: "b", To: "c"},
 		},
@@ -159,13 +159,13 @@ func TestIntegration_BreakpointRendering(t *testing.T) {
 }
 
 func TestIntegration_ErrorState(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "error-test",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "a"},
 			{Name: "b"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{From: "a", To: "b"},
 		},
 		Start: "a",
@@ -175,8 +175,8 @@ func TestIntegration_ErrorState(t *testing.T) {
 	store := view.NewCircuitStore(def)
 	defer store.Close()
 
-	store.OnEvent(framework.WalkEvent{
-		Type:  framework.EventWalkError,
+	store.OnEvent(circuit.WalkEvent{
+		Type:  circuit.EventWalkError,
 		Node:  "a",
 		Error: fmt.Errorf("transformer failed"),
 	})

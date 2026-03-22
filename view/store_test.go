@@ -5,25 +5,25 @@ import (
 	"testing"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
-func testCircuitDef() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func testCircuitDef() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit: "test-circuit",
 		Start:   "recall",
 		Done:    "report",
-		Zones: map[string]framework.ZoneDef{
+		Zones: map[string]circuit.ZoneDef{
 			"analysis": {Nodes: []string{"recall", "triage"}, Approach: "rapid"},
 			"output":   {Nodes: []string{"investigate", "report"}, Approach: "analytical"},
 		},
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "recall", Approach: "rapid"},
 			{Name: "triage", Approach: "rapid"},
 			{Name: "investigate", Approach: "analytical"},
 			{Name: "report", Approach: "analytical"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", Name: "start", From: "recall", To: "triage"},
 			{ID: "e2", Name: "analyze", From: "triage", To: "investigate"},
 			{ID: "e3", Name: "conclude", From: "investigate", To: "report"},
@@ -91,7 +91,7 @@ func TestCircuitStore_NodeEnter(t *testing.T) {
 	id, ch := store.Subscribe()
 	defer store.Unsubscribe(id)
 
-	store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "recall", Walker: "w1"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall", Walker: "w1"})
 
 	diffs := collectDiffs(ch, 50*time.Millisecond)
 
@@ -118,12 +118,12 @@ func TestCircuitStore_NodeEnter(t *testing.T) {
 
 func TestCircuitStore_NodeExit(t *testing.T) {
 	store := NewCircuitStore(testCircuitDef())
-	store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "recall", Walker: "w1"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall", Walker: "w1"})
 
 	id, ch := store.Subscribe()
 	defer store.Unsubscribe(id)
 
-	store.OnEvent(framework.WalkEvent{Type: framework.EventNodeExit, Node: "recall", Walker: "w1"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "recall", Walker: "w1"})
 
 	diffs := collectDiffs(ch, 50*time.Millisecond)
 
@@ -138,12 +138,12 @@ func TestCircuitStore_NodeExit(t *testing.T) {
 
 func TestCircuitStore_WalkerMoved(t *testing.T) {
 	store := NewCircuitStore(testCircuitDef())
-	store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "recall", Walker: "w1"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall", Walker: "w1"})
 
 	id, ch := store.Subscribe()
 	defer store.Unsubscribe(id)
 
-	store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "triage", Walker: "w1"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "triage", Walker: "w1"})
 
 	diffs := collectDiffs(ch, 50*time.Millisecond)
 
@@ -172,7 +172,7 @@ func TestCircuitStore_WalkComplete(t *testing.T) {
 	id, ch := store.Subscribe()
 	defer store.Unsubscribe(id)
 
-	store.OnEvent(framework.WalkEvent{Type: framework.EventWalkComplete})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventWalkComplete})
 
 	diffs := collectDiffs(ch, 50*time.Millisecond)
 
@@ -190,8 +190,8 @@ func TestCircuitStore_WalkError(t *testing.T) {
 	id, ch := store.Subscribe()
 	defer store.Unsubscribe(id)
 
-	store.OnEvent(framework.WalkEvent{
-		Type:  framework.EventWalkError,
+	store.OnEvent(circuit.WalkEvent{
+		Type:  circuit.EventWalkError,
 		Node:  "triage",
 		Error: errors.New("timeout"),
 	})
@@ -221,13 +221,13 @@ func TestCircuitStore_WalkInterruptedResumed(t *testing.T) {
 	id, ch := store.Subscribe()
 	defer store.Unsubscribe(id)
 
-	store.OnEvent(framework.WalkEvent{Type: framework.EventWalkInterrupted, Node: "triage"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventWalkInterrupted, Node: "triage"})
 
 	if snap := store.Snapshot(); !snap.Paused {
 		t.Error("expected paused after interrupted")
 	}
 
-	store.OnEvent(framework.WalkEvent{Type: framework.EventWalkResumed})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventWalkResumed})
 
 	diffs := collectDiffs(ch, 50*time.Millisecond)
 
@@ -251,18 +251,18 @@ func TestCircuitStore_WalkInterruptedResumed(t *testing.T) {
 
 func TestCircuitStore_FanOutStartEnd(t *testing.T) {
 	store := NewCircuitStore(testCircuitDef())
-	store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "recall", Walker: "w1"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall", Walker: "w1"})
 
 	id, ch := store.Subscribe()
 	defer store.Unsubscribe(id)
 
-	store.OnEvent(framework.WalkEvent{Type: framework.EventFanOutStart, Walker: "w2", Node: "triage"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventFanOutStart, Walker: "w2", Node: "triage"})
 	snap := store.Snapshot()
 	if _, ok := snap.Walkers["w2"]; !ok {
 		t.Error("walker w2 should be added on fan_out_start")
 	}
 
-	store.OnEvent(framework.WalkEvent{Type: framework.EventFanOutEnd, Walker: "w2"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventFanOutEnd, Walker: "w2"})
 	snap = store.Snapshot()
 	if _, ok := snap.Walkers["w2"]; ok {
 		t.Error("walker w2 should be removed on fan_out_end")
@@ -288,7 +288,7 @@ func TestCircuitStore_Transition(t *testing.T) {
 	id, ch := store.Subscribe()
 	defer store.Unsubscribe(id)
 
-	store.OnEvent(framework.WalkEvent{Type: framework.EventTransition, Node: "triage", Edge: "e1"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventTransition, Node: "triage", Edge: "e1"})
 	diffs := collectDiffs(ch, 50*time.Millisecond)
 
 	// Transition events are informational — no state change expected
@@ -302,7 +302,7 @@ func TestCircuitStore_EdgeEvaluate(t *testing.T) {
 	id, ch := store.Subscribe()
 	defer store.Unsubscribe(id)
 
-	store.OnEvent(framework.WalkEvent{Type: framework.EventEdgeEvaluate, Edge: "e1"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventEdgeEvaluate, Edge: "e1"})
 	diffs := collectDiffs(ch, 50*time.Millisecond)
 
 	if len(diffs) != 0 {
@@ -312,12 +312,12 @@ func TestCircuitStore_EdgeEvaluate(t *testing.T) {
 
 func TestCircuitStore_WalkerSwitch(t *testing.T) {
 	store := NewCircuitStore(testCircuitDef())
-	store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "recall", Walker: "w1"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall", Walker: "w1"})
 
 	id, ch := store.Subscribe()
 	defer store.Unsubscribe(id)
 
-	store.OnEvent(framework.WalkEvent{Type: framework.EventWalkerSwitch, Walker: "w1", Node: "triage"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventWalkerSwitch, Walker: "w1", Node: "triage"})
 	diffs := collectDiffs(ch, 50*time.Millisecond)
 
 	snap := store.Snapshot()
@@ -340,7 +340,7 @@ func TestCircuitStore_CheckpointSaved(t *testing.T) {
 	id, ch := store.Subscribe()
 	defer store.Unsubscribe(id)
 
-	store.OnEvent(framework.WalkEvent{Type: framework.EventCheckpointSaved})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventCheckpointSaved})
 	diffs := collectDiffs(ch, 50*time.Millisecond)
 	if len(diffs) != 0 {
 		t.Errorf("checkpoint_saved should emit 0 diffs, got %d", len(diffs))
@@ -352,7 +352,7 @@ func TestCircuitStore_ProviderFallback(t *testing.T) {
 	id, ch := store.Subscribe()
 	defer store.Unsubscribe(id)
 
-	store.OnEvent(framework.WalkEvent{Type: framework.EventProviderFallback})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventProviderFallback})
 	diffs := collectDiffs(ch, 50*time.Millisecond)
 	if len(diffs) != 0 {
 		t.Errorf("provider_fallback should emit 0 diffs, got %d", len(diffs))
@@ -364,8 +364,8 @@ func TestCircuitStore_CircuitBreakerEvents(t *testing.T) {
 	id, ch := store.Subscribe()
 	defer store.Unsubscribe(id)
 
-	store.OnEvent(framework.WalkEvent{Type: framework.EventCircuitOpen})
-	store.OnEvent(framework.WalkEvent{Type: framework.EventCircuitClose})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventCircuitOpen})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventCircuitClose})
 	diffs := collectDiffs(ch, 50*time.Millisecond)
 	if len(diffs) != 0 {
 		t.Errorf("circuit breaker events should emit 0 diffs, got %d", len(diffs))
@@ -377,8 +377,8 @@ func TestCircuitStore_RateLimitAndThermal(t *testing.T) {
 	id, ch := store.Subscribe()
 	defer store.Unsubscribe(id)
 
-	store.OnEvent(framework.WalkEvent{Type: framework.EventRateLimit})
-	store.OnEvent(framework.WalkEvent{Type: framework.EventThermalWarning})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventRateLimit})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventThermalWarning})
 	diffs := collectDiffs(ch, 50*time.Millisecond)
 	if len(diffs) != 0 {
 		t.Errorf("rate_limit/thermal should emit 0 diffs, got %d", len(diffs))
@@ -458,7 +458,7 @@ func TestCircuitStore_SnapshotIsolation(t *testing.T) {
 	store := NewCircuitStore(testCircuitDef())
 	snap1 := store.Snapshot()
 
-	store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "recall", Walker: "w1"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall", Walker: "w1"})
 	snap2 := store.Snapshot()
 
 	if snap1.Nodes["recall"].State != NodeIdle {
@@ -497,7 +497,7 @@ func TestCircuitStore_Close(t *testing.T) {
 
 func TestCircuitStore_WalkComplete_ClearsWalkers(t *testing.T) {
 	store := NewCircuitStore(testCircuitDef())
-	store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "recall", Walker: "w1"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall", Walker: "w1"})
 
 	snap := store.Snapshot()
 	if len(snap.Walkers) != 1 {
@@ -507,7 +507,7 @@ func TestCircuitStore_WalkComplete_ClearsWalkers(t *testing.T) {
 	id, ch := store.Subscribe()
 	defer store.Unsubscribe(id)
 
-	store.OnEvent(framework.WalkEvent{Type: framework.EventWalkComplete})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventWalkComplete})
 
 	diffs := collectDiffs(ch, 50*time.Millisecond)
 
@@ -531,16 +531,16 @@ func TestCircuitStore_WalkComplete_ClearsWalkers(t *testing.T) {
 func TestCircuitStore_WalkComplete_ClearsMultipleWalkers(t *testing.T) {
 	store := NewCircuitStore(testCircuitDef())
 
-	store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "recall", Walker: "w1"})
-	store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "triage", Walker: "w2"})
-	store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "investigate", Walker: "w3"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall", Walker: "w1"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "triage", Walker: "w2"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "investigate", Walker: "w3"})
 
 	snap := store.Snapshot()
 	if len(snap.Walkers) != 3 {
 		t.Fatalf("expected 3 walkers before complete, got %d", len(snap.Walkers))
 	}
 
-	store.OnEvent(framework.WalkEvent{Type: framework.EventWalkComplete})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventWalkComplete})
 
 	snap = store.Snapshot()
 	if len(snap.Walkers) != 0 {
@@ -553,15 +553,15 @@ func TestCircuitStore_CalibrationMultiCase_NoStaleWalkers(t *testing.T) {
 	store := NewCircuitStore(testCircuitDef())
 
 	for i := 0; i < 30; i++ {
-		walker := framework.WalkEvent{Walker: "C" + string(rune('0'+i/10)) + string(rune('0'+i%10))}
+		walker := circuit.WalkEvent{Walker: "C" + string(rune('0'+i/10)) + string(rune('0'+i%10))}
 
-		store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "recall", Walker: walker.Walker})
-		store.OnEvent(framework.WalkEvent{Type: framework.EventNodeExit, Node: "recall", Walker: walker.Walker})
-		store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "triage", Walker: walker.Walker})
-		store.OnEvent(framework.WalkEvent{Type: framework.EventNodeExit, Node: "triage", Walker: walker.Walker})
-		store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "report", Walker: walker.Walker})
-		store.OnEvent(framework.WalkEvent{Type: framework.EventNodeExit, Node: "report", Walker: walker.Walker})
-		store.OnEvent(framework.WalkEvent{Type: framework.EventWalkComplete, Walker: walker.Walker})
+		store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall", Walker: walker.Walker})
+		store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "recall", Walker: walker.Walker})
+		store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "triage", Walker: walker.Walker})
+		store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "triage", Walker: walker.Walker})
+		store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "report", Walker: walker.Walker})
+		store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "report", Walker: walker.Walker})
+		store.OnEvent(circuit.WalkEvent{Type: circuit.EventWalkComplete, Walker: walker.Walker})
 	}
 
 	snap := store.Snapshot()
@@ -575,10 +575,10 @@ func TestCircuitStore_CalibrationMultiCase_NoStaleWalkers(t *testing.T) {
 
 func TestCircuitStore_WalkError_ClearsWalker(t *testing.T) {
 	store := NewCircuitStore(testCircuitDef())
-	store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "recall", Walker: "w1"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall", Walker: "w1"})
 
-	store.OnEvent(framework.WalkEvent{
-		Type:   framework.EventWalkError,
+	store.OnEvent(circuit.WalkEvent{
+		Type:   circuit.EventWalkError,
 		Node:   "recall",
 		Walker: "w1",
 		Error:  errors.New("timeout"),

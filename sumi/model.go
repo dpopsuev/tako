@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/view"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -21,7 +21,7 @@ type DiffMsg view.StateDiff
 // It holds the circuit definition, layout, store subscription, and UI state.
 // The War Room layout uses a PanelRegistry for extensible multi-panel composition.
 type Model struct {
-	def     *framework.CircuitDef
+	def     *circuit.CircuitDef
 	store   *view.CircuitStore
 	layout  view.CircuitLayout
 	snap    view.CircuitSnapshot
@@ -84,7 +84,7 @@ type ChatMessage struct {
 
 // Config holds initialization parameters for a Sumi Model.
 type Config struct {
-	Def      *framework.CircuitDef
+	Def      *circuit.CircuitDef
 	Store    *view.CircuitStore
 	Layout   view.CircuitLayout
 	Opts     RenderOpts
@@ -236,9 +236,9 @@ func (m *Model) rebuildFromStore() {
 
 	def := m.store.Def()
 	if def == nil {
-		def = &framework.CircuitDef{Circuit: snap.CircuitName}
+		def = &circuit.CircuitDef{Circuit: snap.CircuitName}
 		for name := range snap.Nodes {
-			def.Nodes = append(def.Nodes, framework.NodeDef{Name: name})
+			def.Nodes = append(def.Nodes, circuit.NodeDef{Name: name})
 		}
 	}
 
@@ -856,7 +856,7 @@ func (m Model) renderInspectorContent() string {
 		return ""
 	}
 	name := m.nodeOrder[m.selected]
-	var nd *framework.NodeDef
+	var nd *circuit.NodeDef
 	for i := range m.def.Nodes {
 		if m.def.Nodes[i].Name == name {
 			nd = &m.def.Nodes[i]
@@ -994,7 +994,7 @@ func (m Model) renderInspector() string {
 		return ""
 	}
 	name := m.nodeOrder[m.selected]
-	var nd *framework.NodeDef
+	var nd *circuit.NodeDef
 	for i := range m.def.Nodes {
 		if m.def.Nodes[i].Name == name {
 			nd = &m.def.Nodes[i]

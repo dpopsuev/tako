@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 func componentCmd(args []string) error {
@@ -33,13 +33,13 @@ func componentList(args []string) error {
 		return err
 	}
 
-	var manifests []*framework.ComponentManifest
+	var manifests []*circuit.ComponentManifest
 	filepath.Walk(*dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return nil
 		}
 		if info.Name() == "component.yaml" {
-			m, loadErr := framework.LoadComponentManifest(path)
+			m, loadErr := circuit.LoadComponentManifest(path)
 			if loadErr == nil {
 				manifests = append(manifests, m)
 			}
@@ -78,7 +78,7 @@ func componentInspect(args []string) error {
 		return fmt.Errorf("usage: origami component inspect <component.yaml>")
 	}
 
-	m, err := framework.LoadComponentManifest(fs.Arg(0))
+	m, err := circuit.LoadComponentManifest(fs.Arg(0))
 	if err != nil {
 		return err
 	}
@@ -114,7 +114,7 @@ func componentValidate(args []string) error {
 	}
 
 	path := fs.Arg(0)
-	m, err := framework.LoadComponentManifest(path)
+	m, err := circuit.LoadComponentManifest(path)
 	if err != nil {
 		return err
 	}

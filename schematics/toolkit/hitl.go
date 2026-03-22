@@ -3,7 +3,8 @@ package toolkit
 import (
 	"fmt"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 )
 
 // HITLResult is returned after a HITL walk step completes. It indicates
@@ -17,8 +18,8 @@ type HITLResult struct {
 
 // LoadCheckpointState loads a WalkerState from a JSON checkpoint directory.
 // Returns nil, nil if no checkpoint exists for the given walker ID.
-func LoadCheckpointState(checkpointDir, walkerID string) (*framework.WalkerState, error) {
-	cp, err := framework.NewJSONCheckpointer(checkpointDir)
+func LoadCheckpointState(checkpointDir, walkerID string) (*circuit.WalkerState, error) {
+	cp, err := engine.NewJSONCheckpointer(checkpointDir)
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +33,7 @@ func LoadCheckpointState(checkpointDir, walkerID string) (*framework.WalkerState
 // BuildHITLResult interprets a walker's state after a walk to produce an
 // HITLResult. If the walk was interrupted, it extracts the prompt path and
 // step from the interrupt data. If the walk completed, it returns IsDone.
-func BuildHITLResult(walker framework.Walker, walkErr error) (*HITLResult, error) {
+func BuildHITLResult(walker circuit.Walker, walkErr error) (*HITLResult, error) {
 	state := walker.State()
 
 	if state.Status == "interrupted" {
@@ -64,7 +65,7 @@ func BuildHITLResult(walker framework.Walker, walkErr error) (*HITLResult, error
 
 // RestoreWalkerState applies a previously checkpointed state onto a new
 // walker. Returns the node to resume from ("" if no checkpoint).
-func RestoreWalkerState(walker framework.Walker, loaded *framework.WalkerState) string {
+func RestoreWalkerState(walker circuit.Walker, loaded *circuit.WalkerState) string {
 	if loaded == nil {
 		return ""
 	}

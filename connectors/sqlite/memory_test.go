@@ -6,7 +6,7 @@ import (
 	"sync"
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 func newTestStore(t *testing.T) *PersistentStore {
@@ -21,7 +21,7 @@ func newTestStore(t *testing.T) *PersistentStore {
 }
 
 func TestPersistentStore_InterfaceCompliance(t *testing.T) {
-	var _ framework.MemoryStore = (*PersistentStore)(nil)
+	var _ circuit.MemoryStore = (*PersistentStore)(nil)
 }
 
 func TestPersistentStore_BackwardCompat(t *testing.T) {

@@ -3,7 +3,7 @@ package view
 import (
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // --- Level 1 test helpers ---
@@ -137,15 +137,15 @@ func assertMinRowSpan(t *testing.T, layout CircuitLayout, min int) {
 
 // --- Topology fixture builders ---
 
-func linearDef() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func linearDef() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit: "linear",
 		Start:   "A",
 		Done:    "_done",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "A"}, {Name: "B"}, {Name: "C"}, {Name: "D"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "A", To: "B"},
 			{ID: "e2", From: "B", To: "C"},
 			{ID: "e3", From: "C", To: "D"},
@@ -154,15 +154,15 @@ func linearDef() *framework.CircuitDef {
 	}
 }
 
-func shortcutDef() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func shortcutDef() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit: "shortcut",
 		Start:   "A",
 		Done:    "_done",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "A"}, {Name: "B"}, {Name: "C"}, {Name: "D"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "A", To: "B"},
 			{ID: "e2", From: "B", To: "C"},
 			{ID: "e3", From: "C", To: "D"},
@@ -172,15 +172,15 @@ func shortcutDef() *framework.CircuitDef {
 	}
 }
 
-func loopDef() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func loopDef() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit: "loop",
 		Start:   "A",
 		Done:    "_done",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "A"}, {Name: "B"}, {Name: "C"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "A", To: "B"},
 			{ID: "e2", From: "B", To: "C"},
 			{ID: "e3", From: "C", To: "_done"},
@@ -189,15 +189,15 @@ func loopDef() *framework.CircuitDef {
 	}
 }
 
-func diamondDef() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func diamondDef() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit: "diamond",
 		Start:   "start",
 		Done:    "_done",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "start"}, {Name: "a"}, {Name: "b"}, {Name: "join"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "start", To: "a"},
 			{ID: "e2", From: "start", To: "b"},
 			{ID: "e3", From: "a", To: "join"},
@@ -207,18 +207,18 @@ func diamondDef() *framework.CircuitDef {
 	}
 }
 
-func staircaseDef() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func staircaseDef() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit: "staircase",
 		Start:   "start",
 		Done:    "_done",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "start"},
 			{Name: "a"}, {Name: "b"},
 			{Name: "c"}, {Name: "d"},
 			{Name: "end"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "start", To: "a"},
 			{ID: "e2", From: "start", To: "b"},
 			{ID: "e3", From: "a", To: "c"},
@@ -231,16 +231,16 @@ func staircaseDef() *framework.CircuitDef {
 	}
 }
 
-func dialecticDef() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func dialecticDef() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit: "dialectic",
 		Start:   "indict",
 		Done:    "_done",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "indict"}, {Name: "discover"}, {Name: "defend"},
 			{Name: "hearing"}, {Name: "cmrr"}, {Name: "verdict"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "indict", To: "discover"},
 			{ID: "e2", From: "indict", To: "defend"},
 			{ID: "e3", From: "discover", To: "defend"},
@@ -254,26 +254,26 @@ func dialecticDef() *framework.CircuitDef {
 	}
 }
 
-func megaFanoutDef() *framework.CircuitDef {
-	nodes := []framework.NodeDef{{Name: "hub"}}
-	edges := []framework.EdgeDef{}
+func megaFanoutDef() *circuit.CircuitDef {
+	nodes := []circuit.NodeDef{{Name: "hub"}}
+	edges := []circuit.EdgeDef{}
 	for i := 0; i < 8; i++ {
 		name := string(rune('t' + 0))
 		name = "t" + string(rune('1'+i))
-		nodes = append(nodes, framework.NodeDef{Name: name})
-		edges = append(edges, framework.EdgeDef{
+		nodes = append(nodes, circuit.NodeDef{Name: name})
+		edges = append(edges, circuit.EdgeDef{
 			ID: "fan-" + name, From: "hub", To: name,
 		})
 	}
-	nodes = append(nodes, framework.NodeDef{Name: "merge"})
+	nodes = append(nodes, circuit.NodeDef{Name: "merge"})
 	for i := 0; i < 8; i++ {
 		name := "t" + string(rune('1'+i))
-		edges = append(edges, framework.EdgeDef{
+		edges = append(edges, circuit.EdgeDef{
 			ID: "join-" + name, From: name, To: "merge",
 		})
 	}
-	edges = append(edges, framework.EdgeDef{ID: "fin", From: "merge", To: "_done"})
-	return &framework.CircuitDef{
+	edges = append(edges, circuit.EdgeDef{ID: "fin", From: "merge", To: "_done"})
+	return &circuit.CircuitDef{
 		Circuit: "mega-fanout",
 		Start:   "hub",
 		Done:    "_done",
@@ -282,25 +282,25 @@ func megaFanoutDef() *framework.CircuitDef {
 	}
 }
 
-func megaFaninDef() *framework.CircuitDef {
-	nodes := []framework.NodeDef{{Name: "start"}}
-	edges := []framework.EdgeDef{}
+func megaFaninDef() *circuit.CircuitDef {
+	nodes := []circuit.NodeDef{{Name: "start"}}
+	edges := []circuit.EdgeDef{}
 	for i := 0; i < 8; i++ {
 		name := "s" + string(rune('1'+i))
-		nodes = append(nodes, framework.NodeDef{Name: name})
-		edges = append(edges, framework.EdgeDef{
+		nodes = append(nodes, circuit.NodeDef{Name: name})
+		edges = append(edges, circuit.EdgeDef{
 			ID: "fan-" + name, From: "start", To: name,
 		})
 	}
-	nodes = append(nodes, framework.NodeDef{Name: "merge"})
+	nodes = append(nodes, circuit.NodeDef{Name: "merge"})
 	for i := 0; i < 8; i++ {
 		name := "s" + string(rune('1'+i))
-		edges = append(edges, framework.EdgeDef{
+		edges = append(edges, circuit.EdgeDef{
 			ID: "join-" + name, From: name, To: "merge",
 		})
 	}
-	edges = append(edges, framework.EdgeDef{ID: "fin", From: "merge", To: "_done"})
-	return &framework.CircuitDef{
+	edges = append(edges, circuit.EdgeDef{ID: "fin", From: "merge", To: "_done"})
+	return &circuit.CircuitDef{
 		Circuit: "mega-fanin",
 		Start:   "start",
 		Done:    "_done",
@@ -309,19 +309,19 @@ func megaFaninDef() *framework.CircuitDef {
 	}
 }
 
-func deepCascadeDef() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func deepCascadeDef() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit: "deep-cascade",
 		Start:   "root",
 		Done:    "_done",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "root"},
 			{Name: "a"}, {Name: "b"},
 			{Name: "c"}, {Name: "d"}, {Name: "e"}, {Name: "f"},
 			{Name: "g"}, {Name: "h"},
 			{Name: "merge"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "root", To: "a"},
 			{ID: "e2", From: "root", To: "b"},
 			{ID: "e3", From: "a", To: "c"},
@@ -340,19 +340,19 @@ func deepCascadeDef() *framework.CircuitDef {
 	}
 }
 
-func wideGridDef() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func wideGridDef() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit: "wide-grid",
 		Start:   "start",
 		Done:    "_done",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "start"},
 			{Name: "a1"}, {Name: "a2"}, {Name: "a3"},
 			{Name: "b1"}, {Name: "b2"}, {Name: "b3"},
 			{Name: "c1"}, {Name: "c2"}, {Name: "c3"},
 			{Name: "merge"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "start", To: "a1"},
 			{ID: "e2", From: "start", To: "a2"},
 			{ID: "e3", From: "start", To: "a3"},
@@ -421,7 +421,7 @@ func TestGridLayout_ZoneGrouping(t *testing.T) {
 }
 
 func TestGridLayout_EmptyCircuit(t *testing.T) {
-	def := &framework.CircuitDef{}
+	def := &circuit.CircuitDef{}
 	var gl GridLayout
 	layout, err := gl.Layout(def)
 	if err != nil {
@@ -433,16 +433,16 @@ func TestGridLayout_EmptyCircuit(t *testing.T) {
 }
 
 func TestGridLayout_ParallelNodes(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "parallel",
 		Start:   "start",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "start"},
 			{Name: "a"},
 			{Name: "b"},
 			{Name: "join"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "start", To: "a"},
 			{ID: "e2", From: "start", To: "b"},
 			{ID: "e3", From: "a", To: "join"},
@@ -476,14 +476,14 @@ func TestGridLayout_ParallelNodes(t *testing.T) {
 }
 
 func TestGridLayout_LoopEdgesIgnored(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "loop",
 		Start:   "a",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "a"},
 			{Name: "b"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "a", To: "b"},
 			{ID: "e2", From: "b", To: "a", Loop: true},
 		},
@@ -717,7 +717,7 @@ func TestLogicalLayout_LinearCircuit(t *testing.T) {
 }
 
 func TestLogicalLayout_EmptyCircuit(t *testing.T) {
-	def := &framework.CircuitDef{}
+	def := &circuit.CircuitDef{}
 	var ll LogicalLayout
 	layout, err := ll.Layout(def)
 	if err != nil {
@@ -729,16 +729,16 @@ func TestLogicalLayout_EmptyCircuit(t *testing.T) {
 }
 
 func TestLogicalLayout_ParallelNodes(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "parallel",
 		Start:   "start",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "start"},
 			{Name: "a"},
 			{Name: "b"},
 			{Name: "join"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "start", To: "a"},
 			{ID: "e2", From: "start", To: "b"},
 			{ID: "e3", From: "a", To: "join"},

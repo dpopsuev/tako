@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/element"
 	"github.com/dpopsuev/origami/dispatch"
 	fwmcp "github.com/dpopsuev/origami/mcp"
@@ -128,7 +128,7 @@ func runDiscovery(
 	runsDir string,
 ) (*ouroboros.RunReport, error) {
 	log := slog.Default().With("component", "ouroboros-discovery")
-	var seen []framework.ModelIdentity
+	var seen []circuit.ModelIdentity
 	seenMap := make(map[string]ouroboros.DiscoveryResult)
 	var results []ouroboros.DiscoveryResult
 	startTime := time.Now()
@@ -250,7 +250,7 @@ func runDiscovery(
 		EndTime:      time.Now(),
 		Config:       config,
 		Results:      results,
-		UniqueModels: append([]framework.ModelIdentity{}, seen...),
+		UniqueModels: append([]circuit.ModelIdentity{}, seen...),
 		TermReason:   termReason,
 	}
 
@@ -281,7 +281,7 @@ func runMultiProbeDiscovery(
 	runID := fmt.Sprintf("mc-%d", time.Now().UnixNano())
 
 	var allResults []ouroboros.DiscoveryResult
-	var allModels []framework.ModelIdentity
+	var allModels []circuit.ModelIdentity
 	var termReasons []string
 
 	for i, handler := range handlers {
@@ -364,7 +364,7 @@ func assembleProfilesFromStore(runsDir string) (assembleProfilesOutput, error) {
 	}
 
 	modelData := make(map[string]*struct {
-		identity framework.ModelIdentity
+		identity circuit.ModelIdentity
 		probes   []probeEntry
 	})
 
@@ -377,7 +377,7 @@ func assembleProfilesFromStore(runsDir string) (assembleProfilesOutput, error) {
 			key := ouroboros.ModelKey(result.Model)
 			if modelData[key] == nil {
 				modelData[key] = &struct {
-					identity framework.ModelIdentity
+					identity circuit.ModelIdentity
 					probes   []probeEntry
 				}{identity: result.Model}
 			}

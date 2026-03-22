@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 func TestImportOverlay_EmptyImport(t *testing.T) {
@@ -363,11 +363,11 @@ calibration:
 }
 
 func TestCalibrationContract_NoCalibration(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit:     "test",
 		Description: "test",
-		Nodes:       []framework.NodeDef{{Name: "a", Approach: "rapid", Handler: "core.jq"}},
-		Edges:       []framework.EdgeDef{{ID: "e1", From: "a", To: "_done"}},
+		Nodes:       []circuit.NodeDef{{Name: "a", Approach: "rapid", Handler: "core.jq"}},
+		Edges:       []circuit.EdgeDef{{ID: "e1", From: "a", To: "_done"}},
 		Start:       "a",
 		Done:        "_done",
 	}

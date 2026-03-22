@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	fw "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/engine"
 
 	"gopkg.in/yaml.v3"
 )
@@ -174,20 +174,20 @@ func (e *MatchEvaluator) Names() []string {
 	return out
 }
 
-// matchTransformer wraps a MatchEvaluator as a framework.Transformer.
+// matchTransformer wraps a MatchEvaluator as a engine.Transformer.
 // Config must include "rule_set" (string) and may include "field" (string)
 // to select which input field to match against.
 type matchTransformer struct{}
 
 // NewMatch returns the match transformer for pipeline use.
-func NewMatch() fw.Transformer {
+func NewMatch() engine.Transformer {
 	return &matchTransformer{}
 }
 
 func (t *matchTransformer) Name() string        { return "match" }
 func (t *matchTransformer) Deterministic() bool { return true }
 
-func (t *matchTransformer) Transform(_ context.Context, tc *fw.TransformerContext) (any, error) {
+func (t *matchTransformer) Transform(_ context.Context, tc *engine.TransformerContext) (any, error) {
 	evaluator, _ := tc.Meta["evaluator"].(*MatchEvaluator)
 	if evaluator == nil {
 		return nil, fmt.Errorf("match transformer: no evaluator in meta")

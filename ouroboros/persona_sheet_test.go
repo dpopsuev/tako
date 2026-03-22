@@ -3,13 +3,13 @@ package ouroboros
 import (
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/element"
 )
 
 func testProfile() ModelProfile {
 	return ModelProfile{
-		Model: framework.ModelIdentity{
+		Model: circuit.ModelIdentity{
 			ModelName: "claude-sonnet-4",
 			Provider:  "anthropic",
 			Version:   "20250514",
@@ -32,10 +32,10 @@ func testProfile() ModelProfile {
 	}
 }
 
-func testCircuit() framework.CircuitDef {
-	return framework.CircuitDef{
+func testCircuit() circuit.CircuitDef {
+	return circuit.CircuitDef{
 		Circuit: "rca-investigation",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "recall"},
 			{Name: "triage"},
 			{Name: "resolve"},
@@ -84,9 +84,9 @@ func TestEmitPersonaSheet_AllStepsHavePersonas(t *testing.T) {
 
 func TestEmitPersonaSheet_3StepCircuit_NilStepDims(t *testing.T) {
 	profile := testProfile()
-	circuit := framework.CircuitDef{
+	circuit := circuit.CircuitDef{
 		Circuit: "ouroboros-probe",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "generate"},
 			{Name: "subject"},
 			{Name: "judge"},

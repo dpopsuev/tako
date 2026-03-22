@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/element"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/uri"
@@ -192,11 +192,11 @@ func edgeConnectionHints(doc *document, lines []string) []InlayHint {
 	return hints
 }
 
-func inferEdgeCopy(def *framework.CircuitDef) []framework.EdgeDef {
+func inferEdgeCopy(def *circuit.CircuitDef) []circuit.EdgeDef {
 	cp := *def
-	cp.Edges = make([]framework.EdgeDef, len(def.Edges))
+	cp.Edges = make([]circuit.EdgeDef, len(def.Edges))
 	copy(cp.Edges, def.Edges)
-	framework.InferTopology(&cp)
+	circuit.InferTopology(&cp)
 	return cp.Edges
 }
 

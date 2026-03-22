@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -123,7 +123,7 @@ func calibrateCmd(args []string) error {
 	// Get report.
 	reportResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
 		Name:      "get_report",
-		Arguments: mustMarshalCal(map[string]any{framework.ProtoKeySessionID: sessionID}),
+		Arguments: mustMarshalCal(map[string]any{circuit.ProtoKeySessionID: sessionID}),
 	})
 	if err != nil {
 		return fmt.Errorf("get_report: %w", err)
@@ -152,7 +152,7 @@ func runCalibrateWorker(
 	session.CallTool(ctx, &sdkmcp.CallToolParams{
 		Name: "emit_signal",
 		Arguments: mustMarshalCal(map[string]any{
-			framework.ProtoKeySessionID: sessionID,
+			circuit.ProtoKeySessionID: sessionID,
 			"event":                     "worker_started",
 			"agent":                     "worker",
 			"meta":                      map[string]any{"worker_id": fmt.Sprintf("w%d", workerID)},
@@ -163,7 +163,7 @@ func runCalibrateWorker(
 		session.CallTool(ctx, &sdkmcp.CallToolParams{
 			Name: "emit_signal",
 			Arguments: mustMarshalCal(map[string]any{
-				framework.ProtoKeySessionID: sessionID,
+				circuit.ProtoKeySessionID: sessionID,
 				"event":                     "worker_stopped",
 				"agent":                     "worker",
 				"meta":                      map[string]any{"worker_id": fmt.Sprintf("w%d", workerID)},
@@ -176,8 +176,8 @@ func runCalibrateWorker(
 		nextResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
 			Name: "get_next_step",
 			Arguments: mustMarshalCal(map[string]any{
-				framework.ProtoKeySessionID: sessionID,
-				framework.ProtoKeyTimeoutMS: 30000,
+				circuit.ProtoKeySessionID: sessionID,
+				circuit.ProtoKeyTimeoutMS: 30000,
 			}),
 		})
 		if err != nil {
@@ -238,10 +238,10 @@ func runCalibrateWorker(
 		submitResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
 			Name: "submit_step",
 			Arguments: mustMarshalCal(map[string]any{
-				framework.ProtoKeySessionID:  sessionID,
-				framework.ProtoKeyDispatchID: step.DispatchID,
-				framework.ProtoKeyStep:       step.Step,
-				framework.ProtoKeyFields:     fields,
+				circuit.ProtoKeySessionID:  sessionID,
+				circuit.ProtoKeyDispatchID: step.DispatchID,
+				circuit.ProtoKeyStep:       step.Step,
+				circuit.ProtoKeyFields:     fields,
 			}),
 		})
 		if err != nil {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/view"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -13,7 +13,7 @@ import (
 
 // InspectorPanel implements Panel for the node inspector.
 type InspectorPanel struct {
-	def     *framework.CircuitDef
+	def     *circuit.CircuitDef
 	snap    *view.CircuitSnapshot
 	noColor bool
 
@@ -23,7 +23,7 @@ type InspectorPanel struct {
 }
 
 // NewInspectorPanel creates an inspector panel.
-func NewInspectorPanel(def *framework.CircuitDef, snap *view.CircuitSnapshot, noColor bool) *InspectorPanel {
+func NewInspectorPanel(def *circuit.CircuitDef, snap *view.CircuitSnapshot, noColor bool) *InspectorPanel {
 	return &InspectorPanel{
 		def:     def,
 		snap:    snap,
@@ -208,7 +208,7 @@ func (p *InspectorPanel) renderContent(width int) string {
 	return strings.TrimRight(sb.String(), "\n")
 }
 
-func (p *InspectorPanel) findNode(name string) *framework.NodeDef {
+func (p *InspectorPanel) findNode(name string) *circuit.NodeDef {
 	for i := range p.def.Nodes {
 		if p.def.Nodes[i].Name == name {
 			return &p.def.Nodes[i]
@@ -227,7 +227,7 @@ func (p *InspectorPanel) walkersAtNode(name string) []view.WalkerPosition {
 	return out
 }
 
-func (p *InspectorPanel) edgesFor(name string) (incoming, outgoing []framework.EdgeDef) {
+func (p *InspectorPanel) edgesFor(name string) (incoming, outgoing []circuit.EdgeDef) {
 	for _, e := range p.def.Edges {
 		if e.To == name {
 			incoming = append(incoming, e)

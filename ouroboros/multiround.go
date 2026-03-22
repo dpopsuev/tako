@@ -6,7 +6,8 @@ import (
 	"strings"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/element"
 )
 
@@ -19,13 +20,13 @@ type JudgeFeedback struct {
 }
 
 // MultiRoundNodes returns a NodeRegistry for the multi-round probe circuit.
-func MultiRoundNodes(seed *Seed, dispatch ProbeDispatcher) framework.NodeRegistry {
+func MultiRoundNodes(seed *Seed, dispatch ProbeDispatcher) engine.NodeRegistry {
 	return MultiRoundNodesWithOpts(seed, dispatch, CircuitOpts{})
 }
 
 // MultiRoundNodesWithOpts returns a multi-round NodeRegistry with optional
 // mechanical verification and self-verification scoring.
-func MultiRoundNodesWithOpts(seed *Seed, dispatch ProbeDispatcher, opts CircuitOpts) framework.NodeRegistry {
+func MultiRoundNodesWithOpts(seed *Seed, dispatch ProbeDispatcher, opts CircuitOpts) engine.NodeRegistry {
 	roundState := &roundTracker{
 		maxRounds:    seed.Rounds,
 		currentRound: 0,
@@ -36,11 +37,11 @@ func MultiRoundNodesWithOpts(seed *Seed, dispatch ProbeDispatcher, opts CircuitO
 		tl, _ = time.ParseDuration(seed.TimeLimit)
 	}
 
-	return framework.NodeRegistry{
-		"ouroboros-generate": func(_ framework.NodeDef) framework.Node {
+	return engine.NodeRegistry{
+		"ouroboros-generate": func(_ circuit.NodeDef) circuit.Node {
 			return &generateNode{seed: seed, dispatch: dispatch, recorder: opts.Recorder}
 		},
-		"ouroboros-subject-multiround": func(_ framework.NodeDef) framework.Node {
+		"ouroboros-subject-multiround": func(_ circuit.NodeDef) circuit.Node {
 			return &multiRoundSubjectNode{
 				dispatch:     dispatch,
 				outputFormat: seed.OutputFormat,
@@ -50,7 +51,7 @@ func MultiRoundNodesWithOpts(seed *Seed, dispatch ProbeDispatcher, opts CircuitO
 				recorder:     opts.Recorder,
 			}
 		},
-		"ouroboros-judge-multiround": func(_ framework.NodeDef) framework.Node {
+		"ouroboros-judge-multiround": func(_ circuit.NodeDef) circuit.Node {
 			return &multiRoundJudgeNode{
 				seed:       seed,
 				dispatch:   dispatch,
@@ -90,9 +91,9 @@ type multiRoundSubjectNode struct {
 }
 
 func (n *multiRoundSubjectNode) Name() string                       { return "subject" }
-func (n *multiRoundSubjectNode) ElementAffinity() framework.Element { return framework.ElementFire }
+func (n *multiRoundSubjectNode) ElementAffinity() circuit.Element { return circuit.ElementFire }
 
-func (n *multiRoundSubjectNode) Process(ctx context.Context, nc framework.NodeContext) (framework.Artifact, error) {
+func (n *multiRoundSubjectNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	if nc.PriorArtifact == nil {
 		return nil, fmt.Errorf("multiround subject: no prior artifact")
 	}
@@ -169,7 +170,7 @@ type multiRoundJudgeNode struct {
 func (n *multiRoundJudgeNode) Name() string                       { return "judge" }
 func (n *multiRoundJudgeNode) ElementAffinity() element.Element { return element.ElementDiamond }
 
-func (n *multiRoundJudgeNode) Process(ctx context.Context, nc framework.NodeContext) (framework.Artifact, error) {
+func (n *multiRoundJudgeNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	if nc.PriorArtifact == nil {
 		return nil, fmt.Errorf("multiround judge: no prior artifact (expected subject response)")
 	}

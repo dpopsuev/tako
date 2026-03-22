@@ -7,38 +7,38 @@ package persona
 import (
 	"strings"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/element"
 )
 
 func init() {
-	framework.DefaultPersonaResolver = ByName
+	circuit.DefaultPersonaResolver = ByName
 }
 
 // PoC color palette
 
 var (
-	ColorCrimson  = framework.Color{Name: "Crimson", DisplayName: "Crimson", Hex: "#DC143C", Family: "Reds"}
-	ColorCerulean = framework.Color{Name: "Cerulean", DisplayName: "Cerulean", Hex: "#007BA7", Family: "Blues"}
-	ColorCobalt   = framework.Color{Name: "Cobalt", DisplayName: "Cobalt", Hex: "#0047AB", Family: "Blues"}
-	ColorAmber    = framework.Color{Name: "Amber", DisplayName: "Amber", Hex: "#FFBF00", Family: "Yellows"}
-	ColorScarlet  = framework.Color{Name: "Scarlet", DisplayName: "Scarlet", Hex: "#FF2400", Family: "Reds"}
-	ColorSapphire = framework.Color{Name: "Sapphire", DisplayName: "Sapphire", Hex: "#0F52BA", Family: "Blues"}
-	ColorObsidian = framework.Color{Name: "Obsidian", DisplayName: "Obsidian", Hex: "#3C3C3C", Family: "Neutrals"}
-	ColorSteel    = framework.Color{Name: "Steel", DisplayName: "Steel", Hex: "#71797E", Family: "Neutrals"}
+	ColorCrimson  = circuit.Color{Name: "Crimson", DisplayName: "Crimson", Hex: "#DC143C", Family: "Reds"}
+	ColorCerulean = circuit.Color{Name: "Cerulean", DisplayName: "Cerulean", Hex: "#007BA7", Family: "Blues"}
+	ColorCobalt   = circuit.Color{Name: "Cobalt", DisplayName: "Cobalt", Hex: "#0047AB", Family: "Blues"}
+	ColorAmber    = circuit.Color{Name: "Amber", DisplayName: "Amber", Hex: "#FFBF00", Family: "Yellows"}
+	ColorScarlet  = circuit.Color{Name: "Scarlet", DisplayName: "Scarlet", Hex: "#FF2400", Family: "Reds"}
+	ColorSapphire = circuit.Color{Name: "Sapphire", DisplayName: "Sapphire", Hex: "#0F52BA", Family: "Blues"}
+	ColorObsidian = circuit.Color{Name: "Obsidian", DisplayName: "Obsidian", Hex: "#3C3C3C", Family: "Neutrals"}
+	ColorSteel    = circuit.Color{Name: "Steel", DisplayName: "Steel", Hex: "#71797E", Family: "Neutrals"}
 )
 
 // Thesis returns the 4 perennial Thesis (Cadai) personas.
-func Thesis() []framework.Persona {
-	return []framework.Persona{
+func Thesis() []circuit.Persona {
+	return []circuit.Persona{
 		{
-			Identity: framework.AgentIdentity{
+			Identity: circuit.AgentIdentity{
 				PersonaName:     "Herald",
 				Color:           ColorCrimson,
 				Element:         element.ElementFire,
-				Position:        framework.PositionPG,
-				Alignment:       framework.AlignmentThesis,
-				HomeZone:        framework.MetaPhaseBk,
+				Position:        circuit.PositionPG,
+				Alignment:       circuit.AlignmentThesis,
+				HomeZone:        circuit.MetaPhaseBk,
 				StickinessLevel: 0,
 				StepAffinity: map[string]float64{
 					"recall": 0.9, "triage": 0.8,
@@ -51,13 +51,13 @@ func Thesis() []framework.Persona {
 			Description: "Fast intake, optimistic classification",
 		},
 		{
-			Identity: framework.AgentIdentity{
+			Identity: circuit.AgentIdentity{
 				PersonaName:     "Seeker",
 				Color:           ColorCerulean,
 				Element:         element.ElementWater,
-				Position:        framework.PositionC,
-				Alignment:       framework.AlignmentThesis,
-				HomeZone:        framework.MetaPhaseFc,
+				Position:        circuit.PositionC,
+				Alignment:       circuit.AlignmentThesis,
+				HomeZone:        circuit.MetaPhaseFc,
 				StickinessLevel: 3,
 				StepAffinity: map[string]float64{
 					"recall": 0.2, "triage": 0.3,
@@ -70,13 +70,13 @@ func Thesis() []framework.Persona {
 			Description: "Deep investigator, builds evidence chains",
 		},
 		{
-			Identity: framework.AgentIdentity{
+			Identity: circuit.AgentIdentity{
 				PersonaName:     "Sentinel",
 				Color:           ColorCobalt,
 				Element:         element.ElementEarth,
-				Position:        framework.PositionPF,
-				Alignment:       framework.AlignmentThesis,
-				HomeZone:        framework.MetaPhaseFc,
+				Position:        circuit.PositionPF,
+				Alignment:       circuit.AlignmentThesis,
+				HomeZone:        circuit.MetaPhaseFc,
 				StickinessLevel: 2,
 				StepAffinity: map[string]float64{
 					"recall": 0.3, "triage": 0.4,
@@ -89,13 +89,13 @@ func Thesis() []framework.Persona {
 			Description: "Steady resolver, follows proven paths",
 		},
 		{
-			Identity: framework.AgentIdentity{
+			Identity: circuit.AgentIdentity{
 				PersonaName:     "Weaver",
 				Color:           ColorAmber,
 				Element:         element.ElementAir,
-				Position:        framework.PositionSG,
-				Alignment:       framework.AlignmentThesis,
-				HomeZone:        framework.MetaPhasePt,
+				Position:        circuit.PositionSG,
+				Alignment:       circuit.AlignmentThesis,
+				HomeZone:        circuit.MetaPhasePt,
 				StickinessLevel: 1,
 				StepAffinity: map[string]float64{
 					"recall": 0.3, "triage": 0.4,
@@ -111,16 +111,16 @@ func Thesis() []framework.Persona {
 }
 
 // Antithesis returns the 4 perennial Antithesis (Cytharai) personas.
-func Antithesis() []framework.Persona {
-	return []framework.Persona{
+func Antithesis() []circuit.Persona {
+	return []circuit.Persona{
 		{
-			Identity: framework.AgentIdentity{
+			Identity: circuit.AgentIdentity{
 				PersonaName:     "Challenger",
 				Color:           ColorScarlet,
 				Element:         element.ElementFire,
-				Position:        framework.PositionPG,
-				Alignment:       framework.AlignmentAntithesis,
-				HomeZone:        framework.MetaPhaseBk,
+				Position:        circuit.PositionPG,
+				Alignment:       circuit.AlignmentAntithesis,
+				HomeZone:        circuit.MetaPhaseBk,
 				StickinessLevel: 0,
 				StepAffinity: map[string]float64{
 					"challenge": 0.9, "cross-examine": 0.7,
@@ -132,13 +132,13 @@ func Antithesis() []framework.Persona {
 			Description: "Aggressive skeptic, rejects weak triage",
 		},
 		{
-			Identity: framework.AgentIdentity{
+			Identity: circuit.AgentIdentity{
 				PersonaName:     "Abyss",
 				Color:           ColorSapphire,
 				Element:         element.ElementWater,
-				Position:        framework.PositionC,
-				Alignment:       framework.AlignmentAntithesis,
-				HomeZone:        framework.MetaPhaseFc,
+				Position:        circuit.PositionC,
+				Alignment:       circuit.AlignmentAntithesis,
+				HomeZone:        circuit.MetaPhaseFc,
 				StickinessLevel: 3,
 				StepAffinity: map[string]float64{
 					"challenge": 0.3, "cross-examine": 0.5,
@@ -150,13 +150,13 @@ func Antithesis() []framework.Persona {
 			Description: "Deep adversary, finds counter-evidence",
 		},
 		{
-			Identity: framework.AgentIdentity{
+			Identity: circuit.AgentIdentity{
 				PersonaName:     "Bulwark",
 				Color:           ColorSteel,
-				Element:         framework.ElementDiamond,
-				Position:        framework.PositionPF,
-				Alignment:       framework.AlignmentAntithesis,
-				HomeZone:        framework.MetaPhaseFc,
+				Element:         circuit.ElementDiamond,
+				Position:        circuit.PositionPF,
+				Alignment:       circuit.AlignmentAntithesis,
+				HomeZone:        circuit.MetaPhaseFc,
 				StickinessLevel: 2,
 				StepAffinity: map[string]float64{
 					"challenge": 0.4, "cross-examine": 0.8,
@@ -168,13 +168,13 @@ func Antithesis() []framework.Persona {
 			Description: "Precision verifier, shatters ambiguity",
 		},
 		{
-			Identity: framework.AgentIdentity{
+			Identity: circuit.AgentIdentity{
 				PersonaName:     "Specter",
 				Color:           ColorObsidian,
-				Element:         framework.ElementLightning,
-				Position:        framework.PositionSG,
-				Alignment:       framework.AlignmentAntithesis,
-				HomeZone:        framework.MetaPhasePt,
+				Element:         circuit.ElementLightning,
+				Position:        circuit.PositionSG,
+				Alignment:       circuit.AlignmentAntithesis,
+				HomeZone:        circuit.MetaPhasePt,
 				StickinessLevel: 0,
 				StepAffinity: map[string]float64{
 					"challenge": 0.5, "cross-examine": 0.4,
@@ -189,17 +189,17 @@ func Antithesis() []framework.Persona {
 }
 
 // All returns all 8 perennial personas (4 Thesis + 4 Antithesis).
-func All() []framework.Persona {
+func All() []circuit.Persona {
 	return append(Thesis(), Antithesis()...)
 }
 
 // ByName looks up a persona by name (case-insensitive).
-func ByName(name string) (framework.Persona, bool) {
+func ByName(name string) (circuit.Persona, bool) {
 	lower := strings.ToLower(name)
 	for _, p := range All() {
 		if strings.ToLower(p.Identity.PersonaName) == lower {
 			return p, true
 		}
 	}
-	return framework.Persona{}, false
+	return circuit.Persona{}, false
 }

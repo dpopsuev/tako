@@ -4,7 +4,7 @@ import (
 	"sort"
 	"strings"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/element"
 )
 
@@ -14,7 +14,7 @@ import (
 // into adjacent rows.
 type GridLayout struct{}
 
-func (GridLayout) Layout(def *framework.CircuitDef) (CircuitLayout, error) {
+func (GridLayout) Layout(def *circuit.CircuitDef) (CircuitLayout, error) {
 	if len(def.Nodes) == 0 {
 		return CircuitLayout{}, nil
 	}
@@ -44,7 +44,7 @@ func (GridLayout) Layout(def *framework.CircuitDef) (CircuitLayout, error) {
 	return CircuitLayout{Grid: grid, Edges: edges, Zones: zones}, nil
 }
 
-func buildAdjacency(def *framework.CircuitDef) (map[string][]string, map[string]int) {
+func buildAdjacency(def *circuit.CircuitDef) (map[string][]string, map[string]int) {
 	adj := make(map[string][]string, len(def.Nodes))
 	inDeg := make(map[string]int, len(def.Nodes))
 	for _, n := range def.Nodes {
@@ -61,7 +61,7 @@ func buildAdjacency(def *framework.CircuitDef) (map[string][]string, map[string]
 	return adj, inDeg
 }
 
-func topoSort(def *framework.CircuitDef, adj map[string][]string, inDeg map[string]int) ([]string, error) {
+func topoSort(def *circuit.CircuitDef, adj map[string][]string, inDeg map[string]int) ([]string, error) {
 	queue := make([]string, 0)
 
 	if def.Start != "" {
@@ -105,7 +105,7 @@ func topoSort(def *framework.CircuitDef, adj map[string][]string, inDeg map[stri
 	return order, nil
 }
 
-func buildNodeZoneMap(def *framework.CircuitDef) map[string]string {
+func buildNodeZoneMap(def *circuit.CircuitDef) map[string]string {
 	nz := make(map[string]string)
 	for zoneName, zd := range def.Zones {
 		for _, nodeName := range zd.Nodes {

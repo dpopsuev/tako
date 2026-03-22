@@ -5,7 +5,8 @@ import (
 	"embed"
 	"fmt"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 )
 
 //go:embed circuits/calibration-runner.yaml
@@ -15,12 +16,12 @@ var embeddedCircuits embed.FS
 type CircuitOption func(*circuitConfig)
 
 type circuitConfig struct {
-	observer framework.WalkObserver
+	observer circuit.WalkObserver
 }
 
 // WithObserver attaches a WalkObserver (e.g., Kami bridge) to the
 // calibration circuit for live visualization and debugging.
-func WithObserver(obs framework.WalkObserver) CircuitOption {
+func WithObserver(obs circuit.WalkObserver) CircuitOption {
 	return func(c *circuitConfig) { c.observer = obs }
 }
 
@@ -55,23 +56,23 @@ func RunCircuit(ctx context.Context, input *CalibrationInput, opts ...CircuitOpt
 		edgeIDs[i] = ed.ID
 	}
 
-	reg := framework.GraphRegistries{
+	reg := engine.GraphRegistries{
 		Nodes: CalibrationNodeRegistry(),
 		Edges: forwardEdgeFactory(edgeIDs...),
 	}
 
-	graph, err := framework.BuildGraph(def, reg)
+	graph, err := engine.BuildGraph(def, reg)
 	if err != nil {
 		return nil, fmt.Errorf("build graph: %w", err)
 	}
 
 	if cfg.observer != nil {
-		if dg, ok := graph.(*framework.DefaultGraph); ok {
+		if dg, ok := graph.(*engine.DefaultGraph); ok {
 			dg.SetObserver(cfg.observer)
 		}
 	}
 
-	walker := framework.NewProcessWalker("calibration")
+	walker := circuit.NewProcessWalker("calibration")
 	walker.State().Context["input"] = input
 
 	if err := graph.Walk(ctx, walker, def.Start); err != nil {
@@ -93,12 +94,12 @@ func RunCircuit(ctx context.Context, input *CalibrationInput, opts ...CircuitOpt
 
 // CircuitDef returns the parsed calibration circuit definition.
 // Useful for Kami registration or custom graph building.
-func CircuitDef() (*framework.CircuitDef, error) {
+func CircuitDef() (*circuit.CircuitDef, error) {
 	data, err := circuitYAML()
 	if err != nil {
 		return nil, err
 	}
-	return framework.LoadCircuit(data)
+	return circuit.LoadCircuit(data)
 }
 
 // circuitYAML returns the raw YAML for the calibration-runner circuit.
@@ -108,10 +109,10 @@ func circuitYAML() ([]byte, error) {
 	return embeddedCircuits.ReadFile("circuits/calibration-runner.yaml")
 }
 
-func forwardEdgeFactory(ids ...string) framework.EdgeFactory {
-	ef := make(framework.EdgeFactory, len(ids))
+func forwardEdgeFactory(ids ...string) engine.EdgeFactory {
+	ef := make(engine.EdgeFactory, len(ids))
 	for _, id := range ids {
-		ef[id] = func(def framework.EdgeDef) framework.Edge {
+		ef[id] = func(def circuit.EdgeDef) circuit.Edge {
 			return &forwardEdge{def: def}
 		}
 	}
@@ -119,7 +120,7 @@ func forwardEdgeFactory(ids ...string) framework.EdgeFactory {
 }
 
 type forwardEdge struct {
-	def framework.EdgeDef
+	def circuit.EdgeDef
 }
 
 func (e *forwardEdge) ID() string         { return e.def.ID }
@@ -128,6 +129,6 @@ func (e *forwardEdge) To() string         { return e.def.To }
 func (e *forwardEdge) IsShortcut() bool   { return e.def.Shortcut }
 func (e *forwardEdge) IsLoop() bool       { return e.def.Loop }
 
-func (e *forwardEdge) Evaluate(_ framework.Artifact, _ *framework.WalkerState) *framework.Transition {
-	return &framework.Transition{NextNode: e.def.To}
+func (e *forwardEdge) Evaluate(_ circuit.Artifact, _ *circuit.WalkerState) *circuit.Transition {
+	return &circuit.Transition{NextNode: e.def.To}
 }

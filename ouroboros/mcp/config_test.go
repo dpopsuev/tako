@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	fwmcp "github.com/dpopsuev/origami/mcp"
 	"github.com/dpopsuev/origami/ouroboros"
 	"github.com/dpopsuev/origami/ouroboros/mcp"
@@ -378,7 +378,7 @@ func TestOuroboros_AssembleProfiles(t *testing.T) {
 		t.Fatalf("create store: %v", err)
 	}
 
-	gpt4o := framework.ModelIdentity{ModelName: "gpt-4o", Provider: "OpenAI", Version: "2025-01"}
+	gpt4o := circuit.ModelIdentity{ModelName: "gpt-4o", Provider: "OpenAI", Version: "2025-01"}
 	run := ouroboros.RunReport{
 		RunID:     "run-test",
 		StartTime: time.Now(),
@@ -393,7 +393,7 @@ func TestOuroboros_AssembleProfiles(t *testing.T) {
 				},
 			},
 		},
-		UniqueModels: []framework.ModelIdentity{gpt4o},
+		UniqueModels: []circuit.ModelIdentity{gpt4o},
 		TermReason:   "max_iterations_reached",
 	}
 	if err := store.SaveRun(run); err != nil {

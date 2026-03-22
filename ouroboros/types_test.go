@@ -5,13 +5,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 func TestDiscoveryResult_JSONRoundTrip(t *testing.T) {
 	dr := DiscoveryResult{
 		Iteration: 3,
-		Model: framework.ModelIdentity{
+		Model: circuit.ModelIdentity{
 			ModelName: "claude-sonnet-4-20250514",
 			Provider:  "Anthropic",
 			Version:   "20250514",
@@ -64,10 +64,10 @@ func TestRunReport_JSONRoundTrip(t *testing.T) {
 		EndTime:   time.Date(2026, 2, 21, 15, 5, 0, 0, time.UTC),
 		Config:    DefaultConfig(),
 		Results: []DiscoveryResult{
-			{Iteration: 0, Model: framework.ModelIdentity{ModelName: "gpt-4o", Provider: "OpenAI"}},
-			{Iteration: 1, Model: framework.ModelIdentity{ModelName: "claude-sonnet-4", Provider: "Anthropic"}},
+			{Iteration: 0, Model: circuit.ModelIdentity{ModelName: "gpt-4o", Provider: "OpenAI"}},
+			{Iteration: 1, Model: circuit.ModelIdentity{ModelName: "claude-sonnet-4", Provider: "Anthropic"}},
 		},
-		UniqueModels: []framework.ModelIdentity{
+		UniqueModels: []circuit.ModelIdentity{
 			{ModelName: "gpt-4o", Provider: "OpenAI"},
 			{ModelName: "claude-sonnet-4", Provider: "Anthropic"},
 		},
@@ -100,7 +100,7 @@ func TestRunReport_JSONRoundTrip(t *testing.T) {
 
 func TestRunReport_ModelNames(t *testing.T) {
 	report := RunReport{
-		UniqueModels: []framework.ModelIdentity{
+		UniqueModels: []circuit.ModelIdentity{
 			{ModelName: "gpt-4o", Provider: "OpenAI"},
 			{ModelName: "claude-sonnet-4", Provider: "Anthropic", Version: "20250514"},
 		},

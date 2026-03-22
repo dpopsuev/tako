@@ -13,7 +13,8 @@ import (
 	"testing"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/mcp"
 )
@@ -222,7 +223,7 @@ type dispatchTransformer struct {
 
 func (t *dispatchTransformer) Name() string { return "dispatch" }
 
-func (t *dispatchTransformer) Transform(ctx context.Context, tc *framework.TransformerContext) (any, error) {
+func (t *dispatchTransformer) Transform(ctx context.Context, tc *engine.TransformerContext) (any, error) {
 	dc := dispatch.DispatchContext{
 		CaseID:        "C01",
 		Step:          tc.NodeName,
@@ -465,15 +466,15 @@ func TestOllamaE2E_DelegatedCircuit(t *testing.T) {
 	requireOllama(t)
 	logs := captureLogs(t)
 
-	innerDef := &framework.CircuitDef{
+	innerDef := &circuit.CircuitDef{
 		Circuit: "analysis",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "analyze", HandlerType: "transformer", Handler: "dispatch",
 				Prompt: "Write one word that rhymes with 'cat'. Reply with only the word."},
 			{Name: "conclude", HandlerType: "transformer", Handler: "dispatch",
 				Prompt: "Name one fruit. Reply with only the fruit name."},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "analyze-conclude", From: "analyze", To: "conclude"},
 			{ID: "conclude-done", From: "conclude", To: "_done"},
 		},
@@ -481,16 +482,16 @@ func TestOllamaE2E_DelegatedCircuit(t *testing.T) {
 		Done:  "_done",
 	}
 
-	outerDef := &framework.CircuitDef{
+	outerDef := &circuit.CircuitDef{
 		Circuit: "outer",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "classify", HandlerType: "transformer", Handler: "dispatch",
 				Prompt: "Name one primary color. Reply with only the color name."},
 			{Name: "delegate_analysis", HandlerType: "circuit", Handler: "analysis"},
 			{Name: "summarize", HandlerType: "transformer", Handler: "dispatch",
 				Prompt: "Say 'done'. Reply with only the word."},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "classify-delegate", From: "classify", To: "delegate_analysis"},
 			{ID: "delegate-summarize", From: "delegate_analysis", To: "summarize"},
 			{ID: "summarize-done", From: "summarize", To: "_done"},
@@ -508,18 +509,18 @@ func TestOllamaE2E_DelegatedCircuit(t *testing.T) {
 		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus *dispatch.SignalBus) (mcp.RunFunc, mcp.SessionMeta, error) {
 			return func(ctx context.Context) (any, error) {
 				dt := &dispatchTransformer{disp: disp}
-				reg := framework.GraphRegistries{
-					Transformers: framework.TransformerRegistry{"dispatch": dt},
-					Circuits:     map[string]*framework.CircuitDef{"analysis": innerDef},
+				reg := engine.GraphRegistries{
+					Transformers: engine.TransformerRegistry{"dispatch": dt},
+					Circuits:     map[string]*circuit.CircuitDef{"analysis": innerDef},
 				}
-				g, err := framework.BuildGraph(outerDef, reg)
+				g, err := engine.BuildGraph(outerDef, reg)
 				if err != nil {
 					return nil, fmt.Errorf("build graph: %w", err)
 				}
-				if dg, ok := g.(*framework.DefaultGraph); ok {
-					dg.SetObserver(framework.NewLogObserver(nil))
+				if dg, ok := g.(*engine.DefaultGraph); ok {
+					dg.SetObserver(engine.NewLogObserver(nil))
 				}
-				walker := framework.NewProcessWalker("e2e-delegate")
+				walker := circuit.NewProcessWalker("e2e-delegate")
 				if err := g.Walk(ctx, walker, outerDef.Start); err != nil {
 					return nil, err
 				}

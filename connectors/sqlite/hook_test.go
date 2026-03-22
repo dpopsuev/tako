@@ -4,7 +4,8 @@ import (
 	"context"
 	"testing"
 
-	fw "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/engine"
+
 )
 
 type hookArtifact struct {
@@ -141,4 +142,4 @@ func TestExecHook_TemplateRendering(t *testing.T) {
 	}
 }
 
-var _ fw.Hook = (*ExecHook)(nil)
+var _ engine.Hook = (*ExecHook)(nil)

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 func TestDebugController_BreakpointPauseResume(t *testing.T) {
@@ -27,8 +27,8 @@ func TestDebugController_BreakpointPauseResume(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		dc.OnEvent(framework.WalkEvent{
-			Type:   framework.EventNodeEnter,
+		dc.OnEvent(circuit.WalkEvent{
+			Type:   circuit.EventNodeEnter,
 			Node:   "investigate",
 			Walker: "sentinel",
 		})
@@ -86,8 +86,8 @@ func TestDebugController_ManualPause(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		dc.OnEvent(framework.WalkEvent{
-			Type:   framework.EventNodeEnter,
+		dc.OnEvent(circuit.WalkEvent{
+			Type:   circuit.EventNodeEnter,
 			Node:   "triage",
 			Walker: "sentinel",
 		})
@@ -117,8 +117,8 @@ func TestDebugController_AdvanceNode(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		dc.OnEvent(framework.WalkEvent{
-			Type: framework.EventNodeEnter,
+		dc.OnEvent(circuit.WalkEvent{
+			Type: circuit.EventNodeEnter,
 			Node: "triage",
 		})
 	}()
@@ -144,12 +144,12 @@ func TestDebugController_SnapshotTracksVisited(t *testing.T) {
 
 	nodes := []string{"recall", "triage", "investigate"}
 	for _, n := range nodes {
-		dc.OnEvent(framework.WalkEvent{
-			Type: framework.EventNodeEnter,
+		dc.OnEvent(circuit.WalkEvent{
+			Type: circuit.EventNodeEnter,
 			Node: n,
 		})
-		dc.OnEvent(framework.WalkEvent{
-			Type: framework.EventNodeExit,
+		dc.OnEvent(circuit.WalkEvent{
+			Type: circuit.EventNodeExit,
 			Node: n,
 		})
 	}
@@ -211,5 +211,5 @@ func TestDebugController_ClearBreakpoint(t *testing.T) {
 }
 
 func TestDebugController_ImplementsWalkObserver(t *testing.T) {
-	var _ framework.WalkObserver = (*DebugController)(nil)
+	var _ circuit.WalkObserver = (*DebugController)(nil)
 }

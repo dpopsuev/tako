@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"sync"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	_ "modernc.org/sqlite"
 )
 
-// SQLiteCheckpointer implements framework.Checkpointer backed by a SQLite
+// SQLiteCheckpointer implements circuit.Checkpointer backed by a SQLite
 // database. Each walker ID maps to one row. Thread-safe for concurrent
 // walkers with distinct IDs.
 type SQLiteCheckpointer struct {
@@ -18,7 +18,7 @@ type SQLiteCheckpointer struct {
 	db *sql.DB
 }
 
-var _ framework.Checkpointer = (*SQLiteCheckpointer)(nil)
+var _ circuit.Checkpointer = (*SQLiteCheckpointer)(nil)
 
 // NewCheckpointer creates a SQLiteCheckpointer, auto-creating the DB and table.
 func NewCheckpointer(dbPath string) (*SQLiteCheckpointer, error) {
@@ -38,7 +38,7 @@ func NewCheckpointer(dbPath string) (*SQLiteCheckpointer, error) {
 	return &SQLiteCheckpointer{db: db}, nil
 }
 
-func (c *SQLiteCheckpointer) Save(state *framework.WalkerState) error {
+func (c *SQLiteCheckpointer) Save(state *circuit.WalkerState) error {
 	data, err := json.Marshal(state)
 	if err != nil {
 		return fmt.Errorf("marshal state: %w", err)
@@ -56,7 +56,7 @@ func (c *SQLiteCheckpointer) Save(state *framework.WalkerState) error {
 	return nil
 }
 
-func (c *SQLiteCheckpointer) Load(id string) (*framework.WalkerState, error) {
+func (c *SQLiteCheckpointer) Load(id string) (*circuit.WalkerState, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	var data []byte
@@ -67,7 +67,7 @@ func (c *SQLiteCheckpointer) Load(id string) (*framework.WalkerState, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load checkpoint %s: %w", id, err)
 	}
-	var state framework.WalkerState
+	var state circuit.WalkerState
 	if err := json.Unmarshal(data, &state); err != nil {
 		return nil, fmt.Errorf("unmarshal checkpoint %s: %w", id, err)
 	}
@@ -78,7 +78,7 @@ func (c *SQLiteCheckpointer) Load(id string) (*framework.WalkerState, error) {
 		state.Context = make(map[string]any)
 	}
 	if state.Outputs == nil {
-		state.Outputs = make(map[string]framework.Artifact)
+		state.Outputs = make(map[string]circuit.Artifact)
 	}
 	return &state, nil
 }

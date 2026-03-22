@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/view"
 )
 
@@ -35,13 +35,13 @@ func testGolden(t *testing.T, name, got string) {
 	}
 }
 
-func loadTestCircuit(t *testing.T, path string) *framework.CircuitDef {
+func loadTestCircuit(t *testing.T, path string) *circuit.CircuitDef {
 	t.Helper()
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read %s: %v", path, err)
 	}
-	def, err := framework.LoadCircuit(data)
+	def, err := circuit.LoadCircuit(data)
 	if err != nil {
 		t.Fatalf("load %s: %v", path, err)
 	}
@@ -105,7 +105,7 @@ func TestRenderGraph_RCACircuit(t *testing.T) {
 }
 
 func TestRenderGraph_EmptyCircuit(t *testing.T) {
-	def := &framework.CircuitDef{Circuit: "empty"}
+	def := &circuit.CircuitDef{Circuit: "empty"}
 	layout := view.CircuitLayout{}
 	snap := view.CircuitSnapshot{CircuitName: "empty"}
 
@@ -116,14 +116,14 @@ func TestRenderGraph_EmptyCircuit(t *testing.T) {
 }
 
 func TestRenderGraph_NodeStates(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "test",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "a"},
 			{Name: "b"},
 			{Name: "c"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{From: "a", To: "b"},
 			{From: "b", To: "c"},
 		},
@@ -134,9 +134,9 @@ func TestRenderGraph_NodeStates(t *testing.T) {
 	store := view.NewCircuitStore(def)
 	defer store.Close()
 
-	store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "a", Walker: "w1"})
-	store.OnEvent(framework.WalkEvent{Type: framework.EventNodeExit, Node: "a"})
-	store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "b", Walker: "w1"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "a", Walker: "w1"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "a"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "b", Walker: "w1"})
 
 	snap := store.Snapshot()
 
@@ -148,15 +148,15 @@ func TestRenderGraph_NodeStates(t *testing.T) {
 }
 
 func TestRenderGraph_DSBadges(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "badges",
 		HandlerType: "transformer",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "det", Handler: "core.jq"},
 			{Name: "stoch", Handler: "core.llm"},
 			{Name: "dial", Handler: "core.dialectic"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{From: "det", To: "stoch"},
 			{From: "stoch", To: "dial"},
 		},
@@ -176,13 +176,13 @@ func TestRenderGraph_DSBadges(t *testing.T) {
 }
 
 func TestRenderGraph_Breakpoints(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "bp",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "a"},
 			{Name: "b"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{From: "a", To: "b"},
 		},
 		Start: "a",
@@ -232,12 +232,12 @@ func TestElementColor_AllElementsCovered(t *testing.T) {
 }
 
 func TestRenderGraph_ShortcutsVisibleBelow(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "shortcuts",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "a"}, {Name: "b"}, {Name: "c"}, {Name: "d"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{From: "a", To: "b"},
 			{From: "b", To: "c"},
 			{From: "c", To: "d"},
@@ -259,12 +259,12 @@ func TestRenderGraph_ShortcutsVisibleBelow(t *testing.T) {
 }
 
 func TestRenderGraph_ChannelsSeparated(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "multi-shortcut",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "a"}, {Name: "b"}, {Name: "c"}, {Name: "d"}, {Name: "e"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{From: "a", To: "b"},
 			{From: "b", To: "c"},
 			{From: "c", To: "d"},
@@ -300,12 +300,12 @@ func TestRenderGraph_ChannelsSeparated(t *testing.T) {
 }
 
 func TestRenderGraph_LoopRoutesToTarget(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "loop-target",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "a"}, {Name: "b"}, {Name: "c"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{From: "a", To: "b"},
 			{From: "b", To: "c"},
 			{From: "c", To: "a", Loop: true},
@@ -352,12 +352,12 @@ func TestRenderGraph_VirtualDoneFiltered(t *testing.T) {
 }
 
 func TestRenderGraph_RealDoneNotFiltered(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "real-done",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "a"}, {Name: "b"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{From: "a", To: "b"},
 		},
 		Start: "a",
@@ -379,12 +379,12 @@ func TestRenderGraph_RealDoneNotFiltered(t *testing.T) {
 }
 
 func TestComputeEdgeRouting_Deduplication(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "dedup",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "a"}, {Name: "b"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{From: "a", To: "b"},
 			{From: "a", To: "b"},
 			{From: "a", To: "b", Shortcut: true},
@@ -489,13 +489,13 @@ func assertNoEdge(t *testing.T, er EdgeRouting, from, to string) {
 
 // --- Level 2: topology fixture builders (sumi package) ---
 
-func sumiLinearDef() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func sumiLinearDef() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit: "linear",
 		Start:   "A",
 		Done:    "_done",
-		Nodes:   []framework.NodeDef{{Name: "A"}, {Name: "B"}, {Name: "C"}, {Name: "D"}},
-		Edges: []framework.EdgeDef{
+		Nodes:   []circuit.NodeDef{{Name: "A"}, {Name: "B"}, {Name: "C"}, {Name: "D"}},
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "A", To: "B"},
 			{ID: "e2", From: "B", To: "C"},
 			{ID: "e3", From: "C", To: "D"},
@@ -504,13 +504,13 @@ func sumiLinearDef() *framework.CircuitDef {
 	}
 }
 
-func sumiShortcutDef() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func sumiShortcutDef() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit: "shortcut",
 		Start:   "A",
 		Done:    "_done",
-		Nodes:   []framework.NodeDef{{Name: "A"}, {Name: "B"}, {Name: "C"}, {Name: "D"}},
-		Edges: []framework.EdgeDef{
+		Nodes:   []circuit.NodeDef{{Name: "A"}, {Name: "B"}, {Name: "C"}, {Name: "D"}},
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "A", To: "B"},
 			{ID: "e2", From: "B", To: "C"},
 			{ID: "e3", From: "C", To: "D"},
@@ -520,13 +520,13 @@ func sumiShortcutDef() *framework.CircuitDef {
 	}
 }
 
-func sumiLoopDef() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func sumiLoopDef() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit: "loop",
 		Start:   "A",
 		Done:    "_done",
-		Nodes:   []framework.NodeDef{{Name: "A"}, {Name: "B"}, {Name: "C"}},
-		Edges: []framework.EdgeDef{
+		Nodes:   []circuit.NodeDef{{Name: "A"}, {Name: "B"}, {Name: "C"}},
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "A", To: "B"},
 			{ID: "e2", From: "B", To: "C"},
 			{ID: "e3", From: "C", To: "_done"},
@@ -535,13 +535,13 @@ func sumiLoopDef() *framework.CircuitDef {
 	}
 }
 
-func sumiDiamondDef() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func sumiDiamondDef() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit: "diamond",
 		Start:   "start",
 		Done:    "_done",
-		Nodes:   []framework.NodeDef{{Name: "start"}, {Name: "a"}, {Name: "b"}, {Name: "join"}},
-		Edges: []framework.EdgeDef{
+		Nodes:   []circuit.NodeDef{{Name: "start"}, {Name: "a"}, {Name: "b"}, {Name: "join"}},
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "start", To: "a"},
 			{ID: "e2", From: "start", To: "b"},
 			{ID: "e3", From: "a", To: "join"},
@@ -551,16 +551,16 @@ func sumiDiamondDef() *framework.CircuitDef {
 	}
 }
 
-func sumiStaircaseDef() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func sumiStaircaseDef() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit: "staircase",
 		Start:   "start",
 		Done:    "_done",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "start"}, {Name: "a"}, {Name: "b"},
 			{Name: "c"}, {Name: "d"}, {Name: "end"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "start", To: "a"},
 			{ID: "e2", From: "start", To: "b"},
 			{ID: "e3", From: "a", To: "c"},
@@ -573,16 +573,16 @@ func sumiStaircaseDef() *framework.CircuitDef {
 	}
 }
 
-func sumiDialecticDef() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func sumiDialecticDef() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit: "dialectic",
 		Start:   "indict",
 		Done:    "_done",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "indict"}, {Name: "discover"}, {Name: "defend"},
 			{Name: "hearing"}, {Name: "cmrr"}, {Name: "verdict"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "indict", To: "discover"},
 			{ID: "e2", From: "indict", To: "defend"},
 			{ID: "e3", From: "discover", To: "defend"},
@@ -596,51 +596,51 @@ func sumiDialecticDef() *framework.CircuitDef {
 	}
 }
 
-func sumiMegaFanoutDef() *framework.CircuitDef {
-	nodes := []framework.NodeDef{{Name: "hub"}}
-	edges := []framework.EdgeDef{}
+func sumiMegaFanoutDef() *circuit.CircuitDef {
+	nodes := []circuit.NodeDef{{Name: "hub"}}
+	edges := []circuit.EdgeDef{}
 	for i := 0; i < 8; i++ {
 		name := "t" + string(rune('1'+i))
-		nodes = append(nodes, framework.NodeDef{Name: name})
-		edges = append(edges, framework.EdgeDef{ID: "fan-" + name, From: "hub", To: name})
+		nodes = append(nodes, circuit.NodeDef{Name: name})
+		edges = append(edges, circuit.EdgeDef{ID: "fan-" + name, From: "hub", To: name})
 	}
-	nodes = append(nodes, framework.NodeDef{Name: "merge"})
+	nodes = append(nodes, circuit.NodeDef{Name: "merge"})
 	for i := 0; i < 8; i++ {
 		name := "t" + string(rune('1'+i))
-		edges = append(edges, framework.EdgeDef{ID: "join-" + name, From: name, To: "merge"})
+		edges = append(edges, circuit.EdgeDef{ID: "join-" + name, From: name, To: "merge"})
 	}
-	edges = append(edges, framework.EdgeDef{ID: "fin", From: "merge", To: "_done"})
-	return &framework.CircuitDef{Circuit: "mega-fanout", Start: "hub", Done: "_done", Nodes: nodes, Edges: edges}
+	edges = append(edges, circuit.EdgeDef{ID: "fin", From: "merge", To: "_done"})
+	return &circuit.CircuitDef{Circuit: "mega-fanout", Start: "hub", Done: "_done", Nodes: nodes, Edges: edges}
 }
 
-func sumiMegaFaninDef() *framework.CircuitDef {
-	nodes := []framework.NodeDef{{Name: "start"}}
-	edges := []framework.EdgeDef{}
+func sumiMegaFaninDef() *circuit.CircuitDef {
+	nodes := []circuit.NodeDef{{Name: "start"}}
+	edges := []circuit.EdgeDef{}
 	for i := 0; i < 8; i++ {
 		name := "s" + string(rune('1'+i))
-		nodes = append(nodes, framework.NodeDef{Name: name})
-		edges = append(edges, framework.EdgeDef{ID: "fan-" + name, From: "start", To: name})
+		nodes = append(nodes, circuit.NodeDef{Name: name})
+		edges = append(edges, circuit.EdgeDef{ID: "fan-" + name, From: "start", To: name})
 	}
-	nodes = append(nodes, framework.NodeDef{Name: "merge"})
+	nodes = append(nodes, circuit.NodeDef{Name: "merge"})
 	for i := 0; i < 8; i++ {
 		name := "s" + string(rune('1'+i))
-		edges = append(edges, framework.EdgeDef{ID: "join-" + name, From: name, To: "merge"})
+		edges = append(edges, circuit.EdgeDef{ID: "join-" + name, From: name, To: "merge"})
 	}
-	edges = append(edges, framework.EdgeDef{ID: "fin", From: "merge", To: "_done"})
-	return &framework.CircuitDef{Circuit: "mega-fanin", Start: "start", Done: "_done", Nodes: nodes, Edges: edges}
+	edges = append(edges, circuit.EdgeDef{ID: "fin", From: "merge", To: "_done"})
+	return &circuit.CircuitDef{Circuit: "mega-fanin", Start: "start", Done: "_done", Nodes: nodes, Edges: edges}
 }
 
-func sumiDeepCascadeDef() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func sumiDeepCascadeDef() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit: "deep-cascade",
 		Start:   "root",
 		Done:    "_done",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "root"}, {Name: "a"}, {Name: "b"},
 			{Name: "c"}, {Name: "d"}, {Name: "e"}, {Name: "f"},
 			{Name: "g"}, {Name: "h"}, {Name: "merge"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "root", To: "a"},
 			{ID: "e2", From: "root", To: "b"},
 			{ID: "e3", From: "a", To: "c"},
@@ -659,19 +659,19 @@ func sumiDeepCascadeDef() *framework.CircuitDef {
 	}
 }
 
-func sumiWideGridDef() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func sumiWideGridDef() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit: "wide-grid",
 		Start:   "start",
 		Done:    "_done",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "start"},
 			{Name: "a1"}, {Name: "a2"}, {Name: "a3"},
 			{Name: "b1"}, {Name: "b2"}, {Name: "b3"},
 			{Name: "c1"}, {Name: "c2"}, {Name: "c3"},
 			{Name: "merge"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "start", To: "a1"},
 			{ID: "e2", From: "start", To: "a2"},
 			{ID: "e3", From: "start", To: "a3"},
@@ -980,16 +980,16 @@ func TestRenderAbstract_DeepCascade(t *testing.T) {
 }
 
 func TestRenderAbstract_CompositeStub(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "composite-stub",
 		Start:   "A",
 		Done:    "_done",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "A"},
 			{Name: "B", Meta: map[string]any{"composite": true}},
 			{Name: "C"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "A", To: "B"},
 			{ID: "e2", From: "B", To: "C"},
 			{ID: "e3", From: "C", To: "_done"},
@@ -1011,7 +1011,7 @@ func TestRenderAbstract_CompositeStub(t *testing.T) {
 }
 
 func TestRenderAbstract_Empty(t *testing.T) {
-	def := &framework.CircuitDef{Circuit: "empty"}
+	def := &circuit.CircuitDef{Circuit: "empty"}
 	layout := view.CircuitLayout{}
 	got := RenderAbstract(def, layout)
 	if got != "(empty)" {

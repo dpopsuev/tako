@@ -5,12 +5,13 @@ import (
 	"sync"
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 )
 
 // RunGraphContract runs the graph compliance suite. The factory must
 // return a Graph with at least 2 nodes (A→B→DONE) and a working observer.
-func RunGraphContract(t *testing.T, factory func() (framework.Graph, framework.Walker)) {
+func RunGraphContract(t *testing.T, factory func() (engine.Graph, circuit.Walker)) {
 	t.Helper()
 
 	t.Run("Walk_TraversesNodes", func(t *testing.T) {
@@ -23,14 +24,14 @@ func RunGraphContract(t *testing.T, factory func() (framework.Graph, framework.W
 
 	t.Run("Walk_EmitsObserverEvents", func(t *testing.T) {
 		g, w := factory()
-		dg, ok := g.(*framework.DefaultGraph)
+		dg, ok := g.(*engine.DefaultGraph)
 		if !ok {
 			t.Skip("graph is not *DefaultGraph, cannot set observer")
 		}
 
 		var mu sync.Mutex
-		var events []framework.WalkEvent
-		dg.SetObserver(framework.WalkObserverFunc(func(e framework.WalkEvent) {
+		var events []circuit.WalkEvent
+		dg.SetObserver(circuit.WalkObserverFunc(func(e circuit.WalkEvent) {
 			mu.Lock()
 			events = append(events, e)
 			mu.Unlock()
@@ -50,11 +51,11 @@ func RunGraphContract(t *testing.T, factory func() (framework.Graph, framework.W
 		hasComplete := false
 		for _, e := range events {
 			switch e.Type {
-			case framework.EventNodeEnter:
+			case circuit.EventNodeEnter:
 				hasEnter = true
-			case framework.EventNodeExit:
+			case circuit.EventNodeExit:
 				hasExit = true
-			case framework.EventWalkComplete:
+			case circuit.EventWalkComplete:
 				hasComplete = true
 			}
 		}

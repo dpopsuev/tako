@@ -7,13 +7,13 @@ import (
 	"testing"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
 )
 
 // AssertEventOrder verifies that the given events contain the expected event
 // types in order. Extra events between expected types are allowed (subsequence match).
-func AssertEventOrder(t testing.TB, events []framework.WalkEvent, expectedTypes []framework.WalkEventType) {
+func AssertEventOrder(t testing.TB, events []circuit.WalkEvent, expectedTypes []circuit.WalkEventType) {
 	t.Helper()
 
 	idx := 0
@@ -32,7 +32,7 @@ func AssertEventOrder(t testing.TB, events []framework.WalkEvent, expectedTypes 
 }
 
 // AssertNoEvent verifies that no event of the given type exists in events.
-func AssertNoEvent(t testing.TB, events []framework.WalkEvent, eventType framework.WalkEventType) {
+func AssertNoEvent(t testing.TB, events []circuit.WalkEvent, eventType circuit.WalkEventType) {
 	t.Helper()
 
 	for i, e := range events {

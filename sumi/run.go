@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/kami"
 	"github.com/dpopsuev/origami/view"
 
@@ -55,7 +55,7 @@ func runCircuit(_ context.Context, cfg RunConfig) error {
 	if err != nil {
 		return fmt.Errorf("read circuit: %w", err)
 	}
-	def, err := framework.LoadCircuit(data)
+	def, err := circuit.LoadCircuit(data)
 	if err != nil {
 		return fmt.Errorf("load circuit: %w", err)
 	}
@@ -239,36 +239,36 @@ func resetStoreHTTP(addr string, log *slog.Logger) {
 	log.Info("store reset via --clean", "status", resp.StatusCode)
 }
 
-func bootstrapFromSnapshot(addr string, log *slog.Logger) (*framework.CircuitDef, *view.CircuitStore) {
+func bootstrapFromSnapshot(addr string, log *slog.Logger) (*circuit.CircuitDef, *view.CircuitStore) {
 	url := fmt.Sprintf("http://%s/api/snapshot", addr)
 
 	client := &http.Client{Timeout: 2 * time.Second}
 	resp, err := client.Get(url)
 	if err != nil {
 		log.Debug("snapshot unavailable, starting with empty circuit", "error", err)
-		def := &framework.CircuitDef{Circuit: "watch"}
+		def := &circuit.CircuitDef{Circuit: "watch"}
 		return def, view.NewCircuitStore(def)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		log.Debug("snapshot returned non-200, starting with empty circuit", "status", resp.StatusCode)
-		def := &framework.CircuitDef{Circuit: "watch"}
+		def := &circuit.CircuitDef{Circuit: "watch"}
 		return def, view.NewCircuitStore(def)
 	}
 
 	var snap view.CircuitSnapshot
 	if err := json.NewDecoder(resp.Body).Decode(&snap); err != nil {
 		log.Debug("snapshot decode failed, starting with empty circuit", "error", err)
-		def := &framework.CircuitDef{Circuit: "watch"}
+		def := &circuit.CircuitDef{Circuit: "watch"}
 		return def, view.NewCircuitStore(def)
 	}
 
 	def := snap.Def
 	if def == nil {
-		def = &framework.CircuitDef{Circuit: snap.CircuitName}
+		def = &circuit.CircuitDef{Circuit: snap.CircuitName}
 		for name := range snap.Nodes {
-			def.Nodes = append(def.Nodes, framework.NodeDef{Name: name})
+			def.Nodes = append(def.Nodes, circuit.NodeDef{Name: name})
 		}
 	}
 
@@ -276,22 +276,22 @@ func bootstrapFromSnapshot(addr string, log *slog.Logger) (*framework.CircuitDef
 
 	for name, ns := range snap.Nodes {
 		if ns.State == view.NodeActive || ns.State == view.NodeCompleted || ns.State == view.NodeError {
-			var evtType framework.WalkEventType
+			var evtType circuit.WalkEventType
 			switch ns.State {
 			case view.NodeActive:
-				evtType = framework.EventNodeEnter
+				evtType = circuit.EventNodeEnter
 			case view.NodeCompleted:
-				evtType = framework.EventNodeExit
+				evtType = circuit.EventNodeExit
 			case view.NodeError:
-				evtType = framework.EventWalkError
+				evtType = circuit.EventWalkError
 			}
-			store.OnEvent(framework.WalkEvent{Type: evtType, Node: name})
+			store.OnEvent(circuit.WalkEvent{Type: evtType, Node: name})
 		}
 	}
 
 	for walkerID, wp := range snap.Walkers {
-		store.OnEvent(framework.WalkEvent{
-			Type:   framework.EventNodeEnter,
+		store.OnEvent(circuit.WalkEvent{
+			Type:   circuit.EventNodeEnter,
 			Node:   wp.Node,
 			Walker: walkerID,
 		})
@@ -308,7 +308,7 @@ func runReplay(_ context.Context, cfg RunConfig) error {
 	}
 	defer f.Close()
 
-	def := &framework.CircuitDef{Circuit: "replay"}
+	def := &circuit.CircuitDef{Circuit: "replay"}
 	store := view.NewCircuitStore(def)
 	defer store.Close()
 
@@ -356,30 +356,30 @@ func runReplay(_ context.Context, cfg RunConfig) error {
 	return nil
 }
 
-func eventToWalkEvent(evt kami.Event) framework.WalkEvent {
-	we := framework.WalkEvent{
+func eventToWalkEvent(evt kami.Event) circuit.WalkEvent {
+	we := circuit.WalkEvent{
 		Node:   evt.Node,
 		Walker: evt.Agent,
 		Edge:   evt.Edge,
 	}
 	switch evt.Type {
 	case kami.EventNodeEnter:
-		we.Type = framework.EventNodeEnter
+		we.Type = circuit.EventNodeEnter
 	case kami.EventNodeExit:
-		we.Type = framework.EventNodeExit
+		we.Type = circuit.EventNodeExit
 	case kami.EventTransition:
-		we.Type = framework.EventTransition
+		we.Type = circuit.EventTransition
 	case kami.EventWalkComplete:
-		we.Type = framework.EventWalkComplete
+		we.Type = circuit.EventWalkComplete
 	case kami.EventWalkError:
-		we.Type = framework.EventWalkError
+		we.Type = circuit.EventWalkError
 		we.Error = fmt.Errorf("%s", evt.Error)
 	case kami.EventFanOutStart:
-		we.Type = framework.EventFanOutStart
+		we.Type = circuit.EventFanOutStart
 	case kami.EventFanOutEnd:
-		we.Type = framework.EventFanOutEnd
+		we.Type = circuit.EventFanOutEnd
 	default:
-		we.Type = framework.WalkEventType(evt.Type)
+		we.Type = circuit.WalkEventType(evt.Type)
 	}
 	return we
 }

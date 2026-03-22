@@ -5,7 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 )
 
 type stubArtifact struct{}
@@ -27,8 +28,8 @@ func TestNewContextInjector_InjectsData(t *testing.T) {
 		t.Errorf("Name() = %q, want %q", hook.Name(), "inject.test")
 	}
 
-	walker := framework.NewProcessWalker("test-walker")
-	ctx := framework.WithWalkerState(context.Background(), walker.State())
+	walker := circuit.NewProcessWalker("test-walker")
+	ctx := engine.WithWalkerState(context.Background(), walker.State())
 
 	err := hook.Run(ctx, "node", stubArtifact{})
 	if err != nil {
@@ -67,8 +68,8 @@ func TestNewContextInjectorErr_ReturnsError(t *testing.T) {
 		return want
 	})
 
-	walker := framework.NewProcessWalker("test-walker")
-	ctx := framework.WithWalkerState(context.Background(), walker.State())
+	walker := circuit.NewProcessWalker("test-walker")
+	ctx := engine.WithWalkerState(context.Background(), walker.State())
 
 	err := hook.Run(ctx, "node", stubArtifact{})
 	if !errors.Is(err, want) {
@@ -97,8 +98,8 @@ func TestNewContextInjectorErr_Success(t *testing.T) {
 		return nil
 	})
 
-	walker := framework.NewProcessWalker("test")
-	ctx := framework.WithWalkerState(context.Background(), walker.State())
+	walker := circuit.NewProcessWalker("test")
+	ctx := engine.WithWalkerState(context.Background(), walker.State())
 
 	err := hook.Run(ctx, "node", stubArtifact{})
 	if err != nil {

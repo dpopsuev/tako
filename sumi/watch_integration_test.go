@@ -10,15 +10,15 @@ import (
 	"testing"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/kami"
 	"github.com/dpopsuev/origami/view"
 )
 
-func rcaDef() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func rcaDef() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit: "rca",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "recall"},
 			{Name: "triage"},
 			{Name: "resolve"},
@@ -34,7 +34,7 @@ func rcaDef() *framework.CircuitDef {
 // when runWatch creates an empty CircuitDef, node_enter SSE events
 // update walker position but NOT node state, resulting in "(empty circuit)".
 func TestWatch_EmptyDef_DropsNodeStateEvents(t *testing.T) {
-	emptyDef := &framework.CircuitDef{Circuit: "watch"}
+	emptyDef := &circuit.CircuitDef{Circuit: "watch"}
 	clientStore := view.NewCircuitStore(emptyDef)
 	defer clientStore.Close()
 
@@ -280,7 +280,7 @@ func TestWatch_SnapshotBootstrap(t *testing.T) {
 	serverStore := view.NewCircuitStore(serverDef)
 	defer serverStore.Close()
 
-	serverStore.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "recall", Walker: "C08"})
+	serverStore.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall", Walker: "C08"})
 
 	bridge := kami.NewEventBridge(nil)
 	defer bridge.Close()
@@ -326,11 +326,11 @@ func TestWatch_SnapshotBootstrap(t *testing.T) {
 		t.Errorf("walker at %q, want recall", wp.Node)
 	}
 
-	clientDef := &framework.CircuitDef{
+	clientDef := &circuit.CircuitDef{
 		Circuit: snap.CircuitName,
 	}
 	for name := range snap.Nodes {
-		clientDef.Nodes = append(clientDef.Nodes, framework.NodeDef{Name: name})
+		clientDef.Nodes = append(clientDef.Nodes, circuit.NodeDef{Name: name})
 	}
 
 	clientStore := view.NewCircuitStore(clientDef)
@@ -365,14 +365,14 @@ func warmupSSE(t *testing.T, serverStore *view.CircuitStore, clientCh <-chan vie
 	for {
 		select {
 		case <-probe.C:
-			serverStore.OnEvent(framework.WalkEvent{
-				Type: framework.EventNodeEnter, Node: "recall", Walker: "_warmup",
+			serverStore.OnEvent(circuit.WalkEvent{
+				Type: circuit.EventNodeEnter, Node: "recall", Walker: "_warmup",
 			})
 		case <-clientCh:
 			// At least one diff arrived — SSE is live.
 			// Remove the warmup walker and drain remaining diffs.
-			serverStore.OnEvent(framework.WalkEvent{
-				Type: framework.EventFanOutEnd, Walker: "_warmup",
+			serverStore.OnEvent(circuit.WalkEvent{
+				Type: circuit.EventFanOutEnd, Walker: "_warmup",
 			})
 			time.Sleep(100 * time.Millisecond)
 			for {
@@ -424,12 +424,12 @@ func TestWatch_FourWorkersConcurrentEvents(t *testing.T) {
 		go func(walkerID string) {
 			defer wg.Done()
 			for _, node := range allNodes {
-				serverStore.OnEvent(framework.WalkEvent{
-					Type: framework.EventNodeEnter, Node: node, Walker: walkerID,
+				serverStore.OnEvent(circuit.WalkEvent{
+					Type: circuit.EventNodeEnter, Node: node, Walker: walkerID,
 				})
 				time.Sleep(20 * time.Millisecond)
-				serverStore.OnEvent(framework.WalkEvent{
-					Type: framework.EventNodeExit, Node: node,
+				serverStore.OnEvent(circuit.WalkEvent{
+					Type: circuit.EventNodeExit, Node: node,
 				})
 				time.Sleep(20 * time.Millisecond)
 			}
@@ -509,8 +509,8 @@ func TestWatch_SessionRestart_SSEReconnects(t *testing.T) {
 	warmupSSE(t, serverStore1, clientCh)
 
 	// Session 1: send event for C01
-	serverStore1.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeEnter, Node: "triage", Walker: "C01",
+	serverStore1.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeEnter, Node: "triage", Walker: "C01",
 	})
 
 	deadline := time.After(3 * time.Second)
@@ -549,8 +549,8 @@ session1Done:
 				return
 			}
 		case <-ticker.C:
-			serverStore2.OnEvent(framework.WalkEvent{
-				Type: framework.EventNodeEnter, Node: "triage", Walker: "C10",
+			serverStore2.OnEvent(circuit.WalkEvent{
+				Type: circuit.EventNodeEnter, Node: "triage", Walker: "C10",
 			})
 		case <-deadline2:
 			t.Fatal("timeout waiting for session-2 events after store swap")
@@ -575,11 +575,11 @@ func TestWatch_SessionRestart_SnapshotReflectsNewSession(t *testing.T) {
 	}
 
 	// Session 1: advance recall to completed
-	serverStore1.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeEnter, Node: "recall", Walker: "C01",
+	serverStore1.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeEnter, Node: "recall", Walker: "C01",
 	})
-	serverStore1.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeExit, Node: "recall",
+	serverStore1.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeExit, Node: "recall",
 	})
 
 	resp1, err := http.Get(fmt.Sprintf("http://%s/api/snapshot", httpAddr))
@@ -665,13 +665,13 @@ func TestWatch_FourWorkersInterleavedTraversals(t *testing.T) {
 		go func(w string, nodes []string) {
 			defer wg.Done()
 			for i, node := range nodes {
-				serverStore.OnEvent(framework.WalkEvent{
-					Type: framework.EventNodeEnter, Node: node, Walker: w,
+				serverStore.OnEvent(circuit.WalkEvent{
+					Type: circuit.EventNodeEnter, Node: node, Walker: w,
 				})
 				time.Sleep(25 * time.Millisecond)
 				if i < len(nodes)-1 {
-					serverStore.OnEvent(framework.WalkEvent{
-						Type: framework.EventNodeExit, Node: node,
+					serverStore.OnEvent(circuit.WalkEvent{
+						Type: circuit.EventNodeExit, Node: node,
 					})
 					time.Sleep(15 * time.Millisecond)
 				}
@@ -749,16 +749,16 @@ func TestBug_WalkerPositionNotUpdatedOnMove(t *testing.T) {
 	warmupSSE(t, serverStore, clientCh)
 
 	// Walker C01 enters recall, then moves to triage.
-	serverStore.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeEnter, Node: "recall", Walker: "C01",
+	serverStore.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeEnter, Node: "recall", Walker: "C01",
 	})
 	time.Sleep(50 * time.Millisecond)
-	serverStore.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeExit, Node: "recall",
+	serverStore.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeExit, Node: "recall",
 	})
 	time.Sleep(50 * time.Millisecond)
-	serverStore.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeEnter, Node: "triage", Walker: "C01",
+	serverStore.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeEnter, Node: "triage", Walker: "C01",
 	})
 
 	// Server store should show walker at triage.
@@ -822,17 +822,17 @@ func TestBug_CircuitCompletionNotPropagated(t *testing.T) {
 	// server does via OnStepDispatched/OnStepCompleted callbacks).
 	allNodes := []string{"recall", "triage", "resolve", "investigate", "correlate", "review", "report"}
 	for _, node := range allNodes {
-		serverStore.OnEvent(framework.WalkEvent{
-			Type: framework.EventNodeEnter, Node: node, Walker: "C01",
+		serverStore.OnEvent(circuit.WalkEvent{
+			Type: circuit.EventNodeEnter, Node: node, Walker: "C01",
 		})
-		serverStore.OnEvent(framework.WalkEvent{
-			Type: framework.EventNodeExit, Node: node,
+		serverStore.OnEvent(circuit.WalkEvent{
+			Type: circuit.EventNodeExit, Node: node,
 		})
 	}
 
 	// FIX: MCP server now emits WalkComplete via OnCircuitDone callback.
-	serverStore.OnEvent(framework.WalkEvent{
-		Type: framework.EventWalkComplete,
+	serverStore.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventWalkComplete,
 	})
 
 	snap := serverStore.Snapshot()
@@ -894,8 +894,8 @@ func TestBug_SessionSwapAccumulatesStaleWalkers(t *testing.T) {
 	warmupSSE(t, serverStore1, clientCh)
 
 	// Session 1: walker C01 enters recall.
-	serverStore1.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeEnter, Node: "recall", Walker: "C01",
+	serverStore1.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeEnter, Node: "recall", Walker: "C01",
 	})
 
 	deadline := time.After(3 * time.Second)
@@ -929,8 +929,8 @@ session1Done:
 				goto session2Done
 			}
 		case <-ticker.C:
-			serverStore2.OnEvent(framework.WalkEvent{
-				Type: framework.EventNodeEnter, Node: "triage", Walker: "C10",
+			serverStore2.OnEvent(circuit.WalkEvent{
+				Type: circuit.EventNodeEnter, Node: "triage", Walker: "C10",
 			})
 		case <-deadline2:
 			t.Fatal("timeout waiting for session-2 walker C10")
@@ -978,9 +978,9 @@ session2Done:
 // circuit definition and node set, which may not match the new session.
 func TestBug_NoRebootstrapOnSSEReconnect(t *testing.T) {
 	// Session 1: a 2-node circuit.
-	def1 := &framework.CircuitDef{
+	def1 := &circuit.CircuitDef{
 		Circuit: "session-1",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "alpha"},
 			{Name: "beta"},
 		},
@@ -1038,8 +1038,8 @@ func TestBug_NoRebootstrapOnSSEReconnect(t *testing.T) {
 		case <-ticker.C:
 			// Send an event with walker W1; the walker-added diff gets
 			// through even if the node isn't in the client's def.
-			serverStore2.OnEvent(framework.WalkEvent{
-				Type: framework.EventNodeEnter, Node: "recall", Walker: "W1",
+			serverStore2.OnEvent(circuit.WalkEvent{
+				Type: circuit.EventNodeEnter, Node: "recall", Walker: "W1",
 			})
 		case <-deadline:
 			t.Fatal("timeout waiting for session-2 events")
@@ -1114,23 +1114,23 @@ func TestE2E_RebootstrapReplaysSnapshotState(t *testing.T) {
 	serverStore2 := view.NewCircuitStore(def)
 	defer serverStore2.Close()
 
-	serverStore2.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeEnter, Node: "recall", Walker: "C01",
+	serverStore2.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeEnter, Node: "recall", Walker: "C01",
 	})
-	serverStore2.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeExit, Node: "recall", Walker: "C01",
+	serverStore2.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeExit, Node: "recall", Walker: "C01",
 	})
-	serverStore2.OnEvent(framework.WalkEvent{
-		Type: framework.EventTransition, Node: "triage", Walker: "C01",
+	serverStore2.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventTransition, Node: "triage", Walker: "C01",
 	})
-	serverStore2.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeEnter, Node: "triage", Walker: "C01",
+	serverStore2.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeEnter, Node: "triage", Walker: "C01",
 	})
-	serverStore2.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeEnter, Node: "recall", Walker: "C02",
+	serverStore2.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeEnter, Node: "recall", Walker: "C02",
 	})
-	serverStore2.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeEnter, Node: "recall", Walker: "C03",
+	serverStore2.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeEnter, Node: "recall", Walker: "C03",
 	})
 
 	// Swap: triggers SSE disconnect, sseClientLoop reconnects and
@@ -1220,12 +1220,12 @@ func TestE2E_FourWorkerSimulation(t *testing.T) {
 			for c := startCase; c < startCase+3; c++ {
 				caseID := fmt.Sprintf("C%02d", c+1)
 				for _, node := range allNodes {
-					serverStore.OnEvent(framework.WalkEvent{
-						Type: framework.EventNodeEnter, Node: node, Walker: caseID,
+					serverStore.OnEvent(circuit.WalkEvent{
+						Type: circuit.EventNodeEnter, Node: node, Walker: caseID,
 					})
 					time.Sleep(5 * time.Millisecond)
-					serverStore.OnEvent(framework.WalkEvent{
-						Type: framework.EventNodeExit, Node: node, Walker: caseID,
+					serverStore.OnEvent(circuit.WalkEvent{
+						Type: circuit.EventNodeExit, Node: node, Walker: caseID,
 					})
 					time.Sleep(5 * time.Millisecond)
 				}
@@ -1235,7 +1235,7 @@ func TestE2E_FourWorkerSimulation(t *testing.T) {
 	wg.Wait()
 
 	// Emit walk complete.
-	serverStore.OnEvent(framework.WalkEvent{Type: framework.EventWalkComplete})
+	serverStore.OnEvent(circuit.WalkEvent{Type: circuit.EventWalkComplete})
 
 	// Wait for client to receive completion.
 	deadline := time.After(5 * time.Second)
@@ -1304,27 +1304,27 @@ func TestE2E_LateJoiner(t *testing.T) {
 	for c := 0; c < 6; c++ {
 		caseID := fmt.Sprintf("C%02d", c+1)
 		for _, node := range allNodes {
-			serverStore.OnEvent(framework.WalkEvent{
-				Type: framework.EventNodeEnter, Node: node, Walker: caseID,
+			serverStore.OnEvent(circuit.WalkEvent{
+				Type: circuit.EventNodeEnter, Node: node, Walker: caseID,
 			})
-			serverStore.OnEvent(framework.WalkEvent{
-				Type: framework.EventNodeExit, Node: node, Walker: caseID,
+			serverStore.OnEvent(circuit.WalkEvent{
+				Type: circuit.EventNodeExit, Node: node, Walker: caseID,
 			})
 		}
 	}
 
 	// Case C07 is mid-flight at "investigate".
-	serverStore.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeEnter, Node: "recall", Walker: "C07",
+	serverStore.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeEnter, Node: "recall", Walker: "C07",
 	})
-	serverStore.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeExit, Node: "recall", Walker: "C07",
+	serverStore.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeExit, Node: "recall", Walker: "C07",
 	})
-	serverStore.OnEvent(framework.WalkEvent{
-		Type: framework.EventTransition, Node: "investigate", Walker: "C07",
+	serverStore.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventTransition, Node: "investigate", Walker: "C07",
 	})
-	serverStore.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeEnter, Node: "investigate", Walker: "C07",
+	serverStore.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeEnter, Node: "investigate", Walker: "C07",
 	})
 
 	// NOW Sumi connects (late joiner).
@@ -1358,11 +1358,11 @@ func TestE2E_LateJoiner(t *testing.T) {
 	}
 
 	// Complete C07 and remaining cases via SSE.
-	serverStore.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeExit, Node: "investigate", Walker: "C07",
+	serverStore.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeExit, Node: "investigate", Walker: "C07",
 	})
-	serverStore.OnEvent(framework.WalkEvent{
-		Type: framework.EventWalkComplete,
+	serverStore.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventWalkComplete,
 	})
 
 	deadline := time.After(3 * time.Second)
@@ -1393,15 +1393,15 @@ waitComplete:
 func TestWatch_EventToWalkEvent_MappingComplete(t *testing.T) {
 	cases := []struct {
 		kamiType kami.EventType
-		wantType framework.WalkEventType
+		wantType circuit.WalkEventType
 	}{
-		{kami.EventNodeEnter, framework.EventNodeEnter},
-		{kami.EventNodeExit, framework.EventNodeExit},
-		{kami.EventTransition, framework.EventTransition},
-		{kami.EventWalkComplete, framework.EventWalkComplete},
-		{kami.EventWalkError, framework.EventWalkError},
-		{kami.EventFanOutStart, framework.EventFanOutStart},
-		{kami.EventFanOutEnd, framework.EventFanOutEnd},
+		{kami.EventNodeEnter, circuit.EventNodeEnter},
+		{kami.EventNodeExit, circuit.EventNodeExit},
+		{kami.EventTransition, circuit.EventTransition},
+		{kami.EventWalkComplete, circuit.EventWalkComplete},
+		{kami.EventWalkError, circuit.EventWalkError},
+		{kami.EventFanOutStart, circuit.EventFanOutStart},
+		{kami.EventFanOutEnd, circuit.EventFanOutEnd},
 	}
 
 	for _, tc := range cases {

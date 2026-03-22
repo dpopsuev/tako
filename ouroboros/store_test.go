@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 func TestFileRunStore_RoundTrip(t *testing.T) {
@@ -22,14 +22,14 @@ func TestFileRunStore_RoundTrip(t *testing.T) {
 		Results: []DiscoveryResult{
 			{
 				Iteration: 0,
-				Model:     framework.ModelIdentity{ModelName: "gpt-4o", Provider: "OpenAI"},
+				Model:     circuit.ModelIdentity{ModelName: "gpt-4o", Provider: "OpenAI"},
 				Probe: ProbeResult{
 					ProbeID: "refactor-v1",
 					Score:   ProbeScore{Renames: 3, TotalScore: 0.65},
 				},
 			},
 		},
-		UniqueModels: []framework.ModelIdentity{
+		UniqueModels: []circuit.ModelIdentity{
 			{ModelName: "gpt-4o", Provider: "OpenAI"},
 		},
 		TermReason: "repeat",
@@ -125,14 +125,14 @@ func TestFileRunStore_IndependentRuns(t *testing.T) {
 	run1 := RunReport{
 		RunID:      "run-alpha",
 		TermReason: "repeat",
-		UniqueModels: []framework.ModelIdentity{
+		UniqueModels: []circuit.ModelIdentity{
 			{ModelName: "model-a", Provider: "ProvA"},
 		},
 	}
 	run2 := RunReport{
 		RunID:      "run-beta",
 		TermReason: "max_iterations",
-		UniqueModels: []framework.ModelIdentity{
+		UniqueModels: []circuit.ModelIdentity{
 			{ModelName: "model-b", Provider: "ProvB"},
 			{ModelName: "model-c", Provider: "ProvC"},
 		},

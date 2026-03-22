@@ -3,7 +3,7 @@ package ouroboros
 import (
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/element"
 )
 
@@ -35,7 +35,7 @@ func TestProviderHints_MapsElementToProvider(t *testing.T) {
 }
 
 func TestInjectAutoRoute_SetsWalkerContext(t *testing.T) {
-	walker := framework.NewProcessWalker("test")
+	walker := circuit.NewProcessWalker("test")
 	sheet := &PersonaSheet{
 		SuggestedPersonas: map[string]string{
 			"investigate": "Seeker",  // Water element

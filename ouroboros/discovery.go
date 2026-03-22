@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // BuildIdentityPrompt returns the prompt fragment that asks the model
@@ -31,7 +31,7 @@ Reply with ONLY: line 1 (your identity JSON), a blank line, then your response t
 // BuildExclusionPrompt constructs the negation system prompt that
 // forces Cursor to select a model not in the exclusion list.
 // Iteration 0 has no exclusions.
-func BuildExclusionPrompt(seen []framework.ModelIdentity) string {
+func BuildExclusionPrompt(seen []circuit.ModelIdentity) string {
 	var b strings.Builder
 
 	if len(seen) > 0 {
@@ -51,7 +51,7 @@ func BuildExclusionPrompt(seen []framework.ModelIdentity) string {
 
 // BuildFullPromptWith combines identity request, exclusion prompt, and a
 // caller-supplied probe prompt. Probe-agnostic: any probe prompt works.
-func BuildFullPromptWith(seen []framework.ModelIdentity, probePrompt string) string {
+func BuildFullPromptWith(seen []circuit.ModelIdentity, probePrompt string) string {
 	var b strings.Builder
 	b.WriteString(BuildIdentityPrompt())
 	b.WriteString("\n\n")
@@ -79,19 +79,19 @@ var jsonLineRe = regexp.MustCompile(`\{[^{}]*"model_name"\s*:\s*"[^"]*"[^{}]*\}`
 
 // ParseIdentityResponse extracts a ModelIdentity from the subagent's
 // raw text response. It looks for a JSON object containing "model_name".
-func ParseIdentityResponse(raw string) (framework.ModelIdentity, error) {
+func ParseIdentityResponse(raw string) (circuit.ModelIdentity, error) {
 	match := jsonLineRe.FindString(raw)
 	if match == "" {
-		return framework.ModelIdentity{}, fmt.Errorf("no model identity JSON found in response (len=%d)", len(raw))
+		return circuit.ModelIdentity{}, fmt.Errorf("no model identity JSON found in response (len=%d)", len(raw))
 	}
 
-	var mi framework.ModelIdentity
+	var mi circuit.ModelIdentity
 	if err := json.Unmarshal([]byte(match), &mi); err != nil {
-		return framework.ModelIdentity{}, fmt.Errorf("parse model identity: %w (raw: %s)", err, match)
+		return circuit.ModelIdentity{}, fmt.Errorf("parse model identity: %w (raw: %s)", err, match)
 	}
 
 	if mi.ModelName == "" {
-		return framework.ModelIdentity{}, fmt.Errorf("model_name is empty in response")
+		return circuit.ModelIdentity{}, fmt.Errorf("model_name is empty in response")
 	}
 
 	return mi, nil
@@ -116,14 +116,14 @@ func ParseProbeResponse(raw string) (string, error) {
 }
 
 // ModelKey returns a lowercase key for deduplication in the seen map.
-func ModelKey(mi framework.ModelIdentity) string {
+func ModelKey(mi circuit.ModelIdentity) string {
 	return strings.ToLower(mi.ModelName)
 }
 
 // --- Extractor implementations (Tome V ceiling demonstrations) ---
 
-// IdentityExtractor wraps ParseIdentityResponse as a framework.Extractor.
-// Input: string (raw agent response). Output: framework.ModelIdentity.
+// IdentityExtractor wraps ParseIdentityResponse as a engine.Extractor.
+// Input: string (raw agent response). Output: circuit.ModelIdentity.
 type IdentityExtractor struct{}
 
 func (e *IdentityExtractor) Name() string { return "identity-v1" }
@@ -136,7 +136,7 @@ func (e *IdentityExtractor) Extract(_ context.Context, input any) (any, error) {
 	return ParseIdentityResponse(raw)
 }
 
-// ProbeTextExtractor wraps ExtractProbeText as a framework.Extractor.
+// ProbeTextExtractor wraps ExtractProbeText as a engine.Extractor.
 // Input: string (raw agent response). Output: string (probe text only).
 type ProbeTextExtractor struct{}
 
@@ -150,7 +150,7 @@ func (e *ProbeTextExtractor) Extract(_ context.Context, input any) (any, error) 
 	return ExtractProbeText(raw), nil
 }
 
-// CodeBlockProbeExtractor wraps ParseProbeResponse as a framework.Extractor.
+// CodeBlockProbeExtractor wraps ParseProbeResponse as a engine.Extractor.
 // Input: string (raw agent response). Output: string (extracted code).
 type CodeBlockProbeExtractor struct{}
 

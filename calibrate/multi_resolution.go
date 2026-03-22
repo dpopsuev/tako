@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // Resolution defines a calibration scope level.
@@ -146,7 +146,7 @@ func BuildResolutionPlans(circuits []CircuitEntry) []ResolutionPlan {
 // WrapForResolution decorates a circuit for a specific resolution level.
 // It attaches resolution metadata and loaded port stubs (if any) to the
 // circuit's Vars so adapters can inspect them at runtime.
-func WrapForResolution(base *framework.CircuitDef, plan ResolutionPlan, config DecoratorConfig) *framework.CircuitDef {
+func WrapForResolution(base *circuit.CircuitDef, plan ResolutionPlan, config DecoratorConfig) *circuit.CircuitDef {
 	wrapped := Wrap(base, config)
 
 	if wrapped.Vars == nil {
@@ -167,7 +167,7 @@ func WrapForResolution(base *framework.CircuitDef, plan ResolutionPlan, config D
 
 // GetPortStubs retrieves the PortStubs from a circuit's Vars, if present.
 // Returns nil if the circuit was not wrapped with port stubs.
-func GetPortStubs(def *framework.CircuitDef) PortStubs {
+func GetPortStubs(def *circuit.CircuitDef) PortStubs {
 	if def == nil || def.Vars == nil {
 		return nil
 	}
@@ -184,7 +184,7 @@ func GetPortStubs(def *framework.CircuitDef) PortStubs {
 
 // GetResolution returns the calibration resolution from a circuit's Vars.
 // Returns empty string if not set (circuit was not wrapped for resolution).
-func GetResolution(def *framework.CircuitDef) Resolution {
+func GetResolution(def *circuit.CircuitDef) Resolution {
 	if def == nil || def.Vars == nil {
 		return ""
 	}

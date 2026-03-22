@@ -4,26 +4,26 @@ import (
 	"strings"
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/view"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-func testInspectorCircuit() (*framework.CircuitDef, *view.CircuitSnapshot) {
-	def := &framework.CircuitDef{
+func testInspectorCircuit() (*circuit.CircuitDef, *view.CircuitSnapshot) {
+	def := &circuit.CircuitDef{
 		Circuit: "test",
 		HandlerType: "transformer",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "recall", Approach: "rapid", Handler: "core.llm", Description: "Recall phase retrieves candidate issues from RP"},
 			{Name: "triage", Approach: "analytical", Handler: "core.jq"},
 			{Name: "report", Approach: "rigorous"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{From: "recall", To: "triage", When: "true"},
 			{From: "triage", To: "report", When: "score > 0.8"},
 		},
-		Zones: map[string]framework.ZoneDef{
+		Zones: map[string]circuit.ZoneDef{
 			"analysis": {Approach: "rapid", Nodes: []string{"recall", "triage"}},
 		},
 	}

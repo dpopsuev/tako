@@ -3,12 +3,13 @@ package assertions_test
 import (
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/testkit/assertions"
 )
 
 func TestAssertTraceContains_Found(t *testing.T) {
-	events := []framework.TraceEvent{
+	events := []engine.TraceEvent{
 		{CaseID: "C01", Event: "node_enter", Node: "recall"},
 		{CaseID: "C01", Event: "node_exit", Node: "recall"},
 		{CaseID: "C02", Event: "node_enter", Node: "triage"},
@@ -19,23 +20,23 @@ func TestAssertTraceContains_Found(t *testing.T) {
 }
 
 func TestAssertPath_Matching(t *testing.T) {
-	events := []framework.TraceEvent{
-		{CaseID: "C01", Event: string(framework.EventNodeEnter), Node: "recall"},
-		{CaseID: "C01", Event: string(framework.EventNodeExit), Node: "recall"},
-		{CaseID: "C01", Event: string(framework.EventNodeEnter), Node: "triage"},
-		{CaseID: "C01", Event: string(framework.EventNodeExit), Node: "triage"},
-		{CaseID: "C01", Event: string(framework.EventNodeEnter), Node: "investigate"},
+	events := []engine.TraceEvent{
+		{CaseID: "C01", Event: string(circuit.EventNodeEnter), Node: "recall"},
+		{CaseID: "C01", Event: string(circuit.EventNodeExit), Node: "recall"},
+		{CaseID: "C01", Event: string(circuit.EventNodeEnter), Node: "triage"},
+		{CaseID: "C01", Event: string(circuit.EventNodeExit), Node: "triage"},
+		{CaseID: "C01", Event: string(circuit.EventNodeEnter), Node: "investigate"},
 	}
 
 	assertions.AssertPath(t, events, "C01", []string{"recall", "triage", "investigate"})
 }
 
 func TestAssertPath_FiltersByCase(t *testing.T) {
-	events := []framework.TraceEvent{
-		{CaseID: "C01", Event: string(framework.EventNodeEnter), Node: "A"},
-		{CaseID: "C02", Event: string(framework.EventNodeEnter), Node: "X"},
-		{CaseID: "C01", Event: string(framework.EventNodeEnter), Node: "B"},
-		{CaseID: "C02", Event: string(framework.EventNodeEnter), Node: "Y"},
+	events := []engine.TraceEvent{
+		{CaseID: "C01", Event: string(circuit.EventNodeEnter), Node: "A"},
+		{CaseID: "C02", Event: string(circuit.EventNodeEnter), Node: "X"},
+		{CaseID: "C01", Event: string(circuit.EventNodeEnter), Node: "B"},
+		{CaseID: "C02", Event: string(circuit.EventNodeEnter), Node: "Y"},
 	}
 
 	assertions.AssertPath(t, events, "C01", []string{"A", "B"})
@@ -43,7 +44,7 @@ func TestAssertPath_FiltersByCase(t *testing.T) {
 }
 
 func TestAssertPath_EmptyPath(t *testing.T) {
-	events := []framework.TraceEvent{
+	events := []engine.TraceEvent{
 		{CaseID: "C01", Event: "node_exit", Node: "A"}, // not node_enter
 	}
 

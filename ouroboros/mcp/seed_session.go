@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 	"log/slog"
 
 	"github.com/dpopsuev/origami/dispatch"
@@ -21,11 +22,11 @@ const probeCircuitPath = "ouroboros/circuits/ouroboros-probe.yaml"
 // Step schemas and the terminal node are derived from the circuit definition
 // so that renaming/adding nodes in the YAML is the single source of truth.
 func NewSeedProfileConfig() fwmcp.CircuitConfig {
-	circuitData, err := framework.ResolveCircuitPath(probeCircuitPath)
+	circuitData, err := circuit.ResolveCircuitPath(probeCircuitPath)
 	if err != nil {
 		panic(fmt.Sprintf("resolve ouroboros circuit: %v", err))
 	}
-	def, err := framework.LoadCircuit(circuitData)
+	def, err := circuit.LoadCircuit(circuitData)
 	if err != nil {
 		panic(fmt.Sprintf("load ouroboros circuit: %v", err))
 	}
@@ -47,7 +48,7 @@ Send it to the target model and return the raw response as {"response": "<text>"
 	}
 }
 
-func stepSchemasFromDef(def framework.CircuitDef) []fwmcp.StepSchema {
+func stepSchemasFromDef(def circuit.CircuitDef) []fwmcp.StepSchema {
 	var schemas []fwmcp.StepSchema
 	for _, node := range def.Nodes {
 		if node.Name == def.Done || node.Name == "" {
@@ -65,7 +66,7 @@ func stepSchemasFromDef(def framework.CircuitDef) []fwmcp.StepSchema {
 
 // terminalNode returns the last node before the done sentinel by walking
 // edges backward from def.Done.
-func terminalNode(def framework.CircuitDef) string {
+func terminalNode(def circuit.CircuitDef) string {
 	for _, edge := range def.Edges {
 		if edge.To == def.Done {
 			return edge.From
@@ -78,7 +79,7 @@ func createSeedSession(
 	params fwmcp.StartParams,
 	disp *dispatch.MuxDispatcher,
 	bus *dispatch.SignalBus,
-	def framework.CircuitDef,
+	def circuit.CircuitDef,
 ) (fwmcp.RunFunc, fwmcp.SessionMeta, error) {
 	seedPath := toolkit.MapStr(params.Extra, "seed_path")
 	if seedPath == "" {
@@ -111,7 +112,7 @@ func runSeedCircuit(
 	seed *ouroboros.Seed,
 	disp *dispatch.MuxDispatcher,
 	bus *dispatch.SignalBus,
-	def framework.CircuitDef,
+	def circuit.CircuitDef,
 ) (*ouroboros.PoleResult, error) {
 	log := slog.Default().With("component", "ouroboros-seed")
 
@@ -134,12 +135,12 @@ func runSeedCircuit(
 
 	nodes := ouroboros.CircuitNodes(seed, dispatcher)
 
-	g, err := framework.BuildGraph(&def, framework.GraphRegistries{Nodes: nodes})
+	g, err := engine.BuildGraph(&def, engine.GraphRegistries{Nodes: nodes})
 	if err != nil {
 		return nil, fmt.Errorf("build graph: %w", err)
 	}
 
-	walker := framework.NewProcessWalker(fmt.Sprintf("seed-%s", seed.Name))
+	walker := circuit.NewProcessWalker(fmt.Sprintf("seed-%s", seed.Name))
 	start := time.Now()
 
 	if err := g.Walk(ctx, walker, def.Start); err != nil {

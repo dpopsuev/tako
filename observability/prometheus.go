@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	fw "github.com/dpopsuev/origami/circuit"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -132,18 +132,18 @@ func (c *PrometheusCollector) SetCircuit(name string) {
 	c.mu.Unlock()
 }
 
-func (c *PrometheusCollector) OnEvent(e framework.WalkEvent) {
+func (c *PrometheusCollector) OnEvent(e fw.WalkEvent) {
 	c.mu.Lock()
 	circuit := c.circuit
 	c.mu.Unlock()
 
 	switch e.Type {
-	case framework.EventNodeExit:
+	case fw.EventNodeExit:
 		c.NodeDuration.WithLabelValues(circuit, e.Node).Observe(e.Elapsed.Seconds())
 		if snr, ok := e.Metadata["snr"].(float64); ok {
 			c.EvidenceSNR.WithLabelValues(circuit, e.Node).Set(snr)
 		}
-	case framework.EventTransition:
+	case fw.EventTransition:
 		from := ""
 		to := ""
 		if e.Metadata != nil {
@@ -158,17 +158,17 @@ func (c *PrometheusCollector) OnEvent(e framework.WalkEvent) {
 			from = e.Node
 		}
 		c.EdgeTransitions.WithLabelValues(circuit, from, to).Inc()
-	case framework.EventWalkComplete:
+	case fw.EventWalkComplete:
 		c.WalkActive.WithLabelValues(circuit).Dec()
 		c.WalkCompleted.WithLabelValues(circuit, "success").Inc()
-	case framework.EventWalkError:
+	case fw.EventWalkError:
 		c.WalkActive.WithLabelValues(circuit).Dec()
 		c.WalkCompleted.WithLabelValues(circuit, "error").Inc()
-	case framework.EventNodeEnter:
+	case fw.EventNodeEnter:
 		if circuit != "" {
 			c.WalkActive.WithLabelValues(circuit).Add(0)
 		}
-	case framework.EventCircuitOpen:
+	case fw.EventCircuitOpen:
 		provider := ""
 		if e.Metadata != nil {
 			if p, ok := e.Metadata["provider"].(string); ok {
@@ -176,7 +176,7 @@ func (c *PrometheusCollector) OnEvent(e framework.WalkEvent) {
 			}
 		}
 		c.CircuitBreakerState.WithLabelValues(circuit, provider).Set(1)
-	case framework.EventCircuitClose:
+	case fw.EventCircuitClose:
 		provider := ""
 		if e.Metadata != nil {
 			if p, ok := e.Metadata["provider"].(string); ok {
@@ -184,9 +184,9 @@ func (c *PrometheusCollector) OnEvent(e framework.WalkEvent) {
 			}
 		}
 		c.CircuitBreakerState.WithLabelValues(circuit, provider).Set(0)
-	case framework.EventRateLimit:
+	case fw.EventRateLimit:
 		c.RateLimitWaits.WithLabelValues(circuit).Inc()
-	case framework.EventThermalWarning:
+	case fw.EventThermalWarning:
 		if cumulative, ok := e.Metadata["cumulative"].(float64); ok {
 			c.ThermalBudgetUsed.WithLabelValues(circuit).Set(cumulative)
 		}

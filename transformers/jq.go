@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	fw "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/engine"
 	"github.com/expr-lang/expr"
 )
 
@@ -19,7 +19,7 @@ func NewJQ() *JQTransformer { return &JQTransformer{} }
 func (t *JQTransformer) Name() string        { return "jq" }
 func (t *JQTransformer) Deterministic() bool { return true }
 
-func (t *JQTransformer) Transform(ctx context.Context, tc *fw.TransformerContext) (any, error) {
+func (t *JQTransformer) Transform(ctx context.Context, tc *engine.TransformerContext) (any, error) {
 	expression, _ := metaString(tc, "expr")
 	if expression == "" {
 		return nil, fmt.Errorf("jq transformer: 'expr' is required in meta")

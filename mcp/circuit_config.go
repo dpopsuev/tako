@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
 )
 
@@ -185,5 +185,5 @@ type StartParams struct {
 	// Domain CreateSession implementations should forward this to
 	// HarnessConfig.Observer so walker-level debug events flow to the trace.
 	// Consumers never set this — the framework auto-wires it.
-	Observer framework.WalkObserver
+	Observer circuit.WalkObserver
 }

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -22,12 +22,12 @@ func TestMCPTools_SetBreakpointThenSnapshot(t *testing.T) {
 
 	dc.SetBreakpoint("triage")
 
-	dc.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeEnter,
+	dc.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeEnter,
 		Node: "recall",
 	})
-	dc.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeExit,
+	dc.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeExit,
 		Node: "recall",
 	})
 
@@ -70,8 +70,8 @@ func TestMCPTools_PauseViaHandler(t *testing.T) {
 func TestMCPTools_GetSnapshotHandler(t *testing.T) {
 	dc, _ := setupMCPTest()
 
-	dc.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeEnter,
+	dc.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeEnter,
 		Node: "recall",
 	})
 

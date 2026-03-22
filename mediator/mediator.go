@@ -16,7 +16,8 @@ import (
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/subprocess"
 )
@@ -87,7 +88,7 @@ type Mediator struct {
 	// Observability: routing signals and optional trace recording.
 	Bus      *dispatch.SignalBus
 	stateDir string                            // empty = tracing disabled
-	recorder *framework.TraceRecorder          // nil when tracing disabled
+	recorder *engine.TraceRecorder          // nil when tracing disabled
 }
 
 // New creates a Mediator that will connect to the given backends.
@@ -125,7 +126,7 @@ func (gw *Mediator) Start(ctx context.Context) error {
 				"state_dir", gw.stateDir, "error", err)
 		} else {
 			tracePath := filepath.Join(gw.stateDir, "mediator-trace.jsonl")
-			rec, err := framework.NewTraceRecorder(tracePath)
+			rec, err := engine.NewTraceRecorder(tracePath)
 			if err != nil {
 				slog.Warn("failed to create mediator trace recorder", "error", err)
 			} else {
@@ -218,7 +219,7 @@ func (gw *Mediator) callPapercup(ctx context.Context, name string, args map[stri
 	}
 
 	// All other Papercup tools: route by session_id affinity.
-	sessionID, _ := args[framework.ProtoKeySessionID].(string)
+	sessionID, _ := args[circuit.ProtoKeySessionID].(string)
 	if sessionID == "" {
 		return errResult("session_id is required"), nil
 	}
@@ -238,7 +239,7 @@ func (gw *Mediator) routeStartCircuit(ctx context.Context, args map[string]any) 
 	// Extract circuit_type from extra params.
 	var circuitType string
 	if extra, ok := args["extra"].(map[string]any); ok {
-		circuitType, _ = extra[framework.ExtraKeyCircuitType].(string)
+		circuitType, _ = extra[circuit.ExtraKeyCircuitType].(string)
 	}
 
 	// Resolve backend.
@@ -264,7 +265,7 @@ func (gw *Mediator) routeStartCircuit(ctx context.Context, args map[string]any) 
 	// Emit route signal.
 	gw.Bus.Emit(EventRoute, dispatch.AgentMediator, "", "", map[string]string{
 		MetaKeyBackend:              backendName,
-		framework.ExtraKeyCircuitType: circuitType,
+		circuit.ExtraKeyCircuitType: circuitType,
 	})
 
 	// Forward to backend.
@@ -282,7 +283,7 @@ func (gw *Mediator) routeStartCircuit(ctx context.Context, args map[string]any) 
 		gw.Bus.Emit(EventSessionStart, dispatch.AgentMediator, "", "", map[string]string{
 			MetaKeySessionID:              sessionID,
 			MetaKeyBackend:                backendName,
-			framework.ExtraKeyCircuitType: circuitType,
+			circuit.ExtraKeyCircuitType: circuitType,
 		})
 
 		slog.Debug("session affinity registered",
@@ -318,7 +319,7 @@ func extractSessionID(result *sdkmcp.CallToolResult) string {
 		if err := json.Unmarshal([]byte(tc.Text), &out); err != nil {
 			continue
 		}
-		if sid, ok := out[framework.ProtoKeySessionID].(string); ok {
+		if sid, ok := out[circuit.ProtoKeySessionID].(string); ok {
 			return sid
 		}
 	}

@@ -5,12 +5,12 @@ import (
 	"sync"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/element"
 )
 
 // CircuitStore is the single source of truth for a circuit's visual state.
-// It implements framework.WalkObserver, maintaining a CircuitSnapshot that
+// It implements circuit.WalkObserver, maintaining a CircuitSnapshot that
 // reflects the current walk state. Subscribers receive StateDiff values
 // as the state changes.
 //
@@ -19,7 +19,7 @@ import (
 type CircuitStore struct {
 	mu          sync.RWMutex
 	snapshot    CircuitSnapshot
-	def         *framework.CircuitDef
+	def         *circuit.CircuitDef
 	subscribers map[int]chan StateDiff
 	nextID      int
 	closed      bool
@@ -30,7 +30,7 @@ type CircuitStore struct {
 
 // NewCircuitStore creates a store initialized from a circuit definition.
 // All nodes start in NodeIdle state.
-func NewCircuitStore(def *framework.CircuitDef) *CircuitStore {
+func NewCircuitStore(def *circuit.CircuitDef) *CircuitStore {
 	nodes := make(map[string]NodeState, len(def.Nodes))
 	nodeZone := make(map[string]string)
 	nodeElement := make(map[string]string)
@@ -73,12 +73,12 @@ func NewCircuitStore(def *framework.CircuitDef) *CircuitStore {
 // definition. Existing subscribers are preserved and receive a DiffReset
 // diff so they know to discard cached state. Used by Sumi's SSE client
 // when reconnecting after a server-side session swap.
-func (cs *CircuitStore) Reset(def *framework.CircuitDef) {
+func (cs *CircuitStore) Reset(def *circuit.CircuitDef) {
 	cs.mu.Lock()
 	defer cs.mu.Unlock()
 
 	if def == nil {
-		def = &framework.CircuitDef{}
+		def = &circuit.CircuitDef{}
 	}
 
 	nodes := make(map[string]NodeState, len(def.Nodes))
@@ -120,15 +120,15 @@ func (cs *CircuitStore) Reset(def *framework.CircuitDef) {
 }
 
 // Def returns the CircuitDef used to initialize this store.
-func (cs *CircuitStore) Def() *framework.CircuitDef {
+func (cs *CircuitStore) Def() *circuit.CircuitDef {
 	cs.mu.RLock()
 	defer cs.mu.RUnlock()
 	return cs.def
 }
 
-// OnEvent implements framework.WalkObserver. It updates the snapshot and
+// OnEvent implements circuit.WalkObserver. It updates the snapshot and
 // emits StateDiff values to subscribers.
-func (cs *CircuitStore) OnEvent(we framework.WalkEvent) {
+func (cs *CircuitStore) OnEvent(we circuit.WalkEvent) {
 	cs.mu.Lock()
 	defer cs.mu.Unlock()
 
@@ -136,30 +136,30 @@ func (cs *CircuitStore) OnEvent(we framework.WalkEvent) {
 	cs.snapshot.Timestamp = now
 
 	switch we.Type {
-	case framework.EventNodeEnter:
+	case circuit.EventNodeEnter:
 		cs.setNodeState(we.Node, NodeActive, now)
 		cs.moveWalker(we.Walker, we.Node, now)
 
-	case framework.EventNodeExit:
+	case circuit.EventNodeExit:
 		cs.setNodeState(we.Node, NodeCompleted, now)
 
-	case framework.EventTransition:
+	case circuit.EventTransition:
 		cs.moveWalker(we.Walker, we.Node, now)
 
-	case framework.EventWalkerSwitch:
+	case circuit.EventWalkerSwitch:
 		cs.moveWalker(we.Walker, we.Node, now)
 
-	case framework.EventFanOutStart:
+	case circuit.EventFanOutStart:
 		if we.Walker != "" {
 			cs.addWalker(we.Walker, we.Node, now)
 		}
 
-	case framework.EventFanOutEnd:
+	case circuit.EventFanOutEnd:
 		if we.Walker != "" {
 			cs.removeWalker(we.Walker, now)
 		}
 
-	case framework.EventWalkComplete:
+	case circuit.EventWalkComplete:
 		if we.Walker != "" {
 			if ci, ok := cs.snapshot.Cases[we.Walker]; ok {
 				ci.State = CaseCompleted
@@ -177,7 +177,7 @@ func (cs *CircuitStore) OnEvent(we framework.WalkEvent) {
 		cs.snapshot.Completed = true
 		cs.emit(StateDiff{Type: DiffCompleted, Timestamp: now})
 
-	case framework.EventWalkError:
+	case circuit.EventWalkError:
 		errMsg := ""
 		if we.Error != nil {
 			errMsg = we.Error.Error()
@@ -195,11 +195,11 @@ func (cs *CircuitStore) OnEvent(we framework.WalkEvent) {
 		cs.snapshot.Error = errMsg
 		cs.emit(StateDiff{Type: DiffError, Node: we.Node, Error: errMsg, Timestamp: now})
 
-	case framework.EventWalkInterrupted:
+	case circuit.EventWalkInterrupted:
 		cs.snapshot.Paused = true
 		cs.emit(StateDiff{Type: DiffPaused, Node: we.Node, Timestamp: now})
 
-	case framework.EventWalkResumed:
+	case circuit.EventWalkResumed:
 		cs.snapshot.Paused = false
 		cs.emit(StateDiff{Type: DiffResumed, Timestamp: now})
 	}

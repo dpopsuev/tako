@@ -4,7 +4,8 @@ import (
 	"context"
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 )
 
 func TestContractCollector_Collect(t *testing.T) {
@@ -41,16 +42,16 @@ func TestContractCollector_Collect(t *testing.T) {
 	}
 
 	// Simulate circuit outputs: C1 correct, C2 wrong.
-	results := []framework.BatchWalkResult{
+	results := []engine.BatchWalkResult{
 		{
 			CaseID: "C1",
-			StepArtifacts: map[string]framework.Artifact{
+			StepArtifacts: map[string]circuit.Artifact{
 				"prompt": &testArtifact{raw: map[string]any{"answer": float64(4)}},
 			},
 		},
 		{
 			CaseID: "C2",
-			StepArtifacts: map[string]framework.Artifact{
+			StepArtifacts: map[string]circuit.Artifact{
 				"prompt": &testArtifact{raw: map[string]any{"answer": float64(7)}},
 			},
 		},
@@ -72,7 +73,7 @@ func TestContractCollector_Collect(t *testing.T) {
 	}
 }
 
-// testArtifact implements framework.Artifact for testing.
+// testArtifact implements circuit.Artifact for testing.
 type testArtifact struct {
 	raw any
 }

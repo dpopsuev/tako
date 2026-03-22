@@ -7,7 +7,8 @@ import (
 	"testing"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/transformers"
 )
@@ -60,7 +61,7 @@ func TestCalibrateWithCLI(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read circuit: %v", err)
 	}
-	circuitDef, err := framework.LoadCircuit(circuitYAML)
+	circuitDef, err := circuit.LoadCircuit(circuitYAML)
 	if err != nil {
 		t.Fatalf("parse circuit: %v", err)
 	}
@@ -99,12 +100,12 @@ func TestCalibrateWithCLI(t *testing.T) {
 		ScoreCard:  sc,
 		Loader:     loader,
 		Collector:  collector,
-		Components: []*framework.Component{coreComp},
+		Components: []*engine.Component{coreComp},
 		Scenario:   scenario.Name,
 		Transformer: command,
 		Runs:       1,
 		Parallel:   1,
-		OnCaseComplete: func(i int, result framework.BatchWalkResult) {
+		OnCaseComplete: func(i int, result engine.BatchWalkResult) {
 			if result.Error != nil {
 				t.Logf("case %d (%s) ERROR: %v", i, result.CaseID, result.Error)
 			} else {
@@ -129,7 +130,7 @@ func TestCalibrateWithCLI(t *testing.T) {
 	}
 }
 
-func artifactKeys(m map[string]framework.Artifact) []string {
+func artifactKeys(m map[string]circuit.Artifact) []string {
 	keys := make([]string, 0, len(m))
 	for k := range m {
 		keys = append(keys, k)

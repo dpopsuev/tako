@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 )
 
 // --- G1: orphan-node ---
@@ -192,7 +193,7 @@ func (r *ExpressionCompileError) Check(ctx *LintContext) []Finding {
 		if ed.When == "" {
 			continue
 		}
-		if _, err := framework.CompileExpressionEdge(ed, ctx.Def.Vars); err != nil {
+		if _, err := engine.CompileExpressionEdge(ed, ctx.Def.Vars); err != nil {
 			out = append(out, Finding{
 				RuleID:   r.ID(),
 				Severity: r.Severity(),
@@ -335,17 +336,17 @@ func (r *UnacknowledgedLoop) Check(ctx *LintContext) []Finding {
 
 // inferEdgeTopology runs InferTopology on a copy of the circuit def
 // and returns the inferred edge flags without mutating the original.
-func inferEdgeTopology(def *framework.CircuitDef) []framework.EdgeDef {
+func inferEdgeTopology(def *circuit.CircuitDef) []circuit.EdgeDef {
 	cp := *def
-	cp.Edges = make([]framework.EdgeDef, len(def.Edges))
+	cp.Edges = make([]circuit.EdgeDef, len(def.Edges))
 	copy(cp.Edges, def.Edges)
-	framework.InferTopology(&cp)
+	circuit.InferTopology(&cp)
 	return cp.Edges
 }
 
 // --- Graph helpers ---
 
-func buildAdjacency(def *framework.CircuitDef) map[string][]string {
+func buildAdjacency(def *circuit.CircuitDef) map[string][]string {
 	adj := make(map[string][]string)
 	for _, ed := range def.Edges {
 		adj[ed.From] = append(adj[ed.From], ed.To)
@@ -369,7 +370,7 @@ func bfs(start string, adj map[string][]string) map[string]bool {
 	return visited
 }
 
-func reachableNodes(def *framework.CircuitDef) map[string]bool {
+func reachableNodes(def *circuit.CircuitDef) map[string]bool {
 	if def.Start == "" {
 		return nil
 	}

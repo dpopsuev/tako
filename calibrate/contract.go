@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 )
 
 // ExtractFields uses a CalibrationContract to extract scorer-addressable
@@ -12,7 +13,7 @@ import (
 // "investigate.defect_type" (node.field) to a scorer name like
 // "actual_defect_type". The result is a flat map[string]any keyed by scorer
 // name, ready for scorecard evaluation.
-func ExtractFields(contract *CalibrationContract, result framework.BatchWalkResult) map[string]any {
+func ExtractFields(contract *CalibrationContract, result engine.BatchWalkResult) map[string]any {
 	if contract == nil {
 		return nil
 	}
@@ -32,7 +33,7 @@ func ExtractFields(contract *CalibrationContract, result framework.BatchWalkResu
 // against a BatchWalkResult. The first segment is the node name (looked up
 // in StepArtifacts), remaining segments walk into the artifact's map
 // representation. Special prefix "state." reads from WalkerState.
-func resolveFieldPath(path string, result framework.BatchWalkResult) any {
+func resolveFieldPath(path string, result engine.BatchWalkResult) any {
 	parts := strings.SplitN(path, ".", 2)
 	if len(parts) == 0 {
 		return nil
@@ -62,7 +63,7 @@ func resolveFieldPath(path string, result framework.BatchWalkResult) any {
 
 // resolveStatePath extracts values from WalkerState for paths like
 // "state.path", "state.loops.investigate".
-func resolveStatePath(parts []string, state *framework.WalkerState) any {
+func resolveStatePath(parts []string, state *circuit.WalkerState) any {
 	if state == nil || len(parts) < 2 {
 		return nil
 	}
@@ -210,7 +211,7 @@ func FoldContracts(contracts map[string]*CalibrationContract) *CalibrationContra
 
 // ContractFromDef converts the DSL CalibrationContractDef to the calibrate
 // package's CalibrationContract. Returns nil if def is nil.
-func ContractFromDef(def *framework.CalibrationContractDef) *CalibrationContract {
+func ContractFromDef(def *circuit.CalibrationContractDef) *CalibrationContract {
 	if def == nil {
 		return nil
 	}

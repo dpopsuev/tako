@@ -249,7 +249,7 @@ import (
 	"net/http"
 	"os"
 
-	origami "github.com/dpopsuev/origami"
+	origami "github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/domainserve"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 {{ .ImportBlock }})

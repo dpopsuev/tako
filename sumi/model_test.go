@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/view"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -15,16 +15,16 @@ import (
 	"github.com/muesli/termenv"
 )
 
-func testCircuit() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func testCircuit() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit: "test",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "recall", Approach: "rapid"},
 			{Name: "triage", Approach: "analytical"},
 			{Name: "investigate", Approach: "methodical"},
 			{Name: "report", Approach: "rigorous"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{From: "recall", To: "triage"},
 			{From: "triage", To: "investigate"},
 			{From: "investigate", To: "report"},
@@ -74,8 +74,8 @@ func TestModel_DiffMsg_AutoSelectsActiveNode(t *testing.T) {
 		t.Fatalf("initial selected = %d, want 0", m.selected)
 	}
 
-	store.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeEnter, Node: "triage", Walker: "w1",
+	store.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeEnter, Node: "triage", Walker: "w1",
 	})
 
 	diff := view.StateDiff{
@@ -248,7 +248,7 @@ func TestSumiRenderer_ImplementsInterface(t *testing.T) {
 // Reproduces the panic: "index out of range [0] with length 0"
 // in toggleBreakpoint when the user presses 'b' on an empty circuit.
 func TestModel_EmptyNodeOrder_NoPanic(t *testing.T) {
-	emptyDef := &framework.CircuitDef{Circuit: "watch"}
+	emptyDef := &circuit.CircuitDef{Circuit: "watch"}
 	store := view.NewCircuitStore(emptyDef)
 	defer store.Close()
 
@@ -329,11 +329,11 @@ func TestViewWarRoom_ANSI_Alignment(t *testing.T) {
 	engine := &view.GridLayout{}
 	layout, _ := engine.Layout(def)
 
-	store.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeEnter, Node: "recall", Walker: "C01",
+	store.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeEnter, Node: "recall", Walker: "C01",
 	})
-	store.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeEnter, Node: "triage", Walker: "C02",
+	store.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeEnter, Node: "triage", Walker: "C02",
 	})
 
 	m := New(Config{
@@ -455,22 +455,22 @@ func TestCasesPanel_ShowsAllCases(t *testing.T) {
 
 	for i := 1; i <= 12; i++ {
 		caseID := fmt.Sprintf("C%02d", i)
-		store.OnEvent(framework.WalkEvent{
-			Type: framework.EventNodeEnter, Node: "recall", Walker: caseID,
+		store.OnEvent(circuit.WalkEvent{
+			Type: circuit.EventNodeEnter, Node: "recall", Walker: caseID,
 		})
 	}
 
 	for i := 1; i <= 4; i++ {
 		caseID := fmt.Sprintf("C%02d", i)
-		store.OnEvent(framework.WalkEvent{
-			Type: framework.EventWalkComplete, Walker: caseID,
+		store.OnEvent(circuit.WalkEvent{
+			Type: circuit.EventWalkComplete, Walker: caseID,
 		})
 	}
 
 	for i := 5; i <= 6; i++ {
 		caseID := fmt.Sprintf("C%02d", i)
-		store.OnEvent(framework.WalkEvent{
-			Type: framework.EventWalkError, Walker: caseID, Error: fmt.Errorf("timeout"),
+		store.OnEvent(circuit.WalkEvent{
+			Type: circuit.EventWalkError, Walker: caseID, Error: fmt.Errorf("timeout"),
 		})
 	}
 
@@ -682,8 +682,8 @@ func TestDrawNode_ElementColoredBorders(t *testing.T) {
 	engine := &view.GridLayout{}
 	layout, _ := engine.Layout(def)
 
-	store.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeEnter, Node: "recall", Walker: "C01",
+	store.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeEnter, Node: "recall", Walker: "C01",
 	})
 
 	snap := store.Snapshot()
@@ -715,7 +715,7 @@ func TestDrawNode_ElementColoredBorders(t *testing.T) {
 // then receives DiffReset from store.Reset with a real circuit def.
 // The Model should rebuild def, layout, nodeOrder so the circuit renders.
 func TestModel_DiffReset_EmptyToPopulated(t *testing.T) {
-	emptyDef := &framework.CircuitDef{Circuit: "watch"}
+	emptyDef := &circuit.CircuitDef{Circuit: "watch"}
 	store := view.NewCircuitStore(emptyDef)
 	defer store.Close()
 
@@ -796,8 +796,8 @@ func TestModel_DiffReset_PreservesEventCount(t *testing.T) {
 
 	// Send a few normal diffs.
 	for i := 0; i < 5; i++ {
-		store.OnEvent(framework.WalkEvent{
-			Type: framework.EventNodeEnter, Node: "recall", Walker: "w1",
+		store.OnEvent(circuit.WalkEvent{
+			Type: circuit.EventNodeEnter, Node: "recall", Walker: "w1",
 		})
 		diff := view.StateDiff{Type: view.DiffNodeState, Node: "recall", State: view.NodeActive, Timestamp: time.Now()}
 		updated, _ := m.Update(DiffMsg(diff))
@@ -821,7 +821,7 @@ func TestModel_DiffReset_PreservesEventCount(t *testing.T) {
 // starts, the store gets populated via SSE events. Verifies the Model
 // eventually shows the circuit.
 func TestModel_SessionStartAfterWatch(t *testing.T) {
-	emptyDef := &framework.CircuitDef{Circuit: "watch"}
+	emptyDef := &circuit.CircuitDef{Circuit: "watch"}
 	store := view.NewCircuitStore(emptyDef)
 	defer store.Close()
 
@@ -854,9 +854,9 @@ func TestModel_SessionStartAfterWatch(t *testing.T) {
 	m = updated.(Model)
 
 	// Feed walker events through the store (as real SSE flow does).
-	walkEvents := []framework.WalkEvent{
-		{Type: framework.EventNodeEnter, Node: "recall", Walker: "C01"},
-		{Type: framework.EventNodeEnter, Node: "triage", Walker: "C02"},
+	walkEvents := []circuit.WalkEvent{
+		{Type: circuit.EventNodeEnter, Node: "recall", Walker: "C01"},
+		{Type: circuit.EventNodeEnter, Node: "triage", Walker: "C02"},
 	}
 	for _, we := range walkEvents {
 		store.OnEvent(we)
@@ -925,8 +925,8 @@ func TestModel_InitSubscription_SurvivesUpdateLoop(t *testing.T) {
 	}
 
 	// 2. Send an event to the store so the channel has a message.
-	store.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeEnter, Node: "recall", Walker: "w1",
+	store.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeEnter, Node: "recall", Walker: "w1",
 	})
 
 	// 3. Execute the batch Cmd and find the DiffMsg among the results.
@@ -963,8 +963,8 @@ func TestModel_InitSubscription_SurvivesUpdateLoop(t *testing.T) {
 	}
 
 	// 6. Send another event.
-	store.OnEvent(framework.WalkEvent{
-		Type: framework.EventNodeEnter, Node: "triage", Walker: "w1",
+	store.OnEvent(circuit.WalkEvent{
+		Type: circuit.EventNodeEnter, Node: "triage", Walker: "w1",
 	})
 
 	// 7. Execute the next Cmd — it should deliver the second diff.

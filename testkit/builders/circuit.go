@@ -5,19 +5,19 @@ package builders
 import (
 	"fmt"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // CircuitDefBuilder constructs a CircuitDef incrementally for tests.
 type CircuitDefBuilder struct {
-	def       framework.CircuitDef
+	def       circuit.CircuitDef
 	edgeCount int
 }
 
 // NewCircuitDef creates a new CircuitDefBuilder with the given circuit name.
 func NewCircuitDef(name string) *CircuitDefBuilder {
 	return &CircuitDefBuilder{
-		def: framework.CircuitDef{
+		def: circuit.CircuitDef{
 			Circuit: name,
 		},
 	}
@@ -31,7 +31,7 @@ func (b *CircuitDefBuilder) HandlerType(ht string) *CircuitDefBuilder {
 
 // AddNode adds a node with the given name and handler.
 func (b *CircuitDefBuilder) AddNode(name, handler string) *CircuitDefBuilder {
-	b.def.Nodes = append(b.def.Nodes, framework.NodeDef{
+	b.def.Nodes = append(b.def.Nodes, circuit.NodeDef{
 		Name:    name,
 		Handler: handler,
 	})
@@ -39,7 +39,7 @@ func (b *CircuitDefBuilder) AddNode(name, handler string) *CircuitDefBuilder {
 }
 
 // AddNodeDef adds a fully specified NodeDef.
-func (b *CircuitDefBuilder) AddNodeDef(nd framework.NodeDef) *CircuitDefBuilder {
+func (b *CircuitDefBuilder) AddNodeDef(nd circuit.NodeDef) *CircuitDefBuilder {
 	b.def.Nodes = append(b.def.Nodes, nd)
 	return b
 }
@@ -49,7 +49,7 @@ func (b *CircuitDefBuilder) AddNodeDef(nd framework.NodeDef) *CircuitDefBuilder 
 func (b *CircuitDefBuilder) AddEdge(from, to, when string) *CircuitDefBuilder {
 	b.edgeCount++
 	id := fmt.Sprintf("e%d-%s-%s", b.edgeCount, from, to)
-	b.def.Edges = append(b.def.Edges, framework.EdgeDef{
+	b.def.Edges = append(b.def.Edges, circuit.EdgeDef{
 		ID:   id,
 		From: from,
 		To:   to,
@@ -59,7 +59,7 @@ func (b *CircuitDefBuilder) AddEdge(from, to, when string) *CircuitDefBuilder {
 }
 
 // AddEdgeDef adds a fully specified EdgeDef.
-func (b *CircuitDefBuilder) AddEdgeDef(ed framework.EdgeDef) *CircuitDefBuilder {
+func (b *CircuitDefBuilder) AddEdgeDef(ed circuit.EdgeDef) *CircuitDefBuilder {
 	b.def.Edges = append(b.def.Edges, ed)
 	return b
 }
@@ -98,7 +98,7 @@ func (b *CircuitDefBuilder) WithTopology(topo string) *CircuitDefBuilder {
 }
 
 // Build returns the constructed CircuitDef.
-func (b *CircuitDefBuilder) Build() *framework.CircuitDef {
+func (b *CircuitDefBuilder) Build() *circuit.CircuitDef {
 	def := b.def
 	return &def
 }

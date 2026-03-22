@@ -4,7 +4,8 @@ import (
 	"context"
 	"testing"
 
-	fw "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/engine"
+
 )
 
 func TestMatchRule_AllOf(t *testing.T) {
@@ -250,7 +251,7 @@ colors:
 	}
 
 	m := NewMatch()
-	tc := &fw.TransformerContext{
+	tc := &engine.TransformerContext{
 		Input: "the sky is blue",
 		Meta: map[string]any{
 			"evaluator": eval,
@@ -285,7 +286,7 @@ test:
 `))
 
 	m := NewMatch()
-	tc := &fw.TransformerContext{
+	tc := &engine.TransformerContext{
 		Input: map[string]any{"text": "error occurred"},
 		Meta: map[string]any{
 			"evaluator": eval,
@@ -305,7 +306,7 @@ test:
 
 func TestMatchTransformer_MissingEvaluator(t *testing.T) {
 	m := NewMatch()
-	tc := &fw.TransformerContext{Meta: map[string]any{}}
+	tc := &engine.TransformerContext{Meta: map[string]any{}}
 	_, err := m.Transform(context.Background(), tc)
 	if err == nil {
 		t.Error("expected error for missing evaluator")
@@ -320,7 +321,7 @@ test:
       result: y
 `))
 	m := NewMatch()
-	tc := &fw.TransformerContext{
+	tc := &engine.TransformerContext{
 		Meta: map[string]any{"evaluator": eval},
 	}
 	_, err := m.Transform(context.Background(), tc)

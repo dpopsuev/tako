@@ -3,7 +3,7 @@ package ouroboros
 import (
 	"time"
 
-	"github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/element"
 )
 
@@ -42,7 +42,7 @@ func AllDimensions() []Dimension {
 // ModelProfile is the empirical output of one Ouroboros cycle for one model.
 // Append-only: historical profiles are never overwritten.
 type ModelProfile struct {
-	Model             framework.ModelIdentity        `json:"model"`
+	Model             circuit.ModelIdentity        `json:"model"`
 	BatteryVersion    string                         `json:"battery_version"`
 	Timestamp         time.Time                      `json:"timestamp"`
 	Dimensions        map[Dimension]float64          `json:"dimensions"`
@@ -50,7 +50,7 @@ type ModelProfile struct {
 	ElementScores     map[element.Element]float64  `json:"element_scores"`
 	SuggestedPersonas []string                       `json:"suggested_personas,omitempty"`
 	OffsetPreamble    string                         `json:"offset_preamble,omitempty"`
-	CostProfile       framework.CostProfile          `json:"cost_profile"`
+	CostProfile       circuit.CostProfile          `json:"cost_profile"`
 	RawResults        []ProbeResult                  `json:"raw_results"`
 }
 
@@ -101,7 +101,7 @@ type ProbeResult struct {
 // DiscoveryResult records one iteration of the negation discovery loop.
 type DiscoveryResult struct {
 	Iteration       int                    `json:"iteration"`
-	Model           framework.ModelIdentity `json:"model"`
+	Model           circuit.ModelIdentity `json:"model"`
 	ExclusionPrompt string                 `json:"exclusion_prompt"`
 	Probe           ProbeResult            `json:"probe"`
 	Timestamp       time.Time              `json:"timestamp"`
@@ -115,7 +115,7 @@ type RunReport struct {
 	EndTime      time.Time                 `json:"end_time"`
 	Config       DiscoveryConfig           `json:"config"`
 	Results      []DiscoveryResult         `json:"results"`
-	UniqueModels []framework.ModelIdentity `json:"unique_models"`
+	UniqueModels []circuit.ModelIdentity `json:"unique_models"`
 	TermReason   string                    `json:"termination_reason"`
 }
 

@@ -3,7 +3,7 @@ package ouroboros
 import (
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 func approxEqual(a, b, eps float64) bool {
@@ -43,7 +43,7 @@ func TestProfileFromPoleResults_Aggregation(t *testing.T) {
 		},
 	}
 
-	model := framework.ModelIdentity{ModelName: "test-model", Provider: "test"}
+	model := circuit.ModelIdentity{ModelName: "test-model", Provider: "test"}
 	profile := ProfileFromPoleResults(model, results)
 
 	if profile.BatteryVersion != SeedBatteryVersion {
@@ -91,7 +91,7 @@ func TestProfileFromPoleResults_DifficultyWeighting(t *testing.T) {
 		},
 	}
 
-	model := framework.ModelIdentity{ModelName: "test", Provider: "test"}
+	model := circuit.ModelIdentity{ModelName: "test", Provider: "test"}
 	profile := ProfileFromPoleResults(model, results)
 
 	// easy weight=1, hard weight=3: weighted avg = (0*1 + 1*3) / (1+3) = 0.75
@@ -120,7 +120,7 @@ func TestProfileFromPoleResults_ElementMatchWorks(t *testing.T) {
 		},
 	}
 
-	model := framework.ModelIdentity{ModelName: "deep-thinker", Provider: "test"}
+	model := circuit.ModelIdentity{ModelName: "deep-thinker", Provider: "test"}
 	profile := ProfileFromPoleResults(model, results)
 
 	if profile.ElementMatch == "" {
@@ -156,7 +156,7 @@ func TestProfileFromPoleResults_DeriveStepAffinityWorks(t *testing.T) {
 		},
 	}
 
-	model := framework.ModelIdentity{ModelName: "balanced", Provider: "test"}
+	model := circuit.ModelIdentity{ModelName: "balanced", Provider: "test"}
 	profile := ProfileFromPoleResults(model, results)
 
 	stepDims := StepDimensionMap{

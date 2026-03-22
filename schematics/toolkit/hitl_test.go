@@ -4,7 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 )
 
 func TestLoadCheckpointState_NoCheckpoint(t *testing.T) {
@@ -24,11 +25,11 @@ func TestLoadCheckpointState_WithCheckpoint(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 
-	cp, err := framework.NewJSONCheckpointer(dir)
+	cp, err := engine.NewJSONCheckpointer(dir)
 	if err != nil {
 		t.Fatalf("create checkpointer: %v", err)
 	}
-	walker := framework.NewProcessWalker("walker-1")
+	walker := circuit.NewProcessWalker("walker-1")
 	walker.State().CurrentNode = "triage"
 	walker.State().Status = "interrupted"
 	if err := cp.Save(walker.State()); err != nil {
@@ -52,7 +53,7 @@ func TestLoadCheckpointState_WithCheckpoint(t *testing.T) {
 
 func TestBuildHITLResult_Completed(t *testing.T) {
 	t.Parallel()
-	walker := framework.NewProcessWalker("w")
+	walker := circuit.NewProcessWalker("w")
 	walker.State().Status = "done"
 
 	result, err := BuildHITLResult(walker, nil)
@@ -69,7 +70,7 @@ func TestBuildHITLResult_Completed(t *testing.T) {
 
 func TestBuildHITLResult_WalkError(t *testing.T) {
 	t.Parallel()
-	walker := framework.NewProcessWalker("w")
+	walker := circuit.NewProcessWalker("w")
 	walker.State().Status = "running"
 
 	_, err := BuildHITLResult(walker, errors.New("timeout"))
@@ -83,7 +84,7 @@ func TestBuildHITLResult_WalkError(t *testing.T) {
 
 func TestBuildHITLResult_Interrupted(t *testing.T) {
 	t.Parallel()
-	walker := framework.NewProcessWalker("w")
+	walker := circuit.NewProcessWalker("w")
 	walker.State().Status = "interrupted"
 	walker.State().CurrentNode = "resolve"
 	walker.State().Context["interrupt_data"] = map[string]any{
@@ -108,7 +109,7 @@ func TestBuildHITLResult_Interrupted(t *testing.T) {
 
 func TestBuildHITLResult_InterruptedNoData(t *testing.T) {
 	t.Parallel()
-	walker := framework.NewProcessWalker("w")
+	walker := circuit.NewProcessWalker("w")
 	walker.State().Status = "interrupted"
 	walker.State().CurrentNode = "triage"
 
@@ -126,7 +127,7 @@ func TestBuildHITLResult_InterruptedNoData(t *testing.T) {
 
 func TestRestoreWalkerState_NilLoaded(t *testing.T) {
 	t.Parallel()
-	walker := framework.NewProcessWalker("w")
+	walker := circuit.NewProcessWalker("w")
 	resumeNode := RestoreWalkerState(walker, nil)
 	if resumeNode != "" {
 		t.Errorf("expected empty resume node for nil loaded, got %q", resumeNode)
@@ -135,14 +136,14 @@ func TestRestoreWalkerState_NilLoaded(t *testing.T) {
 
 func TestRestoreWalkerState_WithCheckpoint(t *testing.T) {
 	t.Parallel()
-	walker := framework.NewProcessWalker("w")
+	walker := circuit.NewProcessWalker("w")
 
-	loaded := &framework.WalkerState{
+	loaded := &circuit.WalkerState{
 		ID:          "w",
 		Status:      "interrupted",
 		CurrentNode: "correlate",
 		LoopCounts:  map[string]int{"investigate": 2},
-		History:     []framework.StepRecord{{Node: "recall"}},
+		History:     []circuit.StepRecord{{Node: "recall"}},
 	}
 
 	resumeNode := RestoreWalkerState(walker, loaded)

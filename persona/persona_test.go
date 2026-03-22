@@ -3,7 +3,7 @@ package persona
 import (
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/element"
 )
 
@@ -20,7 +20,7 @@ func TestThesis_Count(t *testing.T) {
 		t.Errorf("len(Thesis) = %d, want 4", len(thesis))
 	}
 	for _, p := range thesis {
-		if p.Identity.Alignment != framework.AlignmentThesis {
+		if p.Identity.Alignment != circuit.AlignmentThesis {
 			t.Errorf("persona %q has alignment %q, want thesis", p.Identity.PersonaName, p.Identity.Alignment)
 		}
 	}
@@ -32,7 +32,7 @@ func TestAntithesis_Count(t *testing.T) {
 		t.Errorf("len(Antithesis) = %d, want 4", len(antithesis))
 	}
 	for _, p := range antithesis {
-		if p.Identity.Alignment != framework.AlignmentAntithesis {
+		if p.Identity.Alignment != circuit.AlignmentAntithesis {
 			t.Errorf("persona %q has alignment %q, want antithesis", p.Identity.PersonaName, p.Identity.Alignment)
 		}
 	}
@@ -49,10 +49,10 @@ func TestByName_Herald(t *testing.T) {
 	if p.Identity.Element != element.ElementFire {
 		t.Errorf("Herald element = %q, want fire", p.Identity.Element)
 	}
-	if p.Identity.Position != framework.PositionPG {
+	if p.Identity.Position != circuit.PositionPG {
 		t.Errorf("Herald position = %q, want PG", p.Identity.Position)
 	}
-	if p.Identity.Alignment != framework.AlignmentThesis {
+	if p.Identity.Alignment != circuit.AlignmentThesis {
 		t.Errorf("Herald alignment = %q, want thesis", p.Identity.Alignment)
 	}
 }
@@ -100,7 +100,7 @@ func TestPersonas_UniqueColors(t *testing.T) {
 }
 
 func TestPersonas_AllPositionsCovered(t *testing.T) {
-	positions := map[framework.Position]int{framework.PositionPG: 0, framework.PositionSG: 0, framework.PositionPF: 0, framework.PositionC: 0}
+	positions := map[circuit.Position]int{circuit.PositionPG: 0, circuit.PositionSG: 0, circuit.PositionPF: 0, circuit.PositionC: 0}
 	for _, p := range All() {
 		positions[p.Identity.Position]++
 	}
@@ -129,7 +129,7 @@ func TestPersonas_AllHavePromptPreamble(t *testing.T) {
 
 func TestPersonas_HomeZoneMatchesPosition(t *testing.T) {
 	for _, p := range All() {
-		expected := framework.HomeZoneFor(p.Identity.Position)
+		expected := circuit.HomeZoneFor(p.Identity.Position)
 		if p.Identity.HomeZone != expected {
 			t.Errorf("persona %s: HomeZone=%q but HomeZoneFor(%s)=%q",
 				p.Identity.PersonaName, p.Identity.HomeZone, p.Identity.Position, expected)
@@ -138,7 +138,7 @@ func TestPersonas_HomeZoneMatchesPosition(t *testing.T) {
 }
 
 func TestColorPalette_HexFormat(t *testing.T) {
-	colors := []framework.Color{
+	colors := []circuit.Color{
 		ColorCrimson, ColorCerulean, ColorCobalt, ColorAmber,
 		ColorScarlet, ColorSapphire, ColorObsidian, ColorSteel,
 	}

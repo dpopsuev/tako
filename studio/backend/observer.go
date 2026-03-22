@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // StudioEvent is a serializable circuit event stored in the event store.
@@ -34,7 +34,7 @@ type RunInfo struct {
 	EdgeCount int       `json:"edge_count"`
 }
 
-// StudioObserver implements framework.WalkObserver and records events
+// StudioObserver implements circuit.WalkObserver and records events
 // for the Visual Editor's REST API.
 type StudioObserver struct {
 	mu     sync.RWMutex
@@ -52,8 +52,8 @@ func NewStudioObserver(store *EventStore, runID, circuit string) *StudioObserver
 	}
 }
 
-// OnEvent implements framework.WalkObserver.
-func (o *StudioObserver) OnEvent(we framework.WalkEvent) {
+// OnEvent implements circuit.WalkObserver.
+func (o *StudioObserver) OnEvent(we circuit.WalkEvent) {
 	evt := StudioEvent{
 		RunID:     o.runID,
 		Type:      string(we.Type),

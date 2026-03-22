@@ -10,14 +10,14 @@ import (
 	"testing"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/view"
 )
 
 func TestServer_SSEStreamEvents(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "test",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "triage"},
 		},
 	}
@@ -77,8 +77,8 @@ func TestServer_SSEStreamEvents(t *testing.T) {
 	}()
 
 	time.Sleep(50 * time.Millisecond)
-	store.OnEvent(framework.WalkEvent{
-		Type:   framework.EventNodeEnter,
+	store.OnEvent(circuit.WalkEvent{
+		Type:   circuit.EventNodeEnter,
 		Node:   "triage",
 		Walker: "sentinel",
 	})

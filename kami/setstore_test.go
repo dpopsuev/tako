@@ -13,14 +13,14 @@ import (
 	"testing"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/view"
 )
 
-func testDef() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func testDef() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit: "test",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "recall"},
 			{Name: "triage"},
 			{Name: "resolve"},
@@ -75,7 +75,7 @@ func TestSetStore_NilToStore(t *testing.T) {
 	}()
 
 	time.Sleep(50 * time.Millisecond)
-	store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "recall", Walker: "w1"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall", Walker: "w1"})
 
 	select {
 	case evt := <-evtCh:
@@ -304,8 +304,8 @@ func TestSetStore_RapidSwap200Sessions(t *testing.T) {
 
 		time.Sleep(5 * time.Millisecond)
 
-		store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "recall", Walker: "w1"})
-		store.OnEvent(framework.WalkEvent{Type: framework.EventNodeExit, Node: "recall"})
+		store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall", Walker: "w1"})
+		store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "recall"})
 	}
 
 	// Close the last store so the final batch of readers exits.

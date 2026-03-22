@@ -15,7 +15,7 @@ import (
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/lint"
 )
 
@@ -27,13 +27,13 @@ type Server struct {
 	docs        map[uri.URI]*document
 	ready       bool
 	kamiBridge  *KamiBridge
-	vocab       framework.RichVocabulary
+	vocab       circuit.RichVocabulary
 }
 
 type document struct {
 	URI     uri.URI
 	Content string
-	Def     *framework.CircuitDef
+	Def     *circuit.CircuitDef
 	LintCtx *lint.LintContext
 }
 
@@ -187,7 +187,7 @@ func (s *Server) updateDocument(docURI uri.URI, content string) *document {
 
 	lintCtx, _ := lint.NewLintContext(raw, file)
 
-	var def *framework.CircuitDef
+	var def *circuit.CircuitDef
 	if lintCtx != nil {
 		def = lintCtx.Def
 	}
@@ -264,7 +264,7 @@ func (s *Server) KamiBridge() *KamiBridge {
 }
 
 // SetVocab sets the rich vocabulary for hover enrichment.
-func (s *Server) SetVocab(v framework.RichVocabulary) {
+func (s *Server) SetVocab(v circuit.RichVocabulary) {
 	s.mu.Lock()
 	s.vocab = v
 	s.mu.Unlock()

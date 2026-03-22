@@ -5,20 +5,20 @@ import (
 	"testing"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 func TestStudioObserver_RecordsEvents(t *testing.T) {
 	store := NewEventStore()
 	obs := NewStudioObserver(store, "run-1", "test-circuit")
 
-	obs.OnEvent(framework.WalkEvent{
+	obs.OnEvent(circuit.WalkEvent{
 		Type:   "node_enter",
 		Node:   "recall",
 		Walker: "herald",
 	})
 
-	obs.OnEvent(framework.WalkEvent{
+	obs.OnEvent(circuit.WalkEvent{
 		Type:    "transition",
 		Edge:    "E1",
 		Elapsed: 150 * time.Millisecond,
@@ -48,7 +48,7 @@ func TestStudioObserver_RecordsErrors(t *testing.T) {
 	store := NewEventStore()
 	obs := NewStudioObserver(store, "run-1", "test")
 
-	obs.OnEvent(framework.WalkEvent{
+	obs.OnEvent(circuit.WalkEvent{
 		Type:  "walk_error",
 		Error: fmt.Errorf("context deadline exceeded"),
 	})

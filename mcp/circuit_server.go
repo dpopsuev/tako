@@ -11,7 +11,8 @@ import (
 	"sync"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/dispatch"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
@@ -393,7 +394,7 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 	s.mu.Unlock()
 	sessID := fmt.Sprintf("s-%d-%d", time.Now().UnixMilli(), seqN)
 
-	var recorder *framework.TraceRecorder
+	var recorder *engine.TraceRecorder
 	var runDir string
 	if s.Config.StateDir != "" {
 		runDir = filepath.Join(s.Config.StateDir, "runs", sessID)
@@ -402,7 +403,7 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 				"run_dir", runDir, "error", err)
 		} else {
 			var recErr error
-			recorder, recErr = framework.NewTraceRecorder(filepath.Join(runDir, "trace.jsonl"))
+			recorder, recErr = engine.NewTraceRecorder(filepath.Join(runDir, "trace.jsonl"))
 			if recErr != nil {
 				logger.Warn("failed to create trace recorder",
 					"error", recErr)
@@ -453,7 +454,7 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 	sess := NewCircuitSession(runCtx, sessID, meta, parallel, disp, bus, runFn, runCancel)
 	sess.recorder = recorder
 	sess.runDir = runDir
-	if tid, ok := input.Extra[framework.ExtraKeyTraceID].(string); ok && tid != "" {
+	if tid, ok := input.Extra[circuit.ExtraKeyTraceID].(string); ok && tid != "" {
 		sess.traceID = tid
 	} else {
 		sess.traceID = fmt.Sprintf("tr-%d", time.Now().UnixMilli())

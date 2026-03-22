@@ -324,6 +324,17 @@ func WithOutputCapture(capture circuit.WalkObserver) RunOption {
 	}
 }
 
+// --- Checkpoint re-exports (internal/state) ---
+
+// JSONCheckpointer persists WalkerState to a JSON file between nodes,
+// enabling resume-from-failure for circuits.
+type JSONCheckpointer = state.JSONCheckpointer
+
+// NewJSONCheckpointer creates a checkpointer that writes to the given directory.
+func NewJSONCheckpointer(dir string) (*JSONCheckpointer, error) {
+	return state.NewJSONCheckpointer(dir)
+}
+
 // applyOffsetPreamble appends a corrective preamble to a walker's
 // PromptPreamble via SetIdentity.
 func applyOffsetPreamble(w circuit.Walker, offset string) {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -29,22 +29,22 @@ func NewOTelObserver(tracer trace.Tracer) *OTelObserver {
 	}
 }
 
-func (o *OTelObserver) OnEvent(e framework.WalkEvent) {
+func (o *OTelObserver) OnEvent(e circuit.WalkEvent) {
 	switch e.Type {
-	case framework.EventNodeEnter:
+	case circuit.EventNodeEnter:
 		o.onNodeEnter(e)
-	case framework.EventNodeExit:
+	case circuit.EventNodeExit:
 		o.onNodeExit(e)
-	case framework.EventTransition:
+	case circuit.EventTransition:
 		o.onTransition(e)
-	case framework.EventWalkComplete:
+	case circuit.EventWalkComplete:
 		o.onWalkComplete(e)
-	case framework.EventWalkError:
+	case circuit.EventWalkError:
 		o.onWalkError(e)
 	}
 }
 
-func (o *OTelObserver) onNodeEnter(e framework.WalkEvent) {
+func (o *OTelObserver) onNodeEnter(e circuit.WalkEvent) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
@@ -64,7 +64,7 @@ func (o *OTelObserver) onNodeEnter(e framework.WalkEvent) {
 	o.nodeSpans[e.Node] = span
 }
 
-func (o *OTelObserver) onNodeExit(e framework.WalkEvent) {
+func (o *OTelObserver) onNodeExit(e circuit.WalkEvent) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
@@ -75,7 +75,7 @@ func (o *OTelObserver) onNodeExit(e framework.WalkEvent) {
 	}
 }
 
-func (o *OTelObserver) onTransition(e framework.WalkEvent) {
+func (o *OTelObserver) onTransition(e circuit.WalkEvent) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
@@ -87,7 +87,7 @@ func (o *OTelObserver) onTransition(e framework.WalkEvent) {
 	}
 }
 
-func (o *OTelObserver) onWalkComplete(_ framework.WalkEvent) {
+func (o *OTelObserver) onWalkComplete(_ circuit.WalkEvent) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
@@ -99,7 +99,7 @@ func (o *OTelObserver) onWalkComplete(_ framework.WalkEvent) {
 	}
 }
 
-func (o *OTelObserver) onWalkError(e framework.WalkEvent) {
+func (o *OTelObserver) onWalkError(e circuit.WalkEvent) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 

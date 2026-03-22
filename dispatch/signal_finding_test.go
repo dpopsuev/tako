@@ -3,13 +3,13 @@ package dispatch
 import (
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 func TestEmitFinding_RoundTrip(t *testing.T) {
 	bus := NewSignalBus()
-	f := framework.Finding{
-		Severity: framework.FindingError,
+	f := circuit.Finding{
+		Severity: circuit.FindingError,
 		Domain:   "security.auth",
 		Source:   "auth-enforcer",
 		NodeName: "login",
@@ -35,8 +35,8 @@ func TestEmitFinding_RoundTrip(t *testing.T) {
 	if !ok {
 		t.Fatal("DecodeFinding returned false")
 	}
-	if decoded.Severity != framework.FindingError {
-		t.Errorf("Severity = %q, want %q", decoded.Severity, framework.FindingError)
+	if decoded.Severity != circuit.FindingError {
+		t.Errorf("Severity = %q, want %q", decoded.Severity, circuit.FindingError)
 	}
 	if decoded.Domain != "security.auth" {
 		t.Errorf("Domain = %q, want %q", decoded.Domain, "security.auth")
@@ -58,26 +58,26 @@ func TestFindingsSince_MixedSignals(t *testing.T) {
 	bus := NewSignalBus()
 
 	bus.Emit("step:start", "agent", "", "nodeA", nil)
-	EmitFinding(bus, framework.Finding{Severity: framework.FindingWarning, Domain: "test", Source: "tester", Message: "flaky"})
+	EmitFinding(bus, circuit.Finding{Severity: circuit.FindingWarning, Domain: "test", Source: "tester", Message: "flaky"})
 	bus.Emit("step:complete", "agent", "", "nodeA", nil)
-	EmitFinding(bus, framework.Finding{Severity: framework.FindingError, Domain: "security", Source: "auditor", Message: "vuln"})
+	EmitFinding(bus, circuit.Finding{Severity: circuit.FindingError, Domain: "security", Source: "auditor", Message: "vuln"})
 
 	findings := FindingsSince(bus, 0)
 	if len(findings) != 2 {
 		t.Fatalf("FindingsSince returned %d findings, want 2", len(findings))
 	}
-	if findings[0].Severity != framework.FindingWarning {
-		t.Errorf("findings[0].Severity = %q, want %q", findings[0].Severity, framework.FindingWarning)
+	if findings[0].Severity != circuit.FindingWarning {
+		t.Errorf("findings[0].Severity = %q, want %q", findings[0].Severity, circuit.FindingWarning)
 	}
-	if findings[1].Severity != framework.FindingError {
-		t.Errorf("findings[1].Severity = %q, want %q", findings[1].Severity, framework.FindingError)
+	if findings[1].Severity != circuit.FindingError {
+		t.Errorf("findings[1].Severity = %q, want %q", findings[1].Severity, circuit.FindingError)
 	}
 }
 
 func TestFindingsSince_Offset(t *testing.T) {
 	bus := NewSignalBus()
-	EmitFinding(bus, framework.Finding{Severity: framework.FindingInfo, Message: "first"})
-	EmitFinding(bus, framework.Finding{Severity: framework.FindingWarning, Message: "second"})
+	EmitFinding(bus, circuit.Finding{Severity: circuit.FindingInfo, Message: "first"})
+	EmitFinding(bus, circuit.Finding{Severity: circuit.FindingWarning, Message: "second"})
 
 	findings := FindingsSince(bus, 1)
 	if len(findings) != 1 {
@@ -90,7 +90,7 @@ func TestFindingsSince_Offset(t *testing.T) {
 
 func TestEmitFinding_NoEvidence(t *testing.T) {
 	bus := NewSignalBus()
-	EmitFinding(bus, framework.Finding{Severity: framework.FindingInfo, Message: "no evidence"})
+	EmitFinding(bus, circuit.Finding{Severity: circuit.FindingInfo, Message: "no evidence"})
 
 	sig := bus.Since(0)[0]
 	if _, ok := sig.Meta["evidence"]; ok {

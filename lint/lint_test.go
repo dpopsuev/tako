@@ -6,7 +6,8 @@ import (
 	"testing"
 	"testing/fstest"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 )
 
 type testTransformer struct {
@@ -16,7 +17,7 @@ type testTransformer struct {
 
 func (t *testTransformer) Name() string        { return t.name }
 func (t *testTransformer) Deterministic() bool { return t.det }
-func (t *testTransformer) Transform(_ context.Context, _ *framework.TransformerContext) (any, error) {
+func (t *testTransformer) Transform(_ context.Context, _ *engine.TransformerContext) (any, error) {
 	return nil, nil
 }
 
@@ -459,10 +460,10 @@ func TestLintContext_LineNumbers(t *testing.T) {
 }
 
 func TestNewLintContextFromDef(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "test",
-		Nodes:    []framework.NodeDef{{Name: "a", Approach: "rapid"}},
-		Edges:    []framework.EdgeDef{{ID: "e1", Name: "e1", From: "a", To: "_done"}},
+		Nodes:    []circuit.NodeDef{{Name: "a", Approach: "rapid"}},
+		Edges:    []circuit.EdgeDef{{ID: "e1", Name: "e1", From: "a", To: "_done"}},
 		Start:    "a",
 		Done:     "_done",
 	}
@@ -668,8 +669,8 @@ done: _done
 `)
 	stoch := &testTransformer{name: "custom.stochastic", det: false}
 	deter := &testTransformer{name: "custom.deterministic", det: true}
-	reg := &framework.GraphRegistries{
-		Transformers: framework.TransformerRegistry{
+	reg := &engine.GraphRegistries{
+		Transformers: engine.TransformerRegistry{
 			"custom.stochastic":    stoch,
 			"custom.deterministic": deter,
 		},

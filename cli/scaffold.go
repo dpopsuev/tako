@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/kami"
 	"github.com/dpopsuev/origami/lint"
 	"github.com/dpopsuev/origami/observability"
@@ -91,7 +91,7 @@ type CLIBuilder struct {
 	demo        *DemoConfig
 	profile     *ProfileConfig
 	extra        []*cobra.Command
-	observers    []framework.WalkObserver
+	observers    []circuit.WalkObserver
 	obsExplicit  bool
 	promReg      *prometheus.Registry
 }
@@ -154,7 +154,7 @@ func (b *CLIBuilder) WithExtraCommand(cmd *cobra.Command) *CLIBuilder {
 // WithObservability registers walk observers for the CLI.
 // If not called, Build() uses DefaultObservability() automatically.
 // Call with no arguments to disable observability entirely.
-func (b *CLIBuilder) WithObservability(observers ...framework.WalkObserver) *CLIBuilder {
+func (b *CLIBuilder) WithObservability(observers ...circuit.WalkObserver) *CLIBuilder {
 	b.observers = observers
 	b.obsExplicit = true
 	return b
@@ -163,13 +163,13 @@ func (b *CLIBuilder) WithObservability(observers ...framework.WalkObserver) *CLI
 // CLI is the assembled command tree ready for execution.
 type CLI struct {
 	root           *cobra.Command
-	observers      []framework.WalkObserver
+	observers      []circuit.WalkObserver
 	promRegistry   *prometheus.Registry
 	metricsHandler http.Handler
 }
 
 // Observers returns the configured walk observers.
-func (c *CLI) Observers() []framework.WalkObserver {
+func (c *CLI) Observers() []circuit.WalkObserver {
 	return c.observers
 }
 
@@ -452,7 +452,7 @@ func (b *CLIBuilder) buildCircuit() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("read %s: %w", args[0], err)
 			}
-			def, err := framework.LoadCircuit(raw)
+			def, err := circuit.LoadCircuit(raw)
 			if err != nil {
 				return fmt.Errorf("parse %s: %w", args[0], err)
 			}

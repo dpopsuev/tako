@@ -1,7 +1,7 @@
 package curate
 
 import (
-	"github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -116,7 +116,7 @@ func TestBuildCurationGraph_EdgeEvaluation(t *testing.T) {
 
 	t.Run("CE1 always fires", func(t *testing.T) {
 		edge := g.EdgesFrom("fetch")[0]
-		state := framework.NewWalkerState("test")
+		state := circuit.NewWalkerState("test")
 		art := &CurationArtifact{}
 		tr := edge.Evaluate(art, state)
 		if tr == nil {
@@ -132,7 +132,7 @@ func TestBuildCurationGraph_EdgeEvaluation(t *testing.T) {
 		if len(edges) != 1 {
 			t.Fatalf("EdgesFrom(extract) = %d, want 1", len(edges))
 		}
-		state := framework.NewWalkerState("test")
+		state := circuit.NewWalkerState("test")
 		art := &CurationArtifact{}
 		tr := edges[0].Evaluate(art, state)
 		if tr == nil {
@@ -148,7 +148,7 @@ func TestBuildCurationGraph_EdgeEvaluation(t *testing.T) {
 		if len(validateEdges) != 2 {
 			t.Fatalf("EdgesFrom(validate) = %d, want 2 (CE3, CE4)", len(validateEdges))
 		}
-		state := framework.NewWalkerState("test")
+		state := circuit.NewWalkerState("test")
 
 		incompleteArt := &CurationArtifact{
 			Rec:         &Record{ID: "R01", Fields: map[string]Field{"x": {Name: "x", Value: 1}}},
@@ -177,7 +177,7 @@ func TestBuildCurationGraph_EdgeEvaluation(t *testing.T) {
 	})
 
 	t.Run("CE3 respects loop limit", func(t *testing.T) {
-		state := framework.NewWalkerState("test")
+		state := circuit.NewWalkerState("test")
 		state.LoopCounts["CE3"] = MaxFetchLoops
 
 		validateEdges := g.EdgesFrom("validate")
@@ -193,7 +193,7 @@ func TestBuildCurationGraph_EdgeEvaluation(t *testing.T) {
 		if len(edges) != 1 {
 			t.Fatalf("EdgesFrom(enrich) = %d, want 1", len(edges))
 		}
-		state := framework.NewWalkerState("test")
+		state := circuit.NewWalkerState("test")
 		art := &CurationArtifact{}
 		tr := edges[0].Evaluate(art, state)
 		if tr == nil {
@@ -206,7 +206,7 @@ func TestBuildCurationGraph_EdgeEvaluation(t *testing.T) {
 		if len(edges) != 1 {
 			t.Fatalf("EdgesFrom(promote) = %d, want 1", len(edges))
 		}
-		state := framework.NewWalkerState("test")
+		state := circuit.NewWalkerState("test")
 		art := &CurationArtifact{}
 		tr := edges[0].Evaluate(art, state)
 		if tr == nil {
@@ -227,7 +227,7 @@ func TestDefaultNodeRegistry(t *testing.T) {
 			t.Errorf("missing node factory for %q", f)
 			continue
 		}
-		node := factory(framework.NodeDef{Name: f, Approach: "analytical", Handler: f, HandlerType: "node"})
+		node := factory(circuit.NodeDef{Name: f, Approach: "analytical", Handler: f, HandlerType: "node"})
 		if node.Name() != f {
 			t.Errorf("node.Name() = %q, want %q", node.Name(), f)
 		}
@@ -243,7 +243,7 @@ func TestDefaultEdgeFactory(t *testing.T) {
 			t.Errorf("missing edge factory for %q", id)
 			continue
 		}
-		edge := fn(framework.EdgeDef{ID: id, From: "test", To: "test2"})
+		edge := fn(circuit.EdgeDef{ID: id, From: "test", To: "test2"})
 		if edge.ID() != id {
 			t.Errorf("edge.ID() = %q, want %q", edge.ID(), id)
 		}
@@ -251,7 +251,7 @@ func TestDefaultEdgeFactory(t *testing.T) {
 }
 
 func TestCurationArtifact_Interface(t *testing.T) {
-	var a framework.Artifact = &CurationArtifact{
+	var a circuit.Artifact = &CurationArtifact{
 		ArtifactType: "test",
 		Conf:         0.75,
 	}

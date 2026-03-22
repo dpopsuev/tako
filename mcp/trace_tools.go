@@ -11,7 +11,8 @@ import (
 	"strings"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -29,7 +30,7 @@ type getTraceInput struct {
 }
 
 type getTraceOutput struct {
-	Events []framework.TraceEvent `json:"events"`
+	Events []engine.TraceEvent `json:"events"`
 	Total  int                    `json:"total"`
 }
 
@@ -86,12 +87,12 @@ func (s *CircuitServer) handleGetTrace(_ context.Context, _ *sdkmcp.CallToolRequ
 	}
 	defer f.Close()
 
-	maxLevel := framework.LevelInfo
+	maxLevel := engine.LevelInfo
 	switch strings.ToLower(input.Level) {
 	case "debug":
-		maxLevel = framework.LevelDebug
+		maxLevel = engine.LevelDebug
 	case "trace":
-		maxLevel = framework.LevelTrace
+		maxLevel = engine.LevelTrace
 	}
 
 	limit := input.Limit
@@ -99,10 +100,10 @@ func (s *CircuitServer) handleGetTrace(_ context.Context, _ *sdkmcp.CallToolRequ
 		limit = 500
 	}
 
-	var allEvents []framework.TraceEvent
+	var allEvents []engine.TraceEvent
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
-		var te framework.TraceEvent
+		var te engine.TraceEvent
 		if err := json.Unmarshal(scanner.Bytes(), &te); err != nil {
 			continue
 		}
@@ -126,7 +127,7 @@ func (s *CircuitServer) handleGetTrace(_ context.Context, _ *sdkmcp.CallToolRequ
 
 	// Apply pagination.
 	total := len(allEvents)
-	var events []framework.TraceEvent
+	var events []engine.TraceEvent
 	for i, ev := range allEvents {
 		if i < input.Since {
 			continue
@@ -232,11 +233,11 @@ func (s *CircuitServer) resolveRunDir(sessionID string) string {
 }
 
 // levelIncludes returns true if the event level is within the max level.
-func levelIncludes(max, event framework.TraceLevel) bool {
-	order := map[framework.TraceLevel]int{
-		framework.LevelInfo:  0,
-		framework.LevelDebug: 1,
-		framework.LevelTrace: 2,
+func levelIncludes(max, event engine.TraceLevel) bool {
+	order := map[engine.TraceLevel]int{
+		engine.LevelInfo:  0,
+		engine.LevelDebug: 1,
+		engine.LevelTrace: 2,
 	}
 	return order[event] <= order[max]
 }
@@ -247,12 +248,12 @@ func levelIncludes(max, event framework.TraceLevel) bool {
 //
 // When mediatorEndpoint is set and a child trace is not found locally,
 // mergeChildTraces attempts to fetch it via the mediator's get_trace tool.
-func mergeChildTraces(events []framework.TraceEvent, stateDir, mediatorEndpoint string) []framework.TraceEvent {
+func mergeChildTraces(events []engine.TraceEvent, stateDir, mediatorEndpoint string) []engine.TraceEvent {
 	childByTraceID := indexRunsByTraceID(stateDir)
 
-	var out []framework.TraceEvent
+	var out []engine.TraceEvent
 	for _, ev := range events {
-		ct, _ := ev.Metadata[framework.ExtraKeyCircuitType].(string)
+		ct, _ := ev.Metadata[circuit.ExtraKeyCircuitType].(string)
 		switch ev.Event {
 		case "delegate_start":
 			label := ct
@@ -262,12 +263,12 @@ func mergeChildTraces(events []framework.TraceEvent, stateDir, mediatorEndpoint 
 			if ev.Metadata == nil {
 				ev.Metadata = make(map[string]any)
 			}
-			ev.Metadata[framework.TraceMetaDelegation] = label
+			ev.Metadata[circuit.TraceMetaDelegation] = label
 
 			out = append(out, ev)
 
 			// Try to inline child trace events.
-			traceID, _ := ev.Metadata[framework.ExtraKeyTraceID].(string)
+			traceID, _ := ev.Metadata[circuit.ExtraKeyTraceID].(string)
 			if traceID == "" {
 				continue
 			}
@@ -279,7 +280,7 @@ func mergeChildTraces(events []framework.TraceEvent, stateDir, mediatorEndpoint 
 					if ce.Metadata == nil {
 						ce.Metadata = make(map[string]any)
 					}
-					ce.Metadata[framework.TraceMetaSource] = label
+					ce.Metadata[circuit.TraceMetaSource] = label
 					out = append(out, ce)
 				}
 			} else if mediatorEndpoint != "" {
@@ -289,7 +290,7 @@ func mergeChildTraces(events []framework.TraceEvent, stateDir, mediatorEndpoint 
 					if ce.Metadata == nil {
 						ce.Metadata = make(map[string]any)
 					}
-					ce.Metadata[framework.TraceMetaSource] = label + " (remote)"
+					ce.Metadata[circuit.TraceMetaSource] = label + " (remote)"
 					out = append(out, ce)
 				}
 			}
@@ -302,7 +303,7 @@ func mergeChildTraces(events []framework.TraceEvent, stateDir, mediatorEndpoint 
 			if ev.Metadata == nil {
 				ev.Metadata = make(map[string]any)
 			}
-			ev.Metadata[framework.TraceMetaDelegation] = label
+			ev.Metadata[circuit.TraceMetaDelegation] = label
 			out = append(out, ev)
 
 		default:
@@ -335,7 +336,7 @@ func indexRunsByTraceID(stateDir string) map[string]string {
 			continue
 		}
 		runDir := filepath.Join(runsDir, e.Name())
-		rec, err := framework.LoadRunRecord(runDir)
+		rec, err := engine.LoadRunRecord(runDir)
 		if err != nil || rec.TraceID == "" {
 			continue
 		}
@@ -347,7 +348,7 @@ func indexRunsByTraceID(stateDir string) map[string]string {
 // fetchRemoteTrace calls get_trace on a remote MCP endpoint to fetch child
 // trace events for cross-service trace merging. Returns nil on any error
 // (best-effort — remote service may be offline).
-func fetchRemoteTrace(endpoint, traceID string) []framework.TraceEvent {
+func fetchRemoteTrace(endpoint, traceID string) []engine.TraceEvent {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -365,7 +366,7 @@ func fetchRemoteTrace(endpoint, traceID string) []framework.TraceEvent {
 	result, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
 		Name: "get_trace",
 		Arguments: mustMarshalJSON(map[string]any{
-			framework.ProtoKeySessionID: traceID,
+			circuit.ProtoKeySessionID: traceID,
 			"follow_delegations":        true,
 			"level":                     "info",
 			"limit":                     1000,
@@ -395,18 +396,18 @@ func mustMarshalJSON(v any) json.RawMessage {
 }
 
 // readTraceFile reads all trace events from a JSONL file. Returns nil on error.
-func readTraceFile(path string) []framework.TraceEvent {
+func readTraceFile(path string) []engine.TraceEvent {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil
 	}
 	defer f.Close()
 
-	var events []framework.TraceEvent
+	var events []engine.TraceEvent
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 0, 256*1024), 1024*1024)
 	for scanner.Scan() {
-		var ev framework.TraceEvent
+		var ev engine.TraceEvent
 		if err := json.Unmarshal(scanner.Bytes(), &ev); err != nil {
 			continue
 		}

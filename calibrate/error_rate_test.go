@@ -6,40 +6,41 @@ import (
 	"strings"
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 )
 
 // failTransformer errors when the walker's case ID starts with "fail-".
 type failTransformer struct{}
 
 func (failTransformer) Name() string { return "fail-on-id" }
-func (failTransformer) Transform(_ context.Context, tc *framework.TransformerContext) (any, error) {
+func (failTransformer) Transform(_ context.Context, tc *engine.TransformerContext) (any, error) {
 	if tc.WalkerState != nil && strings.HasPrefix(tc.WalkerState.ID, "fail-") {
 		return nil, fmt.Errorf("injected circuit error for case %s", tc.WalkerState.ID)
 	}
 	return "ok", nil
 }
 
-func errorRateCircuitDef() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func errorRateCircuitDef() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit: "error-rate-test",
 		Start:   "start",
 		Done:    "done",
-		Nodes:   []framework.NodeDef{{Name: "start", HandlerType: "transformer", Handler: "fail-on-id"}},
-		Edges:   []framework.EdgeDef{{ID: "start-done", From: "start", To: "done"}},
+		Nodes:   []circuit.NodeDef{{Name: "start", HandlerType: "transformer", Handler: "fail-on-id"}},
+		Edges:   []circuit.EdgeDef{{ID: "start-done", From: "start", To: "done"}},
 	}
 }
 
-func errorRateShared() framework.GraphRegistries {
-	return framework.GraphRegistries{
-		Transformers: framework.TransformerRegistry{
+func errorRateShared() engine.GraphRegistries {
+	return engine.GraphRegistries{
+		Transformers: engine.TransformerRegistry{
 			"fail-on-id": failTransformer{},
 		},
 	}
 }
 
 func TestErrorRate_NoErrors_NoGate(t *testing.T) {
-	loader := &mockLoader{cases: []framework.BatchCase{
+	loader := &mockLoader{cases: []engine.BatchCase{
 		{ID: "ok-1", Context: map[string]any{}},
 		{ID: "ok-2", Context: map[string]any{}},
 		{ID: "ok-3", Context: map[string]any{}},
@@ -68,10 +69,10 @@ func TestErrorRate_NoErrors_NoGate(t *testing.T) {
 
 func TestErrorRate_AtThreshold_Passes(t *testing.T) {
 	// 1/10 = 10% error rate, threshold = 10% → passes (not strictly greater)
-	cases := make([]framework.BatchCase, 10)
-	cases[0] = framework.BatchCase{ID: "fail-1", Context: map[string]any{}}
+	cases := make([]engine.BatchCase, 10)
+	cases[0] = engine.BatchCase{ID: "fail-1", Context: map[string]any{}}
 	for i := 1; i < 10; i++ {
-		cases[i] = framework.BatchCase{ID: fmt.Sprintf("ok-%d", i), Context: map[string]any{}}
+		cases[i] = engine.BatchCase{ID: fmt.Sprintf("ok-%d", i), Context: map[string]any{}}
 	}
 
 	loader := &mockLoader{cases: cases}
@@ -99,12 +100,12 @@ func TestErrorRate_AtThreshold_Passes(t *testing.T) {
 
 func TestErrorRate_ExceedsThreshold_Fails(t *testing.T) {
 	// 3/10 = 30% error rate, threshold = 10% → fails
-	cases := make([]framework.BatchCase, 10)
-	cases[0] = framework.BatchCase{ID: "fail-1", Context: map[string]any{}}
-	cases[1] = framework.BatchCase{ID: "fail-2", Context: map[string]any{}}
-	cases[2] = framework.BatchCase{ID: "fail-3", Context: map[string]any{}}
+	cases := make([]engine.BatchCase, 10)
+	cases[0] = engine.BatchCase{ID: "fail-1", Context: map[string]any{}}
+	cases[1] = engine.BatchCase{ID: "fail-2", Context: map[string]any{}}
+	cases[2] = engine.BatchCase{ID: "fail-3", Context: map[string]any{}}
 	for i := 3; i < 10; i++ {
-		cases[i] = framework.BatchCase{ID: fmt.Sprintf("ok-%d", i), Context: map[string]any{}}
+		cases[i] = engine.BatchCase{ID: fmt.Sprintf("ok-%d", i), Context: map[string]any{}}
 	}
 
 	loader := &mockLoader{cases: cases}
@@ -144,12 +145,12 @@ func TestErrorRate_ExceedsThreshold_Fails(t *testing.T) {
 
 func TestErrorRate_DefaultZero_NoGate(t *testing.T) {
 	// MaxErrorRate=0 (default) → no gate, even with 50% errors
-	cases := make([]framework.BatchCase, 10)
+	cases := make([]engine.BatchCase, 10)
 	for i := 0; i < 5; i++ {
-		cases[i] = framework.BatchCase{ID: fmt.Sprintf("fail-%d", i+1), Context: map[string]any{}}
+		cases[i] = engine.BatchCase{ID: fmt.Sprintf("fail-%d", i+1), Context: map[string]any{}}
 	}
 	for i := 5; i < 10; i++ {
-		cases[i] = framework.BatchCase{ID: fmt.Sprintf("ok-%d", i), Context: map[string]any{}}
+		cases[i] = engine.BatchCase{ID: fmt.Sprintf("ok-%d", i), Context: map[string]any{}}
 	}
 
 	loader := &mockLoader{cases: cases}

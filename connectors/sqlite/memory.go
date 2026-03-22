@@ -8,18 +8,18 @@ import (
 	"sync"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	_ "modernc.org/sqlite"
 )
 
-// PersistentStore implements framework.MemoryStore backed by SQLite.
+// PersistentStore implements circuit.MemoryStore backed by SQLite.
 // Data survives process restarts.
 type PersistentStore struct {
 	mu sync.RWMutex
 	db *sql.DB
 }
 
-var _ framework.MemoryStore = (*PersistentStore)(nil)
+var _ circuit.MemoryStore = (*PersistentStore)(nil)
 
 // NewMemoryStore creates a PersistentStore, auto-creating the DB and table.
 func NewMemoryStore(dbPath string) (*PersistentStore, error) {
@@ -111,7 +111,7 @@ func (s *PersistentStore) KeysNS(namespace, walkerID string) []string {
 	return keys
 }
 
-func (s *PersistentStore) Search(namespace, query string) []framework.MemoryItem {
+func (s *PersistentStore) Search(namespace, query string) []circuit.MemoryItem {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	pattern := "%" + query + "%"
@@ -124,9 +124,9 @@ func (s *PersistentStore) Search(namespace, query string) []framework.MemoryItem
 		return nil
 	}
 	defer rows.Close()
-	var items []framework.MemoryItem
+	var items []circuit.MemoryItem
 	for rows.Next() {
-		var item framework.MemoryItem
+		var item circuit.MemoryItem
 		var data []byte
 		var tags string
 		var created time.Time

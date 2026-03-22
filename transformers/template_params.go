@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	fw "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/engine"
 )
 
 // TemplateParamsTransformer assembles template parameters from walker state,
@@ -29,7 +29,7 @@ func NewTemplateParams() *TemplateParamsTransformer { return &TemplateParamsTran
 func (t *TemplateParamsTransformer) Name() string        { return "template-params" }
 func (t *TemplateParamsTransformer) Deterministic() bool { return true }
 
-func (t *TemplateParamsTransformer) Transform(_ context.Context, tc *fw.TransformerContext) (any, error) {
+func (t *TemplateParamsTransformer) Transform(_ context.Context, tc *engine.TransformerContext) (any, error) {
 	params := make(map[string]any)
 
 	if includeState, _ := tc.Meta["include_state"].(bool); includeState {

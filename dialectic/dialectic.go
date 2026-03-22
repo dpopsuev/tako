@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 )
 
 // Config controls the adversarial dialectic circuit activation and limits.
@@ -159,126 +160,126 @@ func (c *CMRRCheck) Raw() any            { return c }
 // BuildEdgeFactory returns an EdgeFactory with skeleton dialectic evaluators
 // (HD1-HD13) for the adversarial dialectic circuit. Each evaluator checks the
 // artifact type and dialectic-specific conditions.
-func BuildEdgeFactory(cfg Config) framework.EdgeFactory {
-	return framework.EdgeFactory{
-		"HD1": dialecticEdgeFactory(func(a framework.Artifact, _ *framework.WalkerState) *framework.Transition {
+func BuildEdgeFactory(cfg Config) engine.EdgeFactory {
+	return engine.EdgeFactory{
+		"HD1": dialecticEdgeFactory(func(a circuit.Artifact, _ *circuit.WalkerState) *circuit.Transition {
 			tc, ok := unwrapThesisChallenge(a)
 			if !ok {
 				return nil
 			}
 			if tc.ConfidenceScore >= 0.95 {
-				return &framework.Transition{NextNode: "defend", Explanation: "fast-track: thesis confidence >= 0.95"}
+				return &circuit.Transition{NextNode: "defend", Explanation: "fast-track: thesis confidence >= 0.95"}
 			}
 			return nil
 		}),
-		"HD2": dialecticEdgeFactory(func(a framework.Artifact, _ *framework.WalkerState) *framework.Transition {
+		"HD2": dialecticEdgeFactory(func(a circuit.Artifact, _ *circuit.WalkerState) *circuit.Transition {
 			ar, ok := unwrapAntithesisResponse(a)
 			if !ok {
 				return nil
 			}
 			if ar.Concession {
-				return &framework.Transition{NextNode: "verdict", Explanation: "concession: antithesis-holder concedes"}
+				return &circuit.Transition{NextNode: "verdict", Explanation: "concession: antithesis-holder concedes"}
 			}
 			return nil
 		}),
-		"HD3": dialecticEdgeFactory(func(a framework.Artifact, _ *framework.WalkerState) *framework.Transition {
+		"HD3": dialecticEdgeFactory(func(a circuit.Artifact, _ *circuit.WalkerState) *circuit.Transition {
 			ar, ok := unwrapAntithesisResponse(a)
 			if !ok {
 				return nil
 			}
 			if len(ar.Challenges) > 0 && ar.AlternativeHypothesis == "" {
-				return &framework.Transition{NextNode: "hearing", Explanation: "partial negation: challenges without alternative"}
+				return &circuit.Transition{NextNode: "hearing", Explanation: "partial negation: challenges without alternative"}
 			}
 			return nil
 		}),
-		"HD4": dialecticEdgeFactory(func(a framework.Artifact, _ *framework.WalkerState) *framework.Transition {
+		"HD4": dialecticEdgeFactory(func(a circuit.Artifact, _ *circuit.WalkerState) *circuit.Transition {
 			ar, ok := unwrapAntithesisResponse(a)
 			if !ok {
 				return nil
 			}
 			if ar.AlternativeHypothesis != "" {
-				return &framework.Transition{NextNode: "hearing", Explanation: "alternative hypothesis presented"}
+				return &circuit.Transition{NextNode: "hearing", Explanation: "alternative hypothesis presented"}
 			}
 			return nil
 		}),
-		"HD5": dialecticEdgeFactory(func(a framework.Artifact, _ *framework.WalkerState) *framework.Transition {
+		"HD5": dialecticEdgeFactory(func(a circuit.Artifact, _ *circuit.WalkerState) *circuit.Transition {
 			rec, ok := unwrapRecord(a)
 			if !ok {
 				return nil
 			}
 			if rec.GapClosure > 0 && rec.GapClosure < cfg.GapClosureThreshold {
-				return &framework.Transition{NextNode: "verdict", Explanation: fmt.Sprintf("gap closed (%.2f < %.2f threshold)", rec.GapClosure, cfg.GapClosureThreshold)}
+				return &circuit.Transition{NextNode: "verdict", Explanation: fmt.Sprintf("gap closed (%.2f < %.2f threshold)", rec.GapClosure, cfg.GapClosureThreshold)}
 			}
 			if rec.Converged || len(rec.Rounds) >= rec.MaxRounds {
-				return &framework.Transition{NextNode: "verdict", Explanation: "dialectic complete"}
+				return &circuit.Transition{NextNode: "verdict", Explanation: "dialectic complete"}
 			}
 			return nil
 		}),
-		"HD6": dialecticEdgeFactory(func(a framework.Artifact, _ *framework.WalkerState) *framework.Transition {
+		"HD6": dialecticEdgeFactory(func(a circuit.Artifact, _ *circuit.WalkerState) *circuit.Transition {
 			s, ok := unwrapSynthesis(a)
 			if !ok {
 				return nil
 			}
 			if s.Decision == SynthesisAffirm {
-				return &framework.Transition{NextNode: "_done", Explanation: "synthesis: affirm"}
+				return &circuit.Transition{NextNode: "_done", Explanation: "synthesis: affirm"}
 			}
 			return nil
 		}),
-		"HD7": dialecticEdgeFactory(func(a framework.Artifact, _ *framework.WalkerState) *framework.Transition {
+		"HD7": dialecticEdgeFactory(func(a circuit.Artifact, _ *circuit.WalkerState) *circuit.Transition {
 			s, ok := unwrapSynthesis(a)
 			if !ok {
 				return nil
 			}
 			if s.Decision == SynthesisAmend {
-				return &framework.Transition{NextNode: "_done", Explanation: "synthesis: amend"}
+				return &circuit.Transition{NextNode: "_done", Explanation: "synthesis: amend"}
 			}
 			return nil
 		}),
-		"HD8": dialecticEdgeFactory(func(a framework.Artifact, ws *framework.WalkerState) *framework.Transition {
+		"HD8": dialecticEdgeFactory(func(a circuit.Artifact, ws *circuit.WalkerState) *circuit.Transition {
 			s, ok := unwrapSynthesis(a)
 			if !ok {
 				return nil
 			}
 			if s.Decision == SynthesisRemand && ws.LoopCounts["verdict"] < cfg.MaxNegations {
-				return &framework.Transition{
+				return &circuit.Transition{
 					NextNode:    "indict",
 					Explanation: "synthesis: remand for reinvestigation",
 				}
 			}
 			return nil
 		}),
-		"HD9": dialecticEdgeFactory(func(a framework.Artifact, _ *framework.WalkerState) *framework.Transition {
+		"HD9": dialecticEdgeFactory(func(a circuit.Artifact, _ *circuit.WalkerState) *circuit.Transition {
 			s, ok := unwrapSynthesis(a)
 			if !ok {
 				return nil
 			}
 			if s.Decision == SynthesisAcquit {
-				return &framework.Transition{NextNode: "_done", Explanation: "synthesis: acquit (evidence gap brief)"}
+				return &circuit.Transition{NextNode: "_done", Explanation: "synthesis: acquit (evidence gap brief)"}
 			}
 			return nil
 		}),
-		"HD10": dialecticEdgeFactory(func(a framework.Artifact, ws *framework.WalkerState) *framework.Transition {
+		"HD10": dialecticEdgeFactory(func(a circuit.Artifact, ws *circuit.WalkerState) *circuit.Transition {
 			totalLoops := ws.LoopCounts["verdict"] + ws.LoopCounts["hearing"]
 			if totalLoops > cfg.MaxTurns {
 				gc := float64(0)
 				if rec, ok := unwrapRecord(a); ok {
 					gc = rec.GapClosure
 				}
-				return &framework.Transition{NextNode: "_done", Explanation: fmt.Sprintf("safety ceiling reached after %d turns, gap closure was %.2f", totalLoops, gc)}
+				return &circuit.Transition{NextNode: "_done", Explanation: fmt.Sprintf("safety ceiling reached after %d turns, gap closure was %.2f", totalLoops, gc)}
 			}
 			return nil
 		}),
-		"HD12": dialecticEdgeFactory(func(a framework.Artifact, _ *framework.WalkerState) *framework.Transition {
+		"HD12": dialecticEdgeFactory(func(a circuit.Artifact, _ *circuit.WalkerState) *circuit.Transition {
 			s, ok := unwrapSynthesis(a)
 			if !ok {
 				return nil
 			}
 			if s.Decision == SynthesisUnresolved {
-				return &framework.Transition{NextNode: "_done", Explanation: "synthesis: unresolved contradiction declared by arbiter"}
+				return &circuit.Transition{NextNode: "_done", Explanation: "synthesis: unresolved contradiction declared by arbiter"}
 			}
 			return nil
 		}),
-		"HD13": dialecticEdgeFactory(func(a framework.Artifact, _ *framework.WalkerState) *framework.Transition {
+		"HD13": dialecticEdgeFactory(func(a circuit.Artifact, _ *circuit.WalkerState) *circuit.Transition {
 			if !cfg.CMRREnabled {
 				return nil
 			}
@@ -287,7 +288,7 @@ func BuildEdgeFactory(cfg Config) framework.EdgeFactory {
 				return nil
 			}
 			if cmrr.SuspicionScore > 0 {
-				return &framework.Transition{
+				return &circuit.Transition{
 					NextNode:    "hearing",
 					Explanation: fmt.Sprintf("CMRR: shared assumptions detected (suspicion %.2f)", cmrr.SuspicionScore),
 					ContextAdditions: map[string]any{
@@ -301,16 +302,16 @@ func BuildEdgeFactory(cfg Config) framework.EdgeFactory {
 	}
 }
 
-type dialecticEvalFunc func(framework.Artifact, *framework.WalkerState) *framework.Transition
+type dialecticEvalFunc func(circuit.Artifact, *circuit.WalkerState) *circuit.Transition
 
-func dialecticEdgeFactory(eval dialecticEvalFunc) func(framework.EdgeDef) framework.Edge {
-	return func(def framework.EdgeDef) framework.Edge {
+func dialecticEdgeFactory(eval dialecticEvalFunc) func(circuit.EdgeDef) circuit.Edge {
+	return func(def circuit.EdgeDef) circuit.Edge {
 		return &dialecticEdge{def: def, eval: eval}
 	}
 }
 
 type dialecticEdge struct {
-	def  framework.EdgeDef
+	def  circuit.EdgeDef
 	eval dialecticEvalFunc
 }
 
@@ -319,11 +320,11 @@ func (e *dialecticEdge) From() string     { return e.def.From }
 func (e *dialecticEdge) To() string       { return e.def.To }
 func (e *dialecticEdge) IsShortcut() bool { return e.def.Shortcut }
 func (e *dialecticEdge) IsLoop() bool     { return e.def.Loop }
-func (e *dialecticEdge) Evaluate(a framework.Artifact, s *framework.WalkerState) *framework.Transition {
+func (e *dialecticEdge) Evaluate(a circuit.Artifact, s *circuit.WalkerState) *circuit.Transition {
 	return e.eval(a, s)
 }
 
-func unwrapThesisChallenge(a framework.Artifact) (*ThesisChallenge, bool) {
+func unwrapThesisChallenge(a circuit.Artifact) (*ThesisChallenge, bool) {
 	if a == nil {
 		return nil, false
 	}
@@ -331,7 +332,7 @@ func unwrapThesisChallenge(a framework.Artifact) (*ThesisChallenge, bool) {
 	return tc, ok
 }
 
-func unwrapAntithesisResponse(a framework.Artifact) (*AntithesisResponse, bool) {
+func unwrapAntithesisResponse(a circuit.Artifact) (*AntithesisResponse, bool) {
 	if a == nil {
 		return nil, false
 	}
@@ -339,7 +340,7 @@ func unwrapAntithesisResponse(a framework.Artifact) (*AntithesisResponse, bool) 
 	return ar, ok
 }
 
-func unwrapRecord(a framework.Artifact) (*Record, bool) {
+func unwrapRecord(a circuit.Artifact) (*Record, bool) {
 	if a == nil {
 		return nil, false
 	}
@@ -347,7 +348,7 @@ func unwrapRecord(a framework.Artifact) (*Record, bool) {
 	return rec, ok
 }
 
-func unwrapSynthesis(a framework.Artifact) (*Synthesis, bool) {
+func unwrapSynthesis(a circuit.Artifact) (*Synthesis, bool) {
 	if a == nil {
 		return nil, false
 	}
@@ -355,7 +356,7 @@ func unwrapSynthesis(a framework.Artifact) (*Synthesis, bool) {
 	return s, ok
 }
 
-func unwrapCMRRCheck(a framework.Artifact) (*CMRRCheck, bool) {
+func unwrapCMRRCheck(a circuit.Artifact) (*CMRRCheck, bool) {
 	if a == nil {
 		return nil, false
 	}

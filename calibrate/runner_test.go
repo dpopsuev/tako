@@ -5,18 +5,19 @@ import (
 	"fmt"
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 )
 
 // --- Mock implementations ---
 
 type mockLoader struct {
-	cases []framework.BatchCase
+	cases []engine.BatchCase
 	err   error
 	calls int
 }
 
-func (m *mockLoader) Load(_ context.Context) ([]framework.BatchCase, error) {
+func (m *mockLoader) Load(_ context.Context) ([]engine.BatchCase, error) {
 	m.calls++
 	return m.cases, m.err
 }
@@ -28,7 +29,7 @@ type mockCollector struct {
 	calls   int
 }
 
-func (m *mockCollector) Collect(_ context.Context, _ []framework.BatchWalkResult) (map[string]float64, map[string]string, error) {
+func (m *mockCollector) Collect(_ context.Context, _ []engine.BatchWalkResult) (map[string]float64, map[string]string, error) {
 	m.calls++
 	return m.values, m.details, m.err
 }
@@ -52,13 +53,13 @@ func testScoreCard() *ScoreCard {
 	}
 }
 
-func testCircuitDef() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func testCircuitDef() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit: "test-circuit",
 		Start:   "start",
 		Done:    "done",
-		Nodes:   []framework.NodeDef{{Name: "start", HandlerType: "transformer", Handler: "passthrough"}},
-		Edges:   []framework.EdgeDef{{ID: "start-done", From: "start", To: "done"}},
+		Nodes:   []circuit.NodeDef{{Name: "start", HandlerType: "transformer", Handler: "passthrough"}},
+		Edges:   []circuit.EdgeDef{{ID: "start-done", From: "start", To: "done"}},
 	}
 }
 
@@ -116,7 +117,7 @@ func TestRun_LoaderError(t *testing.T) {
 
 func TestRun_CollectorError(t *testing.T) {
 	_, err := Run(context.Background(), HarnessConfig{
-		Loader: &mockLoader{cases: []framework.BatchCase{
+		Loader: &mockLoader{cases: []engine.BatchCase{
 			{ID: "C1", Context: map[string]any{}},
 		}},
 		Collector:  &mockCollector{err: fmt.Errorf("collect failed")},
@@ -130,7 +131,7 @@ func TestRun_CollectorError(t *testing.T) {
 }
 
 func TestRun_SingleRun(t *testing.T) {
-	loader := &mockLoader{cases: []framework.BatchCase{
+	loader := &mockLoader{cases: []engine.BatchCase{
 		{ID: "C1", Context: map[string]any{}},
 	}}
 	collector := &mockCollector{
@@ -174,7 +175,7 @@ func TestRun_SingleRun(t *testing.T) {
 }
 
 func TestRun_MultiRun(t *testing.T) {
-	loader := &mockLoader{cases: []framework.BatchCase{
+	loader := &mockLoader{cases: []engine.BatchCase{
 		{ID: "C1", Context: map[string]any{}},
 	}}
 	collector := &mockCollector{
@@ -210,7 +211,7 @@ func TestRun_MultiRun(t *testing.T) {
 }
 
 func TestRun_DefaultRuns(t *testing.T) {
-	loader := &mockLoader{cases: []framework.BatchCase{
+	loader := &mockLoader{cases: []engine.BatchCase{
 		{ID: "C1", Context: map[string]any{}},
 	}}
 	collector := &mockCollector{

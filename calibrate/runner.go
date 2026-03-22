@@ -5,14 +5,15 @@ import (
 	"fmt"
 	"log/slog"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 )
 
 // ScenarioLoader prepares domain-specific scenarios for BatchWalk.
 // Each call to Load returns a fresh set of cases (e.g., with a new
 // in-memory store), enabling independent multi-run calibration.
 type ScenarioLoader interface {
-	Load(ctx context.Context) ([]framework.BatchCase, error)
+	Load(ctx context.Context) ([]engine.BatchCase, error)
 }
 
 // CaseCollector extracts domain-specific results from BatchWalk output
@@ -20,7 +21,7 @@ type ScenarioLoader interface {
 // Implementations typically store domain state internally (e.g., per-case
 // results) that callers retrieve after Run() for post-processing.
 type CaseCollector interface {
-	Collect(ctx context.Context, results []framework.BatchWalkResult) (
+	Collect(ctx context.Context, results []engine.BatchWalkResult) (
 		values map[string]float64, details map[string]string, err error)
 }
 
@@ -43,9 +44,9 @@ type HarnessConfig struct {
 	Collector CaseCollector
 	Renderer  ReportRenderer
 
-	CircuitDef *framework.CircuitDef
+	CircuitDef *circuit.CircuitDef
 	ScoreCard  *ScoreCard
-	Shared     framework.GraphRegistries
+	Shared     engine.GraphRegistries
 
 	// Contract enables contract-driven field extraction. When set, the
 	// harness extracts scorer-addressable values from BatchWalkResults
@@ -74,7 +75,7 @@ type HarnessConfig struct {
 	// Components are merged into Shared registries before BatchWalk.
 	// This lets callers pass pre-built components (e.g.,
 	// transformers.CoreComponent) without manually flattening them.
-	Components []*framework.Component
+	Components []*engine.Component
 
 	// WalkerContext is injected into every walker's context before walking.
 	// Populated automatically by Run() when PromptRelayer is set.
@@ -84,7 +85,7 @@ type HarnessConfig struct {
 	// delegation with LLM backends. When set alongside Shared.MediatorEndpoint,
 	// Run() automatically injects it into every walker's context.
 	// The MCP session layer provides this — circuit developers don't set it.
-	PromptRelayer framework.PromptRelayer
+	PromptRelayer engine.PromptRelayer
 
 	// MaxErrorRate is the maximum allowed fraction of cases with circuit errors.
 	// When set (> 0), Run() fails if the error rate exceeds this threshold.
@@ -96,11 +97,11 @@ type HarnessConfig struct {
 	Runs        int
 	Parallel    int
 
-	OnCaseComplete func(index int, result framework.BatchWalkResult)
+	OnCaseComplete func(index int, result engine.BatchWalkResult)
 
 	// Observer is an optional WalkObserver that receives debug/trace
 	// events from every case walk. Used by TraceRecorder.
-	Observer framework.WalkObserver
+	Observer circuit.WalkObserver
 }
 
 // Run orchestrates a generic calibration: load → walk → collect → score → aggregate.
@@ -143,7 +144,7 @@ func Run(ctx context.Context, cfg HarnessConfig) (*CalibrationReport, error) {
 
 	// Merge components into shared registries.
 	if len(cfg.Components) > 0 {
-		merged, err := framework.MergeComponents(cfg.Shared, cfg.Components...)
+		merged, err := engine.MergeComponents(cfg.Shared, cfg.Components...)
 		if err != nil {
 			return nil, fmt.Errorf("merge components: %w", err)
 		}
@@ -166,13 +167,13 @@ func Run(ctx context.Context, cfg HarnessConfig) (*CalibrationReport, error) {
 			if cfg.WalkerContext == nil {
 				cfg.WalkerContext = make(map[string]any)
 			}
-			cfg.WalkerContext[framework.ContextKeyPromptRelayer] = cfg.PromptRelayer
+			cfg.WalkerContext[engine.ContextKeyPromptRelayer] = cfg.PromptRelayer
 		}
 
 		// Fail-fast: detect circuit delegate nodes that need PromptRelayer.
 		if cfg.PromptRelayer == nil && cfg.Shared.MediatorEndpoint != "" && cfg.CircuitDef != nil {
 			for _, nd := range cfg.CircuitDef.Nodes {
-				if nd.EffectiveHandlerType(cfg.CircuitDef.HandlerType) == framework.HandlerTypeCircuit {
+				if nd.EffectiveHandlerType(cfg.CircuitDef.HandlerType) == circuit.HandlerTypeCircuit {
 					return nil, fmt.Errorf("circuit has handler_type:circuit node %q but no PromptRelayer configured; set HarnessConfig.PromptRelayer for mediator delegation", nd.Name)
 				}
 			}
@@ -190,7 +191,7 @@ func Run(ctx context.Context, cfg HarnessConfig) (*CalibrationReport, error) {
 			}
 		}
 
-		batchResults := framework.BatchWalk(ctx, framework.BatchWalkConfig{
+		batchResults := engine.BatchWalk(ctx, engine.BatchWalkConfig{
 			Def:            cfg.CircuitDef,
 			Shared:         cfg.Shared,
 			Cases:          cases,

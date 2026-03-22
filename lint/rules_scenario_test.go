@@ -4,20 +4,21 @@ import (
 	"strings"
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 )
 
 // --- S35: expected-path-node-names ---
 
 func TestS35_ExpectedPathNodeNames_InvalidNodes(t *testing.T) {
 	// Circuit with nodes [recall, triage], scenario references ["F0", "F1"] → finding
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "test",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "recall"},
 			{Name: "triage"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "recall", To: "triage"},
 			{ID: "e2", From: "triage", To: "_done"},
 		},
@@ -61,13 +62,13 @@ func TestS35_ExpectedPathNodeNames_InvalidNodes(t *testing.T) {
 
 func TestS35_ExpectedPathNodeNames_ValidNodes(t *testing.T) {
 	// Circuit with nodes [recall, triage], scenario references ["recall", "triage"] → no finding
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "test",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "recall"},
 			{Name: "triage"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "recall", To: "triage"},
 			{ID: "e2", From: "triage", To: "_done"},
 		},
@@ -102,13 +103,13 @@ func TestS35_ExpectedPathNodeNames_ValidNodes(t *testing.T) {
 
 func TestS36_CircuitHandlerResolution_Unresolvable(t *testing.T) {
 	// Node with handler_type=circuit handler=gnd, no circuit file for gnd → finding
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "rca",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "gather", HandlerType: "circuit", Handler: "gnd"},
 			{Name: "triage", Approach: "rapid"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "gather", To: "triage"},
 			{ID: "e2", From: "triage", To: "_done"},
 		},
@@ -142,12 +143,12 @@ func TestS36_CircuitHandlerResolution_Unresolvable(t *testing.T) {
 }
 
 func TestS36_CircuitHandlerResolution_Resolvable(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "rca",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "gather", HandlerType: "circuit", Handler: "gnd"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "gather", To: "_done"},
 		},
 		Start: "gather",
@@ -173,14 +174,14 @@ func TestS36_CircuitHandlerResolution_Resolvable(t *testing.T) {
 
 func TestS37_DeadNodeDetection_UntestedNode(t *testing.T) {
 	// Node gather-code in edges, never in expected_path → finding (warning)
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "test",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "recall"},
 			{Name: "gather-code"},
 			{Name: "triage"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "recall", To: "gather-code"},
 			{ID: "e2", From: "gather-code", To: "triage"},
 			{ID: "e3", From: "triage", To: "_done"},
@@ -223,13 +224,13 @@ func TestS37_DeadNodeDetection_UntestedNode(t *testing.T) {
 }
 
 func TestS37_DeadNodeDetection_AllTested(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "test",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "recall"},
 			{Name: "triage"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "recall", To: "triage"},
 			{ID: "e2", From: "triage", To: "_done"},
 		},
@@ -263,12 +264,12 @@ func TestS37_DeadNodeDetection_AllTested(t *testing.T) {
 
 func TestS38_MediatorBackendCoverage_NoCircuitNoResolver(t *testing.T) {
 	// handler_type=circuit handler=gnd, no circuit file, no registries → finding (warning)
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "rca",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "gather", HandlerType: "circuit", Handler: "gnd"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "gather", To: "_done"},
 		},
 		Start: "gather",
@@ -298,12 +299,12 @@ func TestS38_MediatorBackendCoverage_NoCircuitNoResolver(t *testing.T) {
 }
 
 func TestS38_MediatorBackendCoverage_WithLocalCircuit(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "rca",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "gather", HandlerType: "circuit", Handler: "gnd"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "gather", To: "_done"},
 		},
 		Start: "gather",
@@ -325,12 +326,12 @@ func TestS38_MediatorBackendCoverage_WithLocalCircuit(t *testing.T) {
 }
 
 func TestS38_MediatorBackendCoverage_WithMediatorEndpoint(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "rca",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "gather", HandlerType: "circuit", Handler: "gnd"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "gather", To: "_done"},
 		},
 		Start: "gather",
@@ -338,7 +339,7 @@ func TestS38_MediatorBackendCoverage_WithMediatorEndpoint(t *testing.T) {
 	}
 
 	ctx := NewLintContextFromDef(def, "rca.yaml")
-	ctx.Registries = &framework.GraphRegistries{
+	ctx.Registries = &engine.GraphRegistries{
 		MediatorEndpoint: "localhost:9000",
 	}
 
@@ -356,18 +357,18 @@ func TestS38_MediatorBackendCoverage_WithMediatorEndpoint(t *testing.T) {
 
 func TestS39_PortTypeConsistency_Mismatch(t *testing.T) {
 	// Wiring with mismatched port types → finding (warning)
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "orchestrator",
-		Ports: []framework.PortDef{
+		Ports: []circuit.PortDef{
 			{Name: "post-triage", Direction: "out", Type: "string"},
 		},
-		Wiring: []framework.WiringDef{
+		Wiring: []circuit.WiringDef{
 			{From: "orchestrator.out:post-triage", To: "gnd.in:keywords"},
 		},
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "init"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "init", To: "_done"},
 		},
 		Start: "init",
@@ -405,18 +406,18 @@ func TestS39_PortTypeConsistency_Mismatch(t *testing.T) {
 }
 
 func TestS39_PortTypeConsistency_Match(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "orchestrator",
-		Ports: []framework.PortDef{
+		Ports: []circuit.PortDef{
 			{Name: "post-triage", Direction: "out", Type: "string"},
 		},
-		Wiring: []framework.WiringDef{
+		Wiring: []circuit.WiringDef{
 			{From: "orchestrator.out:post-triage", To: "gnd.in:keywords"},
 		},
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "init"},
 		},
-		Edges: []framework.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "init", To: "_done"},
 		},
 		Start: "init",

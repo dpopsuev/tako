@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/kami"
 	"github.com/dpopsuev/origami/view"
 
@@ -25,13 +25,13 @@ func windowSizeMsg(w, h int) tea.WindowSizeMsg {
 }
 
 func TestIntegration_RecorderCapturesFrameOnDiff(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "rec-test",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "alpha", Approach: "rapid"},
 			{Name: "beta", Approach: "analytical"},
 		},
-		Edges: []framework.EdgeDef{{From: "alpha", To: "beta"}},
+		Edges: []circuit.EdgeDef{{From: "alpha", To: "beta"}},
 		Start: "alpha",
 		Done:  "beta",
 	}
@@ -87,9 +87,9 @@ func TestIntegration_RecorderCapturesFrameOnDiff(t *testing.T) {
 }
 
 func TestIntegration_RecorderNoColorOutput(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "nocolor-test",
-		Nodes:   []framework.NodeDef{{Name: "node1"}},
+		Nodes:   []circuit.NodeDef{{Name: "node1"}},
 		Start:   "node1",
 		Done:    "node1",
 	}
@@ -278,7 +278,7 @@ func TestFramePushLoop_NoPushWhenEmpty(t *testing.T) {
 // --- Pipeline tests (T1-T4) ---
 // These test the full frame pipeline: Model.Update -> ViewRecorder -> framePushLoop -> Kami
 
-func newPipelineModel(t *testing.T, def *framework.CircuitDef, recorder *ViewRecorder) Model {
+func newPipelineModel(t *testing.T, def *circuit.CircuitDef, recorder *ViewRecorder) Model {
 	t.Helper()
 	store := view.NewCircuitStore(def)
 	t.Cleanup(store.Close)
@@ -293,14 +293,14 @@ func newPipelineModel(t *testing.T, def *framework.CircuitDef, recorder *ViewRec
 	})
 }
 
-func pipelineDef() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func pipelineDef() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit: "pipeline-test",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "recall", Approach: "rapid"},
 			{Name: "triage", Approach: "analytical"},
 		},
-		Edges: []framework.EdgeDef{{From: "recall", To: "triage"}},
+		Edges: []circuit.EdgeDef{{From: "recall", To: "triage"}},
 		Start: "recall",
 		Done:  "triage",
 	}
@@ -474,7 +474,7 @@ func TestPipeline_KamiFrameStoreReadBack(t *testing.T) {
 }
 
 func TestPipeline_EmptyWatchCircuit(t *testing.T) {
-	emptyDef := &framework.CircuitDef{Circuit: "watch"}
+	emptyDef := &circuit.CircuitDef{Circuit: "watch"}
 
 	var mu sync.Mutex
 	var received view.RecordedFrame
@@ -543,9 +543,9 @@ func TestPipeline_EmptyWatchCircuit(t *testing.T) {
 }
 
 func TestIntegration_RecorderOnlyOnStateChange(t *testing.T) {
-	def := &framework.CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "dirty-test",
-		Nodes:   []framework.NodeDef{{Name: "a"}},
+		Nodes:   []circuit.NodeDef{{Name: "a"}},
 		Start:   "a",
 		Done:    "a",
 	}

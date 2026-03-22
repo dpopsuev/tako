@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/persona"
 )
 
@@ -15,9 +15,9 @@ var validApproaches = map[string]bool{
 }
 
 var validMergeStrategies = map[string]bool{
-	framework.MergeAppend: true,
-	framework.MergeLatest: true,
-	framework.MergeCustom: true,
+	circuit.MergeAppend: true,
+	circuit.MergeLatest: true,
+	circuit.MergeCustom: true,
 }
 
 func knownPersonas() map[string]bool {
@@ -218,9 +218,9 @@ func (r *EmptyPrompt) Check(ctx *LintContext) []Finding {
 	for _, nd := range ctx.Def.Nodes {
 		ht := nd.EffectiveHandlerType(ctx.Def.HandlerType)
 		// node/delegate/circuit/extractor/renderer handler types provide their own logic
-		if ht == framework.HandlerTypeNode || ht == framework.HandlerTypeDelegate ||
-			ht == framework.HandlerTypeCircuit || ht == framework.HandlerTypeExtractor ||
-			ht == framework.HandlerTypeRenderer {
+		if ht == circuit.HandlerTypeNode || ht == circuit.HandlerTypeDelegate ||
+			ht == circuit.HandlerTypeCircuit || ht == circuit.HandlerTypeExtractor ||
+			ht == circuit.HandlerTypeRenderer {
 			continue
 		}
 		// handler: set means resolution is explicit — skip this check
@@ -520,7 +520,7 @@ func (r *DelegateWithoutGenerator) Check(ctx *LintContext) []Finding {
 	var out []Finding
 	for _, nd := range ctx.Def.Nodes {
 		ht := nd.EffectiveHandlerType(ctx.Def.HandlerType)
-		if ht == framework.HandlerTypeDelegate && nd.Handler == "" {
+		if ht == circuit.HandlerTypeDelegate && nd.Handler == "" {
 			out = append(out, Finding{
 				RuleID:   r.ID(),
 				Severity: r.Severity(),

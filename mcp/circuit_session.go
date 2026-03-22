@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/dispatch"
 )
 
@@ -57,7 +57,7 @@ type CircuitSession struct {
 
 	Supervisor *dispatch.SupervisorTracker
 
-	recorder  *framework.TraceRecorder // nil when tracing disabled
+	recorder  *engine.TraceRecorder // nil when tracing disabled
 	runDir    string                   // {StateDir}/runs/{sessID}
 	startedAt time.Time               // set when session is created
 	traceID   string                   // cross-circuit correlation ID
@@ -429,7 +429,7 @@ func (s *CircuitSession) writeRunRecord() {
 		traceEvents = s.recorder.EventCount()
 	}
 
-	rec := framework.RunRecord{
+	rec := engine.RunRecord{
 		ID:          s.ID,
 		TraceID:     s.traceID,
 		Scenario:    s.Scenario,
@@ -442,7 +442,7 @@ func (s *CircuitSession) writeRunRecord() {
 		TraceEvents: traceEvents,
 	}
 
-	if err := framework.SaveRunRecord(s.runDir, rec); err != nil {
+	if err := engine.SaveRunRecord(s.runDir, rec); err != nil {
 		s.log.Warn("failed to write run.json", "error", err)
 	} else {
 		s.log.Info("run record written", "path", s.runDir)

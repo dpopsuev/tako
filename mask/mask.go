@@ -7,12 +7,12 @@ import (
 	"context"
 	"fmt"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/element"
 )
 
 // NodeProcessor is the function signature for processing a node.
-type NodeProcessor func(ctx context.Context, nc framework.NodeContext) (framework.Artifact, error)
+type NodeProcessor func(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error)
 
 // Mask is a detachable capability modifier that wraps a Node's processing.
 // Masks grant powers at specific nodes without changing the agent's core identity.
@@ -28,7 +28,7 @@ type Registry map[string]Mask
 
 // MaskedNode wraps a Node with one or more Masks applied as middleware.
 type MaskedNode struct {
-	Inner framework.Node
+	Inner circuit.Node
 	Masks []Mask
 }
 
@@ -37,7 +37,7 @@ func (mn *MaskedNode) ElementAffinity() element.Element { return mn.Inner.Elemen
 
 // Process executes the node with all masks applied as a middleware chain.
 // First equipped = outermost wrapper: A.pre -> B.pre -> Node -> B.post -> A.post.
-func (mn *MaskedNode) Process(ctx context.Context, nc framework.NodeContext) (framework.Artifact, error) {
+func (mn *MaskedNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	var processor NodeProcessor = mn.Inner.Process
 	for i := len(mn.Masks) - 1; i >= 0; i-- {
 		processor = mn.Masks[i].Wrap(processor)
@@ -48,7 +48,7 @@ func (mn *MaskedNode) Process(ctx context.Context, nc framework.NodeContext) (fr
 // Equip adds a mask to a node. Returns error if the mask is not valid
 // for this node's name. If the node is already a MaskedNode, the mask is
 // appended to the existing chain.
-func Equip(node framework.Node, m Mask) (*MaskedNode, error) {
+func Equip(node circuit.Node, m Mask) (*MaskedNode, error) {
 	if !isValidNode(node.Name(), m.ValidNodes()) {
 		return nil, fmt.Errorf("mask %q cannot be equipped at node %q (valid: %v)",
 			m.Name(), node.Name(), m.ValidNodes())
@@ -63,7 +63,7 @@ func Equip(node framework.Node, m Mask) (*MaskedNode, error) {
 }
 
 // EquipMany adds multiple masks to a node. First mask = outermost wrapper.
-func EquipMany(node framework.Node, masks ...Mask) (*MaskedNode, error) {
+func EquipMany(node circuit.Node, masks ...Mask) (*MaskedNode, error) {
 	var result *MaskedNode
 	for _, m := range masks {
 		var err error
@@ -96,7 +96,7 @@ func (m *recallMask) Name() string        { return "mask-of-recall" }
 func (m *recallMask) Description() string  { return "Injects prior RCA database context" }
 func (m *recallMask) ValidNodes() []string { return []string{"recall"} }
 func (m *recallMask) Wrap(next NodeProcessor) NodeProcessor {
-	return func(ctx context.Context, nc framework.NodeContext) (framework.Artifact, error) {
+	return func(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 		if nc.Meta == nil {
 			nc.Meta = make(map[string]any)
 		}
@@ -114,7 +114,7 @@ func (m *forgeMask) Name() string        { return "mask-of-the-forge" }
 func (m *forgeMask) Description() string  { return "Injects GND source context" }
 func (m *forgeMask) ValidNodes() []string { return []string{"investigate"} }
 func (m *forgeMask) Wrap(next NodeProcessor) NodeProcessor {
-	return func(ctx context.Context, nc framework.NodeContext) (framework.Artifact, error) {
+	return func(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 		if nc.Meta == nil {
 			nc.Meta = make(map[string]any)
 		}
@@ -132,7 +132,7 @@ func (m *correlationMask) Name() string        { return "mask-of-correlation" }
 func (m *correlationMask) Description() string  { return "Enables cross-case pattern matching" }
 func (m *correlationMask) ValidNodes() []string { return []string{"correlate"} }
 func (m *correlationMask) Wrap(next NodeProcessor) NodeProcessor {
-	return func(ctx context.Context, nc framework.NodeContext) (framework.Artifact, error) {
+	return func(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 		if nc.Meta == nil {
 			nc.Meta = make(map[string]any)
 		}
@@ -150,7 +150,7 @@ func (m *judgmentMask) Name() string        { return "mask-of-judgment" }
 func (m *judgmentMask) Description() string  { return "Grants authority to approve/reject/reassess" }
 func (m *judgmentMask) ValidNodes() []string { return []string{"review"} }
 func (m *judgmentMask) Wrap(next NodeProcessor) NodeProcessor {
-	return func(ctx context.Context, nc framework.NodeContext) (framework.Artifact, error) {
+	return func(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 		if nc.Meta == nil {
 			nc.Meta = make(map[string]any)
 		}

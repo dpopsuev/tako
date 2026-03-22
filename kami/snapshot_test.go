@@ -8,14 +8,14 @@ import (
 	"testing"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/view"
 )
 
-func rcaDef() *framework.CircuitDef {
-	return &framework.CircuitDef{
+func rcaDef() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit: "rca",
-		Nodes: []framework.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "recall"},
 			{Name: "triage"},
 			{Name: "resolve"},
@@ -100,8 +100,8 @@ func TestSSE_NodeEnterUpdatesNodeState(t *testing.T) {
 
 	srv.StartOnAvailablePort(ctx)
 
-	store.OnEvent(framework.WalkEvent{
-		Type:   framework.EventNodeEnter,
+	store.OnEvent(circuit.WalkEvent{
+		Type:   circuit.EventNodeEnter,
 		Node:   "recall",
 		Walker: "C08",
 	})
@@ -126,12 +126,12 @@ func TestSSE_NodeEnterUpdatesNodeState(t *testing.T) {
 }
 
 func TestSSE_EmptyDefDropsNodeEvents(t *testing.T) {
-	emptyDef := &framework.CircuitDef{Circuit: "watch"}
+	emptyDef := &circuit.CircuitDef{Circuit: "watch"}
 	store := view.NewCircuitStore(emptyDef)
 	defer store.Close()
 
-	store.OnEvent(framework.WalkEvent{
-		Type:   framework.EventNodeEnter,
+	store.OnEvent(circuit.WalkEvent{
+		Type:   circuit.EventNodeEnter,
 		Node:   "recall",
 		Walker: "C08",
 	})
@@ -165,13 +165,13 @@ func TestSSE_WalkerMovesAcrossNodes(t *testing.T) {
 
 	steps := []string{"recall", "triage", "resolve", "investigate"}
 	for _, node := range steps {
-		store.OnEvent(framework.WalkEvent{
-			Type:   framework.EventNodeEnter,
+		store.OnEvent(circuit.WalkEvent{
+			Type:   circuit.EventNodeEnter,
 			Node:   node,
 			Walker: "C04",
 		})
-		store.OnEvent(framework.WalkEvent{
-			Type: framework.EventNodeExit,
+		store.OnEvent(circuit.WalkEvent{
+			Type: circuit.EventNodeExit,
 			Node: node,
 		})
 	}
@@ -203,9 +203,9 @@ func TestSSE_MultipleWalkersAtDifferentNodes(t *testing.T) {
 	store := view.NewCircuitStore(def)
 	defer store.Close()
 
-	store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "recall", Walker: "C04"})
-	store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "triage", Walker: "C05"})
-	store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "investigate", Walker: "C08"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall", Walker: "C04"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "triage", Walker: "C05"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "investigate", Walker: "C08"})
 
 	snap := store.Snapshot()
 	if len(snap.Walkers) != 3 {
@@ -309,9 +309,9 @@ func TestSSE_EventsMatchStoreSnapshot(t *testing.T) {
 		t.Fatalf("start: %v", err)
 	}
 
-	store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "recall", Walker: "C04"})
-	store.OnEvent(framework.WalkEvent{Type: framework.EventNodeExit, Node: "recall"})
-	store.OnEvent(framework.WalkEvent{Type: framework.EventNodeEnter, Node: "triage", Walker: "C04"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall", Walker: "C04"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "recall"})
+	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "triage", Walker: "C04"})
 
 	time.Sleep(50 * time.Millisecond)
 

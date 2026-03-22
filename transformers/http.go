@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	fw "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/engine"
 )
 
 // HTTPTransformer makes HTTP requests and returns the JSON response body.
@@ -45,7 +45,7 @@ func NewHTTP(opts ...HTTPOption) *HTTPTransformer {
 func (t *HTTPTransformer) Name() string        { return "http" }
 func (t *HTTPTransformer) Deterministic() bool { return true }
 
-func (t *HTTPTransformer) Transform(ctx context.Context, tc *fw.TransformerContext) (any, error) {
+func (t *HTTPTransformer) Transform(ctx context.Context, tc *engine.TransformerContext) (any, error) {
 	url, _ := metaString(tc, "url")
 	if url == "" {
 		return nil, fmt.Errorf("http transformer: 'url' is required in meta")
@@ -117,7 +117,7 @@ func (t *HTTPTransformer) Transform(ctx context.Context, tc *fw.TransformerConte
 	return result, nil
 }
 
-func metaString(tc *fw.TransformerContext, key string) (string, bool) {
+func metaString(tc *engine.TransformerContext, key string) (string, bool) {
 	if tc.Meta == nil {
 		return "", false
 	}

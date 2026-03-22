@@ -3,7 +3,8 @@ package toolkit
 import (
 	"context"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine"
 )
 
 // NewContextInjector creates a before-hook that extracts the walker context
@@ -11,9 +12,9 @@ import (
 // WalkerStateFromContext + nil check in every inject-style hook.
 //
 // The hook is a no-op if the walker state is not available in context.
-func NewContextInjector(name string, fn func(walkerCtx map[string]any)) framework.Hook {
-	return framework.NewHookFunc(name, func(ctx context.Context, _ string, _ framework.Artifact) error {
-		ws := framework.WalkerStateFromContext(ctx)
+func NewContextInjector(name string, fn func(walkerCtx map[string]any)) engine.Hook {
+	return engine.NewHookFunc(name, func(ctx context.Context, _ string, _ circuit.Artifact) error {
+		ws := engine.WalkerStateFromContext(ctx)
 		if ws == nil {
 			return nil
 		}
@@ -24,9 +25,9 @@ func NewContextInjector(name string, fn func(walkerCtx map[string]any)) framewor
 
 // NewContextInjectorErr is like NewContextInjector but the injector function
 // can return an error to abort the walk.
-func NewContextInjectorErr(name string, fn func(ctx context.Context, walkerCtx map[string]any) error) framework.Hook {
-	return framework.NewHookFunc(name, func(ctx context.Context, _ string, _ framework.Artifact) error {
-		ws := framework.WalkerStateFromContext(ctx)
+func NewContextInjectorErr(name string, fn func(ctx context.Context, walkerCtx map[string]any) error) engine.Hook {
+	return engine.NewHookFunc(name, func(ctx context.Context, _ string, _ circuit.Artifact) error {
+		ws := engine.WalkerStateFromContext(ctx)
 		if ws == nil {
 			return nil
 		}

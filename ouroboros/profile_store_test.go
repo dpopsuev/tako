@@ -4,13 +4,13 @@ import (
 	"testing"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/element"
 )
 
 func makeTestProfile(modelName string, ts time.Time) ModelProfile {
 	return ModelProfile{
-		Model:          framework.ModelIdentity{ModelName: modelName, Provider: "test"},
+		Model:          circuit.ModelIdentity{ModelName: modelName, Provider: "test"},
 		BatteryVersion: "ouroboros-v1",
 		Timestamp:      ts,
 		Dimensions: map[Dimension]float64{

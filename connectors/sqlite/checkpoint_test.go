@@ -6,7 +6,7 @@ import (
 	"sync"
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 func newTestCP(t *testing.T) *SQLiteCheckpointer {
@@ -21,13 +21,13 @@ func newTestCP(t *testing.T) *SQLiteCheckpointer {
 }
 
 func TestSQLiteCheckpointer_InterfaceCompliance(t *testing.T) {
-	var _ framework.Checkpointer = (*SQLiteCheckpointer)(nil)
+	var _ circuit.Checkpointer = (*SQLiteCheckpointer)(nil)
 }
 
 func TestSQLiteCheckpointer_SaveAndLoad(t *testing.T) {
 	cp := newTestCP(t)
 
-	state := framework.NewWalkerState("walk-1")
+	state := circuit.NewWalkerState("walk-1")
 	state.CurrentNode = "investigate"
 	state.LoopCounts["investigate"] = 2
 	state.Context["key"] = "value"
@@ -67,7 +67,7 @@ func TestSQLiteCheckpointer_LoadNotFound(t *testing.T) {
 
 func TestSQLiteCheckpointer_Remove(t *testing.T) {
 	cp := newTestCP(t)
-	cp.Save(framework.NewWalkerState("walk-rm"))
+	cp.Save(circuit.NewWalkerState("walk-rm"))
 
 	if err := cp.Remove("walk-rm"); err != nil {
 		t.Fatalf("Remove: %v", err)
@@ -80,9 +80,9 @@ func TestSQLiteCheckpointer_Remove(t *testing.T) {
 
 func TestSQLiteCheckpointer_List(t *testing.T) {
 	cp := newTestCP(t)
-	cp.Save(framework.NewWalkerState("a"))
-	cp.Save(framework.NewWalkerState("b"))
-	cp.Save(framework.NewWalkerState("c"))
+	cp.Save(circuit.NewWalkerState("a"))
+	cp.Save(circuit.NewWalkerState("b"))
+	cp.Save(circuit.NewWalkerState("c"))
 
 	ids, err := cp.List()
 	if err != nil {
@@ -96,7 +96,7 @@ func TestSQLiteCheckpointer_List(t *testing.T) {
 func TestSQLiteCheckpointer_Overwrite(t *testing.T) {
 	cp := newTestCP(t)
 
-	state := framework.NewWalkerState("ow")
+	state := circuit.NewWalkerState("ow")
 	state.CurrentNode = "a"
 	cp.Save(state)
 
@@ -119,7 +119,7 @@ func TestSQLiteCheckpointer_ConcurrentAccess(t *testing.T) {
 		go func(n int) {
 			defer wg.Done()
 			id := fmt.Sprintf("walk-%d", n)
-			state := framework.NewWalkerState(id)
+			state := circuit.NewWalkerState(id)
 			state.CurrentNode = "test"
 			if err := cp.Save(state); err != nil {
 				t.Errorf("Save %s: %v", id, err)

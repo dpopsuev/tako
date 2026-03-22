@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
 )
 
@@ -15,8 +15,8 @@ func TestEventBridge_WalkEventMapping(t *testing.T) {
 	id, ch := bridge.Subscribe()
 	defer bridge.Unsubscribe(id)
 
-	bridge.OnEvent(framework.WalkEvent{
-		Type:    framework.EventNodeEnter,
+	bridge.OnEvent(circuit.WalkEvent{
+		Type:    circuit.EventNodeEnter,
 		Node:    "triage",
 		Walker:  "sentinel",
 		Elapsed: 150 * time.Millisecond,
@@ -48,8 +48,8 @@ func TestEventBridge_WalkEventError(t *testing.T) {
 	id, ch := bridge.Subscribe()
 	defer bridge.Unsubscribe(id)
 
-	bridge.OnEvent(framework.WalkEvent{
-		Type:  framework.EventWalkError,
+	bridge.OnEvent(circuit.WalkEvent{
+		Type:  circuit.EventWalkError,
 		Node:  "investigate",
 		Error: errTest,
 	})
@@ -162,5 +162,5 @@ func TestEventBridge_CloseStopsPolling(t *testing.T) {
 }
 
 func TestEventBridge_ImplementsWalkObserver(t *testing.T) {
-	var _ framework.WalkObserver = (*EventBridge)(nil)
+	var _ circuit.WalkObserver = (*EventBridge)(nil)
 }

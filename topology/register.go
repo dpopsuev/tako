@@ -3,12 +3,12 @@ package topology
 import (
 	"fmt"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 func init() {
 	reg := DefaultRegistry()
-	framework.RegisterTopologyValidator(func(topoName string, shape framework.GraphShape) error {
+	circuit.RegisterTopologyValidator(func(topoName string, shape circuit.GraphShape) error {
 		topoDef, ok := reg.Lookup(topoName)
 		if !ok {
 			return fmt.Errorf("unknown topology %q (known: %v)", topoName, reg.List())
@@ -22,9 +22,9 @@ func init() {
 	})
 }
 
-// shapeAdapter converts framework.GraphShape to topology.GraphShape.
+// shapeAdapter converts circuit.GraphShape to topology.GraphShape.
 type shapeAdapter struct {
-	shape framework.GraphShape
+	shape circuit.GraphShape
 }
 
 func (a *shapeAdapter) StartNode() string { return a.shape.StartNode }

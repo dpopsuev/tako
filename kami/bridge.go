@@ -4,12 +4,12 @@ import (
 	"sync"
 	"time"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
 )
 
 // EventBridge unifies WalkObserver events and SignalBus signals into a
-// single KamiEvent stream. It implements framework.WalkObserver and
+// single KamiEvent stream. It implements circuit.WalkObserver and
 // polls a SignalBus, normalizing both into Event values broadcast to
 // all subscribers.
 //
@@ -76,9 +76,9 @@ func (b *EventBridge) Emit(e Event) {
 	}
 }
 
-// OnEvent implements framework.WalkObserver. It converts a WalkEvent
+// OnEvent implements circuit.WalkObserver. It converts a WalkEvent
 // into a KamiEvent and broadcasts it.
-func (b *EventBridge) OnEvent(we framework.WalkEvent) {
+func (b *EventBridge) OnEvent(we circuit.WalkEvent) {
 	e := Event{
 		Type:      EventType(we.Type),
 		Timestamp: time.Now().UTC(),

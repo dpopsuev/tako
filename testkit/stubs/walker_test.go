@@ -5,17 +5,17 @@ import (
 	"errors"
 	"testing"
 
-	framework "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/testkit/stubs"
 )
 
 func TestStubWalker_CannedArtifact(t *testing.T) {
 	art := &testArt{val: "result"}
-	w := stubs.NewStubWalker("w1", map[string]framework.Artifact{
+	w := stubs.NewStubWalker("w1", map[string]circuit.Artifact{
 		"recall": art,
 	})
 
-	got, err := w.Handle(context.Background(), &stubNode{name: "recall"}, framework.NodeContext{})
+	got, err := w.Handle(context.Background(), &stubNode{name: "recall"}, circuit.NodeContext{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -27,7 +27,7 @@ func TestStubWalker_CannedArtifact(t *testing.T) {
 func TestStubWalker_DefaultArtifact(t *testing.T) {
 	w := stubs.NewStubWalker("w1", nil)
 
-	got, err := w.Handle(context.Background(), &stubNode{name: "recall"}, framework.NodeContext{})
+	got, err := w.Handle(context.Background(), &stubNode{name: "recall"}, circuit.NodeContext{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +44,7 @@ func TestStubWalker_ErrorInjection(t *testing.T) {
 	injected := errors.New("boom")
 	w.SetError(injected)
 
-	_, err := w.Handle(context.Background(), &stubNode{name: "recall"}, framework.NodeContext{})
+	_, err := w.Handle(context.Background(), &stubNode{name: "recall"}, circuit.NodeContext{})
 	if !errors.Is(err, injected) {
 		t.Errorf("got %v, want injected error", err)
 	}
@@ -52,9 +52,9 @@ func TestStubWalker_ErrorInjection(t *testing.T) {
 
 func TestStubWalker_Visited(t *testing.T) {
 	w := stubs.NewStubWalker("w1", nil)
-	w.Handle(context.Background(), &stubNode{name: "recall"}, framework.NodeContext{})
-	w.Handle(context.Background(), &stubNode{name: "triage"}, framework.NodeContext{})
-	w.Handle(context.Background(), &stubNode{name: "recall"}, framework.NodeContext{})
+	w.Handle(context.Background(), &stubNode{name: "recall"}, circuit.NodeContext{})
+	w.Handle(context.Background(), &stubNode{name: "triage"}, circuit.NodeContext{})
+	w.Handle(context.Background(), &stubNode{name: "recall"}, circuit.NodeContext{})
 
 	visited := w.Visited()
 	if len(visited) != 3 {
@@ -76,7 +76,7 @@ func TestStubWalker_Identity(t *testing.T) {
 
 func TestStubWalker_SetIdentity(t *testing.T) {
 	w := stubs.NewStubWalker("w1", nil)
-	newID := framework.AgentIdentity{PersonaName: "w2"}
+	newID := circuit.AgentIdentity{PersonaName: "w2"}
 	w.SetIdentity(newID)
 
 	id := w.Identity()
@@ -103,25 +103,25 @@ func TestStubWalker_State(t *testing.T) {
 func TestStubWalker_Reset(t *testing.T) {
 	w := stubs.NewStubWalker("w1", nil)
 	w.SetError(errors.New("e"))
-	w.Handle(context.Background(), &stubNode{name: "recall"}, framework.NodeContext{})
+	w.Handle(context.Background(), &stubNode{name: "recall"}, circuit.NodeContext{})
 	w.Reset()
 
 	if len(w.Visited()) != 0 {
 		t.Error("visited not cleared after Reset")
 	}
-	_, err := w.Handle(context.Background(), &stubNode{name: "recall"}, framework.NodeContext{})
+	_, err := w.Handle(context.Background(), &stubNode{name: "recall"}, circuit.NodeContext{})
 	if err != nil {
 		t.Error("error not cleared after Reset")
 	}
 }
 
-// stubNode implements framework.Node for testing.
+// stubNode implements circuit.Node for testing.
 type stubNode struct {
 	name string
 }
 
 func (n *stubNode) Name() string                      { return n.name }
-func (n *stubNode) ElementAffinity() framework.Element { return "" }
-func (n *stubNode) Process(_ context.Context, _ framework.NodeContext) (framework.Artifact, error) {
+func (n *stubNode) ElementAffinity() circuit.Element { return "" }
+func (n *stubNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return nil, nil
 }

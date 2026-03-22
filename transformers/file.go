@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	fw "github.com/dpopsuev/origami"
+	"github.com/dpopsuev/origami/engine"
 )
 
 // FileTransformer reads file(s) from disk and returns their contents.
@@ -38,7 +38,7 @@ func NewFile(opts ...FileOption) *FileTransformer {
 func (t *FileTransformer) Name() string        { return "file" }
 func (t *FileTransformer) Deterministic() bool { return true }
 
-func (t *FileTransformer) Transform(ctx context.Context, tc *fw.TransformerContext) (any, error) {
+func (t *FileTransformer) Transform(ctx context.Context, tc *engine.TransformerContext) (any, error) {
 	path := tc.Prompt
 	if path == "" {
 		path, _ = metaString(tc, "path")
