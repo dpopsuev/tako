@@ -25,8 +25,5 @@ func defaultWalkerWith(element Element) *ProcessWalker {
 		}
 	}
 	id.Element = element
-	return &ProcessWalker{
-		identity: id,
-		state:    NewWalkerState("default"),
-	}
+	return NewProcessWalkerWithIdentity(id, "default")
 }

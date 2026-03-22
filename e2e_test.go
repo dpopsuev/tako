@@ -183,8 +183,8 @@ func TestE2E_RealYAML_RCAInvestigation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Walk: %v", err)
 	}
-	if walker.state.Status != "done" {
-		t.Errorf("status = %q, want done", walker.state.Status)
+	if walker.State().Status != "done" {
+		t.Errorf("status = %q, want done", walker.State().Status)
 	}
 	if len(walker.visited) == 0 {
 		t.Error("no nodes visited")
@@ -222,8 +222,8 @@ func TestE2E_RealYAML_DefectDialectic(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Walk: %v", err)
 	}
-	if walker.state.Status != "done" {
-		t.Errorf("status = %q, want done", walker.state.Status)
+	if walker.State().Status != "done" {
+		t.Errorf("status = %q, want done", walker.State().Status)
 	}
 }
 
@@ -302,8 +302,8 @@ func TestE2E_RealYAML_IntentClassifier(t *testing.T) {
 		t.Fatalf("Walk: %v", err)
 	}
 
-	if walker.state.Status != "done" {
-		t.Errorf("status = %q, want done", walker.state.Status)
+	if walker.State().Status != "done" {
+		t.Errorf("status = %q, want done", walker.State().Status)
 	}
 
 	hasShortcut := false

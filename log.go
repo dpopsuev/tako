@@ -1,54 +1,49 @@
 package framework
 
-// Log component names — used as slog "component" field values.
-// Each subsystem has one name for consistent filtering.
+// Aliases to core/ package.
+
+import "github.com/dpopsuev/origami/core"
+
 const (
-	LogComponentWalk      = "walk"
-	LogComponentDSL       = "dsl"
-	LogComponentCalibrate = "calibrate"
-	LogComponentBatch     = "batch_walk"
-	LogComponentTransform = "transformer"
+	LogComponentWalk      = core.LogComponentWalk
+	LogComponentDSL       = core.LogComponentDSL
+	LogComponentCalibrate = core.LogComponentCalibrate
+	LogComponentBatch     = core.LogComponentBatch
+	LogComponentTransform = core.LogComponentTransform
 )
 
-// Log event names — used as slog msg values.
-// Each decision point has one name for consistent grep/search.
 const (
-	// Walk events
-	LogNodeEnter       = "node enter"
-	LogNodeExit        = "node exit"
-	LogEdgeTaken       = "edge taken"
-	LogEdgeNoMatch     = "no matching edge"
-	LogLoopIncremented = "loop incremented"
-	LogWalkComplete    = "walk complete"
-	LogWalkError       = "walk error"
-	LogDelegateStart   = "delegate start"
-	LogDelegateComplete = "delegate complete"
+	LogNodeEnter        = core.LogNodeEnter
+	LogNodeExit         = core.LogNodeExit
+	LogEdgeTaken        = core.LogEdgeTaken
+	LogEdgeNoMatch      = core.LogEdgeNoMatch
+	LogLoopIncremented  = core.LogLoopIncremented
+	LogWalkComplete     = core.LogWalkComplete
+	LogWalkError        = core.LogWalkError
+	LogDelegateStart    = core.LogDelegateStart
+	LogDelegateComplete = core.LogDelegateComplete
 
-	// DSL events
-	LogOverlayMerge         = "overlay merge"
-	LogOverlayMergeComplete = "overlay merge complete"
-	LogSubCircuitLoaded     = "sub-circuit loaded"
+	LogOverlayMerge         = core.LogOverlayMerge
+	LogOverlayMergeComplete = core.LogOverlayMergeComplete
+	LogSubCircuitLoaded     = core.LogSubCircuitLoaded
 
-	// Calibrate events
-	LogRunStart       = "calibration run start"
-	LogCaseComplete   = "case complete"
-	LogAllCasesFailed = "all cases failed"
+	LogRunStart       = core.LogRunStart
+	LogCaseComplete   = core.LogCaseComplete
+	LogAllCasesFailed = core.LogAllCasesFailed
 )
 
-// Log field keys — used as slog attribute keys.
-// Consistent naming across all subsystems.
 const (
-	LogKeyComponent = "component"
-	LogKeyNode      = "node"
-	LogKeyEdge      = "edge"
-	LogKeyFrom      = "from"
-	LogKeyTo        = "to"
-	LogKeyWalker    = "walker"
-	LogKeyElapsed   = "elapsed_ms"
-	LogKeyLoop      = "loop"
-	LogKeyShortcut  = "shortcut"
-	LogKeyCount     = "count"
-	LogKeyError     = "error"
-	LogKeyCaseID    = "case_id"
-	LogKeyCircuit   = "circuit"
+	LogKeyComponent = core.LogKeyComponent
+	LogKeyNode      = core.LogKeyNode
+	LogKeyEdge      = core.LogKeyEdge
+	LogKeyFrom      = core.LogKeyFrom
+	LogKeyTo        = core.LogKeyTo
+	LogKeyWalker    = core.LogKeyWalker
+	LogKeyElapsed   = core.LogKeyElapsed
+	LogKeyLoop      = core.LogKeyLoop
+	LogKeyShortcut  = core.LogKeyShortcut
+	LogKeyCount     = core.LogKeyCount
+	LogKeyError     = core.LogKeyError
+	LogKeyCaseID    = core.LogKeyCaseID
+	LogKeyCircuit   = core.LogKeyCircuit
 )

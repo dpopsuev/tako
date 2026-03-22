@@ -91,8 +91,5 @@ func buildWalker(d WalkerDef) (*ProcessWalker, error) {
 		id.Role = r
 	}
 
-	return &ProcessWalker{
-		identity: id,
-		state:    NewWalkerState(d.Name),
-	}, nil
+	return NewProcessWalkerWithIdentity(id, d.Name), nil
 }

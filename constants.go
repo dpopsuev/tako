@@ -1,38 +1,36 @@
 package framework
 
-// Walker context keys (underscore-prefixed, stored in WalkerState.Context).
+// Aliases to core/ package.
+
+import "github.com/dpopsuev/origami/core"
+
 const (
-	ContextKeyTraceID = "_trace_id"
+	ContextKeyTraceID = core.ContextKeyTraceID
 )
 
-// Extra param keys (used in start_circuit extra map and mediator routing).
 const (
-	ExtraKeyCircuitType = "circuit_type"
-	ExtraKeyTraceID     = "trace_id"
+	ExtraKeyCircuitType = core.ExtraKeyCircuitType
+	ExtraKeyTraceID     = core.ExtraKeyTraceID
 )
 
-// TraceEvent metadata keys used in delegation event annotation.
 const (
-	TraceMetaDelegation = "delegation"
-	TraceMetaSource     = "source"
+	TraceMetaDelegation = core.TraceMetaDelegation
+	TraceMetaSource     = core.TraceMetaSource
 )
 
-// Papercup protocol JSON field names used in MCP tool call arguments
-// and response parsing. In the framework root (not mcp/) to avoid
-// circular imports — mediator_delegate.go is in package framework.
 const (
-	ProtoKeySessionID     = "session_id"
-	ProtoKeyDone          = "done"
-	ProtoKeyAvailable     = "available"
-	ProtoKeyStep          = "step"
-	ProtoKeyDispatchID    = "dispatch_id"
-	ProtoKeyPromptContent = "prompt_content"
-	ProtoKeyCaseID        = "case_id"
-	ProtoKeyArtifactPath  = "artifact_path"
-	ProtoKeyFields        = "fields"
-	ProtoKeyExtra         = "extra"
-	ProtoKeyError         = "error"
-	ProtoKeyStatus        = "status"
-	ProtoKeyStructured    = "structured"
-	ProtoKeyTimeoutMS     = "timeout_ms"
+	ProtoKeySessionID     = core.ProtoKeySessionID
+	ProtoKeyDone          = core.ProtoKeyDone
+	ProtoKeyAvailable     = core.ProtoKeyAvailable
+	ProtoKeyStep          = core.ProtoKeyStep
+	ProtoKeyDispatchID    = core.ProtoKeyDispatchID
+	ProtoKeyPromptContent = core.ProtoKeyPromptContent
+	ProtoKeyCaseID        = core.ProtoKeyCaseID
+	ProtoKeyArtifactPath  = core.ProtoKeyArtifactPath
+	ProtoKeyFields        = core.ProtoKeyFields
+	ProtoKeyExtra         = core.ProtoKeyExtra
+	ProtoKeyError         = core.ProtoKeyError
+	ProtoKeyStatus        = core.ProtoKeyStatus
+	ProtoKeyStructured    = core.ProtoKeyStructured
+	ProtoKeyTimeoutMS     = core.ProtoKeyTimeoutMS
 )

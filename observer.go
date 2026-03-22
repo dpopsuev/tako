@@ -1,69 +1,50 @@
 package framework
-// Category: Processing & Support
+
+// Category: Processing & Support — aliases to core/ package.
+// Implementations (logObserver, NewLogObserver, TraceCollector) stay here.
+// The unexported emitEvent helper is duplicated because root-package code uses it.
 
 import (
 	"context"
 	"log/slog"
 	"sync"
-	"time"
+
+	"github.com/dpopsuev/origami/core"
 )
 
-// WalkEventType classifies walk events for filtering and routing.
-type WalkEventType string
+type WalkEventType = core.WalkEventType
 
 const (
-	EventNodeEnter    WalkEventType = "node_enter"
-	EventNodeExit     WalkEventType = "node_exit"
-	EventEdgeEvaluate WalkEventType = "edge_evaluate"
-	EventTransition   WalkEventType = "transition"
-	EventWalkerSwitch WalkEventType = "walker_switch"
-	EventFanOutStart  WalkEventType = "fan_out_start"
-	EventFanOutEnd    WalkEventType = "fan_out_end"
-	EventWalkComplete     WalkEventType = "walk_complete"
-	EventWalkError        WalkEventType = "walk_error"
-	EventWalkInterrupted  WalkEventType = "walk_interrupted"
-	EventWalkResumed      WalkEventType = "walk_resumed"
-	EventCheckpointSaved    WalkEventType = "checkpoint_saved"
-	EventProviderFallback   WalkEventType = "provider_fallback"
-	EventCircuitOpen        WalkEventType = "circuit_open"
-	EventCircuitClose       WalkEventType = "circuit_close"
-	EventRateLimit          WalkEventType = "rate_limit"
-	EventThermalWarning     WalkEventType = "thermal_warning"
-	EventDelegateStart      WalkEventType = "delegate_start"
-	EventDelegateEnd        WalkEventType = "delegate_end"
+	EventNodeEnter        = core.EventNodeEnter
+	EventNodeExit         = core.EventNodeExit
+	EventEdgeEvaluate     = core.EventEdgeEvaluate
+	EventTransition       = core.EventTransition
+	EventWalkerSwitch     = core.EventWalkerSwitch
+	EventFanOutStart      = core.EventFanOutStart
+	EventFanOutEnd        = core.EventFanOutEnd
+	EventWalkComplete     = core.EventWalkComplete
+	EventWalkError        = core.EventWalkError
+	EventWalkInterrupted  = core.EventWalkInterrupted
+	EventWalkResumed      = core.EventWalkResumed
+	EventCheckpointSaved  = core.EventCheckpointSaved
+	EventProviderFallback = core.EventProviderFallback
+	EventCircuitOpen      = core.EventCircuitOpen
+	EventCircuitClose     = core.EventCircuitClose
+	EventRateLimit        = core.EventRateLimit
+	EventThermalWarning   = core.EventThermalWarning
+	EventDelegateStart    = core.EventDelegateStart
+	EventDelegateEnd      = core.EventDelegateEnd
 )
 
-// WalkEvent is a single observation from a graph walk. The Metadata map
-// is the forward-compatible extension point — new fields go there
-// without breaking the struct.
-type WalkEvent struct {
-	Type     WalkEventType
-	Node     string
-	Walker   string
-	Edge     string
-	Artifact Artifact
-	Elapsed  time.Duration
-	Error    error
-	Metadata map[string]any
-}
+type WalkEvent = core.WalkEvent
+type WalkObserver = core.WalkObserver
+type WalkObserverFunc = core.WalkObserverFunc
+type MultiObserver = core.MultiObserver
 
-// WalkObserver receives events during a graph walk. Single-method
-// design (like http.Handler) so adding new event types never breaks
-// existing observers.
-type WalkObserver interface {
-	OnEvent(WalkEvent)
-}
-
-// WalkObserverFunc adapts a plain function to the WalkObserver interface.
-type WalkObserverFunc func(WalkEvent)
-
-func (f WalkObserverFunc) OnEvent(e WalkEvent) { f(e) }
-
-// MultiObserver fans out events to multiple observers.
-type MultiObserver []WalkObserver
-
-func (m MultiObserver) OnEvent(e WalkEvent) {
-	for _, obs := range m {
+// emitEvent is a helper to safely emit an event to a possibly-nil observer.
+// Duplicated from core/ because it is unexported and used by root-package code.
+func emitEvent(obs WalkObserver, e WalkEvent) {
+	if obs != nil {
 		obs.OnEvent(e)
 	}
 }
@@ -156,11 +137,4 @@ func (t *TraceCollector) EventsOfType(typ WalkEventType) []WalkEvent {
 		}
 	}
 	return out
-}
-
-// emitEvent is a helper to safely emit an event to a possibly-nil observer.
-func emitEvent(obs WalkObserver, e WalkEvent) {
-	if obs != nil {
-		obs.OnEvent(e)
-	}
 }
