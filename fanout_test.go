@@ -32,7 +32,7 @@ func TestFanOut_BasicParallelExecution(t *testing.T) {
 	}
 
 	tc := &TraceCollector{}
-	g.observer = tc
+	g.SetObserver(tc)
 	w := NewProcessWalker("fan-1")
 
 	if err := g.Walk(context.Background(), w, "A"); err != nil {

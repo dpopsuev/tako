@@ -123,9 +123,9 @@ func TestWalk_DelegateNode_SubWalk(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	g.registries = &GraphRegistries{
+	g.SetRegistries(&GraphRegistries{
 		Transformers: TransformerRegistry{"passthrough": &passthroughTransformer{}},
-	}
+	})
 
 	walker := &stubWalker{
 		identity: AgentIdentity{PersonaName: "test"},

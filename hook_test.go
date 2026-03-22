@@ -235,7 +235,7 @@ func TestFileWriteHook_TemplatedPath(t *testing.T) {
 
 func TestFileWriteHook_MissingOutputPath(t *testing.T) {
 	hook := &FileWriteHook{
-		nodeMeta: map[string]map[string]any{
+		NodeMeta: map[string]map[string]any{
 			"node": {},
 		},
 	}

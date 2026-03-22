@@ -28,7 +28,7 @@ func TestDiag_D1_UnreferencedHook(t *testing.T) {
 		Edges: []EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 	}
 	reg := GraphRegistries{
-		Transformers: TransformerRegistry{"passthrough": &passthroughTransformer{}},
+		Transformers: TransformerRegistry{"passthrough": TransformerFunc("passthrough", func(_ context.Context, tc *TransformerContext) (any, error) { return tc.Input, nil })},
 		Hooks: HookRegistry{
 			"hook-a": NewHookFunc("hook-a", func(_ context.Context, _ string, _ Artifact) error { return nil }),
 			"hook-b": NewHookFunc("hook-b", func(_ context.Context, _ string, _ Artifact) error { return nil }),
@@ -60,7 +60,7 @@ func TestDiag_D2_MissingHookRef(t *testing.T) {
 		Edges: []EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 	}
 	reg := GraphRegistries{
-		Transformers: TransformerRegistry{"passthrough": &passthroughTransformer{}},
+		Transformers: TransformerRegistry{"passthrough": TransformerFunc("passthrough", func(_ context.Context, tc *TransformerContext) (any, error) { return tc.Input, nil })},
 		Hooks: HookRegistry{
 			"hook-exists": NewHookFunc("hook-exists", func(_ context.Context, _ string, _ Artifact) error { return nil }),
 		},
@@ -92,7 +92,7 @@ func TestDiag_D4_PartialHookWiring(t *testing.T) {
 		Edges: []EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 	}
 	reg := GraphRegistries{
-		Transformers: TransformerRegistry{"passthrough": &passthroughTransformer{}},
+		Transformers: TransformerRegistry{"passthrough": TransformerFunc("passthrough", func(_ context.Context, tc *TransformerContext) (any, error) { return tc.Input, nil })},
 		Hooks: HookRegistry{
 			"hook-a": NewHookFunc("hook-a", func(_ context.Context, _ string, _ Artifact) error { return nil }),
 		},
@@ -124,7 +124,7 @@ func TestDiag_AllHooksReferenced_NoWarnings(t *testing.T) {
 		Edges: []EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 	}
 	reg := GraphRegistries{
-		Transformers: TransformerRegistry{"passthrough": &passthroughTransformer{}},
+		Transformers: TransformerRegistry{"passthrough": TransformerFunc("passthrough", func(_ context.Context, tc *TransformerContext) (any, error) { return tc.Input, nil })},
 		Hooks: HookRegistry{
 			"hook-a": NewHookFunc("hook-a", func(_ context.Context, _ string, _ Artifact) error { return nil }),
 			"hook-b": NewHookFunc("hook-b", func(_ context.Context, _ string, _ Artifact) error { return nil }),
@@ -153,7 +153,7 @@ func TestDiag_NoHooksRegistered_NoWarnings(t *testing.T) {
 		Edges: []EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 	}
 	reg := GraphRegistries{
-		Transformers: TransformerRegistry{"passthrough": &passthroughTransformer{}},
+		Transformers: TransformerRegistry{"passthrough": TransformerFunc("passthrough", func(_ context.Context, tc *TransformerContext) (any, error) { return tc.Input, nil })},
 	}
 
 	logs := captureDiagLogs(func() {

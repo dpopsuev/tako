@@ -1,318 +1,42 @@
 package framework
 
-// Category: Execution
+// Category: Execution — aliases to engine/ package.
 
-import (
-	"context"
-	"fmt"
-	"sync"
-	"time"
-)
+import "github.com/dpopsuev/origami/engine"
 
-// EvalAction determines the next step after an Operator evaluation.
-type EvalAction string
+type EvalAction = engine.EvalAction
 
 const (
-	// ActionContinue means the goal is not met; reconcile and walk again.
-	ActionContinue EvalAction = "continue"
-	// ActionEscalate means the Operator cannot make progress; escalate to a higher authority.
-	ActionEscalate EvalAction = "escalate"
-	// ActionDone means the goal is met; the reconciliation loop terminates successfully.
-	ActionDone EvalAction = "done"
+	ActionContinue = engine.ActionContinue
+	ActionEscalate = engine.ActionEscalate
+	ActionDone     = engine.ActionDone
 )
 
-// Goal describes the desired end-state for an Operator reconciliation loop.
-// The framework treats Constraints as opaque — Operator implementations
-// evaluate them against SystemState.
-type Goal struct {
-	Description string         `json:"description" yaml:"description"`
-	Constraints map[string]any `json:"constraints,omitempty" yaml:"constraints,omitempty"`
-	Timeout     time.Duration  `json:"timeout,omitempty" yaml:"timeout,omitempty"`
-}
+type Goal = engine.Goal
+type SystemState = engine.SystemState
+type Evaluation = engine.Evaluation
+type WalkResult = engine.WalkResult
+type Operator = engine.Operator
+type OperatorObserver = engine.OperatorObserver
+type OperatorOption = engine.OperatorOption
 
-// SystemState is the current observed state provided by Operator.Observe.
-// Kept minimal: Operator implementations extend context via walker state
-// or Goal.Constraints rather than adding framework-level fields.
-type SystemState struct {
-	Artifacts map[string]Artifact `json:"-"`
-	Iteration int                 `json:"iteration"`
-	Elapsed   time.Duration       `json:"elapsed"`
-}
-
-// Evaluation is the result of Operator.Evaluate — did the walk close the
-// gap between current state and the goal?
-type Evaluation struct {
-	Met      bool       `json:"met"`
-	Progress float64    `json:"progress"`
-	Action   EvalAction `json:"action"`
-	Reason   string     `json:"reason,omitempty"`
-}
-
-// WalkResult captures the outcome of a single circuit walk within the
-// reconciliation loop.
-type WalkResult struct {
-	Artifacts map[string]Artifact `json:"-"`
-	Elapsed   time.Duration       `json:"elapsed"`
-	Error     error               `json:"error,omitempty"`
-}
-
-// ---------------------------------------------------------------------------
-// Operator interface
-// ---------------------------------------------------------------------------
-
-// Operator implements the Kubernetes-style reconciliation loop for agentic
-// circuits. An Operator observes system state, evaluates whether the goal
-// is met, and reconciles by generating a circuit definition to close the gap.
-type Operator interface {
-	Observe(ctx context.Context) (SystemState, error)
-	Reconcile(ctx context.Context, goal Goal, state SystemState) (*CircuitDef, error)
-	Evaluate(ctx context.Context, goal Goal, result WalkResult) (Evaluation, error)
-}
-
-// OperatorObserver receives lifecycle events from RunOperator.
-type OperatorObserver interface {
-	OnObserve(SystemState)
-	OnEvaluate(Evaluation)
-	OnReconcile(*CircuitDef)
-	OnWalkComplete(WalkResult)
-}
-
-// ---------------------------------------------------------------------------
-// OperatorOption — functional options for RunOperator
-// ---------------------------------------------------------------------------
-
-// OperatorOption configures a RunOperator invocation.
-type OperatorOption func(*operatorConfig)
-
-type operatorConfig struct {
-	maxIterations int
-	observer      OperatorObserver
-	walkObserver  WalkObserver
-}
-
-// WithMaxIterations sets a defense-in-depth cap on reconciliation iterations.
-func WithMaxIterations(n int) OperatorOption {
-	return func(c *operatorConfig) { c.maxIterations = n }
-}
-
-// WithOperatorObserver attaches a lifecycle observer to the reconciliation loop.
-func WithOperatorObserver(obs OperatorObserver) OperatorOption {
-	return func(c *operatorConfig) { c.observer = obs }
-}
-
-// WithWalkObserver attaches a walk-level observer to each circuit walk
-// within the reconciliation loop.
-func WithWalkObserver(obs WalkObserver) OperatorOption {
-	return func(c *operatorConfig) { c.walkObserver = obs }
-}
-
-// ---------------------------------------------------------------------------
-// CircuitContainer — lifecycle wrapper for a single circuit walk
-// ---------------------------------------------------------------------------
-
-// ContainerStatus tracks the lifecycle of a CircuitContainer.
-type ContainerStatus string
+type ContainerStatus = engine.ContainerStatus
 
 const (
-	StatusPending   ContainerStatus = "pending"
-	StatusRunning   ContainerStatus = "running"
-	StatusSucceeded ContainerStatus = "succeeded"
-	StatusFailed    ContainerStatus = "failed"
-	StatusAborted   ContainerStatus = "aborted"
+	StatusPending   = engine.StatusPending
+	StatusRunning   = engine.StatusRunning
+	StatusSucceeded = engine.StatusSucceeded
+	StatusFailed    = engine.StatusFailed
+	StatusAborted   = engine.StatusAborted
 )
 
-// CircuitContainer manages a single circuit instance's lifecycle.
-// Implementations range from in-process (InMemoryContainer) to
-// subprocess-based (ContainerRuntime, P4).
-type CircuitContainer interface {
-	ID() string
-	Def() *CircuitDef
-	Status() ContainerStatus
-	Walk(ctx context.Context, reg GraphRegistries) (*WalkResult, error)
-	Abort(reason string) error
-	Artifacts() map[string]Artifact
-}
+type CircuitContainer = engine.CircuitContainer
+type InMemoryContainer = engine.InMemoryContainer
 
-// InMemoryContainer executes a circuit walk in-process.
-type InMemoryContainer struct {
-	id        string
-	def       *CircuitDef
-	mu        sync.Mutex
-	status    ContainerStatus
-	artifacts map[string]Artifact
-	cancel    context.CancelFunc
-	walkObs   WalkObserver
-}
-
-// NewInMemoryContainer creates a container in StatusPending.
-func NewInMemoryContainer(id string, def *CircuitDef, walkObs WalkObserver) *InMemoryContainer {
-	return &InMemoryContainer{
-		id:      id,
-		def:     def,
-		status:  StatusPending,
-		walkObs: walkObs,
-	}
-}
-
-func (c *InMemoryContainer) ID() string       { return c.id }
-func (c *InMemoryContainer) Def() *CircuitDef { return c.def }
-
-func (c *InMemoryContainer) Status() ContainerStatus {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.status
-}
-
-func (c *InMemoryContainer) Artifacts() map[string]Artifact {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.artifacts
-}
-
-func (c *InMemoryContainer) Walk(ctx context.Context, reg GraphRegistries) (*WalkResult, error) {
-	c.mu.Lock()
-	if c.status == StatusAborted {
-		c.mu.Unlock()
-		return nil, fmt.Errorf("container %s: already aborted", c.id)
-	}
-	c.status = StatusRunning
-	walkCtx, cancel := context.WithCancel(ctx)
-	c.cancel = cancel
-	c.mu.Unlock()
-
-	defer cancel()
-
-	walkStart := time.Now()
-	graph, err := BuildGraph(c.def, reg)
-	if err != nil {
-		c.setFailed()
-		return nil, fmt.Errorf("container %s: build graph: %w", c.id, err)
-	}
-
-	if c.walkObs != nil {
-		if dg, ok := graph.(*DefaultGraph); ok {
-			dg.SetObserver(c.walkObs)
-		}
-	}
-
-	walker := NewProcessWalker(c.id)
-	walkErr := graph.Walk(walkCtx, walker, c.def.Start)
-
-	result := &WalkResult{
-		Artifacts: walker.State().Outputs,
-		Elapsed:   time.Since(walkStart),
-		Error:     walkErr,
-	}
-
-	c.mu.Lock()
-	c.artifacts = result.Artifacts
-	if walkErr != nil {
-		c.status = StatusFailed
-	} else {
-		c.status = StatusSucceeded
-	}
-	c.mu.Unlock()
-
-	return result, walkErr
-}
-
-func (c *InMemoryContainer) Abort(reason string) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if c.status != StatusPending && c.status != StatusRunning {
-		return fmt.Errorf("container %s: cannot abort in status %s", c.id, c.status)
-	}
-	c.status = StatusAborted
-	if c.cancel != nil {
-		c.cancel()
-	}
-	return nil
-}
-
-func (c *InMemoryContainer) setFailed() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.status = StatusFailed
-}
-
-// ---------------------------------------------------------------------------
-// RunOperator — the reconciliation loop
-// ---------------------------------------------------------------------------
-
-// RunOperator executes the Operator reconciliation loop:
-// observe → evaluate → reconcile → walk → repeat until goal is met,
-// escalation is requested, the context is canceled, or max iterations exceeded.
-func RunOperator(ctx context.Context, op Operator, goal Goal, reg GraphRegistries, opts ...OperatorOption) error {
-	cfg := &operatorConfig{}
-	for _, opt := range opts {
-		opt(cfg)
-	}
-
-	if goal.Timeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, goal.Timeout)
-		defer cancel()
-	}
-
-	for iteration := 1; ; iteration++ {
-		if err := ctx.Err(); err != nil {
-			return err
-		}
-
-		if cfg.maxIterations > 0 && iteration > cfg.maxIterations {
-			return fmt.Errorf("%w: %d iterations", ErrMaxIterations, cfg.maxIterations)
-		}
-
-		// Observe
-		state, err := op.Observe(ctx)
-		if err != nil {
-			return fmt.Errorf("observe (iteration %d): %w", iteration, err)
-		}
-		state.Iteration = iteration
-		if cfg.observer != nil {
-			cfg.observer.OnObserve(state)
-		}
-
-		// Evaluate (with a synthetic initial result on iteration 1)
-		initResult := WalkResult{Artifacts: state.Artifacts, Elapsed: state.Elapsed}
-		eval, err := op.Evaluate(ctx, goal, initResult)
-		if err != nil {
-			return fmt.Errorf("evaluate (iteration %d): %w", iteration, err)
-		}
-		if cfg.observer != nil {
-			cfg.observer.OnEvaluate(eval)
-		}
-
-		if eval.Met || eval.Action == ActionDone {
-			return nil
-		}
-		if eval.Action == ActionEscalate {
-			return fmt.Errorf("%w: %s", ErrEscalate, eval.Reason)
-		}
-
-		// Reconcile
-		def, err := op.Reconcile(ctx, goal, state)
-		if err != nil {
-			return fmt.Errorf("reconcile (iteration %d): %w", iteration, err)
-		}
-		if cfg.observer != nil {
-			cfg.observer.OnReconcile(def)
-		}
-
-		// Walk via InMemoryContainer
-		container := NewInMemoryContainer(
-			fmt.Sprintf("operator-iter-%d", iteration),
-			def,
-			cfg.walkObserver,
-		)
-
-		result, walkErr := container.Walk(ctx, reg)
-		if cfg.observer != nil && result != nil {
-			cfg.observer.OnWalkComplete(*result)
-		}
-
-		if walkErr != nil {
-			return fmt.Errorf("walk (iteration %d): %w", iteration, walkErr)
-		}
-	}
-}
+var (
+	WithMaxIterations    = engine.WithMaxIterations
+	WithOperatorObserver = engine.WithOperatorObserver
+	WithWalkObserver     = engine.WithWalkObserver
+	NewInMemoryContainer = engine.NewInMemoryContainer
+	RunOperator          = engine.RunOperator
+)

@@ -4,6 +4,7 @@ package framework
 
 import (
 	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/state"
 )
 
@@ -26,11 +27,5 @@ func NewCapture() (WalkObserver, ArtifactCapture) {
 // withOutputCapture attaches an outputCapture as a walk observer.
 // If another observer is already set, both are composed via MultiObserver.
 func withOutputCapture(capture *outputCapture) RunOption {
-	return func(c *runConfig) {
-		if c.observer == nil {
-			c.observer = capture
-		} else {
-			c.observer = MultiObserver{c.observer, capture}
-		}
-	}
+	return engine.WithOutputCapture(capture)
 }

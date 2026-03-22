@@ -657,7 +657,22 @@ func TestTransformerNode_ContextCancellation_PropagatesError(t *testing.T) {
 }
 
 func TestIsTransformerNode(t *testing.T) {
-	trans := &transformerNode{name: "t", trans: &echoTransformer{}}
+	// Build a real transformer node via BuildGraph.
+	def := &CircuitDef{
+		Circuit: "test", Start: "t", Done: "_done",
+		HandlerType: "transformer",
+		Nodes:       []NodeDef{{Name: "t", Handler: "echo"}},
+		Edges:       []EdgeDef{{ID: "e", From: "t", To: "_done"}},
+	}
+	reg := GraphRegistries{
+		Transformers: TransformerRegistry{"echo": &echoTransformer{}},
+	}
+	g, err := BuildGraph(def, reg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	trans, _ := g.NodeByName("t")
+
 	plain := &testNode{name: "p"}
 
 	if !IsTransformerNode(trans) {

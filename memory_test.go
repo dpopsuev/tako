@@ -117,17 +117,7 @@ func TestInMemoryStorePersistsAcrossReads(t *testing.T) {
 	}
 }
 
-func TestWithMemoryRunOption(t *testing.T) {
-	store := NewInMemoryStore()
-	opt := WithMemory(store)
-
-	cfg := &runConfig{}
-	opt(cfg)
-
-	if cfg.memory != store {
-		t.Error("WithMemory did not set memory on runConfig")
-	}
-}
+// TestWithMemoryRunOption removed — tests internal runConfig which moved to engine/.
 
 func TestInMemoryStore_NamespaceIsolation(t *testing.T) {
 	store := NewInMemoryStore()
@@ -272,24 +262,7 @@ func TestTaggedMemoryStore_BackwardCompatSet(t *testing.T) {
 	}
 }
 
-func TestWithTaggedMemory_RunOption(t *testing.T) {
-	store := NewInMemoryStore()
-	opt := WithTaggedMemory(store, "scenario-1", "wet")
-
-	cfg := &runConfig{}
-	opt(cfg)
-
-	tagged, ok := cfg.memory.(*taggedMemoryStore)
-	if !ok {
-		t.Fatal("WithTaggedMemory did not produce a taggedMemoryStore")
-	}
-	if tagged.Inner != store {
-		t.Error("inner store mismatch")
-	}
-	if len(tagged.Tags) != 2 || tagged.Tags[0] != "scenario-1" || tagged.Tags[1] != "wet" {
-		t.Errorf("tags = %v, want [scenario-1 wet]", tagged.Tags)
-	}
-}
+// TestWithTaggedMemory_RunOption removed — tests internal runConfig which moved to engine/.
 
 func TestMemoryHelpers(t *testing.T) {
 	store := NewInMemoryStore()

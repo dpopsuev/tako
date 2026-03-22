@@ -1061,8 +1061,8 @@ done: _done
 	if !ok {
 		t.Fatal("expected node 'recall' to exist in graph")
 	}
-	if _, ok := node.(*transformerNode); !ok {
-		t.Errorf("expected *transformerNode, got %T", node)
+	if !IsTransformerNode(node) {
+		t.Errorf("expected transformer node, got %T", node)
 	}
 }
 
@@ -1141,8 +1141,8 @@ done: _done
 	if !ok {
 		t.Fatal("expected node 'plan' to exist in graph")
 	}
-	if _, ok := node.(*dslDelegateNode); !ok {
-		t.Errorf("expected *dslDelegateNode, got %T", node)
+	if _, ok := node.(DelegateNode); !ok {
+		t.Errorf("expected DelegateNode, got %T", node)
 	}
 }
 
@@ -1228,16 +1228,16 @@ done: _done
 	if !ok {
 		t.Fatal("expected node 'plan' to exist in graph")
 	}
-	if _, ok := planNode.(*dslDelegateNode); !ok {
-		t.Errorf("expected plan to be *dslDelegateNode, got %T", planNode)
+	if _, ok := planNode.(DelegateNode); !ok {
+		t.Errorf("expected plan to be DelegateNode, got %T", planNode)
 	}
 
 	recallNode, ok := g.NodeByName("recall")
 	if !ok {
 		t.Fatal("expected node 'recall' to exist in graph")
 	}
-	if _, ok := recallNode.(*transformerNode); !ok {
-		t.Errorf("expected recall to be *transformerNode, got %T", recallNode)
+	if !IsTransformerNode(recallNode) {
+		t.Errorf("expected recall to be transformer node, got %T", recallNode)
 	}
 }
 

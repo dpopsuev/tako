@@ -2,7 +2,6 @@ package framework
 
 // Category: Processing & Support — aliases to core/ package.
 // Implementations (logObserver, NewLogObserver, TraceCollector) stay here.
-// The unexported emitEvent helper is duplicated because root-package code uses it.
 
 import (
 	"context"

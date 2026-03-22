@@ -82,8 +82,8 @@ func TestBuildGraph_CircuitHandler_WithRegistry(t *testing.T) {
 	if !ok {
 		t.Fatal("node 'main' not found")
 	}
-	if _, ok := node.(*circuitRefNode); !ok {
-		t.Errorf("node type = %T, want *circuitRefNode", node)
+	if _, ok := node.(DelegateNode); !ok {
+		t.Errorf("node type = %T, want DelegateNode", node)
 	}
 }
 

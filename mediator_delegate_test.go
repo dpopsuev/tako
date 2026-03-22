@@ -92,8 +92,8 @@ func TestMCPCircuitTransformer_StubBackend(t *testing.T) {
 	ts := newMockCircuitServer(t, wantResult, "")
 
 	trans := &mcpCircuitTransformer{
-		circuitType: "dsr",
-		endpoint:    ts.URL + "/mcp",
+		CircuitType: "dsr",
+		Endpoint:    ts.URL + "/mcp",
 	}
 
 	tc := &TransformerContext{
@@ -121,8 +121,8 @@ func TestMCPCircuitTransformer_StubBackend(t *testing.T) {
 
 func TestMCPCircuitTransformer_ConnectionError(t *testing.T) {
 	trans := &mcpCircuitTransformer{
-		circuitType: "dsr",
-		endpoint:    "http://127.0.0.1:1/mcp", // unreachable
+		CircuitType: "dsr",
+		Endpoint:    "http://127.0.0.1:1/mcp", // unreachable
 	}
 
 	tc := &TransformerContext{
@@ -146,8 +146,8 @@ func TestMCPCircuitTransformer_CircuitError(t *testing.T) {
 	ts := newMockCircuitServer(t, nil, "all cases failed: node X broken")
 
 	trans := &mcpCircuitTransformer{
-		circuitType: "dsr",
-		endpoint:    ts.URL + "/mcp",
+		CircuitType: "dsr",
+		Endpoint:    ts.URL + "/mcp",
 	}
 
 	tc := &TransformerContext{
@@ -235,8 +235,8 @@ func TestMCPCircuitTransformer_PropagatesTraceID(t *testing.T) {
 	ts := newCapturingCircuitServer(t, &captured)
 
 	trans := &mcpCircuitTransformer{
-		circuitType: "gnd",
-		endpoint:    ts.URL + "/mcp",
+		CircuitType: "gnd",
+		Endpoint:    ts.URL + "/mcp",
 	}
 
 	tc := &TransformerContext{
@@ -268,8 +268,8 @@ func TestMCPCircuitTransformer_GeneratesTraceIDWhenMissing(t *testing.T) {
 	ts := newCapturingCircuitServer(t, &captured)
 
 	trans := &mcpCircuitTransformer{
-		circuitType: "gnd",
-		endpoint:    ts.URL + "/mcp",
+		CircuitType: "gnd",
+		Endpoint:    ts.URL + "/mcp",
 	}
 
 	tc := &TransformerContext{

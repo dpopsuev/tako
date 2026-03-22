@@ -196,12 +196,8 @@ done: _done
 	if !ok {
 		t.Fatal("node 'parse' not found")
 	}
-	en, ok := n.(*extractorNode)
-	if !ok {
-		t.Fatalf("node type = %T, want *extractorNode", n)
-	}
-	if en.ext.Name() != "my-ext" {
-		t.Errorf("extractor = %q, want %q", en.ext.Name(), "my-ext")
+	if n.Name() != "parse" {
+		t.Errorf("node name = %q, want %q", n.Name(), "parse")
 	}
 }
 
@@ -277,7 +273,7 @@ func TestJSONSchemaExtractor_ValidInput(t *testing.T) {
 			"status":    {Type: "string"},
 		},
 	}
-	ext := &JSONSchemaExtractor{schema: schema}
+	ext := &JSONSchemaExtractor{Schema: schema}
 
 	if ext.Name() != "json-schema" {
 		t.Errorf("Name() = %q", ext.Name())
@@ -304,7 +300,7 @@ func TestJSONSchemaExtractor_MissingRequired(t *testing.T) {
 		Required: []string{"test_name"},
 		Fields:   map[string]FieldSchema{"test_name": {Type: "string"}},
 	}
-	ext := &JSONSchemaExtractor{schema: schema}
+	ext := &JSONSchemaExtractor{Schema: schema}
 
 	_, err := ext.Extract(context.Background(), `{"other":"val"}`)
 	if err == nil {
@@ -382,18 +378,14 @@ done: _done
 	if !ok {
 		t.Fatal("parse node not found")
 	}
-	en, ok := n.(*extractorNode)
-	if !ok {
-		t.Fatalf("node type = %T, want *extractorNode", n)
-	}
-	if en.ext.Name() != "json-schema" {
-		t.Errorf("extractor = %q", en.ext.Name())
+	if n.Name() != "parse" {
+		t.Errorf("node name = %q, want %q", n.Name(), "parse")
 	}
 
 	nc := NodeContext{
 		PriorArtifact: &extractorArtifact{raw: `{"name":"TestFoo"}`},
 	}
-	art, err := en.Process(context.Background(), nc)
+	art, err := n.Process(context.Background(), nc)
 	if err != nil {
 		t.Fatalf("Process: %v", err)
 	}

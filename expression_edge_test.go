@@ -130,7 +130,7 @@ func TestExpressionEdge_ConfigAccess(t *testing.T) {
 
 	// expressionEdge currently passes nil config; test with direct context
 	ctx := buildExprContext(artifact, state, map[string]any{"threshold": 0.8})
-	result, err := runExprProgram(edge.program, ctx)
+	result, err := runExprProgram(edge.Program(), ctx)
 	if err != nil {
 		t.Fatalf("run: %v", err)
 	}

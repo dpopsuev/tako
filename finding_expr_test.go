@@ -9,7 +9,7 @@ func TestSignalExprHelpers_HasFinding(t *testing.T) {
 	c := &InMemoryFindingCollector{}
 	_ = c.Report(context.Background(), Finding{Severity: FindingWarning, Domain: "test"})
 
-	h := SignalExprHelpers{collector: c}
+	h := SignalExprHelpers{Collector: c}
 
 	if !h.HasFinding("warning") {
 		t.Error("HasFinding('warning') = false, want true")
@@ -36,7 +36,7 @@ func TestSignalExprHelpers_FindingCount(t *testing.T) {
 	_ = c.Report(ctx, Finding{Severity: FindingWarning})
 	_ = c.Report(ctx, Finding{Severity: FindingError})
 
-	h := SignalExprHelpers{collector: c}
+	h := SignalExprHelpers{Collector: c}
 
 	if got := h.FindingCount("info"); got != 3 {
 		t.Errorf("FindingCount('info') = %d, want 3", got)
@@ -55,7 +55,7 @@ func TestSignalExprHelpers_FindingDomain(t *testing.T) {
 	_ = c.Report(ctx, Finding{Severity: FindingInfo, Domain: "test.unit"})
 	_ = c.Report(ctx, Finding{Severity: FindingWarning, Domain: "security.auth"})
 
-	h := SignalExprHelpers{collector: c}
+	h := SignalExprHelpers{Collector: c}
 
 	if !h.FindingDomain("test.*") {
 		t.Error("FindingDomain('test.*') = false, want true")

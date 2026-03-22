@@ -25,7 +25,3 @@ func SeverityAtOrAbove(have, threshold FindingSeverity) bool {
 }
 
 type InMemoryFindingCollector = finding.InMemoryFindingCollector
-
-// vetoArtifact wraps an artifact and overrides Confidence to 0.
-// Used by the hookingWalker when a VetoHook returns ErrFindingVeto.
-type vetoArtifact = finding.VetoArtifact

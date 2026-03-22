@@ -87,28 +87,4 @@ func TestOutputCapture_Reset(t *testing.T) {
 	}
 }
 
-func TestWithOutputCapture_ComposesWithExistingObserver(t *testing.T) {
-	capture := newOutputCapture()
-	trace := &TraceCollector{}
-
-	cfg := &runConfig{observer: trace}
-	withOutputCapture(capture)(cfg)
-
-	multi, ok := cfg.observer.(MultiObserver)
-	if !ok {
-		t.Fatal("expected MultiObserver")
-	}
-	if len(multi) != 2 {
-		t.Fatalf("expected 2 observers, got %d", len(multi))
-	}
-}
-
-func TestWithOutputCapture_SetsDirectlyWhenNoExisting(t *testing.T) {
-	capture := newOutputCapture()
-	cfg := &runConfig{}
-	withOutputCapture(capture)(cfg)
-
-	if cfg.observer != capture {
-		t.Fatal("expected capture as direct observer")
-	}
-}
+// Tests for withOutputCapture composition moved to engine/ (internal runConfig).
