@@ -8,19 +8,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/circuit"
 	"golang.org/x/sync/errgroup"
 )
 
 // parallelMatch pairs a matched edge with its transition during fan-out detection.
 type parallelMatch struct {
-	edge       core.Edge
-	transition *core.Transition
+	edge       circuit.Edge
+	transition *circuit.Transition
 }
 
 // isParallelEdge returns true if the edge implements ParallelEdge and is marked parallel.
-func isParallelEdge(e core.Edge) bool {
-	if pe, ok := e.(core.ParallelEdge); ok {
+func isParallelEdge(e circuit.Edge) bool {
+	if pe, ok := e.(circuit.ParallelEdge); ok {
 		return pe.IsParallel()
 	}
 	return false
@@ -29,10 +29,10 @@ func isParallelEdge(e core.Edge) bool {
 // walkFanOut executes parallel branch nodes concurrently and returns the merge node.
 func (g *DefaultGraph) walkFanOut(
 	ctx context.Context,
-	walker core.Walker,
-	obs core.WalkObserver,
-	sourceNode core.Node,
-	sourceArtifact core.Artifact,
+	walker circuit.Walker,
+	obs circuit.WalkObserver,
+	sourceNode circuit.Node,
+	sourceArtifact circuit.Artifact,
 	matches []parallelMatch,
 ) (string, error) {
 	state := walker.State()
@@ -42,8 +42,8 @@ func (g *DefaultGraph) walkFanOut(
 	for i, m := range matches {
 		branchNames[i] = m.transition.NextNode
 	}
-	emitEvent(obs, core.WalkEvent{
-		Type:     core.EventFanOutStart,
+	emitEvent(obs, circuit.WalkEvent{
+		Type:     circuit.EventFanOutStart,
 		Node:     sourceNode.Name(),
 		Walker:   walkerName,
 		Metadata: map[string]any{"branches": branchNames},
@@ -58,14 +58,14 @@ func (g *DefaultGraph) walkFanOut(
 		targetNode, ok := g.nodeIndex[m.transition.NextNode]
 		if !ok {
 			return "", fmt.Errorf("%w: fan-out target %q from edge %s",
-				core.ErrNodeNotFound, m.transition.NextNode, m.edge.ID())
+				circuit.ErrNodeNotFound, m.transition.NextNode, m.edge.ID())
 		}
 
 		eg.Go(func() error {
-			emitEvent(obs, core.WalkEvent{Type: core.EventNodeEnter, Node: targetNode.Name(), Walker: walkerName})
+			emitEvent(obs, circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: targetNode.Name(), Walker: walkerName})
 			start := time.Now()
 
-			nc := core.NodeContext{
+			nc := circuit.NodeContext{
 				WalkerState:   state,
 				PriorArtifact: sourceArtifact,
 				Meta:          make(map[string]any),
@@ -78,21 +78,21 @@ func (g *DefaultGraph) walkFanOut(
 			elapsed := time.Since(start)
 
 			if err != nil {
-				emitEvent(obs, core.WalkEvent{
-					Type: core.EventNodeExit, Node: targetNode.Name(),
+				emitEvent(obs, circuit.WalkEvent{
+					Type: circuit.EventNodeExit, Node: targetNode.Name(),
 					Walker: walkerName, Elapsed: elapsed, Error: err,
 				})
 				return fmt.Errorf("node %s: %w", targetNode.Name(), err)
 			}
 
-			emitEvent(obs, core.WalkEvent{
-				Type: core.EventNodeExit, Node: targetNode.Name(),
+			emitEvent(obs, circuit.WalkEvent{
+				Type: circuit.EventNodeExit, Node: targetNode.Name(),
 				Walker: walkerName, Artifact: art, Elapsed: elapsed,
 			})
 
 			outputMu.Lock()
 			if state.Outputs == nil {
-				state.Outputs = make(map[string]core.Artifact)
+				state.Outputs = make(map[string]circuit.Artifact)
 			}
 			state.Outputs[targetNode.Name()] = art
 			outputMu.Unlock()
@@ -104,7 +104,7 @@ func (g *DefaultGraph) walkFanOut(
 
 	if err := eg.Wait(); err != nil {
 		state.Status = "error"
-		emitEvent(obs, core.WalkEvent{Type: core.EventWalkError, Node: sourceNode.Name(), Error: err})
+		emitEvent(obs, circuit.WalkEvent{Type: circuit.EventWalkError, Node: sourceNode.Name(), Error: err})
 		return "", err
 	}
 
@@ -116,12 +116,12 @@ func (g *DefaultGraph) walkFanOut(
 	mergeNodeName, err := g.findMergeTarget(results, state)
 	if err != nil {
 		state.Status = "error"
-		emitEvent(obs, core.WalkEvent{Type: core.EventWalkError, Node: sourceNode.Name(), Error: err})
+		emitEvent(obs, circuit.WalkEvent{Type: circuit.EventWalkError, Node: sourceNode.Name(), Error: err})
 		return "", err
 	}
 
-	emitEvent(obs, core.WalkEvent{
-		Type:     core.EventFanOutEnd,
+	emitEvent(obs, circuit.WalkEvent{
+		Type:     circuit.EventFanOutEnd,
 		Node:     sourceNode.Name(),
 		Walker:   walkerName,
 		Metadata: map[string]any{"merge": mergeNodeName},
@@ -132,7 +132,7 @@ func (g *DefaultGraph) walkFanOut(
 
 // findMergeTarget evaluates outgoing edges from each parallel branch and returns
 // the common successor node.
-func (g *DefaultGraph) findMergeTarget(results []branchResult, state *core.WalkerState) (string, error) {
+func (g *DefaultGraph) findMergeTarget(results []branchResult, state *circuit.WalkerState) (string, error) {
 	var mergeNodeName string
 
 	for _, r := range results {
@@ -147,18 +147,18 @@ func (g *DefaultGraph) findMergeTarget(results []branchResult, state *core.Walke
 		}
 		if found == "" {
 			return "", fmt.Errorf("%w: branch %q has no matching outgoing edge",
-				core.ErrFanOutMerge, r.nodeName)
+				circuit.ErrFanOutMerge, r.nodeName)
 		}
 		if mergeNodeName == "" {
 			mergeNodeName = found
 		} else if mergeNodeName != found {
 			return "", fmt.Errorf("%w: branches disagree on merge target: %q vs %q",
-				core.ErrFanOutMerge, mergeNodeName, found)
+				circuit.ErrFanOutMerge, mergeNodeName, found)
 		}
 	}
 
 	if mergeNodeName == "" {
-		return "", fmt.Errorf("%w: no merge node found", core.ErrFanOutMerge)
+		return "", fmt.Errorf("%w: no merge node found", circuit.ErrFanOutMerge)
 	}
 
 	return mergeNodeName, nil
@@ -167,13 +167,13 @@ func (g *DefaultGraph) findMergeTarget(results []branchResult, state *core.Walke
 // branchResult holds the output of a single parallel branch.
 type branchResult struct {
 	nodeName string
-	artifact core.Artifact
+	artifact circuit.Artifact
 }
 
 // ListArtifact wraps multiple artifacts from parallel branches into a single
 // composite artifact.
 type ListArtifact struct {
-	Items []core.Artifact
+	Items []circuit.Artifact
 }
 
 func (a *ListArtifact) Type() string       { return "list" }
@@ -181,13 +181,13 @@ func (a *ListArtifact) Confidence() float64 { return 0 }
 func (a *ListArtifact) Raw() any            { return a.Items }
 
 // applyMergeStrategy combines branch results into a single merged artifact.
-func applyMergeStrategy(strategy string, results []branchResult) core.Artifact {
+func applyMergeStrategy(strategy string, results []branchResult) circuit.Artifact {
 	if len(results) == 0 {
 		return nil
 	}
 	switch strategy {
 	case MergeAppend:
-		items := make([]core.Artifact, 0, len(results))
+		items := make([]circuit.Artifact, 0, len(results))
 		for _, r := range results {
 			if r.artifact != nil {
 				items = append(items, r.artifact)

@@ -11,22 +11,22 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 type walkerStateCtxKey struct{}
 
 // WithWalkerState returns a child context carrying the given WalkerState.
 // Used by hookingWalker to make walker state available to hooks via Go context.
-func WithWalkerState(ctx context.Context, s *core.WalkerState) context.Context {
+func WithWalkerState(ctx context.Context, s *circuit.WalkerState) context.Context {
 	return context.WithValue(ctx, walkerStateCtxKey{}, s)
 }
 
 // WalkerStateFromContext extracts the WalkerState from a Go context.
 // Before-hooks use this to inject data into the walker's Context map.
 // Returns nil if the context does not carry a WalkerState.
-func WalkerStateFromContext(ctx context.Context) *core.WalkerState {
-	s, _ := ctx.Value(walkerStateCtxKey{}).(*core.WalkerState)
+func WalkerStateFromContext(ctx context.Context) *circuit.WalkerState {
+	s, _ := ctx.Value(walkerStateCtxKey{}).(*circuit.WalkerState)
 	return s
 }
 
@@ -36,7 +36,7 @@ func WalkerStateFromContext(ctx context.Context) *core.WalkerState {
 // This is the Ansible notify/handler pattern.
 type Hook interface {
 	Name() string
-	Run(ctx context.Context, nodeName string, artifact core.Artifact) error
+	Run(ctx context.Context, nodeName string, artifact circuit.Artifact) error
 }
 
 // HookRegistry maps hook names to implementations.
@@ -74,16 +74,16 @@ func (r HookRegistry) Register(h Hook) {
 // HookFunc is a convenience adapter that turns a plain function into a Hook.
 type HookFunc struct {
 	HookName string
-	Fn       func(ctx context.Context, nodeName string, artifact core.Artifact) error
+	Fn       func(ctx context.Context, nodeName string, artifact circuit.Artifact) error
 }
 
 // NewHookFunc creates a Hook from a function.
-func NewHookFunc(name string, fn func(ctx context.Context, nodeName string, artifact core.Artifact) error) *HookFunc {
+func NewHookFunc(name string, fn func(ctx context.Context, nodeName string, artifact circuit.Artifact) error) *HookFunc {
 	return &HookFunc{HookName: name, Fn: fn}
 }
 
 func (h *HookFunc) Name() string { return h.HookName }
-func (h *HookFunc) Run(ctx context.Context, nodeName string, artifact core.Artifact) error {
+func (h *HookFunc) Run(ctx context.Context, nodeName string, artifact circuit.Artifact) error {
 	return h.Fn(ctx, nodeName, artifact)
 }
 
@@ -99,7 +99,7 @@ type FileWriteHook struct {
 
 func (h *FileWriteHook) Name() string { return BuiltinHookFileWrite }
 
-func (h *FileWriteHook) Run(_ context.Context, nodeName string, artifact core.Artifact) error {
+func (h *FileWriteHook) Run(_ context.Context, nodeName string, artifact circuit.Artifact) error {
 	meta := h.NodeMeta[nodeName]
 	pathTmpl, _ := meta["output_path"].(string)
 	if pathTmpl == "" {

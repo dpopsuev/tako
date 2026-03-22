@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dpopsuev/origami/core"
 )
 
 // ArtifactSchema declares the expected shape of a node's output artifact.
@@ -30,7 +29,7 @@ type FieldSchema struct {
 
 // ValidateArtifact checks that an artifact's Raw() value conforms to the schema.
 // Returns nil if the schema is nil (no validation) or if the artifact matches.
-func ValidateArtifact(schema *ArtifactSchema, artifact core.Artifact) error {
+func ValidateArtifact(schema *ArtifactSchema, artifact Artifact) error {
 	if schema == nil {
 		return nil
 	}

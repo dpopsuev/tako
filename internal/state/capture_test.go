@@ -4,7 +4,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 type captureTestArtifact string
@@ -16,11 +16,11 @@ func (a captureTestArtifact) Raw() any            { return string(a) }
 func TestOutputCapture_CapturesNodeExitArtifacts(t *testing.T) {
 	capture := NewOutputCapture()
 
-	capture.OnEvent(core.WalkEvent{Type: core.EventNodeEnter, Node: "recall"})
-	capture.OnEvent(core.WalkEvent{Type: core.EventNodeExit, Node: "recall", Artifact: captureTestArtifact("data-1")})
-	capture.OnEvent(core.WalkEvent{Type: core.EventNodeEnter, Node: "triage"})
-	capture.OnEvent(core.WalkEvent{Type: core.EventNodeExit, Node: "triage", Artifact: captureTestArtifact("data-2")})
-	capture.OnEvent(core.WalkEvent{Type: core.EventWalkComplete})
+	capture.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall"})
+	capture.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "recall", Artifact: captureTestArtifact("data-1")})
+	capture.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "triage"})
+	capture.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "triage", Artifact: captureTestArtifact("data-2")})
+	capture.OnEvent(circuit.WalkEvent{Type: circuit.EventWalkComplete})
 
 	arts := capture.Artifacts()
 	if len(arts) != 2 {
@@ -36,7 +36,7 @@ func TestOutputCapture_CapturesNodeExitArtifacts(t *testing.T) {
 
 func TestOutputCapture_IgnoresNilArtifacts(t *testing.T) {
 	capture := NewOutputCapture()
-	capture.OnEvent(core.WalkEvent{Type: core.EventNodeExit, Node: "empty"})
+	capture.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "empty"})
 
 	arts := capture.Artifacts()
 	if len(arts) != 0 {
@@ -46,7 +46,7 @@ func TestOutputCapture_IgnoresNilArtifacts(t *testing.T) {
 
 func TestOutputCapture_ArtifactAt(t *testing.T) {
 	capture := NewOutputCapture()
-	capture.OnEvent(core.WalkEvent{Type: core.EventNodeExit, Node: "report", Artifact: captureTestArtifact("result")})
+	capture.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "report", Artifact: captureTestArtifact("result")})
 
 	art, ok := capture.ArtifactAt("report")
 	if !ok {
@@ -71,7 +71,7 @@ func TestOutputCapture_ConcurrentSafety(t *testing.T) {
 		go func(n int) {
 			defer wg.Done()
 			node := "node"
-			capture.OnEvent(core.WalkEvent{Type: core.EventNodeExit, Node: node, Artifact: captureTestArtifact("data")})
+			capture.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: node, Artifact: captureTestArtifact("data")})
 			capture.Artifacts()
 			capture.ArtifactAt(node)
 		}(i)
@@ -81,7 +81,7 @@ func TestOutputCapture_ConcurrentSafety(t *testing.T) {
 
 func TestOutputCapture_Reset(t *testing.T) {
 	capture := NewOutputCapture()
-	capture.OnEvent(core.WalkEvent{Type: core.EventNodeExit, Node: "a", Artifact: captureTestArtifact("x")})
+	capture.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "a", Artifact: captureTestArtifact("x")})
 	capture.Reset()
 
 	if len(capture.Artifacts()) != 0 {
@@ -100,6 +100,6 @@ func TestNewCapture_ReturnsObserverAndCapture(t *testing.T) {
 }
 
 func TestOutputCapture_ImplementsInterfaces(t *testing.T) {
-	var _ core.WalkObserver = (*OutputCapture)(nil)
-	var _ core.ArtifactCapture = (*OutputCapture)(nil)
+	var _ circuit.WalkObserver = (*OutputCapture)(nil)
+	var _ circuit.ArtifactCapture = (*OutputCapture)(nil)
 }

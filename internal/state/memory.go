@@ -7,19 +7,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // InMemoryStore is a thread-safe in-process MemoryStore with namespace support.
 type InMemoryStore struct {
 	mu   sync.RWMutex
-	Data map[string]map[string]map[string]core.MemoryItem // namespace -> walkerID -> key -> item
+	Data map[string]map[string]map[string]circuit.MemoryItem // namespace -> walkerID -> key -> item
 }
 
 // NewInMemoryStore creates a ready-to-use InMemoryStore.
 func NewInMemoryStore() *InMemoryStore {
 	return &InMemoryStore{
-		Data: make(map[string]map[string]map[string]core.MemoryItem),
+		Data: make(map[string]map[string]map[string]circuit.MemoryItem),
 	}
 }
 
@@ -61,12 +61,12 @@ func (s *InMemoryStore) SetNS(namespace, walkerID, key string, value any) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.Data[namespace] == nil {
-		s.Data[namespace] = make(map[string]map[string]core.MemoryItem)
+		s.Data[namespace] = make(map[string]map[string]circuit.MemoryItem)
 	}
 	if s.Data[namespace][walkerID] == nil {
-		s.Data[namespace][walkerID] = make(map[string]core.MemoryItem)
+		s.Data[namespace][walkerID] = make(map[string]circuit.MemoryItem)
 	}
-	s.Data[namespace][walkerID][key] = core.MemoryItem{
+	s.Data[namespace][walkerID][key] = circuit.MemoryItem{
 		Namespace: namespace,
 		WalkerID:  walkerID,
 		Key:       key,
@@ -95,7 +95,7 @@ func (s *InMemoryStore) KeysNS(namespace, walkerID string) []string {
 
 // Search does substring matching on keys and string values across all walkers
 // in the given namespace.
-func (s *InMemoryStore) Search(namespace, query string) []core.MemoryItem {
+func (s *InMemoryStore) Search(namespace, query string) []circuit.MemoryItem {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	ns := s.Data[namespace]
@@ -103,7 +103,7 @@ func (s *InMemoryStore) Search(namespace, query string) []core.MemoryItem {
 		return nil
 	}
 	lower := strings.ToLower(query)
-	var results []core.MemoryItem
+	var results []circuit.MemoryItem
 	for _, wk := range ns {
 		for _, item := range wk {
 			if strings.Contains(strings.ToLower(item.Key), lower) {
@@ -130,12 +130,12 @@ func (s *InMemoryStore) SetNSTagged(namespace, walkerID, key string, value any, 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.Data[namespace] == nil {
-		s.Data[namespace] = make(map[string]map[string]core.MemoryItem)
+		s.Data[namespace] = make(map[string]map[string]circuit.MemoryItem)
 	}
 	if s.Data[namespace][walkerID] == nil {
-		s.Data[namespace][walkerID] = make(map[string]core.MemoryItem)
+		s.Data[namespace][walkerID] = make(map[string]circuit.MemoryItem)
 	}
-	s.Data[namespace][walkerID][key] = core.MemoryItem{
+	s.Data[namespace][walkerID][key] = circuit.MemoryItem{
 		Namespace: namespace,
 		WalkerID:  walkerID,
 		Key:       key,
@@ -153,7 +153,7 @@ type TaggedSetter interface {
 // TaggedMemoryStore wraps a MemoryStore and auto-appends tags to every SetNS call.
 // Read operations are delegated unchanged.
 type TaggedMemoryStore struct {
-	Inner core.MemoryStore
+	Inner circuit.MemoryStore
 	Tags  []string
 }
 
@@ -185,6 +185,6 @@ func (t *TaggedMemoryStore) KeysNS(namespace, walkerID string) []string {
 	return t.Inner.KeysNS(namespace, walkerID)
 }
 
-func (t *TaggedMemoryStore) Search(namespace, query string) []core.MemoryItem {
+func (t *TaggedMemoryStore) Search(namespace, query string) []circuit.MemoryItem {
 	return t.Inner.Search(namespace, query)
 }

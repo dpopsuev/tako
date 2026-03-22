@@ -8,7 +8,6 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/dpopsuev/origami/core"
 )
 
 var refPattern = regexp.MustCompile(`\$\{(\w+)\.output\}`)
@@ -16,7 +15,7 @@ var refPattern = regexp.MustCompile(`\$\{(\w+)\.output\}`)
 // ResolveInput resolves an input reference like "${recall.output}" against
 // the outputs map collected during Walk. Returns nil if the reference is
 // empty (no explicit input dependency).
-func ResolveInput(input string, outputs map[string]core.Artifact) (core.Artifact, error) {
+func ResolveInput(input string, outputs map[string]Artifact) (Artifact, error) {
 	input = strings.TrimSpace(input)
 	if input == "" {
 		return nil, nil
@@ -38,7 +37,7 @@ func ResolveInput(input string, outputs map[string]core.Artifact) (core.Artifact
 // TemplateContext is the unified context available to prompt templates.
 type TemplateContext struct {
 	Output  any                // prior node's output (resolved from input: or prior artifact)
-	State   *core.WalkerState  // walker state (loops, history, context)
+	State   *WalkerState  // walker state (loops, history, context)
 	Config  map[string]any     // circuit vars
 	Sources map[string]any     // named outputs from prior nodes
 	Node    string             // current node name

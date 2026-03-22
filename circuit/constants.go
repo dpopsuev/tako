@@ -1,4 +1,4 @@
-package core
+package circuit
 
 // Walker context keys (underscore-prefixed, stored in WalkerState.Context).
 const (

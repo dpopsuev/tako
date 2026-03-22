@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 type stubArtifact struct {
@@ -20,8 +20,8 @@ func (s *stubArtifact) Raw() any            { return s.raw }
 
 func TestVetoHook_FindingError_ReturnsVeto(t *testing.T) {
 	c := &InMemoryFindingCollector{}
-	_ = c.Report(context.Background(), core.Finding{
-		Severity: core.FindingError,
+	_ = c.Report(context.Background(), circuit.Finding{
+		Severity: circuit.FindingError,
 		NodeName: "login",
 		Domain:   "security",
 		Source:   "auditor",
@@ -32,15 +32,15 @@ func TestVetoHook_FindingError_ReturnsVeto(t *testing.T) {
 	artifact := &stubArtifact{typ: "test", confidence: 0.9, raw: "data"}
 
 	err := hook.Run(context.Background(), "login", artifact)
-	if !errors.Is(err, core.ErrFindingVeto) {
+	if !errors.Is(err, circuit.ErrFindingVeto) {
 		t.Errorf("Run() = %v, want ErrFindingVeto", err)
 	}
 }
 
 func TestVetoHook_FindingWarning_NoVeto(t *testing.T) {
 	c := &InMemoryFindingCollector{}
-	_ = c.Report(context.Background(), core.Finding{
-		Severity: core.FindingWarning,
+	_ = c.Report(context.Background(), circuit.Finding{
+		Severity: circuit.FindingWarning,
 		NodeName: "login",
 	})
 
@@ -55,8 +55,8 @@ func TestVetoHook_FindingWarning_NoVeto(t *testing.T) {
 
 func TestVetoHook_DifferentNode_NoVeto(t *testing.T) {
 	c := &InMemoryFindingCollector{}
-	_ = c.Report(context.Background(), core.Finding{
-		Severity: core.FindingError,
+	_ = c.Report(context.Background(), circuit.Finding{
+		Severity: circuit.FindingError,
 		NodeName: "other-node",
 	})
 
@@ -71,8 +71,8 @@ func TestVetoHook_DifferentNode_NoVeto(t *testing.T) {
 
 func TestVetoHook_NilArtifact_NoVeto(t *testing.T) {
 	c := &InMemoryFindingCollector{}
-	_ = c.Report(context.Background(), core.Finding{
-		Severity: core.FindingError,
+	_ = c.Report(context.Background(), circuit.Finding{
+		Severity: circuit.FindingError,
 		NodeName: "login",
 	})
 

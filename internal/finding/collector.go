@@ -7,16 +7,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // InMemoryFindingCollector is a thread-safe, slice-backed FindingCollector.
 type InMemoryFindingCollector struct {
 	mu       sync.RWMutex
-	findings []core.Finding
+	findings []circuit.Finding
 }
 
-func (c *InMemoryFindingCollector) Report(_ context.Context, f core.Finding) error {
+func (c *InMemoryFindingCollector) Report(_ context.Context, f circuit.Finding) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if f.Timestamp.IsZero() {
@@ -26,10 +26,10 @@ func (c *InMemoryFindingCollector) Report(_ context.Context, f core.Finding) err
 	return nil
 }
 
-func (c *InMemoryFindingCollector) Findings() []core.Finding {
+func (c *InMemoryFindingCollector) Findings() []circuit.Finding {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	out := make([]core.Finding, len(c.findings))
+	out := make([]circuit.Finding, len(c.findings))
 	copy(out, c.findings)
 	return out
 }

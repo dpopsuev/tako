@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // Renderer converts structured data into human-readable output.
@@ -70,15 +70,15 @@ func (t *TemplateRenderer) Render(_ context.Context, data any) (string, error) {
 // rendererNode is a Node that delegates processing to a Renderer.
 type rendererNode struct {
 	name    string
-	element core.Element
+	element circuit.Element
 	rnd     Renderer
 	meta    map[string]any
 }
 
 func (n *rendererNode) Name() string             { return n.name }
-func (n *rendererNode) ElementAffinity() core.Element { return n.element }
+func (n *rendererNode) ElementAffinity() circuit.Element { return n.element }
 
-func (n *rendererNode) Process(ctx context.Context, nc core.NodeContext) (core.Artifact, error) {
+func (n *rendererNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	var input any
 	if nc.PriorArtifact != nil {
 		input = nc.PriorArtifact.Raw()

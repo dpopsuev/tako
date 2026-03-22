@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 type stubCacheArtifact struct{ val string }
@@ -92,5 +92,5 @@ func TestInMemoryCache_Len(t *testing.T) {
 }
 
 func TestInMemoryCache_ImplementsNodeCache(t *testing.T) {
-	var _ core.NodeCache = (*InMemoryCache)(nil)
+	var _ circuit.NodeCache = (*InMemoryCache)(nil)
 }

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/core"
 )
 
 // NarrationSink receives a single human-readable narration line.
@@ -98,12 +97,12 @@ func (n *NarrationObserver) Progress() Progress {
 }
 
 // OnEvent implements WalkObserver.
-func (n *NarrationObserver) OnEvent(e core.WalkEvent) {
+func (n *NarrationObserver) OnEvent(e circuit.WalkEvent) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
 
 	switch e.Type {
-	case core.EventNodeEnter:
+	case circuit.EventNodeEnter:
 		if n.walkStart.IsZero() {
 			n.walkStart = time.Now()
 		}
@@ -118,7 +117,7 @@ func (n *NarrationObserver) OnEvent(e core.WalkEvent) {
 			n.emit(fmt.Sprintf("Entering %s", name))
 		}
 
-	case core.EventNodeExit:
+	case circuit.EventNodeExit:
 		n.nodesVisited++
 		name := n.vocab.Name(e.Node)
 		if e.Error != nil {
@@ -133,23 +132,23 @@ func (n *NarrationObserver) OnEvent(e core.WalkEvent) {
 			n.emitMilestone()
 		}
 
-	case core.EventWalkerSwitch:
+	case circuit.EventWalkerSwitch:
 		n.lastWalker = e.Walker
 		name := n.vocab.Name(e.Node)
 		n.emit(fmt.Sprintf("Handing off to %s at %s", e.Walker, name))
 
-	case core.EventTransition:
+	case circuit.EventTransition:
 		// silent by default; transitions are high-frequency noise
 
-	case core.EventEdgeEvaluate:
+	case circuit.EventEdgeEvaluate:
 		// silent by default
 
-	case core.EventWalkComplete:
+	case circuit.EventWalkComplete:
 		elapsed := time.Since(n.walkStart)
 		n.emit(fmt.Sprintf("Walk complete — %d nodes visited in %s",
 			n.nodesVisited, FmtNarrateDuration(elapsed)))
 
-	case core.EventWalkError:
+	case circuit.EventWalkError:
 		n.errors++
 		node := e.Node
 		if node != "" {

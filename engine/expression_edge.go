@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/expr-lang/expr"
 	"github.com/expr-lang/expr/vm"
 )
@@ -65,7 +65,7 @@ func (e *expressionEdge) IsShortcut() bool { return e.def.Shortcut }
 func (e *expressionEdge) IsLoop() bool     { return e.def.Loop }
 func (e *expressionEdge) IsParallel() bool { return e.def.Parallel }
 
-func (e *expressionEdge) Evaluate(artifact core.Artifact, state *core.WalkerState) *core.Transition {
+func (e *expressionEdge) Evaluate(artifact circuit.Artifact, state *circuit.WalkerState) *circuit.Transition {
 	ctx := buildExprContext(artifact, state, e.config)
 
 	result, err := expr.Run(e.program, ctx)
@@ -78,7 +78,7 @@ func (e *expressionEdge) Evaluate(artifact core.Artifact, state *core.WalkerStat
 		return nil
 	}
 
-	return &core.Transition{
+	return &circuit.Transition{
 		NextNode:    e.def.To,
 		Explanation: fmt.Sprintf("when: %s", e.def.When),
 	}
@@ -95,18 +95,18 @@ func runExprProgram(program *vm.Program, ctx ExprContext) (any, error) {
 }
 
 // buildExprContext creates the evaluation context from artifact and walker state.
-func buildExprContext(artifact core.Artifact, state *core.WalkerState, config map[string]any) ExprContext {
+func buildExprContext(artifact circuit.Artifact, state *circuit.WalkerState, config map[string]any) ExprContext {
 	output := artifactToMap(artifact)
 
 	loops := make(map[string]int)
 	current := ""
-	var collector core.FindingCollector
+	var collector circuit.FindingCollector
 	if state != nil {
 		for k, v := range state.LoopCounts {
 			loops[k] = v
 		}
 		current = state.CurrentNode
-		collector, _ = state.Context[core.FindingCollectorKey].(core.FindingCollector)
+		collector, _ = state.Context[circuit.FindingCollectorKey].(circuit.FindingCollector)
 	}
 
 	if config == nil {
@@ -123,7 +123,7 @@ func buildExprContext(artifact core.Artifact, state *core.WalkerState, config ma
 
 // SignalExprHelpers exposes finding queries to when: expressions.
 type SignalExprHelpers struct {
-	Collector core.FindingCollector
+	Collector circuit.FindingCollector
 }
 
 // HasFinding returns true if any finding is at or above the given severity.
@@ -131,9 +131,9 @@ func (h SignalExprHelpers) HasFinding(severity string) bool {
 	if h.Collector == nil {
 		return false
 	}
-	threshold := core.FindingSeverity(severity)
+	threshold := circuit.FindingSeverity(severity)
 	for _, f := range h.Collector.Findings() {
-		if core.SeverityAtOrAbove(f.Severity, threshold) {
+		if circuit.SeverityAtOrAbove(f.Severity, threshold) {
 			return true
 		}
 	}
@@ -145,10 +145,10 @@ func (h SignalExprHelpers) FindingCount(severity string) int {
 	if h.Collector == nil {
 		return 0
 	}
-	threshold := core.FindingSeverity(severity)
+	threshold := circuit.FindingSeverity(severity)
 	count := 0
 	for _, f := range h.Collector.Findings() {
-		if core.SeverityAtOrAbove(f.Severity, threshold) {
+		if circuit.SeverityAtOrAbove(f.Severity, threshold) {
 			count++
 		}
 	}
@@ -169,17 +169,17 @@ func (h SignalExprHelpers) FindingDomain(domain string) bool {
 }
 
 // ArtifactToMapForTest is exported for root-package test backward compatibility.
-func ArtifactToMapForTest(artifact core.Artifact) map[string]any {
+func ArtifactToMapForTest(artifact circuit.Artifact) map[string]any {
 	return artifactToMap(artifact)
 }
 
 // BuildExprContextForTest is exported for root-package test backward compatibility.
-func BuildExprContextForTest(artifact core.Artifact, state *core.WalkerState, config map[string]any) ExprContext {
+func BuildExprContextForTest(artifact circuit.Artifact, state *circuit.WalkerState, config map[string]any) ExprContext {
 	return buildExprContext(artifact, state, config)
 }
 
 // artifactToMap converts an Artifact's Raw() value to a map[string]any.
-func artifactToMap(artifact core.Artifact) map[string]any {
+func artifactToMap(artifact circuit.Artifact) map[string]any {
 	if artifact == nil {
 		return make(map[string]any)
 	}

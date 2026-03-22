@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // Transformer processes input data and produces structured output.
@@ -55,7 +55,7 @@ type TransformerContext struct {
 	Prompt      string         // prompt template path or content
 	NodeName    string         // current node name
 	Meta        map[string]any // additional metadata from NodeDef or walk state
-	WalkerState *core.WalkerState   // walker state including context, outputs, and loop counts
+	WalkerState *circuit.WalkerState   // walker state including context, outputs, and loop counts
 }
 
 // TransformerRegistry maps transformer names to implementations.
@@ -95,7 +95,7 @@ func (r TransformerRegistry) Register(t Transformer) {
 // Created by BuildGraph when handler_type is "transformer".
 type transformerNode struct {
 	name     string
-	element  core.Element
+	element  circuit.Element
 	trans    Transformer
 	prompt   string         // from NodeDef.Prompt
 	input    string         // from NodeDef.Input (e.g. "${recall.output}")
@@ -105,9 +105,9 @@ type transformerNode struct {
 }
 
 func (n *transformerNode) Name() string             { return n.name }
-func (n *transformerNode) ElementAffinity() core.Element { return n.element }
+func (n *transformerNode) ElementAffinity() circuit.Element { return n.element }
 
-func (n *transformerNode) Process(ctx context.Context, nc core.NodeContext) (core.Artifact, error) {
+func (n *transformerNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	logger := slog.Default().With("component", "transformer")
 	var input any
 
@@ -258,7 +258,7 @@ func (t *passthroughTransformer) Transform(_ context.Context, tc *TransformerCon
 }
 
 // IsTransformerNode returns true if the node was created from a transformer.
-func IsTransformerNode(n core.Node) bool {
+func IsTransformerNode(n circuit.Node) bool {
 	_, ok := n.(*transformerNode)
 	return ok
 }

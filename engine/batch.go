@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/circuit"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -22,8 +22,8 @@ type BatchCase struct {
 type BatchWalkResult struct {
 	CaseID        string
 	Path          []string
-	StepArtifacts map[string]core.Artifact
-	State         *core.WalkerState
+	StepArtifacts map[string]circuit.Artifact
+	State         *circuit.WalkerState
 	Error         error
 }
 
@@ -34,7 +34,7 @@ type BatchWalkConfig struct {
 	Cases          []BatchCase
 	Parallel       int
 	OnCaseComplete func(index int, result BatchWalkResult)
-	Observer       core.WalkObserver // external observer, composed with internal path/artifact collector
+	Observer       circuit.WalkObserver // external observer, composed with internal path/artifact collector
 }
 
 // BatchWalk walks a circuit once per case, optionally in parallel.
@@ -58,26 +58,26 @@ func BatchWalk(ctx context.Context, cfg BatchWalkConfig) []BatchWalkResult {
 			return
 		}
 
-		walker := core.NewProcessWalker(bc.ID)
+		walker := circuit.NewProcessWalker(bc.ID)
 		walker.State().MergeContext(bc.Context)
 
 		var mu sync.Mutex
 		var path []string
-		stepArtifacts := map[string]core.Artifact{}
+		stepArtifacts := map[string]circuit.Artifact{}
 
-		obs := core.WalkObserverFunc(func(e core.WalkEvent) {
+		obs := circuit.WalkObserverFunc(func(e circuit.WalkEvent) {
 			mu.Lock()
 			defer mu.Unlock()
-			if e.Type == core.EventNodeEnter {
+			if e.Type == circuit.EventNodeEnter {
 				path = append(path, e.Node)
 			}
-			if e.Type == core.EventNodeExit && e.Artifact != nil {
+			if e.Type == circuit.EventNodeExit && e.Artifact != nil {
 				stepArtifacts[e.Node] = e.Artifact
 			}
 		})
 		if dg, ok := runner.Graph.(*DefaultGraph); ok {
 			if cfg.Observer != nil {
-				dg.SetObserver(core.MultiObserver{obs, cfg.Observer})
+				dg.SetObserver(circuit.MultiObserver{obs, cfg.Observer})
 			} else {
 				dg.SetObserver(obs)
 			}

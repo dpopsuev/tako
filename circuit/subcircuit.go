@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dpopsuev/origami/core"
 )
 
 // LoadSubCircuitsFromFS loads sub-circuit definitions from a filesystem.
@@ -61,8 +60,8 @@ func LoadSubCircuitsFromFS(fsys fs.FS, resolvers map[string]AssetResolver) map[s
 		if def.Import != "" {
 			if _, hasResolver := resolvers[name]; !hasResolver {
 				slog.Debug("skipping sub-circuit with unresolved import",
-					core.LogKeyComponent, core.LogComponentDSL,
-					core.LogKeyCircuit, name,
+					LogKeyComponent, LogComponentDSL,
+					LogKeyCircuit, name,
 					"import", def.Import,
 				)
 				continue
@@ -70,8 +69,8 @@ func LoadSubCircuitsFromFS(fsys fs.FS, resolvers map[string]AssetResolver) map[s
 		}
 
 		circuits[name] = def
-		slog.Debug(core.LogSubCircuitLoaded, core.LogKeyComponent, core.LogComponentDSL,
-			core.LogKeyCircuit, name, "nodes", len(def.Nodes))
+		slog.Debug(LogSubCircuitLoaded, LogKeyComponent, LogComponentDSL,
+			LogKeyCircuit, name, "nodes", len(def.Nodes))
 	}
 
 	if len(circuits) == 0 {

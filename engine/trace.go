@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // TraceLevel classifies trace events by verbosity.
@@ -59,7 +59,7 @@ func NewTraceRecorder(path string) (*TraceRecorder, error) {
 }
 
 // OnEvent implements WalkObserver.
-func (r *TraceRecorder) OnEvent(e core.WalkEvent) {
+func (r *TraceRecorder) OnEvent(e circuit.WalkEvent) {
 	te := TraceEvent{
 		Timestamp: time.Now().UTC().Format(time.RFC3339Nano),
 		Level:     LevelDebug,
@@ -82,7 +82,7 @@ func (r *TraceRecorder) OnEvent(e core.WalkEvent) {
 
 	r.write(te)
 
-	if e.Type == core.EventNodeExit && e.Artifact != nil {
+	if e.Type == circuit.EventNodeExit && e.Artifact != nil {
 		artEvent := TraceEvent{
 			Timestamp: te.Timestamp,
 			Level:     LevelTrace,

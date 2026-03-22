@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // EvalAction determines the next step after an Operator evaluation.
@@ -29,7 +29,7 @@ type Goal struct {
 
 // SystemState is the current observed state provided by Operator.Observe.
 type SystemState struct {
-	Artifacts map[string]core.Artifact `json:"-"`
+	Artifacts map[string]circuit.Artifact `json:"-"`
 	Iteration int                      `json:"iteration"`
 	Elapsed   time.Duration            `json:"elapsed"`
 }
@@ -45,7 +45,7 @@ type Evaluation struct {
 // WalkResult captures the outcome of a single circuit walk within the
 // reconciliation loop.
 type WalkResult struct {
-	Artifacts map[string]core.Artifact `json:"-"`
+	Artifacts map[string]circuit.Artifact `json:"-"`
 	Elapsed   time.Duration            `json:"elapsed"`
 	Error     error                    `json:"error,omitempty"`
 }
@@ -71,7 +71,7 @@ type OperatorOption func(*operatorConfig)
 type operatorConfig struct {
 	maxIterations int
 	observer      OperatorObserver
-	walkObserver  core.WalkObserver
+	walkObserver  circuit.WalkObserver
 }
 
 // WithMaxIterations sets a defense-in-depth cap on reconciliation iterations.
@@ -86,7 +86,7 @@ func WithOperatorObserver(obs OperatorObserver) OperatorOption {
 
 // WithWalkObserver attaches a walk-level observer to each circuit walk
 // within the reconciliation loop.
-func WithWalkObserver(obs core.WalkObserver) OperatorOption {
+func WithWalkObserver(obs circuit.WalkObserver) OperatorOption {
 	return func(c *operatorConfig) { c.walkObserver = obs }
 }
 
@@ -108,7 +108,7 @@ type CircuitContainer interface {
 	Status() ContainerStatus
 	Walk(ctx context.Context, reg GraphRegistries) (*WalkResult, error)
 	Abort(reason string) error
-	Artifacts() map[string]core.Artifact
+	Artifacts() map[string]circuit.Artifact
 }
 
 // InMemoryContainer executes a circuit walk in-process.
@@ -117,13 +117,13 @@ type InMemoryContainer struct {
 	def       *CircuitDef
 	mu        sync.Mutex
 	status    ContainerStatus
-	artifacts map[string]core.Artifact
+	artifacts map[string]circuit.Artifact
 	cancel    context.CancelFunc
-	walkObs   core.WalkObserver
+	walkObs   circuit.WalkObserver
 }
 
 // NewInMemoryContainer creates a container in StatusPending.
-func NewInMemoryContainer(id string, def *CircuitDef, walkObs core.WalkObserver) *InMemoryContainer {
+func NewInMemoryContainer(id string, def *CircuitDef, walkObs circuit.WalkObserver) *InMemoryContainer {
 	return &InMemoryContainer{
 		id:      id,
 		def:     def,
@@ -141,7 +141,7 @@ func (c *InMemoryContainer) Status() ContainerStatus {
 	return c.status
 }
 
-func (c *InMemoryContainer) Artifacts() map[string]core.Artifact {
+func (c *InMemoryContainer) Artifacts() map[string]circuit.Artifact {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.artifacts
@@ -173,7 +173,7 @@ func (c *InMemoryContainer) Walk(ctx context.Context, reg GraphRegistries) (*Wal
 		}
 	}
 
-	walker := core.NewProcessWalker(c.id)
+	walker := circuit.NewProcessWalker(c.id)
 	walkErr := graph.Walk(walkCtx, walker, c.def.Start)
 
 	result := &WalkResult{
@@ -232,7 +232,7 @@ func RunOperator(ctx context.Context, op Operator, goal Goal, reg GraphRegistrie
 		}
 
 		if cfg.maxIterations > 0 && iteration > cfg.maxIterations {
-			return fmt.Errorf("%w: %d iterations", core.ErrMaxIterations, cfg.maxIterations)
+			return fmt.Errorf("%w: %d iterations", circuit.ErrMaxIterations, cfg.maxIterations)
 		}
 
 		state, err := op.Observe(ctx)
@@ -257,7 +257,7 @@ func RunOperator(ctx context.Context, op Operator, goal Goal, reg GraphRegistrie
 			return nil
 		}
 		if eval.Action == ActionEscalate {
-			return fmt.Errorf("%w: %s", core.ErrEscalate, eval.Reason)
+			return fmt.Errorf("%w: %s", circuit.ErrEscalate, eval.Reason)
 		}
 
 		def, err := op.Reconcile(ctx, goal, state)

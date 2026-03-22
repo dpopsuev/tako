@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // Interrupt signals that a walk should pause at the current node for
@@ -123,16 +123,16 @@ func NewRunnerWith(def *CircuitDef, reg GraphRegistries) (*Runner, error) {
 // against declared schemas and firing after-hooks.
 // If walker is nil, a ProcessWalker is used (delegates to node.Process()).
 // Chain: hookingWalker -> validatingWalker -> inner walker.
-func (r *Runner) Walk(ctx context.Context, walker core.Walker, startNode string) error {
+func (r *Runner) Walk(ctx context.Context, walker circuit.Walker, startNode string) error {
 	if walker == nil {
-		walker = core.NewProcessWalker("default")
+		walker = circuit.NewProcessWalker("default")
 	}
 	vw := &validatingWalker{
 		inner:   walker,
 		schemas: r.Schemas,
 		log:     r.Logger,
 	}
-	var w core.Walker = vw
+	var w circuit.Walker = vw
 	hasHooks := (len(r.NodeBefore) > 0 || len(r.NodeHooks) > 0) && r.Hooks != nil
 	if hasHooks {
 		w = &hookingWalker{
@@ -149,16 +149,16 @@ func (r *Runner) Walk(ctx context.Context, walker core.Walker, startNode string)
 // validatingWalker wraps a domain Walker to add schema validation
 // after each Handle call.
 type validatingWalker struct {
-	inner   core.Walker
+	inner   circuit.Walker
 	schemas map[string]*ArtifactSchema
 	log     *slog.Logger
 }
 
-func (vw *validatingWalker) Identity() core.AgentIdentity     { return vw.inner.Identity() }
-func (vw *validatingWalker) SetIdentity(id core.AgentIdentity) { vw.inner.SetIdentity(id) }
-func (vw *validatingWalker) State() *core.WalkerState          { return vw.inner.State() }
+func (vw *validatingWalker) Identity() circuit.AgentIdentity     { return vw.inner.Identity() }
+func (vw *validatingWalker) SetIdentity(id circuit.AgentIdentity) { vw.inner.SetIdentity(id) }
+func (vw *validatingWalker) State() *circuit.WalkerState          { return vw.inner.State() }
 
-func (vw *validatingWalker) Handle(ctx context.Context, node core.Node, nc core.NodeContext) (core.Artifact, error) {
+func (vw *validatingWalker) Handle(ctx context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
 	artifact, err := vw.inner.Handle(ctx, node, nc)
 	if err != nil {
 		return nil, err
@@ -187,7 +187,7 @@ func (vw *validatingWalker) Handle(ctx context.Context, node core.Node, nc core.
 // can inject data into walker context. After-hooks run with the node's
 // artifact. Hook errors are logged but do not stop the walk by default.
 type hookingWalker struct {
-	inner      core.Walker
+	inner      circuit.Walker
 	nodeBefore map[string][]string // node name -> before-hook names
 	nodeHooks  map[string][]string // node name -> after-hook names
 	hooks      HookRegistry
@@ -199,11 +199,11 @@ type hookingWalker struct {
 	onHookEvent func(name, phase string, err error)
 }
 
-func (hw *hookingWalker) Identity() core.AgentIdentity     { return hw.inner.Identity() }
-func (hw *hookingWalker) SetIdentity(id core.AgentIdentity) { hw.inner.SetIdentity(id) }
-func (hw *hookingWalker) State() *core.WalkerState          { return hw.inner.State() }
+func (hw *hookingWalker) Identity() circuit.AgentIdentity     { return hw.inner.Identity() }
+func (hw *hookingWalker) SetIdentity(id circuit.AgentIdentity) { hw.inner.SetIdentity(id) }
+func (hw *hookingWalker) State() *circuit.WalkerState          { return hw.inner.State() }
 
-func (hw *hookingWalker) Handle(ctx context.Context, node core.Node, nc core.NodeContext) (core.Artifact, error) {
+func (hw *hookingWalker) Handle(ctx context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
 	hookCtx := WithWalkerState(ctx, hw.State())
 	for _, name := range hw.nodeBefore[node.Name()] {
 		hook, hErr := hw.hooks.Get(name)
@@ -237,7 +237,7 @@ func (hw *hookingWalker) Handle(ctx context.Context, node core.Node, nc core.Nod
 			continue
 		}
 		if hErr = hook.Run(hookCtx, node.Name(), artifact); hErr != nil {
-			if errors.Is(hErr, core.ErrFindingVeto) {
+			if errors.Is(hErr, circuit.ErrFindingVeto) {
 				artifact = &vetoArtifact{Inner: artifact}
 				if hw.onHookEvent != nil {
 					hw.onHookEvent(name, "veto", hErr)
@@ -259,22 +259,22 @@ func (hw *hookingWalker) Handle(ctx context.Context, node core.Node, nc core.Nod
 // WrapWithCheckpointer wraps a Walker so that state is saved after each
 // successful node and on Interrupt. Use this when calling Runner.Walk()
 // directly (outside of framework.Run) and you need checkpoint support.
-func WrapWithCheckpointer(w core.Walker, cp core.Checkpointer) core.Walker {
+func WrapWithCheckpointer(w circuit.Walker, cp circuit.Checkpointer) circuit.Walker {
 	return &checkpointingWalker{inner: w, cp: cp}
 }
 
 // checkpointingWalker wraps a Walker to save state after each successful
 // node Handle. This is the outermost wrapper in the walker chain.
 type checkpointingWalker struct {
-	inner core.Walker
-	cp    core.Checkpointer
+	inner circuit.Walker
+	cp    circuit.Checkpointer
 }
 
-func (cw *checkpointingWalker) Identity() core.AgentIdentity     { return cw.inner.Identity() }
-func (cw *checkpointingWalker) SetIdentity(id core.AgentIdentity) { cw.inner.SetIdentity(id) }
-func (cw *checkpointingWalker) State() *core.WalkerState          { return cw.inner.State() }
+func (cw *checkpointingWalker) Identity() circuit.AgentIdentity     { return cw.inner.Identity() }
+func (cw *checkpointingWalker) SetIdentity(id circuit.AgentIdentity) { cw.inner.SetIdentity(id) }
+func (cw *checkpointingWalker) State() *circuit.WalkerState          { return cw.inner.State() }
 
-func (cw *checkpointingWalker) Handle(ctx context.Context, node core.Node, nc core.NodeContext) (core.Artifact, error) {
+func (cw *checkpointingWalker) Handle(ctx context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
 	artifact, err := cw.inner.Handle(ctx, node, nc)
 	if err != nil {
 		if IsInterrupt(err) {

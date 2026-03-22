@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/origami/core"
-	"github.com/dpopsuev/origami/finding"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/internal/finding"
 )
 
 // ArtifactStoreKey is the well-known key for a shared ArtifactStore
@@ -19,31 +19,31 @@ const ArtifactStoreKey = "__artifact_store"
 // ArtifactStore is a thread-safe store of named artifacts.
 type ArtifactStore struct {
 	mu      sync.RWMutex
-	outputs map[string]core.Artifact
+	outputs map[string]circuit.Artifact
 }
 
 // Set stores an artifact under the given node name.
-func (s *ArtifactStore) Set(name string, a core.Artifact) {
+func (s *ArtifactStore) Set(name string, a circuit.Artifact) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.outputs == nil {
-		s.outputs = make(map[string]core.Artifact)
+		s.outputs = make(map[string]circuit.Artifact)
 	}
 	s.outputs[name] = a
 }
 
 // Get retrieves an artifact by node name, or nil if absent.
-func (s *ArtifactStore) Get(name string) core.Artifact {
+func (s *ArtifactStore) Get(name string) circuit.Artifact {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.outputs[name]
 }
 
 // All returns a snapshot of all stored artifacts.
-func (s *ArtifactStore) All() map[string]core.Artifact {
+func (s *ArtifactStore) All() map[string]circuit.Artifact {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	out := make(map[string]core.Artifact, len(s.outputs))
+	out := make(map[string]circuit.Artifact, len(s.outputs))
 	for k, v := range s.outputs {
 		out[k] = v
 	}
@@ -61,11 +61,11 @@ func (s *ArtifactStore) Len() int {
 type artifactCaptureObserver struct {
 	store         *ArtifactStore
 	observedNodes map[string]bool
-	inner         core.WalkObserver
+	inner         circuit.WalkObserver
 }
 
-func (o *artifactCaptureObserver) OnEvent(e core.WalkEvent) {
-	if e.Type == core.EventNodeExit && e.Artifact != nil {
+func (o *artifactCaptureObserver) OnEvent(e circuit.WalkEvent) {
+	if e.Type == circuit.EventNodeExit && e.Artifact != nil {
 		if len(o.observedNodes) == 0 || o.observedNodes[e.Node] {
 			o.store.Set(e.Node, e.Artifact)
 		}
@@ -91,7 +91,7 @@ func RunWithEnforcer(
 	workDef *CircuitDef,
 	workReg GraphRegistries,
 	enforcerCfg ParallelEnforcerConfig,
-) ([]core.Finding, error) {
+) ([]circuit.Finding, error) {
 
 	router := enforcerCfg.Router
 	if router == nil {
@@ -122,11 +122,11 @@ func RunWithEnforcer(
 	enforcerCtx, cancelEnforcer := context.WithCancel(ctx)
 	defer cancelEnforcer()
 
-	workWalker := core.NewProcessWalker("work")
-	workWalker.State().Context[core.FindingCollectorKey] = router
+	workWalker := circuit.NewProcessWalker("work")
+	workWalker.State().Context[circuit.FindingCollectorKey] = router
 
-	enforcerWalker := core.NewProcessWalker("enforcer")
-	enforcerWalker.State().Context[core.FindingCollectorKey] = router
+	enforcerWalker := circuit.NewProcessWalker("enforcer")
+	enforcerWalker.State().Context[circuit.FindingCollectorKey] = router
 	enforcerWalker.State().Context[ArtifactStoreKey] = store
 
 	var workErr error

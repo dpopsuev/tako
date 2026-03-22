@@ -2,28 +2,28 @@ package engine
 
 // Category: Execution
 
-import "github.com/dpopsuev/origami/core"
+import "github.com/dpopsuev/origami/circuit"
 
 // SchedulerContext provides all information a Scheduler needs to pick a walker.
 type SchedulerContext struct {
-	Node        core.Node
+	Node        circuit.Node
 	Zone        *Zone
-	Walkers     []core.Walker
-	PriorWalker core.Walker
-	WalkState   *core.WalkerState
+	Walkers     []circuit.Walker
+	PriorWalker circuit.Walker
+	WalkState   *circuit.WalkerState
 }
 
 // Scheduler selects which walker handles a given node.
 type Scheduler interface {
-	Select(ctx SchedulerContext) core.Walker
+	Select(ctx SchedulerContext) circuit.Walker
 }
 
 // SingleScheduler always returns the same walker.
 type SingleScheduler struct {
-	Walker core.Walker
+	Walker circuit.Walker
 }
 
-func (s *SingleScheduler) Select(_ SchedulerContext) core.Walker {
+func (s *SingleScheduler) Select(_ SchedulerContext) circuit.Walker {
 	return s.Walker
 }
 
@@ -38,7 +38,7 @@ func (s *AffinityScheduler) LastMismatch() float64 {
 	return s.lastMismatch
 }
 
-func (s *AffinityScheduler) Select(ctx SchedulerContext) core.Walker {
+func (s *AffinityScheduler) Select(ctx SchedulerContext) circuit.Walker {
 	s.lastMismatch = 1.0
 
 	if len(ctx.Walkers) == 0 {
@@ -52,7 +52,7 @@ func (s *AffinityScheduler) Select(ctx SchedulerContext) core.Walker {
 	nodeName := ctx.Node.Name()
 	nodeElement := ctx.Node.ElementAffinity()
 
-	var best core.Walker
+	var best circuit.Walker
 	bestScore := -1.0
 	bestElementMatch := false
 
@@ -85,7 +85,7 @@ func (s *AffinityScheduler) Select(ctx SchedulerContext) core.Walker {
 }
 
 // computeMismatch scores how well a walker fits a node (0 = perfect, 1 = worst).
-func computeMismatch(w core.Walker, node core.Node) float64 {
+func computeMismatch(w circuit.Walker, node circuit.Node) float64 {
 	id := w.Identity()
 	affinityScore := id.StepAffinity[node.Name()]
 	elementBonus := 0.0

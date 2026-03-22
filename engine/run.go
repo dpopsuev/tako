@@ -8,8 +8,8 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/dpopsuev/origami/core"
-	"github.com/dpopsuev/origami/state"
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/internal/state"
 )
 
 // RunOption configures a Run invocation.
@@ -23,13 +23,13 @@ type runConfig struct {
 	edges             EdgeFactory
 	components        ComponentLoader
 	overrides         map[string]any
-	walker            core.Walker
+	walker            circuit.Walker
 	team              *Team
-	observer          core.WalkObserver
+	observer          circuit.WalkObserver
 	logger            *slog.Logger
-	memory            core.MemoryStore
-	nodeCache         core.NodeCache
-	checkpointer      core.Checkpointer
+	memory            circuit.MemoryStore
+	nodeCache         circuit.NodeCache
+	checkpointer      circuit.Checkpointer
 	resumeID          string
 	resumeInput       any
 	thermalBudget     *thermalConfig
@@ -72,7 +72,7 @@ func WithOverrides(overrides map[string]any) RunOption {
 }
 
 // WithWalker sets a custom Walker. If nil, ProcessWalker is used.
-func WithWalker(w core.Walker) RunOption {
+func WithWalker(w circuit.Walker) RunOption {
 	return func(c *runConfig) { c.walker = w }
 }
 
@@ -82,7 +82,7 @@ func WithTeam(team *Team) RunOption {
 }
 
 // WithRunObserver attaches a walk observer for the run.
-func WithRunObserver(obs core.WalkObserver) RunOption {
+func WithRunObserver(obs circuit.WalkObserver) RunOption {
 	return func(c *runConfig) { c.observer = obs }
 }
 
@@ -92,25 +92,25 @@ func WithLogger(l *slog.Logger) RunOption {
 }
 
 // WithMemory attaches a MemoryStore for cross-walk persistence.
-func WithMemory(store core.MemoryStore) RunOption {
+func WithMemory(store circuit.MemoryStore) RunOption {
 	return func(c *runConfig) { c.memory = store }
 }
 
 // WithTaggedMemory wraps a MemoryStore so that every SetNS call during the
 // walk automatically attaches the given tags.
-func WithTaggedMemory(store core.MemoryStore, tags ...string) RunOption {
+func WithTaggedMemory(store circuit.MemoryStore, tags ...string) RunOption {
 	return func(c *runConfig) {
 		c.memory = &state.TaggedMemoryStore{Inner: store, Tags: tags}
 	}
 }
 
 // WithNodeCache enables node-level caching.
-func WithNodeCache(cache core.NodeCache) RunOption {
+func WithNodeCache(cache circuit.NodeCache) RunOption {
 	return func(c *runConfig) { c.nodeCache = cache }
 }
 
 // WithCheckpointer enables auto-checkpointing.
-func WithCheckpointer(cp core.Checkpointer) RunOption {
+func WithCheckpointer(cp circuit.Checkpointer) RunOption {
 	return func(c *runConfig) { c.checkpointer = cp }
 }
 
@@ -207,7 +207,7 @@ func Run(ctx context.Context, circuitPath string, input any, opts ...RunOption) 
 
 	walker := cfg.walker
 	if walker == nil {
-		walker = core.NewProcessWalker("run")
+		walker = circuit.NewProcessWalker("run")
 	}
 
 	if cfg.offsetPreamble != "" {
@@ -225,7 +225,7 @@ func Run(ctx context.Context, circuitPath string, input any, opts ...RunOption) 
 			*walker.State() = *loaded
 			startNode = loaded.CurrentNode
 			if cfg.observer != nil {
-				emitEvent(cfg.observer, core.WalkEvent{Type: core.EventWalkResumed, Node: startNode, Walker: walker.Identity().PersonaName})
+				emitEvent(cfg.observer, circuit.WalkEvent{Type: circuit.EventWalkResumed, Node: startNode, Walker: walker.Identity().PersonaName})
 			}
 		}
 	}
@@ -314,19 +314,19 @@ func Validate(circuitPath string, opts ...RunOption) error {
 
 // WithOutputCapture attaches a WalkObserver as a capture observer.
 // If another observer is already set, both are composed via MultiObserver.
-func WithOutputCapture(capture core.WalkObserver) RunOption {
+func WithOutputCapture(capture circuit.WalkObserver) RunOption {
 	return func(c *runConfig) {
 		if c.observer == nil {
 			c.observer = capture
 		} else {
-			c.observer = core.MultiObserver{c.observer, capture}
+			c.observer = circuit.MultiObserver{c.observer, capture}
 		}
 	}
 }
 
 // applyOffsetPreamble appends a corrective preamble to a walker's
 // PromptPreamble via SetIdentity.
-func applyOffsetPreamble(w core.Walker, offset string) {
+func applyOffsetPreamble(w circuit.Walker, offset string) {
 	id := w.Identity()
 	if id.PromptPreamble == "" {
 		id.PromptPreamble = offset

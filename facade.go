@@ -19,10 +19,9 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/core"
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/finding"
-	"github.com/dpopsuev/origami/state"
+	"github.com/dpopsuev/origami/internal/finding"
+	"github.com/dpopsuev/origami/internal/state"
 )
 
 // ---------------------------------------------------------------------------
@@ -31,16 +30,16 @@ import (
 
 // --- Node & Artifact (core/) ---
 
-type Node = core.Node
-type Artifact = core.Artifact
-type CountableArtifact = core.CountableArtifact
-type NodeContext = core.NodeContext
+type Node = circuit.Node
+type Artifact = circuit.Artifact
+type CountableArtifact = circuit.CountableArtifact
+type NodeContext = circuit.NodeContext
 
 // --- Edge & Transition (core/) ---
 
-type Edge = core.Edge
-type ParallelEdge = core.ParallelEdge
-type Transition = core.Transition
+type Edge = circuit.Edge
+type ParallelEdge = circuit.ParallelEdge
+type Transition = circuit.Transition
 
 // --- ExpressionEdge (engine/) ---
 
@@ -66,38 +65,38 @@ var (
 
 // --- Walker (core/) ---
 
-type Walker = core.Walker
-type WalkerState = core.WalkerState
-type StepRecord = core.StepRecord
-type ProcessWalker = core.ProcessWalker
+type Walker = circuit.Walker
+type WalkerState = circuit.WalkerState
+type StepRecord = circuit.StepRecord
+type ProcessWalker = circuit.ProcessWalker
 
-func NewWalkerState(id string) *WalkerState { return core.NewWalkerState(id) }
+func NewWalkerState(id string) *WalkerState { return circuit.NewWalkerState(id) }
 func NewProcessWalker(id string) *ProcessWalker {
-	return core.NewProcessWalker(id)
+	return circuit.NewProcessWalker(id)
 }
 func NewProcessWalkerWithIdentity(id AgentIdentity, stateID string) *ProcessWalker {
-	return core.NewProcessWalkerWithIdentity(id, stateID)
+	return circuit.NewProcessWalkerWithIdentity(id, stateID)
 }
 
 // trajectoryType classifies a confidence convergence pattern.
-type trajectoryType = core.TrajectoryType
+type trajectoryType = circuit.TrajectoryType
 
 const (
-	TrajectoryUnderdamped      = core.TrajectoryUnderdamped
-	TrajectoryOverdamped       = core.TrajectoryOverdamped
-	TrajectoryCriticallyDamped = core.TrajectoryCriticallyDamped
-	TrajectoryUnstable         = core.TrajectoryUnstable
-	TrajectoryInsufficient     = core.TrajectoryInsufficient
+	TrajectoryUnderdamped      = circuit.TrajectoryUnderdamped
+	TrajectoryOverdamped       = circuit.TrajectoryOverdamped
+	TrajectoryCriticallyDamped = circuit.TrajectoryCriticallyDamped
+	TrajectoryUnstable         = circuit.TrajectoryUnstable
+	TrajectoryInsufficient     = circuit.TrajectoryInsufficient
 )
 
 // classifyTrajectory analyzes a confidence history to determine the convergence pattern.
 func classifyTrajectory(history []float64) trajectoryType {
-	return core.ClassifyTrajectory(history)
+	return circuit.ClassifyTrajectory(history)
 }
 
 // readOnlyContext returns a shallow copy of the context map.
 func readOnlyContext(ctx map[string]any) map[string]any {
-	return core.ReadOnlyContext(ctx)
+	return circuit.ReadOnlyContext(ctx)
 }
 
 // --- DelegateNode (engine/) ---
@@ -108,108 +107,108 @@ type DelegateArtifact = engine.DelegateArtifact
 // --- Element (core/) ---
 
 type (
-	Approach      = core.Approach
-	Element       = core.Element
-	SpeedClass    = core.SpeedClass
-	ElementTraits = core.ElementTraits
+	Approach      = circuit.Approach
+	Element       = circuit.Element
+	SpeedClass    = circuit.SpeedClass
+	ElementTraits = circuit.ElementTraits
 )
 
 // Approach constants.
 const (
-	ApproachRapid      = core.ApproachRapid
-	ApproachAggressive = core.ApproachAggressive
-	ApproachMethodical = core.ApproachMethodical
-	ApproachRigorous   = core.ApproachRigorous
-	ApproachAnalytical = core.ApproachAnalytical
-	ApproachHolistic   = core.ApproachHolistic
+	ApproachRapid      = circuit.ApproachRapid
+	ApproachAggressive = circuit.ApproachAggressive
+	ApproachMethodical = circuit.ApproachMethodical
+	ApproachRigorous   = circuit.ApproachRigorous
+	ApproachAnalytical = circuit.ApproachAnalytical
+	ApproachHolistic   = circuit.ApproachHolistic
 )
 
 // Element constants.
 const (
-	ElementFire      = core.ElementFire
-	ElementLightning = core.ElementLightning
-	ElementEarth     = core.ElementEarth
-	ElementDiamond   = core.ElementDiamond
-	ElementWater     = core.ElementWater
-	ElementAir       = core.ElementAir
+	ElementFire      = circuit.ElementFire
+	ElementLightning = circuit.ElementLightning
+	ElementEarth     = circuit.ElementEarth
+	ElementDiamond   = circuit.ElementDiamond
+	ElementWater     = circuit.ElementWater
+	ElementAir       = circuit.ElementAir
 )
 
 // SpeedClass constants.
 const (
-	SpeedFastest  = core.SpeedFastest
-	SpeedFast     = core.SpeedFast
-	SpeedSteady   = core.SpeedSteady
-	SpeedPrecise  = core.SpeedPrecise
-	SpeedDeep     = core.SpeedDeep
-	SpeedHolistic = core.SpeedHolistic
+	SpeedFastest  = circuit.SpeedFastest
+	SpeedFast     = circuit.SpeedFast
+	SpeedSteady   = circuit.SpeedSteady
+	SpeedPrecise  = circuit.SpeedPrecise
+	SpeedDeep     = circuit.SpeedDeep
+	SpeedHolistic = circuit.SpeedHolistic
 )
 
 // DefaultTraits returns the canonical trait set for a given element.
-func DefaultTraits(e Element) ElementTraits { return core.DefaultTraits(e) }
+func DefaultTraits(e Element) ElementTraits { return circuit.DefaultTraits(e) }
 
 // AllElements returns the six core elements.
-func AllElements() []Element { return core.AllElements() }
+func AllElements() []Element { return circuit.AllElements() }
 
 // ResolveApproach maps a user-facing approach name to an internal Element.
-func ResolveApproach(name string) (Element, bool) { return core.ResolveApproach(name) }
+func ResolveApproach(name string) (Element, bool) { return circuit.ResolveApproach(name) }
 
 // ApproachForElement returns the user-facing approach name for an element.
-func ApproachForElement(e Element) Approach { return core.ApproachForElement(e) }
+func ApproachForElement(e Element) Approach { return circuit.ApproachForElement(e) }
 
 // ApproachEmoji returns the emoji for an approach.
-func ApproachEmoji(a Approach) string { return core.ApproachEmoji(a) }
+func ApproachEmoji(a Approach) string { return circuit.ApproachEmoji(a) }
 
 // ApproachTraits returns the ElementTraits for an approach.
-func ApproachTraits(a Approach) ElementTraits { return core.ApproachTraits(a) }
+func ApproachTraits(a Approach) ElementTraits { return circuit.ApproachTraits(a) }
 
 // ApproachTraitsSummary returns a formatted multi-line summary for LSP hover.
-func ApproachTraitsSummary(a Approach) string { return core.ApproachTraitsSummary(a) }
+func ApproachTraitsSummary(a Approach) string { return circuit.ApproachTraitsSummary(a) }
 
 // AllApproaches returns the six core approaches.
-func AllApproaches() []Approach { return core.AllApproaches() }
+func AllApproaches() []Approach { return circuit.AllApproaches() }
 
 // --- Identity (core/) ---
 
-type Persona = core.Persona
-type PersonaResolver = core.PersonaResolver
-type Color = core.Color
-type Alignment = core.Alignment
-type Position = core.Position
-type MetaPhase = core.MetaPhase
-type Role = core.Role
-type CostProfile = core.CostProfile
-type AgentIdentity = core.AgentIdentity
-type ModelIdentity = core.ModelIdentity
+type Persona = circuit.Persona
+type PersonaResolver = circuit.PersonaResolver
+type Color = circuit.Color
+type Alignment = circuit.Alignment
+type Position = circuit.Position
+type MetaPhase = circuit.MetaPhase
+type Role = circuit.Role
+type CostProfile = circuit.CostProfile
+type AgentIdentity = circuit.AgentIdentity
+type ModelIdentity = circuit.ModelIdentity
 
 const (
-	AlignmentThesis     = core.AlignmentThesis
-	AlignmentAntithesis = core.AlignmentAntithesis
+	AlignmentThesis     = circuit.AlignmentThesis
+	AlignmentAntithesis = circuit.AlignmentAntithesis
 )
 
 const (
-	PositionPG = core.PositionPG
-	PositionSG = core.PositionSG
-	PositionPF = core.PositionPF
-	PositionC  = core.PositionC
+	PositionPG = circuit.PositionPG
+	PositionSG = circuit.PositionSG
+	PositionPF = circuit.PositionPF
+	PositionC  = circuit.PositionC
 )
 
 const (
-	MetaPhaseBk = core.MetaPhaseBk
-	MetaPhaseFc = core.MetaPhaseFc
-	MetaPhasePt = core.MetaPhasePt
+	MetaPhaseBk = circuit.MetaPhaseBk
+	MetaPhaseFc = circuit.MetaPhaseFc
+	MetaPhasePt = circuit.MetaPhasePt
 )
 
 const (
-	RoleWorker   = core.RoleWorker
-	RoleManager  = core.RoleManager
-	RoleEnforcer = core.RoleEnforcer
-	RoleBroker   = core.RoleBroker
+	RoleWorker   = circuit.RoleWorker
+	RoleManager  = circuit.RoleManager
+	RoleEnforcer = circuit.RoleEnforcer
+	RoleBroker   = circuit.RoleBroker
 )
 
-var ValidRoles = core.ValidRoles
-var DefaultPersonaResolver = core.DefaultPersonaResolver
+var ValidRoles = circuit.ValidRoles
+var DefaultPersonaResolver = circuit.DefaultPersonaResolver
 
-func HomeZoneFor(p Position) MetaPhase { return core.HomeZoneFor(p) }
+func HomeZoneFor(p Position) MetaPhase { return circuit.HomeZoneFor(p) }
 
 // ---------------------------------------------------------------------------
 // Section 2 — DSL & Build
@@ -526,34 +525,34 @@ const BuiltinRendererTemplate = engine.BuiltinRendererTemplate
 
 // --- Observer (core/, engine/) ---
 
-type WalkEventType = core.WalkEventType
+type WalkEventType = circuit.WalkEventType
 
 const (
-	EventNodeEnter        = core.EventNodeEnter
-	EventNodeExit         = core.EventNodeExit
-	EventEdgeEvaluate     = core.EventEdgeEvaluate
-	EventTransition       = core.EventTransition
-	EventWalkerSwitch     = core.EventWalkerSwitch
-	EventFanOutStart      = core.EventFanOutStart
-	EventFanOutEnd        = core.EventFanOutEnd
-	EventWalkComplete     = core.EventWalkComplete
-	EventWalkError        = core.EventWalkError
-	EventWalkInterrupted  = core.EventWalkInterrupted
-	EventWalkResumed      = core.EventWalkResumed
-	EventCheckpointSaved  = core.EventCheckpointSaved
-	EventProviderFallback = core.EventProviderFallback
-	EventCircuitOpen      = core.EventCircuitOpen
-	EventCircuitClose     = core.EventCircuitClose
-	EventRateLimit        = core.EventRateLimit
-	EventThermalWarning   = core.EventThermalWarning
-	EventDelegateStart    = core.EventDelegateStart
-	EventDelegateEnd      = core.EventDelegateEnd
+	EventNodeEnter        = circuit.EventNodeEnter
+	EventNodeExit         = circuit.EventNodeExit
+	EventEdgeEvaluate     = circuit.EventEdgeEvaluate
+	EventTransition       = circuit.EventTransition
+	EventWalkerSwitch     = circuit.EventWalkerSwitch
+	EventFanOutStart      = circuit.EventFanOutStart
+	EventFanOutEnd        = circuit.EventFanOutEnd
+	EventWalkComplete     = circuit.EventWalkComplete
+	EventWalkError        = circuit.EventWalkError
+	EventWalkInterrupted  = circuit.EventWalkInterrupted
+	EventWalkResumed      = circuit.EventWalkResumed
+	EventCheckpointSaved  = circuit.EventCheckpointSaved
+	EventProviderFallback = circuit.EventProviderFallback
+	EventCircuitOpen      = circuit.EventCircuitOpen
+	EventCircuitClose     = circuit.EventCircuitClose
+	EventRateLimit        = circuit.EventRateLimit
+	EventThermalWarning   = circuit.EventThermalWarning
+	EventDelegateStart    = circuit.EventDelegateStart
+	EventDelegateEnd      = circuit.EventDelegateEnd
 )
 
-type WalkEvent = core.WalkEvent
-type WalkObserver = core.WalkObserver
-type WalkObserverFunc = core.WalkObserverFunc
-type MultiObserver = core.MultiObserver
+type WalkEvent = circuit.WalkEvent
+type WalkObserver = circuit.WalkObserver
+type WalkObserverFunc = circuit.WalkObserverFunc
+type MultiObserver = circuit.MultiObserver
 
 // TraceCollector accumulates walk events in memory for post-walk analysis.
 type TraceCollector = engine.TraceCollector
@@ -607,7 +606,7 @@ func fmtNarrateDuration(d time.Duration) string { return engine.FmtNarrateDurati
 
 // ArtifactCapture provides access to artifacts captured during a walk.
 // Obtain one via NewCapture() and use the returned WalkObserver during the walk.
-type ArtifactCapture = core.ArtifactCapture
+type ArtifactCapture = circuit.ArtifactCapture
 
 // outputCapture collects artifacts produced at each node during a walk.
 type outputCapture = state.OutputCapture
@@ -651,21 +650,21 @@ var NewTraceRecorder = engine.NewTraceRecorder
 
 // --- Finding (core/, finding/) ---
 
-type FindingSeverity = core.FindingSeverity
+type FindingSeverity = circuit.FindingSeverity
 
 const (
-	FindingInfo    = core.FindingInfo
-	FindingWarning = core.FindingWarning
-	FindingError   = core.FindingError
+	FindingInfo    = circuit.FindingInfo
+	FindingWarning = circuit.FindingWarning
+	FindingError   = circuit.FindingError
 )
 
-type Finding = core.Finding
-type FindingCollector = core.FindingCollector
+type Finding = circuit.Finding
+type FindingCollector = circuit.FindingCollector
 
-const FindingCollectorKey = core.FindingCollectorKey
+const FindingCollectorKey = circuit.FindingCollectorKey
 
 func SeverityAtOrAbove(have, threshold FindingSeverity) bool {
-	return core.SeverityAtOrAbove(have, threshold)
+	return circuit.SeverityAtOrAbove(have, threshold)
 }
 
 type InMemoryFindingCollector = finding.InMemoryFindingCollector
@@ -699,92 +698,92 @@ func NewFindingRouter(rules []RouteRule, handlers FindingHandlers) *FindingRoute
 // --- Errors (core/) ---
 
 var (
-	ErrNodeNotFound  = core.ErrNodeNotFound
-	ErrNoEdge        = core.ErrNoEdge
-	ErrMaxLoops      = core.ErrMaxLoops
-	ErrFanOutMerge   = core.ErrFanOutMerge
-	ErrEscalate      = core.ErrEscalate
-	ErrMaxIterations = core.ErrMaxIterations
-	ErrFindingVeto   = core.ErrFindingVeto
+	ErrNodeNotFound  = circuit.ErrNodeNotFound
+	ErrNoEdge        = circuit.ErrNoEdge
+	ErrMaxLoops      = circuit.ErrMaxLoops
+	ErrFanOutMerge   = circuit.ErrFanOutMerge
+	ErrEscalate      = circuit.ErrEscalate
+	ErrMaxIterations = circuit.ErrMaxIterations
+	ErrFindingVeto   = circuit.ErrFindingVeto
 )
 
 // --- Log constants (core/) ---
 
 const (
-	LogComponentWalk      = core.LogComponentWalk
-	LogComponentDSL       = core.LogComponentDSL
-	LogComponentCalibrate = core.LogComponentCalibrate
-	LogComponentBatch     = core.LogComponentBatch
-	LogComponentTransform = core.LogComponentTransform
+	LogComponentWalk      = circuit.LogComponentWalk
+	LogComponentDSL       = circuit.LogComponentDSL
+	LogComponentCalibrate = circuit.LogComponentCalibrate
+	LogComponentBatch     = circuit.LogComponentBatch
+	LogComponentTransform = circuit.LogComponentTransform
 )
 
 const (
-	LogNodeEnter        = core.LogNodeEnter
-	LogNodeExit         = core.LogNodeExit
-	LogEdgeTaken        = core.LogEdgeTaken
-	LogEdgeNoMatch      = core.LogEdgeNoMatch
-	LogLoopIncremented  = core.LogLoopIncremented
-	LogWalkComplete     = core.LogWalkComplete
-	LogWalkError        = core.LogWalkError
-	LogDelegateStart    = core.LogDelegateStart
-	LogDelegateComplete = core.LogDelegateComplete
+	LogNodeEnter        = circuit.LogNodeEnter
+	LogNodeExit         = circuit.LogNodeExit
+	LogEdgeTaken        = circuit.LogEdgeTaken
+	LogEdgeNoMatch      = circuit.LogEdgeNoMatch
+	LogLoopIncremented  = circuit.LogLoopIncremented
+	LogWalkComplete     = circuit.LogWalkComplete
+	LogWalkError        = circuit.LogWalkError
+	LogDelegateStart    = circuit.LogDelegateStart
+	LogDelegateComplete = circuit.LogDelegateComplete
 
-	LogOverlayMerge         = core.LogOverlayMerge
-	LogOverlayMergeComplete = core.LogOverlayMergeComplete
-	LogSubCircuitLoaded     = core.LogSubCircuitLoaded
+	LogOverlayMerge         = circuit.LogOverlayMerge
+	LogOverlayMergeComplete = circuit.LogOverlayMergeComplete
+	LogSubCircuitLoaded     = circuit.LogSubCircuitLoaded
 
-	LogRunStart       = core.LogRunStart
-	LogCaseComplete   = core.LogCaseComplete
-	LogAllCasesFailed = core.LogAllCasesFailed
+	LogRunStart       = circuit.LogRunStart
+	LogCaseComplete   = circuit.LogCaseComplete
+	LogAllCasesFailed = circuit.LogAllCasesFailed
 )
 
 const (
-	LogKeyComponent = core.LogKeyComponent
-	LogKeyNode      = core.LogKeyNode
-	LogKeyEdge      = core.LogKeyEdge
-	LogKeyFrom      = core.LogKeyFrom
-	LogKeyTo        = core.LogKeyTo
-	LogKeyWalker    = core.LogKeyWalker
-	LogKeyElapsed   = core.LogKeyElapsed
-	LogKeyLoop      = core.LogKeyLoop
-	LogKeyShortcut  = core.LogKeyShortcut
-	LogKeyCount     = core.LogKeyCount
-	LogKeyError     = core.LogKeyError
-	LogKeyCaseID    = core.LogKeyCaseID
-	LogKeyCircuit   = core.LogKeyCircuit
+	LogKeyComponent = circuit.LogKeyComponent
+	LogKeyNode      = circuit.LogKeyNode
+	LogKeyEdge      = circuit.LogKeyEdge
+	LogKeyFrom      = circuit.LogKeyFrom
+	LogKeyTo        = circuit.LogKeyTo
+	LogKeyWalker    = circuit.LogKeyWalker
+	LogKeyElapsed   = circuit.LogKeyElapsed
+	LogKeyLoop      = circuit.LogKeyLoop
+	LogKeyShortcut  = circuit.LogKeyShortcut
+	LogKeyCount     = circuit.LogKeyCount
+	LogKeyError     = circuit.LogKeyError
+	LogKeyCaseID    = circuit.LogKeyCaseID
+	LogKeyCircuit   = circuit.LogKeyCircuit
 )
 
 // --- Context-key & protocol constants (core/) ---
 
 const (
-	ContextKeyTraceID = core.ContextKeyTraceID
+	ContextKeyTraceID = circuit.ContextKeyTraceID
 )
 
 const (
-	ExtraKeyCircuitType = core.ExtraKeyCircuitType
-	ExtraKeyTraceID     = core.ExtraKeyTraceID
+	ExtraKeyCircuitType = circuit.ExtraKeyCircuitType
+	ExtraKeyTraceID     = circuit.ExtraKeyTraceID
 )
 
 const (
-	TraceMetaDelegation = core.TraceMetaDelegation
-	TraceMetaSource     = core.TraceMetaSource
+	TraceMetaDelegation = circuit.TraceMetaDelegation
+	TraceMetaSource     = circuit.TraceMetaSource
 )
 
 const (
-	ProtoKeySessionID     = core.ProtoKeySessionID
-	ProtoKeyDone          = core.ProtoKeyDone
-	ProtoKeyAvailable     = core.ProtoKeyAvailable
-	ProtoKeyStep          = core.ProtoKeyStep
-	ProtoKeyDispatchID    = core.ProtoKeyDispatchID
-	ProtoKeyPromptContent = core.ProtoKeyPromptContent
-	ProtoKeyCaseID        = core.ProtoKeyCaseID
-	ProtoKeyArtifactPath  = core.ProtoKeyArtifactPath
-	ProtoKeyFields        = core.ProtoKeyFields
-	ProtoKeyExtra         = core.ProtoKeyExtra
-	ProtoKeyError         = core.ProtoKeyError
-	ProtoKeyStatus        = core.ProtoKeyStatus
-	ProtoKeyStructured    = core.ProtoKeyStructured
-	ProtoKeyTimeoutMS     = core.ProtoKeyTimeoutMS
+	ProtoKeySessionID     = circuit.ProtoKeySessionID
+	ProtoKeyDone          = circuit.ProtoKeyDone
+	ProtoKeyAvailable     = circuit.ProtoKeyAvailable
+	ProtoKeyStep          = circuit.ProtoKeyStep
+	ProtoKeyDispatchID    = circuit.ProtoKeyDispatchID
+	ProtoKeyPromptContent = circuit.ProtoKeyPromptContent
+	ProtoKeyCaseID        = circuit.ProtoKeyCaseID
+	ProtoKeyArtifactPath  = circuit.ProtoKeyArtifactPath
+	ProtoKeyFields        = circuit.ProtoKeyFields
+	ProtoKeyExtra         = circuit.ProtoKeyExtra
+	ProtoKeyError         = circuit.ProtoKeyError
+	ProtoKeyStatus        = circuit.ProtoKeyStatus
+	ProtoKeyStructured    = circuit.ProtoKeyStructured
+	ProtoKeyTimeoutMS     = circuit.ProtoKeyTimeoutMS
 )
 
 // --- Defaults (engine/) ---
@@ -867,7 +866,7 @@ var BatchWalk = engine.BatchWalk
 // Checkpointer persists and restores WalkerState between nodes, enabling
 // resume-from-failure and crash recovery. Implementations must be safe
 // for concurrent use by multiple walkers with distinct IDs.
-type Checkpointer = core.Checkpointer
+type Checkpointer = circuit.Checkpointer
 
 // JSONCheckpointer persists WalkerState to a JSON file between nodes,
 // enabling resume-from-failure for circuits.
@@ -881,7 +880,7 @@ func NewJSONCheckpointer(dir string) (*JSONCheckpointer, error) {
 // --- Cache (core/, state/) ---
 
 // NodeCache stores and retrieves node output artifacts by cache key.
-type NodeCache = core.NodeCache
+type NodeCache = circuit.NodeCache
 
 // InMemoryCache is a thread-safe in-memory NodeCache with TTL-based lazy eviction.
 type InMemoryCache = state.InMemoryCache
@@ -902,16 +901,16 @@ const eventNodeCacheHit WalkEventType = "node_cache_hit"
 // --- Memory (core/, state/) ---
 
 // MemoryStore provides cross-walk, identity-scoped key-value persistence.
-type MemoryStore = core.MemoryStore
+type MemoryStore = circuit.MemoryStore
 
 // MemoryItem represents a stored memory entry with metadata.
-type MemoryItem = core.MemoryItem
+type MemoryItem = circuit.MemoryItem
 
 // Conventional namespace constants for the three memory types.
 const (
-	NamespaceSemantic   = core.NamespaceSemantic
-	NamespaceEpisodic   = core.NamespaceEpisodic
-	NamespaceProcedural = core.NamespaceProcedural
+	NamespaceSemantic   = circuit.NamespaceSemantic
+	NamespaceEpisodic   = circuit.NamespaceEpisodic
+	NamespaceProcedural = circuit.NamespaceProcedural
 )
 
 // InMemoryStore is a thread-safe in-process MemoryStore with namespace support.

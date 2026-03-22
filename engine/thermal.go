@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 type thermalConfig struct {
@@ -24,7 +24,7 @@ func WithThermalBudget(warning, ceiling time.Duration) RunOption {
 
 // thermalObserver wraps another observer and tracks cumulative node latency.
 type thermalObserver struct {
-	inner   core.WalkObserver
+	inner   circuit.WalkObserver
 	warning time.Duration
 	ceiling time.Duration
 	cancel  context.CancelFunc
@@ -35,12 +35,12 @@ type thermalObserver struct {
 	aborted bool
 }
 
-func (t *thermalObserver) OnEvent(e core.WalkEvent) {
+func (t *thermalObserver) OnEvent(e circuit.WalkEvent) {
 	if t.inner != nil {
 		t.inner.OnEvent(e)
 	}
 
-	if e.Type != core.EventNodeExit || e.Error != nil {
+	if e.Type != circuit.EventNodeExit || e.Error != nil {
 		return
 	}
 
@@ -51,8 +51,8 @@ func (t *thermalObserver) OnEvent(e core.WalkEvent) {
 
 	if !t.warned && t.warning > 0 && t.total >= t.warning {
 		t.warned = true
-		emitEvent(t.inner, core.WalkEvent{
-			Type: core.EventThermalWarning,
+		emitEvent(t.inner, circuit.WalkEvent{
+			Type: circuit.EventThermalWarning,
 			Metadata: map[string]any{
 				"cumulative": t.total.Seconds(),
 				"warning":    t.warning.Seconds(),

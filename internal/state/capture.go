@@ -5,7 +5,7 @@ package state
 import (
 	"sync"
 
-	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // OutputCapture collects artifacts produced at each node during a walk.
@@ -13,26 +13,26 @@ import (
 // parallel fan-out walks.
 type OutputCapture struct {
 	mu        sync.RWMutex
-	artifacts map[string]core.Artifact
+	artifacts map[string]circuit.Artifact
 }
 
 // NewOutputCapture creates an OutputCapture ready for use.
 func NewOutputCapture() *OutputCapture {
 	return &OutputCapture{
-		artifacts: make(map[string]core.Artifact),
+		artifacts: make(map[string]circuit.Artifact),
 	}
 }
 
 // NewCapture returns a WalkObserver that captures artifacts and an ArtifactCapture
 // to read them after the walk. Use the observer with MultiObserver or run config.
-func NewCapture() (core.WalkObserver, core.ArtifactCapture) {
+func NewCapture() (circuit.WalkObserver, circuit.ArtifactCapture) {
 	c := NewOutputCapture()
 	return c, c
 }
 
 // OnEvent implements WalkObserver. It captures artifacts from node_exit events.
-func (c *OutputCapture) OnEvent(e core.WalkEvent) {
-	if e.Type != core.EventNodeExit || e.Node == "" {
+func (c *OutputCapture) OnEvent(e circuit.WalkEvent) {
+	if e.Type != circuit.EventNodeExit || e.Node == "" {
 		return
 	}
 	if e.Artifact == nil {
@@ -44,10 +44,10 @@ func (c *OutputCapture) OnEvent(e core.WalkEvent) {
 }
 
 // Artifacts returns a copy of all captured node artifacts.
-func (c *OutputCapture) Artifacts() map[string]core.Artifact {
+func (c *OutputCapture) Artifacts() map[string]circuit.Artifact {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	out := make(map[string]core.Artifact, len(c.artifacts))
+	out := make(map[string]circuit.Artifact, len(c.artifacts))
 	for k, v := range c.artifacts {
 		out[k] = v
 	}
@@ -55,7 +55,7 @@ func (c *OutputCapture) Artifacts() map[string]core.Artifact {
 }
 
 // ArtifactAt returns the artifact for a specific node, if captured.
-func (c *OutputCapture) ArtifactAt(node string) (core.Artifact, bool) {
+func (c *OutputCapture) ArtifactAt(node string) (circuit.Artifact, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	a, ok := c.artifacts[node]
@@ -65,6 +65,6 @@ func (c *OutputCapture) ArtifactAt(node string) (core.Artifact, bool) {
 // Reset clears all captured artifacts.
 func (c *OutputCapture) Reset() {
 	c.mu.Lock()
-	c.artifacts = make(map[string]core.Artifact)
+	c.artifacts = make(map[string]circuit.Artifact)
 	c.mu.Unlock()
 }

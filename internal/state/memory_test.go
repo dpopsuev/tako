@@ -5,7 +5,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 func TestInMemoryStoreSetAndGet(t *testing.T) {
@@ -263,9 +263,9 @@ func TestTaggedMemoryStore_BackwardCompatSet(t *testing.T) {
 }
 
 func TestInMemoryStore_ImplementsMemoryStore(t *testing.T) {
-	var _ core.MemoryStore = (*InMemoryStore)(nil)
+	var _ circuit.MemoryStore = (*InMemoryStore)(nil)
 }
 
 func TestTaggedMemoryStore_ImplementsMemoryStore(t *testing.T) {
-	var _ core.MemoryStore = (*TaggedMemoryStore)(nil)
+	var _ circuit.MemoryStore = (*TaggedMemoryStore)(nil)
 }

@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/core"
 )
 
 type stubMergeArtifact struct{ val string }
@@ -68,7 +67,7 @@ func TestApplyMergeStrategy_Empty(t *testing.T) {
 }
 
 func TestListArtifact(t *testing.T) {
-	items := []core.Artifact{
+	items := []circuit.Artifact{
 		&stubMergeArtifact{val: "a"},
 		&stubMergeArtifact{val: "b"},
 	}
@@ -79,7 +78,7 @@ func TestListArtifact(t *testing.T) {
 	if la.Confidence() != 0 {
 		t.Errorf("Confidence() = %f, want 0", la.Confidence())
 	}
-	raw := la.Raw().([]core.Artifact)
+	raw := la.Raw().([]circuit.Artifact)
 	if len(raw) != 2 {
 		t.Errorf("len(Raw()) = %d, want 2", len(raw))
 	}

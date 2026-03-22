@@ -2,7 +2,7 @@ package engine
 
 // Category: Execution — default walker construction.
 
-import "github.com/dpopsuev/origami/core"
+import "github.com/dpopsuev/origami/circuit"
 
 // DefaultWalker returns a zero-config Walker suitable for consumers that
 // don't need persona or element customization. Uses Earth element
@@ -10,23 +10,23 @@ import "github.com/dpopsuev/origami/core"
 //
 // The identity is deterministic: calling DefaultWalker() twice produces
 // identical walkers, making circuit runs reproducible.
-func DefaultWalker() core.Walker {
-	return defaultWalkerWith(core.ElementEarth)
+func DefaultWalker() circuit.Walker {
+	return defaultWalkerWith(circuit.ElementEarth)
 }
 
 // DefaultWalkerWithElement returns a default Walker with a custom element.
 // The persona remains Sentinel; only the element changes.
-func DefaultWalkerWithElement(element core.Element) core.Walker {
+func DefaultWalkerWithElement(element circuit.Element) circuit.Walker {
 	return defaultWalkerWith(element)
 }
 
-func defaultWalkerWith(element core.Element) *core.ProcessWalker {
-	var id core.AgentIdentity
-	if core.DefaultPersonaResolver != nil {
-		if p, ok := core.DefaultPersonaResolver("Sentinel"); ok {
+func defaultWalkerWith(element circuit.Element) *circuit.ProcessWalker {
+	var id circuit.AgentIdentity
+	if circuit.DefaultPersonaResolver != nil {
+		if p, ok := circuit.DefaultPersonaResolver("Sentinel"); ok {
 			id = p.Identity
 		}
 	}
 	id.Element = element
-	return core.NewProcessWalkerWithIdentity(id, "default")
+	return circuit.NewProcessWalkerWithIdentity(id, "default")
 }

@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/circuit"
 	"gopkg.in/yaml.v3"
 )
 
@@ -16,8 +16,8 @@ import (
 // calls GenerateCircuit to obtain a CircuitDef, builds and walks the
 // sub-graph, and wraps the results in a DelegateArtifact.
 type DelegateNode interface {
-	core.Node
-	GenerateCircuit(ctx context.Context, nc core.NodeContext) (*CircuitDef, error)
+	circuit.Node
+	GenerateCircuit(ctx context.Context, nc circuit.NodeContext) (*CircuitDef, error)
 }
 
 // DelegateArtifact wraps the result of a sub-walk produced by a DelegateNode.
@@ -26,7 +26,7 @@ type DelegateArtifact struct {
 	GeneratedCircuit *CircuitDef `json:"generated_circuit"`
 
 	// InnerArtifacts maps inner node names to their produced artifacts.
-	InnerArtifacts map[string]core.Artifact `json:"-"`
+	InnerArtifacts map[string]circuit.Artifact `json:"-"`
 
 	// NodeCount is the number of nodes in the generated circuit.
 	NodeCount int `json:"node_count"`
@@ -66,16 +66,16 @@ func (a *DelegateArtifact) confidence() float64 {
 // has delegate: true and generator: set.
 type dslDelegateNode struct {
 	name    string
-	element core.Element
+	element circuit.Element
 	gen     Transformer
 	config  map[string]any
 	meta    map[string]any
 }
 
 func (n *dslDelegateNode) Name() string             { return n.name }
-func (n *dslDelegateNode) ElementAffinity() core.Element { return n.element }
+func (n *dslDelegateNode) ElementAffinity() circuit.Element { return n.element }
 
-func (n *dslDelegateNode) Process(ctx context.Context, nc core.NodeContext) (core.Artifact, error) {
+func (n *dslDelegateNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	da, err := n.GenerateCircuit(ctx, nc)
 	if err != nil {
 		return nil, err
@@ -83,7 +83,7 @@ func (n *dslDelegateNode) Process(ctx context.Context, nc core.NodeContext) (cor
 	return &DelegateArtifact{GeneratedCircuit: da, NodeCount: len(da.Nodes)}, nil
 }
 
-func (n *dslDelegateNode) GenerateCircuit(ctx context.Context, nc core.NodeContext) (*CircuitDef, error) {
+func (n *dslDelegateNode) GenerateCircuit(ctx context.Context, nc circuit.NodeContext) (*CircuitDef, error) {
 	var input any
 	if nc.PriorArtifact != nil {
 		input = nc.PriorArtifact.Raw()
@@ -125,18 +125,18 @@ func (n *dslDelegateNode) GenerateCircuit(ctx context.Context, nc core.NodeConte
 // circuitRefNode is a DelegateNode that references a pre-loaded CircuitDef.
 type circuitRefNode struct {
 	name       string
-	element    core.Element
+	element    circuit.Element
 	circuitDef *CircuitDef
 	meta       map[string]any
 }
 
 func (n *circuitRefNode) Name() string             { return n.name }
-func (n *circuitRefNode) ElementAffinity() core.Element { return n.element }
+func (n *circuitRefNode) ElementAffinity() circuit.Element { return n.element }
 
-func (n *circuitRefNode) Process(ctx context.Context, nc core.NodeContext) (core.Artifact, error) {
+func (n *circuitRefNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	return &DelegateArtifact{GeneratedCircuit: n.circuitDef, NodeCount: len(n.circuitDef.Nodes)}, nil
 }
 
-func (n *circuitRefNode) GenerateCircuit(_ context.Context, _ core.NodeContext) (*CircuitDef, error) {
+func (n *circuitRefNode) GenerateCircuit(_ context.Context, _ circuit.NodeContext) (*CircuitDef, error) {
 	return n.circuitDef, nil
 }

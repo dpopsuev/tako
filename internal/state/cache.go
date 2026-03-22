@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // InMemoryCache is a thread-safe in-memory NodeCache with TTL-based lazy eviction.
@@ -16,7 +16,7 @@ type InMemoryCache struct {
 }
 
 type cacheEntry struct {
-	art       core.Artifact
+	art       circuit.Artifact
 	expiresAt time.Time
 }
 
@@ -25,7 +25,7 @@ func NewInMemoryCache() *InMemoryCache {
 	return &InMemoryCache{items: make(map[string]cacheEntry)}
 }
 
-func (c *InMemoryCache) Get(key string) (core.Artifact, bool) {
+func (c *InMemoryCache) Get(key string) (circuit.Artifact, bool) {
 	c.mu.RLock()
 	e, ok := c.items[key]
 	c.mu.RUnlock()
@@ -41,7 +41,7 @@ func (c *InMemoryCache) Get(key string) (core.Artifact, bool) {
 	return e.art, true
 }
 
-func (c *InMemoryCache) Set(key string, art core.Artifact, ttl time.Duration) {
+func (c *InMemoryCache) Set(key string, art circuit.Artifact, ttl time.Duration) {
 	c.mu.Lock()
 	var expires time.Time
 	if ttl > 0 {

@@ -5,7 +5,7 @@ package finding
 import (
 	"context"
 
-	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // VetoHook is an after-hook that checks the FindingCollector for
@@ -13,23 +13,23 @@ import (
 // returns ErrFindingVeto, which the hookingWalker intercepts to wrap
 // the artifact with Confidence() 0.
 type VetoHook struct {
-	collector core.FindingCollector
+	collector circuit.FindingCollector
 }
 
 // NewVetoHook creates a VetoHook backed by the given collector.
-func NewVetoHook(collector core.FindingCollector) *VetoHook {
+func NewVetoHook(collector circuit.FindingCollector) *VetoHook {
 	return &VetoHook{collector: collector}
 }
 
 func (h *VetoHook) Name() string { return "finding-veto" }
 
-func (h *VetoHook) Run(_ context.Context, nodeName string, artifact core.Artifact) error {
+func (h *VetoHook) Run(_ context.Context, nodeName string, artifact circuit.Artifact) error {
 	if artifact == nil {
 		return nil
 	}
 	for _, f := range h.collector.Findings() {
-		if f.Severity == core.FindingError && f.NodeName == nodeName {
-			return core.ErrFindingVeto
+		if f.Severity == circuit.FindingError && f.NodeName == nodeName {
+			return circuit.ErrFindingVeto
 		}
 	}
 	return nil

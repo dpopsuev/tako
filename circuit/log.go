@@ -1,4 +1,4 @@
-package core
+package circuit
 
 // Log component names — used as slog "component" field values.
 // Each subsystem has one name for consistent filtering.

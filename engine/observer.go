@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // logObserver writes walk events as structured slog lines.
@@ -17,11 +17,11 @@ type logObserver struct {
 
 // NewLogObserver creates a WalkObserver that logs events using the given logger.
 // If logger is nil, slog.Default() is used.
-func NewLogObserver(logger *slog.Logger) core.WalkObserver {
+func NewLogObserver(logger *slog.Logger) circuit.WalkObserver {
 	return &logObserver{Logger: logger}
 }
 
-func (o *logObserver) OnEvent(e core.WalkEvent) {
+func (o *logObserver) OnEvent(e circuit.WalkEvent) {
 	logger := o.Logger
 	if logger == nil {
 		logger = slog.Default()
@@ -62,20 +62,20 @@ func (o *logObserver) OnEvent(e core.WalkEvent) {
 // Safe for concurrent use.
 type TraceCollector struct {
 	mu     sync.Mutex
-	events []core.WalkEvent
+	events []circuit.WalkEvent
 }
 
-func (t *TraceCollector) OnEvent(e core.WalkEvent) {
+func (t *TraceCollector) OnEvent(e circuit.WalkEvent) {
 	t.mu.Lock()
 	t.events = append(t.events, e)
 	t.mu.Unlock()
 }
 
 // Events returns a copy of all collected events.
-func (t *TraceCollector) Events() []core.WalkEvent {
+func (t *TraceCollector) Events() []circuit.WalkEvent {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	out := make([]core.WalkEvent, len(t.events))
+	out := make([]circuit.WalkEvent, len(t.events))
 	copy(out, t.events)
 	return out
 }
@@ -88,10 +88,10 @@ func (t *TraceCollector) Reset() {
 }
 
 // EventsOfType returns only events matching the given type.
-func (t *TraceCollector) EventsOfType(typ core.WalkEventType) []core.WalkEvent {
+func (t *TraceCollector) EventsOfType(typ circuit.WalkEventType) []circuit.WalkEvent {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	var out []core.WalkEvent
+	var out []circuit.WalkEvent
 	for _, e := range t.events {
 		if e.Type == typ {
 			out = append(out, e)

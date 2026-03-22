@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/finding"
+	"github.com/dpopsuev/origami/internal/finding"
 )
 
 // passthroughTransformer recreates the built-in passthrough for tests.

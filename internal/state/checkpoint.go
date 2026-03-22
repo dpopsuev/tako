@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // JSONCheckpointer persists WalkerState to a JSON file between nodes,
@@ -22,7 +22,7 @@ type JSONCheckpointer struct {
 }
 
 // Compile-time interface check.
-var _ core.Checkpointer = (*JSONCheckpointer)(nil)
+var _ circuit.Checkpointer = (*JSONCheckpointer)(nil)
 
 // NewJSONCheckpointer creates a checkpointer that writes to the given directory.
 func NewJSONCheckpointer(dir string) (*JSONCheckpointer, error) {
@@ -33,7 +33,7 @@ func NewJSONCheckpointer(dir string) (*JSONCheckpointer, error) {
 }
 
 // Save persists the walker state to a JSON file named by the walker's ID.
-func (c *JSONCheckpointer) Save(state *core.WalkerState) error {
+func (c *JSONCheckpointer) Save(state *circuit.WalkerState) error {
 	data, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
 		return fmt.Errorf("checkpoint: marshal state: %w", err)
@@ -47,7 +47,7 @@ func (c *JSONCheckpointer) Save(state *core.WalkerState) error {
 
 // Load restores a walker state from a previously saved checkpoint file.
 // Returns nil and no error if no checkpoint exists for the given ID.
-func (c *JSONCheckpointer) Load(id string) (*core.WalkerState, error) {
+func (c *JSONCheckpointer) Load(id string) (*circuit.WalkerState, error) {
 	path := c.path(id)
 	data, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
@@ -56,7 +56,7 @@ func (c *JSONCheckpointer) Load(id string) (*core.WalkerState, error) {
 	if err != nil {
 		return nil, fmt.Errorf("checkpoint: read %s: %w", path, err)
 	}
-	var state core.WalkerState
+	var state circuit.WalkerState
 	if err := json.Unmarshal(data, &state); err != nil {
 		return nil, fmt.Errorf("checkpoint: unmarshal %s: %w", path, err)
 	}
@@ -67,7 +67,7 @@ func (c *JSONCheckpointer) Load(id string) (*core.WalkerState, error) {
 		state.Context = make(map[string]any)
 	}
 	if state.Outputs == nil {
-		state.Outputs = make(map[string]core.Artifact)
+		state.Outputs = make(map[string]circuit.Artifact)
 	}
 	return &state, nil
 }

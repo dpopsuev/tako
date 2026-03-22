@@ -23,7 +23,7 @@ var (
 //	var circuitYAML []byte
 //
 //	func init() {
-//	    circuit.RegisterEmbeddedCircuit("achilles", circuitYAML)
+//	    RegisterEmbeddedCircuit("achilles", circuitYAML)
 //	}
 func RegisterEmbeddedCircuit(name string, content []byte) {
 	embeddedCircuitsMu.Lock()

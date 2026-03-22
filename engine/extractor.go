@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // Extractor converts unstructured input into structured output.
@@ -55,15 +55,15 @@ func (r ExtractorRegistry) Register(ext Extractor) {
 // extractorNode is a Node that delegates processing to an Extractor.
 type extractorNode struct {
 	name    string
-	element core.Element
+	element circuit.Element
 	ext     Extractor
 	meta    map[string]any
 }
 
 func (n *extractorNode) Name() string             { return n.name }
-func (n *extractorNode) ElementAffinity() core.Element { return n.element }
+func (n *extractorNode) ElementAffinity() circuit.Element { return n.element }
 
-func (n *extractorNode) Process(ctx context.Context, nc core.NodeContext) (core.Artifact, error) {
+func (n *extractorNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	var input any
 	if nc.PriorArtifact != nil {
 		input = nc.PriorArtifact.Raw()

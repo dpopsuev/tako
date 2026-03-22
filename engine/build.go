@@ -9,8 +9,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/core"
-	"github.com/dpopsuev/origami/finding"
+	"github.com/dpopsuev/origami/internal/finding"
 )
 
 // Type aliases — definitions live in circuit/ sub-package.
@@ -49,10 +48,10 @@ const (
 type vetoArtifact = finding.VetoArtifact
 
 // NodeRegistry maps node family names to Node factory functions.
-type NodeRegistry map[string]func(def NodeDef) core.Node
+type NodeRegistry map[string]func(def NodeDef) circuit.Node
 
 // EdgeFactory maps edge IDs to Edge factory functions.
-type EdgeFactory map[string]func(def EdgeDef) core.Edge
+type EdgeFactory map[string]func(def EdgeDef) circuit.Edge
 
 // ComponentLoader resolves an import name to a live Component.
 type ComponentLoader func(name string) (*Component, error)
@@ -94,7 +93,7 @@ func BuildGraph(def *CircuitDef, reg GraphRegistries) (Graph, error) {
 		reg.Hooks = merged.Hooks
 	}
 
-	fwNodes := make([]core.Node, 0, len(def.Nodes))
+	fwNodes := make([]circuit.Node, 0, len(def.Nodes))
 	for _, nd := range def.Nodes {
 		node, err := resolveNode(def, nd, reg)
 		if err != nil {
@@ -103,7 +102,7 @@ func BuildGraph(def *CircuitDef, reg GraphRegistries) (Graph, error) {
 		fwNodes = append(fwNodes, node)
 	}
 
-	fwEdges := make([]core.Edge, 0, len(def.Edges))
+	fwEdges := make([]circuit.Edge, 0, len(def.Edges))
 	for _, ed := range def.Edges {
 		if ed.When != "" {
 			exprEdge, err := CompileExpressionEdge(ed, def.Vars)
@@ -124,7 +123,7 @@ func BuildGraph(def *CircuitDef, reg GraphRegistries) (Graph, error) {
 
 	fwZones := make([]Zone, 0, len(def.Zones))
 	for name, zd := range def.Zones {
-		elem, _ := core.ResolveApproach(strings.ToLower(zd.Approach))
+		elem, _ := circuit.ResolveApproach(strings.ToLower(zd.Approach))
 		fwZones = append(fwZones, Zone{
 			Name:            name,
 			NodeNames:       zd.Nodes,
@@ -215,13 +214,13 @@ func buildGraphShape(g *DefaultGraph, def *CircuitDef) circuit.GraphShape {
 }
 
 // resolveNode creates a Node from a NodeDef using handler + handler_type.
-func resolveNode(def *CircuitDef, nd NodeDef, reg GraphRegistries) (core.Node, error) {
-	elem, _ := core.ResolveApproach(strings.ToLower(nd.Approach))
+func resolveNode(def *CircuitDef, nd NodeDef, reg GraphRegistries) (circuit.Node, error) {
+	elem, _ := circuit.ResolveApproach(strings.ToLower(nd.Approach))
 	return resolveHandler(def, nd, reg, elem)
 }
 
 // resolveHandler resolves a node using the explicit handler + handler_type path.
-func resolveHandler(def *CircuitDef, nd NodeDef, reg GraphRegistries, elem core.Element) (core.Node, error) {
+func resolveHandler(def *CircuitDef, nd NodeDef, reg GraphRegistries, elem circuit.Element) (circuit.Node, error) {
 	handler := nd.Handler
 	if handler == "" {
 		handler = nd.Name
@@ -373,8 +372,8 @@ func (e *dslEdge) To() string       { return e.def.To }
 func (e *dslEdge) IsShortcut() bool { return e.def.Shortcut }
 func (e *dslEdge) IsLoop() bool     { return e.def.Loop }
 func (e *dslEdge) IsParallel() bool { return e.def.Parallel }
-func (e *dslEdge) Evaluate(_ core.Artifact, _ *core.WalkerState) *core.Transition {
-	return &core.Transition{
+func (e *dslEdge) Evaluate(_ circuit.Artifact, _ *circuit.WalkerState) *circuit.Transition {
+	return &circuit.Transition{
 		NextNode:    e.def.To,
 		Explanation: e.def.Condition,
 	}

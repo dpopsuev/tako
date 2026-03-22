@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 func TestJSONCheckpointer_SaveAndLoad(t *testing.T) {
@@ -15,7 +15,7 @@ func TestJSONCheckpointer_SaveAndLoad(t *testing.T) {
 		t.Fatalf("NewJSONCheckpointer: %v", err)
 	}
 
-	state := core.NewWalkerState("walk-1")
+	state := circuit.NewWalkerState("walk-1")
 	state.Status = "running"
 	state.LoopCounts["investigate"] = 2
 	state.Context["key"] = "value"
@@ -75,7 +75,7 @@ func TestJSONCheckpointer_Remove(t *testing.T) {
 	dir := t.TempDir()
 	cp, _ := NewJSONCheckpointer(dir)
 
-	state := core.NewWalkerState("walk-rm")
+	state := circuit.NewWalkerState("walk-rm")
 	cp.Save(state)
 
 	if err := cp.Remove("walk-rm"); err != nil {
@@ -122,7 +122,7 @@ func TestJSONCheckpointer_Overwrite(t *testing.T) {
 	dir := t.TempDir()
 	cp, _ := NewJSONCheckpointer(dir)
 
-	state := core.NewWalkerState("walk-ow")
+	state := circuit.NewWalkerState("walk-ow")
 	state.CurrentNode = "triage"
 	cp.Save(state)
 
@@ -148,9 +148,9 @@ func TestJSONCheckpointer_List(t *testing.T) {
 		t.Errorf("expected 0 IDs, got %d", len(ids))
 	}
 
-	cp.Save(core.NewWalkerState("walk-a"))
-	cp.Save(core.NewWalkerState("walk-b"))
-	cp.Save(core.NewWalkerState("walk-c"))
+	cp.Save(circuit.NewWalkerState("walk-a"))
+	cp.Save(circuit.NewWalkerState("walk-b"))
+	cp.Save(circuit.NewWalkerState("walk-c"))
 
 	ids, err = cp.List()
 	if err != nil {
@@ -172,5 +172,5 @@ func TestJSONCheckpointer_List(t *testing.T) {
 }
 
 func TestJSONCheckpointer_InterfaceCompliance(t *testing.T) {
-	var _ core.Checkpointer = (*JSONCheckpointer)(nil)
+	var _ circuit.Checkpointer = (*JSONCheckpointer)(nil)
 }

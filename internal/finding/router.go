@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // RouteTarget identifies the authority that receives a routed finding.
@@ -24,16 +24,16 @@ const (
 // Domain uses path.Match glob syntax (e.g. "test.*", "security.*").
 // Rules are evaluated in order; first match wins.
 type RouteRule struct {
-	Severity core.FindingSeverity `json:"severity" yaml:"severity"`
+	Severity circuit.FindingSeverity `json:"severity" yaml:"severity"`
 	Domain   string               `json:"domain" yaml:"domain"`
 	Target   RouteTarget          `json:"target" yaml:"target"`
 }
 
 // FindingHandlers holds callbacks invoked when a finding is routed to a target.
 type FindingHandlers struct {
-	Manager func(core.Finding)
-	Broker  func(core.Finding)
-	Log     func(core.Finding)
+	Manager func(circuit.Finding)
+	Broker  func(circuit.Finding)
+	Log     func(circuit.Finding)
 }
 
 // FindingRouter routes findings to the appropriate authority based on severity
@@ -43,7 +43,7 @@ type FindingRouter struct {
 	handlers FindingHandlers
 
 	mu       sync.RWMutex
-	findings []core.Finding
+	findings []circuit.Finding
 }
 
 // NewFindingRouter creates a router with the given rules and handlers.
@@ -52,7 +52,7 @@ func NewFindingRouter(rules []RouteRule, handlers FindingHandlers) *FindingRoute
 	return &FindingRouter{rules: rules, handlers: handlers}
 }
 
-func (r *FindingRouter) Report(_ context.Context, f core.Finding) error {
+func (r *FindingRouter) Report(_ context.Context, f circuit.Finding) error {
 	if f.Timestamp.IsZero() {
 		f.Timestamp = time.Now().UTC()
 	}
@@ -66,15 +66,15 @@ func (r *FindingRouter) Report(_ context.Context, f core.Finding) error {
 	return nil
 }
 
-func (r *FindingRouter) Findings() []core.Finding {
+func (r *FindingRouter) Findings() []circuit.Finding {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	out := make([]core.Finding, len(r.findings))
+	out := make([]circuit.Finding, len(r.findings))
 	copy(out, r.findings)
 	return out
 }
 
-func (r *FindingRouter) route(f core.Finding) RouteTarget {
+func (r *FindingRouter) route(f circuit.Finding) RouteTarget {
 	for _, rule := range r.rules {
 		if rule.Severity != "" && rule.Severity != f.Severity {
 			continue
@@ -90,18 +90,18 @@ func (r *FindingRouter) route(f core.Finding) RouteTarget {
 	return r.defaultTarget(f.Severity)
 }
 
-func (r *FindingRouter) defaultTarget(severity core.FindingSeverity) RouteTarget {
+func (r *FindingRouter) defaultTarget(severity circuit.FindingSeverity) RouteTarget {
 	switch severity {
-	case core.FindingError:
+	case circuit.FindingError:
 		return TargetBroker
-	case core.FindingWarning:
+	case circuit.FindingWarning:
 		return TargetManager
 	default:
 		return TargetLog
 	}
 }
 
-func (r *FindingRouter) dispatch(target RouteTarget, f core.Finding) {
+func (r *FindingRouter) dispatch(target RouteTarget, f circuit.Finding) {
 	switch target {
 	case TargetManager:
 		if r.handlers.Manager != nil {

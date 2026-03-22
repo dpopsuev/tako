@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/dpopsuev/origami/core"
 )
 
 // rawCircuitDef is the intermediate representation that supports both
@@ -200,7 +199,7 @@ func LoadCircuitWithOverlay(overlayData []byte, resolver AssetResolver) (*Circui
 		return nil, fmt.Errorf("parse base circuit %q: %w", overlay.Import, err)
 	}
 
-	slog.Debug(core.LogOverlayMerge, core.LogKeyComponent, core.LogComponentDSL,
+	slog.Debug(LogOverlayMerge, LogKeyComponent, LogComponentDSL,
 		"base", overlay.Import,
 		"base_nodes", len(base.Nodes),
 		"overlay_nodes", len(overlay.Nodes),
@@ -211,7 +210,7 @@ func LoadCircuitWithOverlay(overlayData []byte, resolver AssetResolver) (*Circui
 		return nil, fmt.Errorf("merge overlay onto %q: %w", overlay.Import, err)
 	}
 
-	slog.Debug(core.LogOverlayMergeComplete, core.LogKeyComponent, core.LogComponentDSL,
+	slog.Debug(LogOverlayMergeComplete, LogKeyComponent, LogComponentDSL,
 		"merged_nodes", len(merged.Nodes),
 		"merged_edges", len(merged.Edges),
 		"start", merged.Start,

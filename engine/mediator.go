@@ -9,7 +9,7 @@ import (
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/dpopsuev/origami/core"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/subprocess"
 )
 
@@ -62,7 +62,7 @@ func (t *MCPCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 	}
 	defer session.Close()
 
-	extra := map[string]any{core.ExtraKeyCircuitType: t.CircuitType}
+	extra := map[string]any{circuit.ExtraKeyCircuitType: t.CircuitType}
 	if tc.WalkerState != nil {
 		for k, v := range tc.WalkerState.Context {
 			if k == ContextKeyPromptRelayer {
@@ -72,10 +72,10 @@ func (t *MCPCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 		}
 	}
 
-	if traceID, ok := tc.WalkerState.Context[core.ContextKeyTraceID].(string); ok {
-		extra[core.ExtraKeyTraceID] = traceID
+	if traceID, ok := tc.WalkerState.Context[circuit.ContextKeyTraceID].(string); ok {
+		extra[circuit.ExtraKeyTraceID] = traceID
 	} else {
-		extra[core.ExtraKeyTraceID] = fmt.Sprintf("tr-%d", time.Now().UnixMilli())
+		extra[circuit.ExtraKeyTraceID] = fmt.Sprintf("tr-%d", time.Now().UnixMilli())
 	}
 
 	startResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
@@ -116,23 +116,23 @@ func (t *MCPCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 			return nil, fmt.Errorf("mediator get_next_step(%s) parse: %w", t.CircuitType, err)
 		}
 
-		if done, _ := stepOut[core.ProtoKeyDone].(bool); done {
-			if errMsg, ok := stepOut[core.ProtoKeyError].(string); ok && errMsg != "" {
+		if done, _ := stepOut[circuit.ProtoKeyDone].(bool); done {
+			if errMsg, ok := stepOut[circuit.ProtoKeyError].(string); ok && errMsg != "" {
 				return nil, fmt.Errorf("mediator circuit %q failed: %s", t.CircuitType, errMsg)
 			}
 			break
 		}
 
-		available, _ := stepOut[core.ProtoKeyAvailable].(bool)
+		available, _ := stepOut[circuit.ProtoKeyAvailable].(bool)
 		if !available {
 			continue
 		}
 
-		childStep, _ := stepOut[core.ProtoKeyStep].(string)
-		childDispatchID, _ := stepOut[core.ProtoKeyDispatchID].(float64)
-		childPrompt, _ := stepOut[core.ProtoKeyPromptContent].(string)
-		childCaseID, _ := stepOut[core.ProtoKeyCaseID].(string)
-		childArtifactPath, _ := stepOut[core.ProtoKeyArtifactPath].(string)
+		childStep, _ := stepOut[circuit.ProtoKeyStep].(string)
+		childDispatchID, _ := stepOut[circuit.ProtoKeyDispatchID].(float64)
+		childPrompt, _ := stepOut[circuit.ProtoKeyPromptContent].(string)
+		childCaseID, _ := stepOut[circuit.ProtoKeyCaseID].(string)
+		childArtifactPath, _ := stepOut[circuit.ProtoKeyArtifactPath].(string)
 
 		slog.Debug("mediator relay child prompt",
 			"circuit_type", t.CircuitType,
@@ -164,10 +164,10 @@ func (t *MCPCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 		_, err = session.CallTool(ctx, &sdkmcp.CallToolParams{
 			Name: "submit_step",
 			Arguments: mustMarshal(map[string]any{
-				core.ProtoKeySessionID:  sessionID,
-				core.ProtoKeyDispatchID: int64(childDispatchID),
-				core.ProtoKeyStep:       childStep,
-				core.ProtoKeyFields:     fields,
+				circuit.ProtoKeySessionID:  sessionID,
+				circuit.ProtoKeyDispatchID: int64(childDispatchID),
+				circuit.ProtoKeyStep:       childStep,
+				circuit.ProtoKeyFields:     fields,
 			}),
 		})
 		if err != nil {
@@ -177,7 +177,7 @@ func (t *MCPCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 
 	reportResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
 		Name:      "get_report",
-		Arguments: mustMarshal(map[string]any{core.ProtoKeySessionID: sessionID}),
+		Arguments: mustMarshal(map[string]any{circuit.ProtoKeySessionID: sessionID}),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("mediator get_report(%s): %w", t.CircuitType, err)
@@ -187,17 +187,17 @@ func (t *MCPCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 		return nil, fmt.Errorf("mediator get_report(%s) parse: %w", t.CircuitType, err)
 	}
 
-	if errMsg, ok := reportOut[core.ProtoKeyError].(string); ok && errMsg != "" {
+	if errMsg, ok := reportOut[circuit.ProtoKeyError].(string); ok && errMsg != "" {
 		return nil, fmt.Errorf("mediator circuit %q error: %s", t.CircuitType, errMsg)
 	}
 
 	slog.Debug("mediator delegate complete",
 		"circuit_type", t.CircuitType,
 		"session_id", sessionID,
-		"status", reportOut[core.ProtoKeyStatus],
+		"status", reportOut[circuit.ProtoKeyStatus],
 	)
 
-	if structured, ok := reportOut[core.ProtoKeyStructured]; ok {
+	if structured, ok := reportOut[circuit.ProtoKeyStructured]; ok {
 		return structured, nil
 	}
 	return reportOut, nil

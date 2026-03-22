@@ -2,12 +2,12 @@ package finding
 
 // Category: Processing & Support
 
-import "github.com/dpopsuev/origami/core"
+import "github.com/dpopsuev/origami/circuit"
 
 // VetoArtifact wraps an artifact and overrides Confidence to 0.
 // Used by the hookingWalker when a VetoHook returns ErrFindingVeto.
 type VetoArtifact struct {
-	Inner core.Artifact
+	Inner circuit.Artifact
 }
 
 func (v *VetoArtifact) Type() string        { return v.Inner.Type() }
