@@ -1,12 +1,17 @@
 package framework
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/dpopsuev/origami/core"
+)
 
 // init registers a test-only persona resolver that provides the same
 // personas as the persona/ package. This avoids a circular dependency
 // between the root package tests and the persona sub-package.
 func init() {
 	DefaultPersonaResolver = testPersonaByName
+	core.DefaultPersonaResolver = testPersonaByName
 }
 
 func testPersonaByName(name string) (Persona, bool) {

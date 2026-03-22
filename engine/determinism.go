@@ -1,8 +1,8 @@
 package engine
 
-// isCircuitDeterministic returns true if every node in the circuit that
+// IsCircuitDeterministic returns true if every node in the circuit that
 // references a transformer resolves to a deterministic transformer.
-func isCircuitDeterministic(def *CircuitDef, reg TransformerRegistry) bool {
+func IsCircuitDeterministic(def *CircuitDef, reg TransformerRegistry) bool {
 	if reg == nil {
 		return false
 	}

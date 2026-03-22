@@ -69,24 +69,24 @@ func (ws *WalkerState) MergeContext(additions map[string]any) {
 	}
 }
 
-// trajectoryType classifies a confidence convergence pattern.
-type trajectoryType string
+// TrajectoryType classifies a confidence convergence pattern.
+type TrajectoryType string
 
 const (
-	TrajectoryUnderdamped      trajectoryType = "underdamped"
-	TrajectoryOverdamped       trajectoryType = "overdamped"
-	TrajectoryCriticallyDamped trajectoryType = "critically_damped"
-	TrajectoryUnstable         trajectoryType = "unstable"
-	TrajectoryInsufficient     trajectoryType = "insufficient"
+	TrajectoryUnderdamped      TrajectoryType = "underdamped"
+	TrajectoryOverdamped       TrajectoryType = "overdamped"
+	TrajectoryCriticallyDamped TrajectoryType = "critically_damped"
+	TrajectoryUnstable         TrajectoryType = "unstable"
+	TrajectoryInsufficient     TrajectoryType = "insufficient"
 )
 
-// classifyTrajectory analyzes a confidence history to determine the convergence pattern.
+// ClassifyTrajectory analyzes a confidence history to determine the convergence pattern.
 // Underdamped: many oscillations (3+ sign changes in derivative).
 // Overdamped: monotonically increasing (0 sign changes).
 // Critically damped: converging within 1 oscillation (1-2 sign changes).
 // Unstable: final value lower than first (diverging).
 // Insufficient: fewer than 3 data points.
-func classifyTrajectory(history []float64) trajectoryType {
+func ClassifyTrajectory(history []float64) TrajectoryType {
 	if len(history) < 3 {
 		return TrajectoryInsufficient
 	}
@@ -117,11 +117,11 @@ func classifyTrajectory(history []float64) trajectoryType {
 	}
 }
 
-// readOnlyContext returns a shallow copy of the context map.
+// ReadOnlyContext returns a shallow copy of the context map.
 // Used to snapshot context at dialectic entry so nodes cannot mutate
 // the shared state during adversarial debate. The original map is never
 // exposed; writes to the copy are discarded after the dialectic round.
-func readOnlyContext(ctx map[string]any) map[string]any {
+func ReadOnlyContext(ctx map[string]any) map[string]any {
 	if ctx == nil {
 		return nil
 	}

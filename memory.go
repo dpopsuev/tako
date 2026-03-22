@@ -30,10 +30,9 @@ func NewInMemoryStore() *InMemoryStore { return state.NewInMemoryStore() }
 type taggedSetter = state.TaggedSetter
 
 // taggedMemoryStore wraps a MemoryStore and auto-appends tags to every SetNS call.
-// Read operations are delegated unchanged.
 type taggedMemoryStore = state.TaggedMemoryStore
 
-// --- Memory type helper functions ---
+// --- Memory type helper functions (unexported, used by root tests) ---
 
 // setFact stores a semantic fact about a walker.
 func setFact(store MemoryStore, walkerID, key string, value any) {

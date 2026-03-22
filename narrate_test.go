@@ -33,7 +33,7 @@ func TestNarrationObserver_ZeroConfig(t *testing.T) {
 	if obs == nil {
 		t.Fatal("newNarrationObserver() returned nil")
 	}
-	p := obs.progress()
+	p := obs.Progress()
 	if p.NodesVisited != 0 {
 		t.Errorf("fresh observer: NodesVisited = %d, want 0", p.NodesVisited)
 	}
@@ -71,7 +71,7 @@ func TestNarrationObserver_NodeEnterExit(t *testing.T) {
 		t.Errorf("line 3: %q, want duration '2.0s'", lines[3])
 	}
 
-	p := obs.progress()
+	p := obs.Progress()
 	if p.NodesVisited != 2 {
 		t.Errorf("NodesVisited = %d, want 2", p.NodesVisited)
 	}
