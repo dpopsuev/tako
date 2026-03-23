@@ -47,22 +47,72 @@ func connectInMemory(t *testing.T, ctx context.Context, srv *fwmcp.CircuitServer
 	return session
 }
 
+// ouroborosToolName maps legacy tool names to consolidated tool names.
+func ouroborosToolName(legacy string) string {
+	switch legacy {
+	case "start_circuit", "get_next_step", "submit_step", "get_report":
+		return "circuit"
+	case "emit_signal", "get_signals", "get_worker_health":
+		return "signal"
+	case "get_trace", "get_run_report", "diff_runs":
+		return "trace"
+	default:
+		return legacy
+	}
+}
+
+// ouroborosToolArgs adds the action field for consolidated tools.
+func ouroborosToolArgs(legacy string, args map[string]any) map[string]any {
+	action := ""
+	switch legacy {
+	case "start_circuit":
+		action = "start"
+	case "get_next_step":
+		action = "step"
+	case "submit_step":
+		action = "submit"
+	case "get_report":
+		action = "report"
+	case "emit_signal":
+		action = "emit"
+	case "get_signals":
+		action = "list"
+	case "get_worker_health":
+		action = "health"
+	case "get_trace":
+		action = "events"
+	case "get_run_report":
+		action = "report"
+	case "diff_runs":
+		action = "diff"
+	default:
+		return args
+	}
+	merged := map[string]any{"action": action}
+	for k, v := range args {
+		merged[k] = v
+	}
+	return merged
+}
+
 func callTool(t *testing.T, ctx context.Context, session *sdkmcp.ClientSession, name string, args map[string]any) map[string]any {
 	t.Helper()
+	actualName := ouroborosToolName(name)
+	actualArgs := ouroborosToolArgs(name, args)
 	res, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-		Name:      name,
-		Arguments: args,
+		Name:      actualName,
+		Arguments: actualArgs,
 	})
 	if err != nil {
-		t.Fatalf("CallTool(%s): %v", name, err)
+		t.Fatalf("CallTool(%s/%s): %v", actualName, name, err)
 	}
 	if res.IsError {
 		for _, c := range res.Content {
 			if tc, ok := c.(*sdkmcp.TextContent); ok {
-				t.Fatalf("CallTool(%s) returned error: %s", name, tc.Text)
+				t.Fatalf("CallTool(%s/%s) returned error: %s", actualName, name, tc.Text)
 			}
 		}
-		t.Fatalf("CallTool(%s) returned error", name)
+		t.Fatalf("CallTool(%s/%s) returned error", actualName, name)
 	}
 	result := make(map[string]any)
 	for _, c := range res.Content {
@@ -79,9 +129,11 @@ func callTool(t *testing.T, ctx context.Context, session *sdkmcp.ClientSession, 
 
 func callToolExpectError(t *testing.T, ctx context.Context, session *sdkmcp.ClientSession, name string, args map[string]any) string {
 	t.Helper()
+	actualName := ouroborosToolName(name)
+	actualArgs := ouroborosToolArgs(name, args)
 	res, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-		Name:      name,
-		Arguments: args,
+		Name:      actualName,
+		Arguments: actualArgs,
 	})
 	if err != nil {
 		return err.Error()
@@ -190,12 +242,8 @@ func TestOuroboros_ToolDiscovery(t *testing.T) {
 	}
 
 	expected := map[string]bool{
-		"start_circuit":    false,
-		"get_next_step":     false,
-		"submit_step":       false,
-		"get_report":        false,
-		"emit_signal":       false,
-		"get_signals":       false,
+		"circuit":           false,
+		"signal":            false,
 		"assemble_profiles": false,
 	}
 

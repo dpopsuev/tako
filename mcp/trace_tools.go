@@ -19,6 +19,20 @@ import (
 
 // --- MCP tool input/output types for trace tools ---
 
+// traceInput is the unified input for the consolidated "trace" tool.
+type traceInput struct {
+	Action            string `json:"action"`               // events, report, diff
+	SessionID         string `json:"session_id,omitempty"`
+	Level             string `json:"level,omitempty"`
+	CaseID            string `json:"case_id,omitempty"`
+	Node              string `json:"node,omitempty"`
+	Since             int    `json:"since,omitempty"`
+	Limit             int    `json:"limit,omitempty"`
+	FollowDelegations bool   `json:"follow_delegations,omitempty"`
+	RunIDA            string `json:"run_id_a,omitempty"`
+	RunIDB            string `json:"run_id_b,omitempty"`
+}
+
 type getTraceInput struct {
 	SessionID         string `json:"session_id" jsonschema:"session ID from start_circuit"`
 	Level             string `json:"level,omitempty" jsonschema:"filter: info, debug, or trace (default: info)"`
@@ -55,23 +69,46 @@ type diffRunsOutput struct {
 	MetricDeltas []metricDelta `json:"metric_deltas"`
 }
 
-// registerTraceTools adds get_trace, get_run_report, and diff_runs MCP tools.
+// registerTraceTools adds the consolidated "trace" MCP tool.
 // Only called when StateDir is configured.
 func (s *CircuitServer) registerTraceTools() {
 	sdkmcp.AddTool(s.MCPServer, &sdkmcp.Tool{
-		Name:        "get_trace",
-		Description: "Read execution trace events from a completed run. Filter by level (info/debug/trace), case ID, and node name. Returns structured JSON — no glue code needed.",
-	}, NoOutputSchema(s.handleGetTrace))
+		Name:        "trace",
+		Description: "Execution trace and run comparison. Actions: events (trace events with filters), report (persisted run report), diff (compare two runs).",
+	}, NoOutputSchema(s.handleTraceDispatch))
+}
 
-	sdkmcp.AddTool(s.MCPServer, &sdkmcp.Tool{
-		Name:        "get_run_report",
-		Description: "Get the structured calibration report for a completed run. Returns metrics, per-case results, and aggregate accuracy as JSON.",
-	}, NoOutputSchema(s.handleGetRunReport))
+// handleTraceDispatch routes the consolidated trace tool to the appropriate handler.
+func (s *CircuitServer) handleTraceDispatch(ctx context.Context, req *sdkmcp.CallToolRequest, input traceInput) (*sdkmcp.CallToolResult, any, error) {
+	switch input.Action {
+	case "events":
+		eventsInput := getTraceInput{
+			SessionID:         input.SessionID,
+			Level:             input.Level,
+			CaseID:            input.CaseID,
+			Node:              input.Node,
+			Since:             input.Since,
+			Limit:             input.Limit,
+			FollowDelegations: input.FollowDelegations,
+		}
+		res, out, err := s.handleGetTrace(ctx, req, eventsInput)
+		return res, out, err
 
-	sdkmcp.AddTool(s.MCPServer, &sdkmcp.Tool{
-		Name:        "diff_runs",
-		Description: "Compare two calibration runs. Returns per-metric deltas showing regressions and improvements.",
-	}, NoOutputSchema(s.handleDiffRuns))
+	case "report":
+		reportInput := getRunReportInput{SessionID: input.SessionID}
+		return s.handleGetRunReport(ctx, req, reportInput)
+
+	case "diff":
+		diffInput := diffRunsInput{
+			RunIDA: input.RunIDA,
+			RunIDB: input.RunIDB,
+		}
+		res, out, err := s.handleDiffRuns(ctx, req, diffInput)
+		return res, out, err
+
+	default:
+		return nil, nil, fmt.Errorf("unknown trace action %q; valid actions: events, report, diff", input.Action)
+	}
 }
 
 func (s *CircuitServer) handleGetTrace(_ context.Context, _ *sdkmcp.CallToolRequest, input getTraceInput) (*sdkmcp.CallToolResult, getTraceOutput, error) {

@@ -290,9 +290,9 @@ done: _done
 		"classify",
 		"scan-to-classify",
 		"start_calibration",
-		"get_next_step",
-		"submit_artifact",
-		"get_report",
+		"circuit(action: step)",
+		"circuit(action: submit)",
+		"circuit(action: report",
 	}
 	for _, check := range checks {
 		if !strings.Contains(string(content), check) {

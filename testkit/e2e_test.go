@@ -222,21 +222,22 @@ func TestE2E_MCP_AllStubs(t *testing.T) {
 	}
 	defer session.Close()
 
-	// Call start_circuit.
-	startResult := callTool(t, ctx, session, "start_circuit", nil)
+	// Call circuit(action=start).
+	startResult := callTool(t, ctx, session, "circuit", map[string]any{"action": "start"})
 	sessionID, ok := startResult["session_id"].(string)
 	if !ok || sessionID == "" {
-		t.Fatalf("start_circuit: expected non-empty session_id, got %v", startResult)
+		t.Fatalf("circuit/start: expected non-empty session_id, got %v", startResult)
 	}
 	totalCases, _ := startResult["total_cases"].(float64)
 	if int(totalCases) != nCases {
-		t.Fatalf("start_circuit: total_cases = %v, want %d", totalCases, nCases)
+		t.Fatalf("circuit/start: total_cases = %v, want %d", totalCases, nCases)
 	}
 
-	// Loop: get_next_step / submit_step until done.
+	// Loop: circuit(action=step) / circuit(action=submit) until done.
 	stepsProcessed := 0
 	for {
-		stepResult := callTool(t, ctx, session, "get_next_step", map[string]any{
+		stepResult := callTool(t, ctx, session, "circuit", map[string]any{
+			"action":     "step",
 			"session_id": sessionID,
 			"timeout_ms": 2000,
 		})
@@ -260,7 +261,8 @@ func TestE2E_MCP_AllStubs(t *testing.T) {
 			fields["data"] = step
 		}
 
-		callTool(t, ctx, session, "submit_step", map[string]any{
+		callTool(t, ctx, session, "circuit", map[string]any{
+			"action":      "submit",
 			"session_id":  sessionID,
 			"dispatch_id": int64(dispatchID),
 			"step":        step,
@@ -274,16 +276,17 @@ func TestE2E_MCP_AllStubs(t *testing.T) {
 	}
 
 	// Get report.
-	reportResult := callTool(t, ctx, session, "get_report", map[string]any{
+	reportResult := callTool(t, ctx, session, "circuit", map[string]any{
+		"action":     "report",
 		"session_id": sessionID,
 	})
 	status, _ := reportResult["status"].(string)
 	if status != "done" {
-		t.Fatalf("get_report: status = %q, want %q", status, "done")
+		t.Fatalf("circuit/report: status = %q, want %q", status, "done")
 	}
 	reportText, _ := reportResult["report"].(string)
 	if reportText == "" {
-		t.Error("get_report: report text is empty")
+		t.Error("circuit/report: report text is empty")
 	}
 	t.Logf("MCP E2E report: %s", reportText)
 }

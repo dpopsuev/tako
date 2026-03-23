@@ -173,7 +173,7 @@ Store the returned ` + "`" + `session_id` + "`" + ` for all subsequent calls.
 
 You are the **supervisor**, not the executor. Launch N worker subagents
 that each run an independent pull-process-submit loop. Do NOT call
-` + "`" + `get_next_step` + "`" + ` or ` + "`" + `submit_artifact` + "`" + ` yourself — workers own those.
+` + "`" + `circuit(action: step)` + "`" + ` or ` + "`" + `circuit(action: submit)` + "`" + ` yourself — workers own those.
 
 Launch up to 4 Task subagents in a **single message**. Each worker receives
 the ` + "`" + `session_id` + "`" + ` and runs the worker loop below until the circuit completes.
@@ -181,21 +181,21 @@ the ` + "`" + `session_id` + "`" + ` and runs the worker loop below until the ci
 ### Worker loop (each subagent runs this independently)
 
 ` + "```" + `
-emit_signal(session_id, "worker_started", "worker", meta={worker_id})
+signal(action: emit, session_id, "worker_started", "worker", meta={worker_id})
 while true:
-  response = get_next_step(session_id, timeout_ms: 30000)
+  response = circuit(action: step, session_id, timeout_ms: 30000)
   if response.done: break
   if not response.available: continue
 
-  emit_signal(session_id, "start", "worker", response.case_id, response.step)
+  signal(action: emit, session_id, "start", "worker", response.case_id, response.step)
   prompt = read(response.prompt_path)
   artifact = generate_artifact(prompt)
-  submit_artifact(session_id, artifact_json: artifact, dispatch_id: response.dispatch_id)
-  emit_signal(session_id, "done", "worker", response.case_id, response.step, {bytes: size})
-emit_signal(session_id, "worker_stopped", "worker", meta={worker_id})
+  circuit(action: submit, session_id, artifact_json: artifact, dispatch_id: response.dispatch_id)
+  signal(action: emit, session_id, "done", "worker", response.case_id, response.step, {bytes: size})
+signal(action: emit, session_id, "worker_stopped", "worker", meta={worker_id})
 ` + "```" + `
 
-Workers self-terminate when ` + "`" + `get_next_step` + "`" + ` returns ` + "`" + `done=true` + "`" + `.
+Workers self-terminate when ` + "`" + `circuit(action: step)` + "`" + ` returns ` + "`" + `done=true` + "`" + `.
 Fast workers immediately pull the next step — no waiting for slow siblings.
 
 ### Supervisor monitoring
@@ -203,7 +203,7 @@ Fast workers immediately pull the next step — no waiting for slow siblings.
 While workers run, monitor progress via the signal bus:
 
 ` + "```" + `
-get_signals(session_id, since=last_index)
+signal(action: list, session_id, since=last_index)
 ` + "```" + `
 
 If a worker emits an ` + "`" + `error` + "`" + ` signal and stops, launch a replacement worker.
@@ -215,7 +215,7 @@ If a worker emits an ` + "`" + `error` + "`" + ` signal and stops, launch a repl
 Once all workers have stopped (all returned from their Task calls):
 
 ` + "```" + `
-get_report(session_id)
+circuit(action: report, session_id)
 ` + "```" + `
 
 Present the metrics scorecard to the user.
@@ -224,8 +224,8 @@ Present the metrics scorecard to the user.
 
 ## Error handling
 
-- **Worker failure:** worker emits error signal; supervisor detects via ` + "`" + `get_signals` + "`" + ` and launches replacement.
-- **Session timeout:** MCP server has a 5-minute inactivity watchdog. Workers keep it alive via ` + "`" + `submit_artifact` + "`" + ` calls.
+- **Worker failure:** worker emits error signal; supervisor detects via ` + "`" + `signal(action: list)` + "`" + ` and launches replacement.
+- **Session timeout:** MCP server has a 5-minute inactivity watchdog. Workers keep it alive via ` + "`" + `circuit(action: submit)` + "`" + ` calls.
 - **MCP disconnection:** session state is lost; re-run.
 
 ---

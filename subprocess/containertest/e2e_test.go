@@ -180,7 +180,7 @@ func TestE2E_FourServices_ToolRouting(t *testing.T) {
 	hasDomain := false
 	for _, tool := range tools.Tools {
 		switch tool.Name {
-		case "start_circuit", "get_next_step", "submit_step":
+		case "circuit", "signal":
 			hasRCA = true
 		case "gnd_search", "gnd_read":
 			hasDSR = true

@@ -133,8 +133,9 @@ func runWetCircuit(t *testing.T, gwEndpoint string) string {
 	defer session.Close()
 
 	startResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-		Name: "start_circuit",
+		Name: "circuit",
 		Arguments: mustJSON(map[string]any{
+			"action": "start",
 			"extra": map[string]any{
 				"scenario": "ptp-mock",
 				"backend":  "stub",
@@ -142,10 +143,10 @@ func runWetCircuit(t *testing.T, gwEndpoint string) string {
 		}),
 	})
 	if err != nil {
-		t.Fatalf("start_circuit: %v", err)
+		t.Fatalf("circuit/start: %v", err)
 	}
 	if startResult.IsError {
-		t.Fatalf("start_circuit error: %s", textContent(startResult))
+		t.Fatalf("circuit/start error: %s", textContent(startResult))
 	}
 	t.Logf("circuit started: %s", textContent(startResult))
 	return textContent(startResult)
@@ -202,9 +203,8 @@ func TestWetE2E_ToolDiscovery(t *testing.T) {
 	}
 
 	want := map[string]bool{
-		"start_circuit":    false,
-		"get_next_step":    false,
-		"submit_step":     false,
+		"circuit":    false,
+		"signal":     false,
 		"dsr_search": false,
 	}
 	for _, tool := range tools.Tools {

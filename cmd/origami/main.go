@@ -30,6 +30,14 @@ import (
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
+// Build-time variables injected via -ldflags.
+// Example: go build -ldflags "-X main.version=v0.1.0 -X main.commit=$(git rev-parse --short HEAD) -X main.date=$(date -u +%Y-%m-%d)"
+var (
+	version = "dev"
+	commit  = "unknown"
+	date    = "unknown"
+)
+
 func main() {
 	if len(os.Args) < 2 {
 		printUsage()
@@ -76,8 +84,8 @@ func main() {
 		err = validateBundleCmd(os.Args[2:])
 	case "calibrate":
 		err = calibrateCmd(os.Args[2:])
-	case "version":
-		fmt.Println("origami v1.0.0")
+	case "version", "--version":
+		fmt.Printf("origami %s (%s, %s)\n", version, commit, date)
 	default:
 		fmt.Fprintf(os.Stderr, "unknown command: %s\n", os.Args[1])
 		printUsage()

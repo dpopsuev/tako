@@ -192,20 +192,22 @@ func connectInMemory(t *testing.T, ctx context.Context, srv *mcp.CircuitServer) 
 
 func callTool(t *testing.T, ctx context.Context, session *sdkmcp.ClientSession, name string, args map[string]any) map[string]any {
 	t.Helper()
+	actualName := toolName(name)
+	actualArgs := toolArgs(name, args)
 	res, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-		Name:      name,
-		Arguments: args,
+		Name:      actualName,
+		Arguments: actualArgs,
 	})
 	if err != nil {
-		t.Fatalf("CallTool(%s): %v", name, err)
+		t.Fatalf("CallTool(%s/%s): %v", actualName, name, err)
 	}
 	if res.IsError {
 		for _, c := range res.Content {
 			if tc, ok := c.(*sdkmcp.TextContent); ok {
-				t.Fatalf("CallTool(%s) returned error: %s", name, tc.Text)
+				t.Fatalf("CallTool(%s/%s) returned error: %s", actualName, name, tc.Text)
 			}
 		}
-		t.Fatalf("CallTool(%s) returned error", name)
+		t.Fatalf("CallTool(%s/%s) returned error", actualName, name)
 	}
 	result := make(map[string]any)
 	for _, c := range res.Content {
@@ -221,20 +223,22 @@ func callTool(t *testing.T, ctx context.Context, session *sdkmcp.ClientSession, 
 }
 
 func callToolE(ctx context.Context, session *sdkmcp.ClientSession, name string, args map[string]any) (map[string]any, error) {
+	actualName := toolName(name)
+	actualArgs := toolArgs(name, args)
 	res, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-		Name:      name,
-		Arguments: args,
+		Name:      actualName,
+		Arguments: actualArgs,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("CallTool(%s): %w", name, err)
+		return nil, fmt.Errorf("CallTool(%s/%s): %w", actualName, name, err)
 	}
 	if res.IsError {
 		for _, c := range res.Content {
 			if tc, ok := c.(*sdkmcp.TextContent); ok {
-				return nil, fmt.Errorf("CallTool(%s) error: %s", name, tc.Text)
+				return nil, fmt.Errorf("CallTool(%s/%s) error: %s", actualName, name, tc.Text)
 			}
 		}
-		return nil, fmt.Errorf("CallTool(%s) returned error", name)
+		return nil, fmt.Errorf("CallTool(%s/%s) returned error", actualName, name)
 	}
 	for _, c := range res.Content {
 		if tc, ok := c.(*sdkmcp.TextContent); ok {
@@ -246,6 +250,54 @@ func callToolE(ctx context.Context, session *sdkmcp.ClientSession, name string, 
 		}
 	}
 	return nil, fmt.Errorf("no text content in %s result", name)
+}
+
+// toolName and toolArgs map legacy tool names to consolidated tool names with action.
+// This reduces test churn during the 11→3 tool consolidation.
+func toolName(legacy string) string {
+	switch legacy {
+	case "start_circuit", "get_next_step", "submit_step", "get_report":
+		return "circuit"
+	case "emit_signal", "get_signals", "get_worker_health":
+		return "signal"
+	case "get_trace", "get_run_report", "diff_runs":
+		return "trace"
+	default:
+		return legacy
+	}
+}
+
+func toolArgs(legacy string, args map[string]any) map[string]any {
+	action := ""
+	switch legacy {
+	case "start_circuit":
+		action = "start"
+	case "get_next_step":
+		action = "step"
+	case "submit_step":
+		action = "submit"
+	case "get_report":
+		action = "report"
+	case "emit_signal":
+		action = "emit"
+	case "get_signals":
+		action = "list"
+	case "get_worker_health":
+		action = "health"
+	case "get_trace":
+		action = "events"
+	case "get_run_report":
+		action = "report"
+	case "diff_runs":
+		action = "diff"
+	default:
+		return args
+	}
+	merged := map[string]any{"action": action}
+	for k, v := range args {
+		merged[k] = v
+	}
+	return merged
 }
 
 func containsCI(s, substr string) bool {
@@ -275,13 +327,8 @@ func TestCircuitServer_ToolDiscovery(t *testing.T) {
 	}
 
 	want := map[string]bool{
-		"start_circuit":    false,
-		"get_next_step":     false,
-		"submit_step":       false,
-		"get_report":        false,
-		"emit_signal":       false,
-		"get_signals":       false,
-		"get_worker_health": false,
+		"circuit": false,
+		"signal":  false,
 	}
 	for _, tool := range tools.Tools {
 		if _, ok := want[tool.Name]; ok {
@@ -343,8 +390,8 @@ func TestCircuitServer_GetNextStep_NoSession(t *testing.T) {
 	defer session.Close()
 
 	res, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-		Name:      "get_next_step",
-		Arguments: map[string]any{"session_id": "nonexistent"},
+		Name:      "circuit",
+		Arguments: map[string]any{"action": "step", "session_id": "nonexistent"},
 	})
 	if err != nil {
 		t.Fatalf("expected tool error, got transport error: %v", err)
@@ -366,8 +413,8 @@ func TestCircuitServer_DoubleStart_WhileRunning(t *testing.T) {
 	callTool(t, ctx, session, "start_circuit", map[string]any{})
 
 	res, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-		Name:      "start_circuit",
-		Arguments: map[string]any{},
+		Name:      "circuit",
+		Arguments: map[string]any{"action": "start"},
 	})
 	if err != nil {
 		t.Fatalf("expected tool error, got transport error: %v", err)
@@ -969,9 +1016,9 @@ func TestSignalBus_EmitRejectsEmpty(t *testing.T) {
 	time.Sleep(300 * time.Millisecond)
 
 	res, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-		Name: "emit_signal",
+		Name: "signal",
 		Arguments: map[string]any{
-			"session_id": sessionID, "event": "", "agent": "main",
+			"action": "emit", "session_id": sessionID, "event": "", "agent": "main",
 		},
 	})
 	if err != nil {
@@ -982,9 +1029,9 @@ func TestSignalBus_EmitRejectsEmpty(t *testing.T) {
 	}
 
 	res, err = session.CallTool(ctx, &sdkmcp.CallToolParams{
-		Name: "emit_signal",
+		Name: "signal",
 		Arguments: map[string]any{
-			"session_id": sessionID, "event": "test", "agent": "",
+			"action": "emit", "session_id": sessionID, "event": "test", "agent": "",
 		},
 	})
 	if err != nil {
@@ -1906,8 +1953,9 @@ func TestToolContract_SubmitStep_RequiresDispatchID(t *testing.T) {
 
 	// dispatch_id=0 should fail (zero value treated as missing).
 	res, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-		Name: "submit_step",
+		Name: "circuit",
 		Arguments: map[string]any{
+			"action":      "submit",
 			"session_id":  sid,
 			"dispatch_id": 0,
 			"step":        "STEP_A",

@@ -1,7 +1,7 @@
 // Package mediator implements the Origami Mediator — a session-aware MCP
 // router that coordinates schematics via the Papercup protocol. Papercup
-// tools are routed by circuit_type and session affinity. Non-Papercup tools
-// are routed by tool name.
+// tools (circuit, signal, trace) are routed by circuit_type and session
+// affinity. Non-Papercup tools are routed by tool name.
 package mediator
 
 import (
@@ -35,15 +35,12 @@ const (
 	MetaKeySessionID  = "session_id"
 )
 
-// PapercupTools enumerates the Papercup protocol tool names.
+// PapercupTools enumerates the Papercup protocol tool names (consolidated).
+// Note: "trace" is optional (only registered when StateDir is configured)
+// and is routed as a non-Papercup tool via the standard tool routing table.
 var PapercupTools = map[string]bool{
-	"start_circuit":    true,
-	"get_next_step":    true,
-	"submit_step":      true,
-	"get_report":       true,
-	"emit_signal":      true,
-	"get_signals":      true,
-	"get_worker_health": true,
+	"circuit": true,
+	"signal":  true,
 }
 
 type routedTool struct {
@@ -55,7 +52,7 @@ type routedTool struct {
 type BackendConfig struct {
 	Name        string
 	Endpoint    string
-	CircuitType string // if set, route start_circuit(circuit_type=X) to this backend
+	CircuitType string // if set, route circuit(action=start, circuit_type=X) to this backend
 }
 
 // Option configures a Mediator.
@@ -68,9 +65,9 @@ func WithStateDir(dir string) Option {
 }
 
 // Mediator proxies MCP tool calls to backend services.
-// Papercup tools are routed by circuit_type (start_circuit) and
-// session affinity (all other Papercup calls). Non-Papercup tools
-// are routed by tool name.
+// Papercup tools (circuit, signal, trace) are routed by circuit_type
+// (circuit action=start) and session affinity (all other Papercup calls).
+// Non-Papercup tools are routed by tool name.
 type Mediator struct {
 	mu         sync.RWMutex
 	backends   map[string]*subprocess.RemoteBackend
@@ -214,8 +211,12 @@ func (gw *Mediator) CallTool(ctx context.Context, name string, args map[string]a
 
 // callPapercup routes Papercup protocol tools using circuit_type and session affinity.
 func (gw *Mediator) callPapercup(ctx context.Context, name string, args map[string]any) (*sdkmcp.CallToolResult, error) {
-	if name == "start_circuit" {
-		return gw.routeStartCircuit(ctx, args)
+	// For the consolidated "circuit" tool, check the action to determine routing.
+	if name == "circuit" {
+		action, _ := args["action"].(string)
+		if action == "start" {
+			return gw.routeStartCircuit(ctx, args)
+		}
 	}
 
 	// All other Papercup tools: route by session_id affinity.
@@ -234,7 +235,7 @@ func (gw *Mediator) callPapercup(ctx context.Context, name string, args map[stri
 	return gw.backends[backendName].CallTool(ctx, name, args)
 }
 
-// routeStartCircuit routes start_circuit by circuit_type.
+// routeStartCircuit routes circuit(action=start) by circuit_type.
 func (gw *Mediator) routeStartCircuit(ctx context.Context, args map[string]any) (*sdkmcp.CallToolResult, error) {
 	// Extract circuit_type from extra params.
 	var circuitType string
@@ -269,7 +270,7 @@ func (gw *Mediator) routeStartCircuit(ctx context.Context, args map[string]any) 
 	})
 
 	// Forward to backend.
-	result, err := rb.CallTool(ctx, "start_circuit", args)
+	result, err := rb.CallTool(ctx, "circuit", args)
 	if err != nil {
 		return nil, err
 	}

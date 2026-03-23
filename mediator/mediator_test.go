@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 
@@ -277,14 +278,14 @@ func TestMediator_EmitsRouteSignal(t *testing.T) {
 
 	// Start a circuit — should emit "route" and "session_start" signals.
 	startRes, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-		Name:      "start_circuit",
-		Arguments: mustJSON(map[string]any{"force": true}),
+		Name:      "circuit",
+		Arguments: mustJSON(map[string]any{"action": "start", "force": true}),
 	})
 	if err != nil {
-		t.Fatalf("start_circuit: %v", err)
+		t.Fatalf("circuit/start: %v", err)
 	}
 	if startRes.IsError {
-		t.Fatalf("start_circuit error: %s", extractText(t, startRes))
+		t.Fatalf("circuit/start error: %s", extractText(t, startRes))
 	}
 
 	// Check that the SignalBus has the expected signals.
@@ -337,14 +338,15 @@ func TestMediator_EmitsRouteSignalWithCircuitType(t *testing.T) {
 
 	// Route to gnd backend via circuit_type.
 	_, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-		Name: "start_circuit",
+		Name: "circuit",
 		Arguments: mustJSON(map[string]any{
-			"force": true,
-			"extra": map[string]any{"circuit_type": "gnd"},
+			"action": "start",
+			"force":  true,
+			"extra":  map[string]any{"circuit_type": "gnd"},
 		}),
 	})
 	if err != nil {
-		t.Fatalf("start_circuit: %v", err)
+		t.Fatalf("circuit/start: %v", err)
 	}
 
 	signals := gw.Bus.Since(0)
@@ -401,11 +403,11 @@ func TestMediator_TraceRecorderWritesFile(t *testing.T) {
 	session := connectMediator(t, ts)
 
 	_, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-		Name:      "start_circuit",
-		Arguments: mustJSON(map[string]any{"force": true}),
+		Name:      "circuit",
+		Arguments: mustJSON(map[string]any{"action": "start", "force": true}),
 	})
 	if err != nil {
-		t.Fatalf("start_circuit: %v", err)
+		t.Fatalf("circuit/start: %v", err)
 	}
 
 	gw.Stop(context.Background())
@@ -683,11 +685,11 @@ func TestMediator_SessionAffinityRouting(t *testing.T) {
 
 	// Start circuit on default backend (rca — no circuit_type).
 	rcaStart, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-		Name:      "start_circuit",
-		Arguments: mustJSON(map[string]any{"force": true}),
+		Name:      "circuit",
+		Arguments: mustJSON(map[string]any{"action": "start", "force": true}),
 	})
 	if err != nil {
-		t.Fatalf("start_circuit (rca): %v", err)
+		t.Fatalf("circuit/start (rca): %v", err)
 	}
 	rcaText := extractText(t, rcaStart)
 	var rcaOut map[string]any
@@ -697,16 +699,20 @@ func TestMediator_SessionAffinityRouting(t *testing.T) {
 		t.Fatalf("no session_id from rca start: %s", rcaText)
 	}
 
+	// Small delay to ensure different session IDs (timestamp-based).
+	time.Sleep(2 * time.Millisecond)
+
 	// Start circuit on dsr backend (circuit_type=gnd).
 	dsrStart, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-		Name: "start_circuit",
+		Name: "circuit",
 		Arguments: mustJSON(map[string]any{
-			"force": true,
-			"extra": map[string]any{"circuit_type": "gnd"},
+			"action": "start",
+			"force":  true,
+			"extra":  map[string]any{"circuit_type": "gnd"},
 		}),
 	})
 	if err != nil {
-		t.Fatalf("start_circuit (dsr): %v", err)
+		t.Fatalf("circuit/start (dsr): %v", err)
 	}
 	dsrText := extractText(t, dsrStart)
 	var dsrOut map[string]any
@@ -725,11 +731,11 @@ func TestMediator_SessionAffinityRouting(t *testing.T) {
 		t.Helper()
 		for i := 0; i < 10; i++ {
 			res, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-				Name:      "get_next_step",
-				Arguments: mustJSON(map[string]any{"session_id": sessionID, "timeout_ms": 3000}),
+				Name:      "circuit",
+				Arguments: mustJSON(map[string]any{"action": "step", "session_id": sessionID, "timeout_ms": 3000}),
 			})
 			if err != nil {
-				t.Fatalf("get_next_step (%s): %v", label, err)
+				t.Fatalf("circuit/step (%s): %v", label, err)
 			}
 			var out map[string]any
 			json.Unmarshal([]byte(extractText(t, res)), &out)
@@ -742,14 +748,15 @@ func TestMediator_SessionAffinityRouting(t *testing.T) {
 			dispatchID := int64(out["dispatch_id"].(float64))
 			step, _ := out["step"].(string)
 			_, err = session.CallTool(ctx, &sdkmcp.CallToolParams{
-				Name: "submit_step",
+				Name: "circuit",
 				Arguments: mustJSON(map[string]any{
+					"action": "submit",
 					"session_id": sessionID, "dispatch_id": dispatchID,
 					"step": step, "fields": map[string]any{"value": "test"},
 				}),
 			})
 			if err != nil {
-				t.Fatalf("submit_step (%s): %v", label, err)
+				t.Fatalf("circuit/submit (%s): %v", label, err)
 			}
 		}
 	}
@@ -759,11 +766,11 @@ func TestMediator_SessionAffinityRouting(t *testing.T) {
 
 	// Verify reports come from correct backends.
 	rcaReport, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-		Name:      "get_report",
-		Arguments: mustJSON(map[string]any{"session_id": rcaSessionID}),
+		Name:      "circuit",
+		Arguments: mustJSON(map[string]any{"action": "report", "session_id": rcaSessionID}),
 	})
 	if err != nil {
-		t.Fatalf("get_report (rca): %v", err)
+		t.Fatalf("circuit/report (rca): %v", err)
 	}
 	var rcaReportOut map[string]any
 	json.Unmarshal([]byte(extractText(t, rcaReport)), &rcaReportOut)
@@ -776,11 +783,11 @@ func TestMediator_SessionAffinityRouting(t *testing.T) {
 	}
 
 	dsrReport, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-		Name:      "get_report",
-		Arguments: mustJSON(map[string]any{"session_id": dsrSessionID}),
+		Name:      "circuit",
+		Arguments: mustJSON(map[string]any{"action": "report", "session_id": dsrSessionID}),
 	})
 	if err != nil {
-		t.Fatalf("get_report (dsr): %v", err)
+		t.Fatalf("circuit/report (dsr): %v", err)
 	}
 	var dsrReportOut map[string]any
 	json.Unmarshal([]byte(extractText(t, dsrReport)), &dsrReportOut)
@@ -898,10 +905,8 @@ func TestMediator_MCPToolsReachableViaHTTP(t *testing.T) {
 	}
 
 	wantTools := map[string]bool{
-		"start_circuit": false,
-		"get_next_step": false,
-		"submit_step":   false,
-		"get_report":    false,
+		"circuit": false,
+		"signal":  false,
 	}
 	for _, tool := range tools.Tools {
 		if _, ok := wantTools[tool.Name]; ok {
@@ -934,11 +939,11 @@ func TestWorker_CanCallToolsViaHTTPTransport(t *testing.T) {
 
 	// Start circuit
 	startRes, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-		Name:      "start_circuit",
-		Arguments: mustJSON(map[string]any{"parallel": 1}),
+		Name:      "circuit",
+		Arguments: mustJSON(map[string]any{"action": "start", "parallel": 1}),
 	})
 	if err != nil {
-		t.Fatalf("start_circuit: %v", err)
+		t.Fatalf("circuit/start: %v", err)
 	}
 	var startOut map[string]any
 	for _, c := range startRes.Content {
@@ -948,18 +953,18 @@ func TestWorker_CanCallToolsViaHTTPTransport(t *testing.T) {
 	}
 	sessionID, _ := startOut["session_id"].(string)
 	if sessionID == "" {
-		t.Fatal("no session_id in start_circuit response")
+		t.Fatal("no session_id in circuit/start response")
 	}
 
 	// Worker loop via HTTP
 	stepsProcessed := 0
 	for {
 		res, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-			Name:      "get_next_step",
-			Arguments: mustJSON(map[string]any{"session_id": sessionID, "timeout_ms": 5000}),
+			Name:      "circuit",
+			Arguments: mustJSON(map[string]any{"action": "step", "session_id": sessionID, "timeout_ms": 5000}),
 		})
 		if err != nil {
-			t.Fatalf("get_next_step: %v", err)
+			t.Fatalf("circuit/step: %v", err)
 		}
 		var out map[string]any
 		for _, c := range res.Content {
@@ -979,8 +984,9 @@ func TestWorker_CanCallToolsViaHTTPTransport(t *testing.T) {
 		step, _ := out["step"].(string)
 
 		_, err = session.CallTool(ctx, &sdkmcp.CallToolParams{
-			Name: "submit_step",
+			Name: "circuit",
 			Arguments: mustJSON(map[string]any{
+				"action":      "submit",
 				"session_id":  sessionID,
 				"dispatch_id": dispatchID,
 				"step":        step,
@@ -988,7 +994,7 @@ func TestWorker_CanCallToolsViaHTTPTransport(t *testing.T) {
 			}),
 		})
 		if err != nil {
-			t.Fatalf("submit_step: %v", err)
+			t.Fatalf("circuit/submit: %v", err)
 		}
 		stepsProcessed++
 	}

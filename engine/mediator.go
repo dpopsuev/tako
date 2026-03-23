@@ -79,19 +79,19 @@ func (t *MCPCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 	}
 
 	startResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-		Name:      "start_circuit",
-		Arguments: mustMarshal(map[string]any{"extra": extra}),
+		Name:      "circuit",
+		Arguments: mustMarshal(map[string]any{"action": "start", "extra": extra}),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("mediator start_circuit(%s): %w", t.CircuitType, err)
+		return nil, fmt.Errorf("mediator circuit/start(%s): %w", t.CircuitType, err)
 	}
 	startOut, err := parseToolResult(startResult)
 	if err != nil {
-		return nil, fmt.Errorf("mediator start_circuit(%s) parse: %w", t.CircuitType, err)
+		return nil, fmt.Errorf("mediator circuit/start(%s) parse: %w", t.CircuitType, err)
 	}
 	sessionID, _ := startOut["session_id"].(string)
 	if sessionID == "" {
-		return nil, fmt.Errorf("mediator start_circuit(%s): no session_id in response", t.CircuitType)
+		return nil, fmt.Errorf("mediator circuit/start(%s): no session_id in response", t.CircuitType)
 	}
 
 	slog.Debug("mediator delegate session started",
@@ -102,18 +102,19 @@ func (t *MCPCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 
 	for {
 		stepResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-			Name: "get_next_step",
+			Name: "circuit",
 			Arguments: mustMarshal(map[string]any{
+				"action":     "step",
 				"session_id": sessionID,
 				"timeout_ms": 30000,
 			}),
 		})
 		if err != nil {
-			return nil, fmt.Errorf("mediator get_next_step(%s): %w", t.CircuitType, err)
+			return nil, fmt.Errorf("mediator circuit/step(%s): %w", t.CircuitType, err)
 		}
 		stepOut, err := parseToolResult(stepResult)
 		if err != nil {
-			return nil, fmt.Errorf("mediator get_next_step(%s) parse: %w", t.CircuitType, err)
+			return nil, fmt.Errorf("mediator circuit/step(%s) parse: %w", t.CircuitType, err)
 		}
 
 		if done, _ := stepOut[circuit.ProtoKeyDone].(bool); done {
@@ -162,8 +163,9 @@ func (t *MCPCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 		}
 
 		_, err = session.CallTool(ctx, &sdkmcp.CallToolParams{
-			Name: "submit_step",
+			Name: "circuit",
 			Arguments: mustMarshal(map[string]any{
+				"action":                   "submit",
 				circuit.ProtoKeySessionID:  sessionID,
 				circuit.ProtoKeyDispatchID: int64(childDispatchID),
 				circuit.ProtoKeyStep:       childStep,
@@ -171,20 +173,20 @@ func (t *MCPCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 			}),
 		})
 		if err != nil {
-			return nil, fmt.Errorf("mediator submit_step(%s/%s): %w", t.CircuitType, childStep, err)
+			return nil, fmt.Errorf("mediator circuit/submit(%s/%s): %w", t.CircuitType, childStep, err)
 		}
 	}
 
 	reportResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-		Name:      "get_report",
-		Arguments: mustMarshal(map[string]any{circuit.ProtoKeySessionID: sessionID}),
+		Name:      "circuit",
+		Arguments: mustMarshal(map[string]any{"action": "report", circuit.ProtoKeySessionID: sessionID}),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("mediator get_report(%s): %w", t.CircuitType, err)
+		return nil, fmt.Errorf("mediator circuit/report(%s): %w", t.CircuitType, err)
 	}
 	reportOut, err := parseToolResult(reportResult)
 	if err != nil {
-		return nil, fmt.Errorf("mediator get_report(%s) parse: %w", t.CircuitType, err)
+		return nil, fmt.Errorf("mediator circuit/report(%s) parse: %w", t.CircuitType, err)
 	}
 
 	if errMsg, ok := reportOut[circuit.ProtoKeyError].(string); ok && errMsg != "" {

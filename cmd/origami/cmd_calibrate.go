@@ -20,8 +20,8 @@ import (
 func calibrateCmd(args []string) error {
 	fs := flag.NewFlagSet("calibrate", flag.ContinueOnError)
 	endpoint := fs.String("endpoint", "http://localhost:9300/mcp", "MCP endpoint to calibrate against")
-	scenario := fs.String("scenario", "ptp", "Scenario name passed in start_circuit extra")
-	backend := fs.String("backend", "llm", "Backend type passed in start_circuit extra")
+	scenario := fs.String("scenario", "ptp", "Scenario name passed in circuit start extra")
+	backend := fs.String("backend", "llm", "Backend type passed in circuit start extra")
 	parallel := fs.Int("parallel", 4, "Number of parallel workers")
 	timeout := fs.Duration("timeout", 30*time.Minute, "Overall calibration timeout")
 	cliCommand := fs.String("cli", "claude", "CLI command for LLM processing")
@@ -58,14 +58,14 @@ func calibrateCmd(args []string) error {
 		"trace_level": *traceLevel,
 	}
 	startResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-		Name:      "start_circuit",
-		Arguments: mustMarshalCal(map[string]any{"parallel": *parallel, "extra": extra}),
+		Name:      "circuit",
+		Arguments: mustMarshalCal(map[string]any{"action": "start", "parallel": *parallel, "extra": extra}),
 	})
 	if err != nil {
-		return fmt.Errorf("start_circuit: %w", err)
+		return fmt.Errorf("circuit/start: %w", err)
 	}
 	if startResult.IsError {
-		return fmt.Errorf("start_circuit: %s", calTextContent(startResult))
+		return fmt.Errorf("circuit/start: %s", calTextContent(startResult))
 	}
 
 	var startOut struct {
@@ -122,14 +122,14 @@ func calibrateCmd(args []string) error {
 
 	// Get report.
 	reportResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-		Name:      "get_report",
-		Arguments: mustMarshalCal(map[string]any{circuit.ProtoKeySessionID: sessionID}),
+		Name:      "circuit",
+		Arguments: mustMarshalCal(map[string]any{"action": "report", circuit.ProtoKeySessionID: sessionID}),
 	})
 	if err != nil {
-		return fmt.Errorf("get_report: %w", err)
+		return fmt.Errorf("circuit/report: %w", err)
 	}
 	if reportResult.IsError {
-		return fmt.Errorf("get_report: %s", calTextContent(reportResult))
+		return fmt.Errorf("circuit/report: %s", calTextContent(reportResult))
 	}
 
 	fmt.Println(calTextContent(reportResult))
@@ -150,9 +150,10 @@ func runCalibrateWorker(
 
 	// Emit worker_started signal.
 	session.CallTool(ctx, &sdkmcp.CallToolParams{
-		Name: "emit_signal",
+		Name: "signal",
 		Arguments: mustMarshalCal(map[string]any{
-			circuit.ProtoKeySessionID: sessionID,
+			"action":                    "emit",
+			circuit.ProtoKeySessionID:   sessionID,
 			"event":                     "worker_started",
 			"agent":                     "worker",
 			"meta":                      map[string]any{"worker_id": fmt.Sprintf("w%d", workerID)},
@@ -161,9 +162,10 @@ func runCalibrateWorker(
 
 	defer func() {
 		session.CallTool(ctx, &sdkmcp.CallToolParams{
-			Name: "emit_signal",
+			Name: "signal",
 			Arguments: mustMarshalCal(map[string]any{
-				circuit.ProtoKeySessionID: sessionID,
+				"action":                    "emit",
+				circuit.ProtoKeySessionID:   sessionID,
 				"event":                     "worker_stopped",
 				"agent":                     "worker",
 				"meta":                      map[string]any{"worker_id": fmt.Sprintf("w%d", workerID)},
@@ -174,8 +176,9 @@ func runCalibrateWorker(
 	for {
 		// Pull next step.
 		nextResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-			Name: "get_next_step",
+			Name: "circuit",
 			Arguments: mustMarshalCal(map[string]any{
+				"action":                  "step",
 				circuit.ProtoKeySessionID: sessionID,
 				circuit.ProtoKeyTimeoutMS: 30000,
 			}),
@@ -184,7 +187,7 @@ func runCalibrateWorker(
 			if ctx.Err() != nil {
 				return nil
 			}
-			return fmt.Errorf("get_next_step: %w", err)
+			return fmt.Errorf("circuit/step: %w", err)
 		}
 
 		var step struct {
@@ -236,8 +239,9 @@ func runCalibrateWorker(
 
 		// Submit.
 		submitResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-			Name: "submit_step",
+			Name: "circuit",
 			Arguments: mustMarshalCal(map[string]any{
+				"action":                   "submit",
 				circuit.ProtoKeySessionID:  sessionID,
 				circuit.ProtoKeyDispatchID: step.DispatchID,
 				circuit.ProtoKeyStep:       step.Step,
@@ -245,7 +249,7 @@ func runCalibrateWorker(
 			}),
 		})
 		if err != nil {
-			return fmt.Errorf("submit_step %s/%s: %w", step.CaseID, step.Step, err)
+			return fmt.Errorf("circuit/submit %s/%s: %w", step.CaseID, step.Step, err)
 		}
 		if submitResult.IsError {
 			wlog.Warn("submit_step rejected", "case_id", step.CaseID, "step", step.Step,

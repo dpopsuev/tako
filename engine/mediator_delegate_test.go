@@ -13,8 +13,9 @@ import (
 )
 
 // newMockCircuitServer creates a mock MCP server that runs a stub circuit.
-// When start_circuit is called, it completes immediately (no dispatched steps).
-// get_next_step returns done=true. get_report returns the structured result.
+// The consolidated "circuit" tool dispatches on the "action" field:
+// action=start completes immediately, action=step returns done=true,
+// action=report returns the structured result.
 func newMockCircuitServer(t *testing.T, result map[string]any, circuitErr string) *httptest.Server {
 	t.Helper()
 	server := sdkmcp.NewServer(
@@ -24,48 +25,43 @@ func newMockCircuitServer(t *testing.T, result map[string]any, circuitErr string
 
 	server.AddTool(
 		&sdkmcp.Tool{
-			Name:        "start_circuit",
+			Name:        "circuit",
 			InputSchema: json.RawMessage(`{"type":"object"}`),
 		},
-		func(_ context.Context, _ *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error) {
-			out := map[string]any{
-				"session_id":  "mock-session-1",
-				"total_cases": 1,
-				"status":      "running",
+		func(_ context.Context, req *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error) {
+			var input struct {
+				Action string `json:"action"`
 			}
-			return mcpTextResult(out), nil
-		},
-	)
-
-	server.AddTool(
-		&sdkmcp.Tool{
-			Name:        "get_next_step",
-			InputSchema: json.RawMessage(`{"type":"object"}`),
-		},
-		func(_ context.Context, _ *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error) {
-			out := map[string]any{"done": true}
-			if circuitErr != "" {
-				out["error"] = circuitErr
+			if req.Params.Arguments != nil {
+				json.Unmarshal(req.Params.Arguments, &input)
 			}
-			return mcpTextResult(out), nil
-		},
-	)
-
-	server.AddTool(
-		&sdkmcp.Tool{
-			Name:        "get_report",
-			InputSchema: json.RawMessage(`{"type":"object"}`),
-		},
-		func(_ context.Context, _ *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error) {
-			out := map[string]any{
-				"status":     "done",
-				"structured": result,
+			switch input.Action {
+			case "start":
+				out := map[string]any{
+					"session_id":  "mock-session-1",
+					"total_cases": 1,
+					"status":      "running",
+				}
+				return mcpTextResult(out), nil
+			case "step":
+				out := map[string]any{"done": true}
+				if circuitErr != "" {
+					out["error"] = circuitErr
+				}
+				return mcpTextResult(out), nil
+			case "report":
+				out := map[string]any{
+					"status":     "done",
+					"structured": result,
+				}
+				if circuitErr != "" {
+					out["status"] = "error"
+					out["error"] = circuitErr
+				}
+				return mcpTextResult(out), nil
+			default:
+				return mcpTextResult(map[string]any{"error": "unknown action"}), nil
 			}
-			if circuitErr != "" {
-				out["status"] = "error"
-				out["error"] = circuitErr
-			}
-			return mcpTextResult(out), nil
 		},
 	)
 
@@ -170,7 +166,7 @@ func TestMCPCircuitTransformer_CircuitError(t *testing.T) {
 
 // --- TSK-186: trace_id propagation ---
 
-// newCapturingCircuitServer creates a mock server that captures start_circuit extra params.
+// newCapturingCircuitServer creates a mock server that captures circuit start extra params.
 func newCapturingCircuitServer(t *testing.T, captured *map[string]any) *httptest.Server {
 	t.Helper()
 	server := sdkmcp.NewServer(
@@ -180,45 +176,35 @@ func newCapturingCircuitServer(t *testing.T, captured *map[string]any) *httptest
 
 	server.AddTool(
 		&sdkmcp.Tool{
-			Name:        "start_circuit",
+			Name:        "circuit",
 			InputSchema: json.RawMessage(`{"type":"object"}`),
 		},
 		func(_ context.Context, req *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error) {
 			var input struct {
-				Extra map[string]any `json:"extra"`
+				Action string         `json:"action"`
+				Extra  map[string]any `json:"extra"`
 			}
 			if req.Params.Arguments != nil {
 				json.Unmarshal(req.Params.Arguments, &input)
 			}
-			*captured = input.Extra
-			return mcpTextResult(map[string]any{
-				"session_id":  "cap-session-1",
-				"total_cases": 1,
-				"status":      "running",
-			}), nil
-		},
-	)
-
-	server.AddTool(
-		&sdkmcp.Tool{
-			Name:        "get_next_step",
-			InputSchema: json.RawMessage(`{"type":"object"}`),
-		},
-		func(_ context.Context, _ *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error) {
-			return mcpTextResult(map[string]any{"done": true}), nil
-		},
-	)
-
-	server.AddTool(
-		&sdkmcp.Tool{
-			Name:        "get_report",
-			InputSchema: json.RawMessage(`{"type":"object"}`),
-		},
-		func(_ context.Context, _ *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error) {
-			return mcpTextResult(map[string]any{
-				"status":     "done",
-				"structured": map[string]any{"ok": true},
-			}), nil
+			switch input.Action {
+			case "start":
+				*captured = input.Extra
+				return mcpTextResult(map[string]any{
+					"session_id":  "cap-session-1",
+					"total_cases": 1,
+					"status":      "running",
+				}), nil
+			case "step":
+				return mcpTextResult(map[string]any{"done": true}), nil
+			case "report":
+				return mcpTextResult(map[string]any{
+					"status":     "done",
+					"structured": map[string]any{"ok": true},
+				}), nil
+			default:
+				return mcpTextResult(map[string]any{"error": "unknown action"}), nil
+			}
 		},
 	)
 
@@ -253,7 +239,7 @@ func TestMCPCircuitTransformer_PropagatesTraceID(t *testing.T) {
 
 	// Verify trace_id was forwarded in extra params.
 	if captured == nil {
-		t.Fatal("captured extra is nil — start_circuit not called?")
+		t.Fatal("captured extra is nil — circuit/start not called?")
 	}
 	traceID, ok := captured["trace_id"].(string)
 	if !ok {

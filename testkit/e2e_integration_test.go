@@ -45,7 +45,8 @@ func TestE2E_Integration_ComposeStack(t *testing.T) {
 	defer session.Close()
 
 	// Start circuit with stub backend.
-	startResult := callToolIntegration(t, ctx, session, "start_circuit", map[string]any{
+	startResult := callToolIntegration(t, ctx, session, "circuit", map[string]any{
+		"action": "start",
 		"extra": map[string]any{
 			"scenario": "ptp",
 			"backend":  "stub",
@@ -53,13 +54,14 @@ func TestE2E_Integration_ComposeStack(t *testing.T) {
 	})
 	sessionID, ok := startResult["session_id"].(string)
 	if !ok || sessionID == "" {
-		t.Fatalf("start_circuit: missing session_id: %v", startResult)
+		t.Fatalf("circuit/start: missing session_id: %v", startResult)
 	}
 	t.Logf("started session %s", sessionID)
 
-	// Drain the circuit: get_next_step/submit_step loop.
+	// Drain the circuit: circuit(action=step)/circuit(action=submit) loop.
 	for {
-		stepResult := callToolIntegration(t, ctx, session, "get_next_step", map[string]any{
+		stepResult := callToolIntegration(t, ctx, session, "circuit", map[string]any{
+			"action":     "step",
 			"session_id": sessionID,
 			"timeout_ms": 5000,
 		})
@@ -73,7 +75,8 @@ func TestE2E_Integration_ComposeStack(t *testing.T) {
 		step, _ := stepResult["step"].(string)
 		dispatchID, _ := stepResult["dispatch_id"].(float64)
 
-		callToolIntegration(t, ctx, session, "submit_step", map[string]any{
+		callToolIntegration(t, ctx, session, "circuit", map[string]any{
+			"action":      "submit",
 			"session_id":  sessionID,
 			"dispatch_id": int64(dispatchID),
 			"step":        step,
@@ -82,12 +85,13 @@ func TestE2E_Integration_ComposeStack(t *testing.T) {
 	}
 
 	// Get report.
-	reportResult := callToolIntegration(t, ctx, session, "get_report", map[string]any{
+	reportResult := callToolIntegration(t, ctx, session, "circuit", map[string]any{
+		"action":     "report",
 		"session_id": sessionID,
 	})
 	status, _ := reportResult["status"].(string)
 	if status != "done" {
-		t.Fatalf("get_report: status = %q, want %q (error: %v)", status, "done", reportResult["error"])
+		t.Fatalf("circuit/report: status = %q, want %q (error: %v)", status, "done", reportResult["error"])
 	}
 	t.Logf("integration report status: %s", status)
 }

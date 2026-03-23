@@ -118,6 +118,43 @@ func NewCircuitServer(cfg CircuitConfig) *CircuitServer {
 
 // --- Tool input/output types ---
 
+// circuitInput is the unified input for the consolidated "circuit" tool.
+type circuitInput struct {
+	Action    string         `json:"action"`              // start, step, submit, report, summary, detail, failing, weak
+	SessionID string         `json:"session_id,omitempty"` // required for all actions except start
+	// start params
+	Parallel int            `json:"parallel,omitempty"`
+	Force    bool           `json:"force,omitempty"`
+	Extra    map[string]any `json:"extra,omitempty"`
+	// step params
+	TimeoutMS         int    `json:"timeout_ms,omitempty"`
+	PreferredCaseID   string `json:"preferred_case_id,omitempty"`
+	PreferredZone     string `json:"preferred_zone,omitempty"`
+	Stickiness        int    `json:"stickiness,omitempty"`
+	ConsecutiveMisses int    `json:"consecutive_misses,omitempty"`
+	// submit params
+	DispatchID int64          `json:"dispatch_id,omitempty"`
+	Step       string         `json:"step,omitempty"`
+	Fields     map[string]any `json:"fields,omitempty"`
+	// detail params
+	CaseID string `json:"case_id,omitempty"`
+	// weak params
+	Threshold float64 `json:"threshold,omitempty"`
+}
+
+// signalInput is the unified input for the consolidated "signal" tool.
+type signalInput struct {
+	Action    string            `json:"action"`     // emit, list, health
+	SessionID string            `json:"session_id"`
+	Event     string            `json:"event,omitempty"`
+	Agent     string            `json:"agent,omitempty"`
+	CaseID    string            `json:"case_id,omitempty"`
+	Step      string            `json:"step,omitempty"`
+	Meta      map[string]string `json:"meta,omitempty"`
+	Since     int               `json:"since,omitempty"`
+}
+
+// Legacy input types — kept for internal handler dispatch.
 type startCircuitInput struct {
 	Parallel int            `json:"parallel,omitempty" jsonschema:"number of parallel workers (default 1 = serial)"`
 	Force    bool           `json:"force,omitempty" jsonschema:"cancel any existing session and start fresh"`
@@ -134,8 +171,8 @@ type startCircuitOutput struct {
 }
 
 type getNextStepInput struct {
-	SessionID       string `json:"session_id" jsonschema:"session ID from start_circuit"`
-	TimeoutMS       int    `json:"timeout_ms,omitempty" jsonschema:"max wait in milliseconds (0 = block forever)"`
+	SessionID         string `json:"session_id" jsonschema:"session ID from start_circuit"`
+	TimeoutMS         int    `json:"timeout_ms,omitempty" jsonschema:"max wait in milliseconds (0 = block forever)"`
 	PreferredCaseID   string `json:"preferred_case_id,omitempty" jsonschema:"prefer steps for this case ID"`
 	PreferredZone     string `json:"preferred_zone,omitempty" jsonschema:"prefer steps from this zone/provider"`
 	Stickiness        int    `json:"stickiness,omitempty" jsonschema:"zone stickiness level: any(0) slight(1) strong(2) exclusive(3)"`
@@ -226,66 +263,196 @@ func NoOutputSchema[In, Out any](h func(context.Context, *sdkmcp.CallToolRequest
 }
 
 func (s *CircuitServer) registerTools() {
+	// Register consolidated "circuit" tool with action-based dispatch.
 	s.MCPServer.AddTool(
-		s.buildStartCircuitTool(),
+		s.buildCircuitTool(),
 		func(ctx context.Context, req *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error) {
-			var input startCircuitInput
+			var input circuitInput
 			if req.Params.Arguments != nil {
 				if err := json.Unmarshal(req.Params.Arguments, &input); err != nil {
-					return toolError(fmt.Errorf("invalid start_circuit arguments: %w", err)), nil
+					return toolError(fmt.Errorf("invalid circuit arguments: %w", err)), nil
 				}
 			}
-			res, out, err := s.handleStartCircuit(ctx, req, input)
-			if err != nil {
-				return toolError(err), nil
-			}
-			if res != nil {
-				return res, nil
-			}
-			data, mErr := json.Marshal(out)
-			if mErr != nil {
-				return toolError(fmt.Errorf("marshal start_circuit output: %w", mErr)), nil
-			}
-			return &sdkmcp.CallToolResult{
-				Content: []sdkmcp.Content{&sdkmcp.TextContent{Text: string(data)}},
-			}, nil
+			return s.dispatchCircuitAction(ctx, req, input)
 		},
 	)
 
+	// Register consolidated "signal" tool with action-based dispatch.
 	sdkmcp.AddTool(s.MCPServer, &sdkmcp.Tool{
-		Name:        "get_next_step",
-		Description: "Get the next circuit step prompt. Blocks until the runner is ready. Returns done=true when all cases are complete.",
-	}, NoOutputSchema(s.handleGetNextStep))
-
-	sdkmcp.AddTool(s.MCPServer, &sdkmcp.Tool{
-		Name:        "submit_step",
-		Description: "Submit a schema-validated artifact for a circuit step. The step name selects the schema; fields are validated before routing.",
-	}, NoOutputSchema(s.handleSubmitStep))
-
-	sdkmcp.AddTool(s.MCPServer, &sdkmcp.Tool{
-		Name:        "get_report",
-		Description: "Get the final circuit report with metrics and per-case results.",
-	}, NoOutputSchema(s.handleGetReport))
-
-	sdkmcp.AddTool(s.MCPServer, &sdkmcp.Tool{
-		Name:        "emit_signal",
-		Description: "Emit a signal to the agent message bus for observability. Use to announce dispatch, start, done, error events.",
-	}, NoOutputSchema(s.handleEmitSignal))
-
-	sdkmcp.AddTool(s.MCPServer, &sdkmcp.Tool{
-		Name:        "get_signals",
-		Description: "Read signals from the agent message bus. Returns all signals, or signals since a given index.",
-	}, NoOutputSchema(s.handleGetSignals))
-
-	sdkmcp.AddTool(s.MCPServer, &sdkmcp.Tool{
-		Name:        "get_worker_health",
-		Description: "Get worker health summary. Shows per-worker status, error counts, and replacement recommendations. The supervisor agent calls this to decide whether to replace or stop workers.",
-	}, NoOutputSchema(s.handleGetWorkerHealth))
+		Name:        "signal",
+		Description: "Agent signal bus. Actions: emit (send signal), list (read signals), health (worker status).",
+	}, NoOutputSchema(s.handleSignalDispatch))
 }
 
-// buildStartCircuitTool constructs the start_circuit Tool with an explicit
-// InputSchema that includes domain-specific extra parameters from CircuitConfig.
-func (s *CircuitServer) buildStartCircuitTool() *sdkmcp.Tool {
+// dispatchCircuitAction routes the consolidated circuit tool to the appropriate handler.
+func (s *CircuitServer) dispatchCircuitAction(ctx context.Context, req *sdkmcp.CallToolRequest, input circuitInput) (*sdkmcp.CallToolResult, error) {
+	switch input.Action {
+	case "start":
+		startInput := startCircuitInput{
+			Parallel: input.Parallel,
+			Force:    input.Force,
+			Extra:    input.Extra,
+		}
+		res, out, err := s.handleStartCircuit(ctx, req, startInput)
+		if err != nil {
+			return toolError(err), nil
+		}
+		if res != nil {
+			return res, nil
+		}
+		data, mErr := json.Marshal(out)
+		if mErr != nil {
+			return toolError(fmt.Errorf("marshal circuit start output: %w", mErr)), nil
+		}
+		return &sdkmcp.CallToolResult{
+			Content: []sdkmcp.Content{&sdkmcp.TextContent{Text: string(data)}},
+		}, nil
+
+	case "step":
+		stepInput := getNextStepInput{
+			SessionID:         input.SessionID,
+			TimeoutMS:         input.TimeoutMS,
+			PreferredCaseID:   input.PreferredCaseID,
+			PreferredZone:     input.PreferredZone,
+			Stickiness:        input.Stickiness,
+			ConsecutiveMisses: input.ConsecutiveMisses,
+		}
+		res, out, err := s.handleGetNextStep(ctx, req, stepInput)
+		if err != nil {
+			return toolError(err), nil
+		}
+		if res != nil {
+			return res, nil
+		}
+		return marshalToolResult(out)
+
+	case "submit":
+		submitInput := submitStepInput{
+			SessionID:  input.SessionID,
+			DispatchID: input.DispatchID,
+			Step:       input.Step,
+			Fields:     input.Fields,
+		}
+		res, out, err := s.handleSubmitStep(ctx, req, submitInput)
+		if err != nil {
+			return toolError(err), nil
+		}
+		if res != nil {
+			return res, nil
+		}
+		return marshalToolResult(out)
+
+	case "report":
+		reportInput := getReportInput{SessionID: input.SessionID}
+		res, out, err := s.handleGetReport(ctx, req, reportInput)
+		if err != nil {
+			return toolError(err), nil
+		}
+		if res != nil {
+			return res, nil
+		}
+		return marshalToolResult(out)
+
+	case "summary":
+		sess, err := s.getSession(input.SessionID)
+		if err != nil {
+			return toolError(err), nil
+		}
+		out, err := s.handleRunSummary(sess)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return marshalToolResult(out)
+
+	case "detail":
+		sess, err := s.getSession(input.SessionID)
+		if err != nil {
+			return toolError(err), nil
+		}
+		out, err := s.handleCaseDetail(sess, input.CaseID)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return marshalToolResult(out)
+
+	case "failing":
+		sess, err := s.getSession(input.SessionID)
+		if err != nil {
+			return toolError(err), nil
+		}
+		out, err := s.handleFailingMetrics(sess)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return marshalToolResult(out)
+
+	case "weak":
+		sess, err := s.getSession(input.SessionID)
+		if err != nil {
+			return toolError(err), nil
+		}
+		threshold := input.Threshold
+		if threshold == 0 {
+			threshold = 0.5
+		}
+		out, err := s.handleWeakCases(sess, threshold)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return marshalToolResult(out)
+
+	default:
+		return toolError(fmt.Errorf("unknown circuit action %q; valid actions: start, step, submit, report, summary, detail, failing, weak", input.Action)), nil
+	}
+}
+
+// handleSignalDispatch routes the consolidated signal tool to the appropriate handler.
+func (s *CircuitServer) handleSignalDispatch(ctx context.Context, req *sdkmcp.CallToolRequest, input signalInput) (*sdkmcp.CallToolResult, any, error) {
+	switch input.Action {
+	case "emit":
+		emitInput := emitSignalInput{
+			SessionID: input.SessionID,
+			Event:     input.Event,
+			Agent:     input.Agent,
+			CaseID:    input.CaseID,
+			Step:      input.Step,
+			Meta:      input.Meta,
+		}
+		return s.handleEmitSignal(ctx, req, emitInput)
+
+	case "list":
+		listInput := getSignalsInput{
+			SessionID: input.SessionID,
+			Since:     input.Since,
+		}
+		return s.handleGetSignals(ctx, req, listInput)
+
+	case "health":
+		healthInput := getWorkerHealthInput{
+			SessionID: input.SessionID,
+		}
+		return s.handleGetWorkerHealth(ctx, req, healthInput)
+
+	default:
+		return nil, nil, fmt.Errorf("unknown signal action %q; valid actions: emit, list, health", input.Action)
+	}
+}
+
+// marshalToolResult marshals any value into a CallToolResult with JSON text content.
+func marshalToolResult(v any) (*sdkmcp.CallToolResult, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return toolError(fmt.Errorf("marshal tool output: %w", err)), nil
+	}
+	return &sdkmcp.CallToolResult{
+		Content: []sdkmcp.Content{&sdkmcp.TextContent{Text: string(data)}},
+	}, nil
+}
+
+// buildCircuitTool constructs the consolidated "circuit" Tool with an explicit
+// InputSchema that includes the action field and domain-specific extra parameters
+// from CircuitConfig.
+func (s *CircuitServer) buildCircuitTool() *sdkmcp.Tool {
 	extraProps := ""
 	if len(s.Config.ExtraParamDefs) > 0 {
 		var props []string
@@ -301,9 +468,9 @@ func (s *CircuitServer) buildStartCircuitTool() *sdkmcp.Tool {
 		extraProps = strings.Join(props, ",")
 	}
 
-	extraSchema := `"additionalProperties":true,"description":"domain-specific parameters","type":"object"`
+	extraSchema := `"additionalProperties":true,"description":"domain-specific parameters (for start action)","type":"object"`
 	if extraProps != "" {
-		extraSchema = fmt.Sprintf(`"additionalProperties":true,"description":"domain-specific parameters","type":"object","properties":{%s}`, extraProps)
+		extraSchema = fmt.Sprintf(`"additionalProperties":true,"description":"domain-specific parameters (for start action)","type":"object","properties":{%s}`, extraProps)
 		var required []string
 		for _, p := range s.Config.ExtraParamDefs {
 			if p.Required {
@@ -317,11 +484,11 @@ func (s *CircuitServer) buildStartCircuitTool() *sdkmcp.Tool {
 	}
 
 	schema := json.RawMessage(fmt.Sprintf(
-		`{"type":"object","additionalProperties":false,"properties":{"parallel":{"type":"integer","description":"number of parallel workers (default 1 = serial)"},"force":{"type":"boolean","description":"cancel any existing session and start fresh"},"extra":{%s}}}`,
+		`{"type":"object","properties":{"action":{"type":"string","description":"Action to perform","enum":["start","step","submit","report","summary","detail","failing","weak"]},"session_id":{"type":"string","description":"session ID from circuit start"},"parallel":{"type":"integer","description":"number of parallel workers (start action)"},"force":{"type":"boolean","description":"cancel any existing session (start action)"},"extra":{%s},"timeout_ms":{"type":"integer","description":"max wait in milliseconds (step action)"},"preferred_case_id":{"type":"string","description":"prefer steps for this case ID (step action)"},"preferred_zone":{"type":"string","description":"prefer steps from this zone (step action)"},"stickiness":{"type":"integer","description":"zone stickiness level (step action)"},"consecutive_misses":{"type":"integer","description":"caller-tracked empty polls (step action)"},"dispatch_id":{"type":"integer","description":"dispatch ID from step (submit action)"},"step":{"type":"string","description":"circuit step name (submit action)"},"fields":{"type":"object","description":"artifact fields (submit action)"},"case_id":{"type":"string","description":"case ID (detail action)"},"threshold":{"type":"number","description":"convergence threshold (weak action, default 0.5)"}},"required":["action"]}`,
 		extraSchema,
 	))
 
-	desc := "Start a circuit run. Spawns the runner goroutine and returns a session ID."
+	desc := "Circuit execution and analysis. Actions: start (begin run), step (get next prompt), submit (send artifact), report (full results), summary (compact metrics+cases), detail (single case drill-down), failing (failed metrics only), weak (low-convergence cases)."
 	if len(s.Config.ExtraParamDefs) > 0 {
 		var parts []string
 		for _, p := range s.Config.ExtraParamDefs {
@@ -334,11 +501,11 @@ func (s *CircuitServer) buildStartCircuitTool() *sdkmcp.Tool {
 			}
 			parts = append(parts, entry)
 		}
-		desc += "\n\nDomain parameters (pass in 'extra'):\n" + strings.Join(parts, "\n")
+		desc += "\n\nDomain parameters (pass in 'extra' for start action):\n" + strings.Join(parts, "\n")
 	}
 
 	return &sdkmcp.Tool{
-		Name:        "start_circuit",
+		Name:        "circuit",
 		Description: desc,
 		InputSchema: schema,
 	}
@@ -770,6 +937,183 @@ func (s *CircuitServer) handleGetWorkerHealth(_ context.Context, _ *sdkmcp.CallT
 	health.QueueDepth = sess.dispatcher.ActiveDispatches()
 
 	return nil, getWorkerHealthOutput{HealthSummary: health}, nil
+}
+
+// --- Post-mortem handlers ---
+
+// handleRunSummary returns a compact summary of the circuit run result.
+// Extracts metrics and per-case one-liners, excluding verbose fields like
+// actual_rca_message, evidence_refs, evidence_gaps. Target: <4KB response.
+func (s *CircuitServer) handleRunSummary(sess *CircuitSession) (any, error) {
+	result := sess.Result()
+	if result == nil {
+		return nil, fmt.Errorf("no result available")
+	}
+	data, err := json.Marshal(result)
+	if err != nil {
+		return nil, fmt.Errorf("marshal result: %w", err)
+	}
+	var full map[string]any
+	if err := json.Unmarshal(data, &full); err != nil {
+		return nil, fmt.Errorf("parse result: %w", err)
+	}
+
+	summary := make(map[string]any)
+
+	// Extract metrics (compact)
+	if metrics, ok := full["metrics"]; ok {
+		summary["metrics"] = metrics
+	}
+
+	// Extract case one-liners
+	if caseResults, ok := full["case_results"]; ok {
+		if cases, ok := caseResults.([]any); ok {
+			var oneLiners []map[string]any
+			for _, c := range cases {
+				cm, ok := c.(map[string]any)
+				if !ok {
+					continue
+				}
+				oneLiner := make(map[string]any)
+				for _, key := range []string{"case_id", "defect_type", "category", "component", "convergence", "step_count"} {
+					if v, exists := cm[key]; exists {
+						oneLiner[key] = v
+					}
+				}
+				if len(oneLiner) > 0 {
+					oneLiners = append(oneLiners, oneLiner)
+				}
+			}
+			if len(oneLiners) > 0 {
+				summary["cases"] = oneLiners
+			}
+		}
+	}
+
+	// If no structured data was extracted, return the full result as-is
+	// (domain may not use metrics/case_results keys)
+	if len(summary) == 0 {
+		summary["result"] = full
+	}
+
+	return summary, nil
+}
+
+// handleCaseDetail returns the full case_result for a single case_id.
+func (s *CircuitServer) handleCaseDetail(sess *CircuitSession, caseID string) (any, error) {
+	if caseID == "" {
+		return nil, fmt.Errorf("case_id is required for detail action")
+	}
+	result := sess.Result()
+	if result == nil {
+		return nil, fmt.Errorf("no result available")
+	}
+	data, err := json.Marshal(result)
+	if err != nil {
+		return nil, fmt.Errorf("marshal result: %w", err)
+	}
+	var full map[string]any
+	if err := json.Unmarshal(data, &full); err != nil {
+		return nil, fmt.Errorf("parse result: %w", err)
+	}
+
+	if caseResults, ok := full["case_results"]; ok {
+		if cases, ok := caseResults.([]any); ok {
+			for _, c := range cases {
+				cm, ok := c.(map[string]any)
+				if !ok {
+					continue
+				}
+				if cm["case_id"] == caseID {
+					return cm, nil
+				}
+			}
+		}
+	}
+	return nil, fmt.Errorf("case_id %q not found in results", caseID)
+}
+
+// handleFailingMetrics returns only the metrics where pass=false.
+func (s *CircuitServer) handleFailingMetrics(sess *CircuitSession) (any, error) {
+	result := sess.Result()
+	if result == nil {
+		return nil, fmt.Errorf("no result available")
+	}
+	data, err := json.Marshal(result)
+	if err != nil {
+		return nil, fmt.Errorf("marshal result: %w", err)
+	}
+	var full map[string]any
+	if err := json.Unmarshal(data, &full); err != nil {
+		return nil, fmt.Errorf("parse result: %w", err)
+	}
+
+	metricsRaw, ok := full["metrics"]
+	if !ok {
+		return map[string]any{"failing": []any{}}, nil
+	}
+	metricsMap, ok := metricsRaw.(map[string]any)
+	if !ok {
+		return map[string]any{"failing": []any{}}, nil
+	}
+	metricsList, ok := metricsMap["metrics"]
+	if !ok {
+		return map[string]any{"failing": []any{}}, nil
+	}
+	metrics, ok := metricsList.([]any)
+	if !ok {
+		return map[string]any{"failing": []any{}}, nil
+	}
+
+	var failing []any
+	for _, m := range metrics {
+		mm, ok := m.(map[string]any)
+		if !ok {
+			continue
+		}
+		if pass, ok := mm["pass"].(bool); ok && !pass {
+			failing = append(failing, mm)
+		}
+	}
+	return map[string]any{"failing": failing}, nil
+}
+
+// handleWeakCases returns cases where convergence < threshold.
+func (s *CircuitServer) handleWeakCases(sess *CircuitSession, threshold float64) (any, error) {
+	result := sess.Result()
+	if result == nil {
+		return nil, fmt.Errorf("no result available")
+	}
+	data, err := json.Marshal(result)
+	if err != nil {
+		return nil, fmt.Errorf("marshal result: %w", err)
+	}
+	var full map[string]any
+	if err := json.Unmarshal(data, &full); err != nil {
+		return nil, fmt.Errorf("parse result: %w", err)
+	}
+
+	caseResults, ok := full["case_results"]
+	if !ok {
+		return map[string]any{"weak": []any{}, "threshold": threshold}, nil
+	}
+	cases, ok := caseResults.([]any)
+	if !ok {
+		return map[string]any{"weak": []any{}, "threshold": threshold}, nil
+	}
+
+	var weak []any
+	for _, c := range cases {
+		cm, ok := c.(map[string]any)
+		if !ok {
+			continue
+		}
+		conv, ok := cm["convergence"].(float64)
+		if ok && conv < threshold {
+			weak = append(weak, cm)
+		}
+	}
+	return map[string]any{"weak": weak, "threshold": threshold}, nil
 }
 
 // --- Session management helpers ---

@@ -21,8 +21,8 @@ func main() {
 	provider := flag.String("provider", envOr("LLM_PROVIDER", "ollama"), "LLM provider: ollama, claude, gemini, openai")
 	model := flag.String("model", envOr("LLM_MODEL", ""), "Model name")
 	llmEndpoint := flag.String("llm-endpoint", envOr("LLM_ENDPOINT", ""), "LLM endpoint URL (provider-specific)")
-	scenario := flag.String("scenario", envOr("SCENARIO", "ptp"), "Scenario name for start_circuit")
-	backend := flag.String("backend", envOr("BACKEND", "stub"), "Backend type for start_circuit")
+	scenario := flag.String("scenario", envOr("SCENARIO", "ptp"), "Scenario name for circuit start")
+	backend := flag.String("backend", envOr("BACKEND", "stub"), "Backend type for circuit start")
 	flag.Parse()
 
 	llm, err := NewLLMClient(*provider, *model, *llmEndpoint)
@@ -47,8 +47,9 @@ func main() {
 	log.Printf("connected to gateway at %s", *gatewayEndpoint)
 
 	startResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-		Name: "start_circuit",
+		Name: "circuit",
 		Arguments: mustMarshal(map[string]any{
+			"action": "start",
 			"extra": map[string]any{
 				"scenario": *scenario,
 				"backend":  *backend,
@@ -56,20 +57,20 @@ func main() {
 		}),
 	})
 	if err != nil {
-		log.Fatalf("start_circuit: %v", err)
+		log.Fatalf("circuit/start: %v", err)
 	}
 	if startResult.IsError {
-		log.Fatalf("start_circuit error: %s", textContent(startResult))
+		log.Fatalf("circuit/start error: %s", textContent(startResult))
 	}
 	log.Printf("circuit started: %s", textContent(startResult))
 
 	for {
 		nextResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-			Name:      "get_next_step",
-			Arguments: mustMarshal(map[string]any{}),
+			Name:      "circuit",
+			Arguments: mustMarshal(map[string]any{"action": "step"}),
 		})
 		if err != nil {
-			log.Fatalf("get_next_step: %v", err)
+			log.Fatalf("circuit/step: %v", err)
 		}
 
 		nextText := textContent(nextResult)
@@ -98,28 +99,29 @@ func main() {
 		}
 
 		submitResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-			Name: "submit_step",
+			Name: "circuit",
 			Arguments: mustMarshal(map[string]any{
+				"action":   "submit",
 				"step":     step.Step,
 				"artifact": llmResponse,
 			}),
 		})
 		if err != nil {
-			log.Fatalf("submit_step %s: %v", step.Step, err)
+			log.Fatalf("circuit/submit %s: %v", step.Step, err)
 		}
 		if submitResult.IsError {
-			log.Printf("submit_step %s warning: %s", step.Step, textContent(submitResult))
+			log.Printf("circuit/submit %s warning: %s", step.Step, textContent(submitResult))
 		} else {
 			log.Printf("submitted step %s", step.Step)
 		}
 	}
 
 	reportResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
-		Name:      "get_report",
-		Arguments: mustMarshal(map[string]any{}),
+		Name:      "circuit",
+		Arguments: mustMarshal(map[string]any{"action": "report"}),
 	})
 	if err != nil {
-		log.Fatalf("get_report: %v", err)
+		log.Fatalf("circuit/report: %v", err)
 	}
 	fmt.Println(textContent(reportResult))
 }
