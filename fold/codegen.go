@@ -111,14 +111,23 @@ func GenerateWiredBinary(m *Manifest, g *ResolvedGraph) ([]byte, error) {
 		port = 9300
 	}
 
+	needsOrigami := false
+	for _, s := range g.Schematics {
+		if s.Resolver != "" {
+			needsOrigami = true
+			break
+		}
+	}
+
 	ctx := wiredBinaryContext{
-		Name:         m.Name,
-		Version:      m.Version,
-		Port:         port,
-		ImportBlock:  renderImports(g),
-		WiringBlock:  renderWiring(g, m.Name),
-		DomainConfig: renderDomainConfig(m),
-		ServerBlock:  renderServerCreation(g, m.Name),
+		Name:          m.Name,
+		Version:       m.Version,
+		Port:          port,
+		ImportBlock:   renderImports(g),
+		WiringBlock:   renderWiring(g, m.Name),
+		DomainConfig:  renderDomainConfig(m),
+		ServerBlock:   renderServerCreation(g, m.Name),
+		NeedsOrigami:  needsOrigami,
 	}
 
 	if ds.Assets != nil {
@@ -139,14 +148,15 @@ func GenerateWiredBinary(m *Manifest, g *ResolvedGraph) ([]byte, error) {
 }
 
 type wiredBinaryContext struct {
-	Name         string
-	Version      string
-	Port         int
-	EmbedPaths   []string
-	ImportBlock  string
-	WiringBlock  string
-	DomainConfig string
-	ServerBlock  string
+	Name          string
+	Version       string
+	Port          int
+	EmbedPaths    []string
+	ImportBlock   string
+	WiringBlock   string
+	DomainConfig  string
+	ServerBlock   string
+	NeedsOrigami  bool
 }
 
 func renderImports(g *ResolvedGraph) string {
@@ -249,8 +259,8 @@ import (
 	"net/http"
 	"os"
 
-	origami "github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/domainserve"
+{{ if .NeedsOrigami }}	origami "github.com/dpopsuev/origami/circuit"
+{{ end }}	"github.com/dpopsuev/origami/domainserve"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 {{ .ImportBlock }})
 
@@ -283,7 +293,7 @@ func main() {
 
 	addr := fmt.Sprintf(":%d", {{ .Port }})
 	fmt.Fprintf(os.Stderr, {{ printf "%q" .Name }}+" listening on %s (domain: /domain/, circuit: /mcp)\n", addr)
-	if err = http.ListenAndServe(addr, mux); err != nil {
+	if err := http.ListenAndServe(addr, mux); err != nil {
 		fmt.Fprintf(os.Stderr, {{ printf "%q" .Name }}+": %v\n", err)
 		os.Exit(1)
 	}
