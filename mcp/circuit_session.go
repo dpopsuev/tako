@@ -235,11 +235,11 @@ func (s *CircuitSession) WorkerPrompt(cfg *CircuitConfig) string {
 	sb.WriteString("## Protocol\n\nFollow this exact sequence:\n\n")
 
 	sb.WriteString(fmt.Sprintf(`1. Emit start signal:
-   emit_signal(session_id="%[1]s", event="worker_started", agent="worker",
-               meta={"worker_id": "<unique_id>", "mode": "stream"})
+   signal(action="emit", session_id="%[1]s", event="worker_started", agent="worker",
+          meta={"worker_id": "<unique_id>", "mode": "stream"})
 
 2. Worker loop — repeat until done:
-   response = get_next_step(session_id="%[1]s", timeout_ms=30000)
+   response = circuit(action="step", session_id="%[1]s", timeout_ms=30000)
 
    if response.done → break
    if not response.available → retry immediately
@@ -250,14 +250,14 @@ func (s *CircuitSession) WorkerPrompt(cfg *CircuitConfig) string {
    Analyze the data in the prompt and produce the artifact fields
    matching the step schema below.
 
-   submit_step(session_id="%[1]s",
-               dispatch_id=response.dispatch_id,
-               step=response.step,
-               fields={<your artifact fields as a JSON object>})
+   circuit(action="submit", session_id="%[1]s",
+           dispatch_id=response.dispatch_id,
+           step=response.step,
+           fields={<your artifact fields as a JSON object>})
 
 3. Emit stop signal:
-   emit_signal(session_id="%[1]s", event="worker_stopped", agent="worker",
-               meta={"worker_id": "<unique_id>"})
+   signal(action="emit", session_id="%[1]s", event="worker_stopped", agent="worker",
+          meta={"worker_id": "<unique_id>"})
 
 `, s.ID))
 
@@ -280,8 +280,8 @@ func (s *CircuitSession) WorkerPrompt(cfg *CircuitConfig) string {
 
 - Respond based ONLY on the prompt content provided.
 - Do NOT read scenario files, ground truth, test code, or prior artifacts.
-- Use submit_step to submit structured fields.
-- You call get_next_step and submit_step DIRECTLY. The parent does NOT relay for you.
+- Use circuit(action="submit") to submit structured fields.
+- You call circuit(action="step") and circuit(action="submit") DIRECTLY. The parent does NOT relay for you.
 - If available=false, retry immediately — the circuit may be between rounds.
 - Process each step independently based on the prompt content.
 `)

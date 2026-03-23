@@ -464,7 +464,7 @@ func TestStartCircuit_WorkerPrompt(t *testing.T) {
 	if workerPrompt == "" {
 		t.Fatal("expected non-empty worker_prompt for parallel>1")
 	}
-	if !containsAll(workerPrompt, sessionID, "get_next_step", "submit_step",
+	if !containsAll(workerPrompt, sessionID, `action="step"`, `action="submit"`,
 		"worker_started", "worker_stopped", "mode", "stream") {
 		t.Errorf("worker_prompt missing required protocol keywords")
 	}
@@ -923,7 +923,7 @@ func TestWorkerPrompt_StepSchemas(t *testing.T) {
 		t.Error("worker prompt missing session_id")
 	}
 
-	keywords := []string{"get_next_step", "submit_step", "worker_started", "worker_stopped", "mode", "stream"}
+	keywords := []string{`action="step"`, `action="submit"`, "worker_started", "worker_stopped", "mode", "stream"}
 	for _, kw := range keywords {
 		if !containsCI(prompt, kw) {
 			t.Errorf("worker prompt missing keyword %q", kw)

@@ -1,17 +1,17 @@
 # RCA Engine — circuit MCP server.
-# Reads domain data from a domain-serve endpoint via MCPRemoteFS.
 #
-# Build: docker build -t origami-rca -f deploy/Dockerfile.rca .
+# Build: docker build -t origami-rca -f deploy/Dockerfile.rca ~/Workspace/rh-rca
 # Run:   docker run -p 9200:9200 origami-rca --domain-endpoint http://domain:9300/mcp
 
 FROM golang:1.24 AS builder
 WORKDIR /src
-COPY go.mod go.sum ./
-# Strip local replace directives — container builds use published modules.
-RUN go mod edit -dropreplace github.com/dpopsuev/rh-gnd
-RUN go mod download
+ENV GOPRIVATE=github.com/dpopsuev/*
+ENV GONOSUMCHECK=github.com/dpopsuev/*
+ENV GONOSUMDB=github.com/dpopsuev/*
+ENV GOFLAGS=-mod=mod
 COPY . .
-RUN CGO_ENABLED=0 go build -o /rca-serve ./cmd/rca-serve
+RUN go mod edit -dropreplace github.com/dpopsuev/origami
+RUN CGO_ENABLED=0 go build -o /rca-serve ./cmd/serve
 
 FROM gcr.io/distroless/static-debian12
 COPY --from=builder /rca-serve /rca-serve
