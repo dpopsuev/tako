@@ -174,10 +174,8 @@ func TestDocsDriver_List(t *testing.T) {
 }
 
 func TestDocsDriver_Interface(t *testing.T) {
-	var d toolkit.Driver = docs.NewDocsDriver()
-	if d == nil {
-		t.Fatal("NewDocsDriver should satisfy Driver interface")
-	}
+	// Compile-time interface satisfaction check.
+	var _ toolkit.Driver = docs.NewDocsDriver()
 }
 
 func containsSubstring(s, sub string) bool {

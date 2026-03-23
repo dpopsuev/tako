@@ -191,9 +191,7 @@ func batchSetRecall(caseResult, groundTruth any, params map[string]any) (float64
 		relevant := ResolveStringSlice(item, relevantField)
 		if len(relevant) == 0 {
 			sumRecall += 1.0
-			if aggregate == "sum" {
-				// vacuously: 0 found / 0 expected, skip
-			}
+			// vacuously: 0 found / 0 expected, skip regardless of aggregate
 			continue
 		}
 		actual := ResolveStringSlice(item, actualField)
@@ -476,9 +474,6 @@ func batchGroupLinkage(caseResult, groundTruth any, params map[string]any) (floa
 	}
 	filters := paramFilters(params)
 
-	type groupEntry struct {
-		value any
-	}
 	groups := make(map[string][]any)
 	for _, item := range batch {
 		if !passesFilters(item, filters) {

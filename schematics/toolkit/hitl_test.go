@@ -77,9 +77,6 @@ func TestBuildHITLResult_WalkError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if !errors.Is(err, errors.Unwrap(err)) {
-		// Just verify we get a wrapped error
-	}
 }
 
 func TestBuildHITLResult_Interrupted(t *testing.T) {

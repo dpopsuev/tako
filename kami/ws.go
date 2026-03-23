@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"sync"
 
-	"nhooyr.io/websocket"
+	"github.com/coder/websocket"
 )
 
 // wsConn tracks a single WebSocket client.

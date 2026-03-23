@@ -103,7 +103,7 @@ func (c *testAnthropicClient) Chat(ctx context.Context, systemPrompt string, mes
 	}
 	var msgs []msg
 	for _, m := range messages {
-		msgs = append(msgs, msg{Role: m.Role, Content: m.Content})
+		msgs = append(msgs, msg(m))
 	}
 	payload := map[string]any{
 		"model":      c.model,

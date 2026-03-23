@@ -9,40 +9,6 @@ import (
 	"time"
 )
 
-// writeWrappedArtifact writes a JSON artifact wrapped with a dispatch_id envelope.
-func writeWrappedArtifact(t *testing.T, path string, dispatchID int64, payload any) {
-	t.Helper()
-	inner, err := json.Marshal(payload)
-	if err != nil {
-		t.Fatalf("marshal inner payload: %v", err)
-	}
-	wrapper := ArtifactWrapper{
-		DispatchID: dispatchID,
-		Data:       json.RawMessage(inner),
-	}
-	data, err := json.MarshalIndent(wrapper, "", "  ")
-	if err != nil {
-		t.Fatalf("marshal wrapper: %v", err)
-	}
-	if err := os.WriteFile(path, data, 0644); err != nil {
-		t.Fatalf("write wrapped artifact: %v", err)
-	}
-}
-
-// readDispatchIDFromSignal reads the dispatch_id from the signal file.
-func readDispatchIDFromSignal(t *testing.T, signalPath string) int64 {
-	t.Helper()
-	data, err := os.ReadFile(signalPath)
-	if err != nil {
-		t.Fatalf("read signal for dispatch_id: %v", err)
-	}
-	var sig SignalFile
-	if err := json.Unmarshal(data, &sig); err != nil {
-		t.Fatalf("unmarshal signal for dispatch_id: %v", err)
-	}
-	return sig.DispatchID
-}
-
 func TestFileDispatcher_HappyPath(t *testing.T) {
 	dir := t.TempDir()
 	artifactPath := filepath.Join(dir, "artifact.json")

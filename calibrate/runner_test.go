@@ -34,15 +34,6 @@ func (m *mockCollector) Collect(_ context.Context, _ []engine.BatchWalkResult) (
 	return m.values, m.details, m.err
 }
 
-type mockRenderer struct {
-	output string
-	err    error
-}
-
-func (m *mockRenderer) Render(_ *CalibrationReport) (string, error) {
-	return m.output, m.err
-}
-
 func testScoreCard() *ScoreCard {
 	return &ScoreCard{
 		Name: "test",

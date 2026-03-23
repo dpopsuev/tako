@@ -117,10 +117,7 @@ func computeHover(doc *document, pos protocol.Position, vocab circuit.RichVocabu
 		}
 	}
 	if nodeName == "" && strings.HasPrefix(trimmed, "name:") || strings.HasPrefix(trimmed, "- name:") {
-		raw := trimmed
-		if strings.HasPrefix(raw, "- ") {
-			raw = raw[2:]
-		}
+		raw := strings.TrimPrefix(trimmed, "- ")
 		nodeName = strings.TrimSpace(strings.TrimPrefix(raw, "name:"))
 	}
 	if nodeName != "" && doc.Def != nil {

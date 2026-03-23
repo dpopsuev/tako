@@ -118,7 +118,9 @@ func buildNodeZoneMap(def *circuit.CircuitDef) map[string]string {
 func assignRanks(order []string, adj map[string][]string) map[string]int {
 	rank := make(map[string]int, len(order))
 	for _, node := range order {
-		rank[node] = rank[node] // ensure entry exists (zero default for roots)
+		if _, exists := rank[node]; !exists {
+			rank[node] = 0
+		}
 		for _, next := range adj[node] {
 			if rank[node]+1 > rank[next] {
 				rank[next] = rank[node] + 1

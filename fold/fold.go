@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -528,7 +527,7 @@ func copyEmbedFiles(ds *DomainServeConfig, manifestDir, tmpDir string, verbose b
 
 // exportDataDir copies flattened domain data to a directory for use with
 // the --data-dir runtime flag. This produces the same file layout that
-// go:embed would create, making it suitable for volume mounts.
+// the go:embed directive would create, making it suitable for volume mounts.
 // The target directory is cleaned before each export to prevent stale files.
 func exportDataDir(m *Manifest, manifestDir string, opts Options) error {
 	if err := m.MergeDiscoveredAssets(manifestDir); err != nil {
@@ -684,11 +683,6 @@ func validatePortWiring(m *Manifest, manifestDir string) error {
 	}
 
 	// Load all circuit files and collect port types + wiring entries.
-	type portInfo struct {
-		circuitName string
-		portName    string
-		portType    string
-	}
 	// circuitName → portName → type
 	portIndex := make(map[string]map[string]string)
 
@@ -805,39 +799,3 @@ func copyFile(src, dst string) error {
 	return err
 }
 
-func copyDir(src, dst string) error {
-	return filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		rel, err := filepath.Rel(src, path)
-		if err != nil {
-			return err
-		}
-		target := filepath.Join(dst, rel)
-
-		if d.IsDir() {
-			return os.MkdirAll(target, 0755)
-		}
-
-		srcFile, err := os.Open(path)
-		if err != nil {
-			return err
-		}
-		defer srcFile.Close()
-
-		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
-			return err
-		}
-
-		dstFile, err := os.Create(target)
-		if err != nil {
-			return err
-		}
-		defer dstFile.Close()
-
-		_, err = io.Copy(dstFile, srcFile)
-		return err
-	})
-}

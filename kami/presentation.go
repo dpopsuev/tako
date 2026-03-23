@@ -172,10 +172,10 @@ type circuitPayload struct {
 func (s *Server) handleThemeAPI(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if s.cfg.Theme == nil {
-		json.NewEncoder(w).Encode(themePayload{})
+		_ = json.NewEncoder(w).Encode(themePayload{})
 		return
 	}
-	json.NewEncoder(w).Encode(themePayload{
+	_ = json.NewEncoder(w).Encode(themePayload{
 		Name:               s.cfg.Theme.Name(),
 		AgentIntros:        s.cfg.Theme.AgentIntros(),
 		NodeDescriptions:   s.vocabOverlay(s.cfg.Theme.NodeDescriptions()),
@@ -187,10 +187,10 @@ func (s *Server) handleThemeAPI(w http.ResponseWriter, _ *http.Request) {
 func (s *Server) handleCircuitAPI(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if s.cfg.Theme == nil {
-		json.NewEncoder(w).Encode(circuitPayload{})
+		_ = json.NewEncoder(w).Encode(circuitPayload{})
 		return
 	}
-	json.NewEncoder(w).Encode(circuitPayload{
+	_ = json.NewEncoder(w).Encode(circuitPayload{
 		Nodes: s.vocabOverlay(s.cfg.Theme.NodeDescriptions()),
 	})
 }
@@ -215,11 +215,11 @@ func (s *Server) vocabOverlay(base map[string]string) map[string]string {
 func (s *Server) handleKabukiAPI(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if s.cfg.Kabuki == nil {
-		json.NewEncoder(w).Encode(kabukiPayload{})
+		_ = json.NewEncoder(w).Encode(kabukiPayload{})
 		return
 	}
 	p := s.cfg.Kabuki
-	json.NewEncoder(w).Encode(kabukiPayload{
+	_ = json.NewEncoder(w).Encode(kabukiPayload{
 		Hero:           p.Hero(),
 		Problem:        p.Problem(),
 		Results:        p.Results(),

@@ -92,8 +92,8 @@ func ScoreDebug(raw string) map[ouroboros.Dimension]float64 {
 		shortcut = 0.2
 	}
 
-	speed := 0.5
 	nonEmptyLines := countNonEmpty(lines)
+	var speed float64
 	if nonEmptyLines < 10 {
 		speed = 0.9
 	} else if nonEmptyLines < 20 {

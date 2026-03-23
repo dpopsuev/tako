@@ -78,17 +78,6 @@ func loadFixture(t *testing.T, rel string) *circuit.CircuitDef {
 	return def
 }
 
-// buildGraph loads a fixture and builds the graph.
-func buildGraph(t *testing.T, rel string) engine.Graph {
-	t.Helper()
-	def := loadFixture(t, rel)
-	g, err := engine.BuildGraph(def, standardRegistries())
-	if err != nil {
-		t.Fatalf("build graph: %v", err)
-	}
-	return g
-}
-
 // runFixture runs a circuit file from testdata/ with standard registries.
 func runFixture(t *testing.T, rel string, input any, opts ...engine.RunOption) error {
 	t.Helper()

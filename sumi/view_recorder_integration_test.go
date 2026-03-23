@@ -74,7 +74,7 @@ func TestIntegration_RecorderCapturesFrameOnDiff(t *testing.T) {
 
 	// DiffMsg records another frame.
 	updated, _ = m.Update(DiffMsg(view.StateDiff{Type: view.DiffNodeState, Node: "alpha"}))
-	m = updated.(Model)
+	_ = updated
 
 	if recorder.Len() != 2 {
 		t.Fatalf("expected 2 frames after DiffMsg, got %d", recorder.Len())
@@ -581,7 +581,7 @@ func TestIntegration_RecorderOnlyOnStateChange(t *testing.T) {
 
 	// Another DiffMsg adds a second frame.
 	updated, _ = m.Update(DiffMsg(view.StateDiff{Type: view.DiffNodeState, Node: "a"}))
-	m = updated.(Model)
+	_ = updated
 	if recorder.Len() != 2 {
 		t.Fatalf("expected 2 frames after DiffMsg, got %d", recorder.Len())
 	}

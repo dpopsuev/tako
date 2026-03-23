@@ -80,7 +80,7 @@ func main() {
 
 	go func() {
 		<-ctx.Done()
-		httpServer.Shutdown(context.Background())
+		_ = httpServer.Shutdown(context.Background())
 	}()
 
 	log.Printf("mediator listening on %s", addr)

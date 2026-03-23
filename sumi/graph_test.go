@@ -465,28 +465,6 @@ func assertCrossRow(t *testing.T, er EdgeRouting, layout view.CircuitLayout, fro
 	t.Errorf("expected cross-row inline edge %s->%s, not found in inline list", from, to)
 }
 
-func assertNoEdge(t *testing.T, er EdgeRouting, from, to string) {
-	t.Helper()
-	for _, re := range er.Inline {
-		if re.From == from && re.To == to {
-			t.Errorf("unexpected inline edge %s->%s", from, to)
-			return
-		}
-	}
-	for _, re := range er.Below {
-		if re.From == from && re.To == to {
-			t.Errorf("unexpected below edge %s->%s", from, to)
-			return
-		}
-	}
-	for _, re := range er.Loops {
-		if re.From == from && re.To == to {
-			t.Errorf("unexpected loop edge %s->%s", from, to)
-			return
-		}
-	}
-}
-
 // --- Level 2: topology fixture builders (sumi package) ---
 
 func sumiLinearDef() *circuit.CircuitDef {

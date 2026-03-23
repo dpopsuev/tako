@@ -61,14 +61,3 @@ func TestFinding_Construction(t *testing.T) {
 	}
 }
 
-// findingStubArtifact is shared by several root-level test files
-// (finding_hook_test.go, finding_expr_test.go, finding_parallel_test.go).
-type findingStubArtifact struct {
-	typ        string
-	confidence float64
-	raw        any
-}
-
-func (s *findingStubArtifact) Type() string        { return s.typ }
-func (s *findingStubArtifact) Confidence() float64 { return s.confidence }
-func (s *findingStubArtifact) Raw() any             { return s.raw }

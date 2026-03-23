@@ -82,7 +82,7 @@ func (cr *ContainerRuntime) RunWithOptions(ctx context.Context, opts RunOptions)
 // Stop stops and removes a container by ID.
 func (cr *ContainerRuntime) Stop(ctx context.Context, id string) error {
 	stop := exec.CommandContext(ctx, cr.Runtime, "stop", "-t", "5", id)
-	stop.CombinedOutput()
+	_, _ = stop.CombinedOutput()
 
 	rm := exec.CommandContext(ctx, cr.Runtime, "rm", "-f", id)
 	output, err := rm.CombinedOutput()
@@ -148,7 +148,7 @@ func (cb *ContainerBackend) Start(ctx context.Context) error {
 
 	session, err := cb.connectMCP(ctx)
 	if err != nil {
-		rt.Stop(ctx, id)
+		_ = rt.Stop(ctx, id)
 		cb.containerID = ""
 		return fmt.Errorf("connect MCP to container %q: %w", cb.Name, err)
 	}

@@ -161,7 +161,7 @@ func (e *Env) StopAll() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	for _, id := range e.ids {
-		e.runtime.Stop(ctx, id)
+		_ = e.runtime.Stop(ctx, id)
 	}
 	e.ids = nil
 }

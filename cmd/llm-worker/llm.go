@@ -87,7 +87,7 @@ func (c *OllamaClient) Chat(ctx context.Context, systemPrompt string, messages [
 		msgs = append(msgs, ollamaMsg{Role: "system", Content: systemPrompt})
 	}
 	for _, m := range messages {
-		msgs = append(msgs, ollamaMsg{Role: m.Role, Content: m.Content})
+		msgs = append(msgs, ollamaMsg(m))
 	}
 
 	body, _ := json.Marshal(map[string]any{
@@ -139,7 +139,7 @@ func (c *AnthropicClient) Chat(ctx context.Context, systemPrompt string, message
 	}
 	var msgs []anthropicMsg
 	for _, m := range messages {
-		msgs = append(msgs, anthropicMsg{Role: m.Role, Content: m.Content})
+		msgs = append(msgs, anthropicMsg(m))
 	}
 
 	payload := map[string]any{
@@ -283,7 +283,7 @@ func (c *OpenAIClient) Chat(ctx context.Context, systemPrompt string, messages [
 		msgs = append(msgs, openaiMsg{Role: "system", Content: systemPrompt})
 	}
 	for _, m := range messages {
-		msgs = append(msgs, openaiMsg{Role: m.Role, Content: m.Content})
+		msgs = append(msgs, openaiMsg(m))
 	}
 
 	body, _ := json.Marshal(map[string]any{

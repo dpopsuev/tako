@@ -60,7 +60,7 @@ func RunTransformerContract(t *testing.T, factory func() engine.Transformer) {
 		// Should either return an error or complete quickly — must not hang.
 		done := make(chan struct{})
 		go func() {
-			tr.Transform(ctx, tc)
+			_, _ = tr.Transform(ctx, tc)
 			close(done)
 		}()
 
@@ -86,7 +86,7 @@ func RunTransformerContract(t *testing.T, factory func() engine.Transformer) {
 					t.Errorf("Transform panicked with nil WalkerState: %v", r)
 				}
 			}()
-			tr.Transform(ctx, tc)
+			_, _ = tr.Transform(ctx, tc)
 		}()
 	})
 }

@@ -3,8 +3,6 @@ package lint
 import (
 	"fmt"
 	"strings"
-
-	"gopkg.in/yaml.v3"
 )
 
 // --- S35: expected-path-node-names ---
@@ -410,26 +408,3 @@ func extractPortTypes(doc map[string]any) map[string]string {
 	return result
 }
 
-// scenarioDoc is a minimal struct to parse scenario YAML for expected_path
-// extraction. Kept private; only used for direct YAML parsing when needed.
-type scenarioDoc struct {
-	Cases []scenarioCase `yaml:"cases"`
-}
-
-type scenarioCase struct {
-	ExpectedPath []string `yaml:"expected_path"`
-}
-
-// parseScenarioExpectedPaths parses scenario YAML bytes and returns all
-// expected_path elements.
-func parseScenarioExpectedPaths(raw []byte) []string {
-	var doc scenarioDoc
-	if err := yaml.Unmarshal(raw, &doc); err != nil {
-		return nil
-	}
-	var result []string
-	for _, c := range doc.Cases {
-		result = append(result, c.ExpectedPath...)
-	}
-	return result
-}

@@ -20,11 +20,6 @@ func discardLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, nil))
 }
 
-// now is a helper for timestamps.
-func now() string {
-	return time.Now().UTC().Format(time.RFC3339)
-}
-
 // Dispatcher abstracts how a prompt is delivered to an external agent
 // and how the resulting artifact is collected back.
 type Dispatcher interface {

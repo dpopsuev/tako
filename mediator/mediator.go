@@ -182,7 +182,7 @@ func (gw *Mediator) Stop(ctx context.Context) {
 		s.Close()
 	}
 	for _, rb := range gw.backends {
-		rb.Stop(ctx)
+		_ = rb.Stop(ctx)
 	}
 	if gw.recorder != nil {
 		gw.recorder.Close()
@@ -403,7 +403,7 @@ func (gw *Mediator) MCPServer() *sdkmcp.Server {
 			func(ctx context.Context, req *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error) {
 				var args map[string]any
 				if req.Params.Arguments != nil {
-					json.Unmarshal(req.Params.Arguments, &args)
+					_ = json.Unmarshal(req.Params.Arguments, &args)
 				}
 				return gw.CallTool(ctx, toolName, args)
 			},

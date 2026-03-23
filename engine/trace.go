@@ -142,7 +142,7 @@ func (r *TraceRecorder) write(te TraceEvent) {
 	}
 	data = append(data, '\n')
 	r.mu.Lock()
-	r.w.Write(data)
+	_, _ = r.w.Write(data)
 	r.eventCount++
 	r.mu.Unlock()
 }

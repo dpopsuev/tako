@@ -154,14 +154,14 @@ func (s *Server) Start(ctx context.Context) error {
 	case <-ctx.Done():
 		shutCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		s.http.Shutdown(shutCtx)
-		s.ws.Shutdown(shutCtx)
+		_ = s.http.Shutdown(shutCtx)
+		_ = s.ws.Shutdown(shutCtx)
 		return ctx.Err()
 	case err := <-errCh:
 		shutCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
-		s.http.Shutdown(shutCtx)
-		s.ws.Shutdown(shutCtx)
+		_ = s.http.Shutdown(shutCtx)
+		_ = s.ws.Shutdown(shutCtx)
 		return err
 	}
 }
@@ -360,7 +360,7 @@ func (s *Server) SetSelection(sel map[string]any) {
 
 func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+	_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
 
 // handleSnapshotAPI returns the current CircuitSnapshot as JSON.
@@ -377,7 +377,7 @@ func (s *Server) handleSnapshotAPI(w http.ResponseWriter, _ *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(store.Snapshot())
+	_ = json.NewEncoder(w).Encode(store.Snapshot())
 }
 
 // handleStoreReset clears the server's CircuitStore, removing all node
@@ -416,15 +416,15 @@ func (s *Server) StartOnAvailablePort(ctx context.Context) (httpAddr, wsAddr str
 	s.http = &http.Server{Handler: mux}
 	s.ws = &http.Server{Handler: wsMux}
 
-	go s.http.Serve(httpLn)
-	go s.ws.Serve(wsLn)
+	go func() { _ = s.http.Serve(httpLn) }()
+	go func() { _ = s.ws.Serve(wsLn) }()
 
 	go func() {
 		<-ctx.Done()
 		shutCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
-		s.http.Shutdown(shutCtx)
-		s.ws.Shutdown(shutCtx)
+		_ = s.http.Shutdown(shutCtx)
+		_ = s.ws.Shutdown(shutCtx)
 	}()
 
 	return httpLn.Addr().String(), wsLn.Addr().String(), nil
@@ -452,7 +452,7 @@ func (s *Server) handleGetFrame(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(f)
+	_ = json.NewEncoder(w).Encode(f)
 }
 
 // --- Review handlers ---
@@ -466,7 +466,7 @@ func (s *Server) handleReviewList(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(grouped)
+	_ = json.NewEncoder(w).Encode(grouped)
 }
 
 func (s *Server) handleReviewGet(w http.ResponseWriter, r *http.Request) {
@@ -483,7 +483,7 @@ func (s *Server) handleReviewGet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(t)
+	_ = json.NewEncoder(w).Encode(t)
 }
 
 func (s *Server) handleReviewScore(w http.ResponseWriter, r *http.Request) {

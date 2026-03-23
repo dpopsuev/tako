@@ -194,7 +194,7 @@ func renderWiring(g *ResolvedGraph, productName string) string {
 
 func renderDomainConfig(m *Manifest) string {
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("\tdomainHandler := domainserve.New(domainFS, domainserve.Config{\n"))
+	b.WriteString("\tdomainHandler := domainserve.New(domainFS, domainserve.Config{\n")
 	b.WriteString(fmt.Sprintf("\t\tName:    %q,\n", m.Name))
 	b.WriteString(fmt.Sprintf("\t\tVersion: %q,\n", m.Version))
 

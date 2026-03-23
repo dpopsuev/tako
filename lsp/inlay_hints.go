@@ -223,10 +223,7 @@ func neighborHints(doc *document, lines []string) []InlayHint {
 		if !strings.HasPrefix(trimmed, "- name:") && !strings.HasPrefix(trimmed, "name:") {
 			continue
 		}
-		raw := trimmed
-		if strings.HasPrefix(raw, "- ") {
-			raw = raw[2:]
-		}
+		raw := strings.TrimPrefix(trimmed, "- ")
 		nodeName := strings.TrimSpace(strings.TrimPrefix(raw, "name:"))
 		if nodeName == "" {
 			continue
@@ -326,19 +323,6 @@ func neighborTooltip(nodeName string, doc *document) string {
 		md += prefix + " `" + cond + "`\n"
 	}
 	return md
-}
-
-// compactTraits extracts the failure mode from traits as a concise risk label.
-func compactTraits(traits string) string {
-	parts := strings.Split(traits, "|")
-	for _, p := range parts {
-		p = strings.TrimSpace(p)
-		kv := strings.SplitN(p, ":", 2)
-		if len(kv) == 2 && strings.TrimSpace(kv[0]) == "failure" {
-			return "risk: " + strings.TrimSpace(kv[1])
-		}
-	}
-	return ""
 }
 
 func findEdgeIDLine(lines []string, edgeID string) int {

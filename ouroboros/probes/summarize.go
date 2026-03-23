@@ -126,7 +126,7 @@ func ScoreSummarize(raw string) map[ouroboros.Dimension]float64 {
 
 	lines := strings.Split(raw, "\n")
 	nonEmpty := countNonEmpty(lines)
-	failureMode := 0.5
+	var failureMode float64
 	if nonEmpty > 40 {
 		failureMode = 0.2
 	} else if nonEmpty > 25 {

@@ -83,7 +83,7 @@ func (s *PersistentStore) SetNS(namespace, walkerID, key string, value any) {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.db.Exec(
+	_, _ = s.db.Exec(
 		`INSERT INTO memories (namespace, walker_id, key, value, created_at) VALUES (?, ?, ?, ?, ?)
 		 ON CONFLICT(namespace, walker_id, key) DO UPDATE SET value = excluded.value, created_at = excluded.created_at`,
 		namespace, walkerID, key, data, time.Now().UTC(),
@@ -133,7 +133,7 @@ func (s *PersistentStore) Search(namespace, query string) []circuit.MemoryItem {
 		if rows.Scan(&item.Namespace, &item.WalkerID, &item.Key, &data, &tags, &created) != nil {
 			continue
 		}
-		json.Unmarshal(data, &item.Value)
+		_ = json.Unmarshal(data, &item.Value)
 		if tags != "" {
 			item.Tags = strings.Split(tags, ",")
 		}
@@ -152,7 +152,7 @@ func (s *PersistentStore) SetNSTagged(namespace, walkerID, key string, value any
 	tagStr := strings.Join(tags, ",")
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.db.Exec(
+	_, _ = s.db.Exec(
 		`INSERT INTO memories (namespace, walker_id, key, value, tags, created_at) VALUES (?, ?, ?, ?, ?, ?)
 		 ON CONFLICT(namespace, walker_id, key) DO UPDATE SET value = excluded.value, tags = excluded.tags, created_at = excluded.created_at`,
 		namespace, walkerID, key, data, tagStr, time.Now().UTC(),

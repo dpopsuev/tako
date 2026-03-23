@@ -3,7 +3,6 @@
 package backend
 
 import (
-	"sync"
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
@@ -37,9 +36,8 @@ type RunInfo struct {
 // StudioObserver implements circuit.WalkObserver and records events
 // for the Visual Editor's REST API.
 type StudioObserver struct {
-	mu     sync.RWMutex
-	store  *EventStore
-	runID  string
+	store   *EventStore
+	runID   string
 	circuit string
 }
 

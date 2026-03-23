@@ -132,10 +132,10 @@ func (s *NetworkServer) handleGetNext(w http.ResponseWriter, r *http.Request) {
 		PreferredZone:   q.Get("preferred_zone"),
 	}
 	if v := q.Get("stickiness"); v != "" {
-		fmt.Sscanf(v, "%d", &hints.Stickiness)
+		_, _ = fmt.Sscanf(v, "%d", &hints.Stickiness)
 	}
 	if v := q.Get("consecutive_misses"); v != "" {
-		fmt.Sscanf(v, "%d", &hints.ConsecutiveMisses)
+		_, _ = fmt.Sscanf(v, "%d", &hints.ConsecutiveMisses)
 	}
 
 	dc, err := s.dispatcher.GetNextStepWithHints(r.Context(), hints)
@@ -153,7 +153,7 @@ func (s *NetworkServer) handleGetNext(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 func (s *NetworkServer) handleSubmit(w http.ResponseWriter, r *http.Request) {
@@ -208,7 +208,7 @@ func (s *NetworkServer) handleGetSignals(w http.ResponseWriter, r *http.Request)
 
 	since := 0
 	if v := r.URL.Query().Get("since"); v != "" {
-		fmt.Sscanf(v, "%d", &since)
+		_, _ = fmt.Sscanf(v, "%d", &since)
 	}
 
 	sigs := s.bus.Since(since)
@@ -217,7 +217,7 @@ func (s *NetworkServer) handleGetSignals(w http.ResponseWriter, r *http.Request)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(sigs)
+	_ = json.NewEncoder(w).Encode(sigs)
 }
 
 // NetworkClient implements ExternalDispatcher by calling a remote NetworkServer

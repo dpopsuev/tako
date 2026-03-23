@@ -190,7 +190,6 @@ func (d *FileDispatcher) Dispatch(_ context.Context, ctx DispatchContext) ([]byt
 			time.Sleep(d.cfg.PollInterval)
 			continue
 		}
-		staleCount = 0
 
 		// dispatch_id matches — this is our artifact
 		if len(wrapper.Data) == 0 {

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 
 	"github.com/dpopsuev/origami/fold"
 )
@@ -36,6 +35,3 @@ func foldCmd(args []string) error {
 	})
 }
 
-func foldUsage() string {
-	return fmt.Sprintf("  fold       Compile a YAML manifest into a standalone binary")
-}

@@ -105,6 +105,6 @@ func (o *Orchestrator) StopAll(ctx context.Context) {
 	o.mu.RUnlock()
 
 	for _, name := range names {
-		o.Stop(ctx, name)
+		_ = o.Stop(ctx, name)
 	}
 }

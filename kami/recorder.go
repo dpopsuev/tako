@@ -47,7 +47,7 @@ func (r *Recorder) Start() {
 		defer close(r.done)
 		enc := json.NewEncoder(r.writer)
 		for evt := range r.ch {
-			enc.Encode(evt)
+			_ = enc.Encode(evt)
 		}
 	}()
 }

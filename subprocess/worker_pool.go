@@ -84,7 +84,7 @@ func (wp *WorkerPool) Scale(ctx context.Context, n int) error {
 		}
 	} else if n < current {
 		for i := current - 1; i >= n; i-- {
-			wp.config.Runtime.Stop(ctx, wp.workers[i].id)
+			_ = wp.config.Runtime.Stop(ctx, wp.workers[i].id)
 		}
 		wp.workers = wp.workers[:n]
 	}
@@ -97,7 +97,7 @@ func (wp *WorkerPool) StopAll(ctx context.Context) {
 	defer wp.mu.Unlock()
 
 	for _, w := range wp.workers {
-		wp.config.Runtime.Stop(ctx, w.id)
+		_ = wp.config.Runtime.Stop(ctx, w.id)
 	}
 	wp.workers = nil
 }

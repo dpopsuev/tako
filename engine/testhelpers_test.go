@@ -35,7 +35,6 @@ func (a *stubArtifact) Raw() any            { return a.raw }
 type stubEdge struct {
 	id, from, to string
 	loop         bool
-	parallel     bool
 	result       *circuit.Transition
 }
 
@@ -65,13 +64,6 @@ func (n *slowNode) Process(ctx context.Context, _ circuit.NodeContext) (circuit.
 	case <-ctx.Done():
 		return &stubArtifact{typ: "slow", confidence: 0, raw: "cancelled"}, ctx.Err()
 	}
-}
-
-type noopTransformer struct{ name string }
-
-func (t *noopTransformer) Name() string { return t.name }
-func (t *noopTransformer) Transform(_ context.Context, _ *TransformerContext) (any, error) {
-	return map[string]any{"result": "noop"}, nil
 }
 
 type echoTransformer struct{}

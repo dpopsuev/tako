@@ -514,7 +514,7 @@ func TestWalk_CircuitRefNode_SubWalk(t *testing.T) {
 func TestWalk_CircuitRefNode_ContextInheritance(t *testing.T) {
 	// Inner circuit has a transformer that reads a context key.
 	contextReader := TransformerFunc("ctx-reader", func(_ context.Context, tc *TransformerContext) (any, error) {
-		v, _ := tc.WalkerState.Context["test-key"]
+		v := tc.WalkerState.Context["test-key"]
 		return &testArtifact{typeName: "test", confidence: 1.0, raw: v}, nil
 	})
 

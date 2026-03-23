@@ -66,7 +66,7 @@ func serveCmd(args []string) error {
 
 	go func() {
 		<-ctx.Done()
-		httpServer.Shutdown(context.Background())
+		_ = httpServer.Shutdown(context.Background())
 	}()
 
 	log.Printf("origami mediator listening on %s", addr)

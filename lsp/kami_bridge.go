@@ -10,8 +10,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"go.lsp.dev/jsonrpc2"
 )
 
 // KamiBridge connects to a Kami server's SSE stream and maintains
@@ -319,29 +317,6 @@ func (kb *KamiBridge) lastTransitionHints(doc *document, state CircuitState, lin
 		Kind:        1,
 		PaddingLeft: true,
 	}}
-}
-
-// handleWorkspaceConfiguration processes workspace/configuration responses
-// to update Kami bridge settings.
-func (s *Server) handleWorkspaceConfiguration(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
-	var configs []json.RawMessage
-	if err := json.Unmarshal(req.Params(), &configs); err != nil {
-		return reply(ctx, nil, nil)
-	}
-
-	for _, raw := range configs {
-		var cfg struct {
-			Kami struct {
-				Enabled bool `json:"enabled"`
-				Port    int  `json:"port"`
-			} `json:"kami"`
-		}
-		if json.Unmarshal(raw, &cfg) == nil && cfg.Kami.Port > 0 {
-			s.configureKami(cfg.Kami.Enabled, cfg.Kami.Port)
-		}
-	}
-
-	return reply(ctx, nil, nil)
 }
 
 // configureKami starts or stops the Kami bridge based on configuration.

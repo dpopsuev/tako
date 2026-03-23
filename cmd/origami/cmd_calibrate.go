@@ -149,7 +149,7 @@ func runCalibrateWorker(
 	wlog := logger.With("worker_id", workerID)
 
 	// Emit worker_started signal.
-	session.CallTool(ctx, &sdkmcp.CallToolParams{
+	_, _ = session.CallTool(ctx, &sdkmcp.CallToolParams{
 		Name: "signal",
 		Arguments: mustMarshalCal(map[string]any{
 			"action":                    "emit",
@@ -161,7 +161,7 @@ func runCalibrateWorker(
 	})
 
 	defer func() {
-		session.CallTool(ctx, &sdkmcp.CallToolParams{
+		_, _ = session.CallTool(ctx, &sdkmcp.CallToolParams{
 			Name: "signal",
 			Arguments: mustMarshalCal(map[string]any{
 				"action":                    "emit",

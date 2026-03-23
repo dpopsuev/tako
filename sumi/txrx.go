@@ -16,7 +16,6 @@ type TxRxPanel struct {
 	noColor      bool
 	workerFilter string
 	scrollTx     int
-	scrollRx     int
 }
 
 // NewTxRxPanel creates a TX/RX panel stub.

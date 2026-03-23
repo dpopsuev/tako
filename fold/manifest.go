@@ -259,7 +259,7 @@ func (m *Manifest) MergeDiscoveredAssets(manifestDir string) error {
 			if info, err := os.Stat(rdPath); err != nil || !info.IsDir() {
 				continue
 			}
-			filepath.Walk(rdPath, func(path string, info os.FileInfo, err error) error {
+			_ = filepath.Walk(rdPath, func(path string, info os.FileInfo, err error) error {
 				if err != nil || info.IsDir() {
 					return nil
 				}
@@ -315,7 +315,7 @@ func (m *Manifest) domainPathMappings(manifestDir string) map[string]string {
 			if info, err := os.Stat(rdPath); err != nil || !info.IsDir() {
 				continue
 			}
-			filepath.Walk(rdPath, func(path string, info os.FileInfo, err error) error {
+			_ = filepath.Walk(rdPath, func(path string, info os.FileInfo, err error) error {
 				if err != nil || info.IsDir() {
 					return nil
 				}

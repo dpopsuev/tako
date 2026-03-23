@@ -64,9 +64,3 @@ func (m MultiObserver) OnEvent(e WalkEvent) {
 	}
 }
 
-// emitEvent is a helper to safely emit an event to a possibly-nil observer.
-func emitEvent(obs WalkObserver, e WalkEvent) {
-	if obs != nil {
-		obs.OnEvent(e)
-	}
-}

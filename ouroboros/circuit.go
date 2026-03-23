@@ -399,10 +399,6 @@ func clampDim(v float64) float64 {
 	return v
 }
 
-func (n *judgeNode) buildPrompt(subjectResponse string) string {
-	return buildJudgePrompt(n.seed, subjectResponse, nil)
-}
-
 // buildJudgePrompt constructs the LLM prompt for the Judge. Shared by
 // cascade and multiround judges. When verifyResult is non-nil, the
 // mechanical verification outcome is included in the prompt so the LLM

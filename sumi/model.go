@@ -503,30 +503,30 @@ func (m Model) toggleBreakpoint() (tea.Model, tea.Cmd) {
 	}
 	name := m.nodeOrder[m.selected]
 	if m.snap.Breakpoints[name] {
-		m.debug.ClearBreakpoint(name)
+		_ = m.debug.ClearBreakpoint(name)
 	} else {
-		m.debug.SetBreakpoint(name)
+		_ = m.debug.SetBreakpoint(name)
 	}
 	return m, nil
 }
 
 func (m Model) pauseWalk() (tea.Model, tea.Cmd) {
 	if m.debug != nil {
-		m.debug.Pause()
+		_ = m.debug.Pause()
 	}
 	return m, nil
 }
 
 func (m Model) resumeWalk() (tea.Model, tea.Cmd) {
 	if m.debug != nil {
-		m.debug.Resume()
+		_ = m.debug.Resume()
 	}
 	return m, nil
 }
 
 func (m Model) stepNode() (tea.Model, tea.Cmd) {
 	if m.debug != nil {
-		m.debug.AdvanceNode()
+		_ = m.debug.AdvanceNode()
 	}
 	return m, nil
 }
@@ -835,19 +835,6 @@ func caseStateIcon(s view.CaseVisualState) string {
 	default:
 		return "○"
 	}
-}
-
-// renderWorkersContent produces the worker list content (panel body only).
-// Deprecated: use renderCasesContent for full case lifecycle tracking.
-func (m Model) renderWorkersContent() string {
-	if len(m.snap.Walkers) == 0 {
-		return "No active workers"
-	}
-	var sb strings.Builder
-	for _, wp := range m.snap.Walkers {
-		sb.WriteString(fmt.Sprintf("● %s @ %s\n", wp.WalkerID, wp.Node))
-	}
-	return strings.TrimRight(sb.String(), "\n")
 }
 
 // renderInspectorContent produces the inspector body without the border frame.

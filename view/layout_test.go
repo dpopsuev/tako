@@ -8,17 +8,6 @@ import (
 
 // --- Level 1 test helpers ---
 
-func assertRow(t *testing.T, layout CircuitLayout, node string, row int) {
-	t.Helper()
-	gc, ok := layout.Grid[node]
-	if !ok {
-		t.Fatalf("node %q not in grid", node)
-	}
-	if gc.Row != row {
-		t.Errorf("node %q row = %d, want %d", node, gc.Row, row)
-	}
-}
-
 func assertCol(t *testing.T, layout CircuitLayout, node string, col int) {
 	t.Helper()
 	gc, ok := layout.Grid[node]
@@ -258,8 +247,7 @@ func megaFanoutDef() *circuit.CircuitDef {
 	nodes := []circuit.NodeDef{{Name: "hub"}}
 	edges := []circuit.EdgeDef{}
 	for i := 0; i < 8; i++ {
-		name := string(rune('t' + 0))
-		name = "t" + string(rune('1'+i))
+		name := "t" + string(rune('1'+i))
 		nodes = append(nodes, circuit.NodeDef{Name: name})
 		edges = append(edges, circuit.EdgeDef{
 			ID: "fan-" + name, From: "hub", To: name,

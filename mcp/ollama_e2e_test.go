@@ -238,15 +238,6 @@ func (t *dispatchTransformer) Transform(ctx context.Context, tc *engine.Transfor
 
 // --- client loop helper ---
 
-// ollamaClientLoop drives the MCP get_next_step / ollamaChat / submit_step loop.
-// Returns the total number of steps processed.
-func ollamaClientLoop(t *testing.T, ctx context.Context, session interface {
-	CallTool(context.Context, *interface{}) (interface{}, error)
-}, sessionID, model string) int {
-	t.Helper()
-	return 0
-}
-
 // runOllamaLoop runs the standard MCP client loop: get_next_step -> Ollama -> submit_step -> repeat.
 func runOllamaLoop(t *testing.T, ctx context.Context, sessionID, model string, callTool func(name string, args map[string]any) map[string]any, callToolErr func(name string, args map[string]any) (map[string]any, error)) int {
 	t.Helper()

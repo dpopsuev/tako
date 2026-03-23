@@ -67,9 +67,7 @@ func MergeReportTemplates(base, overlay *ReportTemplate) (*ReportTemplate, error
 	}
 
 	// Start with a copy of base sections
-	for _, s := range base.Sections {
-		merged.Sections = append(merged.Sections, s)
-	}
+	merged.Sections = append(merged.Sections, base.Sections...)
 
 	// Collect overlay sections by type
 	var overrideSections, insertAfterSections, extraColumnsSections, appendSections []ReportSectionDef

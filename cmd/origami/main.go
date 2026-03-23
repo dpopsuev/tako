@@ -141,7 +141,7 @@ func runCmd(args []string) error {
 	verbose := fs.Bool("v", false, "verbose output (debug level)")
 	sets := make(setFlag)
 	fs.Var(sets, "set", "set circuit variable (key=value), repeatable")
-	fs.Parse(args)
+	_ = fs.Parse(args)
 
 	if fs.NArg() < 1 {
 		return fmt.Errorf("usage: origami run [-v] [--set key=value] <circuit.yaml>")
@@ -179,7 +179,7 @@ func runCmd(args []string) error {
 
 func validateCmd(args []string) error {
 	fs := flag.NewFlagSet("validate", flag.ExitOnError)
-	fs.Parse(args)
+	_ = fs.Parse(args)
 
 	if fs.NArg() < 1 {
 		return fmt.Errorf("usage: origami validate <circuit.yaml>")
@@ -209,7 +209,7 @@ func kamiCmd(args []string) error {
 	debug := fs.Bool("debug", false, "enable debug API")
 	replay := fs.String("replay", "", "replay a JSONL recording file")
 	speed := fs.Float64("speed", 1.0, "replay speed multiplier")
-	fs.Parse(args)
+	_ = fs.Parse(args)
 
 	bridge := kami.NewEventBridge(nil)
 	defer bridge.Close()
@@ -659,7 +659,7 @@ func sumiCmd(args []string) error {
 	noColor := fs.Bool("no-color", false, "disable ANSI colors (CI/pipe-friendly)")
 	compact := fs.Bool("compact", false, "reduced-width rendering")
 	clean := fs.Bool("clean", false, "reset Kami store before connecting (--watch only)")
-	fs.Parse(args)
+	_ = fs.Parse(args)
 
 	circuitPath := ""
 	if fs.NArg() > 0 {

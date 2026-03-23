@@ -194,8 +194,8 @@ func (d *DocsDriver) putCache(key string, data []byte) {
 func (d *DocsDriver) persistToDisk(key string, data []byte) {
 	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(key)))
 	path := filepath.Join(d.cacheDir, hash[:2], hash)
-	os.MkdirAll(filepath.Dir(path), 0o755)
-	os.WriteFile(path, data, 0o644)
+	_ = os.MkdirAll(filepath.Dir(path), 0o755)
+	_ = os.WriteFile(path, data, 0o644)
 }
 
 func buildSearchURL(src toolkit.Source, query string) (string, error) {
