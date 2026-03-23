@@ -76,7 +76,7 @@ func (o *artifactCaptureObserver) OnEvent(e circuit.WalkEvent) {
 
 // ParallelEnforcerConfig configures a parallel enforcement circuit.
 type ParallelEnforcerConfig struct {
-	EnforcerDef   *CircuitDef
+	EnforcerDef   *circuit.CircuitDef
 	Registries    GraphRegistries
 	ObservedNodes []string
 	CheckInterval time.Duration
@@ -87,7 +87,7 @@ type ParallelEnforcerConfig struct {
 // RunWithEnforcer runs a work circuit with a parallel enforcer circuit.
 func RunWithEnforcer(
 	ctx context.Context,
-	workDef *CircuitDef,
+	workDef *circuit.CircuitDef,
 	workReg GraphRegistries,
 	enforcerCfg ParallelEnforcerConfig,
 ) ([]circuit.Finding, error) {

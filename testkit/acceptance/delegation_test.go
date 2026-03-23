@@ -25,7 +25,7 @@ func TestDelegation_DelegateNodeWalksSubCircuit(t *testing.T) {
 
 	tc := &engine.TraceCollector{}
 	registries := standardRegistries()
-	registries.Circuits = map[string]*engine.CircuitDef{
+	registries.Circuits = map[string]*circuit.CircuitDef{
 		"child": childDef,
 	}
 
@@ -73,7 +73,7 @@ func TestDelegation_DelegateArtifactWrapsChildOutput(t *testing.T) {
 	childDef := loadFixture(t, "circuits/child.yaml")
 
 	registries := standardRegistries()
-	registries.Circuits = map[string]*engine.CircuitDef{
+	registries.Circuits = map[string]*circuit.CircuitDef{
 		"child": childDef,
 	}
 

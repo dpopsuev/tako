@@ -8,7 +8,7 @@ import (
 	"fmt"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/element"
+	"github.com/dpopsuev/bugle/element"
 )
 
 // NodeProcessor is the function signature for processing a node.

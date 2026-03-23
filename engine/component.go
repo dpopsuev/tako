@@ -10,11 +10,8 @@ import (
 )
 
 // Manifest type aliases — definitions live in circuit/ sub-package.
-type SocketDef = circuit.SocketDef
-type SatisfiesDef = circuit.SatisfiesDef
-type ComponentManifest = circuit.ComponentManifest
 
-func LoadComponentManifest(path string) (*ComponentManifest, error) {
+func LoadComponentManifest(path string) (*circuit.ComponentManifest, error) {
 	return circuit.LoadComponentManifest(path)
 }
 

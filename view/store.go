@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/element"
+	"github.com/dpopsuev/bugle/element"
 )
 
 // CircuitStore is the single source of truth for a circuit's visual state.

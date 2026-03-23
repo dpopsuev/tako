@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/bugle"
 )
 
 // validElements is the set of recognized element names for validation.
@@ -51,10 +52,10 @@ func buildWalker(d circuit.WalkerDef) (*circuit.ProcessWalker, error) {
 	id := circuit.AgentIdentity{}
 
 	if d.Persona != "" {
-		if circuit.DefaultPersonaResolver == nil {
+		if bugle.DefaultPersonaResolver == nil {
 			return nil, fmt.Errorf("persona %q requested but no persona resolver registered (import _ \"github.com/dpopsuev/origami/persona\")", d.Persona)
 		}
-		p, ok := circuit.DefaultPersonaResolver(d.Persona)
+		p, ok := bugle.DefaultPersonaResolver(d.Persona)
 		if !ok {
 			return nil, fmt.Errorf("unknown persona %q", d.Persona)
 		}

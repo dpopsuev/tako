@@ -62,7 +62,7 @@ func TestRendererRegistry_RegisterDuplicate(t *testing.T) {
 
 func TestTemplateRenderer_Render(t *testing.T) {
 	rnd := &TemplateRenderer{Template: "Hello {{.Node}}"}
-	result, err := rnd.Render(context.Background(), TemplateContext{Node: "test-node"})
+	result, err := rnd.Render(context.Background(), circuit.TemplateContext{Node: "test-node"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -75,7 +75,7 @@ func TestTemplateRenderer_BadInput(t *testing.T) {
 	rnd := &TemplateRenderer{Template: "Hello"}
 	_, err := rnd.Render(context.Background(), "not-a-template-context")
 	if err == nil {
-		t.Fatal("expected error for non-TemplateContext input")
+		t.Fatal("expected error for non-circuit.TemplateContext input")
 	}
 }
 

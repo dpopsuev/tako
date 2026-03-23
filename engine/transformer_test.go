@@ -59,14 +59,14 @@ func TestTransformerNode_NilInput(t *testing.T) {
 
 func TestBuildGraphWith_TransformerNode(t *testing.T) {
 	trans := &echoTransformer{}
-	def := &CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit:     "test",
 		HandlerType: "transformer",
-		Nodes: []NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "a", Approach: "rapid", Handler: "echo"},
 			{Name: "b", Approach: "analytical", Handler: "echo"},
 		},
-		Edges: []EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "E1", Name: "a-to-b", From: "a", To: "b", When: "true"},
 			{ID: "E2", Name: "b-to-done", From: "b", To: "_done", When: "true"},
 		},
@@ -96,13 +96,13 @@ func TestBuildGraphWith_TransformerNode(t *testing.T) {
 
 func TestBuildGraphWith_MixedTransformerAndWalker(t *testing.T) {
 	trans := &echoTransformer{}
-	def := &CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "test",
-		Nodes: []NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "a", Approach: "rapid", Handler: "echo", HandlerType: "transformer"},
 			{Name: "b", Approach: "analytical", Handler: "legacy", HandlerType: "node"},
 		},
-		Edges: []EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "E1", Name: "a-to-b", From: "a", To: "b", When: "true"},
 			{ID: "E2", Name: "b-done", From: "b", To: "_done", When: "true"},
 		},
@@ -110,7 +110,7 @@ func TestBuildGraphWith_MixedTransformerAndWalker(t *testing.T) {
 		Done:  "_done",
 	}
 
-	nodeFactory := func(nd NodeDef) circuit.Node {
+	nodeFactory := func(nd circuit.NodeDef) circuit.Node {
 		return &testNode{name: nd.Name}
 	}
 
@@ -331,10 +331,10 @@ func TestBuildGraph_MetaReachesTransformerContext(t *testing.T) {
 		return map[string]any{"ok": true}, nil
 	})
 
-	def := &CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit:     "test",
 		HandlerType: "transformer",
-		Nodes: []NodeDef{
+		Nodes: []circuit.NodeDef{
 			{
 				Name:     "a",
 				Approach: "rapid",
@@ -342,7 +342,7 @@ func TestBuildGraph_MetaReachesTransformerContext(t *testing.T) {
 				Meta:     map[string]any{"key1": "val1", "key2": 42},
 			},
 		},
-		Edges: []EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "E1", Name: "done", From: "a", To: "_done", When: "true"},
 		},
 		Start: "a",
@@ -373,10 +373,10 @@ func TestBuildGraph_MetaReachesTransformerContext(t *testing.T) {
 }
 
 func TestBuiltinGoTemplate_RendersPrompt(t *testing.T) {
-	def := &CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit:     "test",
 		HandlerType: "transformer",
-		Nodes: []NodeDef{
+		Nodes: []circuit.NodeDef{
 			{
 				Name:     "render",
 				Approach: "rapid",
@@ -384,7 +384,7 @@ func TestBuiltinGoTemplate_RendersPrompt(t *testing.T) {
 				Prompt:   "Hello from {{.Node}}",
 			},
 		},
-		Edges: []EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "E1", Name: "done", From: "render", To: "_done", When: "true"},
 		},
 		Start: "render",
@@ -417,14 +417,14 @@ func TestBuiltinGoTemplate_RendersPrompt(t *testing.T) {
 }
 
 func TestBuiltinPassthrough_ReturnsInput(t *testing.T) {
-	def := &CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit:     "test",
 		HandlerType: "transformer",
-		Nodes: []NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "source", Approach: "methodical", Handler: "go-template", Prompt: "data"},
 			{Name: "pass", Approach: "rapid", Handler: "passthrough"},
 		},
-		Edges: []EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "E1", Name: "to-pass", From: "source", To: "pass", When: "true"},
 			{ID: "E2", Name: "done", From: "pass", To: "_done", When: "true"},
 		},
@@ -458,13 +458,13 @@ func TestBuiltinPassthrough_ReturnsInput(t *testing.T) {
 }
 
 func TestBuiltinGoTemplate_NoRegistry(t *testing.T) {
-	def := &CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit:     "test",
 		HandlerType: "transformer",
-		Nodes: []NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "a", Approach: "rapid", Handler: "go-template"},
 		},
-		Edges: []EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "E1", Name: "done", From: "a", To: "_done", When: "true"},
 		},
 		Start: "a",
@@ -484,10 +484,10 @@ func TestBuiltinGoTemplate_WithMeta(t *testing.T) {
 		return tc.Prompt, nil
 	})
 
-	def := &CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit:     "test",
 		HandlerType: "transformer",
-		Nodes: []NodeDef{
+		Nodes: []circuit.NodeDef{
 			{
 				Name:     "a",
 				Approach: "rapid",
@@ -495,7 +495,7 @@ func TestBuiltinGoTemplate_WithMeta(t *testing.T) {
 				Meta:     map[string]any{"template_dir": "/prompts", "max_tokens": 1000},
 			},
 		},
-		Edges: []EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "E1", Name: "done", From: "a", To: "_done", When: "true"},
 		},
 		Start: "a",
@@ -564,13 +564,13 @@ func TestTransformerNode_SlowTransform_ContextDeadline(t *testing.T) {
 		}
 	})
 
-	def := &CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit:     "timeout-test",
 		HandlerType: "transformer",
-		Nodes: []NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "slow", Approach: "rapid", Handler: "slow"},
 		},
-		Edges: []EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "E1", Name: "done", From: "slow", To: "_done", When: "true"},
 		},
 		Start: "slow",
@@ -608,13 +608,13 @@ func TestTransformerNode_ContextCancellation_PropagatesError(t *testing.T) {
 		return nil, ctx.Err()
 	})
 
-	def := &CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit:     "cancel-test",
 		HandlerType: "transformer",
-		Nodes: []NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "block", Approach: "rapid", Handler: "blocking"},
 		},
-		Edges: []EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "E1", Name: "done", From: "block", To: "_done", When: "true"},
 		},
 		Start: "block",
@@ -651,11 +651,11 @@ func TestTransformerNode_ContextCancellation_PropagatesError(t *testing.T) {
 
 func TestIsTransformerNode(t *testing.T) {
 	// Build a real transformer node via BuildGraph.
-	def := &CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "test", Start: "t", Done: "_done",
 		HandlerType: "transformer",
-		Nodes:       []NodeDef{{Name: "t", Handler: "echo"}},
-		Edges:       []EdgeDef{{ID: "e", From: "t", To: "_done"}},
+		Nodes:       []circuit.NodeDef{{Name: "t", Handler: "echo"}},
+		Edges:       []circuit.EdgeDef{{ID: "e", From: "t", To: "_done"}},
 	}
 	reg := GraphRegistries{
 		Transformers: TransformerRegistry{"echo": &echoTransformer{}},

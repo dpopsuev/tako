@@ -21,13 +21,13 @@ func captureDiagLogs(fn func()) string {
 }
 
 func TestDiag_D1_UnreferencedHook(t *testing.T) {
-	def := &CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "test", Start: "a", Done: "done",
 		HandlerType: "transformer",
-		Nodes: []NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "a", HandlerType: "transformer", Handler: "passthrough", After: []string{"hook-a"}},
 		},
-		Edges: []EdgeDef{{ID: "a-done", From: "a", To: "done"}},
+		Edges: []circuit.EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 	}
 	reg := GraphRegistries{
 		Transformers: TransformerRegistry{"passthrough": TransformerFunc("passthrough", func(_ context.Context, tc *TransformerContext) (any, error) { return tc.Input, nil })},
@@ -53,13 +53,13 @@ func TestDiag_D1_UnreferencedHook(t *testing.T) {
 }
 
 func TestDiag_D2_MissingHookRef(t *testing.T) {
-	def := &CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "test", Start: "a", Done: "done",
 		HandlerType: "transformer",
-		Nodes: []NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "a", HandlerType: "transformer", Handler: "passthrough", Before: []string{"hook-exists", "hook-missing"}},
 		},
-		Edges: []EdgeDef{{ID: "a-done", From: "a", To: "done"}},
+		Edges: []circuit.EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 	}
 	reg := GraphRegistries{
 		Transformers: TransformerRegistry{"passthrough": TransformerFunc("passthrough", func(_ context.Context, tc *TransformerContext) (any, error) { return tc.Input, nil })},
@@ -84,14 +84,14 @@ func TestDiag_D2_MissingHookRef(t *testing.T) {
 }
 
 func TestDiag_D4_PartialHookWiring(t *testing.T) {
-	def := &CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "test", Start: "a", Done: "done",
 		HandlerType: "transformer",
-		Nodes: []NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "a", HandlerType: "transformer", Handler: "passthrough",
 				Before: []string{"hook-a", "hook-b", "hook-c"}},
 		},
-		Edges: []EdgeDef{{ID: "a-done", From: "a", To: "done"}},
+		Edges: []circuit.EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 	}
 	reg := GraphRegistries{
 		Transformers: TransformerRegistry{"passthrough": TransformerFunc("passthrough", func(_ context.Context, tc *TransformerContext) (any, error) { return tc.Input, nil })},
@@ -116,14 +116,14 @@ func TestDiag_D4_PartialHookWiring(t *testing.T) {
 }
 
 func TestDiag_AllHooksReferenced_NoWarnings(t *testing.T) {
-	def := &CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "test", Start: "a", Done: "done",
 		HandlerType: "transformer",
-		Nodes: []NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "a", HandlerType: "transformer", Handler: "passthrough",
 				Before: []string{"hook-a"}, After: []string{"hook-b"}},
 		},
-		Edges: []EdgeDef{{ID: "a-done", From: "a", To: "done"}},
+		Edges: []circuit.EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 	}
 	reg := GraphRegistries{
 		Transformers: TransformerRegistry{"passthrough": TransformerFunc("passthrough", func(_ context.Context, tc *TransformerContext) (any, error) { return tc.Input, nil })},
@@ -146,13 +146,13 @@ func TestDiag_AllHooksReferenced_NoWarnings(t *testing.T) {
 }
 
 func TestDiag_NoHooksRegistered_NoWarnings(t *testing.T) {
-	def := &CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit: "test", Start: "a", Done: "done",
 		HandlerType: "transformer",
-		Nodes: []NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "a", HandlerType: "transformer", Handler: "passthrough"},
 		},
-		Edges: []EdgeDef{{ID: "a-done", From: "a", To: "done"}},
+		Edges: []circuit.EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 	}
 	reg := GraphRegistries{
 		Transformers: TransformerRegistry{"passthrough": TransformerFunc("passthrough", func(_ context.Context, tc *TransformerContext) (any, error) { return tc.Input, nil })},

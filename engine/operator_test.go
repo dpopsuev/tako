@@ -100,7 +100,7 @@ func (m *mockOperator) Observe(_ context.Context) (SystemState, error) {
 	return SystemState{Iteration: m.observeCount}, nil
 }
 
-func (m *mockOperator) Reconcile(_ context.Context, _ Goal, _ SystemState) (*CircuitDef, error) {
+func (m *mockOperator) Reconcile(_ context.Context, _ Goal, _ SystemState) (*circuit.CircuitDef, error) {
 	m.reconcileCount++
 	if m.reconcileErr != nil {
 		return nil, m.reconcileErr
@@ -120,16 +120,16 @@ func (m *mockOperator) Evaluate(_ context.Context, _ Goal, _ WalkResult) (Evalua
 }
 
 // testCircuitDef returns a minimal 2-node circuit: A -> _done.
-func testCircuitDef() *CircuitDef {
-	return &CircuitDef{
+func testCircuitDef() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit:     "test",
 		HandlerType: "transformer",
 		Start:       "A",
 		Done:        "_done",
-		Nodes: []NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "A", Handler: "passthrough"},
 		},
-		Edges: []EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "a-done", From: "A", To: "_done"},
 		},
 	}
@@ -202,13 +202,13 @@ func TestRunOperator_GoalTimeout(t *testing.T) {
 type recordingObserver struct {
 	observes    []SystemState
 	evaluates   []Evaluation
-	reconciles  []*CircuitDef
+	reconciles  []*circuit.CircuitDef
 	walkResults []WalkResult
 }
 
 func (r *recordingObserver) OnObserve(s SystemState)      { r.observes = append(r.observes, s) }
 func (r *recordingObserver) OnEvaluate(e Evaluation)       { r.evaluates = append(r.evaluates, e) }
-func (r *recordingObserver) OnReconcile(d *CircuitDef)     { r.reconciles = append(r.reconciles, d) }
+func (r *recordingObserver) OnReconcile(d *circuit.CircuitDef)     { r.reconciles = append(r.reconciles, d) }
 func (r *recordingObserver) OnWalkComplete(w WalkResult)   { r.walkResults = append(r.walkResults, w) }
 
 func TestRunOperator_Observer(t *testing.T) {
@@ -274,7 +274,7 @@ func TestInMemoryContainer_Lifecycle(t *testing.T) {
 		t.Errorf("ID() = %q, want %q", c.ID(), "test-1")
 	}
 	if c.Def() != def {
-		t.Error("Def() should return the provided CircuitDef")
+		t.Error("Def() should return the provided circuit.CircuitDef")
 	}
 	if c.Status() != StatusPending {
 		t.Errorf("initial Status() = %q, want %q", c.Status(), StatusPending)
@@ -355,7 +355,7 @@ func (s *stubOperator) Observe(_ context.Context) (SystemState, error) {
 	return SystemState{Iteration: s.iteration}, nil
 }
 
-func (s *stubOperator) Reconcile(_ context.Context, _ Goal, _ SystemState) (*CircuitDef, error) {
+func (s *stubOperator) Reconcile(_ context.Context, _ Goal, _ SystemState) (*circuit.CircuitDef, error) {
 	return testCircuitDef(), nil
 }
 

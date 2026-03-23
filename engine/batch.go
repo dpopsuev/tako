@@ -29,7 +29,7 @@ type BatchWalkResult struct {
 
 // BatchWalkConfig configures a batch walk over a circuit.
 type BatchWalkConfig struct {
-	Def            *CircuitDef
+	Def            *circuit.CircuitDef
 	Shared         GraphRegistries
 	Cases          []BatchCase
 	Parallel       int

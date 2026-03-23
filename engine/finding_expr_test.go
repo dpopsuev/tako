@@ -78,7 +78,7 @@ func TestSignalExprHelpers_FindingDomain_NilCollector(t *testing.T) {
 }
 
 func TestExpressionEdge_WithFindingCondition(t *testing.T) {
-	edge, err := CompileExpressionEdge(EdgeDef{
+	edge, err := CompileExpressionEdge(circuit.EdgeDef{
 		ID:   "veto-edge",
 		From: "nodeA",
 		To:   "error-handler",
@@ -110,7 +110,7 @@ func TestExpressionEdge_WithFindingCondition(t *testing.T) {
 }
 
 func TestExpressionEdge_FindingCount(t *testing.T) {
-	edge, err := CompileExpressionEdge(EdgeDef{
+	edge, err := CompileExpressionEdge(circuit.EdgeDef{
 		ID:   "multi-finding",
 		From: "nodeA",
 		To:   "error-handler",
@@ -137,7 +137,7 @@ func TestExpressionEdge_FindingCount(t *testing.T) {
 }
 
 func TestExpressionEdge_FindingDomain(t *testing.T) {
-	edge, err := CompileExpressionEdge(EdgeDef{
+	edge, err := CompileExpressionEdge(circuit.EdgeDef{
 		ID:   "domain-edge",
 		From: "nodeA",
 		To:   "security-handler",
@@ -164,7 +164,7 @@ func TestExpressionEdge_FindingDomain(t *testing.T) {
 }
 
 func TestExpressionEdge_NoCollector_GracefulNoop(t *testing.T) {
-	edge, err := CompileExpressionEdge(EdgeDef{
+	edge, err := CompileExpressionEdge(circuit.EdgeDef{
 		ID:   "noop-edge",
 		From: "nodeA",
 		To:   "error-handler",

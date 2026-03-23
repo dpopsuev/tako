@@ -8,7 +8,7 @@ import (
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/element"
+	"github.com/dpopsuev/bugle/element"
 )
 
 // JudgeFeedback is passed from Judge to Subject on non-final rounds.

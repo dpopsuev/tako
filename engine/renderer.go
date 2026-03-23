@@ -60,9 +60,9 @@ type TemplateRenderer struct {
 func (t *TemplateRenderer) Name() string { return BuiltinRendererTemplate }
 
 func (t *TemplateRenderer) Render(_ context.Context, data any) (string, error) {
-	tc, ok := data.(TemplateContext)
+	tc, ok := data.(circuit.TemplateContext)
 	if !ok {
-		return "", fmt.Errorf("template renderer: expected TemplateContext, got %T", data)
+		return "", fmt.Errorf("template renderer: expected circuit.TemplateContext, got %T", data)
 	}
 	return RenderPrompt(t.Template, tc)
 }

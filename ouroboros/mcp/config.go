@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/element"
+	"github.com/dpopsuev/bugle/element"
 	"github.com/dpopsuev/origami/dispatch"
 	fwmcp "github.com/dpopsuev/origami/mcp"
 	"github.com/dpopsuev/origami/models"

@@ -35,7 +35,7 @@ const ContextKeyPromptRelayer = "_prompt_relayer"
 // Exported for test backward compatibility; canonical usage is through
 // BuildGraph with handler_type: circuit.
 type MCPCircuitTransformer struct {
-	CircuitType string // handler name from NodeDef (e.g., "gnd")
+	CircuitType string // handler name from circuit.NodeDef (e.g., "gnd")
 	Endpoint    string // mediator MCP URL
 }
 

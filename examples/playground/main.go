@@ -18,11 +18,11 @@ import (
 
 	fw "github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/cycle"
+	"github.com/dpopsuev/bugle/cycle"
 	"github.com/dpopsuev/origami/dialectic"
-	"github.com/dpopsuev/origami/element"
+	"github.com/dpopsuev/bugle/element"
 	"github.com/dpopsuev/origami/mask"
-	"github.com/dpopsuev/origami/persona"
+	"github.com/dpopsuev/bugle/persona"
 )
 
 func resolveNodeElement(d fw.NodeDef) element.Element {

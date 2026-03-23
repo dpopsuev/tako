@@ -13,17 +13,17 @@ import (
 
 // DelegateNode is a Node that generates a sub-circuit instead of producing
 // an artifact directly. When the walk loop encounters a DelegateNode, it
-// calls GenerateCircuit to obtain a CircuitDef, builds and walks the
+// calls GenerateCircuit to obtain a circuit.CircuitDef, builds and walks the
 // sub-graph, and wraps the results in a DelegateArtifact.
 type DelegateNode interface {
 	circuit.Node
-	GenerateCircuit(ctx context.Context, nc circuit.NodeContext) (*CircuitDef, error)
+	GenerateCircuit(ctx context.Context, nc circuit.NodeContext) (*circuit.CircuitDef, error)
 }
 
 // DelegateArtifact wraps the result of a sub-walk produced by a DelegateNode.
 type DelegateArtifact struct {
-	// GeneratedCircuit is the CircuitDef returned by GenerateCircuit.
-	GeneratedCircuit *CircuitDef `json:"generated_circuit"`
+	// GeneratedCircuit is the circuit.CircuitDef returned by GenerateCircuit.
+	GeneratedCircuit *circuit.CircuitDef `json:"generated_circuit"`
 
 	// InnerArtifacts maps inner node names to their produced artifacts.
 	InnerArtifacts map[string]circuit.Artifact `json:"-"`
@@ -62,7 +62,7 @@ func (a *DelegateArtifact) confidence() float64 {
 	return sum / float64(count)
 }
 
-// dslDelegateNode is a DelegateNode produced by BuildGraph when a NodeDef
+// dslDelegateNode is a DelegateNode produced by BuildGraph when a circuit.NodeDef
 // has delegate: true and generator: set.
 type dslDelegateNode struct {
 	name    string
@@ -83,7 +83,7 @@ func (n *dslDelegateNode) Process(ctx context.Context, nc circuit.NodeContext) (
 	return &DelegateArtifact{GeneratedCircuit: da, NodeCount: len(da.Nodes)}, nil
 }
 
-func (n *dslDelegateNode) GenerateCircuit(ctx context.Context, nc circuit.NodeContext) (*CircuitDef, error) {
+func (n *dslDelegateNode) GenerateCircuit(ctx context.Context, nc circuit.NodeContext) (*circuit.CircuitDef, error) {
 	var input any
 	if nc.PriorArtifact != nil {
 		input = nc.PriorArtifact.Raw()
@@ -103,9 +103,9 @@ func (n *dslDelegateNode) GenerateCircuit(ctx context.Context, nc circuit.NodeCo
 	}
 
 	switch v := result.(type) {
-	case *CircuitDef:
+	case *circuit.CircuitDef:
 		return v, nil
-	case CircuitDef:
+	case circuit.CircuitDef:
 		return &v, nil
 	case map[string]any:
 		data, err := yaml.Marshal(v)
@@ -118,15 +118,15 @@ func (n *dslDelegateNode) GenerateCircuit(ctx context.Context, nc circuit.NodeCo
 	case []byte:
 		return LoadCircuit(v)
 	default:
-		return nil, fmt.Errorf("generator %s: unexpected result type %T (want *CircuitDef, map, string, or []byte)", n.gen.Name(), result)
+		return nil, fmt.Errorf("generator %s: unexpected result type %T (want *circuit.CircuitDef, map, string, or []byte)", n.gen.Name(), result)
 	}
 }
 
-// circuitRefNode is a DelegateNode that references a pre-loaded CircuitDef.
+// circuitRefNode is a DelegateNode that references a pre-loaded circuit.CircuitDef.
 type circuitRefNode struct {
 	name       string
 	element    circuit.Element
-	circuitDef *CircuitDef
+	circuitDef *circuit.CircuitDef
 	meta       map[string]any
 }
 
@@ -137,6 +137,6 @@ func (n *circuitRefNode) Process(ctx context.Context, nc circuit.NodeContext) (c
 	return &DelegateArtifact{GeneratedCircuit: n.circuitDef, NodeCount: len(n.circuitDef.Nodes)}, nil
 }
 
-func (n *circuitRefNode) GenerateCircuit(_ context.Context, _ circuit.NodeContext) (*CircuitDef, error) {
+func (n *circuitRefNode) GenerateCircuit(_ context.Context, _ circuit.NodeContext) (*circuit.CircuitDef, error) {
 	return n.circuitDef, nil
 }

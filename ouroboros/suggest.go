@@ -4,8 +4,8 @@ import (
 	"math"
 	"sort"
 
-	"github.com/dpopsuev/origami/element"
-	"github.com/dpopsuev/origami/persona"
+	"github.com/dpopsuev/bugle/element"
+	"github.com/dpopsuev/bugle/persona"
 )
 
 // elementVector returns the canonical trait values for an element,

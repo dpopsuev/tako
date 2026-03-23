@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"github.com/dpopsuev/origami/circuit"
 	"log/slog"
 	"sort"
 	"strings"
@@ -8,14 +9,14 @@ import (
 
 // runBuildDiagnostics performs post-build static analysis on the circuit graph.
 // All diagnostics emit slog.Warn — they do not fail the build.
-func runBuildDiagnostics(def *CircuitDef, reg GraphRegistries) {
+func runBuildDiagnostics(def *circuit.CircuitDef, reg GraphRegistries) {
 	diagUnreferencedHooks(def, reg)
 	diagMissingHookRefs(def, reg)
 }
 
 // diagUnreferencedHooks (D1): hooks registered in HookRegistry but not
 // referenced by any node's before: or after: field.
-func diagUnreferencedHooks(def *CircuitDef, reg GraphRegistries) {
+func diagUnreferencedHooks(def *circuit.CircuitDef, reg GraphRegistries) {
 	if len(reg.Hooks) == 0 {
 		return
 	}
@@ -35,7 +36,7 @@ func diagUnreferencedHooks(def *CircuitDef, reg GraphRegistries) {
 }
 
 // diagMissingHookRefs (D2+D4): nodes reference hooks that don't exist in the registry.
-func diagMissingHookRefs(def *CircuitDef, reg GraphRegistries) {
+func diagMissingHookRefs(def *circuit.CircuitDef, reg GraphRegistries) {
 	for _, nd := range def.Nodes {
 		checkHookList(nd.Name, "before", nd.Before, reg, def.Circuit)
 		checkHookList(nd.Name, "after", nd.After, reg, def.Circuit)
@@ -76,7 +77,7 @@ func checkHookList(nodeName, phase string, hooks []string, reg GraphRegistries, 
 	)
 }
 
-func collectReferencedHooks(def *CircuitDef) map[string]bool {
+func collectReferencedHooks(def *circuit.CircuitDef) map[string]bool {
 	refs := make(map[string]bool)
 	for _, nd := range def.Nodes {
 		for _, h := range nd.Before {

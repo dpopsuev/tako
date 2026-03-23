@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/dpopsuev/origami/element"
+	"github.com/dpopsuev/bugle/element"
 )
 
 func TestElementMatch_FastModel_MapsToFireOrLightning(t *testing.T) {

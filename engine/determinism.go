@@ -1,8 +1,11 @@
 package engine
 
+import "github.com/dpopsuev/origami/circuit"
+
+
 // IsCircuitDeterministic returns true if every node in the circuit that
 // references a transformer resolves to a deterministic transformer.
-func IsCircuitDeterministic(def *CircuitDef, reg TransformerRegistry) bool {
+func IsCircuitDeterministic(def *circuit.CircuitDef, reg TransformerRegistry) bool {
 	if reg == nil {
 		return false
 	}

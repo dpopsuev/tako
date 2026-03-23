@@ -97,9 +97,9 @@ const (
 )
 
 // JSONSchemaExtractor is a built-in extractor that unmarshals JSON input
-// and validates it against an ArtifactSchema.
+// and validates it against an circuit.ArtifactSchema.
 type JSONSchemaExtractor struct {
-	Schema *ArtifactSchema
+	Schema *circuit.ArtifactSchema
 }
 
 func (e *JSONSchemaExtractor) Name() string { return BuiltinExtractorJSONSchema }

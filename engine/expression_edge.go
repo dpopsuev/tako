@@ -28,13 +28,13 @@ type ExprState struct {
 
 // expressionEdge evaluates a compiled expr-lang program against artifact + state.
 type expressionEdge struct {
-	def     EdgeDef
+	def     circuit.EdgeDef
 	program *vm.Program
 	config  map[string]any
 }
 
 // CompileExpressionEdge compiles a When expression with a typed environment.
-func CompileExpressionEdge(def EdgeDef, config ...map[string]any) (*expressionEdge, error) {
+func CompileExpressionEdge(def circuit.EdgeDef, config ...map[string]any) (*expressionEdge, error) {
 	if def.When == "" {
 		return nil, fmt.Errorf("edge %s: When expression is empty", def.ID)
 	}

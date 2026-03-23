@@ -53,7 +53,7 @@ type WalkResult struct {
 // Operator implements the Kubernetes-style reconciliation loop for agentic circuits.
 type Operator interface {
 	Observe(ctx context.Context) (SystemState, error)
-	Reconcile(ctx context.Context, goal Goal, state SystemState) (*CircuitDef, error)
+	Reconcile(ctx context.Context, goal Goal, state SystemState) (*circuit.CircuitDef, error)
 	Evaluate(ctx context.Context, goal Goal, result WalkResult) (Evaluation, error)
 }
 
@@ -61,7 +61,7 @@ type Operator interface {
 type OperatorObserver interface {
 	OnObserve(SystemState)
 	OnEvaluate(Evaluation)
-	OnReconcile(*CircuitDef)
+	OnReconcile(*circuit.CircuitDef)
 	OnWalkComplete(WalkResult)
 }
 
@@ -104,7 +104,7 @@ const (
 // CircuitContainer manages a single circuit instance's lifecycle.
 type CircuitContainer interface {
 	ID() string
-	Def() *CircuitDef
+	Def() *circuit.CircuitDef
 	Status() ContainerStatus
 	Walk(ctx context.Context, reg GraphRegistries) (*WalkResult, error)
 	Abort(reason string) error
@@ -114,7 +114,7 @@ type CircuitContainer interface {
 // InMemoryContainer executes a circuit walk in-process.
 type InMemoryContainer struct {
 	id        string
-	def       *CircuitDef
+	def       *circuit.CircuitDef
 	mu        sync.Mutex
 	status    ContainerStatus
 	artifacts map[string]circuit.Artifact
@@ -123,7 +123,7 @@ type InMemoryContainer struct {
 }
 
 // NewInMemoryContainer creates a container in StatusPending.
-func NewInMemoryContainer(id string, def *CircuitDef, walkObs circuit.WalkObserver) *InMemoryContainer {
+func NewInMemoryContainer(id string, def *circuit.CircuitDef, walkObs circuit.WalkObserver) *InMemoryContainer {
 	return &InMemoryContainer{
 		id:      id,
 		def:     def,
@@ -133,7 +133,7 @@ func NewInMemoryContainer(id string, def *CircuitDef, walkObs circuit.WalkObserv
 }
 
 func (c *InMemoryContainer) ID() string       { return c.id }
-func (c *InMemoryContainer) Def() *CircuitDef { return c.def }
+func (c *InMemoryContainer) Def() *circuit.CircuitDef { return c.def }
 
 func (c *InMemoryContainer) Status() ContainerStatus {
 	c.mu.Lock()

@@ -2,7 +2,7 @@ package circuit
 
 // Category: Core Primitives
 
-import "github.com/dpopsuev/origami/element"
+import "github.com/dpopsuev/bugle/element"
 
 // Type aliases — definitions live in element/ sub-package.
 type (

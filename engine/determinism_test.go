@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"github.com/dpopsuev/origami/circuit"
 	"context"
 	"testing"
 )
@@ -42,12 +43,12 @@ func TestIsCircuitDeterministic(t *testing.T) {
 
 	tests := []struct {
 		name  string
-		nodes []NodeDef
+		nodes []circuit.NodeDef
 		want  bool
 	}{
 		{
 			name: "all deterministic",
-			nodes: []NodeDef{
+			nodes: []circuit.NodeDef{
 				{Name: "a", Handler: "core.jq", HandlerType: "transformer"},
 				{Name: "b", Handler: "core.jq", HandlerType: "transformer"},
 			},
@@ -55,7 +56,7 @@ func TestIsCircuitDeterministic(t *testing.T) {
 		},
 		{
 			name: "one stochastic",
-			nodes: []NodeDef{
+			nodes: []circuit.NodeDef{
 				{Name: "a", Handler: "core.jq", HandlerType: "transformer"},
 				{Name: "b", Handler: "core.llm", HandlerType: "transformer"},
 			},
@@ -63,14 +64,14 @@ func TestIsCircuitDeterministic(t *testing.T) {
 		},
 		{
 			name: "unresolvable transformer",
-			nodes: []NodeDef{
+			nodes: []circuit.NodeDef{
 				{Name: "a", Handler: "unknown.thing", HandlerType: "transformer"},
 			},
 			want: false,
 		},
 		{
 			name: "no handler field — skipped",
-			nodes: []NodeDef{
+			nodes: []circuit.NodeDef{
 				{Name: "a"},
 				{Name: "b"},
 			},
@@ -85,7 +86,7 @@ func TestIsCircuitDeterministic(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			def := &CircuitDef{Nodes: tt.nodes}
+			def := &circuit.CircuitDef{Nodes: tt.nodes}
 			got := IsCircuitDeterministic(def, reg)
 			if got != tt.want {
 				t.Errorf("isCircuitDeterministic() = %v, want %v", got, tt.want)
@@ -95,7 +96,7 @@ func TestIsCircuitDeterministic(t *testing.T) {
 }
 
 func TestIsCircuitDeterministic_NilRegistry(t *testing.T) {
-	def := &CircuitDef{Nodes: []NodeDef{{Name: "a", Handler: "core.jq", HandlerType: "transformer"}}}
+	def := &circuit.CircuitDef{Nodes: []circuit.NodeDef{{Name: "a", Handler: "core.jq", HandlerType: "transformer"}}}
 	if IsCircuitDeterministic(def, nil) {
 		t.Error("expected false with nil registry")
 	}

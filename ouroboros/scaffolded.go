@@ -7,7 +7,7 @@ import (
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/element"
+	"github.com/dpopsuev/bugle/element"
 )
 
 // HintFeedback is the artifact emitted by the scaffolded judge when hints

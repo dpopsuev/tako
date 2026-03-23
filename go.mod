@@ -1,6 +1,6 @@
 module github.com/dpopsuev/origami
 
-go 1.24.2
+go 1.25.7
 
 require (
 	github.com/expr-lang/expr v1.17.8
@@ -22,7 +22,10 @@ require (
 	modernc.org/sqlite v1.46.1
 )
 
-require github.com/coder/websocket v1.8.14
+require (
+	github.com/coder/websocket v1.8.14
+	github.com/dpopsuev/bugle v0.0.0-00010101000000-000000000000
+)
 
 require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
@@ -84,3 +87,5 @@ require (
 replace github.com/dpopsuev/rh-gnd => ../rh-gnd
 
 replace github.com/dpopsuev/rh-rca => ../rh-rca
+
+replace github.com/dpopsuev/bugle => ../bugle

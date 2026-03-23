@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/element"
+	"github.com/dpopsuev/bugle/element"
 )
 
 func TestProviderHints_MapsElementToProvider(t *testing.T) {

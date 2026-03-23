@@ -91,7 +91,7 @@ func (h *HookFunc) Run(ctx context.Context, nodeName string, artifact circuit.Ar
 const BuiltinHookFileWrite = "file-write"
 
 // FileWriteHook is a built-in hook that writes an artifact to a JSON file.
-// The output path is read from NodeDef.Meta["output_path"] and supports
+// The output path is read from circuit.NodeDef.Meta["output_path"] and supports
 // Go template variables: {{ .NodeName }}.
 type FileWriteHook struct {
 	NodeMeta map[string]map[string]any // node name -> meta (set by Runner)

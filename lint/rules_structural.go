@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/persona"
+	"github.com/dpopsuev/bugle/persona"
 )
 
 var validApproaches = map[string]bool{

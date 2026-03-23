@@ -2,7 +2,10 @@ package engine
 
 // Category: Execution — default walker construction.
 
-import "github.com/dpopsuev/origami/circuit"
+import (
+	"github.com/dpopsuev/bugle"
+	"github.com/dpopsuev/origami/circuit"
+)
 
 // DefaultWalker returns a zero-config Walker suitable for consumers that
 // don't need persona or element customization. Uses Earth element
@@ -22,8 +25,8 @@ func DefaultWalkerWithElement(element circuit.Element) circuit.Walker {
 
 func defaultWalkerWith(element circuit.Element) *circuit.ProcessWalker {
 	var id circuit.AgentIdentity
-	if circuit.DefaultPersonaResolver != nil {
-		if p, ok := circuit.DefaultPersonaResolver("Sentinel"); ok {
+	if bugle.DefaultPersonaResolver != nil {
+		if p, ok := bugle.DefaultPersonaResolver("Sentinel"); ok {
 			id = p.Identity
 		}
 	}

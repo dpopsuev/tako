@@ -8,14 +8,14 @@ import (
 	"github.com/dpopsuev/origami/circuit"
 )
 
-func findingTestNode(name string, confidence float64, raw any) func(NodeDef) circuit.Node {
-	return func(_ NodeDef) circuit.Node {
+func findingTestNode(name string, confidence float64, raw any) func(circuit.NodeDef) circuit.Node {
+	return func(_ circuit.NodeDef) circuit.Node {
 		return &stubNode{name: name, artifact: &stubArtifact{typ: "test", confidence: confidence, raw: raw}}
 	}
 }
 
-func findingEnforcerNode(name string, collector circuit.FindingCollector, f *circuit.Finding) func(NodeDef) circuit.Node {
-	return func(_ NodeDef) circuit.Node {
+func findingEnforcerNode(name string, collector circuit.FindingCollector, f *circuit.Finding) func(circuit.NodeDef) circuit.Node {
+	return func(_ circuit.NodeDef) circuit.Node {
 		return &findingEnforcerNodeImpl{name: name, collector: collector, finding: f}
 	}
 }
@@ -96,15 +96,15 @@ func TestArtifactCaptureObserver_FilteredNodes(t *testing.T) {
 	}
 }
 
-func twoNodeCircuit() *CircuitDef {
-	return &CircuitDef{
+func twoNodeCircuit() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit:     "test-work",
 		HandlerType: "node",
-		Nodes: []NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "step1"},
 			{Name: "step2"},
 		},
-		Edges: []EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "step1", To: "step2"},
 		},
 		Start: "step1",
@@ -112,15 +112,15 @@ func twoNodeCircuit() *CircuitDef {
 	}
 }
 
-func twoNodeEnforcerCircuit() *CircuitDef {
-	return &CircuitDef{
+func twoNodeEnforcerCircuit() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit:     "test-enforcer",
 		HandlerType: "node",
-		Nodes: []NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "check"},
 			{Name: "report"},
 		},
-		Edges: []EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e-check", From: "check", To: "report"},
 		},
 		Start: "check",
@@ -178,14 +178,14 @@ func TestRunWithEnforcer_WorkAndEnforcerBothRun(t *testing.T) {
 func TestRunWithEnforcer_EnforcerCancelledOnWorkComplete(t *testing.T) {
 	workDef := twoNodeCircuit()
 
-	enforcerDef := &CircuitDef{
+	enforcerDef := &circuit.CircuitDef{
 		Circuit:     "test-enforcer",
 		HandlerType: "node",
-		Nodes: []NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "slow-check"},
 			{Name: "done"},
 		},
-		Edges: []EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e-slow", From: "slow-check", To: "done"},
 		},
 		Start: "slow-check",
@@ -201,7 +201,7 @@ func TestRunWithEnforcer_EnforcerCancelledOnWorkComplete(t *testing.T) {
 
 	enforcerReg := GraphRegistries{
 		Nodes: NodeRegistry{
-			"slow-check": func(_ NodeDef) circuit.Node {
+			"slow-check": func(_ circuit.NodeDef) circuit.Node {
 				return &slowNode{name: "slow-check", duration: 2 * time.Second}
 			},
 			"done": findingTestNode("done", 1.0, "done"),
@@ -260,14 +260,14 @@ func TestRunWithEnforcer_DefaultRouter(t *testing.T) {
 func TestRunWithEnforcer_ErrorFinding(t *testing.T) {
 	workDef := twoNodeCircuit()
 
-	enforcerDef := &CircuitDef{
+	enforcerDef := &circuit.CircuitDef{
 		Circuit:     "test-enforcer",
 		HandlerType: "node",
-		Nodes: []NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "audit"},
 			{Name: "done"},
 		},
-		Edges: []EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "e-audit", From: "audit", To: "done"},
 		},
 		Start: "audit",

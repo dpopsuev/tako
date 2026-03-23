@@ -6,6 +6,7 @@ package acceptance
 //   So that I can process batches efficiently with optional parallelism
 
 import (
+	"github.com/dpopsuev/origami/circuit"
 	"context"
 	"testing"
 
@@ -100,13 +101,13 @@ func TestBatch_FailedCaseDoesNotBlockOthers(t *testing.T) {
 	goodDef := loadFixture(t, "circuits/linear.yaml")
 
 	// Bad circuit with missing start node
-	badDef := &engine.CircuitDef{
+	badDef := &circuit.CircuitDef{
 		Circuit:     "broken",
 		Start:       "nonexistent",
 		Done:        "done",
 		HandlerType: "transformer",
-		Nodes:       []engine.NodeDef{{Name: "step-a", Handler: "echo"}},
-		Edges:       []engine.EdgeDef{{ID: "a-done", From: "step-a", To: "done"}},
+		Nodes:       []circuit.NodeDef{{Name: "step-a", Handler: "echo"}},
+		Edges:       []circuit.EdgeDef{{ID: "a-done", From: "step-a", To: "done"}},
 	}
 
 	cases := []engine.BatchCase{

@@ -54,7 +54,7 @@ type TransformerContext struct {
 	Config      map[string]any // circuit vars
 	Prompt      string         // prompt template path or content
 	NodeName    string         // current node name
-	Meta        map[string]any // additional metadata from NodeDef or walk state
+	Meta        map[string]any // additional metadata from circuit.NodeDef or walk state
 	WalkerState *circuit.WalkerState   // walker state including context, outputs, and loop counts
 }
 
@@ -97,11 +97,11 @@ type transformerNode struct {
 	name     string
 	element  circuit.Element
 	trans    Transformer
-	prompt   string         // from NodeDef.Prompt
-	input    string         // from NodeDef.Input (e.g. "${recall.output}")
-	provider string         // from NodeDef.Provider (e.g. "cursor", "codex")
-	config   map[string]any // circuit vars (from CircuitDef.Vars)
-	meta     map[string]any // from NodeDef.Meta
+	prompt   string         // from circuit.NodeDef.Prompt
+	input    string         // from circuit.NodeDef.Input (e.g. "${recall.output}")
+	provider string         // from circuit.NodeDef.Provider (e.g. "cursor", "codex")
+	config   map[string]any // circuit vars (from circuit.CircuitDef.Vars)
+	meta     map[string]any // from circuit.NodeDef.Meta
 }
 
 func (n *transformerNode) Name() string             { return n.name }
@@ -133,7 +133,7 @@ func (n *transformerNode) Process(ctx context.Context, nc circuit.NodeContext) (
 				sources[k] = v.Raw()
 			}
 		}
-		tmplCtx := TemplateContext{
+		tmplCtx := circuit.TemplateContext{
 			Output:  input,
 			State:   nc.WalkerState,
 			Config:  n.config,

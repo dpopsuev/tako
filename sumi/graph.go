@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/element"
+	"github.com/dpopsuev/bugle/element"
 	"github.com/dpopsuev/origami/view"
 	"github.com/charmbracelet/lipgloss"
 )

@@ -6,6 +6,7 @@ package acceptance
 //   So that circuits can self-correct and converge to desired states
 
 import (
+	"github.com/dpopsuev/origami/circuit"
 	"context"
 	"testing"
 
@@ -23,17 +24,17 @@ func (s *stubConvergingOperator) Observe(_ context.Context) (engine.SystemState,
 	return engine.SystemState{Iteration: s.currentIteration}, nil
 }
 
-func (s *stubConvergingOperator) Reconcile(_ context.Context, _ engine.Goal, _ engine.SystemState) (*engine.CircuitDef, error) {
+func (s *stubConvergingOperator) Reconcile(_ context.Context, _ engine.Goal, _ engine.SystemState) (*circuit.CircuitDef, error) {
 	// Return a minimal passthrough circuit
-	return &engine.CircuitDef{
+	return &circuit.CircuitDef{
 		Circuit:     "convergence-test",
 		HandlerType: "transformer",
 		Start:       "step",
 		Done:        "_done",
-		Nodes: []engine.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "step", Handler: "echo"},
 		},
-		Edges: []engine.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "step-done", From: "step", To: "_done", When: "true"},
 		},
 	}, nil
@@ -120,16 +121,16 @@ func (s *stubEscalatingOperator) Observe(_ context.Context) (engine.SystemState,
 	return engine.SystemState{Iteration: s.iteration}, nil
 }
 
-func (s *stubEscalatingOperator) Reconcile(_ context.Context, _ engine.Goal, _ engine.SystemState) (*engine.CircuitDef, error) {
-	return &engine.CircuitDef{
+func (s *stubEscalatingOperator) Reconcile(_ context.Context, _ engine.Goal, _ engine.SystemState) (*circuit.CircuitDef, error) {
+	return &circuit.CircuitDef{
 		Circuit:     "escalate-test",
 		HandlerType: "transformer",
 		Start:       "step",
 		Done:        "_done",
-		Nodes: []engine.NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "step", Handler: "echo"},
 		},
-		Edges: []engine.EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "step-done", From: "step", To: "_done", When: "true"},
 		},
 	}, nil

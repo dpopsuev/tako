@@ -2,7 +2,7 @@ package ouroboros
 
 import (
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/element"
+	"github.com/dpopsuev/bugle/element"
 )
 
 // ProviderHintsContextKey is the walker context key where auto-routing

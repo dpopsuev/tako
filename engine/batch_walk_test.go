@@ -8,17 +8,17 @@ import (
 	"github.com/dpopsuev/origami/circuit"
 )
 
-func batchTestDef() *CircuitDef {
-	return &CircuitDef{
+func batchTestDef() *circuit.CircuitDef {
+	return &circuit.CircuitDef{
 		Circuit:     "batch-test",
 		Start:       "step-a",
 		Done:        "_done",
 		HandlerType: "transformer",
-		Nodes: []NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "step-a", Handler: "echo"},
 			{Name: "step-b", Handler: "echo"},
 		},
-		Edges: []EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "E1", From: "step-a", To: "step-b", When: "true"},
 			{ID: "E2", From: "step-b", To: "_done", When: "true"},
 		},
@@ -117,15 +117,15 @@ func TestBatchWalk_Parallel(t *testing.T) {
 }
 
 func TestBatchWalk_PerCaseComponents(t *testing.T) {
-	def := &CircuitDef{
+	def := &circuit.CircuitDef{
 		Circuit:     "hook-test",
 		Start:       "step-a",
 		Done:        "_done",
 		HandlerType: "transformer",
-		Nodes: []NodeDef{
+		Nodes: []circuit.NodeDef{
 			{Name: "step-a", Handler: "echo", After: []string{"track"}},
 		},
-		Edges: []EdgeDef{
+		Edges: []circuit.EdgeDef{
 			{ID: "E1", From: "step-a", To: "_done", When: "true"},
 		},
 	}
@@ -193,13 +193,13 @@ func TestBatchWalk_Empty(t *testing.T) {
 }
 
 func TestBatchWalk_CaseError(t *testing.T) {
-	badDef := &CircuitDef{
+	badDef := &circuit.CircuitDef{
 		Circuit:     "bad",
 		Start:       "missing-node",
 		Done:        "_done",
 		HandlerType: "transformer",
-		Nodes:       []NodeDef{{Name: "step-a", Handler: "echo"}},
-		Edges:       []EdgeDef{{ID: "E1", From: "step-a", To: "_done", When: "true"}},
+		Nodes:       []circuit.NodeDef{{Name: "step-a", Handler: "echo"}},
+		Edges:       []circuit.EdgeDef{{ID: "E1", From: "step-a", To: "_done", When: "true"}},
 	}
 
 	results := BatchWalk(context.Background(), BatchWalkConfig{

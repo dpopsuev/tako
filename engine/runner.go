@@ -41,21 +41,21 @@ func AsInterrupt(err error) (Interrupt, bool) {
 
 // Runner drives a circuit graph with automatic artifact schema validation,
 // before-hooks (context injection), and after-hooks (side effects).
-// Domain tools create a Runner from a CircuitDef and their registries,
+// Domain tools create a Runner from a circuit.CircuitDef and their registries,
 // then call Walk with a domain Walker.
 type Runner struct {
-	Circuit    *CircuitDef
+	Circuit    *circuit.CircuitDef
 	Graph      Graph
-	Schemas    map[string]*ArtifactSchema // node name -> schema (from CircuitDef)
-	NodeBefore map[string][]string        // node name -> before-hook names (from NodeDef.Before)
-	NodeHooks  map[string][]string        // node name -> after-hook names (from NodeDef.After)
+	Schemas    map[string]*circuit.ArtifactSchema // node name -> schema (from circuit.CircuitDef)
+	NodeBefore map[string][]string        // node name -> before-hook names (from circuit.NodeDef.Before)
+	NodeHooks  map[string][]string        // node name -> after-hook names (from circuit.NodeDef.After)
 	Hooks      HookRegistry               // resolved hooks
 	Logger     *slog.Logger
 }
 
 // NewRunner constructs a Runner from a circuit definition and registries.
 // Backward-compatible: accepts (NodeRegistry, EdgeFactory, ...ExtractorRegistry).
-func NewRunner(def *CircuitDef, nodes NodeRegistry, edges EdgeFactory, extractors ...ExtractorRegistry) (*Runner, error) {
+func NewRunner(def *circuit.CircuitDef, nodes NodeRegistry, edges EdgeFactory, extractors ...ExtractorRegistry) (*Runner, error) {
 	var extReg ExtractorRegistry
 	if len(extractors) > 0 {
 		extReg = extractors[0]
@@ -68,13 +68,13 @@ func NewRunner(def *CircuitDef, nodes NodeRegistry, edges EdgeFactory, extractor
 }
 
 // NewRunnerWith constructs a Runner using the full registries bundle.
-func NewRunnerWith(def *CircuitDef, reg GraphRegistries) (*Runner, error) {
+func NewRunnerWith(def *circuit.CircuitDef, reg GraphRegistries) (*Runner, error) {
 	graph, err := BuildGraph(def, reg)
 	if err != nil {
 		return nil, fmt.Errorf("build graph: %w", err)
 	}
 
-	schemas := make(map[string]*ArtifactSchema, len(def.Nodes))
+	schemas := make(map[string]*circuit.ArtifactSchema, len(def.Nodes))
 	nodeBefore := make(map[string][]string, len(def.Nodes))
 	nodeHooks := make(map[string][]string, len(def.Nodes))
 	nodeMeta := make(map[string]map[string]any, len(def.Nodes))
@@ -150,7 +150,7 @@ func (r *Runner) Walk(ctx context.Context, walker circuit.Walker, startNode stri
 // after each Handle call.
 type validatingWalker struct {
 	inner   circuit.Walker
-	schemas map[string]*ArtifactSchema
+	schemas map[string]*circuit.ArtifactSchema
 	log     *slog.Logger
 }
 

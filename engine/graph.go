@@ -35,12 +35,11 @@ type Zone struct {
 	ElementAffinity circuit.Element
 	Stickiness      int // 0-3 stickiness value for agents in this zone
 	Domain          string
-	ContextFilter   *ContextFilterDef
+	ContextFilter   *circuit.ContextFilterDef
 }
 
-// ContextFilterDef configures which context keys survive a zone transition.
+// circuit.ContextFilterDef configures which context keys survive a zone transition.
 // Imported from circuit/ via alias.
-type ContextFilterDef = circuit.ContextFilterDef
 
 // DefaultGraph is the reference Graph implementation. It stores nodes and
 // edges in maps for O(1) lookup while preserving edge definition order
@@ -517,7 +516,7 @@ func (g *DefaultGraph) WalkTeam(ctx context.Context, team *Team, startNode strin
 // applyContextFilter strips or keeps context keys based on a zone's filter.
 // Block takes precedence: if both pass and block are set, blocked keys are
 // removed first, then only passed keys survive.
-func applyContextFilter(ctx map[string]any, filter *ContextFilterDef) map[string]any {
+func applyContextFilter(ctx map[string]any, filter *circuit.ContextFilterDef) map[string]any {
 	if filter == nil {
 		return ctx
 	}

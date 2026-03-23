@@ -12,11 +12,6 @@ import (
 )
 
 // Type aliases — definitions live in circuit/ sub-package.
-type CircuitDef = circuit.CircuitDef
-type NodeDef = circuit.NodeDef
-type EdgeDef = circuit.EdgeDef
-type ArtifactSchema = circuit.ArtifactSchema
-type TemplateContext = circuit.TemplateContext
 
 // Forwarded functions from circuit/.
 var (
@@ -44,10 +39,10 @@ const (
 )
 
 // NodeRegistry maps node family names to Node factory functions.
-type NodeRegistry map[string]func(def NodeDef) circuit.Node
+type NodeRegistry map[string]func(def circuit.NodeDef) circuit.Node
 
 // EdgeFactory maps edge IDs to Edge factory functions.
-type EdgeFactory map[string]func(def EdgeDef) circuit.Edge
+type EdgeFactory map[string]func(def circuit.EdgeDef) circuit.Edge
 
 // ComponentLoader resolves an import name to a live Component.
 type ComponentLoader func(name string) (*Component, error)
@@ -61,12 +56,12 @@ type GraphRegistries struct {
 	Transformers     TransformerRegistry
 	Hooks            HookRegistry
 	Components       ComponentLoader
-	Circuits         map[string]*CircuitDef
+	Circuits         map[string]*circuit.CircuitDef
 	MediatorEndpoint string
 }
 
-// BuildGraph constructs a Graph from a CircuitDef using the full registries bundle.
-func BuildGraph(def *CircuitDef, reg GraphRegistries) (Graph, error) {
+// BuildGraph constructs a Graph from a circuit.CircuitDef using the full registries bundle.
+func BuildGraph(def *circuit.CircuitDef, reg GraphRegistries) (Graph, error) {
 	if err := def.Validate(); err != nil {
 		return nil, fmt.Errorf("validate: %w", err)
 	}
@@ -167,7 +162,7 @@ func BuildGraph(def *CircuitDef, reg GraphRegistries) (Graph, error) {
 }
 
 // validateTopology checks the graph against the declared topology.
-func validateTopology(g *DefaultGraph, def *CircuitDef) error {
+func validateTopology(g *DefaultGraph, def *circuit.CircuitDef) error {
 	v := circuit.DefaultTopologyValidator
 	if v == nil {
 		slog.Warn("topology validator not registered, skipping validation",
@@ -181,7 +176,7 @@ func validateTopology(g *DefaultGraph, def *CircuitDef) error {
 	return v(def.Topology, shape)
 }
 
-func buildGraphShape(g *DefaultGraph, def *CircuitDef) circuit.GraphShape {
+func buildGraphShape(g *DefaultGraph, def *circuit.CircuitDef) circuit.GraphShape {
 	nodes := make([]circuit.GraphNodeInfo, 0, len(g.nodes))
 	for _, n := range g.nodes {
 		inputs := 0
@@ -209,14 +204,14 @@ func buildGraphShape(g *DefaultGraph, def *CircuitDef) circuit.GraphShape {
 	}
 }
 
-// resolveNode creates a Node from a NodeDef using handler + handler_type.
-func resolveNode(def *CircuitDef, nd NodeDef, reg GraphRegistries) (circuit.Node, error) {
+// resolveNode creates a Node from a circuit.NodeDef using handler + handler_type.
+func resolveNode(def *circuit.CircuitDef, nd circuit.NodeDef, reg GraphRegistries) (circuit.Node, error) {
 	elem, _ := circuit.ResolveApproach(strings.ToLower(nd.Approach))
 	return resolveHandler(def, nd, reg, elem)
 }
 
 // resolveHandler resolves a node using the explicit handler + handler_type path.
-func resolveHandler(def *CircuitDef, nd NodeDef, reg GraphRegistries, elem circuit.Element) (circuit.Node, error) {
+func resolveHandler(def *circuit.CircuitDef, nd circuit.NodeDef, reg GraphRegistries, elem circuit.Element) (circuit.Node, error) {
 	handler := nd.Handler
 	if handler == "" {
 		handler = nd.Name
@@ -343,7 +338,7 @@ func resolveHandler(def *CircuitDef, nd NodeDef, reg GraphRegistries, elem circu
 }
 
 // resolveTransformerByName resolves a transformer by name, checking builtins first.
-func resolveTransformerByName(_ *CircuitDef, name, nodeName string, reg GraphRegistries) (Transformer, error) {
+func resolveTransformerByName(_ *circuit.CircuitDef, name, nodeName string, reg GraphRegistries) (Transformer, error) {
 	switch name {
 	case BuiltinTransformerGoTemplate:
 		return &goTemplateTransformer{}, nil
@@ -356,10 +351,10 @@ func resolveTransformerByName(_ *CircuitDef, name, nodeName string, reg GraphReg
 	return reg.Transformers.Get(name)
 }
 
-// dslEdge is a default Edge implementation created from an EdgeDef when
+// dslEdge is a default Edge implementation created from an circuit.EdgeDef when
 // no custom factory is registered. It always matches (returns a transition).
 type dslEdge struct {
-	def EdgeDef
+	def circuit.EdgeDef
 }
 
 func (e *dslEdge) ID() string       { return e.def.ID }
@@ -376,7 +371,7 @@ func (e *dslEdge) Evaluate(_ circuit.Artifact, _ *circuit.WalkerState) *circuit.
 }
 
 // resolveExtractor resolves an extractor by name.
-func resolveExtractor(def *CircuitDef, name string, nd NodeDef, reg GraphRegistries) (Extractor, error) {
+func resolveExtractor(def *circuit.CircuitDef, name string, nd circuit.NodeDef, reg GraphRegistries) (Extractor, error) {
 	switch name {
 	case BuiltinExtractorJSONSchema:
 		return &JSONSchemaExtractor{Schema: nd.Schema}, nil
@@ -419,7 +414,7 @@ func resolveExtractor(def *CircuitDef, name string, nd NodeDef, reg GraphRegistr
 }
 
 // resolveRenderer resolves a renderer by name.
-func resolveRenderer(name string, nd NodeDef, reg GraphRegistries) (Renderer, error) {
+func resolveRenderer(name string, nd circuit.NodeDef, reg GraphRegistries) (Renderer, error) {
 	if name == BuiltinRendererTemplate {
 		return &TemplateRenderer{Template: nd.Prompt}, nil
 	}
