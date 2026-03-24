@@ -4,7 +4,7 @@
 # Build: docker build -t origami-gnd -f deploy/Dockerfile.gnd .
 # Run:   docker run -p 9100:9100 origami-gnd --drivers git,docs
 
-FROM golang:1.24 AS builder
+FROM golang:1.25 AS builder
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download

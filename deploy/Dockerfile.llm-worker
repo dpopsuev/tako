@@ -4,7 +4,7 @@
 # Build: docker build -t origami-llm-worker -f deploy/Dockerfile.llm-worker .
 # Run:   docker run -e GATEWAY_ENDPOINT=http://gateway:9000/mcp origami-llm-worker
 
-FROM golang:1.24 AS builder
+FROM golang:1.25 AS builder
 WORKDIR /src
 COPY go.mod go.sum ./
 # Strip local-only modules — container builds use published modules.
