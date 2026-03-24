@@ -24,14 +24,18 @@ check: build lint test
 build:
     go build ./...
 
-# Build the origami CLI
+# Build all CLIs into bin/
 build-cli:
     @mkdir -p {{ bin_dir }}
-    go build -o {{ bin_dir }}/origami {{ cmd }}
+    go build -o {{ bin_dir }}/origami ./cmd/origami
+    go build -o {{ bin_dir }}/mediator ./cmd/mediator
+    go build -o {{ bin_dir }}/llm-worker ./cmd/llm-worker
 
 # Install origami to $GOPATH/bin
 install:
-    go install {{ cmd }}
+    go install ./cmd/origami
+    go install ./cmd/mediator
+    go install ./cmd/llm-worker
 
 # ─── Lint ─────────────────────────────────────────────────
 
