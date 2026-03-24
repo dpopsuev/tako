@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
-	bd "github.com/dpopsuev/bugle/dispatch"
+	"github.com/dpopsuev/origami/agentport"
 )
 
 // FileDispatcherConfig configures the FileDispatcher behavior.
@@ -80,7 +80,7 @@ func NewFileDispatcher(cfg FileDispatcherConfig) *FileDispatcher {
 // Dispatch writes signal.json with a monotonic dispatch_id, polls for an
 // artifact whose wrapper echoes the same dispatch_id, validates JSON, and
 // returns the inner "data" bytes.
-func (d *FileDispatcher) Dispatch(_ context.Context, ctx bd.Context) ([]byte, error) {
+func (d *FileDispatcher) Dispatch(_ context.Context, ctx agentport.Context) ([]byte, error) {
 	signalDir := d.cfg.SignalDir
 	if signalDir == "" {
 		signalDir = filepath.Dir(ctx.ArtifactPath)

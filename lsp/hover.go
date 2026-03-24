@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/bugle/element"
+	"github.com/dpopsuev/origami/agentport"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 )
@@ -74,10 +74,10 @@ func computeHover(doc *document, pos protocol.Position, vocab circuit.RichVocabu
 	// Approach hover
 	if strings.HasPrefix(trimmed, "approach:") {
 		val := strings.TrimSpace(strings.TrimPrefix(trimmed, "approach:"))
-		a := element.Approach(val)
+		a := agentport.Approach(val)
 		if info, ok := approachDocs[val]; ok {
-			emoji := element.ApproachEmoji(a)
-			traits := element.ApproachTraitsSummary(a)
+			emoji := agentport.ApproachEmoji(a)
+			traits := agentport.ApproachTraitsSummary(a)
 			md := fmt.Sprintf("### %s %s\n\n%s\n\n```\n%s\n```\n\n**Color:** %s",
 				emoji, val, info.Description, traits, info.Color)
 			return &protocol.Hover{
@@ -132,7 +132,7 @@ func computeHover(doc *document, pos protocol.Position, vocab circuit.RichVocabu
 					md += fmt.Sprintf("**Handler:** %s\n\n", handler)
 				}
 				if n.Approach != "" {
-					emoji := element.ApproachEmoji(element.Approach(n.Approach))
+					emoji := agentport.ApproachEmoji(agentport.Approach(n.Approach))
 					md += fmt.Sprintf("**Approach:** %s %s\n\n", emoji, n.Approach)
 				}
 				if vocab != nil {

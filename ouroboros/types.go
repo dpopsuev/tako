@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/bugle/element"
+	"github.com/dpopsuev/origami/agentport"
 )
 
 // ---------------------------------------------------------------------------
@@ -46,8 +46,8 @@ type ModelProfile struct {
 	BatteryVersion    string                         `json:"battery_version"`
 	Timestamp         time.Time                      `json:"timestamp"`
 	Dimensions        map[Dimension]float64          `json:"dimensions"`
-	ElementMatch      element.Element              `json:"element_match"`
-	ElementScores     map[element.Element]float64  `json:"element_scores"`
+	ElementMatch      agentport.Element              `json:"element_match"`
+	ElementScores     map[agentport.Element]float64  `json:"element_scores"`
 	SuggestedPersonas []string                       `json:"suggested_personas,omitempty"`
 	OffsetPreamble    string                         `json:"offset_preamble,omitempty"`
 	CostProfile       circuit.CostProfile          `json:"cost_profile"`

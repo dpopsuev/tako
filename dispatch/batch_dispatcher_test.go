@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	bd "github.com/dpopsuev/bugle/dispatch"
+	"github.com/dpopsuev/origami/agentport"
 )
 
 func TestBatchFileDispatcher_AllComplete(t *testing.T) {
@@ -28,13 +28,13 @@ func TestBatchFileDispatcher_AllComplete(t *testing.T) {
 	bfd := NewBatchFileDispatcher(cfg)
 
 	// Create 2 cases with pre-written artifacts
-	cases := make([]bd.Context, 2)
+	cases := make([]agentport.Context, 2)
 	for i := 0; i < 2; i++ {
 		caseDir := filepath.Join(dir, "cases", caseID(i))
 		os.MkdirAll(caseDir, 0755)
 		artifactPath := filepath.Join(caseDir, "recall-result.json")
 
-		cases[i] = bd.Context{
+		cases[i] = agentport.Context{
 			CaseID:       caseID(i),
 			Step:         "F0_RECALL",
 			PromptPath:   filepath.Join(caseDir, "prompt.md"),
@@ -123,11 +123,11 @@ func TestBatchFileDispatcher_PartialFailure(t *testing.T) {
 	bfd := NewBatchFileDispatcher(cfg)
 
 	// Case 0: will succeed, Case 1: will timeout (no artifact written)
-	cases := make([]bd.Context, 2)
+	cases := make([]agentport.Context, 2)
 	for i := 0; i < 2; i++ {
 		caseDir := filepath.Join(dir, "cases", caseID(i))
 		os.MkdirAll(caseDir, 0755)
-		cases[i] = bd.Context{
+		cases[i] = agentport.Context{
 			CaseID:       caseID(i),
 			Step:         "F0_RECALL",
 			PromptPath:   filepath.Join(caseDir, "prompt.md"),
@@ -197,7 +197,7 @@ func TestBatchFileDispatcher_ManifestLifecycle(t *testing.T) {
 	os.MkdirAll(caseDir, 0755)
 	os.WriteFile(filepath.Join(caseDir, "prompt.md"), []byte("test"), 0644)
 
-	ctx := bd.Context{
+	ctx := agentport.Context{
 		CaseID:       "C1",
 		Step:         "F0_RECALL",
 		PromptPath:   filepath.Join(caseDir, "prompt.md"),
@@ -240,7 +240,7 @@ func TestBatchFileDispatcher_ManifestLifecycle(t *testing.T) {
 		}
 	}()
 
-	_, errs := bfd.DispatchBatch(context.Background(), []bd.Context{ctx}, "triage", "")
+	_, errs := bfd.DispatchBatch(context.Background(), []agentport.Context{ctx}, "triage", "")
 	if errs[0] != nil {
 		t.Errorf("dispatch error: %v", errs[0])
 	}
@@ -281,7 +281,7 @@ func TestBatchFileDispatcher_SingleDispatchInterface(t *testing.T) {
 	os.MkdirAll(caseDir, 0755)
 	os.WriteFile(filepath.Join(caseDir, "prompt.md"), []byte("test"), 0644)
 
-	ctx := bd.Context{
+	ctx := agentport.Context{
 		CaseID:       "C1",
 		Step:         "F0_RECALL",
 		PromptPath:   filepath.Join(caseDir, "prompt.md"),
@@ -311,7 +311,7 @@ func TestBatchFileDispatcher_SingleDispatchInterface(t *testing.T) {
 	}()
 
 	// Use the Dispatcher interface
-	var d bd.Dispatcher = bfd
+	var d agentport.Dispatcher = bfd
 	data, err := d.Dispatch(context.Background(), ctx)
 	if err != nil {
 		t.Fatalf("Dispatch error: %v", err)

@@ -18,15 +18,13 @@ import (
 
 	fw "github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/bugle/cycle"
 	"github.com/dpopsuev/origami/dialectic"
-	"github.com/dpopsuev/bugle/element"
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/mask"
-	"github.com/dpopsuev/bugle/persona"
 )
 
-func resolveNodeElement(d fw.NodeDef) element.Element {
-	e, _ := element.ResolveApproach(strings.ToLower(d.Approach))
+func resolveNodeElement(d fw.NodeDef) agentport.Element {
+	e, _ := agentport.ResolveApproach(strings.ToLower(d.Approach))
 	return e
 }
 
@@ -120,8 +118,8 @@ func showElements() {
 		"Element", "Speed", "Loops", "Converg.", "Shortcuts", "Depth", "Failure Mode")
 	fmt.Printf("  %s\n", strings.Repeat("-", 85))
 
-	for _, el := range element.AllElements() {
-		t := element.DefaultTraits(el)
+	for _, el := range agentport.AllElements() {
+		t := agentport.DefaultTraits(el)
 		color := elementColor(el)
 		fmt.Printf("  %s%-12s%s %-10s %-6d %-8.2f %-10.1f %-5d %s\n",
 			color, el, reset,
@@ -131,19 +129,19 @@ func showElements() {
 
 }
 
-func elementColor(e element.Element) string {
+func elementColor(e agentport.Element) string {
 	switch e {
-	case element.ElementFire:
+	case agentport.ElementFire:
 		return red
-	case element.ElementLightning:
+	case agentport.ElementLightning:
 		return yellow
-	case element.ElementEarth:
+	case agentport.ElementEarth:
 		return green
-	case element.ElementDiamond:
+	case agentport.ElementDiamond:
 		return white
-	case element.ElementWater:
+	case agentport.ElementWater:
 		return blue
-	case element.ElementAir:
+	case agentport.ElementAir:
 		return cyan
 	default:
 		return dim
@@ -159,7 +157,7 @@ func showPersonas() {
 	fmt.Printf("an %selement%s, a dialectic %sposition%s, and either %sThesis%s or %sAntithesis%s alignment.\n\n", bold, reset, bold, reset, green, reset, red, reset)
 
 	fmt.Printf("  %sThesis (Cadai) — the investigation team:%s\n", green, reset)
-	for _, p := range persona.Thesis() {
+	for _, p := range agentport.PersonaThesis() {
 		id := p.Identity
 		fmt.Printf("    %s%-12s%s %-10s %-10s %-12s %s\n",
 			elementColor(id.Element), id.PersonaName, reset,
@@ -168,7 +166,7 @@ func showPersonas() {
 
 	fmt.Println()
 	fmt.Printf("  %sAntithesis (Cytharai) — the adversarial dialectic:%s\n", red, reset)
-	for _, p := range persona.Antithesis() {
+	for _, p := range agentport.PersonaAntithesis() {
 		id := p.Identity
 		fmt.Printf("    %s%-12s%s %-10s %-10s %-12s %s\n",
 			elementColor(id.Element), id.PersonaName, reset,
@@ -288,7 +286,7 @@ func walkTriageCircuit(def *fw.CircuitDef) {
 		return
 	}
 
-	herald, _ := persona.ByName("Herald")
+	herald, _ := agentport.PersonaByName("Herald")
 	walker := &demoWalker{
 		identity: herald.Identity,
 		state:    fw.NewWalkerState("demo-walk-1"),
@@ -333,11 +331,11 @@ func newDemoScenario() *demoScenario {
 // demoNode implements circuit.Node for the playground.
 type demoNode struct {
 	name    string
-	element element.Element
+	element agentport.Element
 }
 
 func (n *demoNode) Name() string                 { return n.name }
-func (n *demoNode) ElementAffinity() element.Element { return n.element }
+func (n *demoNode) ElementAffinity() agentport.Element { return n.element }
 func (n *demoNode) Process(ctx context.Context, nc fw.NodeContext) (fw.Artifact, error) {
 	return &demoArtifact{typ: n.name, conf: 0.75}, nil
 }
@@ -467,7 +465,7 @@ func showMasks() {
 	fmt.Println()
 	fmt.Printf("  %sExample — equipping Mask of Recall on a 'recall' node:%s\n\n", dim, reset)
 
-	recallNode := &demoNode{name: "recall", element: element.ElementFire}
+	recallNode := &demoNode{name: "recall", element: agentport.ElementFire}
 	recallMask := mask.NewRecallMask()
 	masked, err := mask.Equip(recallNode, recallMask)
 	if err != nil {
@@ -493,22 +491,8 @@ func showMasks() {
 func showCycles() {
 	fmt.Printf("  Elements interact through two cycles (inspired by Wu Xing):\n\n")
 
-	fmt.Printf("  %sGenerative (sheng) — each element strengthens the next:%s\n", green, reset)
-	for _, rule := range cycle.GenerativeCycle() {
-		fc := elementColor(rule.From)
-		tc := elementColor(rule.To)
-		fmt.Printf("    %s%-12s%s -> %s%-12s%s  %s%s%s\n",
-			fc, rule.From, reset, tc, rule.To, reset, dim, rule.Interaction, reset)
-	}
-
-	fmt.Println()
-	fmt.Printf("  %sDestructive (ke) — each element challenges another:%s\n", red, reset)
-	for _, rule := range cycle.DestructiveCycle() {
-		fc := elementColor(rule.From)
-		tc := elementColor(rule.To)
-		fmt.Printf("    %s%-12s%s -> %s%-12s%s  %s%s%s\n",
-			fc, rule.From, reset, tc, rule.To, reset, dim, rule.Interaction, reset)
-	}
+	// TODO: bugle/cycle package was removed — re-enable when cycle types move to agentport.
+	fmt.Printf("  %s(cycle display temporarily disabled — bugle/cycle pending migration)%s\n", dim, reset)
 
 	fmt.Println()
 	fmt.Printf("  %sThese cycles govern agent interactions: a Fire agent%s\n", dim, reset)
@@ -613,10 +597,10 @@ func teamWalkDemo(def *fw.CircuitDef) {
 		return
 	}
 
-	herald, _ := persona.ByName("Herald")
-	seeker, _ := persona.ByName("Seeker")
-	sentinel, _ := persona.ByName("Sentinel")
-	weaver, _ := persona.ByName("Weaver")
+	herald, _ := agentport.PersonaByName("Herald")
+	seeker, _ := agentport.PersonaByName("Seeker")
+	sentinel, _ := agentport.PersonaByName("Sentinel")
+	weaver, _ := agentport.PersonaByName("Weaver")
 
 	walkers := []fw.Walker{
 		&demoWalker{identity: herald.Identity, state: fw.NewWalkerState("herald-team"), scenario: scenario},

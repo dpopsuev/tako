@@ -7,7 +7,7 @@ import (
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/bugle/element"
+	"github.com/dpopsuev/origami/agentport"
 )
 
 // HintFeedback is the artifact emitted by the scaffolded judge when hints
@@ -185,7 +185,7 @@ type scaffoldedJudgeNode struct {
 }
 
 func (n *scaffoldedJudgeNode) Name() string                       { return "judge" }
-func (n *scaffoldedJudgeNode) ElementAffinity() element.Element { return element.ElementDiamond }
+func (n *scaffoldedJudgeNode) ElementAffinity() agentport.Element { return agentport.ElementDiamond }
 
 func (n *scaffoldedJudgeNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	if nc.PriorArtifact == nil {

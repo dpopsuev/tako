@@ -10,7 +10,7 @@ import (
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/bugle/element"
+	"github.com/dpopsuev/origami/agentport"
 )
 
 // sortedPoleNames returns the pole names from a seed in deterministic
@@ -118,7 +118,7 @@ type generateNode struct {
 }
 
 func (n *generateNode) Name() string                       { return "generate" }
-func (n *generateNode) ElementAffinity() element.Element { return element.ElementEarth }
+func (n *generateNode) ElementAffinity() agentport.Element { return agentport.ElementEarth }
 
 func (n *generateNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	prompt := n.buildPrompt()
@@ -224,7 +224,7 @@ type subjectNode struct {
 }
 
 func (n *subjectNode) Name() string                       { return "subject" }
-func (n *subjectNode) ElementAffinity() element.Element { return element.ElementFire }
+func (n *subjectNode) ElementAffinity() agentport.Element { return agentport.ElementFire }
 
 func (n *subjectNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	if nc.PriorArtifact == nil {
@@ -298,7 +298,7 @@ type judgeNode struct {
 }
 
 func (n *judgeNode) Name() string                       { return "judge" }
-func (n *judgeNode) ElementAffinity() element.Element { return element.ElementDiamond }
+func (n *judgeNode) ElementAffinity() agentport.Element { return agentport.ElementDiamond }
 
 func (n *judgeNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	if nc.PriorArtifact == nil {

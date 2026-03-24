@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/bugle/element"
+	"github.com/dpopsuev/origami/agentport"
 )
 
 func testProfile() ModelProfile {
@@ -23,10 +23,10 @@ func testProfile() ModelProfile {
 			DimEvidenceDepth:        0.9,
 			DimFailureMode:          0.5,
 		},
-		ElementMatch: element.ElementWater,
-		ElementScores: map[element.Element]float64{
-			element.ElementWater: 1.0,
-			element.ElementEarth: 0.85,
+		ElementMatch: agentport.ElementWater,
+		ElementScores: map[agentport.Element]float64{
+			agentport.ElementWater: 1.0,
+			agentport.ElementEarth: 0.85,
 		},
 		SuggestedPersonas: []string{"Seeker", "Sentinel"},
 	}

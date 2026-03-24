@@ -8,11 +8,11 @@ import (
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/bugle/element"
+	"github.com/dpopsuev/origami/agentport"
 )
 
-func resolveApproachElement(approach string) element.Element {
-	e, _ := element.ResolveApproach(strings.ToLower(approach))
+func resolveApproachElement(approach string) agentport.Element {
+	e, _ := agentport.ResolveApproach(strings.ToLower(approach))
 	return e
 }
 
@@ -33,12 +33,12 @@ func ParseCurationCircuit(data []byte) (*circuit.CircuitDef, error) {
 // curationNode implements circuit.Node for curation circuit stages.
 type curationNode struct {
 	name    string
-	element element.Element
+	element agentport.Element
 	family  string
 }
 
 func (n *curationNode) Name() string                       { return n.name }
-func (n *curationNode) ElementAffinity() element.Element   { return n.element }
+func (n *curationNode) ElementAffinity() agentport.Element   { return n.element }
 func (n *curationNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return nil, nil
 }

@@ -3,7 +3,7 @@ package engine
 // Category: Execution — default walker construction.
 
 import (
-	"github.com/dpopsuev/bugle"
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 )
 
@@ -25,8 +25,9 @@ func DefaultWalkerWithElement(element circuit.Element) circuit.Walker {
 
 func defaultWalkerWith(element circuit.Element) *circuit.ProcessWalker {
 	var id circuit.AgentIdentity
-	if bugle.DefaultPersonaResolver != nil {
-		if p, ok := bugle.DefaultPersonaResolver("Sentinel"); ok {
+	resolver := agentport.GetDefaultPersonaResolver()
+	if resolver != nil {
+		if p, ok := resolver("Sentinel"); ok {
 			id = p.Identity
 		}
 	}

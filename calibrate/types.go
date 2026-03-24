@@ -4,7 +4,7 @@
 // shared types, aggregation, and report formatting.
 package calibrate
 
-import "github.com/dpopsuev/bugle/billing"
+import "github.com/dpopsuev/origami/agentport"
 
 // CostTier classifies a metric by what it measures. Tiers are ordered by
 // importance: outcome metrics dominate; efficiency metrics are health checks.
@@ -96,5 +96,5 @@ type CalibrationReport struct {
 	Runs        int                    `json:"runs"`
 	Metrics     MetricSet              `json:"metrics"`
 	RunMetrics  []MetricSet            `json:"run_metrics,omitempty"`
-	Tokens      *billing.TokenSummary `json:"tokens,omitempty"`
+	Tokens      *agentport.TokenSummary `json:"tokens,omitempty"`
 }

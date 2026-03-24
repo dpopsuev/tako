@@ -8,9 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dpopsuev/bugle/element"
-	"github.com/dpopsuev/bugle/signal"
-	bd "github.com/dpopsuev/bugle/dispatch"
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
 	fwmcp "github.com/dpopsuev/origami/mcp"
@@ -44,7 +42,7 @@ Collect the subagent's raw response and wrap it in JSON: {"response": "<raw text
 Submit via submit_step. Do NOT modify the probe prompt.`,
 		DefaultGetNextStepTimeout: 30000,  // 30s — discovery needs LLM inference time
 		DefaultSessionTTL:         600000, // 10min — discovery sessions can be slow
-		CreateSession: func(ctx context.Context, params fwmcp.StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (fwmcp.RunFunc, fwmcp.SessionMeta, error) {
+		CreateSession: func(ctx context.Context, params fwmcp.StartParams, disp *dispatch.MuxDispatcher, bus agentport.Bus) (fwmcp.RunFunc, fwmcp.SessionMeta, error) {
 			return createDiscoverySession(params, disp, bus, registry, runsDir)
 		},
 		FormatReport: formatDiscoveryReport,
@@ -70,7 +68,7 @@ func RegisterExtraTools(srv *fwmcp.CircuitServer, runsDir string) {
 func createDiscoverySession(
 	params fwmcp.StartParams,
 	disp *dispatch.MuxDispatcher,
-	bus signal.Bus,
+	bus agentport.Bus,
 	registry *ProbeRegistry,
 	runsDir string,
 ) (fwmcp.RunFunc, fwmcp.SessionMeta, error) {
@@ -126,7 +124,7 @@ func runDiscovery(
 	config ouroboros.DiscoveryConfig,
 	handler *ProbeHandler,
 	disp *dispatch.MuxDispatcher,
-	bus signal.Bus,
+	bus agentport.Bus,
 	runsDir string,
 ) (*ouroboros.RunReport, error) {
 	log := slog.Default().With("component", "ouroboros-discovery")
@@ -150,7 +148,7 @@ func runDiscovery(
 			prompt = ouroboros.BuildFullPromptWith(seen, probes.RefactorPrompt())
 		}
 
-		artifactBytes, err := disp.Dispatch(ctx, bd.Context{
+		artifactBytes, err := disp.Dispatch(ctx, agentport.Context{
 			CaseID:        fmt.Sprintf("iter-%d", i),
 			Step:          "discover",
 			PromptContent: prompt,
@@ -163,7 +161,7 @@ func runDiscovery(
 
 		var artifact discoveryArtifact
 		if jsonErr := json.Unmarshal(artifactBytes, &artifact); jsonErr != nil || artifact.Response == "" {
-			bus.Emit(&signal.Signal{Event: "artifact_parse_error", Agent: "server", CaseID: fmt.Sprintf("iter-%d", i), Step: "discover", Meta: map[string]string{
+			bus.Emit(&agentport.Signal{Event: "artifact_parse_error", Agent: "server", CaseID: fmt.Sprintf("iter-%d", i), Step: "discover", Meta: map[string]string{
 				"error": fmt.Sprintf("bad artifact at iteration %d", i),
 			}})
 			continue
@@ -172,14 +170,14 @@ func runDiscovery(
 
 		mi, parseErr := ouroboros.ParseIdentityResponse(raw)
 		if parseErr != nil {
-			bus.Emit(&signal.Signal{Event: "identity_parse_error", Agent: "server", CaseID: fmt.Sprintf("iter-%d", i), Step: "discover", Meta: map[string]string{
+			bus.Emit(&agentport.Signal{Event: "identity_parse_error", Agent: "server", CaseID: fmt.Sprintf("iter-%d", i), Step: "discover", Meta: map[string]string{
 				"error": parseErr.Error(),
 			}})
 			continue
 		}
 
 		if models.IsWrapperName(mi.ModelName) {
-			bus.Emit(&signal.Signal{Event: "identity_rejected", Agent: "server", Meta: map[string]string{
+			bus.Emit(&agentport.Signal{Event: "identity_rejected", Agent: "server", Meta: map[string]string{
 				"model":  mi.ModelName,
 				"reason": "wrapper",
 			}})
@@ -196,7 +194,7 @@ func runDiscovery(
 		} else {
 			code, codeErr := ouroboros.ParseProbeResponse(raw)
 			if codeErr != nil {
-				bus.Emit(&signal.Signal{Event: "probe_parse_error", Agent: "server", CaseID: fmt.Sprintf("iter-%d", i), Step: "discover", Meta: map[string]string{
+				bus.Emit(&agentport.Signal{Event: "probe_parse_error", Agent: "server", CaseID: fmt.Sprintf("iter-%d", i), Step: "discover", Meta: map[string]string{
 					"error": codeErr.Error(),
 				}})
 				continue
@@ -211,7 +209,7 @@ func runDiscovery(
 		key := ouroboros.ModelKey(mi)
 
 		if _, exists := seenMap[key]; exists {
-			bus.Emit(&signal.Signal{Event: "model_repeated", Agent: "server", Meta: map[string]string{
+			bus.Emit(&agentport.Signal{Event: "model_repeated", Agent: "server", Meta: map[string]string{
 				"model":     mi.ModelName,
 				"iteration": fmt.Sprintf("%d", i),
 			}})
@@ -238,7 +236,7 @@ func runDiscovery(
 		seen = append(seen, mi)
 		results = append(results, result)
 
-		bus.Emit(&signal.Signal{Event: "model_discovered", Agent: "server", Meta: map[string]string{
+		bus.Emit(&agentport.Signal{Event: "model_discovered", Agent: "server", Meta: map[string]string{
 			"model":     mi.ModelName,
 			"provider":  mi.Provider,
 			"iteration": fmt.Sprintf("%d", i),
@@ -275,7 +273,7 @@ func runMultiProbeDiscovery(
 	handlers []*ProbeHandler,
 	probeIDs []string,
 	disp *dispatch.MuxDispatcher,
-	bus signal.Bus,
+	bus agentport.Bus,
 	runsDir string,
 ) (*ouroboros.RunReport, error) {
 	log := slog.Default().With("component", "ouroboros-multi-probe")
@@ -399,7 +397,7 @@ func assembleProfilesFromStore(runsDir string) (assembleProfilesOutput, error) {
 			BatteryVersion: ouroboros.BatteryVersion,
 			Timestamp:      time.Now(),
 			Dimensions:     make(map[ouroboros.Dimension]float64),
-			ElementScores:  make(map[element.Element]float64),
+			ElementScores:  make(map[agentport.Element]float64),
 		}
 
 		sums := make(map[ouroboros.Dimension]float64)

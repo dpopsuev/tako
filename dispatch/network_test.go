@@ -7,8 +7,7 @@ import (
 	"testing"
 	"time"
 
-	bd "github.com/dpopsuev/bugle/dispatch"
-	"github.com/dpopsuev/bugle/signal"
+	"github.com/dpopsuev/origami/agentport"
 )
 
 func startTestServer(t *testing.T, mux *MuxDispatcher, opts ...NetworkServerOption) (string, context.CancelFunc) {
@@ -61,7 +60,7 @@ func TestNetworkDispatch_SingleAgent(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		dispatchResult, dispatchErr = mux.Dispatch(context.Background(), bd.Context{
+		dispatchResult, dispatchErr = mux.Dispatch(context.Background(), agentport.Context{
 			CaseID:       "C1",
 			Step:         "F0_RECALL",
 			PromptPath:   "/tmp/prompt.json",
@@ -129,7 +128,7 @@ func TestNetworkDispatch_TwoAgentsConcurrent(t *testing.T) {
 		dispatchWg.Add(1)
 		go func() {
 			defer dispatchWg.Done()
-			data, err := mux.Dispatch(context.Background(), bd.Context{
+			data, err := mux.Dispatch(context.Background(), agentport.Context{
 				CaseID: fmt.Sprintf("C%d", i),
 				Step:   "F0",
 			})
@@ -164,7 +163,7 @@ func TestNetworkDispatch_ProtocolIdenticalToInProcess(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		mux.Dispatch(context.Background(), bd.Context{
+		mux.Dispatch(context.Background(), agentport.Context{
 			CaseID:       "C1",
 			Step:         "TRIAGE",
 			PromptPath:   "/p/prompt.json",
@@ -200,7 +199,7 @@ func TestNetworkDispatch_InProcessModeUnchanged(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		data, err := mux.Dispatch(context.Background(), bd.Context{CaseID: "C1", Step: "F0"})
+		data, err := mux.Dispatch(context.Background(), agentport.Context{CaseID: "C1", Step: "F0"})
 		if err != nil {
 			t.Errorf("Dispatch: %v", err)
 			return
@@ -241,7 +240,7 @@ func TestNetworkSignal_EmitAndGet(t *testing.T) {
 	defer cancel()
 
 	mux := NewMuxDispatcher(ctx)
-	bus := signal.NewMemBus()
+	bus := agentport.NewMemBus()
 	addr, stopServer := startTestServer(t, mux, WithSignalBus(bus))
 	defer stopServer()
 
@@ -307,7 +306,7 @@ func TestNetworkSignal_EmptyEventRejected(t *testing.T) {
 	defer cancel()
 
 	mux := NewMuxDispatcher(ctx)
-	bus := signal.NewMemBus()
+	bus := agentport.NewMemBus()
 	addr, stopServer := startTestServer(t, mux, WithSignalBus(bus))
 	defer stopServer()
 

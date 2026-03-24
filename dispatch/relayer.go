@@ -3,7 +3,7 @@ package dispatch
 import (
 	"context"
 
-	bd "github.com/dpopsuev/bugle/dispatch"
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/engine"
 )
 
@@ -17,7 +17,7 @@ type MuxRelayer struct {
 var _ engine.PromptRelayer = (*MuxRelayer)(nil)
 
 func (r *MuxRelayer) Dispatch(ctx context.Context, rc engine.PromptRelayContext) ([]byte, error) {
-	return r.Disp.Dispatch(ctx, bd.Context{
+	return r.Disp.Dispatch(ctx, agentport.Context{
 		CaseID:        rc.CaseID,
 		Step:          rc.Step,
 		PromptContent: rc.PromptContent,

@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/bugle/signal"
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 )
 
@@ -21,7 +21,7 @@ type EventBridge struct {
 	nextID      int
 	closed      bool
 
-	signalBus  signal.Bus
+	signalBus  agentport.Bus
 	signalIdx  int
 	polling    bool
 	pollDone   chan struct{}
@@ -30,7 +30,7 @@ type EventBridge struct {
 
 // NewEventBridge creates a bridge. If bus is non-nil, call StartPolling
 // to begin draining signals. Call Close() when done.
-func NewEventBridge(bus signal.Bus) *EventBridge {
+func NewEventBridge(bus agentport.Bus) *EventBridge {
 	return &EventBridge{
 		subscribers: make(map[int]chan Event),
 		signalBus:   bus,

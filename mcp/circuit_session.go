@@ -12,8 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/bugle/signal"
-	bd "github.com/dpopsuev/bugle/dispatch"
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/dispatch"
 )
@@ -35,7 +34,7 @@ type CircuitSession struct {
 	TotalCases      int
 	Scenario        string
 	DesiredCapacity int
-	Bus             signal.Bus
+	Bus             agentport.Bus
 
 	log        *slog.Logger
 	state      SessionState
@@ -57,7 +56,7 @@ type CircuitSession struct {
 
 	registeredWorkers map[string]string
 
-	Supervisor *signal.Supervisor
+	Supervisor *agentport.Supervisor
 
 	recorder  *engine.TraceRecorder // nil when tracing disabled
 	runDir    string                   // {StateDir}/runs/{sessID}
@@ -81,7 +80,7 @@ func NewCircuitSession(
 	meta SessionMeta,
 	parallel int,
 	disp *dispatch.MuxDispatcher,
-	bus signal.Bus,
+	bus agentport.Bus,
 	runFn RunFunc,
 	cancel context.CancelFunc,
 ) *CircuitSession {
@@ -96,7 +95,7 @@ func NewCircuitSession(
 		dispatcher:      disp,
 		doneCh:          make(chan struct{}),
 		cancel:          cancel,
-		Supervisor:      signal.NewSupervisor(bus),
+		Supervisor:      agentport.NewSupervisor(bus),
 		startedAt:       time.Now(),
 		runCtx:          ctx,
 		runFn:           runFn,
@@ -194,7 +193,7 @@ func (s *CircuitSession) AgentInFlight() int {
 	return s.agentInFlight
 }
 
-// RegisterWorker records a worker's declared mode from a worker_started signal.
+// RegisterWorker records a worker's declared mode from a worker_started agentport.
 func (s *CircuitSession) RegisterWorker(id, mode string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -342,10 +341,10 @@ func (s *CircuitSession) watchdog() {
 			if stale > currentTTL {
 				s.log.Warn("TTL watchdog triggered, aborting session",
 					"stale", stale, "ttl", currentTTL, "session_id", s.ID)
-				s.Bus.Emit(&signal.Signal{
+				s.Bus.Emit(&agentport.Signal{
 					Event: EventSessionError,
-					Agent: signal.AgentServer,
-					Meta:  map[string]string{signal.MetaKeyError: fmt.Sprintf("session TTL expired: no activity for %v", stale)},
+					Agent: agentport.AgentServer,
+					Meta:  map[string]string{agentport.MetaKeyError: fmt.Sprintf("session TTL expired: no activity for %v", stale)},
 				})
 				s.dispatcher.Abort(fmt.Errorf("session TTL expired: no activity for %v", stale))
 				s.mu.Lock()
@@ -384,7 +383,7 @@ func (s *CircuitSession) run(ctx context.Context, runFn RunFunc) {
 	if err != nil {
 		s.state = StateError
 		s.err = err
-		s.Bus.Emit(&signal.Signal{Event: EventSessionError, Agent: signal.AgentServer, Meta: map[string]string{signal.MetaKeyError: err.Error()}})
+		s.Bus.Emit(&agentport.Signal{Event: EventSessionError, Agent: agentport.AgentServer, Meta: map[string]string{agentport.MetaKeyError: err.Error()}})
 		s.log.Error("circuit run failed", "error", err)
 		s.writeReport(result) // write partial report even on error
 		s.writeRunRecord()
@@ -392,7 +391,7 @@ func (s *CircuitSession) run(ctx context.Context, runFn RunFunc) {
 	}
 	s.state = StateDone
 	s.result = result
-	s.Bus.Emit(&signal.Signal{Event: EventSessionDone, Agent: signal.AgentServer})
+	s.Bus.Emit(&agentport.Signal{Event: EventSessionDone, Agent: agentport.AgentServer})
 	s.log.Info("circuit run complete")
 	s.writeReport(result)
 	s.writeRunRecord()
@@ -463,16 +462,16 @@ func (s *CircuitSession) closeRecorder() {
 // GetNextStep blocks until the runner produces the next prompt, the run
 // completes, or the timeout expires.
 // GetNextStep pulls the next step with no hints (FIFO).
-func (s *CircuitSession) GetNextStep(ctx context.Context, timeout time.Duration) (dc bd.Context, done bool, available bool, err error) {
-	return s.GetNextStepWithHints(ctx, timeout, bd.PullHints{})
+func (s *CircuitSession) GetNextStep(ctx context.Context, timeout time.Duration) (dc agentport.Context, done bool, available bool, err error) {
+	return s.GetNextStepWithHints(ctx, timeout, agentport.PullHints{})
 }
 
 // GetNextStepWithHints pulls the next step matching the given hints.
 // Falls back based on stickiness. Blocks up to timeout.
-func (s *CircuitSession) GetNextStepWithHints(ctx context.Context, timeout time.Duration, hints bd.PullHints) (dc bd.Context, done bool, available bool, err error) {
+func (s *CircuitSession) GetNextStepWithHints(ctx context.Context, timeout time.Duration, hints agentport.PullHints) (dc agentport.Context, done bool, available bool, err error) {
 	select {
 	case <-s.doneCh:
-		return bd.Context{}, true, false, nil
+		return agentport.Context{}, true, false, nil
 	default:
 	}
 
@@ -484,7 +483,7 @@ func (s *CircuitSession) GetNextStepWithHints(ctx context.Context, timeout time.
 	}
 
 	type pullResult struct {
-		dc  bd.Context
+		dc  agentport.Context
 		err error
 	}
 	ch := make(chan pullResult, 1)
@@ -500,14 +499,14 @@ func (s *CircuitSession) GetNextStepWithHints(ctx context.Context, timeout time.
 		if cancel != nil {
 			cancel()
 		}
-		return bd.Context{}, true, false, nil
+		return agentport.Context{}, true, false, nil
 	case r := <-ch:
 		if r.err != nil {
 			if pullCtx.Err() == context.DeadlineExceeded {
 				s.log.Debug("get_next_step timed out", "timeout", timeout)
-				return bd.Context{}, false, false, nil
+				return agentport.Context{}, false, false, nil
 			}
-			return bd.Context{}, false, false, r.err
+			return agentport.Context{}, false, false, r.err
 		}
 		s.log.Debug("step delivered",
 			"case_id", r.dc.CaseID, "step", r.dc.Step, "dispatch_id", r.dc.DispatchID, "wait", time.Since(start))

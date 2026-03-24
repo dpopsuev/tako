@@ -3,12 +3,12 @@ package dispatch
 import (
 	"testing"
 
-	"github.com/dpopsuev/bugle/signal"
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 )
 
 func TestEmitFinding_RoundTrip(t *testing.T) {
-	bus := signal.NewMemBus()
+	bus := agentport.NewMemBus()
 	f := circuit.Finding{
 		Severity: circuit.FindingError,
 		Domain:   "security.auth",
@@ -48,7 +48,7 @@ func TestEmitFinding_RoundTrip(t *testing.T) {
 }
 
 func TestDecodeFinding_NonFindingSignal(t *testing.T) {
-	sig := signal.Signal{Event: "step:complete", Meta: map[string]string{"node": "a"}}
+	sig := agentport.Signal{Event: "step:complete", Meta: map[string]string{"node": "a"}}
 	_, ok := DecodeFinding(sig)
 	if ok {
 		t.Error("DecodeFinding should return false for non-finding signal")
@@ -56,11 +56,11 @@ func TestDecodeFinding_NonFindingSignal(t *testing.T) {
 }
 
 func TestFindingsSince_MixedSignals(t *testing.T) {
-	bus := signal.NewMemBus()
+	bus := agentport.NewMemBus()
 
-	bus.Emit(&signal.Signal{Event: "step:start", Agent: "agent", Step: "nodeA"})
+	bus.Emit(&agentport.Signal{Event: "step:start", Agent: "agent", Step: "nodeA"})
 	EmitFinding(bus, circuit.Finding{Severity: circuit.FindingWarning, Domain: "test", Source: "tester", Message: "flaky"})
-	bus.Emit(&signal.Signal{Event: "step:complete", Agent: "agent", Step: "nodeA"})
+	bus.Emit(&agentport.Signal{Event: "step:complete", Agent: "agent", Step: "nodeA"})
 	EmitFinding(bus, circuit.Finding{Severity: circuit.FindingError, Domain: "security", Source: "auditor", Message: "vuln"})
 
 	findings := FindingsSince(bus, 0)
@@ -76,7 +76,7 @@ func TestFindingsSince_MixedSignals(t *testing.T) {
 }
 
 func TestFindingsSince_Offset(t *testing.T) {
-	bus := signal.NewMemBus()
+	bus := agentport.NewMemBus()
 	EmitFinding(bus, circuit.Finding{Severity: circuit.FindingInfo, Message: "first"})
 	EmitFinding(bus, circuit.Finding{Severity: circuit.FindingWarning, Message: "second"})
 
@@ -90,7 +90,7 @@ func TestFindingsSince_Offset(t *testing.T) {
 }
 
 func TestEmitFinding_NoEvidence(t *testing.T) {
-	bus := signal.NewMemBus()
+	bus := agentport.NewMemBus()
 	EmitFinding(bus, circuit.Finding{Severity: circuit.FindingInfo, Message: "no evidence"})
 
 	sig := bus.Since(0)[0]

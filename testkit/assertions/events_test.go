@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/bugle/signal"
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/testkit/assertions"
 )
@@ -61,18 +61,18 @@ func TestAssertNoEvent_EmptyEvents(t *testing.T) {
 }
 
 func TestWaitForSignal_Found(t *testing.T) {
-	bus := signal.NewMemBus()
+	bus := agentport.NewMemBus()
 	go func() {
 		time.Sleep(20 * time.Millisecond)
-		bus.Emit(&signal.Signal{Event: "target", Agent: "agent", CaseID: "case", Step: "step"})
+		bus.Emit(&agentport.Signal{Event: "target", Agent: "agent", CaseID: "case", Step: "step"})
 	}()
 
 	assertions.WaitForSignal(t, bus, "target", 2*time.Second)
 }
 
 func TestWaitForSignal_AlreadyPresent(t *testing.T) {
-	bus := signal.NewMemBus()
-	bus.Emit(&signal.Signal{Event: "target", Agent: "agent", CaseID: "case", Step: "step"})
+	bus := agentport.NewMemBus()
+	bus.Emit(&agentport.Signal{Event: "target", Agent: "agent", CaseID: "case", Step: "step"})
 
 	assertions.WaitForSignal(t, bus, "target", 100*time.Millisecond)
 }

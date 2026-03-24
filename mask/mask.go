@@ -8,7 +8,7 @@ import (
 	"fmt"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/bugle/element"
+	"github.com/dpopsuev/origami/agentport"
 )
 
 // NodeProcessor is the function signature for processing a node.
@@ -33,7 +33,7 @@ type MaskedNode struct {
 }
 
 func (mn *MaskedNode) Name() string            { return mn.Inner.Name() }
-func (mn *MaskedNode) ElementAffinity() element.Element { return mn.Inner.ElementAffinity() }
+func (mn *MaskedNode) ElementAffinity() agentport.Element { return mn.Inner.ElementAffinity() }
 
 // Process executes the node with all masks applied as a middleware chain.
 // First equipped = outermost wrapper: A.pre -> B.pre -> Node -> B.post -> A.post.

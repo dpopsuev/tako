@@ -8,7 +8,7 @@ import (
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/bugle/element"
+	"github.com/dpopsuev/origami/agentport"
 )
 
 // JudgeFeedback is passed from Judge to Subject on non-final rounds.
@@ -168,7 +168,7 @@ type multiRoundJudgeNode struct {
 }
 
 func (n *multiRoundJudgeNode) Name() string                       { return "judge" }
-func (n *multiRoundJudgeNode) ElementAffinity() element.Element { return element.ElementDiamond }
+func (n *multiRoundJudgeNode) ElementAffinity() agentport.Element { return agentport.ElementDiamond }
 
 func (n *multiRoundJudgeNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	if nc.PriorArtifact == nil {

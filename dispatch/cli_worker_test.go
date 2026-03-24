@@ -9,8 +9,7 @@ import (
 	"testing"
 	"time"
 
-	bd "github.com/dpopsuev/bugle/dispatch"
-	"github.com/dpopsuev/bugle/signal"
+	"github.com/dpopsuev/origami/agentport"
 )
 
 func TestCLIWorkerDispatcher_ProcessesSteps(t *testing.T) {
@@ -18,7 +17,7 @@ func TestCLIWorkerDispatcher_ProcessesSteps(t *testing.T) {
 	defer cancel()
 
 	mux := NewMuxDispatcher(ctx)
-	bus := signal.NewMemBus()
+	bus := agentport.NewMemBus()
 
 	d, err := NewCLIWorkerDispatcher(mux, "cat", 2,
 		WithCLIWorkerBus(bus),
@@ -45,7 +44,7 @@ func TestCLIWorkerDispatcher_ProcessesSteps(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			data, dispErr := mux.Dispatch(context.Background(), bd.Context{
+			data, dispErr := mux.Dispatch(context.Background(), agentport.Context{
 				CaseID:     fmt.Sprintf("C%d", i),
 				Step:       "F0",
 				PromptPath: filepath.Join(tmpDir, fmt.Sprintf("prompt_%d.json", i)),
@@ -137,7 +136,7 @@ func TestCLIWorkerDispatcher_SingleWorker(t *testing.T) {
 	var dispErr error
 	go func() {
 		defer close(done)
-		result, dispErr = mux.Dispatch(context.Background(), bd.Context{
+		result, dispErr = mux.Dispatch(context.Background(), agentport.Context{
 			CaseID:     "C1",
 			Step:       "F0",
 			PromptPath: promptPath,

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/bugle/signal"
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 )
 
@@ -71,14 +71,14 @@ type testError struct{}
 func (e *testError) Error() string { return "test error" }
 
 func TestEventBridge_SignalMapping(t *testing.T) {
-	bus := signal.NewMemBus()
+	bus := agentport.NewMemBus()
 	bridge := NewEventBridge(bus)
 	defer bridge.Close()
 
 	id, ch := bridge.Subscribe()
 	defer bridge.Unsubscribe(id)
 
-	bus.Emit(&signal.Signal{Event: "step_ready", Agent: "worker-1", CaseID: "case-42", Step: "F3_INVESTIGATE", Meta: map[string]string{"model": "gpt-4"}})
+	bus.Emit(&agentport.Signal{Event: "step_ready", Agent: "worker-1", CaseID: "case-42", Step: "F3_INVESTIGATE", Meta: map[string]string{"model": "gpt-4"}})
 
 	bridge.StartPolling(10 * time.Millisecond)
 
@@ -151,13 +151,13 @@ func TestEventBridge_UnsubscribeStopsDelivery(t *testing.T) {
 }
 
 func TestEventBridge_CloseStopsPolling(t *testing.T) {
-	bus := signal.NewMemBus()
+	bus := agentport.NewMemBus()
 	bridge := NewEventBridge(bus)
 	bridge.StartPolling(10 * time.Millisecond)
 
 	bridge.Close()
 
-	bus.Emit(&signal.Signal{Event: "late", Agent: "agent"})
+	bus.Emit(&agentport.Signal{Event: "late", Agent: "agent"})
 	time.Sleep(50 * time.Millisecond)
 }
 

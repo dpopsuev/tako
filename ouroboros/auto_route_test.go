@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/bugle/element"
+	"github.com/dpopsuev/origami/agentport"
 )
 
 func TestProviderHints_MapsElementToProvider(t *testing.T) {
@@ -16,9 +16,9 @@ func TestProviderHints_MapsElementToProvider(t *testing.T) {
 		},
 	}
 
-	providerElements := map[string]element.Element{
-		"anthropic": element.ElementWater,
-		"openai":    element.ElementFire,
+	providerElements := map[string]agentport.Element{
+		"anthropic": agentport.ElementWater,
+		"openai":    agentport.ElementFire,
 	}
 
 	hints := sheet.ProviderHints(providerElements)
@@ -43,9 +43,9 @@ func TestInjectAutoRoute_SetsWalkerContext(t *testing.T) {
 		},
 	}
 
-	providerElements := map[string]element.Element{
-		"anthropic": element.ElementWater,
-		"openai":    element.ElementFire,
+	providerElements := map[string]agentport.Element{
+		"anthropic": agentport.ElementWater,
+		"openai":    agentport.ElementFire,
 	}
 
 	InjectAutoRoute(walker, sheet, providerElements)

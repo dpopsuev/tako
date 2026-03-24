@@ -10,8 +10,7 @@ import (
 	"github.com/dpopsuev/origami/engine"
 	"log/slog"
 
-	"github.com/dpopsuev/bugle/signal"
-	bd "github.com/dpopsuev/bugle/dispatch"
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/dispatch"
 	fwmcp "github.com/dpopsuev/origami/mcp"
 	"github.com/dpopsuev/origami/ouroboros"
@@ -43,7 +42,7 @@ func NewSeedProfileConfig() fwmcp.CircuitConfig {
 Send it to the target model and return the raw response as {"response": "<text>"}.`,
 		DefaultGetNextStepTimeout: 60000,
 		DefaultSessionTTL:         600000,
-		CreateSession: func(ctx context.Context, params fwmcp.StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (fwmcp.RunFunc, fwmcp.SessionMeta, error) {
+		CreateSession: func(ctx context.Context, params fwmcp.StartParams, disp *dispatch.MuxDispatcher, bus agentport.Bus) (fwmcp.RunFunc, fwmcp.SessionMeta, error) {
 			return createSeedSession(params, disp, bus, *def)
 		},
 		FormatReport: formatSeedReport,
@@ -80,7 +79,7 @@ func terminalNode(def circuit.CircuitDef) string {
 func createSeedSession(
 	params fwmcp.StartParams,
 	disp *dispatch.MuxDispatcher,
-	bus signal.Bus,
+	bus agentport.Bus,
 	def circuit.CircuitDef,
 ) (fwmcp.RunFunc, fwmcp.SessionMeta, error) {
 	seedPath := toolkit.MapStr(params.Extra, "seed_path")
@@ -113,13 +112,13 @@ func runSeedCircuit(
 	ctx context.Context,
 	seed *ouroboros.Seed,
 	disp *dispatch.MuxDispatcher,
-	bus signal.Bus,
+	bus agentport.Bus,
 	def circuit.CircuitDef,
 ) (*ouroboros.PoleResult, error) {
 	log := slog.Default().With("component", "ouroboros-seed")
 
 	dispatcher := func(ctx context.Context, nodeName string, prompt string) (string, error) {
-		artifactBytes, err := disp.Dispatch(ctx, bd.Context{
+		artifactBytes, err := disp.Dispatch(ctx, agentport.Context{
 			CaseID:        seed.Name,
 			Step:          nodeName,
 			PromptContent: prompt,
@@ -167,7 +166,7 @@ func runSeedCircuit(
 		return nil, fmt.Errorf("%s artifact type %T, expected *PoleResult", lastNode, finalArtifact.Raw())
 	}
 
-	bus.Emit(&signal.Signal{Event: "seed_completed", Agent: "server", CaseID: seed.Name, Step: lastNode, Meta: map[string]string{
+	bus.Emit(&agentport.Signal{Event: "seed_completed", Agent: "server", CaseID: seed.Name, Step: lastNode, Meta: map[string]string{
 		"selected_pole": result.SelectedPole,
 		"confidence":    fmt.Sprintf("%.2f", result.Confidence),
 	}})

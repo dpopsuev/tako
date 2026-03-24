@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/bugle/element"
+	"github.com/dpopsuev/origami/agentport"
 )
 
 // GridLayout computes cell-based positions using Kahn's algorithm
@@ -37,7 +37,7 @@ func (GridLayout) Layout(def *circuit.CircuitDef) (CircuitLayout, error) {
 
 	zones := make([]ZoneLayout, 0, len(def.Zones))
 	for name, zd := range def.Zones {
-		zElem, _ := element.ResolveApproach(strings.ToLower(zd.Approach))
+		zElem, _ := agentport.ResolveApproach(strings.ToLower(zd.Approach))
 		zones = append(zones, ZoneLayout{Name: name, Element: string(zElem)})
 	}
 

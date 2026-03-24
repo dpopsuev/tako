@@ -6,13 +6,13 @@ import (
 	"strings"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/bugle/element"
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/view"
 	"github.com/charmbracelet/lipgloss"
 )
 
 func resolveApproachToElement(approach string) string {
-	e, _ := element.ResolveApproach(strings.ToLower(approach))
+	e, _ := agentport.ResolveApproach(strings.ToLower(approach))
 	return string(e)
 }
 

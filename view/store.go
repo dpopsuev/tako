@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/bugle/element"
+	"github.com/dpopsuev/origami/agentport"
 )
 
 // CircuitStore is the single source of truth for a circuit's visual state.
@@ -42,7 +42,7 @@ func NewCircuitStore(def *circuit.CircuitDef) *CircuitStore {
 	}
 
 	for _, nd := range def.Nodes {
-		elem, _ := element.ResolveApproach(strings.ToLower(nd.Approach))
+		elem, _ := agentport.ResolveApproach(strings.ToLower(nd.Approach))
 		elemStr := string(elem)
 		nodes[nd.Name] = NodeState{
 			Name:    nd.Name,
@@ -92,7 +92,7 @@ func (cs *CircuitStore) Reset(def *circuit.CircuitDef) {
 	}
 
 	for _, nd := range def.Nodes {
-		elem2, _ := element.ResolveApproach(strings.ToLower(nd.Approach))
+		elem2, _ := agentport.ResolveApproach(strings.ToLower(nd.Approach))
 		elemStr2 := string(elem2)
 		nodes[nd.Name] = NodeState{
 			Name:    nd.Name,

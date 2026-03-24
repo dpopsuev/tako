@@ -4,8 +4,7 @@ import (
 	"math"
 	"sort"
 
-	"github.com/dpopsuev/bugle/element"
-	"github.com/dpopsuev/bugle/persona"
+	"github.com/dpopsuev/origami/agentport"
 )
 
 // elementVector returns the canonical trait values for an element,
@@ -14,16 +13,16 @@ import (
 // ConvergenceThreshold and ShortcutAffinity are already 0-1;
 // EvidenceDepth is normalized against the max (10).
 // FailureMode is mapped to a resilience score (higher = more resilient).
-func elementVector(e element.Element) map[Dimension]float64 {
-	traits := element.DefaultTraits(e)
+func elementVector(e agentport.Element) map[Dimension]float64 {
+	traits := agentport.DefaultTraits(e)
 
-	speedMap := map[element.SpeedClass]float64{
-		element.SpeedFastest:  1.0,
-		element.SpeedFast:     0.8,
-		element.SpeedSteady:   0.5,
-		element.SpeedPrecise:  0.4,
-		element.SpeedDeep:     0.2,
-		element.SpeedHolistic: 0.6,
+	speedMap := map[agentport.SpeedClass]float64{
+		agentport.SpeedFastest:  1.0,
+		agentport.SpeedFast:     0.8,
+		agentport.SpeedSteady:   0.5,
+		agentport.SpeedPrecise:  0.4,
+		agentport.SpeedDeep:     0.2,
+		agentport.SpeedHolistic: 0.6,
 	}
 
 	failureModeResilience := map[string]float64{
@@ -47,12 +46,12 @@ func elementVector(e element.Element) map[Dimension]float64 {
 
 // ElementMatch returns the element whose canonical trait vector is closest
 // to the profile's measured dimensions (Euclidean distance).
-func ElementMatch(profile ModelProfile) element.Element {
+func ElementMatch(profile ModelProfile) agentport.Element {
 	scores := ElementScores(profile)
 
-	var bestElement element.Element
+	var bestElement agentport.Element
 	bestScore := -1.0
-	for _, e := range element.AllElements() {
+	for _, e := range agentport.AllElements() {
 		if scores[e] > bestScore {
 			bestScore = scores[e]
 			bestElement = e
@@ -61,14 +60,14 @@ func ElementMatch(profile ModelProfile) element.Element {
 	return bestElement
 }
 
-// ElementScores returns an affinity score (0-1) for each core element.
+// ElementScores returns an affinity score (0-1) for each core agentport.
 // Higher means the profile is more similar to that element's canonical traits.
 // Computed as 1 / (1 + distance) then normalized so the max is 1.0.
-func ElementScores(profile ModelProfile) map[element.Element]float64 {
-	raw := make(map[element.Element]float64)
+func ElementScores(profile ModelProfile) map[agentport.Element]float64 {
+	raw := make(map[agentport.Element]float64)
 	var maxRaw float64
 
-	for _, e := range element.AllElements() {
+	for _, e := range agentport.AllElements() {
 		vec := elementVector(e)
 		dist := euclideanDistance(profile.Dimensions, vec)
 		score := 1.0 / (1.0 + dist)
@@ -78,7 +77,7 @@ func ElementScores(profile ModelProfile) map[element.Element]float64 {
 		}
 	}
 
-	result := make(map[element.Element]float64, len(raw))
+	result := make(map[agentport.Element]float64, len(raw))
 	for e, score := range raw {
 		if maxRaw > 0 {
 			result[e] = score / maxRaw
@@ -101,12 +100,12 @@ func euclideanDistance(a, b map[Dimension]float64) float64 {
 // SuggestPersona returns real persona names suitable for a model profile,
 // based on element match. Resolves the top 2 element affinities to the
 // closest Thesis persona from the persona/ package. Falls back to element
-// name + "-primary" if no persona matches the element.
+// name + "-primary" if no persona matches the agentport.
 func SuggestPersona(profile ModelProfile) []string {
 	scores := ElementScores(profile)
 
 	type scored struct {
-		element element.Element
+		element agentport.Element
 		score   float64
 	}
 	var sorted []scored
@@ -132,13 +131,13 @@ func SuggestPersona(profile ModelProfile) []string {
 
 // personaNameForElement returns the Thesis persona name whose element matches,
 // falling back to element + "-primary" if none match.
-func personaNameForElement(e element.Element) string {
-	for _, p := range persona.Thesis() {
+func personaNameForElement(e agentport.Element) string {
+	for _, p := range agentport.PersonaThesis() {
 		if p.Identity.Element == e {
 			return p.Identity.PersonaName
 		}
 	}
-	for _, p := range persona.Antithesis() {
+	for _, p := range agentport.PersonaAntithesis() {
 		if p.Identity.Element == e {
 			return p.Identity.PersonaName
 		}

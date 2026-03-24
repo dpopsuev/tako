@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/dpopsuev/bugle/element"
+	"github.com/dpopsuev/origami/agentport"
 )
 
 func TestElementMatch_FastModel_MapsToFireOrLightning(t *testing.T) {
@@ -20,7 +20,7 @@ func TestElementMatch_FastModel_MapsToFireOrLightning(t *testing.T) {
 	}
 
 	match := ElementMatch(profile)
-	if match != element.ElementFire && match != element.ElementLightning {
+	if match != agentport.ElementFire && match != agentport.ElementLightning {
 		t.Errorf("expected fire or lightning for fast model, got %s", match)
 	}
 }
@@ -38,7 +38,7 @@ func TestElementMatch_ThoroughModel_MapsToEarthOrWater(t *testing.T) {
 	}
 
 	match := ElementMatch(profile)
-	if match != element.ElementEarth && match != element.ElementWater {
+	if match != agentport.ElementEarth && match != agentport.ElementWater {
 		t.Errorf("expected earth or water for thorough model, got %s", match)
 	}
 }
@@ -57,7 +57,7 @@ func TestElementScores_SumPositive(t *testing.T) {
 
 	scores := ElementScores(profile)
 
-	for _, e := range element.AllElements() {
+	for _, e := range agentport.AllElements() {
 		s, ok := scores[e]
 		if !ok {
 			t.Errorf("missing score for element %s", e)

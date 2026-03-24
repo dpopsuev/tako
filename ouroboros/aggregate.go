@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/bugle/element"
+	"github.com/dpopsuev/origami/agentport"
 )
 
 const BatteryVersion = "ouroboros-v1"
@@ -76,7 +76,7 @@ func ProfileFromPoleResults(
 		BatteryVersion: SeedBatteryVersion,
 		Timestamp:      time.Now(),
 		Dimensions:     make(map[Dimension]float64),
-		ElementScores:  make(map[element.Element]float64),
+		ElementScores:  make(map[agentport.Element]float64),
 	}
 
 	for _, sr := range results {

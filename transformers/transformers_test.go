@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	bd "github.com/dpopsuev/bugle/dispatch"
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/engine"
 )
 
@@ -209,7 +209,7 @@ type mockDispatcher struct {
 	err      error
 }
 
-func (m *mockDispatcher) Dispatch(_ context.Context, ctx bd.Context) ([]byte, error) {
+func (m *mockDispatcher) Dispatch(_ context.Context, ctx agentport.Context) ([]byte, error) {
 	return m.response, m.err
 }
 

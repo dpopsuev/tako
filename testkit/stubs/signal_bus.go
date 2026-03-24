@@ -5,25 +5,25 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/bugle/signal"
+	"github.com/dpopsuev/origami/agentport"
 )
 
-// StubSignalBus wraps signal.MemBus with assertion and wait helpers.
+// StubSignalBus wraps agentport.MemBus with assertion and wait helpers.
 // Thread-safe; designed for test code.
 type StubSignalBus struct {
 	mu     sync.Mutex
-	bus    *signal.MemBus
+	bus    *agentport.MemBus
 	events map[string]int // event name -> count
 }
 
-// NewStubSignalBus creates a StubSignalBus wrapping a new signal.MemBus.
+// NewStubSignalBus creates a StubSignalBus wrapping a new agentport.MemBus.
 // It registers an onEmit callback to track events internally.
 func NewStubSignalBus() *StubSignalBus {
 	s := &StubSignalBus{
-		bus:    signal.NewMemBus(),
+		bus:    agentport.NewMemBus(),
 		events: make(map[string]int),
 	}
-	s.bus.OnEmit(func(sig signal.Signal) {
+	s.bus.OnEmit(func(sig agentport.Signal) {
 		s.mu.Lock()
 		s.events[sig.Event]++
 		s.mu.Unlock()
@@ -31,14 +31,14 @@ func NewStubSignalBus() *StubSignalBus {
 	return s
 }
 
-// Bus returns the underlying signal.MemBus.
-func (s *StubSignalBus) Bus() *signal.MemBus {
+// Bus returns the underlying agentport.MemBus.
+func (s *StubSignalBus) Bus() *agentport.MemBus {
 	return s.bus
 }
 
 // Emit emits a signal on the underlying bus.
 func (s *StubSignalBus) Emit(event, agent, caseID, step string, meta map[string]string) {
-	s.bus.Emit(&signal.Signal{
+	s.bus.Emit(&agentport.Signal{
 		Event:  event,
 		Agent:  agent,
 		CaseID: caseID,

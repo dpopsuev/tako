@@ -2,56 +2,56 @@ package circuit
 
 // Category: Processing & Support
 //
-// Identity types are defined in github.com/dpopsuev/bugle.
-// This file re-exports them as the circuit package's published API.
+// Identity types are defined in github.com/dpopsuev/bugle/identity.
+// This file re-exports them via agentport as the circuit package's published API.
 
-import "github.com/dpopsuev/bugle"
+import "github.com/dpopsuev/origami/agentport"
 
-// Identity types — definitions live in bugle.
+// Identity types — definitions live in bugle/identity, re-exported via agentport.
 type (
-	Persona         = bugle.Persona
-	PersonaResolver = bugle.PersonaResolver
-	Color           = bugle.Color
-	Alignment       = bugle.Alignment
-	Position        = bugle.Position
-	MetaPhase       = bugle.MetaPhase
-	Role            = bugle.Role
-	CostProfile     = bugle.CostProfile
-	AgentIdentity   = bugle.AgentIdentity
-	ModelIdentity   = bugle.ModelIdentity
+	Persona         = agentport.Persona
+	PersonaResolver = agentport.PersonaResolver
+	Color           = agentport.Color
+	Alignment       = agentport.Alignment
+	Position        = agentport.Position
+	MetaPhase       = agentport.MetaPhase
+	Role            = agentport.Role
+	CostProfile     = agentport.CostProfile
+	AgentIdentity   = agentport.AgentIdentity
+	ModelIdentity   = agentport.ModelIdentity
 )
 
 // Alignment constants.
 const (
-	AlignmentThesis     = bugle.AlignmentThesis
-	AlignmentAntithesis = bugle.AlignmentAntithesis
+	AlignmentThesis     = agentport.AlignmentThesis
+	AlignmentAntithesis = agentport.AlignmentAntithesis
 )
 
 // Position constants.
 const (
-	PositionPG = bugle.PositionPG
-	PositionSG = bugle.PositionSG
-	PositionPF = bugle.PositionPF
-	PositionC  = bugle.PositionC
+	PositionPG = agentport.PositionPG
+	PositionSG = agentport.PositionSG
+	PositionPF = agentport.PositionPF
+	PositionC  = agentport.PositionC
 )
 
 // MetaPhase constants.
 const (
-	MetaPhaseBk = bugle.MetaPhaseBk
-	MetaPhaseFc = bugle.MetaPhaseFc
-	MetaPhasePt = bugle.MetaPhasePt
+	MetaPhaseBk = agentport.MetaPhaseBk
+	MetaPhaseFc = agentport.MetaPhaseFc
+	MetaPhasePt = agentport.MetaPhasePt
 )
 
 // Role constants.
 const (
-	RoleWorker   = bugle.RoleWorker
-	RoleManager  = bugle.RoleManager
-	RoleEnforcer = bugle.RoleEnforcer
-	RoleBroker   = bugle.RoleBroker
+	RoleWorker   = agentport.RoleWorker
+	RoleManager  = agentport.RoleManager
+	RoleEnforcer = agentport.RoleEnforcer
+	RoleBroker   = agentport.RoleBroker
 )
 
 // ValidRoles contains all recognized role values for validation.
-var ValidRoles = bugle.ValidRoles
+var ValidRoles = agentport.ValidRoles
 
 // HomeZoneFor returns the MetaPhase for a given Position.
-var HomeZoneFor = bugle.HomeZoneFor
+var HomeZoneFor = agentport.HomeZoneFor

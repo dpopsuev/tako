@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dpopsuev/bugle/billing"
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/calibrate"
 )
 
@@ -96,7 +96,7 @@ func TestFormatReport_AutoSectionsFromTier(t *testing.T) {
 
 func TestFormatReport_WithTokens(t *testing.T) {
 	r := testReport()
-	r.Tokens = &billing.TokenSummary{
+	r.Tokens = &agentport.TokenSummary{
 		TotalPromptTokens:   1000,
 		TotalArtifactTokens: 500,
 	}

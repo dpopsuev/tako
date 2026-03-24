@@ -15,8 +15,7 @@ import (
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/bugle/signal"
-	bd "github.com/dpopsuev/bugle/dispatch"
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/mcp"
 )
@@ -226,7 +225,7 @@ type dispatchTransformer struct {
 func (t *dispatchTransformer) Name() string { return "dispatch" }
 
 func (t *dispatchTransformer) Transform(ctx context.Context, tc *engine.TransformerContext) (any, error) {
-	dc := bd.Context{
+	dc := agentport.Context{
 		CaseID:        "C01",
 		Step:          tc.NodeName,
 		PromptContent: tc.Prompt,
@@ -296,9 +295,9 @@ func TestOllamaE2E_SimpleCircuit(t *testing.T) {
 		StepSchemas: findSchemas("ASK"),
 		DefaultGetNextStepTimeout: 60000,
 		DefaultSessionTTL:         120000,
-		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
+		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus agentport.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 			return func(ctx context.Context) (any, error) {
-				dc := bd.Context{
+				dc := agentport.Context{
 					CaseID:        "C01",
 					Step:          "ASK",
 					PromptContent: "What is 2+2? Reply with only the number.",
@@ -378,11 +377,11 @@ func TestOllamaE2E_MultiStepCascade(t *testing.T) {
 		StepSchemas: findSchemas("STEP_A", "STEP_B", "STEP_C"),
 		DefaultGetNextStepTimeout: 60000,
 		DefaultSessionTTL:         120000,
-		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
+		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus agentport.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 			return func(ctx context.Context) (any, error) {
 				results := make(map[string]string)
 				for _, step := range stepOrder {
-					dc := bd.Context{
+					dc := agentport.Context{
 						CaseID:        "C01",
 						Step:          step,
 						PromptContent: prompts[step],
@@ -499,7 +498,7 @@ func TestOllamaE2E_DelegatedCircuit(t *testing.T) {
 		StepSchemas: findSchemas("classify", "analyze", "conclude", "summarize"),
 		DefaultGetNextStepTimeout: 60000,
 		DefaultSessionTTL:         180000,
-		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
+		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus agentport.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 			return func(ctx context.Context) (any, error) {
 				dt := &dispatchTransformer{disp: disp}
 				reg := engine.GraphRegistries{
@@ -604,9 +603,9 @@ func TestOllamaE2E_UnhappyPaths(t *testing.T) {
 			},
 			DefaultGetNextStepTimeout: 5000,
 			DefaultSessionTTL:         30000,
-			CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
+			CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus agentport.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 				return func(ctx context.Context) (any, error) {
-					dc := bd.Context{
+					dc := agentport.Context{
 						CaseID:        "C01",
 						Step:          "VALIDATE",
 						PromptContent: "test",
@@ -671,9 +670,9 @@ func TestOllamaE2E_UnhappyPaths(t *testing.T) {
 			},
 			DefaultGetNextStepTimeout: 5000,
 			DefaultSessionTTL:         30000,
-			CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
+			CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus agentport.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 				return func(ctx context.Context) (any, error) {
-					dc := bd.Context{
+					dc := agentport.Context{
 						CaseID:        "C01",
 						Step:          "KNOWN",
 						PromptContent: "test",
@@ -735,9 +734,9 @@ func TestOllamaE2E_UnhappyPaths(t *testing.T) {
 			},
 			DefaultGetNextStepTimeout: 60000,
 			DefaultSessionTTL:         60000,
-			CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
+			CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus agentport.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 				return func(ctx context.Context) (any, error) {
-					dc := bd.Context{
+					dc := agentport.Context{
 						CaseID:        "C01",
 						Step:          "SLOW",
 						PromptContent: "Write a very long essay about the history of mathematics.",

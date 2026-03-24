@@ -8,7 +8,7 @@ import (
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/bugle/element"
+	"github.com/dpopsuev/origami/agentport"
 )
 
 // CaseRunner runs a single calibration case through the domain circuit.
@@ -85,7 +85,7 @@ type CaseResultEntry struct {
 type LoadScenarioNode struct{}
 
 func (n *LoadScenarioNode) Name() string                 { return "load_scenario" }
-func (n *LoadScenarioNode) ElementAffinity() element.Element { return element.ElementEarth }
+func (n *LoadScenarioNode) ElementAffinity() agentport.Element { return agentport.ElementEarth }
 
 func (n *LoadScenarioNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	raw, ok := nc.WalkerState.Context["input"]
@@ -116,7 +116,7 @@ func (n *LoadScenarioNode) Process(_ context.Context, nc circuit.NodeContext) (c
 type FanOutCasesNode struct{}
 
 func (n *FanOutCasesNode) Name() string                 { return "fan_out" }
-func (n *FanOutCasesNode) ElementAffinity() element.Element { return element.ElementWater }
+func (n *FanOutCasesNode) ElementAffinity() agentport.Element { return agentport.ElementWater }
 
 func (n *FanOutCasesNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	ci := extractInput(nc)
@@ -132,7 +132,7 @@ func (n *FanOutCasesNode) Process(_ context.Context, nc circuit.NodeContext) (ci
 type WalkCaseNode struct{}
 
 func (n *WalkCaseNode) Name() string                 { return "walk_case" }
-func (n *WalkCaseNode) ElementAffinity() element.Element { return element.ElementFire }
+func (n *WalkCaseNode) ElementAffinity() agentport.Element { return agentport.ElementFire }
 
 func (n *WalkCaseNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	ci := extractInput(nc)
@@ -177,7 +177,7 @@ func runOneCase(ctx context.Context, runner CaseRunner, c CaseInput) CaseResultE
 type ScoreCaseNode struct{}
 
 func (n *ScoreCaseNode) Name() string                 { return "score_case" }
-func (n *ScoreCaseNode) ElementAffinity() element.Element { return element.ElementEarth }
+func (n *ScoreCaseNode) ElementAffinity() agentport.Element { return agentport.ElementEarth }
 
 func (n *ScoreCaseNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	ci := extractInput(nc)
@@ -215,7 +215,7 @@ func (n *ScoreCaseNode) Process(_ context.Context, nc circuit.NodeContext) (circ
 type FanInResultsNode struct{}
 
 func (n *FanInResultsNode) Name() string                 { return "fan_in" }
-func (n *FanInResultsNode) ElementAffinity() element.Element { return element.ElementWater }
+func (n *FanInResultsNode) ElementAffinity() agentport.Element { return agentport.ElementWater }
 
 func (n *FanInResultsNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	prior := nc.PriorArtifact
@@ -255,7 +255,7 @@ func (n *FanInResultsNode) Process(_ context.Context, nc circuit.NodeContext) (c
 type AggregateNode struct{}
 
 func (n *AggregateNode) Name() string                 { return "aggregate" }
-func (n *AggregateNode) ElementAffinity() element.Element { return element.ElementEarth }
+func (n *AggregateNode) ElementAffinity() agentport.Element { return agentport.ElementEarth }
 
 func (n *AggregateNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	ci := extractInput(nc)
@@ -288,7 +288,7 @@ func (n *AggregateNode) Process(_ context.Context, nc circuit.NodeContext) (circ
 type ReportNode struct{}
 
 func (n *ReportNode) Name() string                 { return "report" }
-func (n *ReportNode) ElementAffinity() element.Element { return element.ElementAir }
+func (n *ReportNode) ElementAffinity() agentport.Element { return agentport.ElementAir }
 
 func (n *ReportNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	ci := extractInput(nc)

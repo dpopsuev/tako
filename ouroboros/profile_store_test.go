@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/bugle/element"
+	"github.com/dpopsuev/origami/agentport"
 )
 
 func makeTestProfile(modelName string, ts time.Time) ModelProfile {
@@ -21,7 +21,7 @@ func makeTestProfile(modelName string, ts time.Time) ModelProfile {
 			DimEvidenceDepth:        0.4,
 			DimFailureMode:          0.5,
 		},
-		ElementMatch: element.ElementFire,
+		ElementMatch: agentport.ElementFire,
 	}
 }
 

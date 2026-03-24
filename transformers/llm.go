@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	bd "github.com/dpopsuev/bugle/dispatch"
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/engine"
 )
 
@@ -17,7 +17,7 @@ import (
 // parses the JSON response. This is the primary transformer for AI-driven
 // circuit nodes.
 type LLMTransformer struct {
-	dispatcher bd.Dispatcher
+	dispatcher agentport.Dispatcher
 	baseDir    string // base directory for resolving prompt/artifact paths
 }
 
@@ -30,7 +30,7 @@ func WithBaseDir(dir string) LLMOption {
 }
 
 // NewLLM creates a transformer that dispatches prompts to an external agent.
-func NewLLM(d bd.Dispatcher, opts ...LLMOption) *LLMTransformer {
+func NewLLM(d agentport.Dispatcher, opts ...LLMOption) *LLMTransformer {
 	t := &LLMTransformer{dispatcher: d, baseDir: "."}
 	for _, opt := range opts {
 		opt(t)
@@ -69,7 +69,7 @@ func (t *LLMTransformer) Transform(ctx context.Context, tc *engine.TransformerCo
 		}
 	}
 
-	dc := bd.Context{
+	dc := agentport.Context{
 		CaseID:       caseID,
 		Step:         tc.NodeName,
 		PromptPath:   promptPath,

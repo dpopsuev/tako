@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/bugle/persona"
+	"github.com/dpopsuev/origami/agentport"
 )
 
 var validApproaches = map[string]bool{
@@ -22,7 +22,7 @@ var validMergeStrategies = map[string]bool{
 
 func knownPersonas() map[string]bool {
 	m := make(map[string]bool)
-	for _, p := range persona.All() {
+	for _, p := range agentport.PersonaAll() {
 		m[strings.ToLower(p.Identity.PersonaName)] = true
 	}
 	return m

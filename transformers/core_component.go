@@ -1,14 +1,14 @@
 package transformers
 
 import (
-	bd "github.com/dpopsuev/bugle/dispatch"
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/engine"
 )
 
 // CoreComponent returns a Component bundling the four built-in transformers
 // (llm, http, jq, file) under the "core" namespace.
 // The llm transformer requires a Dispatcher; pass nil to omit it.
-func CoreComponent(d bd.Dispatcher, opts ...CoreComponentOption) *engine.Component {
+func CoreComponent(d agentport.Dispatcher, opts ...CoreComponentOption) *engine.Component {
 	cfg := &coreComponentConfig{}
 	for _, opt := range opts {
 		opt(cfg)

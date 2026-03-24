@@ -2,7 +2,7 @@ package ouroboros
 
 import (
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/bugle/element"
+	"github.com/dpopsuev/origami/agentport"
 )
 
 // ProviderHintsContextKey is the walker context key where auto-routing
@@ -20,7 +20,7 @@ const ProviderHintsContextKey = "ouroboros_provider_hints"
 //
 // The PersonaSheet's step→element mapping is inverted through this map
 // to produce step→provider hints.
-func InjectAutoRoute(walker circuit.Walker, sheet *PersonaSheet, providerElements map[string]element.Element) {
+func InjectAutoRoute(walker circuit.Walker, sheet *PersonaSheet, providerElements map[string]agentport.Element) {
 	hints := sheet.ProviderHints(providerElements)
 	walker.State().Context[ProviderHintsContextKey] = hints
 }

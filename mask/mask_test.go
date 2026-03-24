@@ -5,17 +5,17 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/bugle/element"
+	"github.com/dpopsuev/origami/agentport"
 )
 
 type stubMaskNode struct {
 	name    string
 	called  bool
-	element element.Element
+	element agentport.Element
 }
 
 func (n *stubMaskNode) Name() string            { return n.name }
-func (n *stubMaskNode) ElementAffinity() element.Element { return n.element }
+func (n *stubMaskNode) ElementAffinity() agentport.Element { return n.element }
 func (n *stubMaskNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	n.called = true
 	return &stubMaskArtifact{meta: nc.Meta}, nil
@@ -214,12 +214,12 @@ func TestAllThesisMasks_ValidNodes(t *testing.T) {
 }
 
 func TestMaskedNode_ElementAffinity(t *testing.T) {
-	node := &stubMaskNode{name: "recall", element: element.ElementFire}
+	node := &stubMaskNode{name: "recall", element: agentport.ElementFire}
 	mn, err := Equip(node, NewRecallMask())
 	if err != nil {
 		t.Fatalf("Equip: %v", err)
 	}
-	if mn.ElementAffinity() != element.ElementFire {
-		t.Errorf("ElementAffinity() = %q, want %q", mn.ElementAffinity(), element.ElementFire)
+	if mn.ElementAffinity() != agentport.ElementFire {
+		t.Errorf("ElementAffinity() = %q, want %q", mn.ElementAffinity(), agentport.ElementFire)
 	}
 }
