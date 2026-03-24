@@ -13,18 +13,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/kami"
 	"github.com/dpopsuev/origami/lint"
 	originamilsp "github.com/dpopsuev/origami/lsp"
 	fwmcp "github.com/dpopsuev/origami/mcp"
-	"github.com/dpopsuev/origami/models"
-	"github.com/dpopsuev/origami/ouroboros"
-	"github.com/dpopsuev/origami/ouroboros/mcp"
-	"github.com/dpopsuev/origami/ouroboros/probes"
 	studiobackend "github.com/dpopsuev/origami/studio/backend"
-	"github.com/dpopsuev/origami/sumi"
 	"github.com/dpopsuev/origami/transformers"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
@@ -52,8 +46,6 @@ func main() {
 		err = validateCmd(os.Args[2:])
 	case "skill":
 		err = skillCmd(os.Args[2:])
-	case "ouroboros":
-		err = ouroborosCmd(os.Args[2:])
 	case "lint":
 		err = lintCmd(os.Args[2:])
 	case "lsp":
@@ -64,8 +56,6 @@ func main() {
 		err = studioCmd(os.Args[2:])
 	case "component":
 		err = componentCmd(os.Args[2:])
-	case "sumi":
-		err = sumiCmd(os.Args[2:])
 	case "fold":
 		err = foldCmd(os.Args[2:])
 	case "serve":
@@ -107,12 +97,10 @@ Commands:
   lint       Static analysis for circuit YAML (rules, profiles, auto-fix)
   lsp        Language Server for circuit YAML (diagnostics, completion, hover)
   skill      Skill scaffolding (scaffold SKILL.md from circuit YAML)
-  ouroboros  Ouroboros meta-calibration tools (prompt, analyze, save, serve)
   kami       Live circuit debugger (HTTP/SSE + WS)
   kami serve Start Kami MCP server over stdio (co-starts HTTP/WS)
   studio     Visual Circuit Editor (embedded SPA + REST API)
   component  Component management (list, inspect, validate)
-  sumi       Terminal circuit viewer and debugger (TUI)
   fold       Compile a YAML manifest into a standalone binary
   serve      Run the MCP gateway proxy (routes to backend engines)
   autodoc    Generate documentation tree from circuit YAML
@@ -304,220 +292,6 @@ func kamiServe(args []string) error {
 	return mcpSrv.MCPServer.Run(ctx, &sdkmcp.StdioTransport{})
 }
 
-// --- ouroboros subcommand group ---
-
-func ouroborosCmd(args []string) error {
-	if len(args) == 0 {
-		return fmt.Errorf("usage: origami ouroboros <run|prompt|analyze|save|serve> [flags]")
-	}
-	switch args[0] {
-	case "run":
-		return ouroborosRun(args[1:])
-	case "prompt":
-		return ouroborosPrompt(args[1:])
-	case "analyze":
-		return ouroborosAnalyze(args[1:])
-	case "save":
-		return ouroborosSave(args[1:])
-	case "serve":
-		return ouroborosServe(args[1:])
-	default:
-		return fmt.Errorf("unknown ouroboros subcommand: %s", args[0])
-	}
-}
-
-func ouroborosRun(args []string) error {
-	fs := flag.NewFlagSet("ouroboros run", flag.ContinueOnError)
-	seedPath := fs.String("seed", "", "path to seed YAML file")
-	verbose := fs.Bool("v", false, "verbose output")
-	if err := fs.Parse(args); err != nil {
-		return err
-	}
-
-	if *seedPath == "" {
-		return fmt.Errorf("--seed is required\nusage: origami ouroboros run --seed <path>")
-	}
-
-	seed, err := ouroboros.LoadSeed(*seedPath)
-	if err != nil {
-		return fmt.Errorf("load seed: %w", err)
-	}
-
-	level := slog.LevelInfo
-	if *verbose {
-		level = slog.LevelDebug
-	}
-	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level}))
-
-	logger.Info("running ouroboros probe", "seed", seed.Name, "category", seed.Category)
-
-	circuitPath := "ouroboros/circuits/ouroboros-probe.yaml"
-	dispatcher := func(_ context.Context, nodeName string, prompt string) (string, error) {
-		return "", fmt.Errorf("node %q: no dispatcher configured (use --serve for MCP dispatch)", nodeName)
-	}
-
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer cancel()
-
-	nodes := ouroboros.CircuitNodes(seed, dispatcher)
-	if err := engine.Run(ctx, circuitPath, nil,
-		engine.WithNodes(nodes),
-		engine.WithLogger(logger),
-	); err != nil {
-		return err
-	}
-
-	logger.Info("probe completed", "seed", seed.Name)
-	return nil
-}
-
-func ouroborosPrompt(args []string) error {
-	fs := flag.NewFlagSet("ouroboros prompt", flag.ContinueOnError)
-	excludeFile := fs.String("exclude-file", "", "JSON file with array of ModelIdentity to exclude")
-	if err := fs.Parse(args); err != nil {
-		return err
-	}
-
-	var exclude []circuit.ModelIdentity
-	if *excludeFile != "" {
-		data, err := os.ReadFile(*excludeFile)
-		if err != nil {
-			return fmt.Errorf("read exclude file: %w", err)
-		}
-		if err := json.Unmarshal(data, &exclude); err != nil {
-			return fmt.Errorf("parse exclude file: %w", err)
-		}
-	}
-
-	fmt.Print(ouroboros.BuildFullPromptWith(exclude, probes.RefactorPrompt()))
-	return nil
-}
-
-type analyzeResult struct {
-	Identity circuit.ModelIdentity `json:"identity"`
-	Key      string                  `json:"key"`
-	Code     string                  `json:"code"`
-	Score    ouroboros.ProbeScore      `json:"score"`
-	Known    bool                    `json:"known"`
-	Wrapper  bool                    `json:"wrapper"`
-}
-
-func ouroborosAnalyze(args []string) error {
-	fs := flag.NewFlagSet("ouroboros analyze", flag.ContinueOnError)
-	responseFile := fs.String("response-file", "", "text file with raw subagent response (- for stdin)")
-	if err := fs.Parse(args); err != nil {
-		return err
-	}
-
-	if *responseFile == "" {
-		return fmt.Errorf("--response-file is required")
-	}
-
-	var data []byte
-	var err error
-	if *responseFile == "-" {
-		data, err = io.ReadAll(os.Stdin)
-	} else {
-		data, err = os.ReadFile(*responseFile)
-	}
-	if err != nil {
-		return fmt.Errorf("read response: %w", err)
-	}
-	raw := string(data)
-
-	mi, err := ouroboros.ParseIdentityResponse(raw)
-	if err != nil {
-		return fmt.Errorf("parse identity: %w", err)
-	}
-
-	code, err := ouroboros.ParseProbeResponse(raw)
-	if err != nil {
-		return fmt.Errorf("parse code: %w", err)
-	}
-
-	score := probes.ScoreRefactorOutput(code)
-
-	result := analyzeResult{
-		Identity: mi,
-		Key:      ouroboros.ModelKey(mi),
-		Code:     code,
-		Score:    score,
-		Known:    models.IsKnownModel(mi),
-		Wrapper:  models.IsWrapperName(mi.ModelName),
-	}
-
-	out, err := json.MarshalIndent(result, "", "  ")
-	if err != nil {
-		return fmt.Errorf("marshal result: %w", err)
-	}
-	fmt.Println(string(out))
-	return nil
-}
-
-const defaultRunsDir = "ouroboros/runs"
-
-func ouroborosSave(args []string) error {
-	fs := flag.NewFlagSet("ouroboros save", flag.ContinueOnError)
-	reportFile := fs.String("report-file", "", "JSON file containing the RunReport (- for stdin)")
-	runsDir := fs.String("runs-dir", defaultRunsDir, "directory to save run reports")
-	if err := fs.Parse(args); err != nil {
-		return err
-	}
-
-	if *reportFile == "" {
-		return fmt.Errorf("--report-file is required")
-	}
-
-	var data []byte
-	var err error
-	if *reportFile == "-" {
-		data, err = io.ReadAll(os.Stdin)
-	} else {
-		data, err = os.ReadFile(*reportFile)
-	}
-	if err != nil {
-		return fmt.Errorf("read report: %w", err)
-	}
-
-	var report ouroboros.RunReport
-	if err := json.Unmarshal(data, &report); err != nil {
-		return fmt.Errorf("parse report: %w", err)
-	}
-
-	store, err := ouroboros.NewFileRunStore(*runsDir)
-	if err != nil {
-		return fmt.Errorf("create store: %w", err)
-	}
-
-	if err := store.SaveRun(report); err != nil {
-		return err
-	}
-
-	fmt.Fprintf(os.Stderr, "saved run %q to %s\n", report.RunID, *runsDir)
-	return nil
-}
-
-func ouroborosServe(args []string) error {
-	fs := flag.NewFlagSet("ouroboros serve", flag.ContinueOnError)
-	runsDir := fs.String("runs-dir", defaultRunsDir, "directory to save discovery run reports")
-	if err := fs.Parse(args); err != nil {
-		return err
-	}
-
-	cfg := mcp.NewOuroborosConfig(*runsDir)
-	srv := fwmcp.NewCircuitServer(cfg)
-	mcp.RegisterExtraTools(srv, *runsDir)
-	defer srv.Shutdown()
-
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer cancel()
-
-	fwmcp.WatchStdin(ctx, nil, cancel)
-
-	slog.Info("starting ouroboros MCP server over stdio", "runs_dir", *runsDir)
-	return srv.MCPServer.Run(ctx, &sdkmcp.StdioTransport{})
-}
-
 func lintCmd(args []string) error {
 	fs := flag.NewFlagSet("lint", flag.ContinueOnError)
 	profile := fs.String("profile", "moderate", "lint profile: min, basic, moderate, strict")
@@ -651,31 +425,3 @@ func lspCmd() error {
 	return nil
 }
 
-func sumiCmd(args []string) error {
-	fs := flag.NewFlagSet("sumi", flag.ExitOnError)
-	kamiAddr := fs.String("kami", "", "Kami server address for debug/agent features (e.g. 127.0.0.1:3000)")
-	watch := fs.String("watch", "", "connect to running Kami SSE stream at address")
-	replay := fs.String("replay", "", "replay a recorded JSONL session file")
-	noColor := fs.Bool("no-color", false, "disable ANSI colors (CI/pipe-friendly)")
-	compact := fs.Bool("compact", false, "reduced-width rendering")
-	clean := fs.Bool("clean", false, "reset Kami store before connecting (--watch only)")
-	_ = fs.Parse(args)
-
-	circuitPath := ""
-	if fs.NArg() > 0 {
-		circuitPath = fs.Arg(0)
-	}
-
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer cancel()
-
-	return sumi.Run(ctx, sumi.RunConfig{
-		CircuitPath: circuitPath,
-		KamiAddr:    *kamiAddr,
-		WatchAddr:   *watch,
-		ReplayFile:  *replay,
-		NoColor:     *noColor,
-		Compact:     *compact,
-		Clean:       *clean,
-	})
-}

@@ -11,30 +11,22 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/ouroboros"
-	"github.com/dpopsuev/origami/ouroboros/review"
 	"github.com/dpopsuev/origami/view"
 )
 
-// ReviewConfig configures the ouroboros transcript review subsystem.
-type ReviewConfig struct {
-	Dir string // directory for transcript storage (empty = disabled)
-}
-
 // Config controls the KamiServer behavior.
 type Config struct {
-	Port         int
-	Bind         string // default "127.0.0.1"
-	Debug        bool   // enable debug API endpoints
-	Logger       *slog.Logger
-	Bridge       *EventBridge
-	Store        *view.CircuitStore         // circuit state source for SSE streaming
-	SPA          http.FileSystem            // embedded frontend (nil = no SPA)
-	Theme        Theme                      // consumer theme (nil = default)
-	Kabuki       KabukiConfig               // Kabuki presentation sections (nil = debugger-only mode)
-	Vocab        circuit.RichVocabulary   // rich vocabulary for node tooltips (nil = Theme only)
+	Port           int
+	Bind           string                   // default "127.0.0.1"
+	Debug          bool                     // enable debug API endpoints
+	Logger         *slog.Logger
+	Bridge         *EventBridge
+	Store          *view.CircuitStore       // circuit state source for SSE streaming
+	SPA            http.FileSystem          // embedded frontend (nil = no SPA)
+	Theme          Theme                    // consumer theme (nil = default)
+	Kabuki         KabukiConfig             // Kabuki presentation sections (nil = debugger-only mode)
+	Vocab          circuit.RichVocabulary   // rich vocabulary for node tooltips (nil = Theme only)
 	MetricsHandler http.Handler             // Prometheus /metrics handler (nil = no metrics)
-	Review       ReviewConfig               // ouroboros review subsystem (empty Dir = disabled)
 }
 
 func (c *Config) addr() string {
@@ -78,13 +70,12 @@ type Server struct {
 	selMu     sync.RWMutex
 	selection map[string]any
 
-	frameStore  *FrameStore
-	reviewStore *review.TranscriptStore
+	frameStore *FrameStore
 }
 
 // NewServer creates a KamiServer. Call Start to begin serving.
 func NewServer(cfg Config) *Server {
-	s := &Server{
+	return &Server{
 		cfg:        cfg,
 		bridge:     cfg.Bridge,
 		store:      cfg.Store,
@@ -92,22 +83,6 @@ func NewServer(cfg Config) *Server {
 		wsConns:    make(map[int]*wsConn),
 		frameStore: NewFrameStore(),
 	}
-
-	if cfg.Review.Dir != "" {
-		rs, err := review.NewTranscriptStore(cfg.Review.Dir)
-		if err != nil {
-			cfg.logger().Warn("review store disabled", "err", err)
-		} else {
-			s.reviewStore = rs
-		}
-	}
-
-	return s
-}
-
-// ReviewStore returns the review transcript store, or nil if not configured.
-func (s *Server) ReviewStore() *review.TranscriptStore {
-	return s.reviewStore
 }
 
 // Start begins serving HTTP and WS on the configured ports.
@@ -180,12 +155,6 @@ func (s *Server) buildHTTPMux() *http.ServeMux {
 	mux.HandleFunc("POST /api/sumi/frame", s.handleStoreFrame)
 	mux.HandleFunc("GET /api/sumi/frame", s.handleGetFrame)
 	mux.HandleFunc("POST /api/store/reset", s.handleStoreReset)
-
-	if s.reviewStore != nil {
-		mux.HandleFunc("GET /api/review", s.handleReviewList)
-		mux.HandleFunc("GET /api/review/{id}", s.handleReviewGet)
-		mux.HandleFunc("POST /api/review/{id}/score", s.handleReviewScore)
-	}
 
 	if s.cfg.MetricsHandler != nil {
 		mux.Handle("GET /metrics", s.cfg.MetricsHandler)
@@ -455,55 +424,3 @@ func (s *Server) handleGetFrame(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(f)
 }
 
-// --- Review handlers ---
-
-var reviewIDPattern = review.ValidIDPattern()
-
-func (s *Server) handleReviewList(w http.ResponseWriter, _ *http.Request) {
-	grouped, err := s.reviewStore.List()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(grouped)
-}
-
-func (s *Server) handleReviewGet(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-	if !reviewIDPattern.MatchString(id) {
-		http.Error(w, "invalid transcript ID", http.StatusBadRequest)
-		return
-	}
-
-	t, err := s.reviewStore.Get(id)
-	if err != nil {
-		http.Error(w, "transcript not found", http.StatusNotFound)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(t)
-}
-
-func (s *Server) handleReviewScore(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-	if !reviewIDPattern.MatchString(id) {
-		http.Error(w, "invalid transcript ID", http.StatusBadRequest)
-		return
-	}
-
-	var rev ouroboros.HumanReview
-	if err := json.NewDecoder(r.Body).Decode(&rev); err != nil {
-		http.Error(w, "invalid JSON: "+err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	if err := s.reviewStore.Score(id, &rev); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	fmt.Fprintf(w, `{"ok":"review saved"}`)
-}

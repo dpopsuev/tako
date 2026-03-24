@@ -4,9 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 
-	"github.com/dpopsuev/origami/ouroboros"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -105,33 +103,6 @@ func RegisterMCPTools(mcpSrv *sdkmcp.Server, dc *DebugController, srv *Server) {
 		Description: "Get the latest Sumi TUI rendered frame. Returns the terminal text the user currently sees, plus metadata (timestamp, dimensions, selected node, focused panel, worker/event counts).",
 	}, noOut(handleGetSumiView(srv)))
 
-	// Review tools (only if review store is configured)
-	if srv.ReviewStore() != nil {
-		sdkmcp.AddTool(mcpSrv, &sdkmcp.Tool{
-			Name:        "review_get_transcript",
-			Description: "Fetch a probe transcript by run ID. Returns the full transcript including exchanges, pole result, and any existing review.",
-		}, noOut(handleReviewGetTranscript(srv)))
-
-		sdkmcp.AddTool(mcpSrv, &sdkmcp.Tool{
-			Name:        "review_set_score",
-			Description: "Attach a human review (ratings, notes, prompt tuning) to a probe transcript.",
-		}, noOut(handleReviewSetScore(srv)))
-
-		sdkmcp.AddTool(mcpSrv, &sdkmcp.Tool{
-			Name:        "review_get_current_view",
-			Description: "Get the current browser selection context for the review UI — the selected transcript run_id and exchange index.",
-		}, noOut(handleReviewGetCurrentView(srv)))
-
-		sdkmcp.AddTool(mcpSrv, &sdkmcp.Tool{
-			Name:        "review_highlight_exchange",
-			Description: "Send a WebSocket command to highlight a specific exchange in the review UI.",
-		}, noOut(handleReviewHighlightExchange(srv)))
-
-		sdkmcp.AddTool(mcpSrv, &sdkmcp.Tool{
-			Name:        "review_suggest_tuning",
-			Description: "Propose prompt changes for a specific role. The suggestion appears in the review UI for the human to accept, modify, or reject.",
-		}, noOut(handleReviewSuggestTuning(srv)))
-	}
 }
 
 // noOut wraps a handler to suppress outputSchema and discard the structured
@@ -375,108 +346,3 @@ func handleGetSumiView(srv *Server) func(context.Context, *sdkmcp.CallToolReques
 	}
 }
 
-// --- Review MCP tool handlers ---
-
-type reviewIDInput struct {
-	RunID string `json:"run_id"`
-}
-
-func handleReviewGetTranscript(srv *Server) func(context.Context, *sdkmcp.CallToolRequest, reviewIDInput) (*sdkmcp.CallToolResult, *ouroboros.ProbeTranscript, error) {
-	return func(_ context.Context, _ *sdkmcp.CallToolRequest, input reviewIDInput) (*sdkmcp.CallToolResult, *ouroboros.ProbeTranscript, error) {
-		if input.RunID == "" {
-			return nil, nil, fmt.Errorf("run_id is required")
-		}
-		t, err := srv.ReviewStore().Get(input.RunID)
-		if err != nil {
-			return nil, nil, err
-		}
-		res, err := jsonResult(t)
-		return res, t, err
-	}
-}
-
-type reviewScoreInput struct {
-	RunID      string            `json:"run_id"`
-	ReviewerID string            `json:"reviewer_id"`
-	Ratings    map[string]int    `json:"ratings"`
-	Notes      string            `json:"notes"`
-	Tuning     map[string]string `json:"prompt_tuning,omitempty"`
-}
-
-func handleReviewSetScore(srv *Server) func(context.Context, *sdkmcp.CallToolRequest, reviewScoreInput) (*sdkmcp.CallToolResult, string, error) {
-	return func(_ context.Context, _ *sdkmcp.CallToolRequest, input reviewScoreInput) (*sdkmcp.CallToolResult, string, error) {
-		if input.RunID == "" {
-			return nil, "", fmt.Errorf("run_id is required")
-		}
-		rev := &ouroboros.HumanReview{
-			ReviewerID:   input.ReviewerID,
-			Ratings:      input.Ratings,
-			Notes:        input.Notes,
-			PromptTuning: input.Tuning,
-			Timestamp:    time.Now(),
-		}
-		if err := srv.ReviewStore().Score(input.RunID, rev); err != nil {
-			return nil, "", err
-		}
-		return textResult("review saved"), "ok", nil
-	}
-}
-
-func handleReviewGetCurrentView(srv *Server) func(context.Context, *sdkmcp.CallToolRequest, emptyInput) (*sdkmcp.CallToolResult, map[string]any, error) {
-	return func(_ context.Context, _ *sdkmcp.CallToolRequest, _ emptyInput) (*sdkmcp.CallToolResult, map[string]any, error) {
-		sel := srv.GetSelection()
-		if sel == nil {
-			sel = map[string]any{}
-		}
-		res, err := jsonResult(sel)
-		return res, sel, err
-	}
-}
-
-type highlightExchangeInput struct {
-	RunID        string `json:"run_id"`
-	ExchangeIdx  int    `json:"exchange_idx"`
-	Color        string `json:"color,omitempty"`
-}
-
-func handleReviewHighlightExchange(srv *Server) func(context.Context, *sdkmcp.CallToolRequest, highlightExchangeInput) (*sdkmcp.CallToolResult, string, error) {
-	return func(ctx context.Context, _ *sdkmcp.CallToolRequest, input highlightExchangeInput) (*sdkmcp.CallToolResult, string, error) {
-		if input.RunID == "" {
-			return nil, "", fmt.Errorf("run_id is required")
-		}
-		msg := map[string]any{
-			"action":       "highlight_exchange",
-			"run_id":       input.RunID,
-			"exchange_idx": input.ExchangeIdx,
-			"color":        input.Color,
-		}
-		if err := srv.BroadcastWS(ctx, msg); err != nil {
-			return nil, "", err
-		}
-		return textResult("exchange highlighted"), "ok", nil
-	}
-}
-
-type suggestTuningInput struct {
-	RunID  string `json:"run_id"`
-	Role   string `json:"role"`
-	Change string `json:"change"`
-}
-
-func handleReviewSuggestTuning(srv *Server) func(context.Context, *sdkmcp.CallToolRequest, suggestTuningInput) (*sdkmcp.CallToolResult, string, error) {
-	return func(ctx context.Context, _ *sdkmcp.CallToolRequest, input suggestTuningInput) (*sdkmcp.CallToolResult, string, error) {
-		if input.RunID == "" || input.Role == "" || input.Change == "" {
-			return nil, "", fmt.Errorf("run_id, role, and change are required")
-		}
-		msg := map[string]any{
-			"action": "suggest_tuning",
-			"run_id": input.RunID,
-			"role":   input.Role,
-			"change": input.Change,
-		}
-		if err := srv.BroadcastWS(ctx, msg); err != nil {
-			return nil, "", err
-		}
-		return textResult("tuning suggestion sent"), "ok", nil
-	}
-}
