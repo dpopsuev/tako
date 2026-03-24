@@ -1,5 +1,9 @@
 # Compiled binaries
 /origami
+/serve
+/playground
+/mediator
+/llm-worker
 /bin/
 *.exe
 *.exe~
