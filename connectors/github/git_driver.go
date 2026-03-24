@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dpopsuev/origami/schematics/toolkit"
+	"github.com/dpopsuev/origami/toolkit"
 )
 
 // GitDriver implements toolkit.Driver for git repositories. It wraps the

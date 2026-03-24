@@ -15,7 +15,7 @@ import (
 	"github.com/dpopsuev/origami/models"
 	"github.com/dpopsuev/origami/ouroboros"
 	"github.com/dpopsuev/origami/ouroboros/probes"
-	"github.com/dpopsuev/origami/schematics/toolkit"
+	"github.com/dpopsuev/origami/toolkit"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )

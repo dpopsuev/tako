@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/connectors/docs"
-	"github.com/dpopsuev/origami/schematics/toolkit"
+	"github.com/dpopsuev/origami/toolkit"
 )
 
 func TestDocsDriver_Handles(t *testing.T) {

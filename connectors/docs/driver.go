@@ -17,7 +17,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/origami/schematics/toolkit"
+	"github.com/dpopsuev/origami/toolkit"
 )
 
 var _ toolkit.Driver = (*DocsDriver)(nil)
