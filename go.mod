@@ -21,10 +21,7 @@ require (
 	modernc.org/sqlite v1.46.1
 )
 
-require (
-	github.com/coder/websocket v1.8.14
-	github.com/dpopsuev/bugle v0.4.0
-)
+require github.com/dpopsuev/bugle v0.4.0
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect

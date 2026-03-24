@@ -129,7 +129,7 @@ func TestBuild_CircuitSubcommands(t *testing.T) {
 		t.Fatal("missing circuit command")
 	}
 
-	subs := []string{"list", "validate", "render", "replay"}
+	subs := []string{"list", "validate", "render"}
 	for _, name := range subs {
 		if findSubcommand(pl, name) == nil {
 			t.Errorf("missing circuit subcommand %q", name)

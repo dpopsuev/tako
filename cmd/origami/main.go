@@ -5,23 +5,16 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"log/slog"
-	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"strings"
 
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/kami"
 	"github.com/dpopsuev/origami/lint"
 	originamilsp "github.com/dpopsuev/origami/lsp"
-	fwmcp "github.com/dpopsuev/origami/mcp"
-	studiobackend "github.com/dpopsuev/origami/studio/backend"
 	"github.com/dpopsuev/origami/transformers"
-
-	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 // Build-time variables injected via -ldflags.
@@ -50,10 +43,6 @@ func main() {
 		err = lintCmd(os.Args[2:])
 	case "lsp":
 		err = lspCmd()
-	case "kami":
-		err = kamiCmd(os.Args[2:])
-	case "studio":
-		err = studioCmd(os.Args[2:])
 	case "component":
 		err = componentCmd(os.Args[2:])
 	case "fold":
@@ -97,9 +86,6 @@ Commands:
   lint       Static analysis for circuit YAML (rules, profiles, auto-fix)
   lsp        Language Server for circuit YAML (diagnostics, completion, hover)
   skill      Skill scaffolding (scaffold SKILL.md from circuit YAML)
-  kami       Live circuit debugger (HTTP/SSE + WS)
-  kami serve Start Kami MCP server over stdio (co-starts HTTP/WS)
-  studio     Visual Circuit Editor (embedded SPA + REST API)
   component  Component management (list, inspect, validate)
   fold       Compile a YAML manifest into a standalone binary
   serve      Run the MCP gateway proxy (routes to backend engines)
@@ -179,117 +165,6 @@ func validateCmd(args []string) error {
 	}
 	fmt.Printf("OK: %s is valid\n", circuitPath)
 	return nil
-}
-
-// --- kami subcommand ---
-
-func kamiCmd(args []string) error {
-	if len(args) > 0 && args[0] == "serve" {
-		return kamiServe(args[1:])
-	}
-	if len(args) > 0 && args[0] == "reset" {
-		return kamiReset(args[1:])
-	}
-
-	fs := flag.NewFlagSet("kami", flag.ExitOnError)
-	port := fs.Int("port", 3000, "HTTP port (WS on port+1)")
-	bind := fs.String("bind", "127.0.0.1", "bind address")
-	debug := fs.Bool("debug", false, "enable debug API")
-	replay := fs.String("replay", "", "replay a JSONL recording file")
-	speed := fs.Float64("speed", 1.0, "replay speed multiplier")
-	_ = fs.Parse(args)
-
-	bridge := kami.NewEventBridge(nil)
-	defer bridge.Close()
-
-	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
-
-	srv := kami.NewServer(kami.Config{
-		Port:   *port,
-		Bind:   *bind,
-		Debug:  *debug,
-		Bridge: bridge,
-		Logger: logger,
-		SPA:    kami.FrontendFS(),
-	})
-
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer cancel()
-
-	if *replay != "" {
-		rp, err := kami.NewReplayer(bridge, *replay, *speed)
-		if err != nil {
-			return err
-		}
-		go func() {
-			if err := rp.Play(ctx.Done()); err != nil {
-				logger.Error("replay error", "error", err)
-			}
-			logger.Info("replay complete")
-		}()
-	}
-
-	return srv.Start(ctx)
-}
-
-func kamiReset(args []string) error {
-	if len(args) == 0 {
-		return fmt.Errorf("usage: origami kami reset <addr> (e.g. 127.0.0.1:3001)")
-	}
-	addr := args[0]
-	url := fmt.Sprintf("http://%s/api/store/reset", addr)
-
-	resp, err := http.Post(url, "application/json", nil)
-	if err != nil {
-		return fmt.Errorf("reset failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, _ := io.ReadAll(resp.Body)
-	fmt.Println(string(body))
-	return nil
-}
-
-func kamiServe(args []string) error {
-	fs := flag.NewFlagSet("kami serve", flag.ContinueOnError)
-	port := fs.Int("port", 3000, "HTTP port for Kami server (WS on port+1)")
-	bind := fs.String("bind", "127.0.0.1", "bind address")
-	if err := fs.Parse(args); err != nil {
-		return err
-	}
-
-	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
-
-	bridge := kami.NewEventBridge(nil)
-	defer bridge.Close()
-
-	dc := kami.NewDebugController(bridge)
-	kamiSrv := kami.NewServer(kami.Config{
-		Port:   *port,
-		Bind:   *bind,
-		Debug:  true,
-		Bridge: bridge,
-		Logger: logger,
-		SPA:    kami.FrontendFS(),
-	})
-
-	mcpSrv := fwmcp.NewServer("origami-kami-debugger", "1.0.0")
-	kami.RegisterMCPTools(mcpSrv.MCPServer, dc, kamiSrv)
-
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer cancel()
-
-	fwmcp.WatchStdin(ctx, nil, cancel)
-
-	go func() {
-		logger.Info("kami HTTP+WS server starting", "addr", fmt.Sprintf("%s:%d", *bind, *port))
-		if err := kamiSrv.Start(ctx); err != nil {
-			logger.Error("kami server error", "error", err)
-		}
-	}()
-
-	logger.Info("starting kami MCP server over stdio")
-	return mcpSrv.MCPServer.Run(ctx, &sdkmcp.StdioTransport{})
 }
 
 func lintCmd(args []string) error {
@@ -390,24 +265,6 @@ func lintCmd(args []string) error {
 		os.Exit(exitCode)
 	}
 	return nil
-}
-
-func studioCmd(args []string) error {
-	fs := flag.NewFlagSet("studio", flag.ContinueOnError)
-	port := fs.Int("port", 8080, "HTTP port for Studio server")
-	if err := fs.Parse(args); err != nil {
-		return err
-	}
-
-	srv := studiobackend.NewStudioServer(*port, studiobackend.PlaceholderStaticFS())
-	srv.Start()
-
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer cancel()
-
-	slog.Info("origami studio started", "port", *port, "url", fmt.Sprintf("http://localhost:%d", *port))
-	<-ctx.Done()
-	return srv.Stop(context.Background())
 }
 
 func lspCmd() error {

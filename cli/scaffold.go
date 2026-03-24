@@ -3,14 +3,11 @@ package cli
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"os"
-	"os/signal"
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/kami"
 	"github.com/dpopsuev/origami/lint"
 	"github.com/dpopsuev/origami/observability"
 	"github.com/prometheus/client_golang/prometheus"
@@ -501,47 +498,6 @@ func (b *CLIBuilder) buildCircuit() *cobra.Command {
 	}
 	renderCmd.Flags().String("format", "text", "output format: text, dot")
 	pl.AddCommand(renderCmd)
-
-	replayCmd := &cobra.Command{
-		Use:   "replay <recording.jsonl>",
-		Short: "Replay a circuit recording via Kami",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			speed, _ := cmd.Flags().GetFloat64("speed")
-			port, _ := cmd.Flags().GetInt("port")
-
-			bridge := kami.NewEventBridge(nil)
-			defer bridge.Close()
-
-			logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
-
-			srv := kami.NewServer(kami.Config{
-				Port:   port,
-				Bridge: bridge,
-				Logger: logger,
-				SPA:    kami.FrontendFS(),
-			})
-
-			ctx, cancel := signal.NotifyContext(cmd.Context(), os.Interrupt)
-			defer cancel()
-
-			rp, err := kami.NewReplayer(bridge, args[0], speed)
-			if err != nil {
-				return fmt.Errorf("create replayer: %w", err)
-			}
-			go func() {
-				if err := rp.Play(ctx.Done()); err != nil {
-					logger.Error("replay error", "error", err)
-				}
-				logger.Info("replay complete")
-			}()
-
-			return srv.Start(ctx)
-		},
-	}
-	replayCmd.Flags().Float64("speed", 1.0, "replay speed multiplier")
-	replayCmd.Flags().Int("port", 3000, "Kami server port")
-	pl.AddCommand(replayCmd)
 
 	return pl
 }
