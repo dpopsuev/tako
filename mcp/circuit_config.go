@@ -188,3 +188,15 @@ type StartParams struct {
 	// Consumers never set this — the framework auto-wires it.
 	Observer circuit.WalkObserver
 }
+
+// SchematicHooks groups the domain-specific callbacks that a schematic
+// provides to the framework. Fold-generated code calls these; the
+// consumer implements them in their schematic package.
+type SchematicHooks struct {
+	// CreateSession wires up a domain-specific circuit run.
+	CreateSession func(ctx context.Context, params StartParams, disp *dispatch.MuxDispatcher, bus agentport.Bus) (RunFunc, SessionMeta, error)
+
+	// FormatReport converts domain-specific run result into human-readable
+	// text and optional structured data.
+	FormatReport func(result any) (formatted string, structured any, err error)
+}

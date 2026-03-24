@@ -32,6 +32,13 @@ type ResolvedSchematic struct {
 	Factory  string // constructor function (e.g. "NewRouter", "NewServer")
 	Resolver string // circuit overlay resolver function (e.g. "SchematicResolver"), empty if none
 	Options  []ResolvedOption
+
+	// Hooks mode: when set, fold generates CircuitConfig inline instead of calling Factory.
+	Hooks    string              // Go symbol: "rca.Hooks()" or "Hooks()"
+	Params   []circuit.ParamDef  // extra start_circuit parameters
+	Schemas  []string            // step schema paths
+	Report   string              // report template path
+	Dispatch circuit.DispatchDef // dispatch config
 }
 
 // ResolvedOption is one With* call on a schematic factory.
@@ -220,6 +227,11 @@ func resolveSchematic(
 		Factory:  cm.Factory,
 		Resolver: cm.Resolver,
 		Options:  options,
+		Hooks:    cm.Hooks,
+		Params:   cm.Params,
+		Schemas:  cm.Schemas,
+		Report:   cm.Report,
+		Dispatch: cm.Dispatch,
 	}, nil
 }
 

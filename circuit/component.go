@@ -55,6 +55,29 @@ type ComponentManifest struct {
 		Sockets []SocketDef `yaml:"sockets,omitempty"`
 	} `yaml:"requires,omitempty"`
 	Satisfies []SatisfiesDef `yaml:"satisfies,omitempty"`
+
+	// MCP server configuration — fold reads these to generate CircuitConfig.
+	Params   []ParamDef  `yaml:"params,omitempty"`  // extra start_circuit parameters
+	Schemas  []string    `yaml:"schemas,omitempty"`  // step schema paths (relative to domain FS)
+	Report   string      `yaml:"report,omitempty"`   // report template YAML path
+	Dispatch DispatchDef `yaml:"dispatch,omitempty"` // dispatch provider config
+	Hooks    string      `yaml:"hooks,omitempty"`    // Go symbol: "rca.Hooks()"
+}
+
+// ParamDef declares an extra parameter for MCP start_circuit.
+type ParamDef struct {
+	Name     string   `yaml:"name"`
+	Type     string   `yaml:"type"`
+	Desc     string   `yaml:"description,omitempty"`
+	Required bool     `yaml:"required,omitempty"`
+	Enum     []string `yaml:"enum,omitempty"`
+}
+
+// DispatchDef declares how the schematic dispatches LLM prompts.
+type DispatchDef struct {
+	Provider string `yaml:"provider,omitempty"` // "cli" (default), "http"
+	Workers  int    `yaml:"workers,omitempty"`  // parallel workers (default 1)
+	Timeout  string `yaml:"timeout,omitempty"`  // per-dispatch timeout (e.g. "5m")
 }
 
 // LoadComponentManifest reads and parses a component.yaml file.
