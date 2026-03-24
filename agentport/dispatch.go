@@ -1,6 +1,9 @@
 package agentport
 
-import "github.com/dpopsuev/bugle/dispatch"
+import (
+	"github.com/dpopsuev/bugle/dispatch"
+	"github.com/dpopsuev/bugle/dispatch/guard"
+)
 
 // Type aliases — definitions live in bugle/dispatch.
 type (
@@ -53,3 +56,11 @@ var (
 	UnwrapFinalizer = dispatch.UnwrapFinalizer
 	DiscardLogger   = dispatch.DiscardLogger
 )
+
+// Guard decorators — resilience and token tracking.
+type (
+	TokenTrackingDispatcher = guard.TokenTrackingDispatcher
+	DispatchHook            = guard.Hook
+)
+
+var NewTokenTrackingDispatcher = guard.NewTokenTrackingDispatcher
