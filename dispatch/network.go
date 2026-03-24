@@ -12,6 +12,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/dpopsuev/bugle/signal"
 )
 
 // NetworkServer wraps an ExternalDispatcher and exposes it over HTTP.
@@ -20,7 +22,7 @@ import (
 // SignalBus is provided via WithSignalBus.
 type NetworkServer struct {
 	dispatcher ExternalDispatcher
-	bus        *SignalBus
+	bus        signal.Bus
 	server     *http.Server
 	log        *slog.Logger
 	addr       string
@@ -45,7 +47,7 @@ func WithServerLogger(l *slog.Logger) NetworkServerOption {
 
 // WithSignalBus enables signal bus endpoints (POST /signal, GET /signals).
 // When nil, signal endpoints return 404.
-func WithSignalBus(bus *SignalBus) NetworkServerOption {
+func WithSignalBus(bus signal.Bus) NetworkServerOption {
 	return func(s *NetworkServer) { s.bus = bus }
 }
 
@@ -196,7 +198,13 @@ func (s *NetworkServer) handleEmitSignal(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	s.bus.Emit(req.Event, req.Agent, req.CaseID, req.Step, req.Meta)
+	s.bus.Emit(&signal.Signal{
+		Event:  req.Event,
+		Agent:  req.Agent,
+		CaseID: req.CaseID,
+		Step:   req.Step,
+		Meta:   req.Meta,
+	})
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -213,7 +221,7 @@ func (s *NetworkServer) handleGetSignals(w http.ResponseWriter, r *http.Request)
 
 	sigs := s.bus.Since(since)
 	if sigs == nil {
-		sigs = []Signal{}
+		sigs = []signal.Signal{}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -377,7 +385,7 @@ func (c *NetworkClient) EmitSignal(ctx context.Context, event, agent, caseID, st
 }
 
 // GetSignals retrieves signals from the server's signal bus starting at the given index.
-func (c *NetworkClient) GetSignals(ctx context.Context, since int) ([]Signal, error) {
+func (c *NetworkClient) GetSignals(ctx context.Context, since int) ([]signal.Signal, error) {
 	url := fmt.Sprintf("%s/signals?since=%d", c.baseURL, since)
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
@@ -396,7 +404,7 @@ func (c *NetworkClient) GetSignals(ctx context.Context, since int) ([]Signal, er
 			resp.StatusCode, string(body))
 	}
 
-	var sigs []Signal
+	var sigs []signal.Signal
 	if err := json.NewDecoder(resp.Body).Decode(&sigs); err != nil {
 		return nil, fmt.Errorf("network client: decode signals: %w", err)
 	}

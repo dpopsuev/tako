@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dpopsuev/bugle/signal"
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/dispatch"
@@ -237,7 +238,7 @@ type getSignalsInput struct {
 }
 
 type getSignalsOutput struct {
-	Signals []dispatch.Signal `json:"signals"`
+	Signals []signal.Signal `json:"signals"`
 	Total   int               `json:"total"`
 }
 
@@ -246,7 +247,7 @@ type getWorkerHealthInput struct {
 }
 
 type getWorkerHealthOutput struct {
-	dispatch.HealthSummary
+	signal.HealthSummary
 }
 
 // --- Tool registration ---
@@ -550,7 +551,7 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 	} else {
 		runCtx, runCancel = context.WithCancel(context.Background())
 	}
-	bus := dispatch.NewSignalBus()
+	bus := signal.NewMemBus()
 	disp := dispatch.NewMuxDispatcher(runCtx, dispatch.WithMuxSignalBus(bus))
 
 	// Generate session ID and set up trace recording BEFORE CreateSession
@@ -575,7 +576,7 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 				logger.Warn("failed to create trace recorder",
 					"error", recErr)
 			} else {
-				bus.SetOnEmit(func(sig dispatch.Signal) {
+				bus.OnEmit(func(sig signal.Signal) {
 					recorder.HandleSignal(sig.Timestamp, sig.Event, sig.Agent, sig.CaseID, sig.Step, sig.Meta)
 				})
 			}
@@ -629,9 +630,13 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 	sess.SetTTL(s.defaultSessionTTL)
 	sess.Start() // launch run goroutine after all fields are set
 
-	bus.Emit(EventSessionStarted, dispatch.AgentServer, "", "", map[string]string{
-		MetaKeyScenario:   meta.Scenario,
-		MetaKeyTotalCases: fmt.Sprintf("%d", meta.TotalCases),
+	bus.Emit(&signal.Signal{
+		Event: EventSessionStarted,
+		Agent: signal.AgentServer,
+		Meta: map[string]string{
+			MetaKeyScenario:   meta.Scenario,
+			MetaKeyTotalCases: fmt.Sprintf("%d", meta.TotalCases),
+		},
 	})
 
 	s.mu.Lock()
@@ -698,7 +703,7 @@ func (s *CircuitServer) handleGetNextStep(ctx context.Context, _ *sdkmcp.CallToo
 			out.Error = sessErr.Error()
 		}
 		logger.Info("circuit complete", "session_id", input.SessionID)
-		sess.Bus.Emit(EventCircuitDone, dispatch.AgentServer, "", "", nil)
+		sess.Bus.Emit(&signal.Signal{Event: EventCircuitDone, Agent: signal.AgentServer})
 		if s.Config.OnCircuitDone != nil {
 			s.Config.OnCircuitDone()
 		}
@@ -716,8 +721,12 @@ func (s *CircuitServer) handleGetNextStep(ctx context.Context, _ *sdkmcp.CallToo
 		"step", dc.Step,
 		"dispatch_id", dc.DispatchID)
 
-	sess.Bus.Emit(EventStepReady, dispatch.AgentServer, dc.CaseID, dc.Step, map[string]string{
-		dispatch.MetaKeyPromptPath: dc.PromptPath,
+	sess.Bus.Emit(&signal.Signal{
+		Event:  EventStepReady,
+		Agent:  signal.AgentServer,
+		CaseID: dc.CaseID,
+		Step:   dc.Step,
+		Meta:   map[string]string{signal.MetaKeyPromptPath: dc.PromptPath},
 	})
 
 	if s.Config.OnStepDispatched != nil {
@@ -804,10 +813,15 @@ func (s *CircuitServer) handleSubmitStep(ctx context.Context, _ *sdkmcp.CallTool
 	}
 
 	remaining := sess.AgentSubmit()
-	sess.Bus.Emit(EventArtifactSubmitted, dispatch.AgentServer, "", input.Step, map[string]string{
-		dispatch.MetaKeyBytes:    fmt.Sprintf("%d", len(data)),
-		dispatch.MetaKeyInFlight: fmt.Sprintf("%d", remaining),
-		dispatch.MetaKeyVia:      "submit_step",
+	sess.Bus.Emit(&signal.Signal{
+		Event: EventArtifactSubmitted,
+		Agent: signal.AgentServer,
+		Step:  input.Step,
+		Meta: map[string]string{
+			signal.MetaKeyBytes:    fmt.Sprintf("%d", len(data)),
+			signal.MetaKeyInFlight: fmt.Sprintf("%d", remaining),
+			signal.MetaKeyVia:      "submit_step",
+		},
 	})
 
 	if s.Config.OnStepCompleted != nil {
@@ -893,12 +907,18 @@ func (s *CircuitServer) handleEmitSignal(ctx context.Context, _ *sdkmcp.CallTool
 		return nil, emitSignalOutput{}, err
 	}
 
-	sess.Bus.Emit(input.Event, input.Agent, input.CaseID, input.Step, input.Meta)
+	sess.Bus.Emit(&signal.Signal{
+		Event:  input.Event,
+		Agent:  input.Agent,
+		CaseID: input.CaseID,
+		Step:   input.Step,
+		Meta:   input.Meta,
+	})
 	idx := sess.Bus.Len()
 
-	if input.Event == dispatch.EventWorkerStarted {
-		workerID := input.Meta[dispatch.MetaKeyWorkerID]
-		mode := input.Meta[dispatch.MetaKeyMode]
+	if input.Event == signal.EventWorkerStarted {
+		workerID := input.Meta[signal.MetaKeyWorkerID]
+		mode := input.Meta[signal.MetaKeyMode]
 		if workerID != "" {
 			sess.RegisterWorker(workerID, mode)
 			logger.Debug("worker registered", "worker_id", workerID, "mode", mode)
@@ -936,7 +956,7 @@ func (s *CircuitServer) handleGetWorkerHealth(_ context.Context, _ *sdkmcp.CallT
 	health := sess.Supervisor.Health()
 	health.QueueDepth = sess.dispatcher.ActiveDispatches()
 
-	return nil, getWorkerHealthOutput{HealthSummary: health}, nil
+	return nil, getWorkerHealthOutput{health}, nil
 }
 
 // --- Post-mortem handlers ---

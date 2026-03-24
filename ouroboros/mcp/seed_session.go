@@ -10,6 +10,7 @@ import (
 	"github.com/dpopsuev/origami/engine"
 	"log/slog"
 
+	"github.com/dpopsuev/bugle/signal"
 	"github.com/dpopsuev/origami/dispatch"
 	fwmcp "github.com/dpopsuev/origami/mcp"
 	"github.com/dpopsuev/origami/ouroboros"
@@ -41,7 +42,7 @@ func NewSeedProfileConfig() fwmcp.CircuitConfig {
 Send it to the target model and return the raw response as {"response": "<text>"}.`,
 		DefaultGetNextStepTimeout: 60000,
 		DefaultSessionTTL:         600000,
-		CreateSession: func(ctx context.Context, params fwmcp.StartParams, disp *dispatch.MuxDispatcher, bus *dispatch.SignalBus) (fwmcp.RunFunc, fwmcp.SessionMeta, error) {
+		CreateSession: func(ctx context.Context, params fwmcp.StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (fwmcp.RunFunc, fwmcp.SessionMeta, error) {
 			return createSeedSession(params, disp, bus, *def)
 		},
 		FormatReport: formatSeedReport,
@@ -78,7 +79,7 @@ func terminalNode(def circuit.CircuitDef) string {
 func createSeedSession(
 	params fwmcp.StartParams,
 	disp *dispatch.MuxDispatcher,
-	bus *dispatch.SignalBus,
+	bus signal.Bus,
 	def circuit.CircuitDef,
 ) (fwmcp.RunFunc, fwmcp.SessionMeta, error) {
 	seedPath := toolkit.MapStr(params.Extra, "seed_path")
@@ -111,7 +112,7 @@ func runSeedCircuit(
 	ctx context.Context,
 	seed *ouroboros.Seed,
 	disp *dispatch.MuxDispatcher,
-	bus *dispatch.SignalBus,
+	bus signal.Bus,
 	def circuit.CircuitDef,
 ) (*ouroboros.PoleResult, error) {
 	log := slog.Default().With("component", "ouroboros-seed")
@@ -165,10 +166,10 @@ func runSeedCircuit(
 		return nil, fmt.Errorf("%s artifact type %T, expected *PoleResult", lastNode, finalArtifact.Raw())
 	}
 
-	bus.Emit("seed_completed", "server", seed.Name, lastNode, map[string]string{
+	bus.Emit(&signal.Signal{Event: "seed_completed", Agent: "server", CaseID: seed.Name, Step: lastNode, Meta: map[string]string{
 		"selected_pole": result.SelectedPole,
 		"confidence":    fmt.Sprintf("%.2f", result.Confidence),
-	})
+	}})
 
 	return result, nil
 }

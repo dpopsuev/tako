@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dpopsuev/bugle/signal"
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/dispatch"
 )
 
 // AssertEventOrder verifies that the given events contain the expected event
@@ -45,7 +45,7 @@ func AssertNoEvent(t testing.TB, events []circuit.WalkEvent, eventType circuit.W
 
 // WaitForSignal polls the signal bus until an event with the given name appears
 // or the timeout expires. Fails the test on timeout.
-func WaitForSignal(t testing.TB, bus *dispatch.SignalBus, event string, timeout time.Duration) {
+func WaitForSignal(t testing.TB, bus signal.Bus, event string, timeout time.Duration) {
 	t.Helper()
 
 	deadline := time.Now().Add(timeout)

@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dpopsuev/bugle/signal"
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/dispatch"
 )
@@ -33,7 +34,7 @@ type CircuitSession struct {
 	TotalCases      int
 	Scenario        string
 	DesiredCapacity int
-	Bus             *dispatch.SignalBus
+	Bus             signal.Bus
 
 	log        *slog.Logger
 	state      SessionState
@@ -55,7 +56,7 @@ type CircuitSession struct {
 
 	registeredWorkers map[string]string
 
-	Supervisor *dispatch.SupervisorTracker
+	Supervisor *signal.Supervisor
 
 	recorder  *engine.TraceRecorder // nil when tracing disabled
 	runDir    string                   // {StateDir}/runs/{sessID}
@@ -79,7 +80,7 @@ func NewCircuitSession(
 	meta SessionMeta,
 	parallel int,
 	disp *dispatch.MuxDispatcher,
-	bus *dispatch.SignalBus,
+	bus signal.Bus,
 	runFn RunFunc,
 	cancel context.CancelFunc,
 ) *CircuitSession {
@@ -94,7 +95,7 @@ func NewCircuitSession(
 		dispatcher:      disp,
 		doneCh:          make(chan struct{}),
 		cancel:          cancel,
-		Supervisor:      dispatch.NewSupervisorTracker(bus),
+		Supervisor:      signal.NewSupervisor(bus),
 		startedAt:       time.Now(),
 		runCtx:          ctx,
 		runFn:           runFn,
@@ -340,8 +341,10 @@ func (s *CircuitSession) watchdog() {
 			if stale > currentTTL {
 				s.log.Warn("TTL watchdog triggered, aborting session",
 					"stale", stale, "ttl", currentTTL, "session_id", s.ID)
-				s.Bus.Emit(EventSessionError, dispatch.AgentServer, "", "", map[string]string{
-					dispatch.MetaKeyError: fmt.Sprintf("session TTL expired: no activity for %v", stale),
+				s.Bus.Emit(&signal.Signal{
+					Event: EventSessionError,
+					Agent: signal.AgentServer,
+					Meta:  map[string]string{signal.MetaKeyError: fmt.Sprintf("session TTL expired: no activity for %v", stale)},
 				})
 				s.dispatcher.Abort(fmt.Errorf("session TTL expired: no activity for %v", stale))
 				s.mu.Lock()
@@ -380,7 +383,7 @@ func (s *CircuitSession) run(ctx context.Context, runFn RunFunc) {
 	if err != nil {
 		s.state = StateError
 		s.err = err
-		s.Bus.Emit(EventSessionError, dispatch.AgentServer, "", "", map[string]string{dispatch.MetaKeyError: err.Error()})
+		s.Bus.Emit(&signal.Signal{Event: EventSessionError, Agent: signal.AgentServer, Meta: map[string]string{signal.MetaKeyError: err.Error()}})
 		s.log.Error("circuit run failed", "error", err)
 		s.writeReport(result) // write partial report even on error
 		s.writeRunRecord()
@@ -388,7 +391,7 @@ func (s *CircuitSession) run(ctx context.Context, runFn RunFunc) {
 	}
 	s.state = StateDone
 	s.result = result
-	s.Bus.Emit(EventSessionDone, dispatch.AgentServer, "", "", map[string]string{})
+	s.Bus.Emit(&signal.Signal{Event: EventSessionDone, Agent: signal.AgentServer})
 	s.log.Info("circuit run complete")
 	s.writeReport(result)
 	s.writeRunRecord()

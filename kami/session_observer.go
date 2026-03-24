@@ -3,8 +3,8 @@ package kami
 import (
 	"time"
 
+	"github.com/dpopsuev/bugle/signal"
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/view"
 )
 
@@ -24,7 +24,7 @@ func NewSessionObserver(srv *Server) *SessionObserver {
 
 // OnSessionCreate builds a fresh CircuitStore and EventBridge for the
 // new session, replacing any previous ones.
-func (o *SessionObserver) OnSessionCreate(def *circuit.CircuitDef, bus *dispatch.SignalBus) {
+func (o *SessionObserver) OnSessionCreate(def *circuit.CircuitDef, bus signal.Bus) {
 	if o.bridge != nil {
 		o.bridge.Close()
 	}

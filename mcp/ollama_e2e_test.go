@@ -15,6 +15,7 @@ import (
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/bugle/signal"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/mcp"
 )
@@ -294,7 +295,7 @@ func TestOllamaE2E_SimpleCircuit(t *testing.T) {
 		StepSchemas: findSchemas("ASK"),
 		DefaultGetNextStepTimeout: 60000,
 		DefaultSessionTTL:         120000,
-		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus *dispatch.SignalBus) (mcp.RunFunc, mcp.SessionMeta, error) {
+		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 			return func(ctx context.Context) (any, error) {
 				dc := dispatch.DispatchContext{
 					CaseID:        "C01",
@@ -376,7 +377,7 @@ func TestOllamaE2E_MultiStepCascade(t *testing.T) {
 		StepSchemas: findSchemas("STEP_A", "STEP_B", "STEP_C"),
 		DefaultGetNextStepTimeout: 60000,
 		DefaultSessionTTL:         120000,
-		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus *dispatch.SignalBus) (mcp.RunFunc, mcp.SessionMeta, error) {
+		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 			return func(ctx context.Context) (any, error) {
 				results := make(map[string]string)
 				for _, step := range stepOrder {
@@ -497,7 +498,7 @@ func TestOllamaE2E_DelegatedCircuit(t *testing.T) {
 		StepSchemas: findSchemas("classify", "analyze", "conclude", "summarize"),
 		DefaultGetNextStepTimeout: 60000,
 		DefaultSessionTTL:         180000,
-		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus *dispatch.SignalBus) (mcp.RunFunc, mcp.SessionMeta, error) {
+		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 			return func(ctx context.Context) (any, error) {
 				dt := &dispatchTransformer{disp: disp}
 				reg := engine.GraphRegistries{
@@ -602,7 +603,7 @@ func TestOllamaE2E_UnhappyPaths(t *testing.T) {
 			},
 			DefaultGetNextStepTimeout: 5000,
 			DefaultSessionTTL:         30000,
-			CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus *dispatch.SignalBus) (mcp.RunFunc, mcp.SessionMeta, error) {
+			CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 				return func(ctx context.Context) (any, error) {
 					dc := dispatch.DispatchContext{
 						CaseID:        "C01",
@@ -669,7 +670,7 @@ func TestOllamaE2E_UnhappyPaths(t *testing.T) {
 			},
 			DefaultGetNextStepTimeout: 5000,
 			DefaultSessionTTL:         30000,
-			CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus *dispatch.SignalBus) (mcp.RunFunc, mcp.SessionMeta, error) {
+			CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 				return func(ctx context.Context) (any, error) {
 					dc := dispatch.DispatchContext{
 						CaseID:        "C01",
@@ -733,7 +734,7 @@ func TestOllamaE2E_UnhappyPaths(t *testing.T) {
 			},
 			DefaultGetNextStepTimeout: 60000,
 			DefaultSessionTTL:         60000,
-			CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus *dispatch.SignalBus) (mcp.RunFunc, mcp.SessionMeta, error) {
+			CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 				return func(ctx context.Context) (any, error) {
 					dc := dispatch.DispatchContext{
 						CaseID:        "C01",

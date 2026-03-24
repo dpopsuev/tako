@@ -8,6 +8,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/dpopsuev/bugle/signal"
 )
 
 func TestCLIWorkerDispatcher_ProcessesSteps(t *testing.T) {
@@ -15,7 +17,7 @@ func TestCLIWorkerDispatcher_ProcessesSteps(t *testing.T) {
 	defer cancel()
 
 	mux := NewMuxDispatcher(ctx)
-	bus := NewSignalBus()
+	bus := signal.NewMemBus()
 
 	d, err := NewCLIWorkerDispatcher(mux, "cat", 2,
 		WithCLIWorkerBus(bus),

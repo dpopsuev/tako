@@ -6,6 +6,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/dpopsuev/bugle/signal"
 )
 
 func startTestServer(t *testing.T, mux *MuxDispatcher, opts ...NetworkServerOption) (string, context.CancelFunc) {
@@ -238,7 +240,7 @@ func TestNetworkSignal_EmitAndGet(t *testing.T) {
 	defer cancel()
 
 	mux := NewMuxDispatcher(ctx)
-	bus := NewSignalBus()
+	bus := signal.NewMemBus()
 	addr, stopServer := startTestServer(t, mux, WithSignalBus(bus))
 	defer stopServer()
 
@@ -304,7 +306,7 @@ func TestNetworkSignal_EmptyEventRejected(t *testing.T) {
 	defer cancel()
 
 	mux := NewMuxDispatcher(ctx)
-	bus := NewSignalBus()
+	bus := signal.NewMemBus()
 	addr, stopServer := startTestServer(t, mux, WithSignalBus(bus))
 	defer stopServer()
 

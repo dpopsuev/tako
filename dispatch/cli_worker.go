@@ -9,6 +9,8 @@ import (
 	"os/exec"
 	"sync"
 	"time"
+
+	"github.com/dpopsuev/bugle/signal"
 )
 
 // CLIWorkerDispatcher runs N independent worker goroutines, each pulling steps
@@ -17,7 +19,7 @@ import (
 // power without requiring the CLI tool to know about the protocol.
 type CLIWorkerDispatcher struct {
 	mux     *MuxDispatcher
-	bus     *SignalBus
+	bus     signal.Bus
 	command string
 	args    []string
 	workers int
@@ -43,8 +45,8 @@ func WithCLIWorkerLogger(l *slog.Logger) CLIWorkerOption {
 	return func(d *CLIWorkerDispatcher) { d.log = l }
 }
 
-// WithCLIWorkerBus attaches a SignalBus for worker lifecycle signals.
-func WithCLIWorkerBus(bus *SignalBus) CLIWorkerOption {
+// WithCLIWorkerBus attaches a signal.Bus for worker lifecycle signals.
+func WithCLIWorkerBus(bus signal.Bus) CLIWorkerOption {
 	return func(d *CLIWorkerDispatcher) { d.bus = bus }
 }
 
@@ -107,8 +109,8 @@ func (d *CLIWorkerDispatcher) Run(ctx context.Context) error {
 }
 
 func (d *CLIWorkerDispatcher) workerLoop(ctx context.Context, workerID string) error {
-	d.emit(EventWorkerStarted, AgentWorker, "", "", map[string]string{MetaKeyWorkerID: workerID})
-	defer d.emit(EventWorkerStopped, AgentWorker, "", "", map[string]string{MetaKeyWorkerID: workerID})
+	d.emit(signal.EventWorkerStarted, signal.AgentWorker, "", "", map[string]string{signal.MetaKeyWorkerID: workerID})
+	defer d.emit(signal.EventWorkerStopped, signal.AgentWorker, "", "", map[string]string{signal.MetaKeyWorkerID: workerID})
 
 	for {
 		dc, err := d.mux.GetNextStep(ctx)
@@ -119,13 +121,13 @@ func (d *CLIWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 			return fmt.Errorf("get_next_step: %w", err)
 		}
 
-		d.emit(EventWorkerStart, AgentWorker, dc.CaseID, dc.Step, map[string]string{MetaKeyWorkerID: workerID})
+		d.emit(signal.EventWorkerStart, signal.AgentWorker, dc.CaseID, dc.Step, map[string]string{signal.MetaKeyWorkerID: workerID})
 
 		artifact, err := d.execCLI(ctx, dc)
 		if err != nil {
-			d.emit(EventWorkerError, AgentWorker, dc.CaseID, dc.Step, map[string]string{
-				MetaKeyWorkerID: workerID,
-				MetaKeyError:    err.Error(),
+			d.emit(signal.EventWorkerError, signal.AgentWorker, dc.CaseID, dc.Step, map[string]string{
+				signal.MetaKeyWorkerID: workerID,
+				signal.MetaKeyError:    err.Error(),
 			})
 			d.log.Error("CLI execution failed",
 				slog.String("worker_id", workerID),
@@ -137,16 +139,16 @@ func (d *CLIWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 		}
 
 		if err := d.mux.SubmitArtifact(ctx, dc.DispatchID, artifact); err != nil {
-			d.emit(EventWorkerError, AgentWorker, dc.CaseID, dc.Step, map[string]string{
-				MetaKeyWorkerID: workerID,
-				MetaKeyError:    err.Error(),
+			d.emit(signal.EventWorkerError, signal.AgentWorker, dc.CaseID, dc.Step, map[string]string{
+				signal.MetaKeyWorkerID: workerID,
+				signal.MetaKeyError:    err.Error(),
 			})
 			return fmt.Errorf("submit_artifact dispatch_id=%d: %w", dc.DispatchID, err)
 		}
 
-		d.emit(EventWorkerDone, AgentWorker, dc.CaseID, dc.Step, map[string]string{
-			MetaKeyWorkerID: workerID,
-			MetaKeyBytes:    fmt.Sprintf("%d", len(artifact)),
+		d.emit(signal.EventWorkerDone, signal.AgentWorker, dc.CaseID, dc.Step, map[string]string{
+			signal.MetaKeyWorkerID: workerID,
+			signal.MetaKeyBytes:    fmt.Sprintf("%d", len(artifact)),
 		})
 
 		d.log.Info("step complete",
@@ -203,6 +205,12 @@ func (d *CLIWorkerDispatcher) execCLI(ctx context.Context, dc DispatchContext) (
 
 func (d *CLIWorkerDispatcher) emit(event, agent, caseID, step string, meta map[string]string) {
 	if d.bus != nil {
-		d.bus.Emit(event, agent, caseID, step, meta)
+		d.bus.Emit(&signal.Signal{
+			Event:  event,
+			Agent:  agent,
+			CaseID: caseID,
+			Step:   step,
+			Meta:   meta,
+		})
 	}
 }

@@ -16,9 +16,9 @@ import (
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 
+	"github.com/dpopsuev/bugle/signal"
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/subprocess"
 )
 
@@ -83,7 +83,7 @@ type Mediator struct {
 	papercupSchemas map[string]sdkmcp.Tool
 
 	// Observability: routing signals and optional trace recording.
-	Bus      *dispatch.SignalBus
+	Bus      *signal.MemBus
 	stateDir string                            // empty = tracing disabled
 	recorder *engine.TraceRecorder          // nil when tracing disabled
 }
@@ -97,7 +97,7 @@ func New(configs []BackendConfig, opts ...Option) *Mediator {
 		circuitBackends: make(map[string]string),
 		sessionAffinity: make(map[string]string),
 		papercupSchemas: make(map[string]sdkmcp.Tool),
-		Bus:             dispatch.NewSignalBus(),
+		Bus:             signal.NewMemBus(),
 	}
 	for _, cfg := range configs {
 		gw.backends[cfg.Name] = &subprocess.RemoteBackend{Endpoint: cfg.Endpoint}
@@ -128,7 +128,7 @@ func (gw *Mediator) Start(ctx context.Context) error {
 				slog.Warn("failed to create mediator trace recorder", "error", err)
 			} else {
 				gw.recorder = rec
-				gw.Bus.SetOnEmit(func(sig dispatch.Signal) {
+				gw.Bus.OnEmit(func(sig signal.Signal) {
 					rec.HandleSignal(sig.Timestamp, sig.Event, sig.Agent, sig.CaseID, sig.Step, sig.Meta)
 				})
 			}
@@ -264,9 +264,13 @@ func (gw *Mediator) routeStartCircuit(ctx context.Context, args map[string]any) 
 	}
 
 	// Emit route signal.
-	gw.Bus.Emit(EventRoute, dispatch.AgentMediator, "", "", map[string]string{
-		MetaKeyBackend:              backendName,
-		circuit.ExtraKeyCircuitType: circuitType,
+	gw.Bus.Emit(&signal.Signal{
+		Event: EventRoute,
+		Agent: signal.AgentMediator,
+		Meta: map[string]string{
+			MetaKeyBackend:              backendName,
+			circuit.ExtraKeyCircuitType: circuitType,
+		},
 	})
 
 	// Forward to backend.
@@ -281,10 +285,14 @@ func (gw *Mediator) routeStartCircuit(ctx context.Context, args map[string]any) 
 		gw.sessionAffinity[sessionID] = backendName
 		gw.mu.Unlock()
 
-		gw.Bus.Emit(EventSessionStart, dispatch.AgentMediator, "", "", map[string]string{
-			MetaKeySessionID:              sessionID,
-			MetaKeyBackend:                backendName,
-			circuit.ExtraKeyCircuitType: circuitType,
+		gw.Bus.Emit(&signal.Signal{
+			Event: EventSessionStart,
+			Agent: signal.AgentMediator,
+			Meta: map[string]string{
+				MetaKeySessionID:            sessionID,
+				MetaKeyBackend:              backendName,
+				circuit.ExtraKeyCircuitType: circuitType,
+			},
 		})
 
 		slog.Debug("session affinity registered",
@@ -300,9 +308,13 @@ func (gw *Mediator) routeStartCircuit(ctx context.Context, args map[string]any) 
 // NotifySessionDone emits a session_done signal for observability.
 // Called externally when a child session completes (e.g., after get_report).
 func (gw *Mediator) NotifySessionDone(sessionID, backendName string) {
-	gw.Bus.Emit(EventSessionDone, dispatch.AgentMediator, "", "", map[string]string{
-		MetaKeySessionID: sessionID,
-		MetaKeyBackend:   backendName,
+	gw.Bus.Emit(&signal.Signal{
+		Event: EventSessionDone,
+		Agent: signal.AgentMediator,
+		Meta: map[string]string{
+			MetaKeySessionID: sessionID,
+			MetaKeyBackend:   backendName,
+		},
 	})
 }
 
@@ -363,7 +375,7 @@ func (gw *Mediator) ListTools() []sdkmcp.Tool {
 
 // Signals returns the mediator's SignalBus for observability integration.
 // MCP servers hosting the mediator can register get_signals on this bus.
-func (gw *Mediator) Signals() *dispatch.SignalBus { return gw.Bus }
+func (gw *Mediator) Signals() *signal.MemBus { return gw.Bus }
 
 // Healthy returns true if all backends respond to ping.
 func (gw *Mediator) Healthy(ctx context.Context) bool {

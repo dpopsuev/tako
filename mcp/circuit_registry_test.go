@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/dpopsuev/bugle/signal"
 	"github.com/dpopsuev/origami/dispatch"
 )
 
@@ -12,7 +13,7 @@ func makeTestType(name string) *CircuitType {
 		Name:        name,
 		Description: name + " test type",
 		StepSchemas: []StepSchema{{Name: name + "-step"}},
-		CreateSession: func(_ context.Context, _ StartParams, _ *dispatch.MuxDispatcher, _ *dispatch.SignalBus) (RunFunc, SessionMeta, error) {
+		CreateSession: func(_ context.Context, _ StartParams, _ *dispatch.MuxDispatcher, _ signal.Bus) (RunFunc, SessionMeta, error) {
 			return func(_ context.Context) (any, error) { return name, nil },
 				SessionMeta{Scenario: name},
 				nil

@@ -6,6 +6,7 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/dpopsuev/bugle/signal"
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
 )
@@ -21,7 +22,7 @@ type CircuitType struct {
 	ExtraParamDefs []ExtraParamDef
 	WorkerPreamble string
 
-	CreateSession func(ctx context.Context, params StartParams, disp *dispatch.MuxDispatcher, bus *dispatch.SignalBus) (RunFunc, SessionMeta, error)
+	CreateSession func(ctx context.Context, params StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (RunFunc, SessionMeta, error)
 	FormatReport  func(result any) (formatted string, structured any, err error)
 }
 
@@ -77,7 +78,7 @@ func (r *CircuitTypeRegistry) RouteSession(
 	ctx context.Context,
 	params StartParams,
 	disp *dispatch.MuxDispatcher,
-	bus *dispatch.SignalBus,
+	bus signal.Bus,
 ) (RunFunc, SessionMeta, error) {
 	typeName, _ := params.Extra[circuit.ExtraKeyCircuitType].(string)
 

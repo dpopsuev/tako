@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/dpopsuev/bugle/signal"
 )
 
 var (
@@ -31,7 +33,7 @@ type MuxDispatcher struct {
 	abortCh  chan struct{}
 	abortErr error
 
-	bus *SignalBus // optional; for zone_shift signals
+	bus signal.Bus // optional; for zone_shift signals
 
 	queueMu sync.Mutex
 	queue   []DispatchContext // buffered overflow for hint-based matching
@@ -40,9 +42,9 @@ type MuxDispatcher struct {
 // MuxOption configures a MuxDispatcher.
 type MuxOption func(*MuxDispatcher)
 
-// WithMuxSignalBus attaches a SignalBus for emitting dispatch-level signals
+// WithMuxSignalBus attaches a signal.Bus for emitting dispatch-level signals
 // (e.g. zone_shift on work stealing).
-func WithMuxSignalBus(bus *SignalBus) MuxOption {
+func WithMuxSignalBus(bus signal.Bus) MuxOption {
 	return func(d *MuxDispatcher) { d.bus = bus }
 }
 
@@ -322,9 +324,15 @@ func (d *MuxDispatcher) emitZoneShift(hints PullHints, dc DispatchContext) {
 	if fromZone == "" {
 		fromZone = hints.PreferredCaseID
 	}
-	d.bus.Emit(EventZoneShift, AgentWorker, dc.CaseID, dc.Step, map[string]string{
-		MetaKeyFromZone: fromZone,
-		MetaKeyToZone:   dc.Provider,
+	d.bus.Emit(&signal.Signal{
+		Event:  signal.EventZoneShift,
+		Agent:  signal.AgentWorker,
+		CaseID: dc.CaseID,
+		Step:   dc.Step,
+		Meta: map[string]string{
+			signal.MetaKeyFromZone: fromZone,
+			signal.MetaKeyToZone:   dc.Provider,
+		},
 	})
 }
 
@@ -332,9 +340,15 @@ func (d *MuxDispatcher) emitDispatchRouted(dc DispatchContext, reason string) {
 	if d.bus == nil {
 		return
 	}
-	d.bus.Emit(EventDispatchRouted, AgentWorker, dc.CaseID, dc.Step, map[string]string{
-		MetaKeyDispatchReason: reason,
-		MetaKeyQueueDepth:     strconv.Itoa(d.queueLen()),
+	d.bus.Emit(&signal.Signal{
+		Event:  signal.EventDispatchRouted,
+		Agent:  signal.AgentWorker,
+		CaseID: dc.CaseID,
+		Step:   dc.Step,
+		Meta: map[string]string{
+			signal.MetaKeyDispatchReason: reason,
+			signal.MetaKeyQueueDepth:     strconv.Itoa(d.queueLen()),
+		},
 	})
 }
 

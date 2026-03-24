@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dpopsuev/bugle/signal"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/mcp"
 
@@ -125,7 +126,7 @@ func newTestConfig(nCases, nSteps int, promptDir string) mcp.CircuitConfig {
 		WorkerPreamble: "You are a test circuit worker.",
 		DefaultGetNextStepTimeout: 1000,
 		DefaultSessionTTL:         300000,
-		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus *dispatch.SignalBus) (mcp.RunFunc, mcp.SessionMeta, error) {
+		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 			parallel := params.Parallel
 			if parallel < 1 {
 				parallel = 1
@@ -151,7 +152,7 @@ func newTestConfigStub(nCases int) mcp.CircuitConfig {
 		StepSchemas: testStepSchemas,
 		DefaultGetNextStepTimeout: 1000,
 		DefaultSessionTTL:         300000,
-		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus *dispatch.SignalBus) (mcp.RunFunc, mcp.SessionMeta, error) {
+		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 			return stubRunFuncInstant(nCases),
 				mcp.SessionMeta{TotalCases: nCases, Scenario: "test-stub"},
 				nil
@@ -1377,7 +1378,7 @@ func TestSession_MaxDuration_AbortsCircuit(t *testing.T) {
 		MaxSessionDuration: 200, // 200ms max
 		DefaultGetNextStepTimeout: 1000,
 		DefaultSessionTTL:         300000,
-		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus *dispatch.SignalBus) (mcp.RunFunc, mcp.SessionMeta, error) {
+		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 			return func(ctx context.Context) (any, error) {
 				// RunFunc that sleeps for 2s — should be aborted by max duration
 				select {
@@ -1444,7 +1445,7 @@ func TestSession_MaxDuration_ZeroIsNoLimit(t *testing.T) {
 		MaxSessionDuration: 0, // no limit
 		DefaultGetNextStepTimeout: 1000,
 		DefaultSessionTTL:         300000,
-		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus *dispatch.SignalBus) (mcp.RunFunc, mcp.SessionMeta, error) {
+		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 			return func(ctx context.Context) (any, error) {
 				return &testReport{CasesProcessed: 1}, nil
 			}, mcp.SessionMeta{TotalCases: 1, Scenario: "no-limit-test"}, nil
@@ -1490,7 +1491,7 @@ func TestSession_MaxDuration_InteractionWithTTL(t *testing.T) {
 		MaxSessionDuration: 5000, // 5s max (long)
 		DefaultGetNextStepTimeout: 1000,
 		DefaultSessionTTL:         200, // 200ms TTL (short — should win)
-		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus *dispatch.SignalBus) (mcp.RunFunc, mcp.SessionMeta, error) {
+		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 			return stubRunFunc(disp, 3, 3, 1, []string{"STEP_A", "STEP_B", "STEP_C"}, ""),
 				mcp.SessionMeta{TotalCases: 3, Scenario: "ttl-vs-maxdur"}, nil
 		},
@@ -1597,8 +1598,8 @@ func TestCircuitSession_LateWorker_StillGetsSteps(t *testing.T) {
 	ctx := context.Background()
 	runCtx, runCancel := context.WithCancel(ctx)
 
-	disp := dispatch.NewMuxDispatcher(runCtx, dispatch.WithMuxSignalBus(dispatch.NewSignalBus()))
-	bus := dispatch.NewSignalBus()
+	disp := dispatch.NewMuxDispatcher(runCtx, dispatch.WithMuxSignalBus(signal.NewMemBus()))
+	bus := signal.NewMemBus()
 
 	nCases, nSteps := 3, 1
 	steps := []string{"STEP_A"}
@@ -1784,7 +1785,7 @@ func TestWorkerPrompt_ContainsEndpointURL(t *testing.T) {
 	defer runCancel()
 
 	disp := dispatch.NewMuxDispatcher(runCtx)
-	bus := dispatch.NewSignalBus()
+	bus := signal.NewMemBus()
 	runFn := stubRunFuncInstant(1)
 
 	sess := mcp.NewCircuitSession(runCtx, "test-endpoint",
@@ -1816,7 +1817,7 @@ func TestWorkerPrompt_NoEndpoint_OmitsConnectionSection(t *testing.T) {
 	defer runCancel()
 
 	disp := dispatch.NewMuxDispatcher(runCtx)
-	bus := dispatch.NewSignalBus()
+	bus := signal.NewMemBus()
 	runFn := stubRunFuncInstant(1)
 
 	sess := mcp.NewCircuitSession(runCtx, "test-no-endpoint",

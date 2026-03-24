@@ -4,8 +4,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dpopsuev/bugle/signal"
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/dispatch"
 )
 
 // EventBridge unifies WalkObserver events and SignalBus signals into a
@@ -21,7 +21,7 @@ type EventBridge struct {
 	nextID      int
 	closed      bool
 
-	signalBus  *dispatch.SignalBus
+	signalBus  signal.Bus
 	signalIdx  int
 	polling    bool
 	pollDone   chan struct{}
@@ -30,7 +30,7 @@ type EventBridge struct {
 
 // NewEventBridge creates a bridge. If bus is non-nil, call StartPolling
 // to begin draining signals. Call Close() when done.
-func NewEventBridge(bus *dispatch.SignalBus) *EventBridge {
+func NewEventBridge(bus signal.Bus) *EventBridge {
 	return &EventBridge{
 		subscribers: make(map[int]chan Event),
 		signalBus:   bus,
