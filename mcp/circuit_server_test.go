@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/bugle/signal"
+	bd "github.com/dpopsuev/bugle/dispatch"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/mcp"
 
@@ -80,7 +81,7 @@ func stubRunFunc(disp *dispatch.MuxDispatcher, nCases, nSteps, parallel int, ste
 					if promptDir != "" {
 						promptPath = fmt.Sprintf("%s/%s_%s.md", promptDir, caseID, step)
 					}
-					dc := dispatch.DispatchContext{
+					dc := bd.Context{
 						CaseID:       caseID,
 						Step:         step,
 						PromptPath:   promptPath,

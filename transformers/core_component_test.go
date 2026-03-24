@@ -4,14 +4,13 @@ import (
 	"context"
 	"testing"
 
+	bd "github.com/dpopsuev/bugle/dispatch"
 	"github.com/dpopsuev/origami/engine"
-
-	"github.com/dpopsuev/origami/dispatch"
 )
 
 type stubDispatcher struct{}
 
-func (stubDispatcher) Dispatch(_ context.Context, _ dispatch.DispatchContext) ([]byte, error) {
+func (stubDispatcher) Dispatch(_ context.Context, _ bd.Context) ([]byte, error) {
 	return []byte(`{}`), nil
 }
 

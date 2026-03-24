@@ -14,6 +14,7 @@ import (
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/dpopsuev/bugle/signal"
+	bd "github.com/dpopsuev/bugle/dispatch"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/mcp"
 	"github.com/dpopsuev/origami/mediator"
@@ -640,7 +641,7 @@ func newNamedCircuitBackend(t *testing.T, label string) *httptest.Server {
 		DefaultSessionTTL:         300000,
 		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 			return func(ctx context.Context) (any, error) {
-				if _, err := disp.Dispatch(ctx, dispatch.DispatchContext{
+				if _, err := disp.Dispatch(ctx, bd.Context{
 					CaseID: "C01", Step: "STEP",
 				}); err != nil {
 					return nil, err
@@ -857,7 +858,7 @@ func newCircuitBackend(t *testing.T) (*httptest.Server, *mcp.CircuitServer) {
 			return func(ctx context.Context) (any, error) {
 				for i := 0; i < nCases; i++ {
 					caseID := fmt.Sprintf("C%02d", i+1)
-					if _, err := disp.Dispatch(ctx, dispatch.DispatchContext{
+					if _, err := disp.Dispatch(ctx, bd.Context{
 						CaseID: caseID, Step: "STEP_A",
 					}); err != nil {
 						return nil, err

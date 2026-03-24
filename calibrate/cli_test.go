@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
+	bd "github.com/dpopsuev/bugle/dispatch"
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/transformers"
 )
 
@@ -48,9 +48,9 @@ func TestCalibrateWithCLI(t *testing.T) {
 		}
 	}
 
-	cliDisp, err := dispatch.NewCLIDispatcher(command,
-		dispatch.WithCLIArgs(args...),
-		dispatch.WithCLITimeout(timeout),
+	cliDisp, err := bd.NewCLIDispatcher(command,
+		bd.WithCLIArgs(args...),
+		bd.WithCLITimeout(timeout),
 	)
 	if err != nil {
 		t.Skipf("CLI dispatcher unavailable: %v", err)

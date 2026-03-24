@@ -4,14 +4,21 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"os/exec"
 	"sync"
 	"time"
 
+	bd "github.com/dpopsuev/bugle/dispatch"
 	"github.com/dpopsuev/bugle/signal"
 )
+
+// discardLogger returns a logger that discards all output.
+func discardLogger() *slog.Logger {
+	return slog.New(slog.NewTextHandler(io.Discard, nil))
+}
 
 // CLIWorkerDispatcher runs N independent worker goroutines, each pulling steps
 // from a MuxDispatcher, piping the prompt to a CLI command, and submitting the
@@ -160,7 +167,7 @@ func (d *CLIWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 	}
 }
 
-func (d *CLIWorkerDispatcher) execCLI(ctx context.Context, dc DispatchContext) ([]byte, error) {
+func (d *CLIWorkerDispatcher) execCLI(ctx context.Context, dc bd.Context) ([]byte, error) {
 	prompt, err := os.ReadFile(dc.PromptPath)
 	if err != nil {
 		return nil, fmt.Errorf("read prompt: %w", err)

@@ -10,6 +10,7 @@ import (
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/bugle/signal"
+	bd "github.com/dpopsuev/bugle/dispatch"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/mcp"
 )
@@ -20,13 +21,13 @@ import (
 // When a node runs, it sends the prompt via Dispatch() and blocks until the
 // agent submits an artifact back.
 type lifecycleTransformer struct {
-	disp dispatch.Dispatcher
+	disp bd.Dispatcher
 }
 
 func (t *lifecycleTransformer) Name() string { return "dispatch-lifecycle" }
 func (t *lifecycleTransformer) Transform(ctx context.Context, tc *engine.TransformerContext) (any, error) {
 	prompt := fmt.Sprintf(`{"node":"%s","step":"test"}`, tc.NodeName)
-	data, err := t.disp.Dispatch(ctx, dispatch.DispatchContext{
+	data, err := t.disp.Dispatch(ctx, bd.Context{
 		CaseID:        tc.WalkerState.ID,
 		Step:          tc.NodeName,
 		PromptContent: prompt,

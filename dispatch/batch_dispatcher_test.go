@@ -8,6 +8,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	bd "github.com/dpopsuev/bugle/dispatch"
 )
 
 func TestBatchFileDispatcher_AllComplete(t *testing.T) {
@@ -23,16 +25,16 @@ func TestBatchFileDispatcher_AllComplete(t *testing.T) {
 		SuiteDir:  suiteDir,
 		BatchSize: 4,
 	}
-	bd := NewBatchFileDispatcher(cfg)
+	bfd := NewBatchFileDispatcher(cfg)
 
 	// Create 2 cases with pre-written artifacts
-	cases := make([]DispatchContext, 2)
+	cases := make([]bd.Context, 2)
 	for i := 0; i < 2; i++ {
 		caseDir := filepath.Join(dir, "cases", caseID(i))
 		os.MkdirAll(caseDir, 0755)
 		artifactPath := filepath.Join(caseDir, "recall-result.json")
 
-		cases[i] = DispatchContext{
+		cases[i] = bd.Context{
 			CaseID:       caseID(i),
 			Step:         "F0_RECALL",
 			PromptPath:   filepath.Join(caseDir, "prompt.md"),
@@ -78,7 +80,7 @@ func TestBatchFileDispatcher_AllComplete(t *testing.T) {
 		}
 	}()
 
-	results, errs := bd.DispatchBatch(context.Background(), cases, "triage", "")
+	results, errs := bfd.DispatchBatch(context.Background(), cases, "triage", "")
 
 	for i, err := range errs {
 		if err != nil {
@@ -118,14 +120,14 @@ func TestBatchFileDispatcher_PartialFailure(t *testing.T) {
 		SuiteDir:  suiteDir,
 		BatchSize: 4,
 	}
-	bd := NewBatchFileDispatcher(cfg)
+	bfd := NewBatchFileDispatcher(cfg)
 
 	// Case 0: will succeed, Case 1: will timeout (no artifact written)
-	cases := make([]DispatchContext, 2)
+	cases := make([]bd.Context, 2)
 	for i := 0; i < 2; i++ {
 		caseDir := filepath.Join(dir, "cases", caseID(i))
 		os.MkdirAll(caseDir, 0755)
-		cases[i] = DispatchContext{
+		cases[i] = bd.Context{
 			CaseID:       caseID(i),
 			Step:         "F0_RECALL",
 			PromptPath:   filepath.Join(caseDir, "prompt.md"),
@@ -157,7 +159,7 @@ func TestBatchFileDispatcher_PartialFailure(t *testing.T) {
 		}
 	}()
 
-	_, errs := bd.DispatchBatch(context.Background(), cases, "triage", "")
+	_, errs := bfd.DispatchBatch(context.Background(), cases, "triage", "")
 
 	if errs[0] != nil {
 		t.Errorf("case 0 should succeed, got: %v", errs[0])
@@ -189,13 +191,13 @@ func TestBatchFileDispatcher_ManifestLifecycle(t *testing.T) {
 		SuiteDir:  suiteDir,
 		BatchSize: 4,
 	}
-	bd := NewBatchFileDispatcher(cfg)
+	bfd := NewBatchFileDispatcher(cfg)
 
 	caseDir := filepath.Join(dir, "cases", "C1")
 	os.MkdirAll(caseDir, 0755)
 	os.WriteFile(filepath.Join(caseDir, "prompt.md"), []byte("test"), 0644)
 
-	ctx := DispatchContext{
+	ctx := bd.Context{
 		CaseID:       "C1",
 		Step:         "F0_RECALL",
 		PromptPath:   filepath.Join(caseDir, "prompt.md"),
@@ -238,7 +240,7 @@ func TestBatchFileDispatcher_ManifestLifecycle(t *testing.T) {
 		}
 	}()
 
-	_, errs := bd.DispatchBatch(context.Background(), []DispatchContext{ctx}, "triage", "")
+	_, errs := bfd.DispatchBatch(context.Background(), []bd.Context{ctx}, "triage", "")
 	if errs[0] != nil {
 		t.Errorf("dispatch error: %v", errs[0])
 	}
@@ -247,16 +249,16 @@ func TestBatchFileDispatcher_ManifestLifecycle(t *testing.T) {
 	}
 
 	// Verify batch ID increments
-	if bd.LastBatchID() != 1 {
-		t.Errorf("batch ID: got %d, want 1", bd.LastBatchID())
+	if bfd.LastBatchID() != 1 {
+		t.Errorf("batch ID: got %d, want 1", bfd.LastBatchID())
 	}
 }
 
 func TestBatchFileDispatcher_EmptyBatch(t *testing.T) {
-	bd := NewBatchFileDispatcher(BatchFileDispatcherConfig{
+	bfd := NewBatchFileDispatcher(BatchFileDispatcherConfig{
 		SuiteDir: t.TempDir(),
 	})
-	data, errs := bd.DispatchBatch(context.Background(), nil, "triage", "")
+	data, errs := bfd.DispatchBatch(context.Background(), nil, "triage", "")
 	if data != nil || errs != nil {
 		t.Errorf("empty batch should return nil, nil; got %v, %v", data, errs)
 	}
@@ -273,13 +275,13 @@ func TestBatchFileDispatcher_SingleDispatchInterface(t *testing.T) {
 		},
 		SuiteDir: suiteDir,
 	}
-	bd := NewBatchFileDispatcher(cfg)
+	bfd := NewBatchFileDispatcher(cfg)
 
 	caseDir := filepath.Join(dir, "cases", "C1")
 	os.MkdirAll(caseDir, 0755)
 	os.WriteFile(filepath.Join(caseDir, "prompt.md"), []byte("test"), 0644)
 
-	ctx := DispatchContext{
+	ctx := bd.Context{
 		CaseID:       "C1",
 		Step:         "F0_RECALL",
 		PromptPath:   filepath.Join(caseDir, "prompt.md"),
@@ -309,7 +311,7 @@ func TestBatchFileDispatcher_SingleDispatchInterface(t *testing.T) {
 	}()
 
 	// Use the Dispatcher interface
-	var d Dispatcher = bd
+	var d bd.Dispatcher = bfd
 	data, err := d.Dispatch(context.Background(), ctx)
 	if err != nil {
 		t.Fatalf("Dispatch error: %v", err)
@@ -321,11 +323,11 @@ func TestBatchFileDispatcher_SingleDispatchInterface(t *testing.T) {
 
 func TestBatchFileDispatcher_WriteBriefing(t *testing.T) {
 	dir := t.TempDir()
-	bd := NewBatchFileDispatcher(BatchFileDispatcherConfig{
+	bfd := NewBatchFileDispatcher(BatchFileDispatcherConfig{
 		SuiteDir: dir,
 	})
 
-	path, err := bd.WriteBriefing("# Test Briefing\n\nSome context.")
+	path, err := bfd.WriteBriefing("# Test Briefing\n\nSome context.")
 	if err != nil {
 		t.Fatalf("WriteBriefing: %v", err)
 	}

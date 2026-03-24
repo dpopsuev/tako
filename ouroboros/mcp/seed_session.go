@@ -11,6 +11,7 @@ import (
 	"log/slog"
 
 	"github.com/dpopsuev/bugle/signal"
+	bd "github.com/dpopsuev/bugle/dispatch"
 	"github.com/dpopsuev/origami/dispatch"
 	fwmcp "github.com/dpopsuev/origami/mcp"
 	"github.com/dpopsuev/origami/ouroboros"
@@ -118,7 +119,7 @@ func runSeedCircuit(
 	log := slog.Default().With("component", "ouroboros-seed")
 
 	dispatcher := func(ctx context.Context, nodeName string, prompt string) (string, error) {
-		artifactBytes, err := disp.Dispatch(ctx, dispatch.DispatchContext{
+		artifactBytes, err := disp.Dispatch(ctx, bd.Context{
 			CaseID:        seed.Name,
 			Step:          nodeName,
 			PromptContent: prompt,

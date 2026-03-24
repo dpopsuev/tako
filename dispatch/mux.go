@@ -8,12 +8,13 @@ import (
 	"sync"
 	"time"
 
+	bd "github.com/dpopsuev/bugle/dispatch"
 	"github.com/dpopsuev/bugle/signal"
 )
 
 var (
-	_ Dispatcher         = (*MuxDispatcher)(nil)
-	_ ExternalDispatcher = (*MuxDispatcher)(nil)
+	_ bd.Dispatcher         = (*MuxDispatcher)(nil)
+	_ bd.ExternalDispatcher = (*MuxDispatcher)(nil)
 )
 
 // MuxDispatcher bridges the calibration runner (which calls Dispatch from
@@ -29,14 +30,14 @@ type MuxDispatcher struct {
 	pending map[int64]chan []byte
 	closed  map[int64]struct{}
 
-	promptCh chan DispatchContext
+	promptCh chan bd.Context
 	abortCh  chan struct{}
 	abortErr error
 
 	bus signal.Bus // optional; for zone_shift signals
 
 	queueMu sync.Mutex
-	queue   []DispatchContext // buffered overflow for hint-based matching
+	queue   []bd.Context // buffered overflow for hint-based matching
 }
 
 // MuxOption configures a MuxDispatcher.
@@ -56,7 +57,7 @@ func NewMuxDispatcher(ctx context.Context, opts ...MuxOption) *MuxDispatcher {
 		log:      slog.Default().With("component", "mux-dispatch"),
 		pending:  make(map[int64]chan []byte),
 		closed:   make(map[int64]struct{}),
-		promptCh: make(chan DispatchContext),
+		promptCh: make(chan bd.Context),
 		abortCh:  make(chan struct{}),
 	}
 	for _, opt := range opts {
@@ -68,7 +69,7 @@ func NewMuxDispatcher(ctx context.Context, opts ...MuxOption) *MuxDispatcher {
 // Dispatch assigns a unique dispatch ID, sends the prompt to the agent side,
 // and blocks until the matching SubmitArtifact delivers the response.
 // Satisfies the Dispatcher interface.
-func (d *MuxDispatcher) Dispatch(ctx context.Context, dc DispatchContext) ([]byte, error) {
+func (d *MuxDispatcher) Dispatch(ctx context.Context, dc bd.Context) ([]byte, error) {
 	dispatchStart := time.Now()
 
 	d.mu.Lock()
@@ -170,8 +171,8 @@ func (d *MuxDispatcher) Dispatch(ctx context.Context, dc DispatchContext) ([]byt
 
 // GetNextStep blocks until the runner produces the next prompt context.
 // Equivalent to GetNextStepWithHints with zero-value hints (FIFO, no preference).
-func (d *MuxDispatcher) GetNextStep(ctx context.Context) (DispatchContext, error) {
-	return d.GetNextStepWithHints(ctx, PullHints{})
+func (d *MuxDispatcher) GetNextStep(ctx context.Context) (bd.Context, error) {
+	return d.GetNextStepWithHints(ctx, bd.PullHints{})
 }
 
 // GetNextStepWithHints blocks until a prompt matching the given hints is
@@ -180,7 +181,7 @@ func (d *MuxDispatcher) GetNextStep(ctx context.Context) (DispatchContext, error
 // Matching priority: PreferredCaseID > PreferredZone > any.
 // Stickiness controls fallback: 0=immediate any, 1-2=steal after ConsecutiveMisses
 // threshold, 3=exclusive (never steal, wait for match only).
-func (d *MuxDispatcher) GetNextStepWithHints(ctx context.Context, hints PullHints) (DispatchContext, error) {
+func (d *MuxDispatcher) GetNextStepWithHints(ctx context.Context, hints bd.PullHints) (bd.Context, error) {
 	hasPreference := hints.PreferredCaseID != "" || hints.PreferredZone != ""
 
 	if !hasPreference {
@@ -210,7 +211,7 @@ func (d *MuxDispatcher) GetNextStepWithHints(ctx context.Context, hints PullHint
 		// Queue empty — block for the next item and return it regardless.
 		dc, err := d.receiveOne(ctx)
 		if err != nil {
-			return DispatchContext{}, err
+			return bd.Context{}, err
 		}
 		if !d.matchesHints(dc, hints) {
 			d.emitZoneShift(hints, dc)
@@ -225,7 +226,7 @@ func (d *MuxDispatcher) GetNextStepWithHints(ctx context.Context, hints PullHint
 	for {
 		dc, err := d.receiveOne(ctx)
 		if err != nil {
-			return DispatchContext{}, err
+			return bd.Context{}, err
 		}
 		if d.matchesHints(dc, hints) {
 			d.emitDispatchRouted(dc, "channel")
@@ -235,28 +236,28 @@ func (d *MuxDispatcher) GetNextStepWithHints(ctx context.Context, hints PullHint
 	}
 }
 
-func (d *MuxDispatcher) getNextFIFO(ctx context.Context) (DispatchContext, error) {
+func (d *MuxDispatcher) getNextFIFO(ctx context.Context) (bd.Context, error) {
 	if dc, ok := d.dequeueAny(); ok {
 		return dc, nil
 	}
 	return d.receiveOne(ctx)
 }
 
-func (d *MuxDispatcher) receiveOne(ctx context.Context) (DispatchContext, error) {
+func (d *MuxDispatcher) receiveOne(ctx context.Context) (bd.Context, error) {
 	select {
 	case <-ctx.Done():
-		return DispatchContext{}, ctx.Err()
+		return bd.Context{}, ctx.Err()
 	case <-d.ctx.Done():
-		return DispatchContext{}, fmt.Errorf("dispatcher shutdown: %w", d.ctx.Err())
+		return bd.Context{}, fmt.Errorf("dispatcher shutdown: %w", d.ctx.Err())
 	case dc, ok := <-d.promptCh:
 		if !ok {
-			return DispatchContext{}, fmt.Errorf("dispatcher closed")
+			return bd.Context{}, fmt.Errorf("dispatcher closed")
 		}
 		return dc, nil
 	}
 }
 
-func (d *MuxDispatcher) matchesHints(dc DispatchContext, hints PullHints) bool {
+func (d *MuxDispatcher) matchesHints(dc bd.Context, hints bd.PullHints) bool {
 	if hints.PreferredCaseID != "" && dc.CaseID == hints.PreferredCaseID {
 		return true
 	}
@@ -268,7 +269,7 @@ func (d *MuxDispatcher) matchesHints(dc DispatchContext, hints PullHints) bool {
 
 // shouldSteal returns true if the worker's stickiness and miss count allow
 // taking a non-matching step (work stealing).
-func (d *MuxDispatcher) shouldSteal(hints PullHints) bool {
+func (d *MuxDispatcher) shouldSteal(hints bd.PullHints) bool {
 	switch hints.Stickiness {
 	case 0:
 		return true
@@ -299,24 +300,24 @@ func (d *MuxDispatcher) drainAvailable() {
 	}
 }
 
-func (d *MuxDispatcher) enqueue(dc DispatchContext) {
+func (d *MuxDispatcher) enqueue(dc bd.Context) {
 	d.queueMu.Lock()
 	d.queue = append(d.queue, dc)
 	d.queueMu.Unlock()
 }
 
-func (d *MuxDispatcher) dequeueAny() (DispatchContext, bool) {
+func (d *MuxDispatcher) dequeueAny() (bd.Context, bool) {
 	d.queueMu.Lock()
 	defer d.queueMu.Unlock()
 	if len(d.queue) == 0 {
-		return DispatchContext{}, false
+		return bd.Context{}, false
 	}
 	dc := d.queue[0]
 	d.queue = d.queue[1:]
 	return dc, true
 }
 
-func (d *MuxDispatcher) emitZoneShift(hints PullHints, dc DispatchContext) {
+func (d *MuxDispatcher) emitZoneShift(hints bd.PullHints, dc bd.Context) {
 	if d.bus == nil {
 		return
 	}
@@ -336,7 +337,7 @@ func (d *MuxDispatcher) emitZoneShift(hints PullHints, dc DispatchContext) {
 	})
 }
 
-func (d *MuxDispatcher) emitDispatchRouted(dc DispatchContext, reason string) {
+func (d *MuxDispatcher) emitDispatchRouted(dc bd.Context, reason string) {
 	if d.bus == nil {
 		return
 	}
@@ -358,7 +359,7 @@ func (d *MuxDispatcher) queueLen() int {
 	return len(d.queue)
 }
 
-func (d *MuxDispatcher) tryMatchFromQueue(hints PullHints) (DispatchContext, bool) {
+func (d *MuxDispatcher) tryMatchFromQueue(hints bd.PullHints) (bd.Context, bool) {
 	d.queueMu.Lock()
 	defer d.queueMu.Unlock()
 	for i, dc := range d.queue {
@@ -367,7 +368,7 @@ func (d *MuxDispatcher) tryMatchFromQueue(hints PullHints) (DispatchContext, boo
 			return dc, true
 		}
 	}
-	return DispatchContext{}, false
+	return bd.Context{}, false
 }
 
 // SubmitArtifact routes the artifact to the Dispatch call with the given ID.
@@ -438,7 +439,7 @@ func (d *MuxDispatcher) ActiveDispatches() int {
 }
 
 // PromptCh returns the read-only prompt channel (for session integration).
-func (d *MuxDispatcher) PromptCh() <-chan DispatchContext {
+func (d *MuxDispatcher) PromptCh() <-chan bd.Context {
 	return d.promptCh
 }
 

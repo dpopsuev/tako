@@ -13,15 +13,16 @@ import (
 	"sync"
 	"time"
 
+	bd "github.com/dpopsuev/bugle/dispatch"
 	"github.com/dpopsuev/bugle/signal"
 )
 
-// NetworkServer wraps an ExternalDispatcher and exposes it over HTTP.
+// NetworkServer wraps an bd.ExternalDispatcher and exposes it over HTTP.
 // Agents connect and poll for work via GET /next, then submit results via POST /submit.
 // Optionally exposes signal bus endpoints (POST /signal, GET /signals) when a
 // SignalBus is provided via WithSignalBus.
 type NetworkServer struct {
-	dispatcher ExternalDispatcher
+	dispatcher bd.ExternalDispatcher
 	bus        signal.Bus
 	server     *http.Server
 	log        *slog.Logger
@@ -51,8 +52,8 @@ func WithSignalBus(bus signal.Bus) NetworkServerOption {
 	return func(s *NetworkServer) { s.bus = bus }
 }
 
-// NewNetworkServer creates an HTTP server that exposes an ExternalDispatcher.
-func NewNetworkServer(dispatcher ExternalDispatcher, addr string, opts ...NetworkServerOption) *NetworkServer {
+// NewNetworkServer creates an HTTP server that exposes an bd.ExternalDispatcher.
+func NewNetworkServer(dispatcher bd.ExternalDispatcher, addr string, opts ...NetworkServerOption) *NetworkServer {
 	s := &NetworkServer{
 		dispatcher: dispatcher,
 		log:        discardLogger(),
@@ -129,7 +130,7 @@ type submitRequest struct {
 
 func (s *NetworkServer) handleGetNext(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
-	hints := PullHints{
+	hints := bd.PullHints{
 		PreferredCaseID: q.Get("preferred_case_id"),
 		PreferredZone:   q.Get("preferred_zone"),
 	}
@@ -228,7 +229,7 @@ func (s *NetworkServer) handleGetSignals(w http.ResponseWriter, r *http.Request)
 	_ = json.NewEncoder(w).Encode(sigs)
 }
 
-// NetworkClient implements ExternalDispatcher by calling a remote NetworkServer
+// NetworkClient implements bd.ExternalDispatcher by calling a remote NetworkServer
 // over HTTP. This is the agent-side counterpart to NetworkServer.
 type NetworkClient struct {
 	baseURL string
@@ -249,7 +250,7 @@ func WithClientLogger(l *slog.Logger) NetworkClientOption {
 	return func(nc *NetworkClient) { nc.log = l }
 }
 
-// NewNetworkClient creates an ExternalDispatcher that connects to a remote
+// NewNetworkClient creates an bd.ExternalDispatcher that connects to a remote
 // NetworkServer. The baseURL should be like "http://localhost:8080".
 func NewNetworkClient(baseURL string, opts ...NetworkClientOption) *NetworkClient {
 	nc := &NetworkClient{
@@ -264,13 +265,13 @@ func NewNetworkClient(baseURL string, opts ...NetworkClientOption) *NetworkClien
 }
 
 // GetNextStep polls the server for the next dispatch context (no hints).
-func (c *NetworkClient) GetNextStep(ctx context.Context) (DispatchContext, error) {
-	return c.GetNextStepWithHints(ctx, PullHints{})
+func (c *NetworkClient) GetNextStep(ctx context.Context) (bd.Context, error) {
+	return c.GetNextStepWithHints(ctx, bd.PullHints{})
 }
 
 // GetNextStepWithHints polls the server for the next dispatch context,
 // passing pull hints as query parameters for server-side matching.
-func (c *NetworkClient) GetNextStepWithHints(ctx context.Context, hints PullHints) (DispatchContext, error) {
+func (c *NetworkClient) GetNextStepWithHints(ctx context.Context, hints bd.PullHints) (bd.Context, error) {
 	url := c.baseURL + "/next"
 	sep := "?"
 	if hints.PreferredCaseID != "" {
@@ -291,27 +292,27 @@ func (c *NetworkClient) GetNextStepWithHints(ctx context.Context, hints PullHint
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return DispatchContext{}, fmt.Errorf("network client: create request: %w", err)
+		return bd.Context{}, fmt.Errorf("network client: create request: %w", err)
 	}
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return DispatchContext{}, fmt.Errorf("network client: GET /next: %w", err)
+		return bd.Context{}, fmt.Errorf("network client: GET /next: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return DispatchContext{}, fmt.Errorf("network client: GET /next: status %d: %s",
+		return bd.Context{}, fmt.Errorf("network client: GET /next: status %d: %s",
 			resp.StatusCode, string(body))
 	}
 
 	var nr nextResponse
 	if err := json.NewDecoder(resp.Body).Decode(&nr); err != nil {
-		return DispatchContext{}, fmt.Errorf("network client: decode response: %w", err)
+		return bd.Context{}, fmt.Errorf("network client: decode response: %w", err)
 	}
 
-	return DispatchContext{
+	return bd.Context{
 		DispatchID:   nr.DispatchID,
 		CaseID:       nr.CaseID,
 		Step:         nr.Step,
@@ -412,4 +413,4 @@ func (c *NetworkClient) GetSignals(ctx context.Context, since int) ([]signal.Sig
 	return sigs, nil
 }
 
-var _ ExternalDispatcher = (*NetworkClient)(nil)
+var _ bd.ExternalDispatcher = (*NetworkClient)(nil)

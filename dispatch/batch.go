@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+
+	bd "github.com/dpopsuev/bugle/dispatch"
 )
 
 // BatchFileDispatcher writes N signals concurrently, generates a batch
@@ -57,7 +59,7 @@ type BatchResult struct {
 
 // DispatchBatch writes N signals, generates a manifest and briefing path,
 // then polls all N artifact paths concurrently.
-func (d *BatchFileDispatcher) DispatchBatch(ctx context.Context, ctxs []DispatchContext, phase string, briefingPath string) ([][]byte, []error) {
+func (d *BatchFileDispatcher) DispatchBatch(ctx context.Context, ctxs []bd.Context, phase string, briefingPath string) ([][]byte, []error) {
 	n := len(ctxs)
 	if n == 0 {
 		return nil, nil
@@ -107,7 +109,7 @@ func (d *BatchFileDispatcher) DispatchBatch(ctx context.Context, ctxs []Dispatch
 
 	for i, dc := range ctxs {
 		wg.Add(1)
-		go func(idx int, dctx DispatchContext) {
+		go func(idx int, dctx bd.Context) {
 			defer wg.Done()
 			fd := NewFileDispatcher(d.cfg)
 			data, err := fd.Dispatch(ctx, dctx)
@@ -167,8 +169,8 @@ func (d *BatchFileDispatcher) DispatchBatch(ctx context.Context, ctxs []Dispatch
 }
 
 // Dispatch implements the Dispatcher interface for single-signal compatibility.
-func (d *BatchFileDispatcher) Dispatch(ctx context.Context, dc DispatchContext) ([]byte, error) {
-	data, errs := d.DispatchBatch(ctx, []DispatchContext{dc}, "single", "")
+func (d *BatchFileDispatcher) Dispatch(ctx context.Context, dc bd.Context) ([]byte, error) {
+	data, errs := d.DispatchBatch(ctx, []bd.Context{dc}, "single", "")
 	if len(errs) > 0 && errs[0] != nil {
 		return nil, errs[0]
 	}

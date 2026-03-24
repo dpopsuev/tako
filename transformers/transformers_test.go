@@ -9,9 +9,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	bd "github.com/dpopsuev/bugle/dispatch"
 	"github.com/dpopsuev/origami/engine"
-
-	"github.com/dpopsuev/origami/dispatch"
 )
 
 // --- JQ Transformer ---
@@ -210,7 +209,7 @@ type mockDispatcher struct {
 	err      error
 }
 
-func (m *mockDispatcher) Dispatch(_ context.Context, ctx dispatch.DispatchContext) ([]byte, error) {
+func (m *mockDispatcher) Dispatch(_ context.Context, ctx bd.Context) ([]byte, error) {
 	return m.response, m.err
 }
 

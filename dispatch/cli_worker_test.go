@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	bd "github.com/dpopsuev/bugle/dispatch"
 	"github.com/dpopsuev/bugle/signal"
 )
 
@@ -44,7 +45,7 @@ func TestCLIWorkerDispatcher_ProcessesSteps(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			data, dispErr := mux.Dispatch(context.Background(), DispatchContext{
+			data, dispErr := mux.Dispatch(context.Background(), bd.Context{
 				CaseID:     fmt.Sprintf("C%d", i),
 				Step:       "F0",
 				PromptPath: filepath.Join(tmpDir, fmt.Sprintf("prompt_%d.json", i)),
@@ -136,7 +137,7 @@ func TestCLIWorkerDispatcher_SingleWorker(t *testing.T) {
 	var dispErr error
 	go func() {
 		defer close(done)
-		result, dispErr = mux.Dispatch(context.Background(), DispatchContext{
+		result, dispErr = mux.Dispatch(context.Background(), bd.Context{
 			CaseID:     "C1",
 			Step:       "F0",
 			PromptPath: promptPath,

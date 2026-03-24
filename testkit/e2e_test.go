@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/bugle/signal"
+	bd "github.com/dpopsuev/bugle/dispatch"
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/calibrate"
 	"github.com/dpopsuev/origami/dispatch"
@@ -182,7 +183,7 @@ func TestE2E_MCP_AllStubs(t *testing.T) {
 				for c := 0; c < nCases; c++ {
 					caseID := fmt.Sprintf("C%02d", c+1)
 					for s := 0; s < nSteps; s++ {
-						dc := dispatch.DispatchContext{
+						dc := bd.Context{
 							CaseID:       caseID,
 							Step:         steps[s],
 							ArtifactPath: fmt.Sprintf("/tmp/testkit_%s_%s.json", caseID, steps[s]),

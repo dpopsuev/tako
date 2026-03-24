@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/bugle/signal"
+	bd "github.com/dpopsuev/bugle/dispatch"
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/dispatch"
@@ -678,7 +679,7 @@ func (s *CircuitServer) handleGetNextStep(ctx context.Context, _ *sdkmcp.CallToo
 		timeout = s.defaultGetNextStepTimeout
 	}
 
-	hints := dispatch.PullHints{
+	hints := bd.PullHints{
 		PreferredCaseID:   input.PreferredCaseID,
 		PreferredZone:     input.PreferredZone,
 		Stickiness:        input.Stickiness,

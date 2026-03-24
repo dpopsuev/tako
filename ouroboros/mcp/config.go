@@ -10,6 +10,7 @@ import (
 
 	"github.com/dpopsuev/bugle/element"
 	"github.com/dpopsuev/bugle/signal"
+	bd "github.com/dpopsuev/bugle/dispatch"
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
 	fwmcp "github.com/dpopsuev/origami/mcp"
@@ -149,7 +150,7 @@ func runDiscovery(
 			prompt = ouroboros.BuildFullPromptWith(seen, probes.RefactorPrompt())
 		}
 
-		artifactBytes, err := disp.Dispatch(ctx, dispatch.DispatchContext{
+		artifactBytes, err := disp.Dispatch(ctx, bd.Context{
 			CaseID:        fmt.Sprintf("iter-%d", i),
 			Step:          "discover",
 			PromptContent: prompt,

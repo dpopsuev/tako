@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/bugle/signal"
+	bd "github.com/dpopsuev/bugle/dispatch"
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/dispatch"
 )
@@ -462,16 +463,16 @@ func (s *CircuitSession) closeRecorder() {
 // GetNextStep blocks until the runner produces the next prompt, the run
 // completes, or the timeout expires.
 // GetNextStep pulls the next step with no hints (FIFO).
-func (s *CircuitSession) GetNextStep(ctx context.Context, timeout time.Duration) (dc dispatch.DispatchContext, done bool, available bool, err error) {
-	return s.GetNextStepWithHints(ctx, timeout, dispatch.PullHints{})
+func (s *CircuitSession) GetNextStep(ctx context.Context, timeout time.Duration) (dc bd.Context, done bool, available bool, err error) {
+	return s.GetNextStepWithHints(ctx, timeout, bd.PullHints{})
 }
 
 // GetNextStepWithHints pulls the next step matching the given hints.
 // Falls back based on stickiness. Blocks up to timeout.
-func (s *CircuitSession) GetNextStepWithHints(ctx context.Context, timeout time.Duration, hints dispatch.PullHints) (dc dispatch.DispatchContext, done bool, available bool, err error) {
+func (s *CircuitSession) GetNextStepWithHints(ctx context.Context, timeout time.Duration, hints bd.PullHints) (dc bd.Context, done bool, available bool, err error) {
 	select {
 	case <-s.doneCh:
-		return dispatch.DispatchContext{}, true, false, nil
+		return bd.Context{}, true, false, nil
 	default:
 	}
 
@@ -483,7 +484,7 @@ func (s *CircuitSession) GetNextStepWithHints(ctx context.Context, timeout time.
 	}
 
 	type pullResult struct {
-		dc  dispatch.DispatchContext
+		dc  bd.Context
 		err error
 	}
 	ch := make(chan pullResult, 1)
@@ -499,14 +500,14 @@ func (s *CircuitSession) GetNextStepWithHints(ctx context.Context, timeout time.
 		if cancel != nil {
 			cancel()
 		}
-		return dispatch.DispatchContext{}, true, false, nil
+		return bd.Context{}, true, false, nil
 	case r := <-ch:
 		if r.err != nil {
 			if pullCtx.Err() == context.DeadlineExceeded {
 				s.log.Debug("get_next_step timed out", "timeout", timeout)
-				return dispatch.DispatchContext{}, false, false, nil
+				return bd.Context{}, false, false, nil
 			}
-			return dispatch.DispatchContext{}, false, false, r.err
+			return bd.Context{}, false, false, r.err
 		}
 		s.log.Debug("step delivered",
 			"case_id", r.dc.CaseID, "step", r.dc.Step, "dispatch_id", r.dc.DispatchID, "wait", time.Since(start))
