@@ -11,6 +11,7 @@ ENV GONOSUMDB=github.com/dpopsuev/*
 ENV GOFLAGS=-mod=mod
 COPY . .
 RUN go mod edit \
+    -dropreplace github.com/dpopsuev/bugle \
     -dropreplace github.com/dpopsuev/rh-gnd \
     -dropreplace github.com/dpopsuev/rh-rca \
     -droprequire github.com/dpopsuev/rh-gnd \

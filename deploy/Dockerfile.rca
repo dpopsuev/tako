@@ -10,7 +10,9 @@ ENV GONOSUMCHECK=github.com/dpopsuev/*
 ENV GONOSUMDB=github.com/dpopsuev/*
 ENV GOFLAGS=-mod=mod
 COPY . .
-RUN go mod edit -dropreplace github.com/dpopsuev/origami
+RUN go mod edit \
+    -dropreplace github.com/dpopsuev/origami \
+    -dropreplace github.com/dpopsuev/bugle
 RUN CGO_ENABLED=0 go build -o /rca-serve ./cmd/serve
 
 FROM gcr.io/distroless/static-debian12
