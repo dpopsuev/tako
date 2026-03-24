@@ -1,0 +1,78 @@
+# Generic unstructured-to-structured curation circuit.
+# Domain-agnostic — used by Asterisk's origami component and any future curation use case.
+# Edge evaluation logic is registered via EdgeFactory in Go (internal/curate/circuit.go).
+circuit: curation
+description: "Generic unstructured-to-structured curation circuit"
+handler_type: node
+
+zones:
+  intake:
+    nodes: [fetch]
+    element: water
+    stickiness: 0
+  extraction:
+    nodes: [extract, validate]
+    element: earth
+    stickiness: 1
+  enrichment:
+    nodes: [enrich, promote]
+    element: fire
+    stickiness: 2
+
+nodes:
+  - name: fetch
+    element: water
+    handler: fetch
+  - name: extract
+    element: earth
+    handler: extract
+  - name: validate
+    element: earth
+    handler: validate
+  - name: enrich
+    element: fire
+    handler: enrich
+  - name: promote
+    element: fire
+    handler: promote
+
+edges:
+  - id: CE1
+    name: extract-ready
+    from: fetch
+    to: extract
+    condition: "raw evidence available"
+
+  - id: CE2
+    name: validation-pass
+    from: extract
+    to: validate
+    condition: "fields extracted"
+
+  - id: CE3
+    name: incomplete
+    from: validate
+    to: fetch
+    loop: true
+    condition: "missing required fields, more sources available"
+
+  - id: CE4
+    name: enrich-ready
+    from: validate
+    to: enrich
+    condition: "completeness above threshold"
+
+  - id: CE5
+    name: promote-ready
+    from: enrich
+    to: promote
+    condition: "all required fields present"
+
+  - id: CE6
+    name: done
+    from: promote
+    to: _done
+    condition: "always (terminal)"
+
+start: fetch
+done: _done
