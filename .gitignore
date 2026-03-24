@@ -1,9 +1,4 @@
-# Compiled binaries
-/origami
-/serve
-/playground
-/mediator
-/llm-worker
+# Compiled binaries — everything goes in bin/
 /bin/
 *.exe
 *.exe~
@@ -30,8 +25,7 @@ Thumbs.db
 # Debug
 __debug_bin*
 
-# Frontend (dist/ committed for go:embed; rebuild with npm run build)
-kami/frontend/node_modules/
+# Frontend
 lsp/vscode/node_modules/
 
 # Sensitive / non-distributable assets
