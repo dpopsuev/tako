@@ -13,27 +13,36 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Manifest is the top-level origami.yaml schema.
+// Manifest is the top-level origami.yaml schema (kind: board).
 type Manifest struct {
-	Name        string                  `yaml:"name"`
-	Description string                  `yaml:"description"`
-	Version     string                  `yaml:"version"`
-	Domains     []string                `yaml:"domains,omitempty"`
-	DomainServe *DomainServeConfig      `yaml:"domain_serve,omitempty"`
-	Schematics  map[string]SchematicRef `yaml:"schematics,omitempty"`
-	Connectors  map[string]ConnectorRef `yaml:"connectors,omitempty"`
+	Kind        string             `yaml:"kind"`
+	Name        string             `yaml:"name"`
+	Description string             `yaml:"description"`
+	Version     string             `yaml:"version"`
+	Domains     []string           `yaml:"domains,omitempty"`
+	DomainServe *DomainServeConfig `yaml:"domain_serve,omitempty"` // TODO: rename to serve
+	Uses        map[string]UsesRef `yaml:"uses,omitempty"`
+	Bind        map[string]map[string]string `yaml:"bind,omitempty"` // schematic → socket → component
+
+	// Legacy fields — kept for fold test compatibility during migration.
+	// TODO: delete after TSK-321 (migrate consumers).
+	Schematics map[string]SchematicRef `yaml:"schematics,omitempty"`
+	Connectors map[string]ConnectorRef `yaml:"connectors,omitempty"`
 }
 
-// SchematicRef declares a schematic component and its socket bindings.
-// Path is relative to the Origami module root (locates component.yaml).
-// Bindings maps socket name to the connector or schematic name that fills it.
+// UsesRef declares a schematic or component used by this board.
+type UsesRef struct {
+	Kind   string `yaml:"kind"`   // "schematic" or "component"
+	Module string `yaml:"module"` // Go import path
+}
+
+// SchematicRef declares a schematic component and its socket bindings (legacy).
 type SchematicRef struct {
 	Path     string            `yaml:"path"`
 	Bindings map[string]string `yaml:"bindings,omitempty"`
 }
 
-// ConnectorRef declares a connector component.
-// Path is relative to the Origami module root (locates component.yaml).
+// ConnectorRef declares a connector component (legacy).
 type ConnectorRef struct {
 	Path string `yaml:"path"`
 }
@@ -157,6 +166,24 @@ func ParseManifest(data []byte) (*Manifest, error) {
 			return nil, fmt.Errorf("domain_serve: assets is required")
 		}
 	}
+	// Validate uses: entries (new DSL)
+	for name, u := range m.Uses {
+		if u.Module == "" {
+			return nil, fmt.Errorf("uses %q: module is required", name)
+		}
+	}
+	// Validate bind: references exist in uses:
+	for schematic, bindings := range m.Bind {
+		if _, ok := m.Uses[schematic]; !ok && m.Schematics[schematic].Path == "" {
+			return nil, fmt.Errorf("bind %q: not found in uses", schematic)
+		}
+		for _, component := range bindings {
+			if _, ok := m.Uses[component]; !ok && m.Connectors[component].Path == "" {
+				return nil, fmt.Errorf("bind %q: component %q not found in uses", schematic, component)
+			}
+		}
+	}
+	// Legacy validation
 	for name, s := range m.Schematics {
 		if s.Path == "" {
 			return nil, fmt.Errorf("schematic %q: path is required", name)
@@ -170,10 +197,10 @@ func ParseManifest(data []byte) (*Manifest, error) {
 	return &m, nil
 }
 
-// HasBindings returns true when the manifest declares schematics
-// and connectors for declarative wiring.
+// HasBindings returns true when the manifest declares schematics/connectors
+// (legacy) or uses/bind (new DSL) for declarative wiring.
 func (m *Manifest) HasBindings() bool {
-	return len(m.Schematics) > 0
+	return len(m.Schematics) > 0 || len(m.Uses) > 0
 }
 
 // domainSubdirs maps directory names found inside a domain to AssetMap sections.
