@@ -1,3 +1,4 @@
+kind: schematic
 # Sub-circuit delegation: main delegates to child circuit → done
 # Tests: handler_type: circuit resolution, Circuits registry wiring,
 # sub-circuit walk produces artifacts visible to parent.

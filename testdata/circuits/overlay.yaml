@@ -1,3 +1,4 @@
+kind: schematic
 # Consumer overlay: imports base, adds an enrichment node, reroutes edge.
 # Tests: overlay merge — base start/done inherited, overlay node added,
 # edge replaced (process → enrich instead of process → done).

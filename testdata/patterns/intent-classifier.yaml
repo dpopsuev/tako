@@ -1,3 +1,4 @@
+kind: schematic
 # Intent Classifier Pattern
 #
 # Demonstrates provider resilience via fallback chains. The classify node

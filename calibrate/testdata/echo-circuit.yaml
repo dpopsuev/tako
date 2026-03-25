@@ -1,3 +1,4 @@
+kind: schematic
 circuit: echo-test
 description: Minimal circuit for testing CLI dispatch calibration
 start: prompt

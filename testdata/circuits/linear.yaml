@@ -1,3 +1,4 @@
+kind: schematic
 # Linear circuit: A → B → done
 # Tests: basic walk, passthrough transformer, artifact propagation between nodes.
 circuit: linear

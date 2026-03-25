@@ -1,3 +1,4 @@
+kind: schematic
 # Generic unstructured-to-structured curation circuit.
 # Domain-agnostic — used by Asterisk's origami component and any future curation use case.
 # Edge evaluation logic is registered via EdgeFactory in Go (internal/curate/circuit.go).

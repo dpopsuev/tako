@@ -1,3 +1,4 @@
+kind: schematic
 # Hierarchical Delegation Pattern
 #
 # Demonstrates how Origami's existing primitives (zones, parallel edges,

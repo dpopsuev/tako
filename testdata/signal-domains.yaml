@@ -1,3 +1,4 @@
+kind: schematic
 # Signal Domains test circuit — exercises handler_type: renderer, domain:, and context_filter:.
 circuit: signal-domains-test
 description: "Test circuit for Renderer interface, zone domain annotations, and context filtering"

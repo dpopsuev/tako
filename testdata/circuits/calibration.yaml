@@ -1,3 +1,4 @@
+kind: schematic
 # Calibration circuit: single node with calibration contract.
 # Tests: contract field extraction, ContractCollector, scorecard evaluation.
 circuit: calibration-test

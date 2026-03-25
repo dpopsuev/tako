@@ -1,3 +1,4 @@
+kind: schematic
 circuit: memory-test
 description: "Simple 2-node circuit for verifying cross-walk MemoryStore persistence"
 handler_type: transformer
