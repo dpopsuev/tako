@@ -1,0 +1,9 @@
+kind: component
+component: origami-mcp
+module: github.com/dpopsuev/origami/connectors/mcp
+namespace: mcp
+version: "1.0.0"
+description: "MCP Streamable HTTP ingress transport"
+gives:
+  - socket: transport
+    factory: NewMCPTransport
