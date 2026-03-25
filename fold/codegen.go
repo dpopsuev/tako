@@ -283,19 +283,17 @@ func renderHooksServer(g *ResolvedGraph, productName string) string {
 		b.WriteString("\t}\n\n")
 	}
 
-	// Build CircuitConfig.
-	fmt.Fprintf(&b, "\tcfg := fwmcp.CircuitConfig{\n")
-	fmt.Fprintf(&b, "\t\tName:    %q,\n", productName)
-	fmt.Fprintf(&b, "\t\tVersion: %q,\n", "1.0")
+	// Bridge SessionHooks → CircuitConfig.
+	b.WriteString("\tbridgedCfg := fwmcp.SessionHooksToConfig(hooks)\n")
+	fmt.Fprintf(&b, "\tbridgedCfg.Name = %q\n", productName)
+	fmt.Fprintf(&b, "\tbridgedCfg.Version = %q\n", "1.0")
 	if len(root.Params) > 0 {
-		b.WriteString("\t\tExtraParamDefs: extraParams,\n")
+		b.WriteString("\tbridgedCfg.ExtraParamDefs = extraParams\n")
 	}
-	b.WriteString("\t\tCreateSession: hooks.CreateSession,\n")
-	b.WriteString("\t\tFormatReport:  hooks.FormatReport,\n")
-	fmt.Fprintf(&b, "\t}\n\n")
+	b.WriteString("\n")
 
 	// Create server.
-	b.WriteString("\tserver := fwmcp.NewCircuitServer(cfg)\n")
+	b.WriteString("\tserver := fwmcp.NewCircuitServer(bridgedCfg)\n")
 	b.WriteString("\tdefer server.Shutdown()\n")
 
 	return b.String()

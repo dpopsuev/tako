@@ -1,21 +1,12 @@
-# RCA Engine — circuit MCP server.
+# RCA Engine — fold-generated circuit MCP server.
 #
-# Build: docker build -t origami-rca -f deploy/Dockerfile.rca ~/Workspace/rh-rca
-# Run:   docker run -p 9200:9200 origami-rca --domain-endpoint http://domain:9300/mcp
-
-FROM golang:1.25 AS builder
-WORKDIR /src
-ENV GOPRIVATE=github.com/dpopsuev/*
-ENV GONOSUMCHECK=github.com/dpopsuev/*
-ENV GONOSUMDB=github.com/dpopsuev/*
-ENV GOFLAGS=-mod=mod
-COPY . .
-RUN go mod edit \
-    -dropreplace github.com/dpopsuev/origami \
-    -dropreplace github.com/dpopsuev/bugle
-RUN CGO_ENABLED=0 go build -o /rca-serve ./cmd/serve
+# Prerequisites: origami fold must have built the binary first:
+#   cd ~/Workspace/asterisk && origami fold
+#
+# Build: docker build -t origami-rca -f deploy/Dockerfile.rca ~/Workspace/asterisk
+# Run:   docker run -p 9200:9200 origami-rca --port 9200 --domain-endpoint http://domain:9300/mcp
 
 FROM gcr.io/distroless/static-debian12
-COPY --from=builder /rca-serve /rca-serve
+COPY bin/asterisk /rca-serve
 ENTRYPOINT ["/rca-serve"]
 EXPOSE 9200
