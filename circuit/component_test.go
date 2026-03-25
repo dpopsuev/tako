@@ -61,6 +61,77 @@ version: "1.0"
 	}
 }
 
+// S40: Transport/Trigger only in transports: section
+func TestLoadComponentManifest_RejectsTransportInSources(t *testing.T) {
+	path := writeComponentYAML(t, `
+kind: component
+component: test
+namespace: test
+version: "1.0"
+needs:
+  sources:
+    - name: mcp
+      type: Transport
+`)
+	_, err := LoadComponentManifest(path)
+	if err == nil {
+		t.Fatal("expected error for Transport in sources: section, got nil")
+	}
+}
+
+// S41: SourceReader/SourceCatalog only in sources: section
+func TestLoadComponentManifest_RejectsSourceReaderInTransports(t *testing.T) {
+	path := writeComponentYAML(t, `
+kind: component
+component: test
+namespace: test
+version: "1.0"
+needs:
+  transports:
+    - name: data
+      type: SourceReader
+`)
+	_, err := LoadComponentManifest(path)
+	if err == nil {
+		t.Fatal("expected error for SourceReader in transports: section, got nil")
+	}
+}
+
+// S42: Driver only in storage: section
+func TestLoadComponentManifest_RejectsDriverInTransports(t *testing.T) {
+	path := writeComponentYAML(t, `
+kind: component
+component: test
+namespace: test
+version: "1.0"
+needs:
+  transports:
+    - name: db
+      type: Driver
+`)
+	_, err := LoadComponentManifest(path)
+	if err == nil {
+		t.Fatal("expected error for Driver in transports: section, got nil")
+	}
+}
+
+func TestLoadComponentManifest_RejectsTriggerInStorage(t *testing.T) {
+	path := writeComponentYAML(t, `
+kind: component
+component: test
+namespace: test
+version: "1.0"
+needs:
+  storage:
+    - name: events
+      type: Trigger
+`)
+	_, err := LoadComponentManifest(path)
+	if err == nil {
+		t.Fatal("expected error for Trigger in storage: section, got nil")
+	}
+}
+
 func TestLoadComponentManifest_NeedsGivesParse(t *testing.T) {
 	path := writeComponentYAML(t, `
 kind: component

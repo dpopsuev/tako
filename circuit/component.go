@@ -83,6 +83,32 @@ type DispatchDef struct {
 	Timeout  string `yaml:"timeout,omitempty"`  // per-dispatch timeout (e.g. "5m")
 }
 
+// Forbidden socket types per needs section. Enforced — errors, not warnings.
+// S40: transports must NOT contain SourceReader, SourceCatalog, Driver.
+// S41: sources must NOT contain Transport, Trigger, Driver.
+// S42: storage must NOT contain Transport, Trigger, SourceReader, SourceCatalog.
+// Custom domain types (RunDiscoverer, DefectWriter, store.Store) are allowed
+// in any section — the enforcement prevents obvious misplacement only.
+var forbiddenSocketTypes = map[string]map[string]bool{
+	"transports": {"SourceReader": true, "SourceCatalog": true, "Driver": true},
+	"sources":    {"Transport": true, "Trigger": true, "Driver": true},
+	"storage":    {"Transport": true, "Trigger": true, "SourceReader": true, "SourceCatalog": true},
+}
+
+func validateSocketTypes(path, section string, sockets []SocketDef) error {
+	forbidden := forbiddenSocketTypes[section]
+	for _, s := range sockets {
+		if s.Type == "" {
+			continue
+		}
+		if forbidden[s.Type] {
+			return fmt.Errorf("component manifest %s: socket %q has type %q which is not allowed in %s: section",
+				path, s.Name, s.Type, section)
+		}
+	}
+	return nil
+}
+
 // LoadComponentManifest reads and parses a component.yaml file.
 func LoadComponentManifest(path string) (*ComponentManifest, error) {
 	data, err := os.ReadFile(path)
@@ -101,6 +127,16 @@ func LoadComponentManifest(path string) (*ComponentManifest, error) {
 	}
 	if m.Namespace == "" {
 		return nil, fmt.Errorf("component manifest %s: namespace is required", path)
+	}
+	// S40-S42: enforce socket type constraints per needs section.
+	for section, sockets := range map[string][]SocketDef{
+		"transports": m.Needs.Transports,
+		"sources":    m.Needs.Sources,
+		"storage":    m.Needs.Storage,
+	} {
+		if err := validateSocketTypes(path, section, sockets); err != nil {
+			return nil, err
+		}
 	}
 	return &m, nil
 }
