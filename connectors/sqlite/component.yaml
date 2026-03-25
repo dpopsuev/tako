@@ -1,3 +1,4 @@
+kind: component
 component: origami-sqlite
 namespace: sqlite
 version: "1.0.0"

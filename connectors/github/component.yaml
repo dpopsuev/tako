@@ -1,3 +1,4 @@
+kind: component
 component: origami-github
 module: github.com/dpopsuev/origami/connectors/github
 namespace: github

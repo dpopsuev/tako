@@ -36,6 +36,7 @@ func (g GivesDef) WireMode() string {
 
 // ComponentManifest is the YAML schema for component.yaml files.
 type ComponentManifest struct {
+	Kind        string `yaml:"kind"`
 	Component   string `yaml:"component"`
 	Module      string `yaml:"module"` // Go import path (e.g. github.com/dpopsuev/origami/connectors/rp)
 	Namespace   string `yaml:"namespace"`
@@ -91,6 +92,12 @@ func LoadComponentManifest(path string) (*ComponentManifest, error) {
 	var m ComponentManifest
 	if err := yamlUnmarshal(data, &m); err != nil {
 		return nil, fmt.Errorf("parse component manifest %s: %w", path, err)
+	}
+	if m.Kind == "" {
+		return nil, fmt.Errorf("component manifest %s: kind is required (must be \"component\")", path)
+	}
+	if m.Kind != "component" {
+		return nil, fmt.Errorf("component manifest %s: kind must be \"component\", got %q", path, m.Kind)
 	}
 	if m.Namespace == "" {
 		return nil, fmt.Errorf("component manifest %s: namespace is required", path)

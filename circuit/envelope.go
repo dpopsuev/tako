@@ -36,8 +36,13 @@ func ParseEnvelope(data []byte) (*Envelope, error) {
 // Domain kinds (scenario, vocabulary, etc.) are defined by consumers but
 // listed here so lint rules and tooling can recognize them.
 var KnownKinds = map[string]bool{
+	// DSL kinds — the three circuit kinds (KEYWORDS.md)
+	"schematic": true, // CircuitSchematic — bare graph (nodes, edges)
+	"component": true, // CircuitComponent — pluggable code (needs, gives)
+	"board":     true, // CircuitBoard — composed, wired, runnable (uses, bind)
+
 	// Framework kinds — parsed by Origami
-	"circuit":      true,
+	"circuit":      true, // legacy alias for schematic (migration)
 	"store-schema": true,
 
 	// Domain kinds — parsed by consumers
