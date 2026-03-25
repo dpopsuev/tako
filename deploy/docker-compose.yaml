@@ -54,10 +54,7 @@ services:
       - ASTERISK_RP_API_KEY_PATH=/run/secrets/rp-api-key
     volumes:
       - ${ASTERISK_DIR:-../../asterisk}/.rp-api-key:/run/secrets/rp-api-key:ro
-      # Mount host CA bundle WITHOUT SELinux relabeling.
-      # Using :ro only (no :z/:Z) preserves the host's cert_t label.
-      # The container reads via its own SELinux policy (container_t can read cert_t).
-      - /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:/etc/ssl/certs/ca-certificates.crt:ro
+      - ./ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
       - ${STATE_DIR:-.origami/state}:/root/.local/state/asterisk
     depends_on:
       domain:
