@@ -1,0 +1,27 @@
+kind: circuit
+circuit: ref-hexagonal
+start: ingest
+done: done
+handler_type: transformer
+
+nodes:
+  - name: ingest
+    handler: echo
+    description: "Receives input, passes through"
+  - name: process
+    handler: echo
+    description: "Processes data, passes through"
+  - name: output
+    handler: echo
+    description: "Produces final output"
+
+edges:
+  - id: e1
+    from: ingest
+    to: process
+  - id: e2
+    from: process
+    to: output
+  - id: e3
+    from: output
+    to: done
