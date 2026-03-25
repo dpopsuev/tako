@@ -19,16 +19,16 @@ type SocketDef struct {
 	Optional    bool   `yaml:"optional,omitempty"`  // true if socket has a built-in default
 }
 
-// SatisfiesDef declares that a connector provides a factory for a named socket.
-type SatisfiesDef struct {
+// GivesDef declares that a component provides a factory for a named socket.
+type GivesDef struct {
 	Socket  string `yaml:"socket"`
 	Factory string `yaml:"factory"`
 	Wire    string `yaml:"wire,omitempty"` // "instance" (default): call factory, pass result; "factory": pass function reference
 }
 
 // WireMode returns the effective wire mode, defaulting to "instance".
-func (s SatisfiesDef) WireMode() string {
-	if s.Wire == "factory" {
+func (g GivesDef) WireMode() string {
+	if g.Wire == "factory" {
 		return "factory"
 	}
 	return "instance"
@@ -50,11 +50,13 @@ type ComponentManifest struct {
 		Extractors   []string `yaml:"extractors,omitempty"`
 		Hooks        []string `yaml:"hooks,omitempty"`
 	} `yaml:"provides"`
-	Requires struct {
-		Origami string      `yaml:"origami,omitempty"`
-		Sockets []SocketDef `yaml:"sockets,omitempty"`
-	} `yaml:"requires,omitempty"`
-	Satisfies []SatisfiesDef `yaml:"satisfies,omitempty"`
+	Needs struct {
+		Origami    string      `yaml:"origami,omitempty"`
+		Transports []SocketDef `yaml:"transports,omitempty"` // Transport, Trigger
+		Sources    []SocketDef `yaml:"sources,omitempty"`    // SourceReader, SourceCatalog
+		Storage    []SocketDef `yaml:"storage,omitempty"`    // Driver
+	} `yaml:"needs,omitempty"`
+	Gives []GivesDef `yaml:"gives,omitempty"`
 
 	// MCP server configuration — fold reads these to generate CircuitConfig.
 	Params   []ParamDef  `yaml:"params,omitempty"`  // extra start_circuit parameters

@@ -174,7 +174,12 @@ func resolveSchematic(
 	bindings := ref.Bindings
 
 	var options []ResolvedOption
-	for _, sock := range cm.Requires.Sockets {
+	// Iterate all typed socket sections: transports, sources, storage.
+	allSockets := make([]circuit.SocketDef, 0, len(cm.Needs.Transports)+len(cm.Needs.Sources)+len(cm.Needs.Storage))
+	allSockets = append(allSockets, cm.Needs.Transports...)
+	allSockets = append(allSockets, cm.Needs.Sources...)
+	allSockets = append(allSockets, cm.Needs.Storage...)
+	for _, sock := range allSockets {
 		if sock.Option == "" {
 			continue
 		}
@@ -235,10 +240,10 @@ func resolveSchematic(
 	}, nil
 }
 
-func findSatisfy(cm *circuit.ComponentManifest, socketName string) *circuit.SatisfiesDef {
-	for i := range cm.Satisfies {
-		if cm.Satisfies[i].Socket == socketName {
-			return &cm.Satisfies[i]
+func findSatisfy(cm *circuit.ComponentManifest, socketName string) *circuit.GivesDef {
+	for i := range cm.Gives {
+		if cm.Gives[i].Socket == socketName {
+			return &cm.Gives[i]
 		}
 	}
 	return nil
@@ -360,7 +365,7 @@ func buildResolvedConnectors(connIdx map[string]connectorEntry) []ResolvedConnec
 		entry := connIdx[name]
 		cm := entry.manifest
 		var entries []ResolvedSatisfy
-		for _, sat := range cm.Satisfies {
+		for _, sat := range cm.Gives {
 			if sat.WireMode() == "instance" {
 				entries = append(entries, ResolvedSatisfy{
 					Socket:  sat.Socket,

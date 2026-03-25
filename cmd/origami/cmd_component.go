@@ -89,8 +89,8 @@ func componentInspect(args []string) error {
 	if m.Description != "" {
 		fmt.Printf("Description: %s\n", m.Description)
 	}
-	if m.Requires.Origami != "" {
-		fmt.Printf("Requires:    origami %s\n", m.Requires.Origami)
+	if m.Needs.Origami != "" {
+		fmt.Printf("Needs:       origami %s\n", m.Needs.Origami)
 	}
 	if len(m.Provides.Transformers) > 0 {
 		fmt.Printf("Transformers: %s\n", strings.Join(m.Provides.Transformers, ", "))
