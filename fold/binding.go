@@ -9,6 +9,31 @@ import (
 	"github.com/dpopsuev/origami/circuit"
 )
 
+// bridgeUsesToLegacy converts the new Uses/Bind DSL to the legacy
+// Schematics/Connectors fields so the existing resolution pipeline works.
+// This is a temporary bridge — once all consumers use Uses/Bind, the
+// legacy fields and this function are deleted.
+func bridgeUsesToLegacy(m *Manifest) {
+	if m.Schematics == nil {
+		m.Schematics = make(map[string]SchematicRef)
+	}
+	if m.Connectors == nil {
+		m.Connectors = make(map[string]ConnectorRef)
+	}
+	for name, u := range m.Uses {
+		switch u.Kind {
+		case "schematic":
+			bindings := m.Bind[name] // may be nil
+			m.Schematics[name] = SchematicRef{
+				Path:     u.Module,
+				Bindings: bindings,
+			}
+		case "component", "":
+			m.Connectors[name] = ConnectorRef{Path: u.Module}
+		}
+	}
+}
+
 // ResolvedConnector is a connector ready for codegen instantiation.
 type ResolvedConnector struct {
 	Name    string // manifest key (e.g. "reportportal")
@@ -69,7 +94,13 @@ type ImportEntry struct {
 // cycles, and returns a topologically ordered instantiation plan.
 func Resolve(m *Manifest, origamiRoot string, resolver ModuleResolver) (*ResolvedGraph, error) {
 	if !m.HasBindings() {
-		return nil, fmt.Errorf("manifest has no schematics section")
+		return nil, fmt.Errorf("manifest has no schematics or uses section")
+	}
+
+	// Bridge: if Uses/Bind are set, populate legacy Schematics/Connectors
+	// so the rest of the resolution pipeline works unchanged.
+	if len(m.Uses) > 0 {
+		bridgeUsesToLegacy(m)
 	}
 
 	connManifests := make(map[string]*circuit.ComponentManifest)
