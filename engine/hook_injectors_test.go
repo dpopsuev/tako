@@ -1,4 +1,4 @@
-package toolkit
+package engine
 
 import (
 	"context"
@@ -6,14 +6,9 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine"
 )
 
-type stubArtifact struct{}
-
-func (a stubArtifact) Type() string        { return "stub" }
-func (a stubArtifact) Confidence() float64 { return 1.0 }
-func (a stubArtifact) Raw() any            { return nil }
+// stubArtifact defined in testhelpers_test.go
 
 func TestNewContextInjector_InjectsData(t *testing.T) {
 	t.Parallel()
@@ -29,9 +24,9 @@ func TestNewContextInjector_InjectsData(t *testing.T) {
 	}
 
 	walker := circuit.NewProcessWalker("test-walker")
-	ctx := engine.WithWalkerState(context.Background(), walker.State())
+	ctx := WithWalkerState(context.Background(), walker.State())
 
-	err := hook.Run(ctx, "node", stubArtifact{})
+	err := hook.Run(ctx, "node", &stubArtifact{})
 	if err != nil {
 		t.Fatalf("Run error: %v", err)
 	}
@@ -51,7 +46,7 @@ func TestNewContextInjector_NilWalkerState(t *testing.T) {
 		called = true
 	})
 
-	err := hook.Run(context.Background(), "node", stubArtifact{})
+	err := hook.Run(context.Background(), "node", &stubArtifact{})
 	if err != nil {
 		t.Fatalf("Run error: %v", err)
 	}
@@ -69,9 +64,9 @@ func TestNewContextInjectorErr_ReturnsError(t *testing.T) {
 	})
 
 	walker := circuit.NewProcessWalker("test-walker")
-	ctx := engine.WithWalkerState(context.Background(), walker.State())
+	ctx := WithWalkerState(context.Background(), walker.State())
 
-	err := hook.Run(ctx, "node", stubArtifact{})
+	err := hook.Run(ctx, "node", &stubArtifact{})
 	if !errors.Is(err, want) {
 		t.Errorf("Run error = %v, want %v", err, want)
 	}
@@ -84,7 +79,7 @@ func TestNewContextInjectorErr_NilWalkerState(t *testing.T) {
 		return errors.New("should not reach")
 	})
 
-	err := hook.Run(context.Background(), "node", stubArtifact{})
+	err := hook.Run(context.Background(), "node", &stubArtifact{})
 	if err != nil {
 		t.Fatalf("should be no-op with nil walker state: %v", err)
 	}
@@ -99,9 +94,9 @@ func TestNewContextInjectorErr_Success(t *testing.T) {
 	})
 
 	walker := circuit.NewProcessWalker("test")
-	ctx := engine.WithWalkerState(context.Background(), walker.State())
+	ctx := WithWalkerState(context.Background(), walker.State())
 
-	err := hook.Run(ctx, "node", stubArtifact{})
+	err := hook.Run(ctx, "node", &stubArtifact{})
 	if err != nil {
 		t.Fatalf("Run error: %v", err)
 	}

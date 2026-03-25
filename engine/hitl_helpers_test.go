@@ -1,11 +1,10 @@
-package toolkit
+package engine
 
 import (
 	"errors"
 	"testing"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine"
 )
 
 func TestLoadCheckpointState_NoCheckpoint(t *testing.T) {
@@ -25,7 +24,7 @@ func TestLoadCheckpointState_WithCheckpoint(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 
-	cp, err := engine.NewJSONCheckpointer(dir)
+	cp, err := NewJSONCheckpointer(dir)
 	if err != nil {
 		t.Fatalf("create checkpointer: %v", err)
 	}

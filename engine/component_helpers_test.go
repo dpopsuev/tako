@@ -1,30 +1,29 @@
-package toolkit
+package engine
 
 import (
 	"context"
 	"testing"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine"
 )
 
-type stubTransformer struct{ name string }
+type componentStubTransformer struct{ name string }
 
-func (s *stubTransformer) Name() string { return s.name }
-func (s *stubTransformer) Transform(_ context.Context, _ *engine.TransformerContext) (any, error) {
+func (s *componentStubTransformer) Name() string { return s.name }
+func (s *componentStubTransformer) Transform(_ context.Context, _ *TransformerContext) (any, error) {
 	return nil, nil
 }
 
-type stubExtractor struct{ name string }
+type componentStubExtractor struct{ name string }
 
-func (s *stubExtractor) Name() string { return s.name }
-func (s *stubExtractor) Extract(_ context.Context, _ any) (any, error) {
+func (s *componentStubExtractor) Name() string { return s.name }
+func (s *componentStubExtractor) Extract(_ context.Context, _ any) (any, error) {
 	return nil, nil
 }
 
 func TestTransformerForAllNodes(t *testing.T) {
 	t.Parallel()
-	tr := &stubTransformer{name: "stub"}
+	tr := &componentStubTransformer{name: "stub"}
 	nodes := []string{"a", "b", "c"}
 
 	reg := TransformerForAllNodes(tr, nodes)
@@ -40,7 +39,7 @@ func TestTransformerForAllNodes(t *testing.T) {
 
 func TestTransformerForAllNodes_Empty(t *testing.T) {
 	t.Parallel()
-	reg := TransformerForAllNodes(&stubTransformer{}, nil)
+	reg := TransformerForAllNodes(&componentStubTransformer{}, nil)
 	if len(reg) != 0 {
 		t.Errorf("empty nodes should give empty registry, got %d", len(reg))
 	}
@@ -49,8 +48,8 @@ func TestTransformerForAllNodes_Empty(t *testing.T) {
 func TestExtractorForAllNodes(t *testing.T) {
 	t.Parallel()
 	nodes := []string{"x", "y"}
-	factory := func(name string) engine.Extractor {
-		return &stubExtractor{name: name}
+	factory := func(name string) Extractor {
+		return &componentStubExtractor{name: name}
 	}
 
 	reg := ExtractorForAllNodes(factory, nodes)
