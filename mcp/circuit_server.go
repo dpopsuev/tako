@@ -164,6 +164,7 @@ type startCircuitInput struct {
 
 type startCircuitOutput struct {
 	SessionID    string `json:"session_id"`
+	Alias        string `json:"alias,omitempty"`
 	TotalCases   int    `json:"total_cases"`
 	Scenario     string `json:"scenario"`
 	Status       string `json:"status"`
@@ -624,6 +625,9 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 	}
 
 	sess := NewCircuitSession(runCtx, sessID, meta, parallel, disp, bus, runFn, runCancel)
+	if alias, ok := input.Extra[ExtraKeySessionName].(string); ok {
+		sess.Alias = alias
+	}
 	sess.recorder = recorder
 	sess.runDir = runDir
 	if tid, ok := input.Extra[circuit.ExtraKeyTraceID].(string); ok && tid != "" {
@@ -649,6 +653,7 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 
 	out := startCircuitOutput{
 		SessionID:  sess.ID,
+		Alias:      sess.Alias,
 		TotalCases: sess.TotalCases,
 		Scenario:   sess.Scenario,
 		Status:     string(StateRunning),

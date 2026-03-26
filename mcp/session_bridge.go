@@ -106,12 +106,37 @@ func wrapWithACPWorkers(inner RunFunc, params StartParams, disp *dispatch.MuxDis
 		}
 		defer staff.KillAll(ctx)
 
-		acpDisp := dispatch.NewACPWorkerDispatcher(
-			disp, staff, defaultACPRole, workers,
+		var acpOpts []dispatch.ACPWorkerOption
+		acpOpts = append(acpOpts,
 			dispatch.WithACPWorkerBus(bus),
 			dispatch.WithACPWorkerLogger(slog.Default()),
 		)
-		go acpDisp.Run(ctx)
+
+		// Spawn a dialectic collective for hard steps (investigate, review).
+		// Two extra agents debate — the collective is asked instead of a
+		// single worker for steps in collectiveSteps.
+		coll, collErr := agentport.SpawnCollective(ctx, staff, agentport.CollectiveConfig{
+			Role:     "debater",
+			Strategy: &agentport.Dialectic{MaxRounds: 2},
+			Agents: []agentport.LaunchConfig{
+				{Role: "thesis", Model: agentCmd},
+				{Role: "antithesis", Model: agentCmd},
+			},
+		})
+		if collErr != nil {
+			slog.Warn("collective spawn failed, falling back to single-agent dispatch", "error", collErr)
+		} else {
+			acpOpts = append(acpOpts, dispatch.WithACPWorkerCollective(coll))
+		}
+
+		acpDisp := dispatch.NewACPWorkerDispatcher(
+			disp, staff, defaultACPRole, workers, acpOpts...,
+		)
+		go func() {
+			if err := acpDisp.Run(ctx); err != nil {
+				slog.Error("ACP worker dispatch error", "error", err)
+			}
+		}()
 
 		return inner(ctx)
 	}

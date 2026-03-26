@@ -30,6 +30,11 @@ type SessionObserver interface {
 	OnSessionEnd()
 }
 
+// Extra key constants for start_circuit parameters.
+const (
+	ExtraKeySessionName = "session_name" // user-provided session alias
+)
+
 // CircuitConfig is the domain-injection entry point. Implementations register
 // three hooks (session creation, step schemas, report formatting) and the
 // generic CircuitServer handles all protocol mechanics.

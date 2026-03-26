@@ -31,6 +31,7 @@ const (
 // FormatReport, both provided via CircuitConfig.
 type CircuitSession struct {
 	ID              string
+	Alias           string
 	TotalCases      int
 	Scenario        string
 	DesiredCapacity int

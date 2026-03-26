@@ -10,17 +10,28 @@ import (
 	"github.com/dpopsuev/origami/agentport"
 )
 
+// Steps where dialectic collective debate improves quality.
+// These are scored by M1 (defect_type), M8 (convergence), M15 (component).
+var collectiveSteps = map[string]bool{
+	"investigate": true,
+	"review":      true,
+}
+
 // ACPWorkerDispatcher runs N ACP agent workers that pull steps from a
 // MuxDispatcher, ask an agent via the facade Staff, and submit the
 // response back. Same competing-consumer pattern as CLIWorkerDispatcher
 // but using bugle/acp agents instead of raw CLI subprocesses.
+//
+// When a collective is configured, hard steps (investigate, review)
+// are routed through a dialectic debate instead of a single agent.
 type ACPWorkerDispatcher struct {
-	mux     *MuxDispatcher
-	staff   *agentport.Staff
-	bus     agentport.Bus
-	role    string
-	workers int
-	log     *slog.Logger
+	mux        *MuxDispatcher
+	staff      *agentport.Staff
+	bus        agentport.Bus
+	role       string
+	workers    int
+	collective *agentport.AgentCollective
+	log        *slog.Logger
 }
 
 // ACPWorkerOption configures an ACPWorkerDispatcher.
@@ -34,6 +45,12 @@ func WithACPWorkerLogger(l *slog.Logger) ACPWorkerOption {
 // WithACPWorkerBus attaches a signal bus for lifecycle events.
 func WithACPWorkerBus(bus agentport.Bus) ACPWorkerOption {
 	return func(d *ACPWorkerDispatcher) { d.bus = bus }
+}
+
+// WithACPWorkerCollective routes hard steps (investigate, review) through
+// a dialectic collective instead of a single agent.
+func WithACPWorkerCollective(c *agentport.AgentCollective) ACPWorkerOption {
+	return func(d *ACPWorkerDispatcher) { d.collective = c }
 }
 
 // NewACPWorkerDispatcher creates a dispatcher that runs N ACP agent workers.
@@ -110,15 +127,20 @@ func (d *ACPWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 			prompt = string(data)
 		}
 
-		// Find a worker by role and ask it.
-		workers := d.staff.FindByRole(d.role)
-		if len(workers) == 0 {
-			d.log.Error("no workers available", "role", d.role)
-			continue
+		// Route hard steps through collective debate, others to single agent.
+		var response string
+		if d.collective != nil && collectiveSteps[dc.Step] {
+			d.log.Info("routing to collective", "step", dc.Step, "case", dc.CaseID)
+			response, err = d.collective.Ask(ctx, prompt)
+		} else {
+			workers := d.staff.FindByRole(d.role)
+			if len(workers) == 0 {
+				d.log.Error("no workers available", "role", d.role)
+				continue
+			}
+			worker := workers[int(dc.DispatchID)%len(workers)]
+			response, err = worker.Ask(ctx, prompt)
 		}
-		// Round-robin: pick worker by dispatch ID modulo count.
-		worker := workers[int(dc.DispatchID)%len(workers)]
-		response, err := worker.Ask(ctx, prompt)
 		if err != nil {
 			d.emit(agentport.EventWorkerError, agentport.AgentWorker, dc.CaseID, dc.Step, map[string]string{
 				agentport.MetaKeyWorkerID: workerID,
