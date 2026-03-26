@@ -75,8 +75,8 @@ func (c *RepoCache) doClone(ctx context.Context, org, repo, branch, dest string)
 		return fmt.Errorf("create cache dir: %w", err)
 	}
 	tok := TokenForOrg(c.privateTokens, org, repo, c.token)
-	url := cloneURL(org, repo, tok)
-	return shallowClone(ctx, url, branch, dest)
+	url := cloneURL(org, repo, "") // never embed token in URL
+	return shallowClone(ctx, url, branch, dest, tok)
 }
 
 // Clear removes all cached clones.

@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dpopsuev/bugle/resilience"
 	"github.com/dpopsuev/origami/agentport"
 )
 
@@ -27,6 +28,7 @@ type NetworkServer struct {
 	log        *slog.Logger
 	addr       string
 	authToken  string
+	rateLimit  float64
 	mu         sync.Mutex
 	started    bool
 }
@@ -58,6 +60,12 @@ func WithAuthToken(token string) NetworkServerOption {
 	return func(s *NetworkServer) { s.authToken = token }
 }
 
+// WithRateLimit sets the maximum requests per second for all endpoints.
+// Zero (default) disables rate limiting.
+func WithRateLimit(rps float64) NetworkServerOption {
+	return func(s *NetworkServer) { s.rateLimit = rps }
+}
+
 // NewNetworkServer creates an HTTP server that exposes an agentport.ExternalDispatcher.
 func NewNetworkServer(dispatcher agentport.ExternalDispatcher, addr string, opts ...NetworkServerOption) *NetworkServer {
 	s := &NetworkServer{
@@ -77,8 +85,15 @@ func NewNetworkServer(dispatcher agentport.ExternalDispatcher, addr string, opts
 	mux.HandleFunc("GET /signals", s.handleGetSignals)
 
 	var handler http.Handler = mux
+	if s.rateLimit > 0 {
+		rl := resilience.NewRateLimiter(resilience.RateLimitConfig{
+			Rate:  s.rateLimit,
+			Burst: max(int(s.rateLimit), 10),
+		})
+		handler = rateLimitMiddleware(rl, handler)
+	}
 	if s.authToken != "" {
-		handler = s.authMiddleware(mux)
+		handler = s.authMiddleware(handler)
 	}
 	s.server.Handler = handler
 
@@ -240,6 +255,16 @@ func (s *NetworkServer) handleGetSignals(w http.ResponseWriter, r *http.Request)
 
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(sigs)
+}
+
+func rateLimitMiddleware(rl *resilience.RateLimiter, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !rl.Allow() {
+			http.Error(w, "rate limit exceeded", http.StatusTooManyRequests)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (s *NetworkServer) authMiddleware(next http.Handler) http.Handler {

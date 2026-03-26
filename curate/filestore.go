@@ -37,7 +37,17 @@ func (s *FileStore) List(_ context.Context) ([]string, error) {
 	return names, nil
 }
 
+func validateName(name string) error {
+	if name == "" || strings.Contains(name, "..") || strings.ContainsAny(name, "/\\") {
+		return fmt.Errorf("curate: invalid dataset name %q", name)
+	}
+	return nil
+}
+
 func (s *FileStore) Load(_ context.Context, name string) (*Dataset, error) {
+	if err := validateName(name); err != nil {
+		return nil, err
+	}
 	path := filepath.Join(s.Dir, name+".json")
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -51,6 +61,9 @@ func (s *FileStore) Load(_ context.Context, name string) (*Dataset, error) {
 }
 
 func (s *FileStore) Save(_ context.Context, d *Dataset) error {
+	if err := validateName(d.Name); err != nil {
+		return err
+	}
 	data, err := json.MarshalIndent(d, "", "  ")
 	if err != nil {
 		return fmt.Errorf("curate: marshal %q: %w", d.Name, err)
