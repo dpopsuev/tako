@@ -63,6 +63,7 @@ func SessionHooksToConfig(hooks engine.SessionHooks) CircuitConfig {
 			}
 			return runFn, meta, nil
 		},
-		FormatReport: hooks.FormatReport,
+		FormatReport:  hooks.FormatReport,
+		StepSchemas:   hooks.StepSchemas,
 	}
 }

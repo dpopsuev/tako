@@ -6,6 +6,7 @@ import (
 
 	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/toolkit"
 )
 
 // SessionConfig is the domain-specific configuration returned by a
@@ -65,7 +66,16 @@ type SessionHooks struct {
 	// FormatReport converts domain-specific run result into
 	// human-readable text and optional structured data.
 	FormatReport func(result any) (formatted string, structured any, err error)
+
+	// StepSchemas declares the artifact schema for each circuit step.
+	// Copied to CircuitConfig.StepSchemas by the bridge. Workers see
+	// these in the worker prompt so they know what fields to submit.
+	StepSchemas []StepSchema
 }
+
+// StepSchema is a type alias for toolkit.StepSchema, re-exported here
+// so consumers don't need to import toolkit/ just for step schemas.
+type StepSchema = toolkit.StepSchema
 
 // SessionParams are the parsed parameters from a start_circuit tool call.
 // Domain-specific fields live in Extra.
