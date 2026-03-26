@@ -14,7 +14,7 @@ uses:
     module: github.com/dpopsuev/rh-rca
   reportportal:
     kind: component
-    module: github.com/dpopsuev/rh-connectors/rp
+    module: github.com/dpopsuev/rh-modules/rp
   mcp:
     kind: component
     module: github.com/dpopsuev/origami/connectors/mcp
@@ -45,7 +45,7 @@ domain_serve:
 	if m.Uses["rca"].Kind != "schematic" {
 		t.Errorf("Uses[rca].Kind = %q, want schematic", m.Uses["rca"].Kind)
 	}
-	if m.Uses["reportportal"].Module != "github.com/dpopsuev/rh-connectors/rp" {
+	if m.Uses["reportportal"].Module != "github.com/dpopsuev/rh-modules/rp" {
 		t.Errorf("Uses[reportportal].Module = %q", m.Uses["reportportal"].Module)
 	}
 	if m.Bind["rca"]["data"] != "reportportal" {
