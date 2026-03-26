@@ -287,6 +287,7 @@ func renderHooksServer(g *ResolvedGraph, productName string) string {
 	b.WriteString("\tbridgedCfg := fwmcp.SessionHooksToConfig(hooks)\n")
 	fmt.Fprintf(&b, "\tbridgedCfg.Name = %q\n", productName)
 	fmt.Fprintf(&b, "\tbridgedCfg.Version = %q\n", "1.0")
+	b.WriteString("\tbridgedCfg.DomainFS = domainFS\n")
 	if len(root.Params) > 0 {
 		b.WriteString("\tbridgedCfg.ExtraParamDefs = extraParams\n")
 	}

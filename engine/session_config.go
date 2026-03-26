@@ -2,7 +2,9 @@ package engine
 
 import (
 	"context"
+	"io/fs"
 
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 )
 
@@ -35,6 +37,12 @@ type SessionConfig struct {
 	// Meta carries domain metadata back to the framework
 	// (e.g., total cases, scenario name).
 	Meta SessionMeta
+
+	// RunFunc, when set, replaces the bridge's default BatchWalk execution.
+	// Used by calibration consumers that need the full calibrate.Run()
+	// pipeline (load → walk → collect → score → report). When nil,
+	// the bridge builds a RunFunc from Cases/Transformers/CircuitDef.
+	RunFunc func(ctx context.Context) (any, error)
 }
 
 // SessionMeta carries initial metadata from the domain session factory
@@ -67,8 +75,8 @@ type SessionParams struct {
 	Extra    map[string]any
 
 	// DomainFS is the domain data filesystem (scenarios, prompts, etc.).
-	// The framework injects this — consumers read domain data from it.
-	DomainFS interface{ Open(name string) (any, error) } // fs.FS compatible
+	// The framework injects this from CircuitConfig.DomainFS.
+	DomainFS fs.FS
 
 	// StateDir is the base directory for persistent run data.
 	StateDir string
@@ -76,4 +84,14 @@ type SessionParams struct {
 	// Observer is set by the framework for tracing. Consumers forward
 	// it to RunOptions via engine.WithRunObserver(params.Observer).
 	Observer circuit.WalkObserver
+
+	// Dispatcher is the framework-created MuxDispatcher for LLM dispatch.
+	// Consumers that need to create domain-specific transformers (e.g.,
+	// prompt-filling transformers) use this to wire dispatch.
+	// Nil when no dispatch is needed (e.g., stub/heuristic backends).
+	Dispatcher agentport.Dispatcher
+
+	// Relayer wraps the Dispatcher as a PromptRelayer for sub-circuit
+	// delegation via MCPCircuitTransformer. Set by the bridge.
+	Relayer PromptRelayer
 }

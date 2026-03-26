@@ -587,7 +587,11 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 		Parallel: parallel,
 		Force:    input.Force,
 		Extra:    input.Extra,
-		Observer: recorder, // nil when tracing disabled — safe
+		DomainFS: s.Config.DomainFS,
+		StateDir: s.Config.StateDir,
+	}
+	if recorder != nil {
+		params.Observer = recorder
 	}
 
 	if s.Config.Preflight != nil {

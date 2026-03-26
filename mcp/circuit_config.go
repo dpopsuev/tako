@@ -3,6 +3,7 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"io/fs"
 
 	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
@@ -99,6 +100,11 @@ type CircuitConfig struct {
 	// inherit project-level MCP configs — know where to connect.
 	GatewayEndpoint string
 
+	// DomainFS is the domain data filesystem (scenarios, prompts, scorecards).
+	// Fold-generated code sets this from the embedded domain data.
+	// Passed to SessionParams.DomainFS for consumer access.
+	DomainFS fs.FS
+
 	// StateDir is the base directory for persistent run data (traces,
 	// artifacts, reports). When set, each session creates a run directory
 	// at {StateDir}/runs/{session-id}/ with trace.jsonl, report.json,
@@ -120,7 +126,11 @@ type CircuitConfig struct {
 
 // FindSchema returns the StepSchema for the given step name, or an error
 // listing valid step names. Used by the submit_step handler.
+// When no schemas are defined, any step name is accepted (no validation).
 func (c *CircuitConfig) FindSchema(step string) (StepSchema, error) {
+	if len(c.StepSchemas) == 0 {
+		return StepSchema{Name: step}, nil
+	}
 	var names []string
 	for _, s := range c.StepSchemas {
 		if s.Name == step {
@@ -149,6 +159,12 @@ type StartParams struct {
 	Parallel int
 	Force    bool
 	Extra    map[string]any // domain-specific params (scenario, backend, rp_base_url, etc.)
+
+	// DomainFS is the domain data filesystem from CircuitConfig.
+	DomainFS fs.FS
+
+	// StateDir is the persistent run data directory from CircuitConfig.
+	StateDir string
 
 	// Observer is set by the framework when tracing is enabled (StateDir != "").
 	// Domain CreateSession implementations should forward this to
