@@ -257,10 +257,10 @@ func buildWiredBinary(ctx context.Context, m *Manifest, opts Options) error {
 	cmd.Dir = tmpDir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Env = os.Environ()
+	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
 
 	if opts.Verbose {
-		fmt.Fprintf(os.Stderr, "running: go %s (in %s)\n", strings.Join(args, " "), tmpDir)
+		fmt.Fprintf(os.Stderr, "running: CGO_ENABLED=0 go %s (in %s)\n", strings.Join(args, " "), tmpDir)
 	}
 
 	if err := cmd.Run(); err != nil {

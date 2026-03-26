@@ -323,7 +323,16 @@ var domainData embed.FS
 
 func main() {
 	dataDir := flag.String("data-dir", "", "serve domain data from this directory instead of embedded assets")
+	healthz := flag.Bool("healthz", false, "probe /healthz and exit")
 	flag.Parse()
+
+	if *healthz {
+		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/healthz", {{ .Port }}))
+		if err != nil || resp.StatusCode != http.StatusOK {
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
 
 	var domainFS fs.FS = domainData
 	if *dataDir != "" {

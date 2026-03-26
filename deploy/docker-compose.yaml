@@ -1,25 +1,31 @@
 # Origami — Local Development Stack
 #
-# Starts domain, GND, RCA, and mediator services.
+# 3 containers: asterisk (domain+rca), gnd, mediator
+#
+# Prerequisites:
+#   cd ~/Workspace/asterisk && origami fold          # builds bin/asterisk
+#   docker build -f deploy/Dockerfile.rca ~/Workspace/asterisk -t origami-rca
+#   docker build -f deploy/Dockerfile.gnd ~/Workspace/rh-gnd -t origami-gnd
+#   docker build -f deploy/Dockerfile.mediator . -t origami-mediator
 #
 # Usage:
 #   docker compose -f deploy/docker-compose.yaml up -d
-#   curl http://localhost:9000/healthz   # verify mediator
-#
-# Prerequisites — build images first:
-#   just build-images   (from origami repo)
-#   origami fold --domain-only --container   (from asterisk repo)
+#   curl http://localhost:9000/healthz
 
 services:
-  domain:
-    image: origami-asterisk-domain
+  rca:
+    image: origami-rca
     ports:
       - "9300:9300"
-    command: ["--data-dir", "/data"]
     volumes:
-      - ${ASTERISK_DATA_DIR:-../../asterisk/.data}:/data:ro
+      - ${ASTERISK_DIR:-../../asterisk}/.rp-api-key:/run/secrets/rp-api-key:ro
+      - ./ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
+    environment:
+      - ASTERISK_RP_BASE_URL=${ASTERISK_RP_BASE_URL:-}
+      - ASTERISK_RP_PROJECT=${ASTERISK_RP_PROJECT:-}
+      - ASTERISK_RP_API_KEY_PATH=/run/secrets/rp-api-key
     healthcheck:
-      test: ["CMD", "/domain-serve", "--healthz"]
+      test: ["CMD", "/rca-serve", "--healthz"]
       interval: 5s
       timeout: 3s
       retries: 3
@@ -37,34 +43,6 @@ services:
       timeout: 3s
       retries: 3
 
-  rca:
-    image: origami-rca
-    ports:
-      - "9200:9200"
-    command:
-      - "--port"
-      - "9200"
-      - "--domain-endpoint"
-      - "http://domain:9300/mcp"
-      - "--mediator-endpoint"
-      - "http://mediator:9000/mcp"
-    environment:
-      - ASTERISK_RP_BASE_URL=${ASTERISK_RP_BASE_URL:-}
-      - ASTERISK_RP_PROJECT=${ASTERISK_RP_PROJECT:-}
-      - ASTERISK_RP_API_KEY_PATH=/run/secrets/rp-api-key
-    volumes:
-      - ${ASTERISK_DIR:-../../asterisk}/.rp-api-key:/run/secrets/rp-api-key:ro
-      - ./ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
-      - ${STATE_DIR:-.origami/state}:/root/.local/state/asterisk
-    depends_on:
-      domain:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "/rca-serve", "--healthz"]
-      interval: 5s
-      timeout: 3s
-      retries: 3
-
   mediator:
     image: origami-mediator
     ports:
@@ -73,7 +51,7 @@ services:
       - "--port"
       - "9000"
       - "--backend"
-      - "rca=http://rca:9200/mcp"
+      - "rca=http://rca:9300/mcp"
       - "--backend"
       - "gnd:gnd=http://gnd:9100/mcp"
     depends_on:
