@@ -26,6 +26,7 @@ type NetworkServer struct {
 	server     *http.Server
 	log        *slog.Logger
 	addr       string
+	authToken  string
 	mu         sync.Mutex
 	started    bool
 }
@@ -51,6 +52,12 @@ func WithSignalBus(bus agentport.Bus) NetworkServerOption {
 	return func(s *NetworkServer) { s.bus = bus }
 }
 
+// WithAuthToken sets a bearer token required for all requests.
+// When empty (default), no authentication is enforced.
+func WithAuthToken(token string) NetworkServerOption {
+	return func(s *NetworkServer) { s.authToken = token }
+}
+
 // NewNetworkServer creates an HTTP server that exposes an agentport.ExternalDispatcher.
 func NewNetworkServer(dispatcher agentport.ExternalDispatcher, addr string, opts ...NetworkServerOption) *NetworkServer {
 	s := &NetworkServer{
@@ -68,7 +75,12 @@ func NewNetworkServer(dispatcher agentport.ExternalDispatcher, addr string, opts
 	mux.HandleFunc("POST /submit", s.handleSubmit)
 	mux.HandleFunc("POST /signal", s.handleEmitSignal)
 	mux.HandleFunc("GET /signals", s.handleGetSignals)
-	s.server.Handler = mux
+
+	var handler http.Handler = mux
+	if s.authToken != "" {
+		handler = s.authMiddleware(mux)
+	}
+	s.server.Handler = handler
 
 	return s
 }
@@ -142,7 +154,8 @@ func (s *NetworkServer) handleGetNext(w http.ResponseWriter, r *http.Request) {
 
 	dc, err := s.dispatcher.GetNextStepWithHints(r.Context(), hints)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		s.log.Error("get next step failed", "error", err)
+		http.Error(w, "dispatch unavailable", http.StatusServiceUnavailable)
 		return
 	}
 
@@ -161,12 +174,13 @@ func (s *NetworkServer) handleGetNext(w http.ResponseWriter, r *http.Request) {
 func (s *NetworkServer) handleSubmit(w http.ResponseWriter, r *http.Request) {
 	var req submitRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid JSON: "+err.Error(), http.StatusBadRequest)
+		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	if err := s.dispatcher.SubmitArtifact(r.Context(), req.DispatchID, req.Data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		s.log.Error("submit artifact failed", "dispatch_id", req.DispatchID, "error", err)
+		http.Error(w, "submit failed", http.StatusInternalServerError)
 		return
 	}
 
@@ -189,7 +203,7 @@ func (s *NetworkServer) handleEmitSignal(w http.ResponseWriter, r *http.Request)
 
 	var req emitSignalRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid JSON: "+err.Error(), http.StatusBadRequest)
+		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
@@ -226,6 +240,17 @@ func (s *NetworkServer) handleGetSignals(w http.ResponseWriter, r *http.Request)
 
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(sigs)
+}
+
+func (s *NetworkServer) authMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth := r.Header.Get("Authorization")
+		if auth != "Bearer "+s.authToken {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // NetworkClient implements agentport.ExternalDispatcher by calling a remote NetworkServer
