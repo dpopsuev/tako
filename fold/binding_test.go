@@ -47,8 +47,8 @@ func TestResolve_AsteriskLike(t *testing.T) {
 	if g.Root.Name != "rca" {
 		t.Errorf("root = %q, want rca", g.Root.Name)
 	}
-	if g.Root.Factory != "NewServer" {
-		t.Errorf("root factory = %q, want NewServer", g.Root.Factory)
+	if g.Root.Hooks != "Hooks()" {
+		t.Errorf("root hooks = %q, want Hooks()", g.Root.Hooks)
 	}
 
 	if len(g.Schematics) != 0 {
@@ -83,6 +83,8 @@ func TestResolve_AsteriskLike(t *testing.T) {
 }
 
 func TestResolve_MissingBinding(t *testing.T) {
+	// rh-rca's sockets are all optional: true, so empty bindings
+	// are accepted. Verify Resolve succeeds.
 	root := origamiRoot(t)
 
 	m := &Manifest{
@@ -97,11 +99,8 @@ func TestResolve_MissingBinding(t *testing.T) {
 	}
 
 	_, err := Resolve(m, root, &DefaultModuleResolver{})
-	if err == nil {
-		t.Fatal("expected error for missing required binding")
-	}
-	if !strings.Contains(err.Error(), "no binding") {
-		t.Errorf("error = %q, want mention of no binding", err.Error())
+	if err != nil {
+		t.Fatalf("Resolve should succeed with all-optional sockets: %v", err)
 	}
 }
 

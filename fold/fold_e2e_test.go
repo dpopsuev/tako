@@ -104,11 +104,11 @@ func TestE2E_WiredBinary_OrigamiImportWithResolvers(t *testing.T) {
 	}
 	code := string(src)
 
-	if !strings.Contains(code, `origami "github.com/dpopsuev/origami/circuit"`) {
-		t.Errorf("origami import should be INCLUDED when sub-circuit resolvers are present")
-	}
-	if !strings.Contains(code, "origami.AssetResolver") {
-		t.Errorf("generated code should reference origami.AssetResolver")
+	// In hooks mode, sub-circuit resolvers aren't rendered in the
+	// generated code — the consumer's Hooks().CreateSession handles
+	// resolver wiring internally. Verify the hooks pattern is present.
+	if !strings.Contains(code, "SessionHooksToConfig") {
+		t.Errorf("generated code should use SessionHooksToConfig (hooks mode)")
 	}
 }
 

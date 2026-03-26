@@ -206,7 +206,7 @@ func TestGenerateWiredBinary_DataDirFlag(t *testing.T) {
 		`var domainFS fs.FS = domainData`,
 		`os.DirFS(*dataDir)`,
 		`domainserve.New(domainFS,`,
-		`WithDomainFS(domainFS)`,
+		`bridgedCfg.DomainFS = domainFS`,
 	} {
 		if !strings.Contains(code, want) {
 			t.Errorf("missing %q in generated code:\n%s", want, code)
@@ -256,12 +256,12 @@ func TestGenerateWiredBinary(t *testing.T) {
 		"package main",
 		`"github.com/dpopsuev/rh-rca/connectors/rp"`,
 		`"github.com/dpopsuev/rh-rca"`,
-		"rhrca.NewServer(",
-		"rhrca.WithDomainFS(domainFS)",
-		"rhrca.WithSourceReader(rp.NewSourceReader)",
+		"rhrca.Hooks()",
+		"fwmcp.SessionHooksToConfig(hooks)",
+		"bridgedCfg.DomainFS = domainFS",
 		"domainserve.New(domainFS",
 		"NewStreamableHTTPHandler",
-		"server.CircuitServer.MCPServer",
+		"fwmcp.NewCircuitServer(bridgedCfg)",
 		"/mcp",
 		"/domain/",
 		"/healthz",
