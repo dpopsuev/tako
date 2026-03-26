@@ -11,10 +11,11 @@ import (
 // RepoCache manages shallow clones of repositories on the local filesystem.
 // Clones are keyed by (org, repo, branch) and shared across parallel walkers.
 type RepoCache struct {
-	baseDir string
-	token   string
-	mu      sync.Mutex
-	cloning map[string]*cloneState
+	baseDir       string
+	token         string            // default token (from $GITHUB_TOKEN)
+	privateTokens map[string]string // org or org/repo → token (from $GITHUB_PRIVATE_REPO_TOKENS)
+	mu            sync.Mutex
+	cloning       map[string]*cloneState
 }
 
 type cloneState struct {
@@ -25,9 +26,10 @@ type cloneState struct {
 // NewRepoCache creates a cache rooted at baseDir.
 func NewRepoCache(baseDir, token string) *RepoCache {
 	return &RepoCache{
-		baseDir: baseDir,
-		token:   token,
-		cloning: make(map[string]*cloneState),
+		baseDir:       baseDir,
+		token:         token,
+		privateTokens: ResolvePrivateRepoTokens(),
+		cloning:       make(map[string]*cloneState),
 	}
 }
 
@@ -72,7 +74,8 @@ func (c *RepoCache) doClone(ctx context.Context, org, repo, branch, dest string)
 	if err := os.MkdirAll(filepath.Dir(dest), 0700); err != nil {
 		return fmt.Errorf("create cache dir: %w", err)
 	}
-	url := cloneURL(org, repo, c.token)
+	tok := TokenForOrg(c.privateTokens, org, repo, c.token)
+	url := cloneURL(org, repo, tok)
 	return shallowClone(ctx, url, branch, dest)
 }
 

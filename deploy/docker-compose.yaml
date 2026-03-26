@@ -38,6 +38,11 @@ services:
     command: ["--port", "9100", "--drivers", "git,docs"]
     volumes:
       - ${STATE_DIR:-.origami/state}/gnd:/root/.local/state/gnd
+    environment:
+      # Comma-separated list of org:token pairs for private repos.
+      # Format: org1=token1,org2=token2
+      # Public repos (openshift/*, openshift-kni/*, redhat-cne/*) need no token.
+      - GITHUB_PRIVATE_REPO_TOKENS=${GITHUB_PRIVATE_REPO_TOKENS:-}
     healthcheck:
       test: ["CMD", "/gnd-serve", "--healthz"]
       interval: 5s
