@@ -2,6 +2,7 @@ package calibrate
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -93,21 +94,7 @@ func Preflight(ctx context.Context, cfg HarnessConfig) (*PreflightReport, error)
 
 	// TSK-206: Mediator connectivity check (warning only).
 	if shared.MediatorEndpoint != "" {
-		healthURL := strings.TrimSuffix(shared.MediatorEndpoint, "/mcp") + "/healthz"
-		client := &http.Client{Timeout: 2 * time.Second}
-		resp, hErr := client.Get(healthURL)
-		if hErr != nil {
-			report.Warnings = append(report.Warnings,
-				fmt.Sprintf("mediator at %s may be unreachable: %v", shared.MediatorEndpoint, hErr))
-		} else {
-			resp.Body.Close()
-			if resp.StatusCode != http.StatusOK {
-				report.Warnings = append(report.Warnings,
-					fmt.Sprintf("mediator at %s returned status %d", shared.MediatorEndpoint, resp.StatusCode))
-			} else {
-				report.Passed = append(report.Passed, "mediator connectivity")
-			}
-		}
+		checkMediatorHealth(report, shared.MediatorEndpoint)
 	}
 
 	// Step 3: Walk the start node with a stub walker that cancels the
@@ -126,7 +113,7 @@ func Preflight(ctx context.Context, cfg HarnessConfig) (*PreflightReport, error)
 	// the walk loop to return context.Canceled on the next iteration.
 	// That is the expected outcome. Any other error (except Interrupt)
 	// means the start node itself is broken.
-	if walkErr != nil && walkErr != context.Canceled && !engine.IsInterrupt(walkErr) {
+	if walkErr != nil && !errors.Is(walkErr, context.Canceled) && !engine.IsInterrupt(walkErr) {
 		report.Errors = append(report.Errors, PreflightError{
 			Phase:  "walk",
 			Detail: walkErr.Error(),
@@ -138,6 +125,24 @@ func Preflight(ctx context.Context, cfg HarnessConfig) (*PreflightReport, error)
 
 	report.Elapsed = time.Since(start)
 	return report, nil
+}
+
+func checkMediatorHealth(report *PreflightReport, endpoint string) {
+	healthURL := strings.TrimSuffix(endpoint, "/mcp") + "/healthz"
+	client := &http.Client{Timeout: 2 * time.Second}
+	resp, hErr := client.Get(healthURL)
+	if hErr != nil {
+		report.Warnings = append(report.Warnings,
+			fmt.Sprintf("mediator at %s may be unreachable: %v", endpoint, hErr))
+		return
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		report.Warnings = append(report.Warnings,
+			fmt.Sprintf("mediator at %s returned status %d", endpoint, resp.StatusCode))
+		return
+	}
+	report.Passed = append(report.Passed, "mediator connectivity")
 }
 
 // preflightWalker is a stub Walker that returns a minimal artifact on Handle

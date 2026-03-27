@@ -168,7 +168,7 @@ func (d *FileDispatcher) Dispatch(_ context.Context, ctx agentport.Context) ([]b
 				sig.Error = fmt.Sprintf("stale artifact tolerance exceeded: %d consecutive unusable reads (last: invalid JSON: %v)",
 					staleCount, err)
 				_ = WriteSignal(signalPath, &sig)
-				return nil, fmt.Errorf("stale artifact tolerance exceeded: %d consecutive unusable reads at %s (last: invalid JSON: %v)",
+				return nil, fmt.Errorf("stale artifact tolerance exceeded: %d consecutive unusable reads at %s (last: invalid JSON: %w)",
 					staleCount, ctx.ArtifactPath, err)
 			}
 			time.Sleep(d.cfg.PollInterval)

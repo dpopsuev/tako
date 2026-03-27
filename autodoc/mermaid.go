@@ -120,10 +120,9 @@ func classifyNodes(def *circuit.CircuitDef, opts *MermaidOptions) map[string]dsC
 		}
 		if opts != nil && opts.Registry != nil {
 			if t, err := opts.Registry.Get(name); err == nil {
+				m[nd.Name] = dsStochastic
 				if engine.IsDeterministic(t) {
 					m[nd.Name] = dsDeterministic
-				} else {
-					m[nd.Name] = dsStochastic
 				}
 				continue
 			}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/dpopsuev/origami/circuit"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 )
@@ -91,36 +92,48 @@ func computeSemanticTokens(doc *document) []uint32 {
 	}
 
 	if doc.Def != nil {
-		for zoneName, zone := range doc.Def.Zones {
-			if zone.Approach == "" {
-				continue
-			}
-			idx, ok := approachTokenIndex[strings.ToLower(zone.Approach)]
-			if !ok {
-				continue
-			}
-			for i, line := range lines {
-				trimmed := strings.TrimSpace(line)
-				if trimmed == zoneName+":" || strings.HasPrefix(trimmed, zoneName+":") {
-					indent := len(line) - len(strings.TrimLeft(line, " "))
-					ctx := guessContext(lines, i)
-					if ctx == "zones" && indent > 0 {
-						col := strings.Index(line, zoneName)
-						if col >= 0 {
-							hits = append(hits, tokenHit{
-								line:      uint32(i),
-								startChar: uint32(col),
-								length:    uint32(len(zoneName)),
-								tokenType: idx,
-							})
-						}
-					}
-				}
-			}
-		}
+		hits = appendZoneTokens(hits, doc.Def, lines)
 	}
 
 	return encodeTokens(hits)
+}
+
+func appendZoneTokens(hits []tokenHit, def *circuit.CircuitDef, lines []string) []tokenHit {
+	for zoneName, zone := range def.Zones {
+		if zone.Approach == "" {
+			continue
+		}
+		idx, ok := approachTokenIndex[strings.ToLower(zone.Approach)]
+		if !ok {
+			continue
+		}
+		hits = appendZoneLineHits(hits, lines, zoneName, idx)
+	}
+	return hits
+}
+
+func appendZoneLineHits(hits []tokenHit, lines []string, zoneName string, tokenType uint32) []tokenHit {
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != zoneName+":" && !strings.HasPrefix(trimmed, zoneName+":") {
+			continue
+		}
+		indent := len(line) - len(strings.TrimLeft(line, " "))
+		ctx := guessContext(lines, i)
+		if ctx != "zones" || indent <= 0 {
+			continue
+		}
+		col := strings.Index(line, zoneName)
+		if col >= 0 {
+			hits = append(hits, tokenHit{
+				line:      uint32(i),
+				startChar: uint32(col),
+				length:    uint32(len(zoneName)),
+				tokenType: tokenType,
+			})
+		}
+	}
+	return hits
 }
 
 // encodeTokens converts absolute positions to LSP-relative encoding:

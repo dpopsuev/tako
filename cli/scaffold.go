@@ -455,43 +455,9 @@ func (b *CLIBuilder) buildCircuit() *cobra.Command {
 			}
 			format, _ := cmd.Flags().GetString("format")
 			if format == "dot" {
-				fmt.Println("digraph circuit {")
-				fmt.Println("  rankdir=LR;")
-				for _, n := range def.Nodes {
-					label := n.Name
-					if n.Approach != "" {
-						label += fmt.Sprintf(" [%s]", n.Approach)
-					}
-					fmt.Printf("  %q [label=%q];\n", n.Name, label)
-				}
-				for _, e := range def.Edges {
-					label := e.Name
-					if label == "" {
-						label = e.ID
-					}
-					fmt.Printf("  %q -> %q [label=%q];\n", e.From, e.To, label)
-				}
-				fmt.Println("}")
+				renderCircuitDot(def)
 			} else {
-				fmt.Printf("Circuit: %s\n", def.Circuit)
-				fmt.Printf("Start:    %s\n", def.Start)
-				fmt.Printf("Done:     %s\n\n", def.Done)
-				fmt.Println("Nodes:")
-				for _, n := range def.Nodes {
-					elem := ""
-					if n.Approach != "" {
-						elem = fmt.Sprintf(" [%s]", n.Approach)
-					}
-					fmt.Printf("  %-20s%s\n", n.Name, elem)
-				}
-				fmt.Println("\nEdges:")
-				for _, e := range def.Edges {
-					fmt.Printf("  %s → %s", e.From, e.To)
-					if e.When != "" {
-						fmt.Printf("  (when: %s)", e.When)
-					}
-					fmt.Println()
-				}
+				renderCircuitText(def)
 			}
 			return nil
 		},
@@ -500,6 +466,48 @@ func (b *CLIBuilder) buildCircuit() *cobra.Command {
 	pl.AddCommand(renderCmd)
 
 	return pl
+}
+
+func renderCircuitDot(def *circuit.CircuitDef) {
+	fmt.Println("digraph circuit {")
+	fmt.Println("  rankdir=LR;")
+	for _, n := range def.Nodes {
+		label := n.Name
+		if n.Approach != "" {
+			label += fmt.Sprintf(" [%s]", n.Approach)
+		}
+		fmt.Printf("  %q [label=%q];\n", n.Name, label)
+	}
+	for _, e := range def.Edges {
+		label := e.Name
+		if label == "" {
+			label = e.ID
+		}
+		fmt.Printf("  %q -> %q [label=%q];\n", e.From, e.To, label)
+	}
+	fmt.Println("}")
+}
+
+func renderCircuitText(def *circuit.CircuitDef) {
+	fmt.Printf("Circuit: %s\n", def.Circuit)
+	fmt.Printf("Start:    %s\n", def.Start)
+	fmt.Printf("Done:     %s\n\n", def.Done)
+	fmt.Println("Nodes:")
+	for _, n := range def.Nodes {
+		elem := ""
+		if n.Approach != "" {
+			elem = fmt.Sprintf(" [%s]", n.Approach)
+		}
+		fmt.Printf("  %-20s%s\n", n.Name, elem)
+	}
+	fmt.Println("\nEdges:")
+	for _, e := range def.Edges {
+		fmt.Printf("  %s → %s", e.From, e.To)
+		if e.When != "" {
+			fmt.Printf("  (when: %s)", e.When)
+		}
+		fmt.Println()
+	}
 }
 
 func (b *CLIBuilder) buildConsume() *cobra.Command {

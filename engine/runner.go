@@ -236,17 +236,16 @@ func (hw *hookingWalker) Handle(ctx context.Context, node circuit.Node, nc circu
 			}
 			continue
 		}
-		if hErr = hook.Run(hookCtx, node.Name(), artifact); hErr != nil {
-			if errors.Is(hErr, circuit.ErrFindingVeto) {
-				artifact = &VetoArtifact{Inner: artifact}
-				if hw.onHookEvent != nil {
-					hw.onHookEvent(name, "veto", hErr)
-				}
-				continue
+		hErr = hook.Run(hookCtx, node.Name(), artifact)
+		if hErr != nil && errors.Is(hErr, circuit.ErrFindingVeto) {
+			artifact = &VetoArtifact{Inner: artifact}
+			if hw.onHookEvent != nil {
+				hw.onHookEvent(name, "veto", hErr)
 			}
-			if hw.log != nil {
-				hw.log.Warn("hook error", slog.String("hook", name), slog.String("node", node.Name()), slog.String("error", hErr.Error()))
-			}
+			continue
+		}
+		if hErr != nil && hw.log != nil {
+			hw.log.Warn("hook error", slog.String("hook", name), slog.String("node", node.Name()), slog.String("error", hErr.Error()))
 		}
 		if hw.onHookEvent != nil {
 			hw.onHookEvent(name, "after", hErr)

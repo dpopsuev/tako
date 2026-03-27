@@ -98,34 +98,7 @@ func walkMap(m map[string]any, path string) any {
 	for i, key := range parts {
 		// Array projection: "files[]" → iterate array, collect remaining path.
 		if strings.HasSuffix(key, "[]") {
-			mapKey := strings.TrimSuffix(key, "[]")
-			cm, ok := current.(map[string]any)
-			if !ok {
-				return nil
-			}
-			arr, ok := cm[mapKey]
-			if !ok {
-				return nil
-			}
-			items := toAnySlice(arr)
-			if items == nil {
-				return nil
-			}
-			// If no remaining path, return the array as-is.
-			remaining := strings.Join(parts[i+1:], ".")
-			if remaining == "" {
-				return items
-			}
-			// Collect values at remaining path from each element.
-			var collected []any
-			for _, item := range items {
-				if im, ok := item.(map[string]any); ok {
-					if v := walkMap(im, remaining); v != nil {
-						collected = append(collected, v)
-					}
-				}
-			}
-			return collected
+			return walkMapArray(current, key, parts[i+1:])
 		}
 
 		cm, ok := current.(map[string]any)
@@ -138,6 +111,37 @@ func walkMap(m map[string]any, path string) any {
 		}
 	}
 	return current
+}
+
+func walkMapArray(current any, key string, remaining []string) any {
+	mapKey := strings.TrimSuffix(key, "[]")
+	cm, ok := current.(map[string]any)
+	if !ok {
+		return nil
+	}
+	arr, ok := cm[mapKey]
+	if !ok {
+		return nil
+	}
+	items := toAnySlice(arr)
+	if items == nil {
+		return nil
+	}
+	rest := strings.Join(remaining, ".")
+	if rest == "" {
+		return items
+	}
+	var collected []any
+	for _, item := range items {
+		im, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		if v := walkMap(im, rest); v != nil {
+			collected = append(collected, v)
+		}
+	}
+	return collected
 }
 
 // toAnySlice converts various slice types to []any.

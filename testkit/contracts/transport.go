@@ -2,6 +2,7 @@ package contracts
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -20,7 +21,7 @@ func RunTransportContract(t *testing.T, factory func() toolkit.Transport) {
 
 		err := tr.Serve(ctx, nil)
 		// Must return when context is cancelled — either nil or context error
-		if err != nil && err != context.DeadlineExceeded && err != context.Canceled {
+		if err != nil && !errors.Is(err, context.DeadlineExceeded) && !errors.Is(err, context.Canceled) {
 			t.Errorf("Serve returned unexpected error: %v", err)
 		}
 	})

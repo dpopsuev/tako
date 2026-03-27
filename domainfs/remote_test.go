@@ -3,6 +3,7 @@ package domainfs_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -208,7 +209,7 @@ func TestReadDir_Paging(t *testing.T) {
 	}
 
 	batch2, err := dirFile.ReadDir(2)
-	if err != io.EOF {
+	if !errors.Is(err, io.EOF) {
 		t.Fatalf("expected io.EOF, got %v", err)
 	}
 	if len(batch2) != 1 {
@@ -218,24 +219,8 @@ func TestReadDir_Paging(t *testing.T) {
 
 func isNotExist(err error) bool {
 	var pe *fs.PathError
-	if ok := errorAs(err, &pe); ok {
-		return pe.Err == fs.ErrNotExist
+	if errors.As(err, &pe) {
+		return errors.Is(pe.Err, fs.ErrNotExist)
 	}
 	return false
-}
-
-func errorAs(err error, target any) bool {
-	return fmt.Errorf("%w", err) != nil && // ensure err is non-nil
-		func() bool {
-			switch t := target.(type) {
-			case **fs.PathError:
-				pe, ok := err.(*fs.PathError)
-				if ok {
-					*t = pe
-				}
-				return ok
-			default:
-				return false
-			}
-		}()
 }

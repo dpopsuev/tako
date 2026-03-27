@@ -33,3 +33,4 @@ rh-presentation-assets.pdf
 deploy/.origami/
 deploy/ca-certificates.crt
 .claude/scheduled_tasks.lock
+.claude/worktrees/

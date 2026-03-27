@@ -75,35 +75,38 @@ func MergeScorecardDefs(base, overlay *ScorecardDef) (*ScorecardDef, error) {
 	}
 
 	for _, om := range overlay.Metrics {
-		if idx, exists := baseIdx[om.ID]; exists {
-			// Overlay tunes existing metric
-			if om.Threshold != 0 {
-				merged.Metrics[idx].Threshold = om.Threshold
-			}
-			if om.Weight != 0 {
-				merged.Metrics[idx].Weight = om.Weight
-			}
-			if om.Scorer != "" {
-				merged.Metrics[idx].Scorer = om.Scorer
-			}
-			if len(om.Params) > 0 {
-				if merged.Metrics[idx].Params == nil {
-					merged.Metrics[idx].Params = make(map[string]any)
-				}
-				for k, v := range om.Params {
-					merged.Metrics[idx].Params[k] = v
-				}
-			}
-			if om.DisplayName != "" {
-				merged.Metrics[idx].DisplayName = om.DisplayName
-			}
-		} else {
-			// New metric from overlay
+		idx, exists := baseIdx[om.ID]
+		if !exists {
 			merged.Metrics = append(merged.Metrics, om)
+			continue
 		}
+		applyMetricOverlay(&merged.Metrics[idx], om)
 	}
 
 	return &merged, nil
+}
+
+func applyMetricOverlay(base *ScorecardMetric, om ScorecardMetric) {
+	if om.Threshold != 0 {
+		base.Threshold = om.Threshold
+	}
+	if om.Weight != 0 {
+		base.Weight = om.Weight
+	}
+	if om.Scorer != "" {
+		base.Scorer = om.Scorer
+	}
+	if len(om.Params) > 0 {
+		if base.Params == nil {
+			base.Params = make(map[string]any)
+		}
+		for k, v := range om.Params {
+			base.Params[k] = v
+		}
+	}
+	if om.DisplayName != "" {
+		base.DisplayName = om.DisplayName
+	}
 }
 
 // RegisterScorecardVocabulary registers display names from scorecard metrics

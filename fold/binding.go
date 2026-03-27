@@ -223,37 +223,11 @@ func resolveSchematic(
 			return nil, fmt.Errorf("schematic %q: socket %q has no binding and is not optional", name, sock.Name)
 		}
 
-		if conn, ok := connIdx[boundTo]; ok {
-			sat := findSatisfy(conn.manifest, sock.Name)
-			if sat == nil {
-				return nil, fmt.Errorf("schematic %q socket %q: connector %q does not satisfy socket %q",
-					name, sock.Name, boundTo, sock.Name)
-			}
-			alias := importAlias(conn.manifest.Module)
-			provider := alias + "." + sat.Factory
-			if sat.WireMode() == "instance" {
-				provider = varName(boundTo, sock.Name)
-			}
-			options = append(options, ResolvedOption{
-				OptionFunc: sock.Option,
-				Provider:   provider,
-				Wire:       sat.WireMode(),
-			})
-		} else if _, ok := schemIdx[boundTo]; ok {
-			vn, exists := varNames[boundTo]
-			if !exists {
-				return nil, fmt.Errorf("schematic %q socket %q: bound schematic %q not yet resolved (cycle?)",
-					name, sock.Name, boundTo)
-			}
-			options = append(options, ResolvedOption{
-				OptionFunc: sock.Option,
-				Provider:   vn,
-				Wire:       "instance",
-			})
-		} else {
-			return nil, fmt.Errorf("schematic %q socket %q: binding %q is neither a connector nor a schematic",
-				name, sock.Name, boundTo)
+		opt, err := resolveSocketBinding(name, sock, boundTo, connIdx, schemIdx, varNames)
+		if err != nil {
+			return nil, err
 		}
+		options = append(options, opt)
 	}
 
 	return &ResolvedSchematic{
@@ -269,6 +243,43 @@ func resolveSchematic(
 		Report:   cm.Report,
 		Dispatch: cm.Dispatch,
 	}, nil
+}
+
+func resolveSocketBinding(
+	name string, sock circuit.SocketDef, boundTo string,
+	connIdx map[string]connectorEntry, schemIdx map[string]schematicEntry, varNames map[string]string,
+) (ResolvedOption, error) {
+	if conn, ok := connIdx[boundTo]; ok {
+		sat := findSatisfy(conn.manifest, sock.Name)
+		if sat == nil {
+			return ResolvedOption{}, fmt.Errorf("schematic %q socket %q: connector %q does not satisfy socket %q",
+				name, sock.Name, boundTo, sock.Name)
+		}
+		alias := importAlias(conn.manifest.Module)
+		provider := alias + "." + sat.Factory
+		if sat.WireMode() == "instance" {
+			provider = varName(boundTo, sock.Name)
+		}
+		return ResolvedOption{
+			OptionFunc: sock.Option,
+			Provider:   provider,
+			Wire:       sat.WireMode(),
+		}, nil
+	}
+	if _, ok := schemIdx[boundTo]; ok {
+		vn, exists := varNames[boundTo]
+		if !exists {
+			return ResolvedOption{}, fmt.Errorf("schematic %q socket %q: bound schematic %q not yet resolved (cycle?)",
+				name, sock.Name, boundTo)
+		}
+		return ResolvedOption{
+			OptionFunc: sock.Option,
+			Provider:   vn,
+			Wire:       "instance",
+		}, nil
+	}
+	return ResolvedOption{}, fmt.Errorf("schematic %q socket %q: binding %q is neither a connector nor a schematic",
+		name, sock.Name, boundTo)
 }
 
 func findSatisfy(cm *circuit.ComponentManifest, socketName string) *circuit.GivesDef {

@@ -2,6 +2,7 @@ package stubs
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 
@@ -90,12 +91,12 @@ func TestStubDriver_SetError_InjectsError(t *testing.T) {
 	d.SetError(injected)
 
 	_, err := d.Read(context.Background(), toolkit.Source{Name: "x"}, "y")
-	if err != injected {
+	if !errors.Is(err, injected) {
 		t.Errorf("Read error = %v, want %v", err, injected)
 	}
 
 	err = d.Ensure(context.Background(), toolkit.Source{Name: "x"})
-	if err != injected {
+	if !errors.Is(err, injected) {
 		t.Errorf("Ensure error = %v, want %v", err, injected)
 	}
 }

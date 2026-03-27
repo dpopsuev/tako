@@ -203,22 +203,26 @@ func renderDomainConfig(m *Manifest) string {
 	b.WriteString(fmt.Sprintf("\t\tVersion: %q,\n", m.Version))
 
 	if m.DomainServe != nil && m.DomainServe.Assets != nil {
-		a := m.DomainServe.Assets
-		sections := a.Sections()
-		files := a.ScalarFiles()
-		if len(sections) > 0 || len(files) > 0 {
-			b.WriteString("\t\tAssets: &domainserve.AssetIndex{\n")
-			if len(sections) > 0 {
-				b.WriteString(fmt.Sprintf("\t\t\tSections: %s,\n", goNestedMap(sections)))
-			}
-			if len(files) > 0 {
-				b.WriteString(fmt.Sprintf("\t\t\tFiles:    %s,\n", goStringMap(files)))
-			}
-			b.WriteString("\t\t},\n")
-		}
+		renderAssetIndex(&b, m.DomainServe.Assets)
 	}
 	b.WriteString("\t})\n")
 	return b.String()
+}
+
+func renderAssetIndex(b *strings.Builder, a *AssetMap) {
+	sections := a.Sections()
+	files := a.ScalarFiles()
+	if len(sections) == 0 && len(files) == 0 {
+		return
+	}
+	b.WriteString("\t\tAssets: &domainserve.AssetIndex{\n")
+	if len(sections) > 0 {
+		b.WriteString(fmt.Sprintf("\t\t\tSections: %s,\n", goNestedMap(sections)))
+	}
+	if len(files) > 0 {
+		b.WriteString(fmt.Sprintf("\t\t\tFiles:    %s,\n", goStringMap(files)))
+	}
+	b.WriteString("\t\t},\n")
 }
 
 func renderServerCreation(g *ResolvedGraph, productName string) string {

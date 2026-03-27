@@ -118,21 +118,7 @@ func New(configs []BackendConfig, opts ...Option) *Mediator {
 func (gw *Mediator) Start(ctx context.Context) error {
 	// Set up trace recording if StateDir is configured.
 	if gw.stateDir != "" {
-		if err := os.MkdirAll(gw.stateDir, 0755); err != nil {
-			slog.Warn("failed to create mediator state dir, tracing disabled",
-				"state_dir", gw.stateDir, "error", err)
-		} else {
-			tracePath := filepath.Join(gw.stateDir, "mediator-trace.jsonl")
-			rec, err := engine.NewTraceRecorder(tracePath)
-			if err != nil {
-				slog.Warn("failed to create mediator trace recorder", "error", err)
-			} else {
-				gw.recorder = rec
-				gw.Bus.OnEmit(func(sig agentport.Signal) {
-					rec.HandleSignal(sig.Timestamp, sig.Event, sig.Agent, sig.CaseID, sig.Step, sig.Meta)
-				})
-			}
-		}
+		gw.initTraceRecording()
 	}
 
 	for name, rb := range gw.backends {
@@ -174,6 +160,24 @@ func (gw *Mediator) Start(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (gw *Mediator) initTraceRecording() {
+	if err := os.MkdirAll(gw.stateDir, 0755); err != nil {
+		slog.Warn("failed to create mediator state dir, tracing disabled",
+			"state_dir", gw.stateDir, "error", err)
+		return
+	}
+	tracePath := filepath.Join(gw.stateDir, "mediator-trace.jsonl")
+	rec, err := engine.NewTraceRecorder(tracePath)
+	if err != nil {
+		slog.Warn("failed to create mediator trace recorder", "error", err)
+		return
+	}
+	gw.recorder = rec
+	gw.Bus.OnEmit(func(sig agentport.Signal) {
+		rec.HandleSignal(sig.Timestamp, sig.Event, sig.Agent, sig.CaseID, sig.Step, sig.Meta)
+	})
 }
 
 // Stop closes all discovery sessions, backend connections, and the trace recorder.

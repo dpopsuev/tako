@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"testing"
@@ -56,7 +57,7 @@ func TestMCPTransport_ServesHTTP(t *testing.T) {
 	}
 
 	cancel()
-	if err := <-errCh; err != nil && err != http.ErrServerClosed && err != context.Canceled {
+	if err := <-errCh; err != nil && !errors.Is(err, http.ErrServerClosed) && !errors.Is(err, context.Canceled) {
 		t.Errorf("Serve error: %v", err)
 	}
 }

@@ -62,35 +62,7 @@ func NewCircuitServer(cfg CircuitConfig) *CircuitServer {
 
 	// Auto-wire observer to lifecycle callbacks. Consumer-set callbacks compose.
 	if cfg.Observer != nil {
-		obs := cfg.Observer
-		origDispatched := cfg.OnStepDispatched
-		cfg.OnStepDispatched = func(caseID, step string) {
-			obs.OnStepDispatched(caseID, step)
-			if origDispatched != nil {
-				origDispatched(caseID, step)
-			}
-		}
-		origCompleted := cfg.OnStepCompleted
-		cfg.OnStepCompleted = func(caseID, step string, dispatchID int64) {
-			obs.OnStepCompleted(caseID, step, dispatchID)
-			if origCompleted != nil {
-				origCompleted(caseID, step, dispatchID)
-			}
-		}
-		origDone := cfg.OnCircuitDone
-		cfg.OnCircuitDone = func() {
-			obs.OnCircuitDone()
-			if origDone != nil {
-				origDone()
-			}
-		}
-		origEnd := cfg.OnSessionEnd
-		cfg.OnSessionEnd = func() {
-			obs.OnSessionEnd()
-			if origEnd != nil {
-				origEnd()
-			}
-		}
+		wireObserverCallbacks(&cfg)
 	}
 
 	fw := NewServer(cfg.Name, cfg.Version)
@@ -115,6 +87,59 @@ func NewCircuitServer(cfg CircuitConfig) *CircuitServer {
 		s.registerTraceTools()
 	}
 	return s
+}
+
+func wireObserverCallbacks(cfg *CircuitConfig) {
+	obs := cfg.Observer
+	origDispatched := cfg.OnStepDispatched
+	cfg.OnStepDispatched = func(caseID, step string) {
+		obs.OnStepDispatched(caseID, step)
+		if origDispatched != nil {
+			origDispatched(caseID, step)
+		}
+	}
+	origCompleted := cfg.OnStepCompleted
+	cfg.OnStepCompleted = func(caseID, step string, dispatchID int64) {
+		obs.OnStepCompleted(caseID, step, dispatchID)
+		if origCompleted != nil {
+			origCompleted(caseID, step, dispatchID)
+		}
+	}
+	origDone := cfg.OnCircuitDone
+	cfg.OnCircuitDone = func() {
+		obs.OnCircuitDone()
+		if origDone != nil {
+			origDone()
+		}
+	}
+	origEnd := cfg.OnSessionEnd
+	cfg.OnSessionEnd = func() {
+		obs.OnSessionEnd()
+		if origEnd != nil {
+			origEnd()
+		}
+	}
+}
+
+func setupTraceRecorder(stateDir, sessID string, bus *agentport.MemBus, logger *slog.Logger) (*engine.TraceRecorder, string) {
+	if stateDir == "" {
+		return nil, ""
+	}
+	runDir := filepath.Join(stateDir, "runs", sessID)
+	if err := os.MkdirAll(runDir, 0755); err != nil {
+		logger.Warn("failed to create run dir, tracing disabled",
+			"run_dir", runDir, "error", err)
+		return nil, runDir
+	}
+	recorder, recErr := engine.NewTraceRecorder(filepath.Join(runDir, "trace.jsonl"))
+	if recErr != nil {
+		logger.Warn("failed to create trace recorder", "error", recErr)
+		return nil, runDir
+	}
+	bus.OnEmit(func(sig agentport.Signal) {
+		recorder.HandleSignal(sig.Timestamp, sig.Event, sig.Agent, sig.CaseID, sig.Step, sig.Meta)
+	})
+	return recorder, runDir
 }
 
 // --- Tool input/output types ---
@@ -563,26 +588,7 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 	s.mu.Unlock()
 	sessID := fmt.Sprintf("s-%d-%d", time.Now().UnixMilli(), seqN)
 
-	var recorder *engine.TraceRecorder
-	var runDir string
-	if s.Config.StateDir != "" {
-		runDir = filepath.Join(s.Config.StateDir, "runs", sessID)
-		if err := os.MkdirAll(runDir, 0755); err != nil {
-			logger.Warn("failed to create run dir, tracing disabled",
-				"run_dir", runDir, "error", err)
-		} else {
-			var recErr error
-			recorder, recErr = engine.NewTraceRecorder(filepath.Join(runDir, "trace.jsonl"))
-			if recErr != nil {
-				logger.Warn("failed to create trace recorder",
-					"error", recErr)
-			} else {
-				bus.OnEmit(func(sig agentport.Signal) {
-					recorder.HandleSignal(sig.Timestamp, sig.Event, sig.Agent, sig.CaseID, sig.Step, sig.Meta)
-				})
-			}
-		}
-	}
+	recorder, runDir := setupTraceRecorder(s.Config.StateDir, sessID, bus, logger)
 
 	params := StartParams{
 		Parallel: parallel,
@@ -995,28 +1001,8 @@ func (s *CircuitServer) handleRunSummary(sess *CircuitSession) (any, error) {
 	}
 
 	// Extract case one-liners
-	if caseResults, ok := full["case_results"]; ok {
-		if cases, ok := caseResults.([]any); ok {
-			var oneLiners []map[string]any
-			for _, c := range cases {
-				cm, ok := c.(map[string]any)
-				if !ok {
-					continue
-				}
-				oneLiner := make(map[string]any)
-				for _, key := range []string{"case_id", "defect_type", "category", "component", "convergence", "step_count"} {
-					if v, exists := cm[key]; exists {
-						oneLiner[key] = v
-					}
-				}
-				if len(oneLiner) > 0 {
-					oneLiners = append(oneLiners, oneLiner)
-				}
-			}
-			if len(oneLiners) > 0 {
-				summary["cases"] = oneLiners
-			}
-		}
+	if oneLiners := extractCaseOneLiners(full); len(oneLiners) > 0 {
+		summary["cases"] = oneLiners
 	}
 
 	// If no structured data was extracted, return the full result as-is
@@ -1026,6 +1012,36 @@ func (s *CircuitServer) handleRunSummary(sess *CircuitSession) (any, error) {
 	}
 
 	return summary, nil
+}
+
+var caseOneLinerKeys = []string{"case_id", "defect_type", "category", "component", "convergence", "step_count"}
+
+func extractCaseOneLiners(full map[string]any) []map[string]any {
+	caseResults, ok := full["case_results"]
+	if !ok {
+		return nil
+	}
+	cases, ok := caseResults.([]any)
+	if !ok {
+		return nil
+	}
+	var oneLiners []map[string]any
+	for _, c := range cases {
+		cm, ok := c.(map[string]any)
+		if !ok {
+			continue
+		}
+		oneLiner := make(map[string]any)
+		for _, key := range caseOneLinerKeys {
+			if v, exists := cm[key]; exists {
+				oneLiner[key] = v
+			}
+		}
+		if len(oneLiner) > 0 {
+			oneLiners = append(oneLiners, oneLiner)
+		}
+	}
+	return oneLiners
 }
 
 // handleCaseDetail returns the full case_result for a single case_id.
@@ -1046,17 +1062,21 @@ func (s *CircuitServer) handleCaseDetail(sess *CircuitSession, caseID string) (a
 		return nil, fmt.Errorf("parse result: %w", err)
 	}
 
-	if caseResults, ok := full["case_results"]; ok {
-		if cases, ok := caseResults.([]any); ok {
-			for _, c := range cases {
-				cm, ok := c.(map[string]any)
-				if !ok {
-					continue
-				}
-				if cm["case_id"] == caseID {
-					return cm, nil
-				}
-			}
+	caseResults, ok := full["case_results"]
+	if !ok {
+		return nil, fmt.Errorf("case_id %q not found in results", caseID)
+	}
+	cases, ok := caseResults.([]any)
+	if !ok {
+		return nil, fmt.Errorf("case_id %q not found in results", caseID)
+	}
+	for _, c := range cases {
+		cm, ok := c.(map[string]any)
+		if !ok {
+			continue
+		}
+		if cm["case_id"] == caseID {
+			return cm, nil
 		}
 	}
 	return nil, fmt.Errorf("case_id %q not found in results", caseID)

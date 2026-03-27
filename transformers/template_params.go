@@ -32,15 +32,13 @@ func (t *TemplateParamsTransformer) Deterministic() bool { return true }
 func (t *TemplateParamsTransformer) Transform(_ context.Context, tc *engine.TransformerContext) (any, error) {
 	params := make(map[string]any)
 
-	if includeState, _ := tc.Meta["include_state"].(bool); includeState {
-		if tc.Input != nil {
-			if m, ok := tc.Input.(map[string]any); ok {
-				for k, v := range m {
-					params[k] = v
-				}
-			} else {
-				params["input"] = tc.Input
+	if includeState, _ := tc.Meta["include_state"].(bool); includeState && tc.Input != nil {
+		if m, ok := tc.Input.(map[string]any); ok {
+			for k, v := range m {
+				params[k] = v
 			}
+		} else {
+			params["input"] = tc.Input
 		}
 	}
 

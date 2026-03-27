@@ -167,16 +167,8 @@ func (n *transformerNode) Process(ctx context.Context, nc circuit.NodeContext) (
 		WalkerState: nc.WalkerState,
 	}
 
-	if typed, ok := n.trans.(TypedTransformer); ok {
-		if expected := typed.InputType(); expected != nil {
-			if tc.Input == nil {
-				return nil, fmt.Errorf("node %s: expected input type %s but got nil", tc.NodeName, expected)
-			}
-			actual := reflect.TypeOf(tc.Input)
-			if !actual.AssignableTo(expected) {
-				return nil, fmt.Errorf("node %s: input type %s not assignable to expected %s", tc.NodeName, actual, expected)
-			}
-		}
+	if err := checkTransformerInputType(n.trans, tc); err != nil {
+		return nil, err
 	}
 
 	logger.Debug("transformer executing",
@@ -203,6 +195,25 @@ func (n *transformerNode) Process(ctx context.Context, nc circuit.NodeContext) (
 		confidence: 1.0,
 		raw:        result,
 	}, nil
+}
+
+func checkTransformerInputType(trans Transformer, tc *TransformerContext) error {
+	typed, ok := trans.(TypedTransformer)
+	if !ok {
+		return nil
+	}
+	expected := typed.InputType()
+	if expected == nil {
+		return nil
+	}
+	if tc.Input == nil {
+		return fmt.Errorf("node %s: expected input type %s but got nil", tc.NodeName, expected)
+	}
+	actual := reflect.TypeOf(tc.Input)
+	if !actual.AssignableTo(expected) {
+		return fmt.Errorf("node %s: input type %s not assignable to expected %s", tc.NodeName, actual, expected)
+	}
+	return nil
 }
 
 // transformerArtifact wraps transformer output as an Artifact.

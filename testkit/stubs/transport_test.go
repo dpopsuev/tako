@@ -2,6 +2,7 @@ package stubs
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -22,7 +23,7 @@ func TestStubTransport_Serve_BlocksUntilContextCancel(t *testing.T) {
 	defer cancel()
 
 	err := st.Serve(ctx, nil)
-	if err != nil && err != context.DeadlineExceeded {
+	if err != nil && !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("Serve: %v", err)
 	}
 
@@ -50,7 +51,7 @@ func TestStubTransport_SetError_InjectsError(t *testing.T) {
 	st.SetError(injected)
 
 	err := st.Serve(context.Background(), nil)
-	if err != injected {
+	if !errors.Is(err, injected) {
 		t.Errorf("Serve error = %v, want %v", err, injected)
 	}
 }

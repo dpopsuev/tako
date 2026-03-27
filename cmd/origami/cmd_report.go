@@ -138,69 +138,75 @@ func renderReportText(w io.Writer, data []byte) error {
 
 	// Cases.
 	if len(report.CaseResults) > 0 {
-		fmt.Fprintf(w, "\n=== CASES (%d) ===\n", len(report.CaseResults))
-		fmt.Fprintf(w, "%-6s %-7s %-10s %4s  %5s  %3s  %5s  %4s  %s\n",
-			"CASE", "VER", "JOB", "COMP", "DEFCT", "CAT", "STEPS", "CONV", "ERROR")
-
-		var compOK, defOK, catOK int
-		for _, c := range report.CaseResults {
-			comp := boolMark(c.ComponentCorrect)
-			def := boolMark(c.DefectTypeCorrect)
-			cat := boolMark(c.CategoryCorrect)
-
-			if c.ComponentCorrect {
-				compOK++
-			}
-			if c.DefectTypeCorrect {
-				defOK++
-			}
-			if c.CategoryCorrect {
-				catOK++
-			}
-
-			job := c.Job
-			if job == "" {
-				job = "-"
-			}
-
-			conv := ""
-			if c.ActualConvergence > 0 {
-				conv = fmt.Sprintf("%.2f", c.ActualConvergence)
-			}
-
-			errStr := c.CircuitError
-			if len(errStr) > 40 {
-				errStr = errStr[:40] + "..."
-			}
-
-			// Truncate version and job for table alignment.
-			ver := c.Version
-			if len(ver) > 7 {
-				ver = ver[:7]
-			}
-			if len(job) > 10 {
-				job = job[:10]
-			}
-
-			fmt.Fprintf(w, "%-6s %-7s %-10s    %s      %s    %s  %5d  %4s  %s\n",
-				c.CaseID, ver, job, comp, def, cat, c.StepCount, conv, errStr)
-		}
-
-		total := len(report.CaseResults)
-		pct := func(n int) int {
-			if total == 0 {
-				return 0
-			}
-			return n * 100 / total
-		}
-
-		fmt.Fprintf(w, "\nComponent: %d/%d (%d%%)  Defect: %d/%d (%d%%)  Category: %d/%d (%d%%)\n",
-			compOK, total, pct(compOK),
-			defOK, total, pct(defOK),
-			catOK, total, pct(catOK))
+		renderCaseResults(w, report.CaseResults)
 	}
 
 	return nil
+}
+
+func renderCaseResults(w io.Writer, cases []caseResult) {
+	fmt.Fprintf(w, "\n=== CASES (%d) ===\n", len(cases))
+	fmt.Fprintf(w, "%-6s %-7s %-10s %4s  %5s  %3s  %5s  %4s  %s\n",
+		"CASE", "VER", "JOB", "COMP", "DEFCT", "CAT", "STEPS", "CONV", "ERROR")
+
+	var compOK, defOK, catOK int
+	for _, c := range cases {
+		if c.ComponentCorrect {
+			compOK++
+		}
+		if c.DefectTypeCorrect {
+			defOK++
+		}
+		if c.CategoryCorrect {
+			catOK++
+		}
+		renderCaseRow(w, c)
+	}
+
+	total := len(cases)
+	pct := func(n int) int {
+		if total == 0 {
+			return 0
+		}
+		return n * 100 / total
+	}
+
+	fmt.Fprintf(w, "\nComponent: %d/%d (%d%%)  Defect: %d/%d (%d%%)  Category: %d/%d (%d%%)\n",
+		compOK, total, pct(compOK),
+		defOK, total, pct(defOK),
+		catOK, total, pct(catOK))
+}
+
+func renderCaseRow(w io.Writer, c caseResult) {
+	comp := boolMark(c.ComponentCorrect)
+	def := boolMark(c.DefectTypeCorrect)
+	cat := boolMark(c.CategoryCorrect)
+
+	job := c.Job
+	if job == "" {
+		job = "-"
+	}
+
+	conv := ""
+	if c.ActualConvergence > 0 {
+		conv = fmt.Sprintf("%.2f", c.ActualConvergence)
+	}
+
+	errStr := c.CircuitError
+	if len(errStr) > 40 {
+		errStr = errStr[:40] + "..."
+	}
+
+	ver := c.Version
+	if len(ver) > 7 {
+		ver = ver[:7]
+	}
+	if len(job) > 10 {
+		job = job[:10]
+	}
+
+	fmt.Fprintf(w, "%-6s %-7s %-10s    %s      %s    %s  %5d  %4s  %s\n",
+		c.CaseID, ver, job, comp, def, cat, c.StepCount, conv, errStr)
 }
 
 func boolMark(b bool) string {

@@ -4,6 +4,7 @@ package engine
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -216,16 +217,9 @@ func Run(ctx context.Context, circuitPath string, input any, opts ...RunOption) 
 	startNode := def.Start
 
 	if cfg.checkpointer != nil && cfg.resumeID != "" {
-		loaded, loadErr := cfg.checkpointer.Load(cfg.resumeID)
-		if loadErr != nil {
-			return fmt.Errorf("load checkpoint %s: %w", cfg.resumeID, loadErr)
-		}
-		if loaded != nil {
-			*walker.State() = *loaded
-			startNode = loaded.CurrentNode
-			if cfg.observer != nil {
-				emitEvent(cfg.observer, circuit.WalkEvent{Type: circuit.EventWalkResumed, Node: startNode, Walker: walker.Identity().PersonaName})
-			}
+		startNode, err = resumeFromCheckpoint(cfg, walker, startNode)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -246,7 +240,7 @@ func Run(ctx context.Context, circuitPath string, input any, opts ...RunOption) 
 
 	err = runner.Walk(ctx, walker, startNode)
 
-	if err == walkInterrupted {
+	if errors.Is(err, walkInterrupted) {
 		return nil
 	}
 
@@ -260,6 +254,22 @@ func Run(ctx context.Context, circuitPath string, input any, opts ...RunOption) 
 		}
 	}
 	return err
+}
+
+func resumeFromCheckpoint(cfg *runConfig, walker circuit.Walker, startNode string) (string, error) {
+	loaded, loadErr := cfg.checkpointer.Load(cfg.resumeID)
+	if loadErr != nil {
+		return "", fmt.Errorf("load checkpoint %s: %w", cfg.resumeID, loadErr)
+	}
+	if loaded == nil {
+		return startNode, nil
+	}
+	*walker.State() = *loaded
+	startNode = loaded.CurrentNode
+	if cfg.observer != nil {
+		emitEvent(cfg.observer, circuit.WalkEvent{Type: circuit.EventWalkResumed, Node: startNode, Walker: walker.Identity().PersonaName})
+	}
+	return startNode, nil
 }
 
 // Validate loads and validates a circuit YAML without executing it.
@@ -293,21 +303,27 @@ func Validate(circuitPath string, opts ...RunOption) error {
 	}
 
 	hasRegistries := reg.Nodes != nil || reg.Edges != nil || reg.Extractors != nil || reg.Transformers != nil || reg.Hooks != nil
-	if hasRegistries {
-		if _, err := BuildGraph(def, reg); err != nil {
-			return fmt.Errorf("build graph (dry run): %w", err)
-		}
-		for _, nd := range def.Nodes {
-			for _, hookName := range nd.After {
-				if reg.Hooks != nil {
-					if _, hErr := reg.Hooks.Get(hookName); hErr != nil {
-						return fmt.Errorf("node %q: hook %q: %w", nd.Name, hookName, hErr)
-					}
-				}
+	if !hasRegistries {
+		return nil
+	}
+
+	if _, err := BuildGraph(def, reg); err != nil {
+		return fmt.Errorf("build graph (dry run): %w", err)
+	}
+	return validateNodeHooks(def, reg)
+}
+
+func validateNodeHooks(def *circuit.CircuitDef, reg GraphRegistries) error {
+	if reg.Hooks == nil {
+		return nil
+	}
+	for _, nd := range def.Nodes {
+		for _, hookName := range nd.After {
+			if _, hErr := reg.Hooks.Get(hookName); hErr != nil {
+				return fmt.Errorf("node %q: hook %q: %w", nd.Name, hookName, hErr)
 			}
 		}
 	}
-
 	return nil
 }
 

@@ -121,30 +121,8 @@ func computeHover(doc *document, pos protocol.Position, vocab circuit.RichVocabu
 		nodeName = strings.TrimSpace(strings.TrimPrefix(raw, "name:"))
 	}
 	if nodeName != "" && doc.Def != nil {
-		for _, n := range doc.Def.Nodes {
-			if n.Name == nodeName {
-				md := fmt.Sprintf("### Node: %s\n\n", n.Name)
-				if n.Description != "" {
-					md += n.Description + "\n\n"
-				}
-				handler := n.EffectiveHandler()
-				if handler != "" && handler != n.Name {
-					md += fmt.Sprintf("**Handler:** %s\n\n", handler)
-				}
-				if n.Approach != "" {
-					emoji := agentport.ApproachEmoji(agentport.Approach(n.Approach))
-					md += fmt.Sprintf("**Approach:** %s %s\n\n", emoji, n.Approach)
-				}
-				if vocab != nil {
-					if d := vocab.Description(n.Name); d != "" {
-						md += fmt.Sprintf("---\n\n%s\n\n", d)
-					}
-				}
-				md += connectedEdges(doc.Def, n.Name)
-				return &protocol.Hover{
-					Contents: protocol.MarkupContent{Kind: protocol.Markdown, Value: md},
-				}
-			}
+		if h := buildNodeHover(doc.Def, nodeName, vocab); h != nil {
+			return h
 		}
 	}
 
@@ -170,6 +148,36 @@ func computeHover(doc *document, pos protocol.Position, vocab circuit.RichVocabu
 		}
 	}
 
+	return nil
+}
+
+func buildNodeHover(def *circuit.CircuitDef, nodeName string, vocab circuit.RichVocabulary) *protocol.Hover {
+	for _, n := range def.Nodes {
+		if n.Name != nodeName {
+			continue
+		}
+		md := fmt.Sprintf("### Node: %s\n\n", n.Name)
+		if n.Description != "" {
+			md += n.Description + "\n\n"
+		}
+		handler := n.EffectiveHandler()
+		if handler != "" && handler != n.Name {
+			md += fmt.Sprintf("**Handler:** %s\n\n", handler)
+		}
+		if n.Approach != "" {
+			emoji := agentport.ApproachEmoji(agentport.Approach(n.Approach))
+			md += fmt.Sprintf("**Approach:** %s %s\n\n", emoji, n.Approach)
+		}
+		if vocab != nil {
+			if d := vocab.Description(n.Name); d != "" {
+				md += fmt.Sprintf("---\n\n%s\n\n", d)
+			}
+		}
+		md += connectedEdges(def, n.Name)
+		return &protocol.Hover{
+			Contents: protocol.MarkupContent{Kind: protocol.Markdown, Value: md},
+		}
+	}
 	return nil
 }
 

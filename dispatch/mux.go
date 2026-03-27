@@ -202,23 +202,7 @@ func (d *MuxDispatcher) GetNextStepWithHints(ctx context.Context, hints agentpor
 
 	// No match in queue. If stickiness allows stealing, return any queued item.
 	if d.shouldSteal(hints) {
-		if dc, ok := d.dequeueAny(); ok {
-			d.emitZoneShift(hints, dc)
-			d.emitDispatchRouted(dc, "steal")
-			return dc, nil
-		}
-		// Queue empty — block for the next item and return it regardless.
-		dc, err := d.receiveOne(ctx)
-		if err != nil {
-			return agentport.Context{}, err
-		}
-		if !d.matchesHints(dc, hints) {
-			d.emitZoneShift(hints, dc)
-			d.emitDispatchRouted(dc, "steal")
-		} else {
-			d.emitDispatchRouted(dc, "hint_match")
-		}
-		return dc, nil
+		return d.stealNext(ctx, hints)
 	}
 
 	// High stickiness: keep pulling items, queue non-matches, wait for a match.
@@ -233,6 +217,26 @@ func (d *MuxDispatcher) GetNextStepWithHints(ctx context.Context, hints agentpor
 		}
 		d.enqueue(dc)
 	}
+}
+
+func (d *MuxDispatcher) stealNext(ctx context.Context, hints agentport.PullHints) (agentport.Context, error) {
+	if dc, ok := d.dequeueAny(); ok {
+		d.emitZoneShift(hints, dc)
+		d.emitDispatchRouted(dc, "steal")
+		return dc, nil
+	}
+	// Queue empty — block for the next item and return it regardless.
+	dc, err := d.receiveOne(ctx)
+	if err != nil {
+		return agentport.Context{}, err
+	}
+	if !d.matchesHints(dc, hints) {
+		d.emitZoneShift(hints, dc)
+		d.emitDispatchRouted(dc, "steal")
+	} else {
+		d.emitDispatchRouted(dc, "hint_match")
+	}
+	return dc, nil
 }
 
 func (d *MuxDispatcher) getNextFIFO(ctx context.Context) (agentport.Context, error) {
