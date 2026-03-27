@@ -38,17 +38,20 @@ func TestRun_IntegrationBuild_Assets(t *testing.T) {
 
 	manifest := filepath.Join(tmpDir, "origami.yaml")
 	if err := os.WriteFile(manifest, []byte(`
-name: test-assets
-version: "0.1"
-domain_serve:
-  port: 9300
-  assets:
-    circuits:
-      rca: circuits/rca.yaml
-    prompts:
-      recall: prompts/recall.md
-    files:
-      vocabulary: vocabulary.yaml
+apiVersion: origami/v1
+kind: Board
+metadata:
+  name: test-assets
+spec:
+  domain_serve:
+    port: 9300
+    assets:
+      circuits:
+        rca: circuits/rca.yaml
+      prompts:
+        recall: prompts/recall.md
+      files:
+        vocabulary: vocabulary.yaml
 `), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -72,8 +75,11 @@ domain_serve:
 func TestRun_MissingDomainServe(t *testing.T) {
 	manifest := filepath.Join(t.TempDir(), "origami.yaml")
 	if err := os.WriteFile(manifest, []byte(`
-name: test-no-serve
-version: "1.0"
+apiVersion: origami/v1
+kind: Board
+metadata:
+  name: test-no-serve
+spec: {}
 `), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -357,15 +363,18 @@ func TestRun_IntegrationBuild_WithDomains(t *testing.T) {
 
 	manifest := filepath.Join(tmpDir, "origami.yaml")
 	os.WriteFile(manifest, []byte(`
-name: test-domains
-version: "0.1"
-domains: [ocp/ptp]
-domain_serve:
-  port: 9300
-  assets:
-    vocabulary: vocabulary.yaml
-    circuits:
-      rca: circuits/rca.yaml
+apiVersion: origami/v1
+kind: Board
+metadata:
+  name: test-domains
+spec:
+  domains: [ocp/ptp]
+  domain_serve:
+    port: 9300
+    assets:
+      vocabulary: vocabulary.yaml
+      circuits:
+        rca: circuits/rca.yaml
 `), 0644)
 
 	output := filepath.Join(t.TempDir(), "test-domains")
@@ -406,17 +415,20 @@ func TestExportDataDir_MatchesEmbedLayout(t *testing.T) {
 
 	manifest := filepath.Join(tmpDir, "origami.yaml")
 	os.WriteFile(manifest, []byte(`
-name: test-export
-version: "0.1"
-domains: [ocp/ptp]
-domain_serve:
-  port: 9300
-  assets:
-    vocabulary: vocabulary.yaml
-    circuits:
-      rca: circuits/rca.yaml
-    prompts:
-      recall: prompts/recall/judge.md
+apiVersion: origami/v1
+kind: Board
+metadata:
+  name: test-export
+spec:
+  domains: [ocp/ptp]
+  domain_serve:
+    port: 9300
+    assets:
+      vocabulary: vocabulary.yaml
+      circuits:
+        rca: circuits/rca.yaml
+      prompts:
+        recall: prompts/recall/judge.md
 `), 0644)
 
 	exportDir := filepath.Join(t.TempDir(), "exported")
@@ -467,14 +479,17 @@ func TestExportDataDir_OverwritesStaleFiles(t *testing.T) {
 
 	manifest := filepath.Join(tmpDir, "origami.yaml")
 	os.WriteFile(manifest, []byte(`
-name: test-overwrite
-version: "0.1"
-domain_serve:
-  port: 9300
-  assets:
-    vocabulary: vocabulary.yaml
-    prompts:
-      recall: prompts/recall/judge.md
+apiVersion: origami/v1
+kind: Board
+metadata:
+  name: test-overwrite
+spec:
+  domain_serve:
+    port: 9300
+    assets:
+      vocabulary: vocabulary.yaml
+      prompts:
+        recall: prompts/recall/judge.md
 `), 0644)
 
 	exportDir := filepath.Join(t.TempDir(), "exported")
@@ -780,22 +795,21 @@ func TestRun_DomainOnly_SkipsBindings(t *testing.T) {
 
 	manifest := filepath.Join(tmpDir, "origami.yaml")
 	os.WriteFile(manifest, []byte(`
-name: test-domain-only
-version: "0.1"
-schematics:
-  rca:
-    path: github.com/dpopsuev/origami-rca
-    bindings:
-      source: reportportal
-connectors:
-  reportportal:
-    path: github.com/dpopsuev/origami-rca/connectors/rp
-domain_serve:
-  port: 9300
-  assets:
-    vocabulary: vocabulary.yaml
-    circuits:
-      rca: circuits/rca.yaml
+apiVersion: origami/v1
+kind: Board
+metadata:
+  name: test-domain-only
+spec:
+  uses:
+    rca:
+      kind: schematic
+      module: github.com/dpopsuev/origami-rca
+  domain_serve:
+    port: 9300
+    assets:
+      vocabulary: vocabulary.yaml
+      circuits:
+        rca: circuits/rca.yaml
 `), 0644)
 
 	m, err := LoadManifest(manifest)

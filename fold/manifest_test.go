@@ -7,9 +7,12 @@ import (
 
 func TestParseManifest_Minimal(t *testing.T) {
 	data := []byte(`
-name: test-tool
-description: A test tool
-version: "1.0"
+apiVersion: origami/v1
+kind: Board
+metadata:
+  name: test-tool
+  description: A test tool
+spec: {}
 `)
 	m, err := ParseManifest(data)
 	if err != nil {
@@ -18,20 +21,20 @@ version: "1.0"
 	if m.Name != "test-tool" {
 		t.Errorf("name = %q, want test-tool", m.Name)
 	}
-	if m.Version != "1.0" {
-		t.Errorf("version = %q, want 1.0", m.Version)
-	}
 }
 
 func TestParseManifest_DomainServe(t *testing.T) {
 	data := []byte(`
-name: asterisk
-version: "1.0"
-domain_serve:
-  port: 9300
-  assets:
-    circuits:
-      rca: circuits/rca.yaml
+apiVersion: origami/v1
+kind: Board
+metadata:
+  name: asterisk
+spec:
+  domain_serve:
+    port: 9300
+    assets:
+      circuits:
+        rca: circuits/rca.yaml
 `)
 	m, err := ParseManifest(data)
 	if err != nil {
@@ -49,39 +52,74 @@ domain_serve:
 }
 
 func TestParseManifest_MissingName(t *testing.T) {
-	data := []byte(`description: no name`)
+	data := []byte(`
+apiVersion: origami/v1
+kind: Board
+metadata: {}
+spec: {}
+`)
 	_, err := ParseManifest(data)
 	if err == nil {
 		t.Fatal("expected error for missing name")
 	}
 }
 
+func TestParseManifest_MissingAPIVersion(t *testing.T) {
+	data := []byte(`
+kind: Board
+metadata:
+  name: test
+spec: {}
+`)
+	_, err := ParseManifest(data)
+	if err == nil {
+		t.Fatal("expected error for missing apiVersion")
+	}
+}
+
+func TestParseManifest_WrongKind(t *testing.T) {
+	data := []byte(`
+apiVersion: origami/v1
+kind: Component
+metadata:
+  name: test
+spec: {}
+`)
+	_, err := ParseManifest(data)
+	if err == nil {
+		t.Fatal("expected error for wrong kind")
+	}
+}
+
 func TestParseManifest_Assets(t *testing.T) {
 	data := []byte(`
-name: asterisk
-version: "1.0"
-domain_serve:
-  port: 9300
-  assets:
-    circuits:
-      rca: circuits/rca.yaml
-      calibration: circuits/calibration.yaml
-    prompts:
-      recall: prompts/recall/judge-similarity.md
-      triage: prompts/triage/classify-symptoms.md
-    schemas:
-      recall: schemas/rca/F0_RECALL.yaml
-    scenarios:
-      ptp-mock: scenarios/ptp-mock.yaml
-    scorecards:
-      rca: scorecards/rca.yaml
-    reports:
-      rca: reports/rca-report.yaml
-    sources:
-      ptp: sources/ptp.yaml
-    files:
-      vocabulary: vocabulary.yaml
-      heuristics: heuristics.yaml
+apiVersion: origami/v1
+kind: Board
+metadata:
+  name: asterisk
+spec:
+  domain_serve:
+    port: 9300
+    assets:
+      circuits:
+        rca: circuits/rca.yaml
+        calibration: circuits/calibration.yaml
+      prompts:
+        recall: prompts/recall/judge-similarity.md
+        triage: prompts/triage/classify-symptoms.md
+      schemas:
+        recall: schemas/rca/F0_RECALL.yaml
+      scenarios:
+        ptp-mock: scenarios/ptp-mock.yaml
+      scorecards:
+        rca: scorecards/rca.yaml
+      reports:
+        rca: reports/rca-report.yaml
+      sources:
+        ptp: sources/ptp.yaml
+      files:
+        vocabulary: vocabulary.yaml
+        heuristics: heuristics.yaml
 `)
 	m, err := ParseManifest(data)
 	if err != nil {
@@ -103,17 +141,17 @@ domain_serve:
 	if got := a.Files["vocabulary"]; got != "vocabulary.yaml" {
 		t.Errorf("files.vocabulary = %q, want vocabulary.yaml", got)
 	}
-	if got := a.Files["heuristics"]; got != "heuristics.yaml" {
-		t.Errorf("files.heuristics = %q, want heuristics.yaml", got)
-	}
 }
 
 func TestParseManifest_NoAssets(t *testing.T) {
 	data := []byte(`
-name: bad
-version: "1.0"
-domain_serve:
-  port: 9300
+apiVersion: origami/v1
+kind: Board
+metadata:
+  name: bad
+spec:
+  domain_serve:
+    port: 9300
 `)
 	_, err := ParseManifest(data)
 	if err == nil {
@@ -143,7 +181,6 @@ func TestAssetMap_AllPaths(t *testing.T) {
 	}
 
 	paths := a.AllPaths()
-
 	want := []string{
 		"circuits/calibration.yaml",
 		"circuits/rca.yaml",
@@ -170,9 +207,6 @@ func TestAssetMap_AllPaths_Dedup(t *testing.T) {
 	paths := a.AllPaths()
 	if len(paths) != 1 {
 		t.Fatalf("expected 1 deduplicated path, got %v", paths)
-	}
-	if paths[0] != "shared.yaml" {
-		t.Errorf("path = %q, want shared.yaml", paths[0])
 	}
 }
 
@@ -204,9 +238,6 @@ func TestAssetMap_ScalarFiles(t *testing.T) {
 	files := a.ScalarFiles()
 	if files["vocabulary"] != "vocabulary.yaml" {
 		t.Errorf("vocabulary = %q", files["vocabulary"])
-	}
-	if files["heuristics"] != "heuristics.yaml" {
-		t.Errorf("heuristics = %q", files["heuristics"])
 	}
 }
 

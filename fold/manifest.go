@@ -13,60 +13,85 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Manifest is the top-level origami.yaml schema (kind: board).
+// Manifest is the top-level origami.yaml schema.
+// YAML format follows K8s pattern: apiVersion/kind/metadata/spec.
+// Go struct keeps flat fields for internal convenience.
 type Manifest struct {
-	Kind        string             `yaml:"kind"`
-	Name        string             `yaml:"name"`
-	Description string             `yaml:"description"`
-	Version     string             `yaml:"version"`
-	Domains     []string           `yaml:"domains,omitempty"`
-	DomainServe *DomainServeConfig `yaml:"domain_serve,omitempty"` // TODO: rename to serve
-	Uses        map[string]UsesRef `yaml:"uses,omitempty"`
-	Bind        map[string]map[string]string `yaml:"bind,omitempty"` // schematic → socket → component
+	// Parsed directly from YAML.
+	APIVersion string `yaml:"apiVersion"`
+	Kind       string `yaml:"kind"`
 
-	// Legacy fields — kept for fold test compatibility during migration.
-	// TODO: delete after TSK-321 (migrate consumers).
-	Schematics map[string]SchematicRef `yaml:"schematics,omitempty"`
-	Connectors map[string]ConnectorRef `yaml:"connectors,omitempty"`
+	// Flat fields — populated by ParseManifest from the nested YAML.
+	Name        string
+	Description string
+	Version     string
+	Domains     []string
+	DomainServe *DomainServeConfig
+	Uses        map[string]UsesRef
+	Bind        map[string]map[string]string
+	Params      []ParamDef
+
+	// Bridge fields — populated by bridgeUsesToLegacy from Uses/Bind.
+	Schematics map[string]SchematicRef
+	Connectors map[string]ConnectorRef
+}
+
+// manifestYAML is the K8s-style YAML structure for unmarshaling.
+type manifestYAML struct {
+	APIVersion string `yaml:"apiVersion"`
+	Kind       string `yaml:"kind"`
+	Metadata   struct {
+		Name        string `yaml:"name"`
+		Description string `yaml:"description,omitempty"`
+	} `yaml:"metadata"`
+	Spec struct {
+		Domains     []string                     `yaml:"domains,omitempty"`
+		DomainServe *DomainServeConfig           `yaml:"domain_serve,omitempty"`
+		Uses        map[string]UsesRef           `yaml:"uses,omitempty"`
+		Bind        map[string]map[string]string `yaml:"bind,omitempty"`
+		Params      []ParamDef                   `yaml:"params,omitempty"`
+	} `yaml:"spec"`
 }
 
 // UsesRef declares a schematic or component used by this board.
 type UsesRef struct {
-	Kind   string `yaml:"kind"`   // "schematic" or "component"
-	Module string `yaml:"module"` // Go import path
+	Kind   string `yaml:"kind"`
+	Module string `yaml:"module"`
 }
 
-// SchematicRef declares a schematic component and its socket bindings (legacy).
+// SchematicRef is a resolved schematic with socket bindings.
 type SchematicRef struct {
-	Path     string            `yaml:"path"`
-	Bindings map[string]string `yaml:"bindings,omitempty"`
+	Path     string
+	Bindings map[string]string
 }
 
-// ConnectorRef declares a connector component (legacy).
+// ConnectorRef is a resolved connector.
 type ConnectorRef struct {
-	Path string `yaml:"path"`
+	Path string
+}
+
+// ParamDef declares an extra parameter for the circuit start tool.
+type ParamDef struct {
+	Name        string   `yaml:"name"`
+	Type        string   `yaml:"type"`
+	Description string   `yaml:"description,omitempty"`
+	Enum        []string `yaml:"enum,omitempty"`
 }
 
 // DomainServeConfig controls generation of a domain data MCP server binary.
-// When present, origami fold produces a binary (<name>-domain-serve)
-// that embeds the specified directory and serves it via domainserve.New().
 type DomainServeConfig struct {
-	Port   int          `yaml:"port"`             // listen port (default 9300)
-	Assets *AssetMap    `yaml:"assets,omitempty"` // keyed file map
-	Store  *StoreConfig `yaml:"store,omitempty"`  // storage engine config
+	Port   int          `yaml:"port"`
+	Assets *AssetMap    `yaml:"assets,omitempty"`
+	Store  *StoreConfig `yaml:"store,omitempty"`
 }
 
-// StoreConfig declares the storage backend for the domain-serve binary.
+// StoreConfig declares the storage backend.
 type StoreConfig struct {
-	Engine string `yaml:"engine"` // e.g. "sqlite"
-	Schema string `yaml:"schema"` // path to schema file, included in AllPaths
+	Engine string `yaml:"engine"`
+	Schema string `yaml:"schema"`
 }
 
-// AssetMap declares domain files by section and key. Each map section
-// (circuits, prompts, ...) maps a logical key to a file path relative
-// to origami.yaml. Vocabulary and Store are promoted scalar fields.
-// The Files section holds legacy singleton assets that don't belong
-// to a typed section; new manifests should use the promoted fields.
+// AssetMap declares domain files by section and key.
 type AssetMap struct {
 	Circuits   map[string]string `yaml:"circuits,omitempty"`
 	Prompts    map[string]string `yaml:"prompts,omitempty"`
@@ -79,8 +104,7 @@ type AssetMap struct {
 	Files      map[string]string `yaml:"files,omitempty"`
 }
 
-// AllPaths returns a deduplicated, sorted list of every file path
-// referenced by the asset map.
+// AllPaths returns a deduplicated, sorted list of every file path.
 func (a *AssetMap) AllPaths() []string {
 	seen := make(map[string]struct{})
 	for _, section := range a.allSections() {
@@ -99,9 +123,7 @@ func (a *AssetMap) AllPaths() []string {
 	return paths
 }
 
-// Sections returns the named map sections as a map of section name to
-// key-path pairs. Only non-nil sections are included.
-// Files is excluded — use ScalarFiles() for singleton assets.
+// Sections returns named map sections.
 func (a *AssetMap) Sections() map[string]map[string]string {
 	result := make(map[string]map[string]string)
 	for name, section := range map[string]map[string]string{
@@ -120,8 +142,7 @@ func (a *AssetMap) Sections() map[string]map[string]string {
 	return result
 }
 
-// ScalarFiles returns singleton asset entries as a map of name to path.
-// Includes both the legacy Files map and promoted scalar fields.
+// ScalarFiles returns singleton asset entries.
 func (a *AssetMap) ScalarFiles() map[string]string {
 	cp := make(map[string]string)
 	for k, v := range a.Files {
@@ -152,53 +173,58 @@ func LoadManifest(path string) (*Manifest, error) {
 	return ParseManifest(data)
 }
 
-// ParseManifest parses YAML bytes into a Manifest.
+// ParseManifest parses K8s-style YAML into a flat Manifest.
 func ParseManifest(data []byte) (*Manifest, error) {
-	var m Manifest
-	if err := yaml.Unmarshal(data, &m); err != nil {
+	var raw manifestYAML
+	if err := yaml.Unmarshal(data, &raw); err != nil {
 		return nil, fmt.Errorf("parse manifest: %w", err)
 	}
-	if m.Name == "" {
-		return nil, fmt.Errorf("manifest: name is required")
+	if raw.APIVersion != "origami/v1" {
+		return nil, fmt.Errorf("manifest: apiVersion must be 'origami/v1', got %q", raw.APIVersion)
 	}
+	if raw.Kind != "Board" {
+		return nil, fmt.Errorf("manifest: kind must be 'Board', got %q", raw.Kind)
+	}
+	if raw.Metadata.Name == "" {
+		return nil, fmt.Errorf("manifest: metadata.name is required")
+	}
+
+	m := &Manifest{
+		APIVersion:  raw.APIVersion,
+		Kind:        raw.Kind,
+		Name:        raw.Metadata.Name,
+		Description: raw.Metadata.Description,
+		Domains:     raw.Spec.Domains,
+		DomainServe: raw.Spec.DomainServe,
+		Uses:        raw.Spec.Uses,
+		Bind:        raw.Spec.Bind,
+		Params:      raw.Spec.Params,
+	}
+
 	if ds := m.DomainServe; ds != nil {
 		if ds.Assets == nil {
 			return nil, fmt.Errorf("domain_serve: assets is required")
 		}
 	}
-	// Validate uses: entries (new DSL)
 	for name, u := range m.Uses {
 		if u.Module == "" {
 			return nil, fmt.Errorf("uses %q: module is required", name)
 		}
 	}
-	// Validate bind: references exist in uses:
 	for schematic, bindings := range m.Bind {
-		if _, ok := m.Uses[schematic]; !ok && m.Schematics[schematic].Path == "" {
+		if _, ok := m.Uses[schematic]; !ok {
 			return nil, fmt.Errorf("bind %q: not found in uses", schematic)
 		}
 		for _, component := range bindings {
-			if _, ok := m.Uses[component]; !ok && m.Connectors[component].Path == "" {
+			if _, ok := m.Uses[component]; !ok {
 				return nil, fmt.Errorf("bind %q: component %q not found in uses", schematic, component)
 			}
 		}
 	}
-	// Legacy validation
-	for name, s := range m.Schematics {
-		if s.Path == "" {
-			return nil, fmt.Errorf("schematic %q: path is required", name)
-		}
-	}
-	for name, c := range m.Connectors {
-		if c.Path == "" {
-			return nil, fmt.Errorf("connector %q: path is required", name)
-		}
-	}
-	return &m, nil
+	return m, nil
 }
 
-// HasBindings returns true when the manifest declares schematics/connectors
-// (legacy) or uses/bind (new DSL) for declarative wiring.
+// HasBindings returns true when the manifest has uses or schematics.
 func (m *Manifest) HasBindings() bool {
 	return len(m.Schematics) > 0 || len(m.Uses) > 0
 }
@@ -214,17 +240,10 @@ var domainSubdirs = []struct {
 	{"tuning", "tuning"},
 }
 
-// domainRecursiveDirs are directories inside a domain that are walked
-// recursively and embedded with their full relative path structure.
 var domainRecursiveDirs = []string{"offline"}
-
-// domainFiles maps individual files found inside a domain to AssetMap.Files keys.
 var domainFiles = []string{"heuristics.yaml"}
 
-// MergeDiscoveredAssets scans each domain directory and merges discovered files
-// into the AssetMap. Files are registered with flat paths (e.g., "scenarios/x.yaml")
-// so the embedded FS layout matches what the runtime expects. A separate
-// copyDomainFiles step handles the physical->flat copy during fold.
+// MergeDiscoveredAssets scans each domain directory and merges discovered files.
 func (m *Manifest) MergeDiscoveredAssets(manifestDir string) error {
 	if len(m.Domains) == 0 || m.DomainServe == nil || m.DomainServe.Assets == nil {
 		return nil
@@ -292,11 +311,10 @@ func (m *Manifest) MergeDiscoveredAssets(manifestDir string) error {
 				}
 				rel, _ := filepath.Rel(domainDir, path)
 				flatPath := filepath.ToSlash(rel)
-				key := flatPath
 				if a.Files == nil {
 					a.Files = make(map[string]string)
 				}
-				a.Files[key] = flatPath
+				a.Files[flatPath] = flatPath
 				return nil
 			})
 		}
@@ -304,8 +322,6 @@ func (m *Manifest) MergeDiscoveredAssets(manifestDir string) error {
 	return nil
 }
 
-// domainPathMappings returns physical-source -> flat-embed path mappings
-// for all domain-discovered files. Used by copyDomainFiles.
 func (m *Manifest) domainPathMappings(manifestDir string) map[string]string {
 	mappings := make(map[string]string)
 	if len(m.Domains) == 0 {

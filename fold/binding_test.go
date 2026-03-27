@@ -182,26 +182,24 @@ func TestImportAlias(t *testing.T) {
 
 func TestParseManifest_WithBindings(t *testing.T) {
 	data := []byte(`
-name: asterisk
-version: "1.0"
-schematics:
-  rca:
-    path: github.com/dpopsuev/origami-rca
-    bindings:
+apiVersion: origami/v1
+kind: Board
+metadata:
+  name: asterisk
+spec:
+  uses:
+    rca:
+      kind: schematic
+      module: github.com/dpopsuev/origami-rca
+    gnd:
+      kind: schematic
+      module: github.com/dpopsuev/origami-gnd
+    reportportal:
+      kind: component
+      module: github.com/dpopsuev/origami-rca/connectors/rp
+  bind:
+    rca:
       source: reportportal
-      dsr: gnd
-  gnd:
-    path: github.com/dpopsuev/origami-gnd
-    bindings:
-      git: github
-      docs: docs
-connectors:
-  reportportal:
-    path: github.com/dpopsuev/origami-rca/connectors/rp
-  github:
-    path: connectors/github
-  docs:
-    path: connectors/docs
 `)
 	m, err := ParseManifest(data)
 	if err != nil {
@@ -210,33 +208,14 @@ connectors:
 	if !m.HasBindings() {
 		t.Error("HasBindings() = false, want true")
 	}
-	if len(m.Schematics) != 2 {
-		t.Errorf("schematics count = %d, want 2", len(m.Schematics))
+	if len(m.Uses) != 3 {
+		t.Errorf("uses count = %d, want 3", len(m.Uses))
 	}
-	if len(m.Connectors) != 3 {
-		t.Errorf("connectors count = %d, want 3", len(m.Connectors))
+	if m.Uses["rca"].Module != "github.com/dpopsuev/origami-rca" {
+		t.Errorf("uses[rca].module = %q", m.Uses["rca"].Module)
 	}
-	rca := m.Schematics["rca"]
-	if rca.Path != "github.com/dpopsuev/origami-rca" {
-		t.Errorf("rca.path = %q", rca.Path)
-	}
-	if rca.Bindings["source"] != "reportportal" {
-		t.Errorf("rca.bindings.source = %q", rca.Bindings["source"])
-	}
-}
-
-func TestParseManifest_SchematicMissingPath(t *testing.T) {
-	data := []byte(`
-name: test
-version: "1.0"
-schematics:
-  rca:
-    bindings:
-      source: reportportal
-`)
-	_, err := ParseManifest(data)
-	if err == nil {
-		t.Fatal("expected error for missing schematic path")
+	if m.Bind["rca"]["source"] != "reportportal" {
+		t.Errorf("bind[rca][source] = %q", m.Bind["rca"]["source"])
 	}
 }
 
