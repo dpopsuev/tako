@@ -1,0 +1,17 @@
+apiVersion: origami/v1
+kind: Board
+metadata:
+  name: test
+spec:
+  uses:
+    rca:
+      kind: schematic
+      module: github.com/dpopsuev/origami-rca
+  bind:
+    rca:
+      data: nonexistent
+  domain_serve:
+    port: 9300
+    assets:
+      circuits:
+        rca: circuits/rca.yaml

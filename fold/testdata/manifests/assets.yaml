@@ -1,0 +1,27 @@
+apiVersion: origami/v1
+kind: Board
+metadata:
+  name: asterisk
+spec:
+  domain_serve:
+    port: 9300
+    assets:
+      circuits:
+        rca: circuits/rca.yaml
+        calibration: circuits/calibration.yaml
+      prompts:
+        recall: prompts/recall/judge-similarity.md
+        triage: prompts/triage/classify-symptoms.md
+      schemas:
+        recall: schemas/rca/F0_RECALL.yaml
+      scenarios:
+        ptp-mock: scenarios/ptp-mock.yaml
+      scorecards:
+        rca: scorecards/rca.yaml
+      reports:
+        rca: reports/rca-report.yaml
+      sources:
+        ptp: sources/ptp.yaml
+      files:
+        vocabulary: vocabulary.yaml
+        heuristics: heuristics.yaml

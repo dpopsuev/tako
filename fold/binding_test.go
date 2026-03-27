@@ -181,27 +181,7 @@ func TestImportAlias(t *testing.T) {
 }
 
 func TestParseManifest_WithBindings(t *testing.T) {
-	data := []byte(`
-apiVersion: origami/v1
-kind: Board
-metadata:
-  name: asterisk
-spec:
-  uses:
-    rca:
-      kind: schematic
-      module: github.com/dpopsuev/origami-rca
-    gnd:
-      kind: schematic
-      module: github.com/dpopsuev/origami-gnd
-    reportportal:
-      kind: component
-      module: github.com/dpopsuev/origami-rca/connectors/rp
-  bind:
-    rca:
-      source: reportportal
-`)
-	m, err := ParseManifest(data)
+	m, err := ParseManifest(loadFixtureManifest(t, "with-bindings"))
 	if err != nil {
 		t.Fatal(err)
 	}

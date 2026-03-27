@@ -1,0 +1,17 @@
+apiVersion: origami/v1
+kind: Board
+metadata:
+  name: test
+spec:
+  uses:
+    mcp:
+      kind: component
+      module: github.com/dpopsuev/origami/connectors/mcp
+  bind:
+    nonexistent:
+      transport: mcp
+  domain_serve:
+    port: 9300
+    assets:
+      circuits:
+        rca: circuits/rca.yaml

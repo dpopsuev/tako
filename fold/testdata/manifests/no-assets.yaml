@@ -1,0 +1,7 @@
+apiVersion: origami/v1
+kind: Board
+metadata:
+  name: bad
+spec:
+  domain_serve:
+    port: 9300

@@ -3,34 +3,7 @@ package fold
 import "testing"
 
 func TestParseManifest_Board_ValidUsesAndBind(t *testing.T) {
-	yaml := `
-apiVersion: origami/v1
-kind: Board
-metadata:
-  name: asterisk
-spec:
-  uses:
-    rca:
-      kind: schematic
-      module: github.com/dpopsuev/origami-rca
-    reportportal:
-      kind: component
-      module: github.com/dpopsuev/origami-components/rp
-    mcp:
-      kind: component
-      module: github.com/dpopsuev/origami/connectors/mcp
-  bind:
-    rca:
-      data: reportportal
-      transport: mcp
-  domains: [ocp/ptp]
-  domain_serve:
-    port: 9300
-    assets:
-      circuits:
-        rca: circuits/rca.yaml
-`
-	m, err := ParseManifest([]byte(yaml))
+	m, err := ParseManifest(loadFixtureManifest(t, "board-uses-bind"))
 	if err != nil {
 		t.Fatalf("ParseManifest: %v", err)
 	}
@@ -52,101 +25,32 @@ spec:
 }
 
 func TestParseManifest_Board_RejectsUnknownBindTarget(t *testing.T) {
-	yaml := `
-apiVersion: origami/v1
-kind: Board
-metadata:
-  name: test
-spec:
-  uses:
-    rca:
-      kind: schematic
-      module: github.com/dpopsuev/origami-rca
-  bind:
-    rca:
-      data: nonexistent
-  domain_serve:
-    port: 9300
-    assets:
-      circuits:
-        rca: circuits/rca.yaml
-`
-	_, err := ParseManifest([]byte(yaml))
+	_, err := ParseManifest(loadFixtureManifest(t, "bind-unknown-target"))
 	if err == nil {
-		t.Fatal("expected error for bind referencing nonexistent component, got nil")
+		t.Fatal("expected error for bind referencing nonexistent component")
 	}
 }
 
 func TestParseManifest_Board_RejectsBindForUnknownSchematic(t *testing.T) {
-	yaml := `
-apiVersion: origami/v1
-kind: Board
-metadata:
-  name: test
-spec:
-  uses:
-    mcp:
-      kind: component
-      module: github.com/dpopsuev/origami/connectors/mcp
-  bind:
-    nonexistent:
-      transport: mcp
-  domain_serve:
-    port: 9300
-    assets:
-      circuits:
-        rca: circuits/rca.yaml
-`
-	_, err := ParseManifest([]byte(yaml))
+	_, err := ParseManifest(loadFixtureManifest(t, "bind-unknown-schematic"))
 	if err == nil {
-		t.Fatal("expected error for bind referencing nonexistent schematic, got nil")
+		t.Fatal("expected error for bind referencing nonexistent schematic")
 	}
 }
 
 func TestParseManifest_Board_RejectsMissingModule(t *testing.T) {
-	yaml := `
-apiVersion: origami/v1
-kind: Board
-metadata:
-  name: test
-spec:
-  uses:
-    rca:
-      kind: schematic
-  domain_serve:
-    port: 9300
-    assets:
-      circuits:
-        rca: circuits/rca.yaml
-`
-	_, err := ParseManifest([]byte(yaml))
+	_, err := ParseManifest(loadFixtureManifest(t, "missing-module"))
 	if err == nil {
-		t.Fatal("expected error for uses entry without module, got nil")
+		t.Fatal("expected error for uses entry without module")
 	}
 }
 
 func TestParseManifest_Board_HasBindings(t *testing.T) {
-	yaml := `
-apiVersion: origami/v1
-kind: Board
-metadata:
-  name: test
-spec:
-  uses:
-    rca:
-      kind: schematic
-      module: github.com/dpopsuev/origami-rca
-  domain_serve:
-    port: 9300
-    assets:
-      circuits:
-        rca: circuits/rca.yaml
-`
-	m, err := ParseManifest([]byte(yaml))
+	m, err := ParseManifest(loadFixtureManifest(t, "has-bindings"))
 	if err != nil {
 		t.Fatalf("ParseManifest: %v", err)
 	}
 	if !m.HasBindings() {
-		t.Error("HasBindings() = false, want true for manifest with uses")
+		t.Error("HasBindings() = false, want true")
 	}
 }

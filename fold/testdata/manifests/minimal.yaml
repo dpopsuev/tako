@@ -1,0 +1,6 @@
+apiVersion: origami/v1
+kind: Board
+metadata:
+  name: test-tool
+  description: A test tool
+spec: {}

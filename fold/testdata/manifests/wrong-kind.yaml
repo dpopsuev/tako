@@ -1,0 +1,5 @@
+apiVersion: origami/v1
+kind: Component
+metadata:
+  name: test
+spec: {}
