@@ -179,12 +179,12 @@ func TestGenerateWiredBinary_DataDirFlag(t *testing.T) {
 		},
 		Schematics: map[string]SchematicRef{
 			"rca": {
-				Path:     "github.com/dpopsuev/rh-rca",
+				Path:     "github.com/dpopsuev/origami-rca",
 				Bindings: map[string]string{"source": "reportportal"},
 			},
 		},
 		Connectors: map[string]ConnectorRef{
-			"reportportal": {Path: "github.com/dpopsuev/rh-rca/connectors/rp"},
+			"reportportal": {Path: "github.com/dpopsuev/origami-rca/connectors/rp"},
 		},
 	}
 
@@ -229,14 +229,14 @@ func TestGenerateWiredBinary(t *testing.T) {
 		},
 		Schematics: map[string]SchematicRef{
 			"rca": {
-				Path: "github.com/dpopsuev/rh-rca",
+				Path: "github.com/dpopsuev/origami-rca",
 				Bindings: map[string]string{
 					"source": "reportportal",
 				},
 			},
 		},
 		Connectors: map[string]ConnectorRef{
-			"reportportal": {Path: "github.com/dpopsuev/rh-rca/connectors/rp"},
+			"reportportal": {Path: "github.com/dpopsuev/origami-rca/connectors/rp"},
 		},
 	}
 
@@ -254,9 +254,8 @@ func TestGenerateWiredBinary(t *testing.T) {
 	for _, want := range []string{
 		"DO NOT EDIT",
 		"package main",
-		`"github.com/dpopsuev/rh-rca/connectors/rp"`,
-		`"github.com/dpopsuev/rh-rca"`,
-		"rhrca.Hooks()",
+		`"github.com/dpopsuev/origami-rca"`,
+		"origamirca.Hooks()",
 		"fwmcp.SessionHooksToConfig(hooks)",
 		"bridgedCfg.DomainFS = domainFS",
 		"domainserve.New(domainFS",

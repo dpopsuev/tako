@@ -34,12 +34,12 @@ func TestE2E_WiredBinary_NoOrigamiImportWithoutResolvers(t *testing.T) {
 		},
 		Schematics: map[string]SchematicRef{
 			"rca": {
-				Path:     "github.com/dpopsuev/rh-rca",
+				Path:     "github.com/dpopsuev/origami-rca",
 				Bindings: map[string]string{"source": "reportportal"},
 			},
 		},
 		Connectors: map[string]ConnectorRef{
-			"reportportal": {Path: "github.com/dpopsuev/rh-rca/connectors/rp"},
+			"reportportal": {Path: "github.com/dpopsuev/origami-rca/connectors/rp"},
 		},
 	}
 
@@ -75,12 +75,12 @@ func TestE2E_WiredBinary_OrigamiImportWithResolvers(t *testing.T) {
 		},
 		Schematics: map[string]SchematicRef{
 			"rca": {
-				Path:     "github.com/dpopsuev/rh-rca",
+				Path:     "github.com/dpopsuev/origami-rca",
 				Bindings: map[string]string{"source": "reportportal"},
 			},
 		},
 		Connectors: map[string]ConnectorRef{
-			"reportportal": {Path: "github.com/dpopsuev/rh-rca/connectors/rp"},
+			"reportportal": {Path: "github.com/dpopsuev/origami-rca/connectors/rp"},
 		},
 	}
 
@@ -92,7 +92,7 @@ func TestE2E_WiredBinary_OrigamiImportWithResolvers(t *testing.T) {
 	// Add a sub-schematic with a resolver to trigger NeedsOrigami
 	g.Schematics = append(g.Schematics, ResolvedSchematic{
 		Name:     "gnd",
-		Module:   "github.com/dpopsuev/rh-gnd",
+		Module:   "github.com/dpopsuev/origami-gnd",
 		Alias:    "gnd",
 		Factory:  "NewServer",
 		Resolver: "CircuitResolver",
@@ -127,10 +127,10 @@ func TestE2E_WiredBinary_ErrVariableDeclared(t *testing.T) {
 			Assets: &AssetMap{Circuits: map[string]string{"test": "circuits/test.yaml"}},
 		},
 		Schematics: map[string]SchematicRef{
-			"rca": {Path: "github.com/dpopsuev/rh-rca", Bindings: map[string]string{"source": "reportportal"}},
+			"rca": {Path: "github.com/dpopsuev/origami-rca", Bindings: map[string]string{"source": "reportportal"}},
 		},
 		Connectors: map[string]ConnectorRef{
-			"reportportal": {Path: "github.com/dpopsuev/rh-rca/connectors/rp"},
+			"reportportal": {Path: "github.com/dpopsuev/origami-rca/connectors/rp"},
 		},
 	}
 

@@ -1,6 +1,6 @@
 # GND — source access MCP server.
 #
-# Build: docker build -t origami-gnd -f deploy/Dockerfile.gnd ~/Workspace/rh-gnd
+# Build: docker build -t origami-gnd -f deploy/Dockerfile.gnd ~/Workspace/origami-gnd
 # Run:   docker run -p 9100:9100 origami-gnd --port 9100 --drivers git,docs
 
 FROM golang:1.25 AS builder

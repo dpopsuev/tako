@@ -12,10 +12,10 @@ ENV GOFLAGS=-mod=mod
 COPY . .
 RUN go mod edit \
     -dropreplace github.com/dpopsuev/bugle \
-    -dropreplace github.com/dpopsuev/rh-gnd \
-    -dropreplace github.com/dpopsuev/rh-rca \
-    -droprequire github.com/dpopsuev/rh-gnd \
-    -droprequire github.com/dpopsuev/rh-rca
+    -dropreplace github.com/dpopsuev/origami-gnd \
+    -dropreplace github.com/dpopsuev/origami-rca \
+    -droprequire github.com/dpopsuev/origami-gnd \
+    -droprequire github.com/dpopsuev/origami-rca
 RUN CGO_ENABLED=0 go build -o /mediator ./cmd/mediator
 
 FROM gcr.io/distroless/static-debian12

@@ -784,12 +784,12 @@ name: test-domain-only
 version: "0.1"
 schematics:
   rca:
-    path: github.com/dpopsuev/rh-rca
+    path: github.com/dpopsuev/origami-rca
     bindings:
       source: reportportal
 connectors:
   reportportal:
-    path: github.com/dpopsuev/rh-rca/connectors/rp
+    path: github.com/dpopsuev/origami-rca/connectors/rp
 domain_serve:
   port: 9300
   assets:

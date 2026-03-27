@@ -11,10 +11,10 @@ version: "1.0"
 uses:
   rca:
     kind: schematic
-    module: github.com/dpopsuev/rh-rca
+    module: github.com/dpopsuev/origami-rca
   reportportal:
     kind: component
-    module: github.com/dpopsuev/rh-modules/rp
+    module: github.com/dpopsuev/origami-components/rp
   mcp:
     kind: component
     module: github.com/dpopsuev/origami/connectors/mcp
@@ -45,7 +45,7 @@ domain_serve:
 	if m.Uses["rca"].Kind != "schematic" {
 		t.Errorf("Uses[rca].Kind = %q, want schematic", m.Uses["rca"].Kind)
 	}
-	if m.Uses["reportportal"].Module != "github.com/dpopsuev/rh-modules/rp" {
+	if m.Uses["reportportal"].Module != "github.com/dpopsuev/origami-components/rp" {
 		t.Errorf("Uses[reportportal].Module = %q", m.Uses["reportportal"].Module)
 	}
 	if m.Bind["rca"]["data"] != "reportportal" {
@@ -62,7 +62,7 @@ version: "1.0"
 uses:
   rca:
     kind: schematic
-    module: github.com/dpopsuev/rh-rca
+    module: github.com/dpopsuev/origami-rca
 
 bind:
   rca:
@@ -138,7 +138,7 @@ version: "1.0"
 uses:
   rca:
     kind: schematic
-    module: github.com/dpopsuev/rh-rca
+    module: github.com/dpopsuev/origami-rca
 
 domain_serve:
   port: 9300

@@ -5,7 +5,7 @@
 # Prerequisites:
 #   cd ~/Workspace/asterisk && origami fold          # builds bin/asterisk
 #   docker build -f deploy/Dockerfile.rca ~/Workspace/asterisk -t origami-rca
-#   docker build -f deploy/Dockerfile.gnd ~/Workspace/rh-gnd -t origami-gnd
+#   docker build -f deploy/Dockerfile.gnd ~/Workspace/origami-gnd -t origami-gnd
 #   docker build -f deploy/Dockerfile.mediator . -t origami-mediator
 #
 # Usage:

@@ -28,14 +28,14 @@ func TestResolve_AsteriskLike(t *testing.T) {
 		Version: "1.0",
 		Schematics: map[string]SchematicRef{
 			"rca": {
-				Path: "github.com/dpopsuev/rh-rca",
+				Path: "github.com/dpopsuev/origami-rca",
 				Bindings: map[string]string{
 					"source": "reportportal",
 				},
 			},
 		},
 		Connectors: map[string]ConnectorRef{
-			"reportportal": {Path: "github.com/dpopsuev/rh-rca/connectors/rp"},
+			"reportportal": {Path: "github.com/dpopsuev/origami-rca/connectors/rp"},
 		},
 	}
 
@@ -91,7 +91,7 @@ func TestResolve_MissingBinding(t *testing.T) {
 		Name: "test",
 		Schematics: map[string]SchematicRef{
 			"rca": {
-				Path:     "github.com/dpopsuev/rh-rca",
+				Path:     "github.com/dpopsuev/origami-rca",
 				Bindings: map[string]string{},
 			},
 		},
@@ -108,8 +108,8 @@ func TestResolve_CycleDetection(t *testing.T) {
 	m := &Manifest{
 		Name: "test",
 		Schematics: map[string]SchematicRef{
-			"a": {Path: "github.com/dpopsuev/rh-rca", Bindings: map[string]string{"source": "b"}},
-			"b": {Path: "github.com/dpopsuev/rh-gnd", Bindings: map[string]string{"git": "a"}},
+			"a": {Path: "github.com/dpopsuev/origami-rca", Bindings: map[string]string{"source": "b"}},
+			"b": {Path: "github.com/dpopsuev/origami-gnd", Bindings: map[string]string{"git": "a"}},
 		},
 		Connectors: map[string]ConnectorRef{},
 	}
@@ -127,8 +127,8 @@ func TestTopoSort_SingleRoot(t *testing.T) {
 	m := &Manifest{
 		Name: "test",
 		Schematics: map[string]SchematicRef{
-			"rca":       {Path: "github.com/dpopsuev/rh-rca", Bindings: map[string]string{"gnd": "gnd"}},
-			"gnd": {Path: "github.com/dpopsuev/rh-gnd"},
+			"rca":       {Path: "github.com/dpopsuev/origami-rca", Bindings: map[string]string{"gnd": "gnd"}},
+			"gnd": {Path: "github.com/dpopsuev/origami-gnd"},
 		},
 	}
 
@@ -148,8 +148,8 @@ func TestTopoSort_MultipleRoots(t *testing.T) {
 	m := &Manifest{
 		Name: "test",
 		Schematics: map[string]SchematicRef{
-			"a": {Path: "github.com/dpopsuev/rh-rca"},
-			"b": {Path: "github.com/dpopsuev/rh-gnd"},
+			"a": {Path: "github.com/dpopsuev/origami-rca"},
+			"b": {Path: "github.com/dpopsuev/origami-gnd"},
 		},
 	}
 
@@ -167,10 +167,10 @@ func TestImportAlias(t *testing.T) {
 		mod  string
 		want string
 	}{
-		{"github.com/dpopsuev/rh-rca/connectors/rp", "rp"},
+		{"github.com/dpopsuev/origami-rca/connectors/rp", "rp"},
 		{"github.com/dpopsuev/origami/connectors/github", "github"},
-		{"github.com/dpopsuev/rh-gnd", "rhgnd"},
-		{"github.com/dpopsuev/rh-rca/mcpconfig", "mcpconfig"},
+		{"github.com/dpopsuev/origami-gnd", "origamignd"},
+		{"github.com/dpopsuev/origami-rca/mcpconfig", "mcpconfig"},
 	}
 	for _, tt := range tests {
 		got := importAlias(tt.mod)
@@ -186,18 +186,18 @@ name: asterisk
 version: "1.0"
 schematics:
   rca:
-    path: github.com/dpopsuev/rh-rca
+    path: github.com/dpopsuev/origami-rca
     bindings:
       source: reportportal
       dsr: gnd
   gnd:
-    path: github.com/dpopsuev/rh-gnd
+    path: github.com/dpopsuev/origami-gnd
     bindings:
       git: github
       docs: docs
 connectors:
   reportportal:
-    path: github.com/dpopsuev/rh-rca/connectors/rp
+    path: github.com/dpopsuev/origami-rca/connectors/rp
   github:
     path: connectors/github
   docs:
@@ -217,7 +217,7 @@ connectors:
 		t.Errorf("connectors count = %d, want 3", len(m.Connectors))
 	}
 	rca := m.Schematics["rca"]
-	if rca.Path != "github.com/dpopsuev/rh-rca" {
+	if rca.Path != "github.com/dpopsuev/origami-rca" {
 		t.Errorf("rca.path = %q", rca.Path)
 	}
 	if rca.Bindings["source"] != "reportportal" {

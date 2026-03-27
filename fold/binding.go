@@ -467,12 +467,12 @@ func sanitize(s string) string {
 // resolveComponentPath resolves a SchematicRef/ConnectorRef path to the
 // filesystem location of component.yaml. Supports both relative paths
 // (e.g. "schematics/rca") and module-qualified paths
-// (e.g. "github.com/dpopsuev/rh-rca").
+// (e.g. "github.com/dpopsuev/origami-rca").
 func resolveComponentPath(refPath, origamiRoot string, resolver ModuleResolver) string {
 	// Module path: first segment contains a dot (e.g. "github.com").
 	if parts := strings.SplitN(refPath, "/", 2); strings.Contains(parts[0], ".") && resolver != nil {
 		// Try the full path as a module, then walk up to find the module root.
-		// For "github.com/dpopsuev/rh-rca/connectors/rp":
+		// For "github.com/dpopsuev/origami-rca/connectors/rp":
 		//   try rh-rca/connectors/rp → no go.mod
 		//   try rh-rca → has go.mod → subpath = connectors/rp
 		segments := strings.Split(refPath, "/")

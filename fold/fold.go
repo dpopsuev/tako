@@ -306,7 +306,7 @@ func createWiredBuildModule(tmpDir, name string, resolver ModuleResolver, g *Res
 }
 
 // moduleRoot extracts the module root from a Go import path.
-// "github.com/dpopsuev/rh-rca/connectors/rp" → "github.com/dpopsuev/rh-rca"
+// "github.com/dpopsuev/origami-rca/connectors/rp" → "github.com/dpopsuev/origami-rca"
 // Returns "" for standard library or origami-internal paths.
 func moduleRoot(importPath string) string {
 	parts := strings.Split(importPath, "/")

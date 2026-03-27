@@ -8,10 +8,10 @@ FROM golang:1.25 AS builder
 WORKDIR /src
 COPY go.mod go.sum ./
 # Strip local-only modules — container builds use published modules.
-RUN go mod edit -dropreplace github.com/dpopsuev/rh-gnd \
-    -droprequire github.com/dpopsuev/rh-gnd \
-    -dropreplace github.com/dpopsuev/rh-rca \
-    -droprequire github.com/dpopsuev/rh-rca
+RUN go mod edit -dropreplace github.com/dpopsuev/origami-gnd \
+    -droprequire github.com/dpopsuev/origami-gnd \
+    -dropreplace github.com/dpopsuev/origami-rca \
+    -droprequire github.com/dpopsuev/origami-rca
 RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 go build -o /llm-worker ./cmd/llm-worker
