@@ -1,0 +1,11 @@
+apiVersion: origami/v1
+kind: Component
+metadata:
+  name: test
+  namespace: test
+spec:
+  needs:
+    transports:
+      - name: bad
+        type: SourceReader
+        option: WithBad

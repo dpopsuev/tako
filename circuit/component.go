@@ -109,25 +109,78 @@ func validateSocketTypes(path, section string, sockets []SocketDef) error {
 	return nil
 }
 
+// componentManifestYAML is the K8s-style YAML structure for component.yaml.
+type componentManifestYAML struct {
+	APIVersion string `yaml:"apiVersion"`
+	Kind       string `yaml:"kind"`
+	Metadata   struct {
+		Name        string `yaml:"name"`
+		Module      string `yaml:"module"`
+		Namespace   string `yaml:"namespace"`
+		Description string `yaml:"description,omitempty"`
+	} `yaml:"metadata"`
+	Spec struct {
+		Version   string `yaml:"version,omitempty"`
+		Hooks     string `yaml:"hooks,omitempty"`
+		Resolver  string `yaml:"resolver,omitempty"`
+		Provides  struct {
+			Transformers []string `yaml:"transformers,omitempty"`
+			Extractors   []string `yaml:"extractors,omitempty"`
+			Hooks        []string `yaml:"hooks,omitempty"`
+		} `yaml:"provides,omitempty"`
+		Needs struct {
+			Origami    string      `yaml:"origami,omitempty"`
+			Transports []SocketDef `yaml:"transports,omitempty"`
+			Sources    []SocketDef `yaml:"sources,omitempty"`
+			Storage    []SocketDef `yaml:"storage,omitempty"`
+		} `yaml:"needs,omitempty"`
+		Gives    []GivesDef  `yaml:"gives,omitempty"`
+		Params   []ParamDef  `yaml:"params,omitempty"`
+		Schemas  []string    `yaml:"schemas,omitempty"`
+		Report   string      `yaml:"report,omitempty"`
+		Dispatch DispatchDef `yaml:"dispatch,omitempty"`
+	} `yaml:"spec"`
+}
+
 // LoadComponentManifest reads and parses a component.yaml file.
+// Accepts K8s-style format: apiVersion/kind/metadata/spec.
 func LoadComponentManifest(path string) (*ComponentManifest, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("read component manifest %s: %w", path, err)
 	}
-	var m ComponentManifest
-	if err := yamlUnmarshal(data, &m); err != nil {
+	var raw componentManifestYAML
+	if err := yamlUnmarshal(data, &raw); err != nil {
 		return nil, fmt.Errorf("parse component manifest %s: %w", path, err)
 	}
-	if m.Kind == "" {
-		return nil, fmt.Errorf("component manifest %s: kind is required (must be \"component\")", path)
+	if raw.APIVersion != "origami/v1" {
+		return nil, fmt.Errorf("component manifest %s: apiVersion must be 'origami/v1', got %q", path, raw.APIVersion)
 	}
-	if m.Kind != "component" {
-		return nil, fmt.Errorf("component manifest %s: kind must be \"component\", got %q", path, m.Kind)
+	if raw.Kind != "Schematic" && raw.Kind != "Component" {
+		return nil, fmt.Errorf("component manifest %s: kind must be 'Schematic' or 'Component', got %q", path, raw.Kind)
 	}
-	if m.Namespace == "" {
-		return nil, fmt.Errorf("component manifest %s: namespace is required", path)
+	if raw.Metadata.Namespace == "" {
+		return nil, fmt.Errorf("component manifest %s: metadata.namespace is required", path)
 	}
+
+	m := &ComponentManifest{
+		Kind:        raw.Kind,
+		Component:   raw.Metadata.Name,
+		Module:      raw.Metadata.Module,
+		Namespace:   raw.Metadata.Namespace,
+		Version:     raw.Spec.Version,
+		Description: raw.Metadata.Description,
+		Resolver:    raw.Spec.Resolver,
+		Provides:    raw.Spec.Provides,
+		Needs:       raw.Spec.Needs,
+		Gives:       raw.Spec.Gives,
+		Params:      raw.Spec.Params,
+		Schemas:     raw.Spec.Schemas,
+		Report:      raw.Spec.Report,
+		Dispatch:    raw.Spec.Dispatch,
+		Hooks:       raw.Spec.Hooks,
+	}
+
 	// S40-S42: enforce socket type constraints per needs section.
 	for section, sockets := range map[string][]SocketDef{
 		"transports": m.Needs.Transports,
@@ -138,5 +191,5 @@ func LoadComponentManifest(path string) (*ComponentManifest, error) {
 			return nil, err
 		}
 	}
-	return &m, nil
+	return m, nil
 }

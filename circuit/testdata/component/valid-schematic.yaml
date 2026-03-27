@@ -1,0 +1,7 @@
+apiVersion: origami/v1
+kind: Schematic
+metadata:
+  name: test
+  namespace: test
+spec:
+  hooks: "Hooks()"

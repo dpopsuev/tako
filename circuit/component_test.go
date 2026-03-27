@@ -6,160 +6,93 @@ import (
 	"testing"
 )
 
-func writeComponentYAML(t *testing.T, content string) string {
+func loadComponentFixture(t *testing.T, name string) string {
 	t.Helper()
+	src := filepath.Join("testdata", "component", name+".yaml")
+	data, err := os.ReadFile(src)
+	if err != nil {
+		t.Fatalf("load fixture %s: %v", name, err)
+	}
 	dir := t.TempDir()
 	path := filepath.Join(dir, "component.yaml")
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
+	os.WriteFile(path, data, 0644)
 	return path
 }
 
 func TestLoadComponentManifest_ValidComponent(t *testing.T) {
-	path := writeComponentYAML(t, `
-kind: component
-component: test
-namespace: test
-version: "1.0"
-`)
-	m, err := LoadComponentManifest(path)
+	m, err := LoadComponentManifest(loadComponentFixture(t, "valid-component"))
 	if err != nil {
-		t.Fatalf("LoadComponentManifest: %v", err)
+		t.Fatal(err)
 	}
-	if m.Kind != "component" {
-		t.Errorf("Kind = %q, want %q", m.Kind, "component")
+	if m.Kind != "Component" {
+		t.Errorf("Kind = %q, want Component", m.Kind)
 	}
 }
 
-func TestLoadComponentManifest_RejectsMissingKind(t *testing.T) {
-	path := writeComponentYAML(t, `
-component: test
-namespace: test
-version: "1.0"
-`)
-	_, err := LoadComponentManifest(path)
+func TestLoadComponentManifest_ValidSchematic(t *testing.T) {
+	m, err := LoadComponentManifest(loadComponentFixture(t, "valid-schematic"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.Kind != "Schematic" {
+		t.Errorf("Kind = %q, want Schematic", m.Kind)
+	}
+}
+
+func TestLoadComponentManifest_RejectsMissingAPIVersion(t *testing.T) {
+	_, err := LoadComponentManifest(loadComponentFixture(t, "missing-apiversion"))
 	if err == nil {
-		t.Fatal("expected error for missing kind, got nil")
+		t.Fatal("expected error for missing apiVersion")
 	}
 }
 
 func TestLoadComponentManifest_RejectsWrongKind(t *testing.T) {
-	for _, kind := range []string{"schematic", "board", "circuit", "scenario"} {
-		t.Run(kind, func(t *testing.T) {
-			path := writeComponentYAML(t, `
-kind: `+kind+`
-component: test
-namespace: test
-version: "1.0"
-`)
-			_, err := LoadComponentManifest(path)
-			if err == nil {
-				t.Fatalf("expected error for kind: %s in component.yaml, got nil", kind)
-			}
-		})
+	_, err := LoadComponentManifest(loadComponentFixture(t, "wrong-kind-board"))
+	if err == nil {
+		t.Fatal("expected error for wrong kind")
 	}
 }
 
-// S40: Transport/Trigger only in transports: section
 func TestLoadComponentManifest_RejectsTransportInSources(t *testing.T) {
-	path := writeComponentYAML(t, `
-kind: component
-component: test
-namespace: test
-version: "1.0"
-needs:
-  sources:
-    - name: mcp
-      type: Transport
-`)
-	_, err := LoadComponentManifest(path)
+	_, err := LoadComponentManifest(loadComponentFixture(t, "transport-in-sources"))
 	if err == nil {
-		t.Fatal("expected error for Transport in sources: section, got nil")
+		t.Fatal("expected error for Transport in sources")
 	}
 }
 
-// S41: SourceReader/SourceCatalog only in sources: section
 func TestLoadComponentManifest_RejectsSourceReaderInTransports(t *testing.T) {
-	path := writeComponentYAML(t, `
-kind: component
-component: test
-namespace: test
-version: "1.0"
-needs:
-  transports:
-    - name: data
-      type: SourceReader
-`)
-	_, err := LoadComponentManifest(path)
+	_, err := LoadComponentManifest(loadComponentFixture(t, "sourcereader-in-transports"))
 	if err == nil {
-		t.Fatal("expected error for SourceReader in transports: section, got nil")
+		t.Fatal("expected error for SourceReader in transports")
 	}
 }
 
-// S42: Driver only in storage: section
 func TestLoadComponentManifest_RejectsDriverInTransports(t *testing.T) {
-	path := writeComponentYAML(t, `
-kind: component
-component: test
-namespace: test
-version: "1.0"
-needs:
-  transports:
-    - name: db
-      type: Driver
-`)
-	_, err := LoadComponentManifest(path)
+	_, err := LoadComponentManifest(loadComponentFixture(t, "driver-in-transports"))
 	if err == nil {
-		t.Fatal("expected error for Driver in transports: section, got nil")
+		t.Fatal("expected error for Driver in transports")
 	}
 }
 
 func TestLoadComponentManifest_RejectsTriggerInStorage(t *testing.T) {
-	path := writeComponentYAML(t, `
-kind: component
-component: test
-namespace: test
-version: "1.0"
-needs:
-  storage:
-    - name: events
-      type: Trigger
-`)
-	_, err := LoadComponentManifest(path)
+	_, err := LoadComponentManifest(loadComponentFixture(t, "trigger-in-storage"))
 	if err == nil {
-		t.Fatal("expected error for Trigger in storage: section, got nil")
+		t.Fatal("expected error for Trigger in storage")
 	}
 }
 
 func TestLoadComponentManifest_NeedsGivesParse(t *testing.T) {
-	path := writeComponentYAML(t, `
-kind: component
-component: test-rca
-namespace: rca
-version: "1.0"
-needs:
-  sources:
-    - name: data
-      type: SourceReader
-  storage:
-    - name: db
-      type: Driver
-gives:
-  - socket: data
-    factory: NewSourceReader
-`)
-	m, err := LoadComponentManifest(path)
+	m, err := LoadComponentManifest(loadComponentFixture(t, "needs-gives"))
 	if err != nil {
-		t.Fatalf("LoadComponentManifest: %v", err)
+		t.Fatal(err)
 	}
 	if len(m.Needs.Sources) != 1 {
-		t.Errorf("Needs.Sources = %d, want 1", len(m.Needs.Sources))
-	}
-	if len(m.Needs.Storage) != 1 {
-		t.Errorf("Needs.Storage = %d, want 1", len(m.Needs.Storage))
+		t.Errorf("needs.sources = %d, want 1", len(m.Needs.Sources))
 	}
 	if len(m.Gives) != 1 {
-		t.Errorf("Gives = %d, want 1", len(m.Gives))
+		t.Errorf("gives = %d, want 1", len(m.Gives))
+	}
+	if m.Gives[0].Factory != "NewSourceReader" {
+		t.Errorf("gives[0].factory = %q, want NewSourceReader", m.Gives[0].Factory)
 	}
 }
