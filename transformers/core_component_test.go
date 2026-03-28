@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/origami/agentport"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
 )
 
@@ -72,9 +73,9 @@ func TestTemplateParamsTransformer_Basic(t *testing.T) {
 	tc := &engine.TransformerContext{
 		NodeName: "build-context",
 		Config:   map[string]any{"env": "prod"},
-		Meta: map[string]any{
-			"include_config": true,
-			"extra":          map[string]any{"step": "recall"},
+		NodeConfig: &circuit.NodeConfig{
+			IncludeConfig: true,
+			Extra:         map[string]any{"step": "recall"},
 		},
 	}
 
@@ -104,8 +105,8 @@ func TestTemplateParamsTransformer_IncludeState(t *testing.T) {
 	tc := &engine.TransformerContext{
 		NodeName: "merge",
 		Input:    map[string]any{"findings": []string{"f1"}},
-		Meta: map[string]any{
-			"include_state": true,
+		NodeConfig: &circuit.NodeConfig{
+			IncludeState: true,
 		},
 	}
 
@@ -126,9 +127,9 @@ func TestTemplateParamsTransformer_Pick(t *testing.T) {
 	tc := &engine.TransformerContext{
 		NodeName: "filter",
 		Config:   map[string]any{"env": "prod", "debug": true, "region": "us"},
-		Meta: map[string]any{
-			"include_config": true,
-			"pick":           []any{"env", "region"},
+		NodeConfig: &circuit.NodeConfig{
+			IncludeConfig: true,
+			Pick:          []string{"env", "region"},
 		},
 	}
 

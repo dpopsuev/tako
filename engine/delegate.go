@@ -67,11 +67,12 @@ func (a *DelegateArtifact) confidence() float64 {
 // dslDelegateNode is a DelegateNode produced by BuildGraph when a circuit.NodeDef
 // has delegate: true and generator: set.
 type dslDelegateNode struct {
-	name    string
-	element circuit.Element
-	gen     Transformer
-	config  map[string]any
-	meta    map[string]any
+	name       string
+	element    circuit.Element
+	gen        Transformer
+	config     map[string]any
+	nodeConfig *circuit.NodeConfig
+	meta       map[string]any
 }
 
 func (n *dslDelegateNode) Name() string             { return n.name }
@@ -95,6 +96,7 @@ func (n *dslDelegateNode) GenerateCircuit(ctx context.Context, nc circuit.NodeCo
 		Input:       input,
 		Config:      n.config,
 		NodeName:    n.name,
+		NodeConfig:  n.nodeConfig,
 		Meta:        n.meta,
 		WalkerState: nc.WalkerState,
 	}

@@ -33,20 +33,24 @@ func (t *matchTransformer) Name() string        { return transformerNameMatch }
 func (t *matchTransformer) Deterministic() bool { return true }
 
 func (t *matchTransformer) Transform(_ context.Context, tc *engine.TransformerContext) (any, error) {
-	evaluator, _ := tc.Meta["evaluator"].(*MatchEvaluator)
-	if evaluator == nil {
-		return nil, fmt.Errorf("match transformer: no evaluator in meta")
+	if tc.NodeConfig == nil {
+		return nil, fmt.Errorf("match transformer: no node config")
 	}
 
-	ruleSetName, _ := tc.Meta["rule_set"].(string)
+	evaluator, _ := tc.NodeConfig.Evaluator.(*MatchEvaluator)
+	if evaluator == nil {
+		return nil, fmt.Errorf("match transformer: no evaluator in config")
+	}
+
+	ruleSetName := tc.NodeConfig.RuleSet
 	if ruleSetName == "" {
-		return nil, fmt.Errorf("match transformer: rule_set not specified in meta")
+		return nil, fmt.Errorf("match transformer: rule_set not specified in config")
 	}
 
 	text, _ := tc.Input.(string)
 	if text == "" {
 		if m, ok := tc.Input.(map[string]any); ok {
-			field, _ := tc.Meta["field"].(string)
+			field := tc.NodeConfig.Field
 			if field == "" {
 				field = "text"
 			}

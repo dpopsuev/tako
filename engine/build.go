@@ -234,14 +234,15 @@ func resolveHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegi
 			return nil, err
 		}
 		return &transformerNode{
-			name:     nd.Name,
-			element:  elem,
-			trans:    t,
-			prompt:   nd.Prompt,
-			input:    nd.Input,
-			provider: nd.Provider,
-			config:   def.Vars,
-			meta:     nd.Meta,
+			name:       nd.Name,
+			element:    elem,
+			trans:      t,
+			prompt:     nd.Prompt,
+			input:      nd.Input,
+			provider:   nd.Provider,
+			config:     def.Vars,
+			nodeConfig: nd.EffectiveConfig(),
+			meta:       nd.Meta,
 		}, nil
 
 	case HandlerTypeExtractor:
@@ -287,11 +288,12 @@ func resolveHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegi
 			return nil, fmt.Errorf("node %q: delegate handler: %w", nd.Name, err)
 		}
 		return &dslDelegateNode{
-			name:    nd.Name,
-			element: elem,
-			gen:     gen,
-			config:  def.Vars,
-			meta:    nd.Meta,
+			name:       nd.Name,
+			element:    elem,
+			gen:        gen,
+			config:     def.Vars,
+			nodeConfig: nd.EffectiveConfig(),
+			meta:       nd.Meta,
 		}, nil
 
 	case HandlerTypeCircuit:
@@ -326,11 +328,12 @@ func resolveHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegi
 				"endpoint", reg.MediatorEndpoint,
 			)
 			return &transformerNode{
-				name:    nd.Name,
-				element: elem,
-				trans:   &MCPCircuitTransformer{CircuitType: handler, Endpoint: reg.MediatorEndpoint},
-				config:  def.Vars,
-				meta:    nd.Meta,
+				name:       nd.Name,
+				element:    elem,
+				trans:      &MCPCircuitTransformer{CircuitType: handler, Endpoint: reg.MediatorEndpoint},
+				config:     def.Vars,
+				nodeConfig: nd.EffectiveConfig(),
+				meta:       nd.Meta,
 			}, nil
 		}
 		return nil, fmt.Errorf("node %q: circuit handler %q not found (no local circuit and no mediator endpoint)", nd.Name, handler)
@@ -379,7 +382,8 @@ func resolveExtractor(def *circuit.CircuitDef, name string, nd *circuit.NodeDef,
 	case BuiltinExtractorJSONSchema:
 		return &JSONSchemaExtractor{Schema: nd.Schema}, nil
 	case BuiltinExtractorRegex:
-		pattern, _ := nd.Meta["pattern"].(string)
+		cfg := nd.EffectiveConfig()
+		pattern := cfg.Pattern
 		if pattern == "" {
 			return nil, fmt.Errorf("node %q: regex extractor requires meta.pattern", nd.Name)
 		}

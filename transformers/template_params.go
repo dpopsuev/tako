@@ -2,8 +2,8 @@ package transformers
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
 )
 
@@ -34,7 +34,12 @@ func (t *TemplateParamsTransformer) Deterministic() bool { return true }
 func (t *TemplateParamsTransformer) Transform(_ context.Context, tc *engine.TransformerContext) (any, error) {
 	params := make(map[string]any)
 
-	if includeState, _ := tc.Meta["include_state"].(bool); includeState && tc.Input != nil {
+	cfg := tc.NodeConfig
+	if cfg == nil {
+		cfg = &circuit.NodeConfig{}
+	}
+
+	if cfg.IncludeState && tc.Input != nil {
 		if m, ok := tc.Input.(map[string]any); ok {
 			for k, v := range m {
 				params[k] = v
@@ -44,25 +49,19 @@ func (t *TemplateParamsTransformer) Transform(_ context.Context, tc *engine.Tran
 		}
 	}
 
-	if includeConfig, _ := tc.Meta["include_config"].(bool); includeConfig {
+	if cfg.IncludeConfig {
 		for k, v := range tc.Config {
 			params[k] = v
 		}
 	}
 
-	if extra, ok := tc.Meta["extra"].(map[string]any); ok {
-		for k, v := range extra {
-			params[k] = v
-		}
+	for k, v := range cfg.Extra {
+		params[k] = v
 	}
 
-	if keys, ok := tc.Meta["pick"].([]any); ok {
-		picked := make(map[string]any, len(keys))
-		for _, k := range keys {
-			key, ok := k.(string)
-			if !ok {
-				return nil, fmt.Errorf("template-params: pick key must be string, got %T", k)
-			}
+	if len(cfg.Pick) > 0 {
+		picked := make(map[string]any, len(cfg.Pick))
+		for _, key := range cfg.Pick {
 			if v, exists := params[key]; exists {
 				picked[key] = v
 			}

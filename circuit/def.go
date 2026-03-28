@@ -127,6 +127,42 @@ type OutputField struct {
 	Required bool   `yaml:"required,omitempty"`
 }
 
+// NodeConfig carries typed handler configuration for a circuit node.
+// Replaces the untyped Meta map[string]any field. Unknown keys go to Extras.
+type NodeConfig struct {
+	// Template params (template-params transformer)
+	IncludeState  bool           `yaml:"include_state,omitempty"`
+	IncludeConfig bool           `yaml:"include_config,omitempty"`
+	Pick          []string       `yaml:"pick,omitempty"`
+	Extra         map[string]any `yaml:"extra,omitempty"`
+
+	// HTTP transformer
+	Headers map[string]string `yaml:"headers,omitempty"`
+
+	// Match transformer
+	RuleSet string `yaml:"rule_set,omitempty"`
+	Field   string `yaml:"field,omitempty"`
+
+	// LLM transformer
+	ArtifactPath string `yaml:"artifact_path,omitempty"`
+
+	// Build / extractor
+	Pattern string `yaml:"pattern,omitempty"`
+
+	// Hook output
+	OutputPath string `yaml:"output_path,omitempty"`
+
+	// Limits
+	MaxRetries int `yaml:"max_retries,omitempty"`
+	MaxTokens  int `yaml:"max_tokens,omitempty"`
+
+	// Programmatic — not from YAML
+	Evaluator any `yaml:"-"` // *toolkit.MatchEvaluator, set by consumer code
+
+	// Controlled escape hatch for domain-specific keys
+	Extras map[string]any `yaml:"extras,omitempty"`
+}
+
 // NodeDef declares a node in the circuit.
 //
 // Resolution uses handler_type + handler (explicit, no cascade).
@@ -148,12 +184,75 @@ type NodeDef struct {
 	After       []string        `yaml:"after,omitempty"`
 	Schema      *ArtifactSchema `yaml:"schema,omitempty"`
 	Cache       *CacheDef       `yaml:"cache,omitempty"`
-	Meta        map[string]any  `yaml:"meta,omitempty"`
+	Config      *NodeConfig     `yaml:"config,omitempty"`
+	Meta        map[string]any  `yaml:"meta,omitempty"` // deprecated: use Config
 
 	// Vocabulary and output schema
 	Code        string        `yaml:"code,omitempty"`         // machine code (e.g. "F0")
 	DisplayName string        `yaml:"display_name,omitempty"` // human name (e.g. "Recall")
 	Output      []OutputField `yaml:"output,omitempty"`
+}
+
+// EffectiveConfig returns the node's typed config, merging legacy Meta if needed.
+func (nd *NodeDef) EffectiveConfig() *NodeConfig {
+	if nd.Config != nil {
+		return nd.Config
+	}
+	if nd.Meta == nil {
+		return &NodeConfig{}
+	}
+	// Bridge legacy Meta to typed config
+	cfg := &NodeConfig{Extras: make(map[string]any)}
+	for k, v := range nd.Meta {
+		switch k {
+		case "include_state":
+			cfg.IncludeState, _ = v.(bool)
+		case "include_config":
+			cfg.IncludeConfig, _ = v.(bool)
+		case "pick":
+			if arr, ok := v.([]any); ok {
+				for _, item := range arr {
+					if s, ok := item.(string); ok {
+						cfg.Pick = append(cfg.Pick, s)
+					}
+				}
+			}
+		case "extra":
+			cfg.Extra, _ = v.(map[string]any)
+		case "headers":
+			if h, ok := v.(map[string]any); ok {
+				cfg.Headers = make(map[string]string, len(h))
+				for hk, hv := range h {
+					if s, ok := hv.(string); ok {
+						cfg.Headers[hk] = s
+					}
+				}
+			}
+		case "rule_set":
+			cfg.RuleSet, _ = v.(string)
+		case "field":
+			cfg.Field, _ = v.(string)
+		case "evaluator":
+			cfg.Evaluator = v
+		case "artifact_path":
+			cfg.ArtifactPath, _ = v.(string)
+		case "pattern":
+			cfg.Pattern, _ = v.(string)
+		case "output_path":
+			cfg.OutputPath, _ = v.(string)
+		case "max_retries":
+			if i, ok := v.(int); ok {
+				cfg.MaxRetries = i
+			}
+		case "max_tokens":
+			if i, ok := v.(int); ok {
+				cfg.MaxTokens = i
+			}
+		default:
+			cfg.Extras[k] = v
+		}
+	}
+	return cfg
 }
 
 // EffectiveHandlerType returns the handler type for this node, resolving

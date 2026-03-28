@@ -50,12 +50,13 @@ type TypedTransformer interface {
 
 // TransformerContext carries all inputs needed by a transformer.
 type TransformerContext struct {
-	Input       any            // prior node's output (or circuit input)
-	Config      map[string]any // circuit vars
-	Prompt      string         // prompt template path or content
-	NodeName    string         // current node name
-	Meta        map[string]any // additional metadata from circuit.NodeDef or walk state
-	WalkerState *circuit.WalkerState   // walker state including context, outputs, and loop counts
+	Input       any                  // prior node's output (or circuit input)
+	Config      map[string]any       // circuit vars
+	Prompt      string               // prompt template path or content
+	NodeName    string               // current node name
+	NodeConfig  *circuit.NodeConfig  // typed node configuration
+	Meta        map[string]any       // deprecated: use NodeConfig
+	WalkerState *circuit.WalkerState // walker state including context, outputs, and loop counts
 }
 
 // TransformerRegistry maps transformer names to implementations.
@@ -94,14 +95,15 @@ func (r TransformerRegistry) Register(t Transformer) {
 // transformerNode is a Node that delegates to a Transformer.
 // Created by BuildGraph when handler_type is "transformer".
 type transformerNode struct {
-	name     string
-	element  circuit.Element
-	trans    Transformer
-	prompt   string         // from circuit.NodeDef.Prompt
-	input    string         // from circuit.NodeDef.Input (e.g. "${recall.output}")
-	provider string         // from circuit.NodeDef.Provider (e.g. "cursor", "codex")
-	config   map[string]any // circuit vars (from circuit.CircuitDef.Vars)
-	meta     map[string]any // from circuit.NodeDef.Meta
+	name       string
+	element    circuit.Element
+	trans      Transformer
+	prompt     string              // from circuit.NodeDef.Prompt
+	input      string              // from circuit.NodeDef.Input (e.g. "${recall.output}")
+	provider   string              // from circuit.NodeDef.Provider (e.g. "cursor", "codex")
+	config     map[string]any      // circuit vars (from circuit.CircuitDef.Vars)
+	nodeConfig *circuit.NodeConfig // from NodeDef.EffectiveConfig()
+	meta       map[string]any      // deprecated: from circuit.NodeDef.Meta
 }
 
 func (n *transformerNode) Name() string             { return n.name }
@@ -163,6 +165,7 @@ func (n *transformerNode) Process(ctx context.Context, nc circuit.NodeContext) (
 		Config:      n.config,
 		Prompt:      prompt,
 		NodeName:    n.name,
+		NodeConfig:  n.nodeConfig,
 		Meta:        meta,
 		WalkerState: nc.WalkerState,
 	}

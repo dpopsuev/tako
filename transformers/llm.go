@@ -50,10 +50,8 @@ func (t *LLMTransformer) Transform(ctx context.Context, tc *engine.TransformerCo
 	}
 
 	artifactPath := ""
-	if tc.Meta != nil {
-		if ap, ok := tc.Meta["artifact_path"].(string); ok {
-			artifactPath = ap
-		}
+	if tc.NodeConfig != nil {
+		artifactPath = tc.NodeConfig.ArtifactPath
 	}
 	if artifactPath == "" {
 		dir, err := os.MkdirTemp("", "origami-llm-*")

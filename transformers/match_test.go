@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
-
 )
 
 func TestMatchRule_AllOf(t *testing.T) {
@@ -253,9 +253,9 @@ colors:
 	m := NewMatch()
 	tc := &engine.TransformerContext{
 		Input: "the sky is blue",
-		Meta: map[string]any{
-			"evaluator": eval,
-			"rule_set":  "colors",
+		NodeConfig: &circuit.NodeConfig{
+			Evaluator: eval,
+			RuleSet:   "colors",
 		},
 	}
 
@@ -288,9 +288,9 @@ test:
 	m := NewMatch()
 	tc := &engine.TransformerContext{
 		Input: map[string]any{"text": "error occurred"},
-		Meta: map[string]any{
-			"evaluator": eval,
-			"rule_set":  "test",
+		NodeConfig: &circuit.NodeConfig{
+			Evaluator: eval,
+			RuleSet:   "test",
 		},
 	}
 
@@ -306,7 +306,7 @@ test:
 
 func TestMatchTransformer_MissingEvaluator(t *testing.T) {
 	m := NewMatch()
-	tc := &engine.TransformerContext{Meta: map[string]any{}}
+	tc := &engine.TransformerContext{NodeConfig: &circuit.NodeConfig{}}
 	_, err := m.Transform(context.Background(), tc)
 	if err == nil {
 		t.Error("expected error for missing evaluator")
@@ -322,7 +322,7 @@ test:
 `))
 	m := NewMatch()
 	tc := &engine.TransformerContext{
-		Meta: map[string]any{"evaluator": eval},
+		NodeConfig: &circuit.NodeConfig{Evaluator: eval},
 	}
 	_, err := m.Transform(context.Background(), tc)
 	if err == nil {

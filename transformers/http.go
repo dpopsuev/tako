@@ -88,11 +88,9 @@ func (t *HTTPTransformer) Transform(ctx context.Context, tc *engine.TransformerC
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	if headers, ok := tc.Meta["headers"].(map[string]any); ok {
-		for k, v := range headers {
-			if s, ok := v.(string); ok {
-				req.Header.Set(k, s)
-			}
+	if tc.NodeConfig != nil {
+		for k, v := range tc.NodeConfig.Headers {
+			req.Header.Set(k, v)
 		}
 	}
 
