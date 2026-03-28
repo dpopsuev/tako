@@ -53,7 +53,7 @@ func TestGND_LiveAcceptance(t *testing.T) {
 	if err != nil {
 		t.Fatalf("list tools: %v", err)
 	}
-	var toolNames []string
+	toolNames := make([]string, 0, len(tools.Tools))
 	for _, tool := range tools.Tools {
 		toolNames = append(toolNames, tool.Name)
 	}

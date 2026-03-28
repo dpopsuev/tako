@@ -166,7 +166,7 @@ func (e *jsonExtractor[T]) Extract(_ context.Context, input any) (any, error) {
 }
 
 // RegexExtractor extracts named capture groups from text.
-func NewRegexExtractor(name string, pattern string) (Extractor, error) {
+func NewRegexExtractor(name, pattern string) (Extractor, error) {
 	re, err := regexp.Compile(pattern)
 	if err != nil {
 		return nil, fmt.Errorf("RegexExtractor %q: compile pattern: %w", name, err)
@@ -175,7 +175,7 @@ func NewRegexExtractor(name string, pattern string) (Extractor, error) {
 }
 
 // MustRegexExtractor is like NewRegexExtractor but panics on invalid pattern.
-func MustRegexExtractor(name string, pattern string) Extractor {
+func MustRegexExtractor(name, pattern string) Extractor {
 	ext, err := NewRegexExtractor(name, pattern)
 	if err != nil {
 		panic(err)

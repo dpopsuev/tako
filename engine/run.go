@@ -156,7 +156,7 @@ func Run(ctx context.Context, circuitPath string, input any, opts ...RunOption) 
 		def.Vars = MergeVars(def.Vars, cfg.overrides)
 	}
 
-	reg := GraphRegistries{
+	reg := &GraphRegistries{
 		Nodes:        cfg.nodes,
 		Edges:        cfg.edges,
 		Extractors:   cfg.extractors,
@@ -247,9 +247,9 @@ func Run(ctx context.Context, circuitPath string, input any, opts ...RunOption) 
 	if err == nil && cfg.checkpointer != nil {
 		cpID := walker.State().ID
 		if rmErr := cfg.checkpointer.Remove(cpID); rmErr != nil {
-			slog.Warn("failed to remove checkpoint after successful walk",
-				slog.String("walker_id", cpID),
-				slog.String("error", rmErr.Error()),
+			slog.WarnContext(ctx, "failed to remove checkpoint after successful walk",
+				"walker_id", cpID,
+				"error", rmErr.Error(),
 			)
 		}
 	}
@@ -267,7 +267,7 @@ func resumeFromCheckpoint(cfg *runConfig, walker circuit.Walker, startNode strin
 	*walker.State() = *loaded
 	startNode = loaded.CurrentNode
 	if cfg.observer != nil {
-		emitEvent(cfg.observer, circuit.WalkEvent{Type: circuit.EventWalkResumed, Node: startNode, Walker: walker.Identity().PersonaName})
+		emitEvent(cfg.observer, &circuit.WalkEvent{Type: circuit.EventWalkResumed, Node: startNode, Walker: walker.Identity().PersonaName})
 	}
 	return startNode, nil
 }
@@ -293,7 +293,7 @@ func Validate(circuitPath string, opts ...RunOption) error {
 		return fmt.Errorf("validate circuit: %w", err)
 	}
 
-	reg := GraphRegistries{
+	reg := &GraphRegistries{
 		Nodes:        cfg.nodes,
 		Edges:        cfg.edges,
 		Extractors:   cfg.extractors,
@@ -313,14 +313,14 @@ func Validate(circuitPath string, opts ...RunOption) error {
 	return validateNodeHooks(def, reg)
 }
 
-func validateNodeHooks(def *circuit.CircuitDef, reg GraphRegistries) error {
+func validateNodeHooks(def *circuit.CircuitDef, reg *GraphRegistries) error {
 	if reg.Hooks == nil {
 		return nil
 	}
-	for _, nd := range def.Nodes {
-		for _, hookName := range nd.After {
+	for i := range def.Nodes {
+		for _, hookName := range def.Nodes[i].After {
 			if _, hErr := reg.Hooks.Get(hookName); hErr != nil {
-				return fmt.Errorf("node %q: hook %q: %w", nd.Name, hookName, hErr)
+				return fmt.Errorf("node %q: hook %q: %w", def.Nodes[i].Name, hookName, hErr)
 			}
 		}
 	}
@@ -348,6 +348,6 @@ func applyOffsetPreamble(w circuit.Walker, offset string) {
 	} else {
 		id.PromptPreamble = id.PromptPreamble + "\n\n" + offset
 	}
-	w.SetIdentity(id)
+	w.SetIdentity(&id)
 }
 

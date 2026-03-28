@@ -24,7 +24,7 @@ func foldCmd(args []string) error {
 		manifest = fs.Arg(0)
 	}
 
-	return fold.Run(context.Background(), fold.Options{
+	return fold.Run(context.Background(), &fold.Options{
 		ManifestPath:  manifest,
 		Output:        *output,
 		Container:     *container,

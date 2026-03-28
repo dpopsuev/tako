@@ -309,7 +309,7 @@ func (s *CircuitSession) touchActivity() {
 	s.mu.Unlock()
 
 	if ttl > 0 && !prev.IsZero() {
-		s.log.Debug("activity reset", "gap", time.Since(prev), "ttl", ttl)
+		s.log.DebugContext(context.Background(), "activity reset", "gap", time.Since(prev), "ttl", ttl)
 	}
 }
 
@@ -340,7 +340,7 @@ func (s *CircuitSession) watchdog() {
 			}
 
 			if stale > currentTTL {
-				s.log.Warn("TTL watchdog triggered, aborting session",
+				s.log.WarnContext(context.Background(), "TTL watchdog triggered, aborting session",
 					"stale", stale, "ttl", currentTTL, "session_id", s.ID)
 				s.Bus.Emit(&agentport.Signal{
 					Event: EventSessionError,
@@ -385,7 +385,7 @@ func (s *CircuitSession) run(ctx context.Context, runFn RunFunc) {
 		s.state = StateError
 		s.err = err
 		s.Bus.Emit(&agentport.Signal{Event: EventSessionError, Agent: agentport.AgentServer, Meta: map[string]string{agentport.MetaKeyError: err.Error()}})
-		s.log.Error("circuit run failed", "error", err)
+		s.log.ErrorContext(ctx, "circuit run failed", "error", err)
 		s.writeReport(result) // write partial report even on error
 		s.writeRunRecord()
 		return
@@ -393,7 +393,7 @@ func (s *CircuitSession) run(ctx context.Context, runFn RunFunc) {
 	s.state = StateDone
 	s.result = result
 	s.Bus.Emit(&agentport.Signal{Event: EventSessionDone, Agent: agentport.AgentServer})
-	s.log.Info("circuit run complete")
+	s.log.InfoContext(ctx, "circuit run complete")
 	s.writeReport(result)
 	s.writeRunRecord()
 }
@@ -405,14 +405,14 @@ func (s *CircuitSession) writeReport(result any) {
 	}
 	data, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
-		s.log.Warn("failed to marshal report", "error", err)
+		s.log.WarnContext(context.Background(), "failed to marshal report", "error", err)
 		return
 	}
 	path := filepath.Join(s.runDir, "report.json")
-	if err := os.WriteFile(path, data, 0644); err != nil {
-		s.log.Warn("failed to write report.json", "path", path, "error", err)
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		s.log.WarnContext(context.Background(), "failed to write report.json", "path", path, "error", err)
 	} else {
-		s.log.Info("report written", "path", path)
+		s.log.InfoContext(context.Background(), "report written", "path", path)
 	}
 }
 
@@ -446,10 +446,10 @@ func (s *CircuitSession) writeRunRecord() {
 		TraceEvents: traceEvents,
 	}
 
-	if err := engine.SaveRunRecord(s.runDir, rec); err != nil {
-		s.log.Warn("failed to write run.json", "error", err)
+	if err := engine.SaveRunRecord(s.runDir, &rec); err != nil {
+		s.log.WarnContext(context.Background(), "failed to write run.json", "error", err)
 	} else {
-		s.log.Info("run record written", "path", s.runDir)
+		s.log.InfoContext(context.Background(), "run record written", "path", s.runDir)
 	}
 }
 
@@ -463,13 +463,13 @@ func (s *CircuitSession) closeRecorder() {
 // GetNextStep blocks until the runner produces the next prompt, the run
 // completes, or the timeout expires.
 // GetNextStep pulls the next step with no hints (FIFO).
-func (s *CircuitSession) GetNextStep(ctx context.Context, timeout time.Duration) (dc agentport.Context, done bool, available bool, err error) {
+func (s *CircuitSession) GetNextStep(ctx context.Context, timeout time.Duration) (dc agentport.Context, done, available bool, err error) {
 	return s.GetNextStepWithHints(ctx, timeout, agentport.PullHints{})
 }
 
 // GetNextStepWithHints pulls the next step matching the given hints.
 // Falls back based on stickiness. Blocks up to timeout.
-func (s *CircuitSession) GetNextStepWithHints(ctx context.Context, timeout time.Duration, hints agentport.PullHints) (dc agentport.Context, done bool, available bool, err error) {
+func (s *CircuitSession) GetNextStepWithHints(ctx context.Context, timeout time.Duration, hints agentport.PullHints) (dc agentport.Context, done, available bool, err error) {
 	select {
 	case <-s.doneCh:
 		return agentport.Context{}, true, false, nil
@@ -504,12 +504,12 @@ func (s *CircuitSession) GetNextStepWithHints(ctx context.Context, timeout time.
 	case r := <-ch:
 		if r.err != nil {
 			if pullCtx.Err() == context.DeadlineExceeded {
-				s.log.Debug("get_next_step timed out", "timeout", timeout)
+				s.log.DebugContext(ctx, "get_next_step timed out", "timeout", timeout)
 				return agentport.Context{}, false, false, nil
 			}
 			return agentport.Context{}, false, false, r.err
 		}
-		s.log.Debug("step delivered",
+		s.log.DebugContext(ctx, "step delivered",
 			"case_id", r.dc.CaseID, "step", r.dc.Step, "dispatch_id", r.dc.DispatchID, "wait", time.Since(start))
 		return r.dc, false, true, nil
 	}

@@ -24,10 +24,10 @@ func TestRun_IntegrationBuild_Assets(t *testing.T) {
 	writeFile := func(rel, content string) {
 		t.Helper()
 		p := filepath.Join(tmpDir, rel)
-		if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(p, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(p, []byte(content), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -52,13 +52,13 @@ spec:
         recall: prompts/recall.md
       files:
         vocabulary: vocabulary.yaml
-`), 0644); err != nil {
+`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
 	output := filepath.Join(t.TempDir(), "test-assets")
 
-	err := Run(context.Background(), Options{
+	err := Run(context.Background(), &Options{
 		ManifestPath: manifest,
 		Output:       output,
 		Verbose:      true,
@@ -80,11 +80,11 @@ kind: Board
 metadata:
   name: test-no-serve
 spec: {}
-`), 0644); err != nil {
+`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
-	err := Run(context.Background(), Options{ManifestPath: manifest})
+	err := Run(context.Background(), &Options{ManifestPath: manifest})
 	if err == nil {
 		t.Fatal("expected error for manifest without domain_serve")
 	}
@@ -97,8 +97,8 @@ func TestCopyEmbedFiles_SkipsDomainPlacedFiles(t *testing.T) {
 	writeFile := func(dir, rel, content string) {
 		t.Helper()
 		p := filepath.Join(dir, rel)
-		os.MkdirAll(filepath.Dir(p), 0755)
-		os.WriteFile(p, []byte(content), 0644)
+		os.MkdirAll(filepath.Dir(p), 0o755)
+		os.WriteFile(p, []byte(content), 0o644)
 	}
 
 	writeFile(manifestDir, "circuits/rca.yaml", "circuit content")
@@ -128,7 +128,7 @@ func TestCopyEmbedFiles_SkipsDomainPlacedFiles(t *testing.T) {
 		t.Errorf("heuristics.yaml was overwritten, got %q", string(data))
 	}
 
-	data, err = os.ReadFile(filepath.Join(tmpDir, "circuits/rca.yaml"))
+	data, err = os.ReadFile(filepath.Join(tmpDir, "circuits", "rca.yaml"))
 	if err != nil {
 		t.Fatalf("read circuits/rca.yaml: %v", err)
 	}
@@ -163,7 +163,7 @@ func TestBuildContainerImage_RequiresDocker(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	binaryPath := filepath.Join(tmpDir, "test-binary")
-	os.WriteFile(binaryPath, []byte("#!/bin/sh\necho ok"), 0755)
+	os.WriteFile(binaryPath, []byte("#!/bin/sh\necho ok"), 0o755)
 
 	m := &Manifest{
 		Name: "myapp",
@@ -172,7 +172,7 @@ func TestBuildContainerImage_RequiresDocker(t *testing.T) {
 		},
 	}
 
-	err := buildContainerImage(context.Background(), m, binaryPath, Options{Verbose: true})
+	err := buildContainerImage(context.Background(), m, binaryPath, &Options{Verbose: true})
 	if err != nil {
 		t.Logf("docker build failed (expected in CI): %v", err)
 	}
@@ -219,8 +219,8 @@ func TestValidateCircuitRefs_ValidRef(t *testing.T) {
 	writeFile := func(rel, content string) {
 		t.Helper()
 		p := filepath.Join(tmpDir, rel)
-		os.MkdirAll(filepath.Dir(p), 0755)
-		os.WriteFile(p, []byte(content), 0644)
+		os.MkdirAll(filepath.Dir(p), 0o755)
+		os.WriteFile(p, []byte(content), 0o644)
 	}
 
 	writeFile("circuits/rca.yaml", `
@@ -257,13 +257,13 @@ nodes:
 func TestValidateCircuitRefs_MissingRef(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := filepath.Join(tmpDir, "circuits")
-	os.MkdirAll(p, 0755)
+	os.MkdirAll(p, 0o755)
 	os.WriteFile(filepath.Join(p, "rca.yaml"), []byte(`
 nodes:
   - name: gather-code
     handler_type: circuit
     handler: nonexistent
-`), 0644)
+`), 0o644)
 
 	m := &Manifest{
 		DomainServe: &DomainServeConfig{
@@ -287,8 +287,8 @@ func TestValidateCircuitRefs_CycleDetected(t *testing.T) {
 	writeFile := func(rel, content string) {
 		t.Helper()
 		p := filepath.Join(tmpDir, rel)
-		os.MkdirAll(filepath.Dir(p), 0755)
-		os.WriteFile(p, []byte(content), 0644)
+		os.MkdirAll(filepath.Dir(p), 0o755)
+		os.WriteFile(p, []byte(content), 0o644)
 	}
 
 	writeFile("circuits/a.yaml", `
@@ -351,8 +351,8 @@ func TestRun_IntegrationBuild_WithDomains(t *testing.T) {
 	writeFile := func(rel, content string) {
 		t.Helper()
 		p := filepath.Join(tmpDir, rel)
-		os.MkdirAll(filepath.Dir(p), 0755)
-		os.WriteFile(p, []byte(content), 0644)
+		os.MkdirAll(filepath.Dir(p), 0o755)
+		os.WriteFile(p, []byte(content), 0o644)
 	}
 
 	writeFile("circuits/rca.yaml", "topology: cascade\n")
@@ -375,11 +375,11 @@ spec:
       vocabulary: vocabulary.yaml
       circuits:
         rca: circuits/rca.yaml
-`), 0644)
+`), 0o644)
 
 	output := filepath.Join(t.TempDir(), "test-domains")
 
-	err := Run(context.Background(), Options{
+	err := Run(context.Background(), &Options{
 		ManifestPath: manifest,
 		Output:       output,
 		Verbose:      true,
@@ -402,8 +402,8 @@ func TestExportDataDir_MatchesEmbedLayout(t *testing.T) {
 	writeFile := func(rel, content string) {
 		t.Helper()
 		p := filepath.Join(tmpDir, rel)
-		os.MkdirAll(filepath.Dir(p), 0755)
-		os.WriteFile(p, []byte(content), 0644)
+		os.MkdirAll(filepath.Dir(p), 0o755)
+		os.WriteFile(p, []byte(content), 0o644)
 	}
 
 	// Create domain files at the un-flattened paths (like a real workspace).
@@ -429,11 +429,11 @@ spec:
         rca: circuits/rca.yaml
       prompts:
         recall: prompts/recall/judge.md
-`), 0644)
+`), 0o644)
 
 	exportDir := filepath.Join(t.TempDir(), "exported")
 
-	err := Run(context.Background(), Options{
+	err := Run(context.Background(), &Options{
 		ManifestPath:  manifest,
 		ExportDataDir: exportDir,
 		Verbose:       true,
@@ -470,8 +470,8 @@ func TestExportDataDir_OverwritesStaleFiles(t *testing.T) {
 	writeFile := func(rel, content string) {
 		t.Helper()
 		p := filepath.Join(tmpDir, rel)
-		os.MkdirAll(filepath.Dir(p), 0755)
-		os.WriteFile(p, []byte(content), 0644)
+		os.MkdirAll(filepath.Dir(p), 0o755)
+		os.WriteFile(p, []byte(content), 0o644)
 	}
 
 	writeFile("prompts/recall/judge.md", "version: 1\n")
@@ -490,12 +490,12 @@ spec:
       vocabulary: vocabulary.yaml
       prompts:
         recall: prompts/recall/judge.md
-`), 0644)
+`), 0o644)
 
 	exportDir := filepath.Join(t.TempDir(), "exported")
 
 	// First export.
-	err := Run(context.Background(), Options{
+	err := Run(context.Background(), &Options{
 		ManifestPath:  manifest,
 		ExportDataDir: exportDir,
 	})
@@ -503,7 +503,7 @@ spec:
 		t.Fatalf("first export: %v", err)
 	}
 
-	got, _ := os.ReadFile(filepath.Join(exportDir, "prompts/recall/judge.md"))
+	got, _ := os.ReadFile(filepath.Join(exportDir, "prompts", "recall", "judge.md"))
 	if string(got) != "version: 1\n" {
 		t.Fatalf("first export content = %q, want 'version: 1\\n'", string(got))
 	}
@@ -512,7 +512,7 @@ spec:
 	writeFile("prompts/recall/judge.md", "version: 2\n")
 
 	// Re-export to same directory.
-	err = Run(context.Background(), Options{
+	err = Run(context.Background(), &Options{
 		ManifestPath:  manifest,
 		ExportDataDir: exportDir,
 	})
@@ -521,7 +521,7 @@ spec:
 	}
 
 	// Verify the exported file has the updated content.
-	got, _ = os.ReadFile(filepath.Join(exportDir, "prompts/recall/judge.md"))
+	got, _ = os.ReadFile(filepath.Join(exportDir, "prompts", "recall", "judge.md"))
 	if string(got) != "version: 2\n" {
 		t.Errorf("re-export did not overwrite stale file: got %q, want 'version: 2\\n'", string(got))
 	}
@@ -534,8 +534,8 @@ func TestPortWiring_MatchingTypes(t *testing.T) {
 	writeFile := func(rel, content string) {
 		t.Helper()
 		p := filepath.Join(tmpDir, rel)
-		os.MkdirAll(filepath.Dir(p), 0755)
-		os.WriteFile(p, []byte(content), 0644)
+		os.MkdirAll(filepath.Dir(p), 0o755)
+		os.WriteFile(p, []byte(content), 0o644)
 	}
 
 	writeFile("circuits/rca.yaml", `
@@ -607,8 +607,8 @@ func TestPortWiring_MismatchedTypes(t *testing.T) {
 	writeFile := func(rel, content string) {
 		t.Helper()
 		p := filepath.Join(tmpDir, rel)
-		os.MkdirAll(filepath.Dir(p), 0755)
-		os.WriteFile(p, []byte(content), 0644)
+		os.MkdirAll(filepath.Dir(p), 0o755)
+		os.WriteFile(p, []byte(content), 0o644)
 	}
 
 	writeFile("circuits/rca.yaml", `
@@ -690,8 +690,8 @@ func TestPortWiring_NoWiring(t *testing.T) {
 	writeFile := func(rel, content string) {
 		t.Helper()
 		p := filepath.Join(tmpDir, rel)
-		os.MkdirAll(filepath.Dir(p), 0755)
-		os.WriteFile(p, []byte(content), 0644)
+		os.MkdirAll(filepath.Dir(p), 0o755)
+		os.WriteFile(p, []byte(content), 0o644)
 	}
 
 	writeFile("circuits/rca.yaml", `
@@ -725,8 +725,8 @@ func TestPortWiring_UntypedPortsSkipped(t *testing.T) {
 	writeFile := func(rel, content string) {
 		t.Helper()
 		p := filepath.Join(tmpDir, rel)
-		os.MkdirAll(filepath.Dir(p), 0755)
-		os.WriteFile(p, []byte(content), 0644)
+		os.MkdirAll(filepath.Dir(p), 0o755)
+		os.WriteFile(p, []byte(content), 0o644)
 	}
 
 	writeFile("circuits/rca.yaml", `
@@ -786,8 +786,8 @@ func TestRun_DomainOnly_SkipsBindings(t *testing.T) {
 	writeFile := func(rel, content string) {
 		t.Helper()
 		p := filepath.Join(tmpDir, rel)
-		os.MkdirAll(filepath.Dir(p), 0755)
-		os.WriteFile(p, []byte(content), 0644)
+		os.MkdirAll(filepath.Dir(p), 0o755)
+		os.WriteFile(p, []byte(content), 0o644)
 	}
 
 	writeFile("circuits/rca.yaml", "circuit: rca\ntopology: cascade\nnodes:\n  - name: a\n    approach: analytical\n")
@@ -810,7 +810,7 @@ spec:
       vocabulary: vocabulary.yaml
       circuits:
         rca: circuits/rca.yaml
-`), 0644)
+`), 0o644)
 
 	m, err := LoadManifest(manifest)
 	if err != nil {
@@ -822,7 +822,7 @@ spec:
 
 	output := filepath.Join(t.TempDir(), "test-domain-only")
 
-	err = Run(context.Background(), Options{
+	err = Run(context.Background(), &Options{
 		ManifestPath: manifest,
 		Output:       output,
 		DomainOnly:   true,

@@ -62,7 +62,7 @@ type Options struct {
 // connector binding. Otherwise it produces a domain-serve-only binary.
 // The context controls cancellation and deadlines for all subprocess calls
 // (go mod tidy, go build, docker build).
-func Run(ctx context.Context, opts Options) error {
+func Run(ctx context.Context, opts *Options) error {
 	m, err := LoadManifest(opts.ManifestPath)
 	if err != nil {
 		return err
@@ -175,7 +175,7 @@ const (
 	mcpSDKModule  = "github.com/modelcontextprotocol/go-sdk"
 )
 
-func buildWiredBinary(ctx context.Context, m *Manifest, opts Options) error {
+func buildWiredBinary(ctx context.Context, m *Manifest, opts *Options) error {
 	resolver := opts.ModuleResolver
 	if resolver == nil {
 		resolver = &DefaultModuleResolver{}
@@ -207,7 +207,7 @@ func buildWiredBinary(ctx context.Context, m *Manifest, opts Options) error {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	if err := os.WriteFile(filepath.Join(tmpDir, "main.go"), src, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "main.go"), src, 0o644); err != nil {
 		return fmt.Errorf("write main.go: %w", err)
 	}
 
@@ -245,7 +245,7 @@ func buildWiredBinary(ctx context.Context, m *Manifest, opts Options) error {
 		output = filepath.Join(wd, output)
 	}
 
-	if err := os.MkdirAll(filepath.Dir(output), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(output), 0o755); err != nil {
 		return fmt.Errorf("create output dir: %w", err)
 	}
 
@@ -302,7 +302,7 @@ func createWiredBuildModule(tmpDir, name string, resolver ModuleResolver, g *Res
 		}
 	}
 
-	return os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(buf.String()), 0644)
+	return os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(buf.String()), 0o644)
 }
 
 // moduleRoot extracts the module root from a Go import path.
@@ -316,7 +316,7 @@ func moduleRoot(importPath string) string {
 	return strings.Join(parts[:3], "/")
 }
 
-func buildDomainServe(ctx context.Context, m *Manifest, opts Options) error {
+func buildDomainServe(ctx context.Context, m *Manifest, opts *Options) error {
 	manifestDir := filepath.Dir(opts.ManifestPath)
 	if err := m.MergeDiscoveredAssets(manifestDir); err != nil {
 		return fmt.Errorf("discover domain assets: %w", err)
@@ -333,7 +333,7 @@ func buildDomainServe(ctx context.Context, m *Manifest, opts Options) error {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	if err := os.WriteFile(filepath.Join(tmpDir, "main.go"), src, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "main.go"), src, 0o644); err != nil {
 		return fmt.Errorf("write main.go: %w", err)
 	}
 
@@ -376,7 +376,7 @@ func buildDomainServe(ctx context.Context, m *Manifest, opts Options) error {
 		output = filepath.Join(wd, output)
 	}
 
-	if err := os.MkdirAll(filepath.Dir(output), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(output), 0o755); err != nil {
 		return fmt.Errorf("create output dir: %w", err)
 	}
 
@@ -416,7 +416,7 @@ ENTRYPOINT ["/domain-serve"]
 EXPOSE %d
 `
 
-func buildContainerImage(ctx context.Context, m *Manifest, binaryPath string, opts Options) error {
+func buildContainerImage(ctx context.Context, m *Manifest, binaryPath string, opts *Options) error {
 	port := 9300
 	if m.DomainServe != nil && m.DomainServe.Port != 0 {
 		port = m.DomainServe.Port
@@ -434,7 +434,7 @@ func buildContainerImage(ctx context.Context, m *Manifest, binaryPath string, op
 	defer os.RemoveAll(imgDir)
 
 	dockerfile := fmt.Sprintf(containerDockerfileTemplate, port)
-	if err := os.WriteFile(filepath.Join(imgDir, "Dockerfile"), []byte(dockerfile), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(imgDir, "Dockerfile"), []byte(dockerfile), 0o644); err != nil {
 		return fmt.Errorf("write Dockerfile: %w", err)
 	}
 
@@ -444,7 +444,7 @@ func buildContainerImage(ctx context.Context, m *Manifest, binaryPath string, op
 	}
 	defer src.Close()
 
-	dst, err := os.OpenFile(filepath.Join(imgDir, "domain-serve"), os.O_CREATE|os.O_WRONLY, 0755)
+	dst, err := os.OpenFile(filepath.Join(imgDir, "domain-serve"), os.O_CREATE|os.O_WRONLY, 0o755)
 	if err != nil {
 		return fmt.Errorf("copy binary: %w", err)
 	}
@@ -482,7 +482,7 @@ func createDomainServeBuildModule(tmpDir, name string, resolver ModuleResolver) 
 		buf.WriteString(fmt.Sprintf("replace %s => %s\n", origamiModule, localPath))
 	}
 
-	return os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(buf.String()), 0644)
+	return os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(buf.String()), 0o644)
 }
 
 // copyDomainFiles copies files from domains/<path>/ into the build dir at
@@ -529,7 +529,7 @@ func copyEmbedFiles(ds *DomainServeConfig, manifestDir, tmpDir string, verbose b
 // the --data-dir runtime flag. This produces the same file layout that
 // the go:embed directive would create, making it suitable for volume mounts.
 // The target directory is cleaned before each export to prevent stale files.
-func exportDataDir(m *Manifest, manifestDir string, opts Options) error {
+func exportDataDir(m *Manifest, manifestDir string, opts *Options) error {
 	if err := m.MergeDiscoveredAssets(manifestDir); err != nil {
 		return fmt.Errorf("discover domain assets: %w", err)
 	}
@@ -538,7 +538,7 @@ func exportDataDir(m *Manifest, manifestDir string, opts Options) error {
 	if err := os.RemoveAll(opts.ExportDataDir); err != nil {
 		return fmt.Errorf("clean export dir: %w", err)
 	}
-	if err := os.MkdirAll(opts.ExportDataDir, 0755); err != nil {
+	if err := os.MkdirAll(opts.ExportDataDir, 0o755); err != nil {
 		return fmt.Errorf("create export dir: %w", err)
 	}
 
@@ -772,17 +772,12 @@ func parseWiringRef(ref string) (circuit, direction, port string) {
 	}
 	circuit = ref[:dotIdx]
 	rest := ref[dotIdx+1:]
-	colonIdx := strings.Index(rest, ":")
-	if colonIdx < 0 {
-		return circuit, rest, ""
-	}
-	direction = rest[:colonIdx]
-	port = rest[colonIdx+1:]
+	direction, port, _ = strings.Cut(rest, ":")
 	return circuit, direction, port
 }
 
 func copyFile(src, dst string) error {
-	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 		return err
 	}
 	srcFile, err := os.Open(src)

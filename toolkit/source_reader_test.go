@@ -8,31 +8,31 @@ import (
 )
 
 type stubReader struct {
-	ensureFn func(ctx context.Context, src Source) error
-	searchFn func(ctx context.Context, src Source, query string, max int) ([]SearchResult, error)
-	readFn   func(ctx context.Context, src Source, path string) ([]byte, error)
-	listFn   func(ctx context.Context, src Source, root string, maxDepth int) ([]ContentEntry, error)
+	ensureFn func(ctx context.Context, src *Source) error
+	searchFn func(ctx context.Context, src *Source, query string, max int) ([]SearchResult, error)
+	readFn   func(ctx context.Context, src *Source, path string) ([]byte, error)
+	listFn   func(ctx context.Context, src *Source, root string, maxDepth int) ([]ContentEntry, error)
 }
 
-func (s *stubReader) Ensure(ctx context.Context, src Source) error {
+func (s *stubReader) Ensure(ctx context.Context, src *Source) error {
 	if s.ensureFn != nil {
 		return s.ensureFn(ctx, src)
 	}
 	return nil
 }
-func (s *stubReader) Search(ctx context.Context, src Source, query string, max int) ([]SearchResult, error) {
+func (s *stubReader) Search(ctx context.Context, src *Source, query string, maxResults int) ([]SearchResult, error) {
 	if s.searchFn != nil {
-		return s.searchFn(ctx, src, query, max)
+		return s.searchFn(ctx, src, query, maxResults)
 	}
 	return nil, nil
 }
-func (s *stubReader) Read(ctx context.Context, src Source, path string) ([]byte, error) {
+func (s *stubReader) Read(ctx context.Context, src *Source, path string) ([]byte, error) {
 	if s.readFn != nil {
 		return s.readFn(ctx, src, path)
 	}
 	return nil, nil
 }
-func (s *stubReader) List(ctx context.Context, src Source, root string, maxDepth int) ([]ContentEntry, error) {
+func (s *stubReader) List(ctx context.Context, src *Source, root string, maxDepth int) ([]ContentEntry, error) {
 	if s.listFn != nil {
 		return s.listFn(ctx, src, root, maxDepth)
 	}
@@ -47,14 +47,14 @@ func TestSourceReader_InterfaceCompliance(t *testing.T) {
 func TestSourceReader_Ensure(t *testing.T) {
 	t.Parallel()
 	called := false
-	r := &stubReader{ensureFn: func(_ context.Context, src Source) error {
+	r := &stubReader{ensureFn: func(_ context.Context, src *Source) error {
 		called = true
 		if src.Name != "test" {
 			return fmt.Errorf("unexpected source: %s", src.Name)
 		}
 		return nil
 	}}
-	err := r.Ensure(context.Background(), Source{Name: "test"})
+	err := r.Ensure(context.Background(), &Source{Name: "test"})
 	if err != nil {
 		t.Fatalf("Ensure error: %v", err)
 	}
@@ -65,12 +65,12 @@ func TestSourceReader_Ensure(t *testing.T) {
 
 func TestSourceReader_Search(t *testing.T) {
 	t.Parallel()
-	r := &stubReader{searchFn: func(_ context.Context, _ Source, query string, max int) ([]SearchResult, error) {
+	r := &stubReader{searchFn: func(_ context.Context, _ *Source, query string, max int) ([]SearchResult, error) {
 		return []SearchResult{
 			{Source: "repo", Path: "main.go", Line: 42, Snippet: "func main()"},
 		}, nil
 	}}
-	results, err := r.Search(context.Background(), Source{Name: "repo"}, "main", 10)
+	results, err := r.Search(context.Background(), &Source{Name: "repo"}, "main", 10)
 	if err != nil {
 		t.Fatalf("Search error: %v", err)
 	}

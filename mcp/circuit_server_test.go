@@ -117,9 +117,9 @@ func stubRunFuncInstant(nCases int) mcp.RunFunc {
 }
 
 // newTestConfig creates a CircuitConfig for testing.
-func newTestConfig(nCases, nSteps int, promptDir string) mcp.CircuitConfig {
+func newTestConfig(nCases, nSteps int, promptDir string) *mcp.CircuitConfig {
 	steps := []string{"STEP_A", "STEP_B", "STEP_C"}
-	return mcp.CircuitConfig{
+	return &mcp.CircuitConfig{
 		Name:        "test-circuit",
 		Version:     "dev",
 		StepSchemas: testStepSchemas,
@@ -145,8 +145,8 @@ func newTestConfig(nCases, nSteps int, promptDir string) mcp.CircuitConfig {
 	}
 }
 
-func newTestConfigStub(nCases int) mcp.CircuitConfig {
-	return mcp.CircuitConfig{
+func newTestConfigStub(nCases int) *mcp.CircuitConfig {
+	return &mcp.CircuitConfig{
 		Name:        "test-circuit",
 		Version:     "dev",
 		StepSchemas: testStepSchemas,
@@ -167,7 +167,7 @@ func newTestConfigStub(nCases int) mcp.CircuitConfig {
 	}
 }
 
-func newTestServer(t *testing.T, cfg mcp.CircuitConfig) *mcp.CircuitServer {
+func newTestServer(t *testing.T, cfg *mcp.CircuitConfig) *mcp.CircuitServer {
 	t.Helper()
 	srv := mcp.NewCircuitServer(cfg)
 	t.Cleanup(srv.Shutdown)
@@ -912,7 +912,7 @@ func TestWorkerPrompt_StepSchemas(t *testing.T) {
 		DesiredCapacity: 4,
 	}
 
-	prompt := sess.WorkerPrompt(&cfg)
+	prompt := sess.WorkerPrompt(cfg)
 
 	for _, schema := range testStepSchemas {
 		if !containsCI(prompt, schema.Name) {
@@ -940,7 +940,7 @@ func TestWorkerPrompt_SessionIDEmbedded(t *testing.T) {
 		DesiredCapacity: 2,
 	}
 
-	prompt := sess.WorkerPrompt(&cfg)
+	prompt := sess.WorkerPrompt(cfg)
 
 	if !containsCI(prompt, "s-1234567890") {
 		t.Error("worker prompt does not contain the actual session ID")
@@ -1371,7 +1371,7 @@ func TestSubmitStep_ZeroDispatchID(t *testing.T) {
 // --- Timeout and fail-fast tests ---
 
 func TestSession_MaxDuration_AbortsCircuit(t *testing.T) {
-	cfg := mcp.CircuitConfig{
+	cfg := &mcp.CircuitConfig{
 		Name:               "test-circuit",
 		Version:            "dev",
 		StepSchemas:        testStepSchemas,
@@ -1438,7 +1438,7 @@ func TestSession_MaxDuration_AbortsCircuit(t *testing.T) {
 }
 
 func TestSession_MaxDuration_ZeroIsNoLimit(t *testing.T) {
-	cfg := mcp.CircuitConfig{
+	cfg := &mcp.CircuitConfig{
 		Name:               "test-circuit",
 		Version:            "dev",
 		StepSchemas:        testStepSchemas,
@@ -1484,7 +1484,7 @@ func TestSession_MaxDuration_ZeroIsNoLimit(t *testing.T) {
 }
 
 func TestSession_MaxDuration_InteractionWithTTL(t *testing.T) {
-	cfg := mcp.CircuitConfig{
+	cfg := &mcp.CircuitConfig{
 		Name:               "test-circuit",
 		Version:            "dev",
 		StepSchemas:        testStepSchemas,

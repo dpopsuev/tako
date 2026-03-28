@@ -8,7 +8,7 @@ import "context"
 // (who the agent is) with processing capability (how it handles nodes).
 type Walker interface {
 	Identity() AgentIdentity
-	SetIdentity(AgentIdentity)
+	SetIdentity(*AgentIdentity)
 	State() *WalkerState
 	Handle(ctx context.Context, node Node, nc NodeContext) (Artifact, error)
 }
@@ -156,15 +156,15 @@ func NewProcessWalker(id string) *ProcessWalker {
 }
 
 // NewProcessWalkerWithIdentity creates a ProcessWalker with a pre-built identity.
-func NewProcessWalkerWithIdentity(id AgentIdentity, stateID string) *ProcessWalker {
+func NewProcessWalkerWithIdentity(id *AgentIdentity, stateID string) *ProcessWalker {
 	return &ProcessWalker{
-		identity: id,
+		identity: *id,
 		state:    NewWalkerState(stateID),
 	}
 }
 
 func (w *ProcessWalker) Identity() AgentIdentity      { return w.identity }
-func (w *ProcessWalker) SetIdentity(id AgentIdentity)  { w.identity = id }
+func (w *ProcessWalker) SetIdentity(id *AgentIdentity)  { w.identity = *id }
 func (w *ProcessWalker) State() *WalkerState           { return w.state }
 
 func (w *ProcessWalker) Handle(ctx context.Context, node Node, nc NodeContext) (Artifact, error) {

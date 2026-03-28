@@ -31,8 +31,8 @@ func errorRateCircuitDef() *circuit.CircuitDef {
 	}
 }
 
-func errorRateShared() engine.GraphRegistries {
-	return engine.GraphRegistries{
+func errorRateShared() *engine.GraphRegistries {
+	return &engine.GraphRegistries{
 		Transformers: engine.TransformerRegistry{
 			"fail-on-id": failTransformer{},
 		},
@@ -50,7 +50,7 @@ func TestErrorRate_NoErrors_NoGate(t *testing.T) {
 		details: map[string]string{},
 	}
 
-	report, err := Run(context.Background(), HarnessConfig{
+	report, err := Run(context.Background(), &HarnessConfig{
 		Loader:       loader,
 		Collector:    collector,
 		CircuitDef:   errorRateCircuitDef(),
@@ -81,7 +81,7 @@ func TestErrorRate_AtThreshold_Passes(t *testing.T) {
 		details: map[string]string{},
 	}
 
-	report, err := Run(context.Background(), HarnessConfig{
+	report, err := Run(context.Background(), &HarnessConfig{
 		Loader:       loader,
 		Collector:    collector,
 		CircuitDef:   errorRateCircuitDef(),
@@ -114,7 +114,7 @@ func TestErrorRate_ExceedsThreshold_Fails(t *testing.T) {
 		details: map[string]string{},
 	}
 
-	_, err := Run(context.Background(), HarnessConfig{
+	_, err := Run(context.Background(), &HarnessConfig{
 		Loader:       loader,
 		Collector:    collector,
 		CircuitDef:   errorRateCircuitDef(),
@@ -159,7 +159,7 @@ func TestErrorRate_DefaultZero_NoGate(t *testing.T) {
 		details: map[string]string{},
 	}
 
-	report, err := Run(context.Background(), HarnessConfig{
+	report, err := Run(context.Background(), &HarnessConfig{
 		Loader:     loader,
 		Collector:  collector,
 		CircuitDef: errorRateCircuitDef(),

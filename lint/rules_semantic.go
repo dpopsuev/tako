@@ -8,11 +8,17 @@ import (
 	"github.com/dpopsuev/origami/engine"
 )
 
+const (
+	ruleOrphanNode   = "G1/orphan-node"
+	ruleUnreachDone  = "G2/unreachable-done"
+	ruleFanInMerge   = "G7/fan-in-without-merge"
+)
+
 // --- G1: orphan-node ---
 
 type OrphanNode struct{}
 
-func (r *OrphanNode) ID() string          { return "G1/orphan-node" }
+func (r *OrphanNode) ID() string          { return ruleOrphanNode }
 func (r *OrphanNode) Description() string { return "node not reachable from start via any edge path" }
 func (r *OrphanNode) Severity() Severity   { return SeverityWarning }
 func (r *OrphanNode) Tags() []string       { return []string{"semantic"} }
@@ -20,14 +26,14 @@ func (r *OrphanNode) Tags() []string       { return []string{"semantic"} }
 func (r *OrphanNode) Check(ctx *LintContext) []Finding {
 	reachable := reachableNodes(ctx.Def)
 	var out []Finding
-	for _, nd := range ctx.Def.Nodes {
-		if !reachable[nd.Name] {
+	for i := range ctx.Def.Nodes {
+		if !reachable[ctx.Def.Nodes[i].Name] {
 			out = append(out, Finding{
 				RuleID:   r.ID(),
 				Severity: r.Severity(),
-				Message:  fmt.Sprintf("node %q is not reachable from start node %q", nd.Name, ctx.Def.Start),
+				Message:  fmt.Sprintf("node %q is not reachable from start node %q", ctx.Def.Nodes[i].Name, ctx.Def.Start),
 				File:     ctx.File,
-				Line:     ctx.NodeLine(nd.Name),
+				Line:     ctx.NodeLine(ctx.Def.Nodes[i].Name),
 			})
 		}
 	}
@@ -38,7 +44,7 @@ func (r *OrphanNode) Check(ctx *LintContext) []Finding {
 
 type UnreachableDone struct{}
 
-func (r *UnreachableDone) ID() string          { return "G2/unreachable-done" }
+func (r *UnreachableDone) ID() string          { return ruleUnreachDone }
 func (r *UnreachableDone) Description() string { return "no edge path from start reaches done" }
 func (r *UnreachableDone) Severity() Severity   { return SeverityError }
 func (r *UnreachableDone) Tags() []string       { return []string{"semantic"} }
@@ -73,14 +79,14 @@ func (r *DeadEdge) Tags() []string       { return []string{"semantic"} }
 func (r *DeadEdge) Check(ctx *LintContext) []Finding {
 	reachable := reachableNodes(ctx.Def)
 	var out []Finding
-	for _, ed := range ctx.Def.Edges {
-		if !reachable[ed.From] {
+	for i := range ctx.Def.Edges {
+		if !reachable[ctx.Def.Edges[i].From] {
 			out = append(out, Finding{
 				RuleID:   r.ID(),
 				Severity: r.Severity(),
-				Message:  fmt.Sprintf("edge %q originates from unreachable node %q", ed.ID, ed.From),
+				Message:  fmt.Sprintf("edge %q originates from unreachable node %q", ctx.Def.Edges[i].ID, ctx.Def.Edges[i].From),
 				File:     ctx.File,
-				Line:     ctx.EdgeLine(ed.ID),
+				Line:     ctx.EdgeLine(ctx.Def.Edges[i].ID),
 			})
 		}
 	}
@@ -98,9 +104,9 @@ func (r *ShortcutBypassesRequired) Tags() []string     { return []string{"semant
 
 func (r *ShortcutBypassesRequired) Check(ctx *LintContext) []Finding {
 	schemaNodes := make(map[string]bool)
-	for _, nd := range ctx.Def.Nodes {
-		if nd.Schema != nil {
-			schemaNodes[nd.Name] = true
+	for i := range ctx.Def.Nodes {
+		if ctx.Def.Nodes[i].Schema != nil {
+			schemaNodes[ctx.Def.Nodes[i].Name] = true
 		}
 	}
 	if len(schemaNodes) == 0 {
@@ -108,14 +114,15 @@ func (r *ShortcutBypassesRequired) Check(ctx *LintContext) []Finding {
 	}
 
 	normalAdj := make(map[string][]string)
-	for _, ed := range ctx.Def.Edges {
-		if !ed.Shortcut {
-			normalAdj[ed.From] = append(normalAdj[ed.From], ed.To)
+	for i := range ctx.Def.Edges {
+		if !ctx.Def.Edges[i].Shortcut {
+			normalAdj[ctx.Def.Edges[i].From] = append(normalAdj[ctx.Def.Edges[i].From], ctx.Def.Edges[i].To)
 		}
 	}
 
 	var out []Finding
-	for _, ed := range ctx.Def.Edges {
+	for i := range ctx.Def.Edges {
+		ed := &ctx.Def.Edges[i]
 		if !ed.Shortcut {
 			continue
 		}
@@ -146,9 +153,9 @@ func (r *ZoneApproachMismatch) Tags() []string       { return []string{"semantic
 
 func (r *ZoneApproachMismatch) Check(ctx *LintContext) []Finding {
 	nodeApproaches := make(map[string]string)
-	for _, nd := range ctx.Def.Nodes {
-		if nd.Approach != "" {
-			nodeApproaches[nd.Name] = strings.ToLower(nd.Approach)
+	for i := range ctx.Def.Nodes {
+		if ctx.Def.Nodes[i].Approach != "" {
+			nodeApproaches[ctx.Def.Nodes[i].Name] = strings.ToLower(ctx.Def.Nodes[i].Approach)
 		}
 	}
 
@@ -189,17 +196,17 @@ func (r *ExpressionCompileError) Tags() []string       { return []string{"semant
 
 func (r *ExpressionCompileError) Check(ctx *LintContext) []Finding {
 	var out []Finding
-	for _, ed := range ctx.Def.Edges {
-		if ed.When == "" {
+	for i := range ctx.Def.Edges {
+		if ctx.Def.Edges[i].When == "" {
 			continue
 		}
-		if _, err := engine.CompileExpressionEdge(ed, ctx.Def.Vars); err != nil {
+		if _, err := engine.CompileExpressionEdge(&ctx.Def.Edges[i], ctx.Def.Vars); err != nil {
 			out = append(out, Finding{
 				RuleID:   r.ID(),
 				Severity: r.Severity(),
-				Message:  fmt.Sprintf("edge %q: %v", ed.ID, err),
+				Message:  fmt.Sprintf("edge %q: %v", ctx.Def.Edges[i].ID, err),
 				File:     ctx.File,
-				Line:     ctx.EdgeLine(ed.ID),
+				Line:     ctx.EdgeLine(ctx.Def.Edges[i].ID),
 			})
 		}
 	}
@@ -210,7 +217,7 @@ func (r *ExpressionCompileError) Check(ctx *LintContext) []Finding {
 
 type FanInWithoutMerge struct{}
 
-func (r *FanInWithoutMerge) ID() string          { return "G7/fan-in-without-merge" }
+func (r *FanInWithoutMerge) ID() string          { return ruleFanInMerge }
 func (r *FanInWithoutMerge) Description() string { return "multiple edges converge on a node without merge strategy" }
 func (r *FanInWithoutMerge) Severity() Severity   { return SeverityWarning }
 func (r *FanInWithoutMerge) Tags() []string       { return []string{"semantic"} }
@@ -221,15 +228,16 @@ func (r *FanInWithoutMerge) Check(ctx *LintContext) []Finding {
 		conditional bool
 	}
 	inbound := make(map[string][]edgeInfo)
-	for _, ed := range ctx.Def.Edges {
+	for i := range ctx.Def.Edges {
+		ed := &ctx.Def.Edges[i]
 		conditional := ed.When != "" || ed.Condition != "" || ed.Shortcut || ed.Parallel
 		inbound[ed.To] = append(inbound[ed.To], edgeInfo{id: ed.ID, conditional: conditional})
 	}
 
 	hasMerge := make(map[string]bool)
-	for _, ed := range ctx.Def.Edges {
-		if ed.Merge != "" {
-			hasMerge[ed.To] = true
+	for i := range ctx.Def.Edges {
+		if ctx.Def.Edges[i].Merge != "" {
+			hasMerge[ctx.Def.Edges[i].To] = true
 		}
 	}
 
@@ -272,7 +280,8 @@ func (r *UnacknowledgedShortcut) Tags() []string       { return []string{"semant
 func (r *UnacknowledgedShortcut) Check(ctx *LintContext) []Finding {
 	inferred := inferEdgeTopology(ctx.Def)
 	var out []Finding
-	for i, orig := range ctx.Def.Edges {
+	for i := range ctx.Def.Edges {
+		orig := &ctx.Def.Edges[i]
 		inf := inferred[i]
 		if inf.Shortcut && !orig.Shortcut {
 			out = append(out, Finding{
@@ -309,7 +318,8 @@ func (r *UnacknowledgedLoop) Tags() []string       { return []string{"semantic"}
 func (r *UnacknowledgedLoop) Check(ctx *LintContext) []Finding {
 	inferred := inferEdgeTopology(ctx.Def)
 	var out []Finding
-	for i, orig := range ctx.Def.Edges {
+	for i := range ctx.Def.Edges {
+		orig := &ctx.Def.Edges[i]
 		inf := inferred[i]
 		if inf.Loop && !orig.Loop {
 			out = append(out, Finding{
@@ -348,8 +358,8 @@ func inferEdgeTopology(def *circuit.CircuitDef) []circuit.EdgeDef {
 
 func buildAdjacency(def *circuit.CircuitDef) map[string][]string {
 	adj := make(map[string][]string)
-	for _, ed := range def.Edges {
-		adj[ed.From] = append(adj[ed.From], ed.To)
+	for i := range def.Edges {
+		adj[def.Edges[i].From] = append(adj[def.Edges[i].From], def.Edges[i].To)
 	}
 	return adj
 }

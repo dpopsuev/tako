@@ -16,7 +16,8 @@ func RenderNodeTable(def *circuit.CircuitDef, opts *MermaidOptions) string {
 	b.WriteString("| Node | Description | Zone | Handler | Type | Element | Hooks | D/S |\n")
 	b.WriteString("|------|-------------|------|---------|------|---------|-------|-----|\n")
 
-	for _, nd := range def.Nodes {
+	for i := range def.Nodes {
+		nd := &def.Nodes[i]
 		desc := nd.Description
 		if desc == "" {
 			desc = "-"
@@ -62,8 +63,8 @@ func RenderSummary(def *circuit.CircuitDef, opts *MermaidOptions) string {
 	nodeDS := classifyNodes(def, opts)
 
 	detCount, stochCount, unknownCount := 0, 0, 0
-	for _, nd := range def.Nodes {
-		switch nodeDS[nd.Name] {
+	for i := range def.Nodes {
+		switch nodeDS[def.Nodes[i].Name] {
 		case dsDeterministic:
 			detCount++
 		case dsStochastic:
@@ -74,11 +75,11 @@ func RenderSummary(def *circuit.CircuitDef, opts *MermaidOptions) string {
 	}
 
 	shortcuts, loops := 0, 0
-	for _, e := range def.Edges {
-		if e.Shortcut {
+	for i := range def.Edges {
+		if def.Edges[i].Shortcut {
 			shortcuts++
 		}
-		if e.Loop {
+		if def.Edges[i].Loop {
 			loops++
 		}
 	}

@@ -3,6 +3,7 @@ package engine
 // Category: DSL & Build — graph construction and registries.
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -61,7 +62,7 @@ type GraphRegistries struct {
 }
 
 // BuildGraph constructs a Graph from a circuit.CircuitDef using the full registries bundle.
-func BuildGraph(def *circuit.CircuitDef, reg GraphRegistries) (Graph, error) {
+func BuildGraph(def *circuit.CircuitDef, reg *GraphRegistries) (Graph, error) {
 	if err := def.Validate(); err != nil {
 		return nil, fmt.Errorf("validate: %w", err)
 	}
@@ -85,8 +86,8 @@ func BuildGraph(def *circuit.CircuitDef, reg GraphRegistries) (Graph, error) {
 	}
 
 	fwNodes := make([]circuit.Node, 0, len(def.Nodes))
-	for _, nd := range def.Nodes {
-		node, err := resolveNode(def, nd, reg)
+	for i := range def.Nodes {
+		node, err := resolveNode(def, &def.Nodes[i], reg)
 		if err != nil {
 			return nil, err
 		}
@@ -94,21 +95,23 @@ func BuildGraph(def *circuit.CircuitDef, reg GraphRegistries) (Graph, error) {
 	}
 
 	fwEdges := make([]circuit.Edge, 0, len(def.Edges))
-	for _, ed := range def.Edges {
-		if ed.When != "" {
-			exprEdge, err := CompileExpressionEdge(ed, def.Vars)
+	for i := range def.Edges {
+		ed := &def.Edges[i]
+		switch {
+		case ed.When != "":
+			exprEdge, err := CompileExpressionEdge(&def.Edges[i], def.Vars)
 			if err != nil {
 				return nil, fmt.Errorf("edge %s: %w", ed.ID, err)
 			}
 			fwEdges = append(fwEdges, exprEdge)
-		} else if reg.Edges != nil {
+		case reg.Edges != nil:
 			if factory, ok := reg.Edges[ed.ID]; ok {
-				fwEdges = append(fwEdges, factory(ed))
+				fwEdges = append(fwEdges, factory(def.Edges[i]))
 			} else {
-				fwEdges = append(fwEdges, &dslEdge{def: ed})
+				fwEdges = append(fwEdges, &dslEdge{def: def.Edges[i]})
 			}
-		} else {
-			fwEdges = append(fwEdges, &dslEdge{def: ed})
+		default:
+			fwEdges = append(fwEdges, &dslEdge{def: def.Edges[i]})
 		}
 	}
 
@@ -126,8 +129,8 @@ func BuildGraph(def *circuit.CircuitDef, reg GraphRegistries) (Graph, error) {
 	}
 
 	var timeouts map[string]time.Duration
-	for _, nd := range def.Nodes {
-		d, err := nd.EffectiveTimeout(def.Timeout)
+	for i := range def.Nodes {
+		d, err := def.Nodes[i].EffectiveTimeout(def.Timeout)
 		if err != nil {
 			return nil, err
 		}
@@ -135,7 +138,7 @@ func BuildGraph(def *circuit.CircuitDef, reg GraphRegistries) (Graph, error) {
 			if timeouts == nil {
 				timeouts = make(map[string]time.Duration)
 			}
-			timeouts[nd.Name] = d
+			timeouts[def.Nodes[i].Name] = d
 		}
 	}
 
@@ -148,7 +151,7 @@ func BuildGraph(def *circuit.CircuitDef, reg GraphRegistries) (Graph, error) {
 	if err != nil {
 		return nil, err
 	}
-	g.registries = &reg
+	g.registries = reg
 
 	if def.Topology != "" {
 		if err := validateTopology(g, def); err != nil {
@@ -165,7 +168,7 @@ func BuildGraph(def *circuit.CircuitDef, reg GraphRegistries) (Graph, error) {
 func validateTopology(g *DefaultGraph, def *circuit.CircuitDef) error {
 	v := circuit.DefaultTopologyValidator
 	if v == nil {
-		slog.Warn("topology validator not registered, skipping validation",
+		slog.WarnContext(context.Background(), "topology validator not registered, skipping validation",
 			"component", "build",
 			"topology", def.Topology,
 			"circuit", def.Circuit,
@@ -205,13 +208,13 @@ func buildGraphShape(g *DefaultGraph, def *circuit.CircuitDef) circuit.GraphShap
 }
 
 // resolveNode creates a Node from a circuit.NodeDef using handler + handler_type.
-func resolveNode(def *circuit.CircuitDef, nd circuit.NodeDef, reg GraphRegistries) (circuit.Node, error) {
+func resolveNode(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries) (circuit.Node, error) {
 	elem, _ := circuit.ResolveApproach(strings.ToLower(nd.Approach))
 	return resolveHandler(def, nd, reg, elem)
 }
 
 // resolveHandler resolves a node using the explicit handler + handler_type path.
-func resolveHandler(def *circuit.CircuitDef, nd circuit.NodeDef, reg GraphRegistries, elem circuit.Element) (circuit.Node, error) {
+func resolveHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem circuit.Element) (circuit.Node, error) {
 	handler := nd.Handler
 	if handler == "" {
 		handler = nd.Name
@@ -273,7 +276,7 @@ func resolveHandler(def *circuit.CircuitDef, nd circuit.NodeDef, reg GraphRegist
 		if !ok {
 			return nil, fmt.Errorf("node %q: handler %q not found in node registry", nd.Name, handler)
 		}
-		return factory(nd), nil
+		return factory(*nd), nil
 
 	case HandlerTypeDelegate:
 		if reg.Transformers == nil {
@@ -292,7 +295,7 @@ func resolveHandler(def *circuit.CircuitDef, nd circuit.NodeDef, reg GraphRegist
 		}, nil
 
 	case HandlerTypeCircuit:
-		slog.Debug("resolve circuit handler",
+		slog.DebugContext(context.Background(), "resolve circuit handler",
 			"component", "build",
 			"node", nd.Name,
 			"handler", handler,
@@ -302,7 +305,7 @@ func resolveHandler(def *circuit.CircuitDef, nd circuit.NodeDef, reg GraphRegist
 		)
 		if reg.Circuits != nil {
 			if cd, ok := reg.Circuits[handler]; ok {
-				slog.Debug("circuit handler resolved locally",
+				slog.DebugContext(context.Background(), "circuit handler resolved locally",
 					"component", "build",
 					"node", nd.Name,
 					"handler", handler,
@@ -316,7 +319,7 @@ func resolveHandler(def *circuit.CircuitDef, nd circuit.NodeDef, reg GraphRegist
 			}
 		}
 		if reg.MediatorEndpoint != "" {
-			slog.Debug("circuit handler delegating to mediator",
+			slog.DebugContext(context.Background(), "circuit handler delegating to mediator",
 				"component", "build",
 				"node", nd.Name,
 				"handler", handler,
@@ -338,7 +341,7 @@ func resolveHandler(def *circuit.CircuitDef, nd circuit.NodeDef, reg GraphRegist
 }
 
 // resolveTransformerByName resolves a transformer by name, checking builtins first.
-func resolveTransformerByName(_ *circuit.CircuitDef, name, nodeName string, reg GraphRegistries) (Transformer, error) {
+func resolveTransformerByName(_ *circuit.CircuitDef, name, nodeName string, reg *GraphRegistries) (Transformer, error) {
 	switch name {
 	case BuiltinTransformerGoTemplate:
 		return &goTemplateTransformer{}, nil
@@ -371,7 +374,7 @@ func (e *dslEdge) Evaluate(_ circuit.Artifact, _ *circuit.WalkerState) *circuit.
 }
 
 // resolveExtractor resolves an extractor by name.
-func resolveExtractor(def *circuit.CircuitDef, name string, nd circuit.NodeDef, reg GraphRegistries) (Extractor, error) {
+func resolveExtractor(def *circuit.CircuitDef, name string, nd *circuit.NodeDef, reg *GraphRegistries) (Extractor, error) {
 	switch name {
 	case BuiltinExtractorJSONSchema:
 		return &JSONSchemaExtractor{Schema: nd.Schema}, nil
@@ -414,7 +417,7 @@ func resolveExtractor(def *circuit.CircuitDef, name string, nd circuit.NodeDef, 
 }
 
 // resolveRenderer resolves a renderer by name.
-func resolveRenderer(name string, nd circuit.NodeDef, reg GraphRegistries) (Renderer, error) {
+func resolveRenderer(name string, nd *circuit.NodeDef, reg *GraphRegistries) (Renderer, error) {
 	if name == BuiltinRendererTemplate {
 		return &TemplateRenderer{Template: nd.Prompt}, nil
 	}

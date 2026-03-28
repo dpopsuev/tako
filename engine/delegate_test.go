@@ -283,7 +283,7 @@ func TestBuildGraph_DelegateNode_DSL(t *testing.T) {
 		}, nil
 	})
 
-	reg := GraphRegistries{
+	reg := &GraphRegistries{
 		Transformers: TransformerRegistry{
 			"passthrough": &passthroughTransformer{},
 			"plan":        planGen,
@@ -337,7 +337,7 @@ func TestBuildGraph_DelegateNode_MissingHandler(t *testing.T) {
 		},
 	}
 
-	_, err := BuildGraph(def, GraphRegistries{})
+	_, err := BuildGraph(def, &GraphRegistries{})
 	if err == nil {
 		t.Fatal("BuildGraph() should fail for delegate without handler")
 	}
@@ -415,7 +415,7 @@ func TestBuildGraph_CircuitRefNode(t *testing.T) {
 		},
 	}
 
-	reg := GraphRegistries{
+	reg := &GraphRegistries{
 		Transformers: TransformerRegistry{
 			"passthrough": &passthroughTransformer{},
 		},
@@ -468,7 +468,7 @@ func TestWalk_CircuitRefNode_SubWalk(t *testing.T) {
 		},
 	}
 
-	reg := GraphRegistries{
+	reg := &GraphRegistries{
 		Transformers: TransformerRegistry{
 			"passthrough": &passthroughTransformer{},
 		},
@@ -545,7 +545,7 @@ func TestWalk_CircuitRefNode_ContextInheritance(t *testing.T) {
 		},
 	}
 
-	reg := GraphRegistries{
+	reg := &GraphRegistries{
 		Transformers: TransformerRegistry{
 			"passthrough": &passthroughTransformer{},
 			"ctx-reader":  contextReader,
@@ -594,7 +594,7 @@ func TestBuildGraph_CircuitRefNode_MissingCircuit(t *testing.T) {
 		},
 	}
 
-	_, err := BuildGraph(def, GraphRegistries{
+	_, err := BuildGraph(def, &GraphRegistries{
 		Circuits: map[string]*circuit.CircuitDef{},
 	})
 	if err == nil {
@@ -635,7 +635,7 @@ func TestDelegateEvents_CarryCircuitType_CircuitRef(t *testing.T) {
 		},
 	}
 
-	reg := GraphRegistries{
+	reg := &GraphRegistries{
 		Transformers: TransformerRegistry{
 			"passthrough": &passthroughTransformer{},
 		},
@@ -704,7 +704,7 @@ func TestDelegateEvents_CarryCircuitType_DSLDelegate(t *testing.T) {
 		},
 	}
 
-	reg := GraphRegistries{
+	reg := &GraphRegistries{
 		Transformers: TransformerRegistry{
 			"passthrough": &passthroughTransformer{},
 			"plan":        planGen,
@@ -756,7 +756,7 @@ func TestBuildGraph_CircuitRefNode_NilRegistry(t *testing.T) {
 		},
 	}
 
-	_, err := BuildGraph(def, GraphRegistries{})
+	_, err := BuildGraph(def, &GraphRegistries{})
 	if err == nil {
 		t.Fatal("BuildGraph() should fail when no local circuit and no mediator")
 	}

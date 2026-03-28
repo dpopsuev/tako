@@ -43,6 +43,7 @@ func (n *curationNode) Process(_ context.Context, _ circuit.NodeContext) (circui
 	return nil, nil
 }
 
+//nolint:gocritic // hugeParam: signature required by engine.NodeRegistry
 func newCurationNode(def circuit.NodeDef) circuit.Node {
 	return &curationNode{
 		name:    def.Name,
@@ -181,5 +182,5 @@ func BuildCurationGraph(yamlData []byte) (engine.Graph, error) {
 	if err != nil {
 		return nil, err
 	}
-	return engine.BuildGraph(def, engine.GraphRegistries{Nodes: DefaultNodeRegistry(), Edges: DefaultEdgeFactory()})
+	return engine.BuildGraph(def, &engine.GraphRegistries{Nodes: DefaultNodeRegistry(), Edges: DefaultEdgeFactory()})
 }

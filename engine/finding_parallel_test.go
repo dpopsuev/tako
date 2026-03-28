@@ -31,7 +31,7 @@ func (n *findingEnforcerNodeImpl) ElementAffinity() circuit.Element { return "" 
 func (n *findingEnforcerNodeImpl) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	if n.finding != nil {
 		if c, ok := nc.WalkerState.Context[circuit.FindingCollectorKey].(circuit.FindingCollector); ok {
-			_ = c.Report(ctx, *n.finding)
+			_ = c.Report(ctx, n.finding)
 		}
 	}
 	return &stubArtifact{typ: "enforcer", confidence: 1.0, raw: "checked"}, nil
@@ -68,8 +68,8 @@ func TestArtifactCaptureObserver(t *testing.T) {
 	obs := &artifactCaptureObserver{store: store}
 
 	a := &stubArtifact{typ: "test", confidence: 0.8, raw: "data"}
-	obs.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "nodeA", Artifact: a})
-	obs.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "nodeB"})
+	obs.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "nodeA", Artifact: a})
+	obs.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "nodeB"})
 
 	if store.Len() != 1 {
 		t.Errorf("store.Len() = %d, want 1 (only EventNodeExit captured)", store.Len())
@@ -88,8 +88,8 @@ func TestArtifactCaptureObserver_FilteredNodes(t *testing.T) {
 
 	a1 := &stubArtifact{typ: "test", confidence: 0.8, raw: "a"}
 	a2 := &stubArtifact{typ: "test", confidence: 0.9, raw: "b"}
-	obs.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "nodeA", Artifact: a1})
-	obs.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "nodeB", Artifact: a2})
+	obs.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "nodeA", Artifact: a1})
+	obs.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "nodeB", Artifact: a2})
 
 	if store.Len() != 1 {
 		t.Errorf("store.Len() = %d, want 1 (only observed nodeA)", store.Len())
@@ -132,7 +132,7 @@ func TestRunWithEnforcer_WorkAndEnforcerBothRun(t *testing.T) {
 	workDef := twoNodeCircuit()
 	enforcerDef := twoNodeEnforcerCircuit()
 
-	workReg := GraphRegistries{
+	workReg := &GraphRegistries{
 		Nodes: NodeRegistry{
 			"step1": findingTestNode("step1", 0.9, map[string]any{"result": "ok"}),
 			"step2": findingTestNode("step2", 0.95, map[string]any{"result": "done"}),
@@ -140,7 +140,7 @@ func TestRunWithEnforcer_WorkAndEnforcerBothRun(t *testing.T) {
 	}
 
 	router := NewFindingRouter(nil, FindingHandlers{})
-	enforcerReg := GraphRegistries{
+	enforcerReg := &GraphRegistries{
 		Nodes: NodeRegistry{
 			"check": findingEnforcerNode("check", router, &circuit.Finding{
 				Severity: circuit.FindingWarning,
@@ -157,7 +157,7 @@ func TestRunWithEnforcer_WorkAndEnforcerBothRun(t *testing.T) {
 		context.Background(),
 		workDef,
 		workReg,
-		ParallelEnforcerConfig{
+		&ParallelEnforcerConfig{
 			EnforcerDef: enforcerDef,
 			Registries:  enforcerReg,
 			Router:      router,
@@ -192,14 +192,14 @@ func TestRunWithEnforcer_EnforcerCancelledOnWorkComplete(t *testing.T) {
 		Done:  "done",
 	}
 
-	workReg := GraphRegistries{
+	workReg := &GraphRegistries{
 		Nodes: NodeRegistry{
 			"step1": findingTestNode("step1", 0.9, "done"),
 			"step2": findingTestNode("step2", 0.95, "done"),
 		},
 	}
 
-	enforcerReg := GraphRegistries{
+	enforcerReg := &GraphRegistries{
 		Nodes: NodeRegistry{
 			"slow-check": func(_ circuit.NodeDef) circuit.Node {
 				return &slowNode{name: "slow-check", duration: 2 * time.Second}
@@ -212,7 +212,7 @@ func TestRunWithEnforcer_EnforcerCancelledOnWorkComplete(t *testing.T) {
 	defer cancel()
 
 	start := time.Now()
-	_, err := RunWithEnforcer(ctx, workDef, workReg, ParallelEnforcerConfig{
+	_, err := RunWithEnforcer(ctx, workDef, workReg, &ParallelEnforcerConfig{
 		EnforcerDef: enforcerDef,
 		Registries:  enforcerReg,
 	})
@@ -230,21 +230,21 @@ func TestRunWithEnforcer_DefaultRouter(t *testing.T) {
 	workDef := twoNodeCircuit()
 	enforcerDef := twoNodeEnforcerCircuit()
 
-	workReg := GraphRegistries{
+	workReg := &GraphRegistries{
 		Nodes: NodeRegistry{
 			"step1": findingTestNode("step1", 0.9, "ok"),
 			"step2": findingTestNode("step2", 0.95, "ok"),
 		},
 	}
 
-	enforcerReg := GraphRegistries{
+	enforcerReg := &GraphRegistries{
 		Nodes: NodeRegistry{
 			"check":  findingEnforcerNode("check", nil, nil),
 			"report": findingTestNode("report", 1.0, "done"),
 		},
 	}
 
-	findings, err := RunWithEnforcer(context.Background(), workDef, workReg, ParallelEnforcerConfig{
+	findings, err := RunWithEnforcer(context.Background(), workDef, workReg, &ParallelEnforcerConfig{
 		EnforcerDef: enforcerDef,
 		Registries:  enforcerReg,
 	})
@@ -279,14 +279,14 @@ func TestRunWithEnforcer_ErrorFinding(t *testing.T) {
 		Broker: func(_ circuit.Finding) { brokerCalled = true },
 	})
 
-	workReg := GraphRegistries{
+	workReg := &GraphRegistries{
 		Nodes: NodeRegistry{
 			"step1": findingTestNode("step1", 0.9, "ok"),
 			"step2": findingTestNode("step2", 0.95, "ok"),
 		},
 	}
 
-	enforcerReg := GraphRegistries{
+	enforcerReg := &GraphRegistries{
 		Nodes: NodeRegistry{
 			"audit": findingEnforcerNode("audit", router, &circuit.Finding{
 				Severity: circuit.FindingError,
@@ -299,7 +299,7 @@ func TestRunWithEnforcer_ErrorFinding(t *testing.T) {
 		},
 	}
 
-	findings, err := RunWithEnforcer(context.Background(), workDef, workReg, ParallelEnforcerConfig{
+	findings, err := RunWithEnforcer(context.Background(), workDef, workReg, &ParallelEnforcerConfig{
 		EnforcerDef: enforcerDef,
 		Registries:  enforcerReg,
 		Router:      router,

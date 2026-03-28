@@ -81,8 +81,8 @@ func (d *DocsDriver) Handles() toolkit.SourceKind {
 }
 
 // Ensure validates the documentation endpoint is reachable.
-func (d *DocsDriver) Ensure(ctx context.Context, src toolkit.Source) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodHead, src.URI, nil)
+func (d *DocsDriver) Ensure(ctx context.Context, src *toolkit.Source) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodHead, src.URI, http.NoBody)
 	if err != nil {
 		return fmt.Errorf("docs ensure: %w", err)
 	}
@@ -100,7 +100,7 @@ func (d *DocsDriver) Ensure(ctx context.Context, src toolkit.Source) error {
 // Search queries the documentation search endpoint.
 // The source URI should be the base URL (e.g. "https://docs.redhat.com").
 // Source tags can include "product" and "version" for filtering.
-func (d *DocsDriver) Search(ctx context.Context, src toolkit.Source, query string, maxResults int) ([]toolkit.SearchResult, error) {
+func (d *DocsDriver) Search(ctx context.Context, src *toolkit.Source, query string, maxResults int) ([]toolkit.SearchResult, error) {
 	searchURL, err := buildSearchURL(src, query)
 	if err != nil {
 		return nil, err
@@ -121,7 +121,7 @@ func (d *DocsDriver) Search(ctx context.Context, src toolkit.Source, query strin
 }
 
 // Read fetches a documentation page and returns it as plain text.
-func (d *DocsDriver) Read(ctx context.Context, src toolkit.Source, path string) ([]byte, error) {
+func (d *DocsDriver) Read(ctx context.Context, src *toolkit.Source, path string) ([]byte, error) {
 	pageURL := src.URI
 	if path != "" && path != "/" {
 		pageURL = strings.TrimRight(src.URI, "/") + "/" + strings.TrimLeft(path, "/")
@@ -144,12 +144,12 @@ func (d *DocsDriver) Read(ctx context.Context, src toolkit.Source, path string) 
 }
 
 // List is a no-op for documentation sources — search is the discovery mechanism.
-func (d *DocsDriver) List(_ context.Context, _ toolkit.Source, _ string, _ int) ([]toolkit.ContentEntry, error) {
+func (d *DocsDriver) List(_ context.Context, _ *toolkit.Source, _ string, _ int) ([]toolkit.ContentEntry, error) {
 	return nil, nil
 }
 
 func (d *DocsDriver) fetchURL(ctx context.Context, rawURL string) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +198,7 @@ func (d *DocsDriver) persistToDisk(key string, data []byte) {
 	_ = os.WriteFile(path, data, 0o644)
 }
 
-func buildSearchURL(src toolkit.Source, query string) (string, error) {
+func buildSearchURL(src *toolkit.Source, query string) (string, error) {
 	base := strings.TrimRight(src.URI, "/")
 	u, err := url.Parse(base + "/search/")
 	if err != nil {
@@ -223,7 +223,7 @@ func buildSearchURL(src toolkit.Source, query string) (string, error) {
 // parseSearchResults extracts doc links and snippets from the HTML response.
 // This is a simple heuristic parser — it looks for common doc page patterns.
 func parseSearchResults(sourceName, html string, maxResults int) []toolkit.SearchResult {
-	var results []toolkit.SearchResult
+	results := make([]toolkit.SearchResult, 0, maxResults)
 
 	lines := strings.Split(html, "\n")
 	for _, line := range lines {

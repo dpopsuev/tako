@@ -16,13 +16,13 @@ type InMemoryFindingCollector struct {
 	findings []circuit.Finding
 }
 
-func (c *InMemoryFindingCollector) Report(_ context.Context, f circuit.Finding) error {
+func (c *InMemoryFindingCollector) Report(_ context.Context, f *circuit.Finding) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if f.Timestamp.IsZero() {
 		f.Timestamp = time.Now().UTC()
 	}
-	c.findings = append(c.findings, f)
+	c.findings = append(c.findings, *f)
 	return nil
 }
 

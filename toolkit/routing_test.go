@@ -120,7 +120,7 @@ func TestLoadRoutingLog_InvalidJSON(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "bad.json")
-	os.WriteFile(path, []byte("{invalid"), 0644)
+	os.WriteFile(path, []byte("{invalid"), 0o644)
 	_, err := LoadRoutingLog(path)
 	if err == nil {
 		t.Error("expected error for invalid JSON")

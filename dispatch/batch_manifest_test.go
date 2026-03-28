@@ -78,7 +78,7 @@ func TestReadManifest_MissingFile(t *testing.T) {
 func TestReadManifest_InvalidJSON(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "bad.json")
-	if err := os.WriteFile(path, []byte("not json"), 0644); err != nil {
+	if err := os.WriteFile(path, []byte("not json"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	_, err := ReadManifest(path)

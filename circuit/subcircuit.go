@@ -3,11 +3,11 @@ package circuit
 // Category: DSL & Build — sub-circuit loading from filesystem.
 
 import (
+	"context"
 	"io/fs"
 	"log/slog"
 	"path/filepath"
 	"strings"
-
 )
 
 // LoadSubCircuitsFromFS loads sub-circuit definitions from a filesystem.
@@ -59,7 +59,7 @@ func LoadSubCircuitsFromFS(fsys fs.FS, resolvers map[string]AssetResolver) map[s
 		// these via remote delegation instead.
 		if def.Import != "" {
 			if _, hasResolver := resolvers[name]; !hasResolver {
-				slog.Debug("skipping sub-circuit with unresolved import",
+				slog.DebugContext(context.Background(), "skipping sub-circuit with unresolved import",
 					LogKeyComponent, LogComponentDSL,
 					LogKeyCircuit, name,
 					"import", def.Import,
@@ -69,7 +69,7 @@ func LoadSubCircuitsFromFS(fsys fs.FS, resolvers map[string]AssetResolver) map[s
 		}
 
 		circuits[name] = def
-		slog.Debug(LogSubCircuitLoaded, LogKeyComponent, LogComponentDSL,
+		slog.DebugContext(context.Background(), LogSubCircuitLoaded, LogKeyComponent, LogComponentDSL,
 			LogKeyCircuit, name, "nodes", len(def.Nodes))
 	}
 

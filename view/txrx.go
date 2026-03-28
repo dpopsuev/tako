@@ -42,7 +42,7 @@ func NewTxRxLog(capacity int) *TxRxLog {
 }
 
 // Push adds an entry, overwriting the oldest if full.
-func (l *TxRxLog) Push(e TxRxEntry) {
+func (l *TxRxLog) Push(e *TxRxEntry) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	idx := (l.head + l.count) % l.cap
@@ -51,7 +51,7 @@ func (l *TxRxLog) Push(e TxRxEntry) {
 	} else {
 		l.count++
 	}
-	l.entries[idx] = e
+	l.entries[idx] = *e
 }
 
 // Len returns the number of entries.

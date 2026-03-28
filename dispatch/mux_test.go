@@ -1,6 +1,7 @@
 package dispatch_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"math/rand"
@@ -47,7 +48,7 @@ func TestMux_SingleRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Dispatch error: %v", err)
 	}
-	if string(got) != string(want) {
+	if !bytes.Equal(got, want) {
 		t.Errorf("Dispatch got %s, want %s", got, want)
 	}
 }
@@ -88,10 +89,10 @@ func TestMux_ConcurrentDispatch_CorrectRouting(t *testing.T) {
 	}
 
 	// Submit in reverse: step2 first, then step1
-	if err := d.SubmitArtifact(ctx, step2.DispatchID, []byte(fmt.Sprintf(`{"case":"%s"}`, step2.CaseID))); err != nil {
+	if err := d.SubmitArtifact(ctx, step2.DispatchID, []byte(fmt.Sprintf(`{"case":%q}`, step2.CaseID))); err != nil {
 		t.Fatalf("SubmitArtifact step2: %v", err)
 	}
-	if err := d.SubmitArtifact(ctx, step1.DispatchID, []byte(fmt.Sprintf(`{"case":"%s"}`, step1.CaseID))); err != nil {
+	if err := d.SubmitArtifact(ctx, step1.DispatchID, []byte(fmt.Sprintf(`{"case":%q}`, step1.CaseID))); err != nil {
 		t.Fatalf("SubmitArtifact step1: %v", err)
 	}
 
@@ -100,7 +101,7 @@ func TestMux_ConcurrentDispatch_CorrectRouting(t *testing.T) {
 		if r.err != nil {
 			t.Fatalf("Dispatch %s error: %v", r.caseID, r.err)
 		}
-		expected := fmt.Sprintf(`{"case":"%s"}`, r.caseID)
+		expected := fmt.Sprintf(`{"case":%q}`, r.caseID)
 		if string(r.data) != expected {
 			t.Errorf("case %s got %s, want %s — artifact routed to wrong dispatcher", r.caseID, r.data, expected)
 		}
@@ -147,7 +148,7 @@ func TestMux_HighParallelism(t *testing.T) {
 	rand.Shuffle(n, func(i, j int) { steps[i], steps[j] = steps[j], steps[i] })
 
 	for _, s := range steps {
-		payload := []byte(fmt.Sprintf(`{"case":"%s"}`, s.CaseID))
+		payload := []byte(fmt.Sprintf(`{"case":%q}`, s.CaseID))
 		if err := d.SubmitArtifact(ctx, s.DispatchID, payload); err != nil {
 			t.Fatalf("SubmitArtifact dispatch_id=%d: %v", s.DispatchID, err)
 		}
@@ -236,7 +237,7 @@ func TestMux_ContextCancel_OneOfMany(t *testing.T) {
 
 	// Submit only 2 of 3 (skip the first one to simulate one dispatch never completing)
 	for i := 1; i < 3; i++ {
-		payload := []byte(fmt.Sprintf(`{"case":"%s"}`, steps[i].CaseID))
+		payload := []byte(fmt.Sprintf(`{"case":%q}`, steps[i].CaseID))
 		if err := d.SubmitArtifact(ctx, steps[i].DispatchID, payload); err != nil {
 			t.Fatalf("SubmitArtifact %d: %v", i, err)
 		}
@@ -838,7 +839,7 @@ func TestMux_PerDispatchTimeout_SubmitBeforeDeadline(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected success, got: %v", err)
 	}
-	if string(got) != string(want) {
+	if !bytes.Equal(got, want) {
 		t.Errorf("got %s, want %s", got, want)
 	}
 }
@@ -854,7 +855,7 @@ func TestMux_MultipleSequentialRoundTrips(t *testing.T) {
 				t.Errorf("round %d GetNextStep error: %v", i, err)
 				return
 			}
-			artifact := []byte(fmt.Sprintf(`{"round":"%s"}`, dc.CaseID))
+			artifact := []byte(fmt.Sprintf(`{"round":%q}`, dc.CaseID))
 			if err := d.SubmitArtifact(ctx, dc.DispatchID, artifact); err != nil {
 				t.Errorf("round %d SubmitArtifact error: %v", i, err)
 				return
@@ -868,7 +869,7 @@ func TestMux_MultipleSequentialRoundTrips(t *testing.T) {
 		if err != nil {
 			t.Fatalf("round %d Dispatch error: %v", i, err)
 		}
-		want := fmt.Sprintf(`{"round":"%s"}`, caseID)
+		want := fmt.Sprintf(`{"round":%q}`, caseID)
 		if string(got) != want {
 			t.Errorf("round %d got %s, want %s", i, got, want)
 		}
@@ -908,7 +909,7 @@ func TestMux_LateConsumer_BlocksUntilReady(t *testing.T) {
 		if r.err != nil {
 			t.Fatalf("Dispatch failed with late consumer: %v", r.err)
 		}
-		if string(r.data) != string(want) {
+		if !bytes.Equal(r.data, want) {
 			t.Errorf("got %s, want %s", r.data, want)
 		}
 	case <-time.After(5 * time.Second):

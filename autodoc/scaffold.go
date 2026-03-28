@@ -25,7 +25,7 @@ type ScaffoldConfig struct {
 
 // Scaffold generates a Kubernetes-style docs tree. Auto-generated sections
 // are delimited by markers for idempotent updates.
-func Scaffold(cfg ScaffoldConfig) error {
+func Scaffold(cfg *ScaffoldConfig) error {
 	if cfg.OutputDir == "" {
 		cfg.OutputDir = filepath.Join(cfg.ProjectRoot, "docs")
 	}
@@ -66,7 +66,7 @@ func Scaffold(cfg ScaffoldConfig) error {
 	return nil
 }
 
-func writeReadme(cfg ScaffoldConfig) error {
+func writeReadme(cfg *ScaffoldConfig) error {
 	name := cfg.Manifest.Name
 	desc := cfg.Manifest.Description
 	if desc == "" {
@@ -99,7 +99,7 @@ func writeReadme(cfg ScaffoldConfig) error {
 	return writeIdempotent(filepath.Join(cfg.ProjectRoot, "README.md"), b.String())
 }
 
-func writeCircuitPage(cfg ScaffoldConfig, def *circuit.CircuitDef) error {
+func writeCircuitPage(cfg *ScaffoldConfig, def *circuit.CircuitDef) error {
 	path := filepath.Join(cfg.OutputDir, "circuits", def.Circuit+".md")
 
 	var b strings.Builder
@@ -123,7 +123,7 @@ func writeCircuitPage(cfg ScaffoldConfig, def *circuit.CircuitDef) error {
 	return writeIdempotent(path, b.String())
 }
 
-func writeCircuitIndex(cfg ScaffoldConfig) error {
+func writeCircuitIndex(cfg *ScaffoldConfig) error {
 	path := filepath.Join(cfg.OutputDir, "circuits", "index.md")
 
 	var b strings.Builder
@@ -140,7 +140,7 @@ func writeCircuitIndex(cfg ScaffoldConfig) error {
 	return writeIdempotent(path, b.String())
 }
 
-func writeStubs(cfg ScaffoldConfig) error {
+func writeStubs(cfg *ScaffoldConfig) error {
 	stubs := map[string]string{
 		filepath.Join(cfg.OutputDir, "concepts", "architecture.md"):          "# Architecture\n\n*TODO: Describe the project architecture.*\n",
 		filepath.Join(cfg.OutputDir, "concepts", "pipeline-stages.md"):       "# Pipeline Stages\n\n*TODO: Explain the pipeline stages.*\n",
@@ -163,7 +163,7 @@ func writeStubs(cfg ScaffoldConfig) error {
 	return nil
 }
 
-func writeScorecardRef(cfg ScaffoldConfig) error {
+func writeScorecardRef(cfg *ScaffoldConfig) error {
 	path := filepath.Join(cfg.OutputDir, "reference", "scorecards.md")
 
 	var b strings.Builder
@@ -183,7 +183,7 @@ func writeScorecardRef(cfg ScaffoldConfig) error {
 
 // writeIdempotent writes content to a file. If the file already exists and
 // contains autodoc markers, only the marked section is replaced.
-func writeIdempotent(path string, content string) error {
+func writeIdempotent(path, content string) error {
 	existing, err := os.ReadFile(path)
 	if err != nil || !strings.Contains(string(existing), markerBegin) {
 		return os.WriteFile(path, []byte(content), 0o644)

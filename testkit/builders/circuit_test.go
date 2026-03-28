@@ -83,7 +83,7 @@ func TestCircuitDefBuilder_AddNodeDef(t *testing.T) {
 		Prompt:  "Do the thing",
 	}
 	def := builders.NewCircuitDef("test").
-		AddNodeDef(nd).
+		AddNodeDef(&nd).
 		AddEdge("custom", "DONE", "true").
 		Start("custom").Done("DONE").
 		Build()
@@ -106,7 +106,7 @@ func TestCircuitDefBuilder_AddEdgeDef(t *testing.T) {
 	def := builders.NewCircuitDef("test").
 		AddNode("A", "a").
 		AddNode("B", "b").
-		AddEdgeDef(ed).
+		AddEdgeDef(&ed).
 		Start("A").Done("DONE").
 		Build()
 

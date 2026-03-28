@@ -115,7 +115,7 @@ func testScoreCard() calibrate.ScoreCard {
 			calibrate.MetricDef{ID: "M2", Name: "Coverage", Tier: calibrate.TierOutcome, Direction: calibrate.HigherIsBetter, Threshold: 0.70, Weight: 0.30},
 			calibrate.MetricDef{ID: "M18", Name: "TokenUsage", Tier: calibrate.TierEfficiency, Direction: calibrate.LowerIsBetter, Threshold: 200000, Weight: 0},
 		).
-		WithAggregate(calibrate.AggregateConfig{
+		WithAggregate(&calibrate.AggregateConfig{
 			ID: "M19", Name: "Overall", Formula: "weighted_average",
 			Threshold: 0.70, Include: []string{"M1", "M2"},
 		}).
@@ -307,7 +307,7 @@ func TestScoreCardBuilder_FullChain(t *testing.T) {
 		WithDescription("desc").
 		WithCostModel(calibrate.CostModel{CostPerBatchUSD: 1.0}).
 		WithMetrics(calibrate.MetricDef{ID: "X"}).
-		WithAggregate(calibrate.AggregateConfig{ID: "AGG"}).
+		WithAggregate(&calibrate.AggregateConfig{ID: "AGG"}).
 		Build()
 	if sc.Name != "my-card" {
 		t.Error("name")
@@ -360,7 +360,7 @@ aggregate:
 `
 	dir := t.TempDir()
 	path := filepath.Join(dir, "scorecard.yaml")
-	if err := os.WriteFile(path, []byte(yamlContent), 0644); err != nil {
+	if err := os.WriteFile(path, []byte(yamlContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	sc, err := calibrate.LoadScoreCard(path)
@@ -387,7 +387,7 @@ aggregate:
 func TestLoadScoreCard_InvalidFormat(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "scorecard.json")
-	os.WriteFile(path, []byte(`{}`), 0644)
+	os.WriteFile(path, []byte(`{}`), 0o644)
 	_, err := calibrate.LoadScoreCard(path)
 	if err == nil {
 		t.Error("should reject .json format")
@@ -412,7 +412,7 @@ func TestThreeLayerPattern(t *testing.T) {
 
 	sc := calibrate.DefaultScoreCard().
 		WithMetrics(domainMetric).
-		WithAggregate(calibrate.AggregateConfig{
+		WithAggregate(&calibrate.AggregateConfig{
 			ID: "overall", Name: "Overall",
 			Formula: "weighted_average", Threshold: 0.70,
 			Include: []string{"domain_accuracy", "confidence_calibration"},

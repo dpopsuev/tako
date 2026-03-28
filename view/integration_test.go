@@ -31,8 +31,8 @@ func TestIntegration_WalkSequence(t *testing.T) {
 		{Type: circuit.EventWalkComplete},
 	}
 
-	for _, e := range events {
-		store.OnEvent(e)
+	for i := range events {
+		store.OnEvent(&events[i])
 	}
 
 	diffs := collectDiffs(ch, 100*time.Millisecond)
@@ -90,10 +90,10 @@ func TestIntegration_WalkWithError(t *testing.T) {
 	id, ch := store.Subscribe()
 	defer store.Unsubscribe(id)
 
-	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall", Walker: "w1"})
-	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "recall", Walker: "w1"})
-	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "triage", Walker: "w1"})
-	store.OnEvent(circuit.WalkEvent{
+	store.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall", Walker: "w1"})
+	store.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "recall", Walker: "w1"})
+	store.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "triage", Walker: "w1"})
+	store.OnEvent(&circuit.WalkEvent{
 		Type:   circuit.EventWalkError,
 		Node:   "triage",
 		Walker: "w1",
@@ -142,7 +142,7 @@ func TestIntegration_TwoSubscribers(t *testing.T) {
 	defer store.Unsubscribe(id1)
 	defer store.Unsubscribe(id2)
 
-	store.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall", Walker: "w1"})
+	store.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall", Walker: "w1"})
 
 	diffs1 := collectDiffs(ch1, 50*time.Millisecond)
 	diffs2 := collectDiffs(ch2, 50*time.Millisecond)

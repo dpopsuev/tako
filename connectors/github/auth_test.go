@@ -21,7 +21,7 @@ func TestResolveToken_File(t *testing.T) {
 	t.Setenv(tokenEnvVar, "")
 	dir := t.TempDir()
 	tokenFile := filepath.Join(dir, "token")
-	os.WriteFile(tokenFile, []byte("file-token-456\n"), 0600)
+	os.WriteFile(tokenFile, []byte("file-token-456\n"), 0o600)
 
 	tok, err := ResolveToken(tokenFile)
 	if err != nil {

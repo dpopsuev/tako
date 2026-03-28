@@ -44,7 +44,7 @@ func SessionHooksToConfig(hooks engine.SessionHooks) CircuitConfig {
 				return nil, SessionMeta{}, err
 			}
 
-			runFn := buildRunFunc(sessionCfg, engineParams)
+			runFn := buildRunFunc(sessionCfg, &engineParams)
 
 			// ACP dispatch mode: spawn in-process ACP agent workers that
 			// bridge MuxDispatcher <-> agent CLIs. No external workers needed.
@@ -65,14 +65,14 @@ func SessionHooksToConfig(hooks engine.SessionHooks) CircuitConfig {
 	}
 }
 
-func buildRunFunc(cfg *engine.SessionConfig, params engine.SessionParams) RunFunc {
+func buildRunFunc(cfg *engine.SessionConfig, params *engine.SessionParams) RunFunc {
 	if cfg.RunFunc != nil {
 		return cfg.RunFunc
 	}
 	return func(ctx context.Context) (any, error) {
 		bwCfg := engine.BatchWalkConfig{
 			Def: cfg.CircuitDef,
-			Shared: engine.GraphRegistries{
+			Shared: &engine.GraphRegistries{
 				Transformers: cfg.Transformers,
 				Extractors:   cfg.Extractors,
 				Hooks:        cfg.Hooks,
@@ -124,7 +124,7 @@ func wrapWithACPWorkers(inner RunFunc, params StartParams, disp *dispatch.MuxDis
 			},
 		})
 		if collErr != nil {
-			slog.Warn("collective spawn failed, falling back to single-agent dispatch", "error", collErr)
+			slog.WarnContext(ctx, "collective spawn failed, falling back to single-agent dispatch", "error", collErr)
 		} else {
 			acpOpts = append(acpOpts, dispatch.WithACPWorkerCollective(coll))
 		}
@@ -134,7 +134,7 @@ func wrapWithACPWorkers(inner RunFunc, params StartParams, disp *dispatch.MuxDis
 		)
 		go func() {
 			if err := acpDisp.Run(ctx); err != nil {
-				slog.Error("ACP worker dispatch error", "error", err)
+				slog.ErrorContext(ctx, "ACP worker dispatch error", "error", err)
 			}
 		}()
 

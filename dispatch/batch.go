@@ -11,6 +11,11 @@ import (
 	"github.com/dpopsuev/origami/agentport"
 )
 
+const (
+	statusError = "error"
+	statusDone  = "done"
+)
+
 // BatchFileDispatcher writes N signals concurrently, generates a batch
 // manifest and briefing file, then polls all N artifact paths in parallel.
 type BatchFileDispatcher struct {
@@ -33,7 +38,7 @@ type BatchFileDispatcherConfig struct {
 }
 
 // NewBatchFileDispatcher creates a batch dispatcher.
-func NewBatchFileDispatcher(cfg BatchFileDispatcherConfig) *BatchFileDispatcher {
+func NewBatchFileDispatcher(cfg *BatchFileDispatcherConfig) *BatchFileDispatcher {
 	if cfg.BatchSize <= 0 {
 		cfg.BatchSize = 4
 	}
@@ -59,7 +64,7 @@ type BatchResult struct {
 
 // DispatchBatch writes N signals, generates a manifest and briefing path,
 // then polls all N artifact paths concurrently.
-func (d *BatchFileDispatcher) DispatchBatch(ctx context.Context, ctxs []agentport.Context, phase string, briefingPath string) ([][]byte, []error) {
+func (d *BatchFileDispatcher) DispatchBatch(ctx context.Context, ctxs []agentport.Context, phase, briefingPath string) ([][]byte, []error) {
 	n := len(ctxs)
 	if n == 0 {
 		return nil, nil
@@ -68,7 +73,7 @@ func (d *BatchFileDispatcher) DispatchBatch(ctx context.Context, ctxs []agentpor
 	d.batchID++
 	bid := d.batchID
 
-	d.log.Debug("batch dispatch begin",
+	d.log.DebugContext(ctx, "batch dispatch begin",
 		"batch_id", bid, "signals", n, "phase", phase)
 
 	signals := make([]BatchSignalEntry, n)
@@ -83,7 +88,7 @@ func (d *BatchFileDispatcher) DispatchBatch(ctx context.Context, ctxs []agentpor
 
 	manifest := NewBatchManifest(bid, phase, briefingPath, signals)
 	manifestPath := filepath.Join(d.suiteDir, "batch-manifest.json")
-	if err := os.MkdirAll(d.suiteDir, 0755); err != nil {
+	if err := os.MkdirAll(d.suiteDir, 0o755); err != nil {
 		errs := make([]error, n)
 		for i := range errs {
 			errs[i] = fmt.Errorf("mkdir suite dir: %w", err)
@@ -98,7 +103,7 @@ func (d *BatchFileDispatcher) DispatchBatch(ctx context.Context, ctxs []agentpor
 		return make([][]byte, n), errs
 	}
 
-	d.log.Debug("manifest written",
+	d.log.DebugContext(ctx, "manifest written",
 		"batch_id", bid, "path", manifestPath, "signals", n)
 
 	manifest.Status = "in_progress"
@@ -119,31 +124,27 @@ func (d *BatchFileDispatcher) DispatchBatch(ctx context.Context, ctxs []agentpor
 				Err:   err,
 			}
 			if err != nil {
-				signals[idx].Status = "error"
+				signals[idx].Status = statusError
 			} else {
-				signals[idx].Status = "done"
+				signals[idx].Status = statusDone
 			}
 		}(i, dc)
 	}
 
 	wg.Wait()
 
-	allDone := true
 	allError := true
 	for _, r := range results {
-		if r.Err != nil {
-			allDone = false
-		} else {
+		if r.Err == nil {
 			allError = false
 		}
 	}
 
-	if allError {
-		manifest.Status = "error"
-	} else if allDone {
-		manifest.Status = "done"
-	} else {
-		manifest.Status = "done"
+	switch {
+	case allError:
+		manifest.Status = statusError
+	default:
+		manifest.Status = statusDone
 	}
 	manifest.Signals = signals
 	_ = WriteManifest(manifestPath, manifest)
@@ -151,11 +152,11 @@ func (d *BatchFileDispatcher) DispatchBatch(ctx context.Context, ctxs []agentpor
 	if d.tokenBudget > 0 {
 		budgetPath := filepath.Join(d.suiteDir, "budget-status.json")
 		if err := WriteBudgetStatus(budgetPath, d.tokenBudget, d.tokenUsed); err != nil {
-			d.log.Warn("failed to write budget status", "error", err)
+			d.log.WarnContext(ctx, "failed to write budget status", "error", err)
 		}
 	}
 
-	d.log.Debug("batch dispatch complete",
+	d.log.DebugContext(ctx, "batch dispatch complete",
 		"batch_id", bid, "status", manifest.Status)
 
 	data := make([][]byte, n)
@@ -169,6 +170,8 @@ func (d *BatchFileDispatcher) DispatchBatch(ctx context.Context, ctxs []agentpor
 }
 
 // Dispatch implements the Dispatcher interface for single-signal compatibility.
+//
+//nolint:gocritic // hugeParam: interface conformance (agentport.Dispatcher)
 func (d *BatchFileDispatcher) Dispatch(ctx context.Context, dc agentport.Context) ([]byte, error) {
 	data, errs := d.DispatchBatch(ctx, []agentport.Context{dc}, "single", "")
 	if len(errs) > 0 && errs[0] != nil {
@@ -198,10 +201,10 @@ func (d *BatchFileDispatcher) ManifestPath() string {
 // WriteBriefing writes a briefing file to the suite directory and returns its path.
 func (d *BatchFileDispatcher) WriteBriefing(content string) (string, error) {
 	path := filepath.Join(d.suiteDir, "briefing.md")
-	if err := os.MkdirAll(d.suiteDir, 0755); err != nil {
+	if err := os.MkdirAll(d.suiteDir, 0o755); err != nil {
 		return "", fmt.Errorf("mkdir for briefing: %w", err)
 	}
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		return "", fmt.Errorf("write briefing: %w", err)
 	}
 	return path, nil

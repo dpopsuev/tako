@@ -7,6 +7,8 @@ import (
 	"github.com/dpopsuev/origami/circuit"
 )
 
+const testNodeName = "test"
+
 // RunWalkerContract runs the walker compliance suite.
 func RunWalkerContract(t *testing.T, factory func() circuit.Walker) {
 	t.Helper()
@@ -29,8 +31,8 @@ func RunWalkerContract(t *testing.T, factory func() circuit.Walker) {
 	t.Run("State_Consistent", func(t *testing.T) {
 		w := factory()
 		s := w.State()
-		s.CurrentNode = "test"
-		if s.CurrentNode != "test" {
+		s.CurrentNode = testNodeName
+		if s.CurrentNode != testNodeName {
 			t.Error("State().CurrentNode not persisted")
 		}
 		// WalkerState is intentionally NOT thread-safe — walkers
@@ -39,7 +41,7 @@ func RunWalkerContract(t *testing.T, factory func() circuit.Walker) {
 
 	t.Run("Handle_ProducesArtifact", func(t *testing.T) {
 		w := factory()
-		node := &contractNode{name: "test"}
+		node := &contractNode{name: testNodeName}
 		nc := circuit.NodeContext{
 			WalkerState: w.State(),
 			Meta:        make(map[string]any),

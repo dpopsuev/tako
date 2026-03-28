@@ -19,10 +19,10 @@ func TestTraceRecorder_WalkEvents(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Walker name IS the case ID (BatchWalk uses circuit.NewProcessWalker(caseID)).
-	rec.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall", Walker: "C04"})
-	rec.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "recall", Walker: "C04", Elapsed: 5 * time.Second})
-	rec.OnEvent(circuit.WalkEvent{Type: circuit.EventEdgeEvaluate, Node: "recall", Edge: "recall-triage", Walker: "C04"})
-	rec.OnEvent(circuit.WalkEvent{Type: circuit.EventTransition, Node: "recall", Edge: "recall-triage", Walker: "C04"})
+	rec.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall", Walker: "C04"})
+	rec.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "recall", Walker: "C04", Elapsed: 5 * time.Second})
+	rec.OnEvent(&circuit.WalkEvent{Type: circuit.EventEdgeEvaluate, Node: "recall", Edge: "recall-triage", Walker: "C04"})
+	rec.OnEvent(&circuit.WalkEvent{Type: circuit.EventTransition, Node: "recall", Edge: "recall-triage", Walker: "C04"})
 
 	if err := rec.Close(); err != nil {
 		t.Fatal(err)
@@ -58,7 +58,7 @@ func TestTraceRecorder_ArtifactGetsTraceLevel(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	rec.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "recall", Walker: "C04", Artifact: &testRecArtifact{}})
+	rec.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "recall", Walker: "C04", Artifact: &testRecArtifact{}})
 	rec.Close()
 
 	events := readTraceEvents(t, path)
@@ -129,7 +129,7 @@ func TestTraceRecorder_Concurrent(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for j := 0; j < 50; j++ {
-				rec.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "test"})
+				rec.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "test"})
 				rec.HandleSignal(
 					time.Now().UTC().Format(time.RFC3339),
 					"test", "agent", "", "", nil,

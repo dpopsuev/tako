@@ -8,7 +8,10 @@ import (
 	"strings"
 )
 
-const maxTreeDepth = 4
+const (
+	maxTreeDepth = 4
+	gitDir       = ".git"
+)
 
 // LocalTreeEntry represents a file or directory entry in a repository listing.
 // This is the internal type; git_driver.go maps these to skn.ContentEntry.
@@ -45,14 +48,14 @@ func ListTree(_ context.Context, localPath string, maxDepth int) ([]LocalTreeEnt
 		}
 
 		rel := path[baseLen:]
-		if len(rel) > 0 && rel[0] == filepath.Separator {
+		if rel != "" && rel[0] == filepath.Separator {
 			rel = rel[1:]
 		}
 		if rel == "" {
 			return nil
 		}
 
-		if d.Name() == ".git" {
+		if d.Name() == gitDir {
 			return filepath.SkipDir
 		}
 		if strings.HasPrefix(d.Name(), ".") && d.IsDir() {

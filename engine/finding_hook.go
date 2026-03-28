@@ -8,6 +8,8 @@ import (
 	"github.com/dpopsuev/origami/circuit"
 )
 
+const hookNameFindingVeto = "finding-veto"
+
 // VetoHook is an after-hook that checks the FindingCollector for
 // FindingError findings targeting the current node. When found, it
 // returns ErrFindingVeto, which the hookingWalker intercepts to wrap
@@ -21,7 +23,7 @@ func NewVetoHook(collector circuit.FindingCollector) *VetoHook {
 	return &VetoHook{collector: collector}
 }
 
-func (h *VetoHook) Name() string { return "finding-veto" }
+func (h *VetoHook) Name() string { return hookNameFindingVeto }
 
 func (h *VetoHook) Run(_ context.Context, nodeName string, artifact circuit.Artifact) error {
 	if artifact == nil {

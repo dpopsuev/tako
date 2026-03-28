@@ -379,7 +379,7 @@ func TestScaffold(t *testing.T) {
 		Circuits:    []*circuit.CircuitDef{simpleCircuit(), zonedCircuit()},
 	}
 
-	if err := Scaffold(cfg); err != nil {
+	if err := Scaffold(&cfg); err != nil {
 		t.Fatalf("Scaffold: %v", err)
 	}
 
@@ -437,7 +437,7 @@ func TestScaffold_Idempotent(t *testing.T) {
 		Circuits:    []*circuit.CircuitDef{simpleCircuit()},
 	}
 
-	if err := Scaffold(cfg); err != nil {
+	if err := Scaffold(&cfg); err != nil {
 		t.Fatalf("first Scaffold: %v", err)
 	}
 
@@ -449,7 +449,7 @@ func TestScaffold_Idempotent(t *testing.T) {
 	os.WriteFile(readmePath, []byte(handwritten), 0o644)
 
 	cfg.Circuits = append(cfg.Circuits, zonedCircuit())
-	if err := Scaffold(cfg); err != nil {
+	if err := Scaffold(&cfg); err != nil {
 		t.Fatalf("second Scaffold: %v", err)
 	}
 
@@ -475,7 +475,7 @@ func TestScaffold_WithScorecards(t *testing.T) {
 		Scorecards:  []string{scPath},
 	}
 
-	if err := Scaffold(cfg); err != nil {
+	if err := Scaffold(&cfg); err != nil {
 		t.Fatalf("Scaffold: %v", err)
 	}
 

@@ -135,8 +135,8 @@ func testCircuitDef() *circuit.CircuitDef {
 	}
 }
 
-func testRegistries() GraphRegistries {
-	return GraphRegistries{
+func testRegistries() *GraphRegistries {
+	return &GraphRegistries{
 		Transformers: TransformerRegistry{"passthrough": &passthroughTransformer{}},
 	}
 }

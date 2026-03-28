@@ -56,7 +56,7 @@ func TestResolve_AsteriskLike(t *testing.T) {
 	}
 
 	// Root should have options for source (writer/discoverer/store are optional)
-	var optNames []string
+	optNames := make([]string, 0, len(g.Root.Options))
 	for _, o := range g.Root.Options {
 		optNames = append(optNames, o.OptionFunc)
 	}

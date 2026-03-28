@@ -78,7 +78,7 @@ func TestFile_ReadJSON(t *testing.T) {
 	dir := t.TempDir()
 	data := map[string]any{"key": "value"}
 	raw, _ := json.Marshal(data)
-	os.WriteFile(filepath.Join(dir, "test.json"), raw, 0644)
+	os.WriteFile(filepath.Join(dir, "test.json"), raw, 0o644)
 
 	ft := NewFile(WithRootDir(dir))
 	if ft.Name() != "file" {
@@ -101,7 +101,7 @@ func TestFile_ReadJSON(t *testing.T) {
 
 func TestFile_ReadText(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "readme.txt"), []byte("hello world"), 0644)
+	os.WriteFile(filepath.Join(dir, "readme.txt"), []byte("hello world"), 0o644)
 
 	ft := NewFile(WithRootDir(dir))
 	tc := &engine.TransformerContext{Prompt: "readme.txt"}
@@ -209,6 +209,7 @@ type mockDispatcher struct {
 	err      error
 }
 
+//nolint:gocritic // hugeParam: interface conformance (agentport.Dispatcher)
 func (m *mockDispatcher) Dispatch(_ context.Context, ctx agentport.Context) ([]byte, error) {
 	return m.response, m.err
 }

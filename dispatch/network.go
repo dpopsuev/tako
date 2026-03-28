@@ -114,7 +114,7 @@ func (s *NetworkServer) Serve(ctx context.Context) error {
 	s.started = true
 	s.mu.Unlock()
 
-	s.log.Info("network server started", slog.String("addr", s.addr))
+	s.log.InfoContext(ctx, "network server started", "addr", s.addr)
 
 	go func() {
 		<-ctx.Done()
@@ -170,7 +170,7 @@ func (s *NetworkServer) handleGetNext(w http.ResponseWriter, r *http.Request) {
 
 	dc, err := s.dispatcher.GetNextStepWithHints(r.Context(), hints)
 	if err != nil {
-		s.log.Error("get next step failed", "error", err)
+		s.log.ErrorContext(r.Context(), "get next step failed", "error", err)
 		http.Error(w, "dispatch unavailable", http.StatusServiceUnavailable)
 		return
 	}
@@ -195,7 +195,7 @@ func (s *NetworkServer) handleSubmit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.dispatcher.SubmitArtifact(r.Context(), req.DispatchID, req.Data); err != nil {
-		s.log.Error("submit artifact failed", "dispatch_id", req.DispatchID, "error", err)
+		s.log.ErrorContext(r.Context(), "submit artifact failed", "dispatch_id", req.DispatchID, "error", err)
 		http.Error(w, "submit failed", http.StatusInternalServerError)
 		return
 	}
@@ -340,7 +340,7 @@ func (c *NetworkClient) GetNextStepWithHints(ctx context.Context, hints agentpor
 		url += fmt.Sprintf("%sconsecutive_misses=%d", sep, hints.ConsecutiveMisses)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 	if err != nil {
 		return agentport.Context{}, fmt.Errorf("network client: create request: %w", err)
 	}
@@ -438,7 +438,7 @@ func (c *NetworkClient) EmitSignal(ctx context.Context, event, agent, caseID, st
 // GetSignals retrieves signals from the server's signal bus starting at the given index.
 func (c *NetworkClient) GetSignals(ctx context.Context, since int) ([]agentport.Signal, error) {
 	url := fmt.Sprintf("%s/signals?since=%d", c.baseURL, since)
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("network client: create signals request: %w", err)
 	}

@@ -13,7 +13,7 @@ func TestFinalizeSignals_SetsAllToComplete(t *testing.T) {
 	// Create two case directories with signal files in different states.
 	for _, sub := range []string{"C1", "C2"} {
 		caseDir := filepath.Join(dir, sub)
-		if err := os.MkdirAll(caseDir, 0755); err != nil {
+		if err := os.MkdirAll(caseDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
 		status := "waiting"
@@ -122,11 +122,11 @@ func TestPreRunCleanup_RemovesStaleDir(t *testing.T) {
 
 	// Create a stale calibration directory with content.
 	caseDir := filepath.Join(calibDir, "C1")
-	if err := os.MkdirAll(caseDir, 0755); err != nil {
+	if err := os.MkdirAll(caseDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	staleFile := filepath.Join(caseDir, "signal.json")
-	if err := os.WriteFile(staleFile, []byte(`{"status":"waiting"}`), 0644); err != nil {
+	if err := os.WriteFile(staleFile, []byte(`{"status":"waiting"}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -143,7 +143,7 @@ func TestPreRunCleanup_RemovesStaleDir(t *testing.T) {
 	}
 
 	// Recreate fresh.
-	if err := os.MkdirAll(calibDir, 0755); err != nil {
+	if err := os.MkdirAll(calibDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 

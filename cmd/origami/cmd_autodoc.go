@@ -68,7 +68,7 @@ func autodocCmd(args []string) error {
 			cfg.OutputDir = filepath.Join(projectRoot, "docs")
 		}
 
-		if err := autodoc.Scaffold(cfg); err != nil {
+		if err := autodoc.Scaffold(&cfg); err != nil {
 			return err
 		}
 		fmt.Fprintf(os.Stderr, "scaffolded docs tree for %s (%d circuits)\n", manifest.Name, len(circuits))

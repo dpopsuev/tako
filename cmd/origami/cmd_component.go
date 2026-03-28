@@ -10,6 +10,8 @@ import (
 	"github.com/dpopsuev/origami/circuit"
 )
 
+const subCmdValidate = "validate"
+
 func componentCmd(args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("usage: origami component <list|inspect|validate> [flags]")
@@ -19,7 +21,7 @@ func componentCmd(args []string) error {
 		return componentList(args[1:])
 	case "inspect":
 		return componentInspect(args[1:])
-	case "validate":
+	case subCmdValidate:
 		return componentValidate(args[1:])
 	default:
 		return fmt.Errorf("unknown component subcommand: %s", args[0])

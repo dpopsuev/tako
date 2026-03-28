@@ -163,15 +163,15 @@ func (gw *Mediator) Start(ctx context.Context) error {
 }
 
 func (gw *Mediator) initTraceRecording() {
-	if err := os.MkdirAll(gw.stateDir, 0755); err != nil {
-		slog.Warn("failed to create mediator state dir, tracing disabled",
+	if err := os.MkdirAll(gw.stateDir, 0o755); err != nil {
+		slog.WarnContext(context.Background(), "failed to create mediator state dir, tracing disabled",
 			"state_dir", gw.stateDir, "error", err)
 		return
 	}
 	tracePath := filepath.Join(gw.stateDir, "mediator-trace.jsonl")
 	rec, err := engine.NewTraceRecorder(tracePath)
 	if err != nil {
-		slog.Warn("failed to create mediator trace recorder", "error", err)
+		slog.WarnContext(context.Background(), "failed to create mediator trace recorder", "error", err)
 		return
 	}
 	gw.recorder = rec
@@ -299,7 +299,7 @@ func (gw *Mediator) routeStartCircuit(ctx context.Context, args map[string]any) 
 			},
 		})
 
-		slog.Debug("session affinity registered",
+		slog.DebugContext(ctx, "session affinity registered",
 			"session_id", sessionID,
 			"backend", backendName,
 			"circuit_type", circuitType,
@@ -367,7 +367,7 @@ func (gw *Mediator) ListTools() []sdkmcp.Tool {
 	}
 
 	// Non-Papercup tools.
-	for _, rt := range gw.toolRoutes {
+	for _, rt := range gw.toolRoutes { //nolint:gocritic // rangeValCopy: map value; unavoidable copy
 		if !seen[rt.tool.Name] {
 			tools = append(tools, rt.tool)
 			seen[rt.tool.Name] = true
@@ -432,7 +432,7 @@ func (gw *Mediator) MCPServer() *sdkmcp.Server {
 	}
 
 	// Register non-Papercup tools.
-	for _, rt := range gw.toolRoutes {
+	for _, rt := range gw.toolRoutes { //nolint:gocritic // rangeValCopy: map value; unavoidable copy
 		addHandler(rt.tool)
 	}
 

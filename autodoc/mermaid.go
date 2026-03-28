@@ -81,7 +81,8 @@ func RenderContextFlow(def *circuit.CircuitDef) string {
 
 	zoneOf := buildZoneMap(def)
 	emitted := make(map[string]bool)
-	for _, e := range def.Edges {
+	for i := range def.Edges {
+		e := &def.Edges[i]
 		fromZ := zoneOf[e.From]
 		toZ := zoneOf[e.To]
 		if fromZ != "" && toZ != "" && fromZ != toZ {
@@ -111,7 +112,8 @@ var knownStochastic = map[string]bool{
 
 func classifyNodes(def *circuit.CircuitDef, opts *MermaidOptions) map[string]dsClass {
 	m := make(map[string]dsClass, len(def.Nodes))
-	for _, nd := range def.Nodes {
+	for i := range def.Nodes {
+		nd := &def.Nodes[i]
 		ht := nd.EffectiveHandlerType(def.HandlerType)
 		name := nd.EffectiveHandler()
 		if ht != circuit.HandlerTypeTransformer || name == "" {
@@ -150,30 +152,32 @@ func renderZonesEnhanced(b *strings.Builder, def *circuit.CircuitDef, nodeDS map
 		b.WriteString("    end\n")
 	}
 
-	for _, nd := range def.Nodes {
-		if !zonedNodes[nd.Name] {
-			fmt.Fprintf(b, "    %s\n", nodeShape(nd.Name, nodeDS[nd.Name], false))
+	for i := range def.Nodes {
+		if !zonedNodes[def.Nodes[i].Name] {
+			fmt.Fprintf(b, "    %s\n", nodeShape(def.Nodes[i].Name, nodeDS[def.Nodes[i].Name], false))
 		}
 	}
 }
 
 func renderFlatNodes(b *strings.Builder, def *circuit.CircuitDef, nodeDS map[string]dsClass) {
-	for _, nd := range def.Nodes {
-		fmt.Fprintf(b, "    %s\n", nodeShape(nd.Name, nodeDS[nd.Name], false))
+	for i := range def.Nodes {
+		fmt.Fprintf(b, "    %s\n", nodeShape(def.Nodes[i].Name, nodeDS[def.Nodes[i].Name], false))
 	}
 }
 
 func renderEdgesEnhanced(b *strings.Builder, def *circuit.CircuitDef) {
-	for _, e := range def.Edges {
+	for i := range def.Edges {
+		e := &def.Edges[i]
 		from := sanitize(e.From)
 		to := sanitize(e.To)
-		label := edgeLabel(e)
+		label := edgeLabel(&def.Edges[i])
 
-		if e.Shortcut {
+		switch {
+		case e.Shortcut:
 			fmt.Fprintf(b, "    %s -.->|\"%s\"| %s\n", from, label, to)
-		} else if e.Loop {
+		case e.Loop:
 			fmt.Fprintf(b, "    %s ==>|\"%s\"| %s\n", from, label, to)
-		} else {
+		default:
 			fmt.Fprintf(b, "    %s -->|\"%s\"| %s\n", from, label, to)
 		}
 	}
@@ -200,35 +204,37 @@ func renderZonesDS(b *strings.Builder, def *circuit.CircuitDef, nodeDS map[strin
 		b.WriteString("    end\n")
 	}
 
-	for _, nd := range def.Nodes {
-		if !zonedNodes[nd.Name] {
-			fmt.Fprintf(b, "    %s\n", nodeShape(nd.Name, nodeDS[nd.Name], true))
+	for i := range def.Nodes {
+		if !zonedNodes[def.Nodes[i].Name] {
+			fmt.Fprintf(b, "    %s\n", nodeShape(def.Nodes[i].Name, nodeDS[def.Nodes[i].Name], true))
 		}
 	}
 }
 
 func renderFlatNodesDS(b *strings.Builder, def *circuit.CircuitDef, nodeDS map[string]dsClass) {
-	for _, nd := range def.Nodes {
-		fmt.Fprintf(b, "    %s\n", nodeShape(nd.Name, nodeDS[nd.Name], true))
+	for i := range def.Nodes {
+		fmt.Fprintf(b, "    %s\n", nodeShape(def.Nodes[i].Name, nodeDS[def.Nodes[i].Name], true))
 	}
 }
 
 func renderEdgesDS(b *strings.Builder, def *circuit.CircuitDef, nodeDS map[string]dsClass) {
-	for _, e := range def.Edges {
+	for i := range def.Edges {
+		e := &def.Edges[i]
 		from := sanitize(e.From)
 		to := sanitize(e.To)
-		label := edgeLabel(e)
+		label := edgeLabel(&def.Edges[i])
 
 		isBoundary := nodeDS[e.From] == dsDeterministic && nodeDS[e.To] == dsStochastic
 		if isBoundary {
 			label += " [D→S]"
 		}
 
-		if e.Shortcut {
+		switch {
+		case e.Shortcut:
 			fmt.Fprintf(b, "    %s -.->|\"%s\"| %s\n", from, label, to)
-		} else if e.Loop {
+		case e.Loop:
 			fmt.Fprintf(b, "    %s ==>|\"%s\"| %s\n", from, label, to)
-		} else {
+		default:
 			fmt.Fprintf(b, "    %s -->|\"%s\"| %s\n", from, label, to)
 		}
 	}
@@ -241,15 +247,15 @@ func nodeShape(name string, ds dsClass, useDSShapes bool) string {
 	}
 	switch ds {
 	case dsStochastic:
-		return fmt.Sprintf("%s([\"%s\"])", id, name) // stadium shape
+		return fmt.Sprintf("%s([%q])", id, name) // stadium shape
 	case dsDeterministic:
-		return fmt.Sprintf("%s[\"%s\"]", id, name) // rectangle
+		return fmt.Sprintf("%s[%q]", id, name) // rectangle
 	default:
 		return id
 	}
 }
 
-func edgeLabel(e circuit.EdgeDef) string {
+func edgeLabel(e *circuit.EdgeDef) string {
 	parts := []string{}
 	if e.Name != "" {
 		parts = append(parts, e.Name)

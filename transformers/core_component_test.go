@@ -10,6 +10,7 @@ import (
 
 type stubDispatcher struct{}
 
+//nolint:gocritic // hugeParam: interface conformance (agentport.Dispatcher)
 func (stubDispatcher) Dispatch(_ context.Context, _ agentport.Context) ([]byte, error) {
 	return []byte(`{}`), nil
 }

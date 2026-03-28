@@ -3,10 +3,10 @@ package circuit
 // Category: DSL & Build — circuit YAML loading and overlay merge.
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"strings"
-
 )
 
 // rawCircuitDef is the intermediate representation that supports both
@@ -104,8 +104,8 @@ func (raw *rawCircuitDef) normalize() (*CircuitDef, error) {
 
 	edgeIDs := make(map[string]int)
 	def.Edges = append(def.Edges, raw.Edges...)
-	for _, e := range raw.Edges {
-		edgeIDs[e.ID]++
+	for i := range raw.Edges {
+		edgeIDs[raw.Edges[i].ID]++
 	}
 
 	for i := range raw.Nodes {
@@ -114,7 +114,7 @@ func (raw *rawCircuitDef) normalize() (*CircuitDef, error) {
 			if re.To == "" {
 				return nil, fmt.Errorf("node %q: inline edge missing 'to' field", nodeName)
 			}
-			id := generateEdgeID(nodeName, re, edgeIDs)
+			id := generateEdgeID(nodeName, &re, edgeIDs)
 			def.Edges = append(def.Edges, EdgeDef{
 				ID:          id,
 				Name:        re.Name,
@@ -133,7 +133,7 @@ func (raw *rawCircuitDef) normalize() (*CircuitDef, error) {
 	return def, nil
 }
 
-func generateEdgeID(from string, e rawEdgeDef, seen map[string]int) string {
+func generateEdgeID(from string, e *rawEdgeDef, seen map[string]int) string {
 	base := from + "-" + e.To
 	if e.Name != "" {
 		base = from + "-" + strings.ReplaceAll(e.Name, " ", "-")
@@ -199,7 +199,7 @@ func LoadCircuitWithOverlay(overlayData []byte, resolver AssetResolver) (*Circui
 		return nil, fmt.Errorf("parse base circuit %q: %w", overlay.Import, err)
 	}
 
-	slog.Debug(LogOverlayMerge, LogKeyComponent, LogComponentDSL,
+	slog.DebugContext(context.Background(), LogOverlayMerge, LogKeyComponent, LogComponentDSL,
 		"base", overlay.Import,
 		"base_nodes", len(base.Nodes),
 		"overlay_nodes", len(overlay.Nodes),
@@ -210,7 +210,7 @@ func LoadCircuitWithOverlay(overlayData []byte, resolver AssetResolver) (*Circui
 		return nil, fmt.Errorf("merge overlay onto %q: %w", overlay.Import, err)
 	}
 
-	slog.Debug(LogOverlayMergeComplete, LogKeyComponent, LogComponentDSL,
+	slog.DebugContext(context.Background(), LogOverlayMergeComplete, LogKeyComponent, LogComponentDSL,
 		"merged_nodes", len(merged.Nodes),
 		"merged_edges", len(merged.Edges),
 		"start", merged.Start,
@@ -276,28 +276,28 @@ func mergeCircuits(base, overlay *CircuitDef) (*CircuitDef, error) {
 	// Nodes: overlay appends new nodes by name
 	if len(overlay.Nodes) > 0 {
 		baseNodeSet := make(map[string]bool, len(merged.Nodes))
-		for _, n := range merged.Nodes {
-			baseNodeSet[n.Name] = true
+		for i := range merged.Nodes {
+			baseNodeSet[merged.Nodes[i].Name] = true
 		}
-		for _, n := range overlay.Nodes {
-			if baseNodeSet[n.Name] {
-				return nil, fmt.Errorf("overlay cannot override base node %q (append-only)", n.Name)
+		for i := range overlay.Nodes {
+			if baseNodeSet[overlay.Nodes[i].Name] {
+				return nil, fmt.Errorf("overlay cannot override base node %q (append-only)", overlay.Nodes[i].Name)
 			}
-			merged.Nodes = append(merged.Nodes, n)
+			merged.Nodes = append(merged.Nodes, overlay.Nodes[i])
 		}
 	}
 
 	// Edges: overlay appends; matching IDs replace base edges
 	if len(overlay.Edges) > 0 {
 		baseEdgeIdx := make(map[string]int, len(merged.Edges))
-		for i, e := range merged.Edges {
-			baseEdgeIdx[e.ID] = i
+		for i := range merged.Edges {
+			baseEdgeIdx[merged.Edges[i].ID] = i
 		}
-		for _, oe := range overlay.Edges {
-			if idx, exists := baseEdgeIdx[oe.ID]; exists {
-				merged.Edges[idx] = oe
+		for i := range overlay.Edges {
+			if idx, exists := baseEdgeIdx[overlay.Edges[i].ID]; exists {
+				merged.Edges[idx] = overlay.Edges[i]
 			} else {
-				merged.Edges = append(merged.Edges, oe)
+				merged.Edges = append(merged.Edges, overlay.Edges[i])
 			}
 		}
 	}

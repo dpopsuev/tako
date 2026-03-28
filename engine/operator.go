@@ -106,7 +106,7 @@ type CircuitContainer interface {
 	ID() string
 	Def() *circuit.CircuitDef
 	Status() ContainerStatus
-	Walk(ctx context.Context, reg GraphRegistries) (*WalkResult, error)
+	Walk(ctx context.Context, reg *GraphRegistries) (*WalkResult, error)
 	Abort(reason string) error
 	Artifacts() map[string]circuit.Artifact
 }
@@ -147,7 +147,7 @@ func (c *InMemoryContainer) Artifacts() map[string]circuit.Artifact {
 	return c.artifacts
 }
 
-func (c *InMemoryContainer) Walk(ctx context.Context, reg GraphRegistries) (*WalkResult, error) {
+func (c *InMemoryContainer) Walk(ctx context.Context, reg *GraphRegistries) (*WalkResult, error) {
 	c.mu.Lock()
 	if c.status == StatusAborted {
 		c.mu.Unlock()
@@ -214,7 +214,7 @@ func (c *InMemoryContainer) setFailed() {
 }
 
 // RunOperator executes the Operator reconciliation loop.
-func RunOperator(ctx context.Context, op Operator, goal Goal, reg GraphRegistries, opts ...OperatorOption) error {
+func RunOperator(ctx context.Context, op Operator, goal Goal, reg *GraphRegistries, opts ...OperatorOption) error {
 	cfg := &operatorConfig{}
 	for _, opt := range opts {
 		opt(cfg)

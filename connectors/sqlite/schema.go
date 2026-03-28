@@ -210,7 +210,7 @@ func (raw *rawSchema) normalize() (*Schema, error) {
 		}
 		if rt.shouldAutoID() {
 			idCol := Column{
-				Name: "id", Type: "integer",
+				Name: "id", Type: colTypeInteger,
 				PrimaryKey: true, Autoincrement: true,
 			}
 			t.Columns = append([]Column{idCol}, t.Columns...)
@@ -291,11 +291,11 @@ func (s *Schema) Validate() error {
 // GenerateDDL produces CREATE TABLE and CREATE INDEX statements from the schema.
 func (s *Schema) GenerateDDL() string {
 	var b strings.Builder
-	for i, t := range s.Tables {
+	for i := range s.Tables {
 		if i > 0 {
 			b.WriteString("\n")
 		}
-		b.WriteString(generateTableDDL(t))
+		b.WriteString(generateTableDDL(&s.Tables[i]))
 	}
 	for _, idx := range s.Indexes {
 		b.WriteString("\n")
@@ -304,11 +304,11 @@ func (s *Schema) GenerateDDL() string {
 	return b.String()
 }
 
-func generateTableDDL(t Table) string {
+func generateTableDDL(t *Table) string {
 	var b strings.Builder
 	b.WriteString(fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (\n", t.Name))
 
-	var lines []string
+	lines := make([]string, 0, len(t.Columns)+len(t.ForeignKeys)+len(t.Unique))
 	for _, c := range t.Columns {
 		lines = append(lines, "\t"+generateColumnDDL(c))
 	}

@@ -1,6 +1,7 @@
 package circuit
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,7 +19,7 @@ func TestResolveCircuitPath_Embedded(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if string(got) != string(content) {
+	if !bytes.Equal(got, content) {
 		t.Fatalf("content mismatch: got %q, want %q", got, content)
 	}
 }
@@ -34,7 +35,7 @@ func TestResolveCircuitPath_EmbeddedCaseInsensitive(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if string(got) != string(content) {
+	if !bytes.Equal(got, content) {
 		t.Fatalf("content mismatch")
 	}
 }
@@ -45,7 +46,7 @@ func TestResolveCircuitPath_FilesystemFallback(t *testing.T) {
 
 	dir := t.TempDir()
 	content := []byte("circuit: fs-test\nnodes: []\nedges: []")
-	if err := os.WriteFile(filepath.Join(dir, "test.yaml"), content, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "test.yaml"), content, 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -53,7 +54,7 @@ func TestResolveCircuitPath_FilesystemFallback(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if string(got) != string(content) {
+	if !bytes.Equal(got, content) {
 		t.Fatalf("content mismatch")
 	}
 }
@@ -64,7 +65,7 @@ func TestResolveCircuitPath_EnvVar(t *testing.T) {
 
 	dir := t.TempDir()
 	content := []byte("circuit: env-test")
-	if err := os.WriteFile(filepath.Join(dir, "envpipe.yaml"), content, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "envpipe.yaml"), content, 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -74,7 +75,7 @@ func TestResolveCircuitPath_EnvVar(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if string(got) != string(content) {
+	if !bytes.Equal(got, content) {
 		t.Fatalf("content mismatch")
 	}
 }
@@ -101,7 +102,7 @@ func TestResolveCircuitPath_AutoYamlSuffix(t *testing.T) {
 
 	dir := t.TempDir()
 	content := []byte("circuit: suffix-test")
-	if err := os.WriteFile(filepath.Join(dir, "myfile.yaml"), content, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "myfile.yaml"), content, 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -109,7 +110,7 @@ func TestResolveCircuitPath_AutoYamlSuffix(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if string(got) != string(content) {
+	if !bytes.Equal(got, content) {
 		t.Fatalf("content mismatch")
 	}
 }

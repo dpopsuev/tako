@@ -141,7 +141,7 @@ func TestWrapForResolution_SetsResolutionMetadata(t *testing.T) {
 	}
 	config := DecoratorConfig{}
 
-	wrapped := WrapForResolution(base, plan, config)
+	wrapped := WrapForResolution(base, &plan, config)
 
 	if wrapped.Vars == nil {
 		t.Fatal("Vars is nil")
@@ -186,7 +186,7 @@ func TestParseResolution_Invalid(t *testing.T) {
 func TestLoadPortStubs_ValidJSON(t *testing.T) {
 	dir := t.TempDir()
 	fixture := filepath.Join(dir, "code-context.json")
-	if err := os.WriteFile(fixture, []byte(`{"files":["a.go","b.go"]}`), 0644); err != nil {
+	if err := os.WriteFile(fixture, []byte(`{"files":["a.go","b.go"]}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 

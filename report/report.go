@@ -16,6 +16,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const sectionTypeHeader = "header"
+
 // ReportDef is a YAML-loadable report layout.
 type ReportDef struct {
 	Metadata struct {
@@ -83,12 +85,13 @@ func Render(def *ReportDef, data map[string]any) (string, error) {
 }
 
 func renderSections(buf *strings.Builder, sections []SectionDef, data map[string]any, mode format.Mode) error {
-	for i, sec := range sections {
+	for i := range sections {
 		if i > 0 {
 			buf.WriteString("\n")
 		}
+		sec := &sections[i]
 		switch sec.Type {
-		case "header":
+		case sectionTypeHeader:
 			renderHeader(buf, sec, mode)
 		case "table":
 			if err := renderTable(buf, sec, data, mode); err != nil {
@@ -103,13 +106,13 @@ func renderSections(buf *strings.Builder, sections []SectionDef, data map[string
 				return fmt.Errorf("section %d (repeat): %w", i, err)
 			}
 		default:
-			return fmt.Errorf("section %d: unknown type %q", i, sec.Type)
+			return fmt.Errorf("section %d: unknown type %q", i, sections[i].Type)
 		}
 	}
 	return nil
 }
 
-func renderRepeat(buf *strings.Builder, sec SectionDef, data map[string]any, mode format.Mode) error {
+func renderRepeat(buf *strings.Builder, sec *SectionDef, data map[string]any, mode format.Mode) error {
 	if sec.Items == "" {
 		return fmt.Errorf("repeat section requires 'items' field")
 	}
@@ -144,7 +147,7 @@ func renderRepeat(buf *strings.Builder, sec SectionDef, data map[string]any, mod
 	return nil
 }
 
-func renderHeader(buf *strings.Builder, sec SectionDef, mode format.Mode) {
+func renderHeader(buf *strings.Builder, sec *SectionDef, mode format.Mode) {
 	level := sec.Level
 	if level < 1 {
 		level = 1
@@ -168,7 +171,7 @@ func renderHeader(buf *strings.Builder, sec SectionDef, mode format.Mode) {
 	}
 }
 
-func renderTable(buf *strings.Builder, sec SectionDef, data map[string]any, mode format.Mode) error {
+func renderTable(buf *strings.Builder, sec *SectionDef, data map[string]any, mode format.Mode) error {
 	if sec.Title != "" {
 		buf.WriteString(sec.Title + "\n")
 	}
@@ -204,7 +207,7 @@ func renderTable(buf *strings.Builder, sec SectionDef, data map[string]any, mode
 	return nil
 }
 
-func renderText(buf *strings.Builder, sec SectionDef, data map[string]any) error {
+func renderText(buf *strings.Builder, sec *SectionDef, data map[string]any) error {
 	tmpl, err := template.New("text").Parse(sec.Content)
 	if err != nil {
 		return fmt.Errorf("parse template: %w", err)

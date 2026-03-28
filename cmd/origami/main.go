@@ -140,11 +140,11 @@ func runCmd(args []string) error {
 		opts = append(opts, engine.WithOverrides(map[string]any(sets)))
 	}
 
-	logger.Info("running circuit", "path", circuitPath)
+	logger.InfoContext(ctx, "running circuit", "path", circuitPath)
 	if err := engine.Run(ctx, circuitPath, nil, opts...); err != nil {
 		return err
 	}
-	logger.Info("circuit completed")
+	logger.InfoContext(ctx, "circuit completed")
 	return nil
 }
 
@@ -225,11 +225,11 @@ func lintCmd(args []string) error {
 				fmt.Fprintf(os.Stderr, "%s: no fixes to apply\n", file)
 				continue
 			}
-			if err := os.WriteFile(file, fixed, 0644); err != nil {
+			if err := os.WriteFile(file, fixed, 0o644); err != nil {
 				return fmt.Errorf("write %s: %w", file, err)
 			}
-			for _, f := range fixes {
-				fmt.Printf("fixed: %s\n", f.Finding)
+			for j := range fixes {
+				fmt.Printf("fixed: %s\n", fixes[j].Finding)
 			}
 			continue
 		}
@@ -274,7 +274,7 @@ func lspCmd() error {
 	conn := originamilsp.ServeStream(ctx, srv, stream)
 	srv.SetConn(conn)
 
-	slog.Info("origami-lsp started", "transport", "stdio")
+	slog.InfoContext(ctx, "origami-lsp started", "transport", "stdio")
 	<-ctx.Done()
 	return nil
 }

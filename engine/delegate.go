@@ -11,6 +11,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const artifactTypeDelegate = "delegate"
+
 // DelegateNode is a Node that generates a sub-circuit instead of producing
 // an artifact directly. When the walk loop encounters a DelegateNode, it
 // calls GenerateCircuit to obtain a circuit.CircuitDef, builds and walks the
@@ -38,7 +40,7 @@ type DelegateArtifact struct {
 	InnerError error `json:"inner_error,omitempty"`
 }
 
-func (a *DelegateArtifact) Type() string       { return "delegate" }
+func (a *DelegateArtifact) Type() string       { return artifactTypeDelegate }
 func (a *DelegateArtifact) Confidence() float64 { return a.confidence() }
 func (a *DelegateArtifact) Raw() any            { return a.InnerArtifacts }
 

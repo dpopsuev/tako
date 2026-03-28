@@ -16,10 +16,10 @@ func TestInMemoryFindingCollector_Report(t *testing.T) {
 	f1 := circuit.Finding{Severity: circuit.FindingInfo, Domain: "lint", Source: "linter", Message: "style issue"}
 	f2 := circuit.Finding{Severity: circuit.FindingWarning, Domain: "test", Source: "tester", Message: "flaky test"}
 
-	if err := c.Report(ctx, f1); err != nil {
+	if err := c.Report(ctx, &f1); err != nil {
 		t.Fatalf("Report f1: %v", err)
 	}
-	if err := c.Report(ctx, f2); err != nil {
+	if err := c.Report(ctx, &f2); err != nil {
 		t.Fatalf("Report f2: %v", err)
 	}
 
@@ -38,7 +38,7 @@ func TestInMemoryFindingCollector_Report(t *testing.T) {
 func TestInMemoryFindingCollector_TimestampDefault(t *testing.T) {
 	c := &InMemoryFindingCollector{}
 	before := time.Now().UTC()
-	if err := c.Report(context.Background(), circuit.Finding{Severity: circuit.FindingInfo}); err != nil {
+	if err := c.Report(context.Background(), &circuit.Finding{Severity: circuit.FindingInfo}); err != nil {
 		t.Fatal(err)
 	}
 	after := time.Now().UTC()
@@ -51,7 +51,7 @@ func TestInMemoryFindingCollector_TimestampDefault(t *testing.T) {
 
 func TestInMemoryFindingCollector_FindingsReturnsCopy(t *testing.T) {
 	c := &InMemoryFindingCollector{}
-	_ = c.Report(context.Background(), circuit.Finding{Severity: circuit.FindingInfo, Message: "original"})
+	_ = c.Report(context.Background(), &circuit.Finding{Severity: circuit.FindingInfo, Message: "original"})
 
 	findings := c.Findings()
 	findings[0].Message = "mutated"
@@ -71,7 +71,7 @@ func TestInMemoryFindingCollector_ConcurrentWrites(t *testing.T) {
 	for i := 0; i < n; i++ {
 		go func(i int) {
 			defer wg.Done()
-			_ = c.Report(ctx, circuit.Finding{Severity: circuit.FindingInfo, Message: "concurrent"})
+			_ = c.Report(ctx, &circuit.Finding{Severity: circuit.FindingInfo, Message: "concurrent"})
 		}(i)
 	}
 	wg.Wait()

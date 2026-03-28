@@ -26,9 +26,9 @@ func TestFindingRouter_DefaultRouting(t *testing.T) {
 	})
 
 	ctx := context.Background()
-	_ = router.Report(ctx, circuit.Finding{Severity: circuit.FindingInfo, Domain: "lint"})
-	_ = router.Report(ctx, circuit.Finding{Severity: circuit.FindingWarning, Domain: "test"})
-	_ = router.Report(ctx, circuit.Finding{Severity: circuit.FindingError, Domain: "security"})
+	_ = router.Report(ctx, &circuit.Finding{Severity: circuit.FindingInfo, Domain: "lint"})
+	_ = router.Report(ctx, &circuit.Finding{Severity: circuit.FindingWarning, Domain: "test"})
+	_ = router.Report(ctx, &circuit.Finding{Severity: circuit.FindingError, Domain: "security"})
 
 	if len(got) != 3 {
 		t.Fatalf("dispatched %d, want 3", len(got))
@@ -54,7 +54,7 @@ func TestFindingRouter_ExactDomainMatch(t *testing.T) {
 		},
 	)
 
-	_ = router.Report(context.Background(), circuit.Finding{Severity: circuit.FindingWarning, Domain: "test.unit"})
+	_ = router.Report(context.Background(), &circuit.Finding{Severity: circuit.FindingWarning, Domain: "test.unit"})
 	if target != TargetBroker {
 		t.Errorf("exact domain routed to %q, want %q", target, TargetBroker)
 	}
@@ -70,7 +70,7 @@ func TestFindingRouter_GlobDomain(t *testing.T) {
 		},
 	)
 
-	_ = router.Report(context.Background(), circuit.Finding{Severity: circuit.FindingWarning, Domain: "test.integration"})
+	_ = router.Report(context.Background(), &circuit.Finding{Severity: circuit.FindingWarning, Domain: "test.integration"})
 	if target != TargetBroker {
 		t.Errorf("glob domain routed to %q, want %q", target, TargetBroker)
 	}
@@ -86,7 +86,7 @@ func TestFindingRouter_GlobNoMatch_FallsToDefault(t *testing.T) {
 		},
 	)
 
-	_ = router.Report(context.Background(), circuit.Finding{Severity: circuit.FindingWarning, Domain: "lint.style"})
+	_ = router.Report(context.Background(), &circuit.Finding{Severity: circuit.FindingWarning, Domain: "lint.style"})
 	if target != TargetManager {
 		t.Errorf("unmatched glob routed to %q, want default %q", target, TargetManager)
 	}
@@ -105,7 +105,7 @@ func TestFindingRouter_FirstMatchWins(t *testing.T) {
 		},
 	)
 
-	_ = router.Report(context.Background(), circuit.Finding{Severity: circuit.FindingError, Domain: "security.auth"})
+	_ = router.Report(context.Background(), &circuit.Finding{Severity: circuit.FindingError, Domain: "security.auth"})
 	if target != TargetBroker {
 		t.Errorf("first-match routed to %q, want %q", target, TargetBroker)
 	}
@@ -121,7 +121,7 @@ func TestFindingRouter_SeverityOnlyRule(t *testing.T) {
 		},
 	)
 
-	_ = router.Report(context.Background(), circuit.Finding{Severity: circuit.FindingInfo, Domain: "anything"})
+	_ = router.Report(context.Background(), &circuit.Finding{Severity: circuit.FindingInfo, Domain: "anything"})
 	if target != TargetManager {
 		t.Errorf("severity-only rule routed to %q, want %q", target, TargetManager)
 	}
@@ -137,7 +137,7 @@ func TestFindingRouter_DomainOnlyRule(t *testing.T) {
 		},
 	)
 
-	_ = router.Report(context.Background(), circuit.Finding{Severity: circuit.FindingWarning, Domain: "security.auth"})
+	_ = router.Report(context.Background(), &circuit.Finding{Severity: circuit.FindingWarning, Domain: "security.auth"})
 	if target != TargetBroker {
 		t.Errorf("domain-only rule routed to %q, want %q", target, TargetBroker)
 	}
@@ -147,8 +147,8 @@ func TestFindingRouter_ImplementsFindingCollector(t *testing.T) {
 	router := NewFindingRouter(nil, FindingHandlers{})
 	ctx := context.Background()
 
-	_ = router.Report(ctx, circuit.Finding{Severity: circuit.FindingInfo, Message: "a"})
-	_ = router.Report(ctx, circuit.Finding{Severity: circuit.FindingWarning, Message: "b"})
+	_ = router.Report(ctx, &circuit.Finding{Severity: circuit.FindingInfo, Message: "a"})
+	_ = router.Report(ctx, &circuit.Finding{Severity: circuit.FindingWarning, Message: "b"})
 
 	var _ circuit.FindingCollector = router // compile-time check
 
@@ -160,7 +160,7 @@ func TestFindingRouter_ImplementsFindingCollector(t *testing.T) {
 
 func TestFindingRouter_NilHandlers(t *testing.T) {
 	router := NewFindingRouter(nil, FindingHandlers{})
-	err := router.Report(context.Background(), circuit.Finding{Severity: circuit.FindingError})
+	err := router.Report(context.Background(), &circuit.Finding{Severity: circuit.FindingError})
 	if err != nil {
 		t.Fatalf("Report with nil handlers: %v", err)
 	}

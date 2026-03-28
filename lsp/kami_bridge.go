@@ -12,6 +12,8 @@ import (
 	"time"
 )
 
+const labelPaused = "PAUSED"
+
 // KamiBridge connects to a Kami server's SSE stream and maintains
 // live circuit state for inlay hint overlays.
 type KamiBridge struct {
@@ -147,7 +149,7 @@ func (kb *KamiBridge) connectLoop(ctx context.Context) {
 
 func (kb *KamiBridge) consumeSSE(ctx context.Context) error {
 	url := kb.baseURL + "/events/stream"
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return fmt.Errorf("create request: %w", err)
 	}
@@ -262,7 +264,7 @@ func (kb *KamiBridge) LiveInlayHints(doc *document) []InlayHint {
 				label = fmt.Sprintf("ACTIVE [%s]", state.ActiveAgent)
 			}
 			if state.Paused {
-				label = "PAUSED"
+				label = labelPaused
 			}
 			hints = append(hints, InlayHint{
 				Position:    Position{Line: uint32(i), Character: uint32(len(line))},
@@ -324,14 +326,15 @@ func (s *Server) configureKami(enabled bool, port int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if enabled && s.kamiBridge == nil {
+	switch {
+	case enabled && s.kamiBridge == nil:
 		s.kamiBridge = NewKamiBridge(port)
 		s.kamiBridge.Start(context.Background())
-	} else if enabled && s.kamiBridge != nil {
+	case enabled && s.kamiBridge != nil:
 		s.kamiBridge.Stop()
 		s.kamiBridge = NewKamiBridge(port)
 		s.kamiBridge.Start(context.Background())
-	} else if !enabled && s.kamiBridge != nil {
+	case !enabled && s.kamiBridge != nil:
 		s.kamiBridge.Stop()
 		s.kamiBridge = nil
 	}

@@ -12,6 +12,8 @@ import (
 	"go.lsp.dev/protocol"
 )
 
+const condUnconditional = "unconditional"
+
 type approachInfo struct {
 	Description string
 	Color       string
@@ -152,7 +154,8 @@ func computeHover(doc *document, pos protocol.Position, vocab circuit.RichVocabu
 }
 
 func buildNodeHover(def *circuit.CircuitDef, nodeName string, vocab circuit.RichVocabulary) *protocol.Hover {
-	for _, n := range def.Nodes {
+	for i := range def.Nodes {
+		n := &def.Nodes[i]
 		if n.Name != nodeName {
 			continue
 		}
@@ -183,8 +186,9 @@ func buildNodeHover(def *circuit.CircuitDef, nodeName string, vocab circuit.Rich
 
 func connectedEdges(def *circuit.CircuitDef, nodeName string) string {
 	var inbound, outbound []string
-	for _, e := range def.Edges {
-		label := formatEdgeLabel(e)
+	for i := range def.Edges {
+		e := &def.Edges[i]
+		label := formatEdgeLabel(&def.Edges[i])
 		if e.To == nodeName {
 			inbound = append(inbound, fmt.Sprintf("- %s **%s** `%s`", e.From+" →", e.ID, label))
 		}
@@ -206,7 +210,7 @@ func connectedEdges(def *circuit.CircuitDef, nodeName string) string {
 	return md
 }
 
-func formatEdgeLabel(e circuit.EdgeDef) string {
+func formatEdgeLabel(e *circuit.EdgeDef) string {
 	var tags []string
 	if e.Shortcut {
 		tags = append(tags, "shortcut")
@@ -229,5 +233,5 @@ func formatEdgeLabel(e circuit.EdgeDef) string {
 	if cond != "" {
 		return cond
 	}
-	return "unconditional"
+	return condUnconditional
 }

@@ -167,7 +167,7 @@ func TestMCPCircuitTransformer_CircuitError(t *testing.T) {
 // --- TSK-186: trace_id propagation ---
 
 // newCapturingCircuitServer creates a mock server that captures circuit start extra params.
-func newCapturingCircuitServer(t *testing.T, captured *map[string]any) *httptest.Server {
+func newCapturingCircuitServer(t *testing.T, captured map[string]any) *httptest.Server {
 	t.Helper()
 	server := sdkmcp.NewServer(
 		&sdkmcp.Implementation{Name: "capturing-circuit", Version: "v0.1.0"},
@@ -189,7 +189,10 @@ func newCapturingCircuitServer(t *testing.T, captured *map[string]any) *httptest
 			}
 			switch input.Action {
 			case "start":
-				*captured = input.Extra
+				clear(captured)
+				for k, v := range input.Extra {
+					captured[k] = v
+				}
 				return mcpTextResult(map[string]any{
 					"session_id":  "cap-session-1",
 					"total_cases": 1,
@@ -218,8 +221,8 @@ func newCapturingCircuitServer(t *testing.T, captured *map[string]any) *httptest
 }
 
 func TestMCPCircuitTransformer_PropagatesTraceID(t *testing.T) {
-	var captured map[string]any
-	ts := newCapturingCircuitServer(t, &captured)
+	captured := make(map[string]any)
+	ts := newCapturingCircuitServer(t, captured)
 
 	trans := &MCPCircuitTransformer{
 		CircuitType: "gnd",
@@ -238,8 +241,8 @@ func TestMCPCircuitTransformer_PropagatesTraceID(t *testing.T) {
 	}
 
 	// Verify trace_id was forwarded in extra params.
-	if captured == nil {
-		t.Fatal("captured extra is nil — circuit/start not called?")
+	if len(captured) == 0 {
+		t.Fatal("captured extra is empty — circuit/start not called?")
 	}
 	traceID, ok := captured["trace_id"].(string)
 	if !ok {
@@ -251,8 +254,8 @@ func TestMCPCircuitTransformer_PropagatesTraceID(t *testing.T) {
 }
 
 func TestMCPCircuitTransformer_GeneratesTraceIDWhenMissing(t *testing.T) {
-	var captured map[string]any
-	ts := newCapturingCircuitServer(t, &captured)
+	captured := make(map[string]any)
+	ts := newCapturingCircuitServer(t, captured)
 
 	trans := &MCPCircuitTransformer{
 		CircuitType: "gnd",

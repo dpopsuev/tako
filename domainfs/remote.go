@@ -181,7 +181,7 @@ type staticFileInfo struct {
 
 func (fi *staticFileInfo) Name() string      { return fi.name }
 func (fi *staticFileInfo) Size() int64       { return fi.size }
-func (fi *staticFileInfo) Mode() fs.FileMode { if fi.isDir { return fs.ModeDir | 0555 }; return 0444 }
+func (fi *staticFileInfo) Mode() fs.FileMode { if fi.isDir { return fs.ModeDir | 0o555 }; return 0o444 }
 func (fi *staticFileInfo) ModTime() time.Time { return time.Time{} }
 func (fi *staticFileInfo) IsDir() bool       { return fi.isDir }
 func (fi *staticFileInfo) Sys() any          { return nil }

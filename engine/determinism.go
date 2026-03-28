@@ -9,7 +9,8 @@ func IsCircuitDeterministic(def *circuit.CircuitDef, reg TransformerRegistry) bo
 	if reg == nil {
 		return false
 	}
-	for _, nd := range def.Nodes {
+	for i := range def.Nodes {
+		nd := &def.Nodes[i]
 		ht := nd.EffectiveHandlerType(def.HandlerType)
 		name := nd.EffectiveHandler()
 		if ht != HandlerTypeTransformer || name == "" {

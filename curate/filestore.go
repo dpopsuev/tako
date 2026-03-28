@@ -27,7 +27,7 @@ func (s *FileStore) List(_ context.Context) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("curate: list: %w", err)
 	}
-	var names []string
+	names := make([]string, 0, len(entries))
 	for _, e := range entries {
 		if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
 			continue

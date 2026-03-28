@@ -77,7 +77,7 @@ func TestStubWalker_Identity(t *testing.T) {
 func TestStubWalker_SetIdentity(t *testing.T) {
 	w := stubs.NewStubWalker("w1", nil)
 	newID := circuit.AgentIdentity{PersonaName: "w2"}
-	w.SetIdentity(newID)
+	w.SetIdentity(&newID)
 
 	id := w.Identity()
 	if id.PersonaName != "w2" {

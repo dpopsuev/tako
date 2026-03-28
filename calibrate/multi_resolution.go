@@ -105,7 +105,7 @@ func (ps PortStubs) Get(port string) any {
 // Unit plans are generated for each circuit. Pairwise plans for circuits
 // that share ports. Integrated plans for the full composition.
 func BuildResolutionPlans(circuits []CircuitEntry) []ResolutionPlan {
-	var plans []ResolutionPlan
+	plans := make([]ResolutionPlan, 0, len(circuits)+len(circuits)*(len(circuits)-1)/2+1)
 
 	// Unit: each circuit independently
 	for _, c := range circuits {
@@ -146,7 +146,7 @@ func BuildResolutionPlans(circuits []CircuitEntry) []ResolutionPlan {
 // WrapForResolution decorates a circuit for a specific resolution level.
 // It attaches resolution metadata and loaded port stubs (if any) to the
 // circuit's Vars so adapters can inspect them at runtime.
-func WrapForResolution(base *circuit.CircuitDef, plan ResolutionPlan, config DecoratorConfig) *circuit.CircuitDef {
+func WrapForResolution(base *circuit.CircuitDef, plan *ResolutionPlan, config DecoratorConfig) *circuit.CircuitDef {
 	wrapped := Wrap(base, config)
 
 	if wrapped.Vars == nil {

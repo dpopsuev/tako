@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"bytes"
 	"testing"
 )
 
@@ -254,7 +255,7 @@ func TestEntityStore_BlobRoundTrip(t *testing.T) {
 		t.Fatalf("get: %v", err)
 	}
 	got := row.Bytes("payload")
-	if string(got) != string(data) {
+	if !bytes.Equal(got, data) {
 		t.Errorf("payload: got %q, want %q", got, data)
 	}
 }

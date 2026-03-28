@@ -3,6 +3,7 @@ package engine
 // Category: DSL & Build — component types.
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 
@@ -28,8 +29,8 @@ type Component struct {
 }
 
 // MergeComponents merges one or more components into a base GraphRegistries.
-func MergeComponents(base GraphRegistries, components ...*Component) (GraphRegistries, error) {
-	merged := GraphRegistries{
+func MergeComponents(base *GraphRegistries, components ...*Component) (*GraphRegistries, error) {
+	merged := &GraphRegistries{
 		Transformers:     cloneMap(base.Transformers),
 		Extractors:       cloneMap(base.Extractors),
 		Hooks:            cloneMap(base.Hooks),
@@ -39,7 +40,7 @@ func MergeComponents(base GraphRegistries, components ...*Component) (GraphRegis
 		MediatorEndpoint: base.MediatorEndpoint,
 	}
 
-	slog.Debug("merge components",
+	slog.DebugContext(context.Background(), "merge components",
 		"component", "registry",
 		"base_circuits", len(base.Circuits),
 		"mediator_endpoint", base.MediatorEndpoint,
@@ -48,13 +49,13 @@ func MergeComponents(base GraphRegistries, components ...*Component) (GraphRegis
 
 	for _, a := range components {
 		if err := mergeTransformers(merged.Transformers, a); err != nil {
-			return GraphRegistries{}, err
+			return nil, err
 		}
 		if err := mergeExtractors(merged.Extractors, a); err != nil {
-			return GraphRegistries{}, err
+			return nil, err
 		}
 		if err := mergeHooks(merged.Hooks, a); err != nil {
-			return GraphRegistries{}, err
+			return nil, err
 		}
 	}
 	return merged, nil

@@ -34,6 +34,9 @@ linters:
     # Lex: require justification for //nolint
     - nolintlint
 
+    # Lex: structured logging conventions
+    - sloglint
+
 linters-settings:
   nestif:
     min-complexity: 4  # Lex rule: max nesting depth 3
@@ -57,9 +60,20 @@ linters-settings:
     require-explanation: true
     require-specific: true
 
+  sloglint:
+    no-mixed-args: true     # forbid slog.Info("msg", "key", val, badVal)
+    kv-only: true           # enforce key-value pairs, no positional args
+    attr-only: false         # don't require slog.Attr (too strict)
+    context: "all"          # require context in all slog calls
+    static-msg: false        # allow dynamic messages
+    no-raw-keys: false       # allow string keys (vs slog constants)
+    key-naming-case: snake   # enforce snake_case keys
+
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
+  exclude-dirs:
+    - lsp/vscode/node_modules  # vendored JS/Go deps
   exclude-rules:
     - path: _test\.go
       linters:

@@ -32,5 +32,5 @@ func defaultWalkerWith(element circuit.Element) *circuit.ProcessWalker {
 		}
 	}
 	id.Element = element
-	return circuit.NewProcessWalkerWithIdentity(id, "default")
+	return circuit.NewProcessWalkerWithIdentity(&id, "default")
 }

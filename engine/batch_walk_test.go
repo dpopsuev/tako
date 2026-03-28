@@ -25,8 +25,8 @@ func batchTestDef() *circuit.CircuitDef {
 	}
 }
 
-func batchTestRegistries() GraphRegistries {
-	return GraphRegistries{
+func batchTestRegistries() *GraphRegistries {
+	return &GraphRegistries{
 		Transformers: TransformerRegistry{
 			"echo": TransformerFunc("echo", func(_ context.Context, tc *TransformerContext) (any, error) {
 				return map[string]any{"node": tc.NodeName, "input": tc.WalkerState.Context["case_input"]}, nil
@@ -78,7 +78,7 @@ func TestBatchWalk_Parallel(t *testing.T) {
 	var concurrency atomic.Int32
 	var maxConcurrency atomic.Int32
 
-	reg := GraphRegistries{
+	reg := &GraphRegistries{
 		Transformers: TransformerRegistry{
 			"echo": TransformerFunc("echo", func(_ context.Context, tc *TransformerContext) (any, error) {
 				cur := concurrency.Add(1)
@@ -130,7 +130,7 @@ func TestBatchWalk_PerCaseComponents(t *testing.T) {
 		},
 	}
 
-	sharedReg := GraphRegistries{
+	sharedReg := &GraphRegistries{
 		Transformers: TransformerRegistry{
 			"echo": TransformerFunc("echo", func(_ context.Context, tc *TransformerContext) (any, error) {
 				return map[string]any{"node": tc.NodeName}, nil

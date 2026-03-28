@@ -74,7 +74,7 @@ func TestBuildGraphWith_TransformerNode(t *testing.T) {
 		Done:  "_done",
 	}
 
-	reg := GraphRegistries{
+	reg := &GraphRegistries{
 		Transformers: TransformerRegistry{"echo": trans},
 	}
 
@@ -114,7 +114,7 @@ func TestBuildGraphWith_MixedTransformerAndWalker(t *testing.T) {
 		return &testNode{name: nd.Name}
 	}
 
-	reg := GraphRegistries{
+	reg := &GraphRegistries{
 		Transformers: TransformerRegistry{"echo": trans},
 		Nodes:        NodeRegistry{"legacy": nodeFactory},
 	}
@@ -349,7 +349,7 @@ func TestBuildGraph_MetaReachesTransformerContext(t *testing.T) {
 		Done:  "_done",
 	}
 
-	runner, err := NewRunnerWith(def, GraphRegistries{
+	runner, err := NewRunnerWith(def, &GraphRegistries{
 		Transformers: TransformerRegistry{"capture": captureTrans},
 	})
 	if err != nil {
@@ -391,19 +391,19 @@ func TestBuiltinGoTemplate_RendersPrompt(t *testing.T) {
 		Done:  "_done",
 	}
 
-	cap := NewOutputCapture()
-	runner, err := NewRunnerWith(def, GraphRegistries{})
+	capture := NewOutputCapture()
+	runner, err := NewRunnerWith(def, &GraphRegistries{})
 	if err != nil {
 		t.Fatalf("NewRunnerWith: %v", err)
 	}
-	runner.Graph.(*DefaultGraph).SetObserver(cap)
+	runner.Graph.(*DefaultGraph).SetObserver(capture)
 
 	err = runner.Walk(context.Background(), nil, "render")
 	if err != nil {
 		t.Fatalf("Walk: %v", err)
 	}
 
-	art, found := cap.ArtifactAt("render")
+	art, found := capture.ArtifactAt("render")
 	if !found {
 		t.Fatal("no artifact for render node")
 	}
@@ -432,19 +432,19 @@ func TestBuiltinPassthrough_ReturnsInput(t *testing.T) {
 		Done:  "_done",
 	}
 
-	cap := NewOutputCapture()
-	runner, err := NewRunnerWith(def, GraphRegistries{})
+	capture := NewOutputCapture()
+	runner, err := NewRunnerWith(def, &GraphRegistries{})
 	if err != nil {
 		t.Fatalf("NewRunnerWith: %v", err)
 	}
-	runner.Graph.(*DefaultGraph).SetObserver(cap)
+	runner.Graph.(*DefaultGraph).SetObserver(capture)
 
 	err = runner.Walk(context.Background(), nil, "source")
 	if err != nil {
 		t.Fatalf("Walk: %v", err)
 	}
 
-	art, found := cap.ArtifactAt("pass")
+	art, found := capture.ArtifactAt("pass")
 	if !found {
 		t.Fatal("no artifact for pass node")
 	}
@@ -471,7 +471,7 @@ func TestBuiltinGoTemplate_NoRegistry(t *testing.T) {
 		Done:  "_done",
 	}
 
-	_, err := BuildGraph(def, GraphRegistries{})
+	_, err := BuildGraph(def, &GraphRegistries{})
 	if err != nil {
 		t.Fatalf("BuildGraph should succeed for built-in transformer without registry: %v", err)
 	}
@@ -502,7 +502,7 @@ func TestBuiltinGoTemplate_WithMeta(t *testing.T) {
 		Done:  "_done",
 	}
 
-	runner, err := NewRunnerWith(def, GraphRegistries{
+	runner, err := NewRunnerWith(def, &GraphRegistries{
 		Transformers: TransformerRegistry{"meta-capture": metaCapture},
 	})
 	if err != nil {
@@ -577,7 +577,7 @@ func TestTransformerNode_SlowTransform_ContextDeadline(t *testing.T) {
 		Done:  "_done",
 	}
 
-	runner, err := NewRunnerWith(def, GraphRegistries{
+	runner, err := NewRunnerWith(def, &GraphRegistries{
 		Transformers: TransformerRegistry{"slow": slowTrans},
 	})
 	if err != nil {
@@ -621,7 +621,7 @@ func TestTransformerNode_ContextCancellation_PropagatesError(t *testing.T) {
 		Done:  "_done",
 	}
 
-	runner, err := NewRunnerWith(def, GraphRegistries{
+	runner, err := NewRunnerWith(def, &GraphRegistries{
 		Transformers: TransformerRegistry{"blocking": blockingTrans},
 	})
 	if err != nil {
@@ -657,7 +657,7 @@ func TestIsTransformerNode(t *testing.T) {
 		Nodes:       []circuit.NodeDef{{Name: "t", Handler: "echo"}},
 		Edges:       []circuit.EdgeDef{{ID: "e", From: "t", To: "_done"}},
 	}
-	reg := GraphRegistries{
+	reg := &GraphRegistries{
 		Transformers: TransformerRegistry{"echo": &echoTransformer{}},
 	}
 	g, err := BuildGraph(def, reg)

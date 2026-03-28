@@ -37,7 +37,7 @@ func TestCircuitDef_LoadsAndBuilds(t *testing.T) {
 		edgeIDs[i] = ed.ID
 	}
 
-	reg := engine.GraphRegistries{
+	reg := &engine.GraphRegistries{
 		Nodes: CalibrationNodeRegistry(),
 		Edges: forwardEdgeFactory(edgeIDs...),
 	}
@@ -58,7 +58,7 @@ func TestRunCircuit_EndToEnd(t *testing.T) {
 			MetricDef{ID: "accuracy", Name: "Accuracy", Tier: TierOutcome, Direction: HigherIsBetter, Threshold: 0.50, Weight: 1.0},
 			MetricDef{ID: "speed", Name: "Speed", Tier: TierEfficiency, Direction: LowerIsBetter, Threshold: 100, Weight: 0},
 		).
-		WithAggregate(AggregateConfig{
+		WithAggregate(&AggregateConfig{
 			ID: "overall", Name: "Overall", Formula: "weighted_average",
 			Threshold: 0.50, Include: []string{"accuracy"},
 		}).
@@ -218,8 +218,8 @@ func TestRunCircuit_WithObserver(t *testing.T) {
 		Build()
 
 	var events []circuit.WalkEvent
-	obs := circuit.WalkObserverFunc(func(e circuit.WalkEvent) {
-		events = append(events, e)
+	obs := circuit.WalkObserverFunc(func(e *circuit.WalkEvent) {
+		events = append(events, *e)
 	})
 
 	input := &CalibrationInput{
@@ -269,7 +269,7 @@ func TestRunCircuit_IdenticalToProceduralScoring(t *testing.T) {
 			MetricDef{ID: "m1", Name: "M1", Tier: TierOutcome, Direction: HigherIsBetter, Threshold: 0.70, Weight: 0.6},
 			MetricDef{ID: "m2", Name: "M2", Tier: TierEfficiency, Direction: LowerIsBetter, Threshold: 100, Weight: 0.4},
 		).
-		WithAggregate(AggregateConfig{
+		WithAggregate(&AggregateConfig{
 			ID: "agg", Name: "Aggregate", Formula: "weighted_average",
 			Threshold: 0.50, Include: []string{"m1", "m2"},
 		}).

@@ -53,8 +53,8 @@ func (ms *MetricSet) AllMetrics() []Metric {
 }
 
 // PassCount returns (passed, total), excluding dry-capped metrics from both counts.
-func (ms *MetricSet) PassCount() (int, int) {
-	passed, total := 0, 0
+func (ms *MetricSet) PassCount() (passed, total int) {
+	passed, total = 0, 0
 	for _, m := range ms.Metrics {
 		if m.DryCapped {
 			continue

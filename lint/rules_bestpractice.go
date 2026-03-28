@@ -9,18 +9,28 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	rulePreferWhen      = "B1/prefer-when-over-condition"
+	ruleStochastic      = "B7/stochastic-transformer"
+	ruleStochasticSumm  = "B7s/stochastic-summary"
+	ruleMissingKind     = "B9/missing-kind"
+	ruleDeprecatedArrow = "B10/deprecated-fk-arrow"
+	yamlFieldKind       = "kind"
+)
+
 // --- B1: prefer-when-over-condition ---
 
 type PreferWhenOverCondition struct{}
 
-func (r *PreferWhenOverCondition) ID() string          { return "B1/prefer-when-over-condition" }
+func (r *PreferWhenOverCondition) ID() string          { return rulePreferWhen }
 func (r *PreferWhenOverCondition) Description() string { return "use when instead of deprecated condition field" }
 func (r *PreferWhenOverCondition) Severity() Severity   { return SeverityWarning }
 func (r *PreferWhenOverCondition) Tags() []string       { return []string{"best-practice"} }
 
 func (r *PreferWhenOverCondition) Check(ctx *LintContext) []Finding {
 	var out []Finding
-	for _, ed := range ctx.Def.Edges {
+	for i := range ctx.Def.Edges {
+		ed := &ctx.Def.Edges[i]
 		if ed.Condition != "" && ed.When == "" && looksLikeExpression(ed.Condition) {
 			out = append(out, Finding{
 				RuleID:       r.ID(),
@@ -61,8 +71,8 @@ func (r *NameYourEdges) Tags() []string       { return []string{"best-practice"}
 
 func (r *NameYourEdges) Check(ctx *LintContext) []Finding {
 	unnamed := 0
-	for _, ed := range ctx.Def.Edges {
-		if ed.Name == "" {
+	for i := range ctx.Def.Edges {
+		if ctx.Def.Edges[i].Name == "" {
 			unnamed++
 		}
 	}
@@ -89,12 +99,13 @@ func (r *TerminalEdgeToDone) Tags() []string       { return []string{"best-pract
 
 func (r *TerminalEdgeToDone) Check(ctx *LintContext) []Finding {
 	hasOutgoing := make(map[string]bool)
-	for _, ed := range ctx.Def.Edges {
-		hasOutgoing[ed.From] = true
+	for i := range ctx.Def.Edges {
+		hasOutgoing[ctx.Def.Edges[i].From] = true
 	}
 
 	var out []Finding
-	for _, nd := range ctx.Def.Nodes {
+	for i := range ctx.Def.Nodes {
+		nd := &ctx.Def.Nodes[i]
 		if !hasOutgoing[nd.Name] {
 			out = append(out, Finding{
 				RuleID:   r.ID(),
@@ -123,8 +134,8 @@ func (r *ZoneStickinessWithoutProvider) Check(ctx *LintContext) []Finding {
 	// Only flag when stickiness is "exclusive" (3) and zero providers exist
 	// anywhere in the circuit, suggesting a configuration oversight.
 	anyProvider := false
-	for _, nd := range ctx.Def.Nodes {
-		if nd.Provider != "" {
+	for i := range ctx.Def.Nodes {
+		if ctx.Def.Nodes[i].Provider != "" {
 			anyProvider = true
 			break
 		}
@@ -133,7 +144,7 @@ func (r *ZoneStickinessWithoutProvider) Check(ctx *LintContext) []Finding {
 		return nil
 	}
 
-	var out []Finding
+	out := make([]Finding, 0, len(ctx.Def.Zones))
 	for zoneName, z := range ctx.Def.Zones {
 		if z.Stickiness < 3 {
 			continue
@@ -181,22 +192,23 @@ func (r *ApproachAffinityChain) Tags() []string       { return []string{"best-pr
 
 func (r *ApproachAffinityChain) Check(ctx *LintContext) []Finding {
 	nodeApproaches := make(map[string]string)
-	for _, nd := range ctx.Def.Nodes {
-		if nd.Approach != "" {
-			nodeApproaches[nd.Name] = strings.ToLower(nd.Approach)
+	for i := range ctx.Def.Nodes {
+		if ctx.Def.Nodes[i].Approach != "" {
+			nodeApproaches[ctx.Def.Nodes[i].Name] = strings.ToLower(ctx.Def.Nodes[i].Approach)
 		}
 	}
 
 	adj := make(map[string][]string)
-	for _, ed := range ctx.Def.Edges {
-		if !ed.Shortcut && !ed.Loop {
-			adj[ed.From] = append(adj[ed.From], ed.To)
+	for i := range ctx.Def.Edges {
+		if !ctx.Def.Edges[i].Shortcut && !ctx.Def.Edges[i].Loop {
+			adj[ctx.Def.Edges[i].From] = append(adj[ctx.Def.Edges[i].From], ctx.Def.Edges[i].To)
 		}
 	}
 
 	var out []Finding
 	reported := make(map[string]bool)
-	for _, nd := range ctx.Def.Nodes {
+	for i := range ctx.Def.Nodes {
+		nd := &ctx.Def.Nodes[i]
 		approach := nodeApproaches[nd.Name]
 		if approach == "" {
 			continue
@@ -224,13 +236,14 @@ func findApproachChain(start, approach string, nodeApproaches map[string]string,
 		nexts := adj[curr]
 		extended := false
 		for _, next := range nexts {
-			if !visited[next] && nodeApproaches[next] == approach {
-				chain = append(chain, next)
-				visited[next] = true
-				curr = next
-				extended = true
-				break
+			if visited[next] || nodeApproaches[next] != approach {
+				continue
 			}
+			chain = append(chain, next)
+			visited[next] = true
+			curr = next
+			extended = true
+			break
 		}
 		if !extended {
 			break
@@ -250,7 +263,7 @@ var knownStochasticTransformers = map[string]bool{
 
 type StochasticTransformer struct{}
 
-func (r *StochasticTransformer) ID() string          { return "B7/stochastic-transformer" }
+func (r *StochasticTransformer) ID() string          { return ruleStochastic }
 func (r *StochasticTransformer) Description() string { return "node uses a stochastic (non-deterministic) transformer" }
 func (r *StochasticTransformer) Severity() Severity   { return SeverityInfo }
 func (r *StochasticTransformer) Tags() []string       { return []string{"best-practice", "determinism"} }
@@ -262,7 +275,8 @@ func (r *StochasticTransformer) Check(ctx *LintContext) []Finding {
 	}
 
 	var out []Finding
-	for _, nd := range ctx.Def.Nodes {
+	for i := range ctx.Def.Nodes {
+		nd := &ctx.Def.Nodes[i]
 		ht := nd.EffectiveHandlerType(ctx.Def.HandlerType)
 		name := nd.EffectiveHandler()
 		if ht == circuit.HandlerTypeTransformer && name != "" {
@@ -293,7 +307,7 @@ func isStochastic(name string, reg engine.TransformerRegistry) bool {
 
 type StochasticSummary struct{}
 
-func (r *StochasticSummary) ID() string          { return "B7s/stochastic-summary" }
+func (r *StochasticSummary) ID() string          { return ruleStochasticSumm }
 func (r *StochasticSummary) Description() string { return "aggregate count of stochastic nodes in circuit" }
 func (r *StochasticSummary) Severity() Severity   { return SeverityInfo }
 func (r *StochasticSummary) Tags() []string       { return []string{"best-practice", "determinism"} }
@@ -306,7 +320,8 @@ func (r *StochasticSummary) Check(ctx *LintContext) []Finding {
 
 	totalWithTransformer := 0
 	var stochasticNames []string
-	for _, nd := range ctx.Def.Nodes {
+	for i := range ctx.Def.Nodes {
+		nd := &ctx.Def.Nodes[i]
 		ht := nd.EffectiveHandlerType(ctx.Def.HandlerType)
 		name := nd.EffectiveHandler()
 		isTransformer := ht == circuit.HandlerTypeTransformer
@@ -335,7 +350,7 @@ func (r *StochasticSummary) Check(ctx *LintContext) []Finding {
 
 type MissingKind struct{}
 
-func (r *MissingKind) ID() string          { return "B9/missing-kind" }
+func (r *MissingKind) ID() string          { return ruleMissingKind }
 func (r *MissingKind) Description() string { return "YAML file should have a top-level kind field" }
 func (r *MissingKind) Severity() Severity  { return SeverityWarning }
 func (r *MissingKind) Tags() []string      { return []string{"best-practice", "envelope"} }
@@ -345,7 +360,7 @@ func (r *MissingKind) Check(ctx *LintContext) []Finding {
 		return nil
 	}
 	for i := 0; i+1 < len(ctx.yamlRoot.Content); i += 2 {
-		if ctx.yamlRoot.Content[i].Kind == yaml.ScalarNode && ctx.yamlRoot.Content[i].Value == "kind" {
+		if ctx.yamlRoot.Content[i].Kind == yaml.ScalarNode && ctx.yamlRoot.Content[i].Value == yamlFieldKind {
 			val := ctx.yamlRoot.Content[i+1].Value
 			if val != "" && !circuit.KnownKinds[val] {
 				return []Finding{{
@@ -372,7 +387,7 @@ func (r *MissingKind) Check(ctx *LintContext) []Finding {
 
 type DeprecatedArrow struct{}
 
-func (r *DeprecatedArrow) ID() string        { return "B10/deprecated-fk-arrow" }
+func (r *DeprecatedArrow) ID() string        { return ruleDeprecatedArrow }
 func (r *DeprecatedArrow) Description() string { return "use references instead of -> for foreign keys" }
 func (r *DeprecatedArrow) Severity() Severity  { return SeverityWarning }
 func (r *DeprecatedArrow) Tags() []string      { return []string{"best-practice", "schema", "envelope"} }
@@ -392,7 +407,7 @@ func findArrows(node *yaml.Node, file string, out *[]Finding) {
 	}
 	if node.Kind == yaml.ScalarNode && strings.Contains(node.Value, " -> ") {
 		*out = append(*out, Finding{
-			RuleID:       "B10/deprecated-fk-arrow",
+			RuleID:       ruleDeprecatedArrow,
 			Severity:     SeverityWarning,
 			Message:      fmt.Sprintf("deprecated -> syntax; use references instead: %s", node.Value),
 			File:         file,
@@ -435,7 +450,7 @@ func (r *MissingKindDomainPath) Check(ctx *LintContext) []Finding {
 		return nil
 	}
 	for i := 0; i+1 < len(ctx.yamlRoot.Content); i += 2 {
-		if ctx.yamlRoot.Content[i].Kind == yaml.ScalarNode && ctx.yamlRoot.Content[i].Value == "kind" {
+		if ctx.yamlRoot.Content[i].Kind == yaml.ScalarNode && ctx.yamlRoot.Content[i].Value == yamlFieldKind {
 			return nil
 		}
 	}

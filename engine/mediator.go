@@ -42,7 +42,7 @@ type MCPCircuitTransformer struct {
 func (t *MCPCircuitTransformer) Name() string { return "mediator.circuit" }
 
 func (t *MCPCircuitTransformer) Transform(ctx context.Context, tc *TransformerContext) (any, error) {
-	slog.Debug("mediator delegate start",
+	slog.DebugContext(ctx, "mediator delegate start",
 		"circuit_type", t.CircuitType,
 		"endpoint", t.Endpoint,
 		"node", tc.NodeName,
@@ -94,7 +94,7 @@ func (t *MCPCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 		return nil, fmt.Errorf("mediator circuit/start(%s): no session_id in response", t.CircuitType)
 	}
 
-	slog.Debug("mediator delegate session started",
+	slog.DebugContext(ctx, "mediator delegate session started",
 		"circuit_type", t.CircuitType,
 		"session_id", sessionID,
 		"has_relayer", relayer != nil,
@@ -135,7 +135,7 @@ func (t *MCPCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 		childCaseID, _ := stepOut[circuit.ProtoKeyCaseID].(string)
 		childArtifactPath, _ := stepOut[circuit.ProtoKeyArtifactPath].(string)
 
-		slog.Debug("mediator relay child prompt",
+		slog.DebugContext(ctx, "mediator relay child prompt",
 			"circuit_type", t.CircuitType,
 			"child_step", childStep,
 			"child_case_id", childCaseID,
@@ -193,7 +193,7 @@ func (t *MCPCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 		return nil, fmt.Errorf("mediator circuit %q error: %s", t.CircuitType, errMsg)
 	}
 
-	slog.Debug("mediator delegate complete",
+	slog.DebugContext(ctx, "mediator delegate complete",
 		"circuit_type", t.CircuitType,
 		"session_id", sessionID,
 		"status", reportOut[circuit.ProtoKeyStatus],

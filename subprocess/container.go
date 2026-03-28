@@ -15,6 +15,8 @@ import (
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
+const defaultRuntime = "podman"
+
 // ContainerRuntime handles OCI container lifecycle via podman or docker.
 // It knows nothing about MCP — it only starts, stops, and removes containers.
 type ContainerRuntime struct {
@@ -24,7 +26,7 @@ type ContainerRuntime struct {
 // NewContainerRuntime creates a runtime with the given CLI tool name.
 func NewContainerRuntime(runtime string) *ContainerRuntime {
 	if runtime == "" {
-		runtime = "podman"
+		runtime = defaultRuntime
 	}
 	return &ContainerRuntime{Runtime: runtime}
 }
@@ -44,7 +46,7 @@ type RunOptions struct {
 // Run starts a container and returns its ID. The container binds to
 // 127.0.0.1 only and maps hostPort to containerPort.
 func (cr *ContainerRuntime) Run(ctx context.Context, name, image string, hostPort, containerPort int) (string, error) {
-	return cr.RunWithOptions(ctx, RunOptions{
+	return cr.RunWithOptions(ctx, &RunOptions{
 		Name:          name,
 		Image:         image,
 		HostPort:      hostPort,
@@ -53,7 +55,7 @@ func (cr *ContainerRuntime) Run(ctx context.Context, name, image string, hostPor
 }
 
 // RunWithOptions starts a container with full configuration and returns its ID.
-func (cr *ContainerRuntime) RunWithOptions(ctx context.Context, opts RunOptions) (string, error) {
+func (cr *ContainerRuntime) RunWithOptions(ctx context.Context, opts *RunOptions) (string, error) {
 	args := []string{"run", "-d", "--name", opts.Name}
 
 	if opts.HostPort > 0 && opts.ContainerPort > 0 {
@@ -278,7 +280,7 @@ type containerEntry struct {
 // NewContainerManager creates a ContainerManager with the given runtime.
 func NewContainerManager(runtime string) *ContainerManager {
 	if runtime == "" {
-		runtime = "podman"
+		runtime = defaultRuntime
 	}
 	return &ContainerManager{
 		Runtime:    runtime,
@@ -343,7 +345,7 @@ func (cm *ContainerManager) Swap(ctx context.Context, name, newImage string) err
 }
 
 // CallTool calls a tool on a named container's MCP server.
-func (cm *ContainerManager) CallTool(ctx context.Context, name string, tool string, args map[string]any) (*sdkmcp.CallToolResult, error) {
+func (cm *ContainerManager) CallTool(ctx context.Context, name, tool string, args map[string]any) (*sdkmcp.CallToolResult, error) {
 	cm.mu.RLock()
 	entry, ok := cm.containers[name]
 	cm.mu.RUnlock()

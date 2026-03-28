@@ -101,7 +101,7 @@ func (c *testAnthropicClient) Chat(ctx context.Context, systemPrompt string, mes
 		Role    string `json:"role"`
 		Content string `json:"content"`
 	}
-	var msgs []msg
+	msgs := make([]msg, 0, len(messages))
 	for _, m := range messages {
 		msgs = append(msgs, msg(m))
 	}
@@ -203,7 +203,7 @@ func (c *testGeminiClient) Chat(ctx context.Context, systemPrompt string, messag
 		Role  string `json:"role"`
 		Parts []part `json:"parts"`
 	}
-	var contents []content
+	contents := make([]content, 0, len(messages))
 	for _, m := range messages {
 		contents = append(contents, content{Role: m.Role, Parts: []part{{Text: m.Content}}})
 	}

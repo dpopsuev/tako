@@ -52,11 +52,11 @@ func RunCircuit(ctx context.Context, input *CalibrationInput, opts ...CircuitOpt
 	}
 
 	edgeIDs := make([]string, len(def.Edges))
-	for i, ed := range def.Edges {
-		edgeIDs[i] = ed.ID
+	for i := range def.Edges {
+		edgeIDs[i] = def.Edges[i].ID
 	}
 
-	reg := engine.GraphRegistries{
+	reg := &engine.GraphRegistries{
 		Nodes: CalibrationNodeRegistry(),
 		Edges: forwardEdgeFactory(edgeIDs...),
 	}

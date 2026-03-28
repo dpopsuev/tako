@@ -52,6 +52,6 @@ type Source struct {
 
 // IsAlwaysRead returns true if this source should be included in every
 // circuit run regardless of routing rules.
-func (s Source) IsAlwaysRead() bool {
+func (s *Source) IsAlwaysRead() bool {
 	return s.ReadPolicy == ReadAlways
 }

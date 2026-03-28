@@ -21,7 +21,7 @@ func NewLogObserver(logger *slog.Logger) circuit.WalkObserver {
 	return &logObserver{Logger: logger}
 }
 
-func (o *logObserver) OnEvent(e circuit.WalkEvent) {
+func (o *logObserver) OnEvent(e *circuit.WalkEvent) {
 	logger := o.Logger
 	if logger == nil {
 		logger = slog.Default()
@@ -65,9 +65,9 @@ type TraceCollector struct {
 	events []circuit.WalkEvent
 }
 
-func (t *TraceCollector) OnEvent(e circuit.WalkEvent) {
+func (t *TraceCollector) OnEvent(e *circuit.WalkEvent) {
 	t.mu.Lock()
-	t.events = append(t.events, e)
+	t.events = append(t.events, *e)
 	t.mu.Unlock()
 }
 

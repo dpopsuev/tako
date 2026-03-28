@@ -8,6 +8,8 @@ import (
 	"strings"
 )
 
+const colTypeInteger = "integer"
+
 // Row represents a database row as column-name → value pairs.
 // Values are typed by their schema column type:
 //
@@ -115,8 +117,8 @@ func (e *EntityStore) Create(table string, row Row) (int64, error) {
 		return 0, fmt.Errorf("entity create: unknown table %q", table)
 	}
 
-	var cols []string
-	var vals []any
+	cols := make([]string, 0, len(t.Columns))
+	vals := make([]any, 0, len(t.Columns))
 	for _, c := range t.Columns {
 		if c.PrimaryKey && c.Autoincrement {
 			continue
@@ -296,7 +298,7 @@ func makeScanDest(t *Table) []any {
 	dests := make([]any, len(t.Columns))
 	for i, c := range t.Columns {
 		switch strings.ToLower(c.Type) {
-		case "integer":
+		case colTypeInteger:
 			dests[i] = new(sql.NullInt64)
 		case "real":
 			dests[i] = new(sql.NullFloat64)
@@ -338,7 +340,7 @@ func destToRow(t *Table, dests []any) Row {
 	return row
 }
 
-func buildWhere(where Row) (string, []any) {
+func buildWhere(where Row) (clause string, args []any) {
 	keys := make([]string, 0, len(where))
 	for k := range where {
 		keys = append(keys, k)
@@ -346,7 +348,6 @@ func buildWhere(where Row) (string, []any) {
 	sort.Strings(keys)
 
 	var parts []string
-	var args []any
 	for _, col := range keys {
 		val := where[col]
 		if val == nil {

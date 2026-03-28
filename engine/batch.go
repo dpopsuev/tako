@@ -30,7 +30,7 @@ type BatchWalkResult struct {
 // BatchWalkConfig configures a batch walk over a circuit.
 type BatchWalkConfig struct {
 	Def            *circuit.CircuitDef
-	Shared         GraphRegistries
+	Shared         *GraphRegistries
 	Cases          []BatchCase
 	Parallel       int
 	OnCaseComplete func(index int, result BatchWalkResult)
@@ -65,7 +65,7 @@ func BatchWalk(ctx context.Context, cfg BatchWalkConfig) []BatchWalkResult {
 		var path []string
 		stepArtifacts := map[string]circuit.Artifact{}
 
-		obs := circuit.WalkObserverFunc(func(e circuit.WalkEvent) {
+		obs := circuit.WalkObserverFunc(func(e *circuit.WalkEvent) {
 			mu.Lock()
 			defer mu.Unlock()
 			if e.Type == circuit.EventNodeEnter {
@@ -85,7 +85,7 @@ func BatchWalk(ctx context.Context, cfg BatchWalkConfig) []BatchWalkResult {
 
 		walkErr := runner.Walk(ctx, walker, cfg.Def.Start)
 		if walkErr != nil {
-			slog.Warn("case walk failed", "component", "batch_walk", "case_id", bc.ID, "error", walkErr)
+			slog.WarnContext(ctx, "case walk failed", "component", "batch_walk", "case_id", bc.ID, "error", walkErr)
 		}
 
 		results[i] = BatchWalkResult{

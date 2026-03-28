@@ -83,33 +83,33 @@ func Render(def *ReportDef, data map[string]any) (string, error) {
 }
 
 func renderSections(buf *strings.Builder, sections []SectionDef, data map[string]any, mode toolkit.Mode) error {
-	for i, sec := range sections {
+	for i := range sections {
 		if i > 0 {
 			buf.WriteString("\n")
 		}
-		switch sec.Type {
+		switch sections[i].Type {
 		case "header":
-			renderHeader(buf, sec, mode)
+			renderHeader(buf, &sections[i], mode)
 		case "table":
-			if err := renderTable(buf, sec, data, mode); err != nil {
-				return fmt.Errorf("section %d (%s): %w", i, sec.Title, err)
+			if err := renderTable(buf, &sections[i], data, mode); err != nil {
+				return fmt.Errorf("section %d (%s): %w", i, sections[i].Title, err)
 			}
 		case "text":
-			if err := renderText(buf, sec, data); err != nil {
+			if err := renderText(buf, &sections[i], data); err != nil {
 				return fmt.Errorf("section %d (text): %w", i, err)
 			}
 		case "repeat":
-			if err := renderRepeat(buf, sec, data, mode); err != nil {
+			if err := renderRepeat(buf, &sections[i], data, mode); err != nil {
 				return fmt.Errorf("section %d (repeat): %w", i, err)
 			}
 		default:
-			return fmt.Errorf("section %d: unknown type %q", i, sec.Type)
+			return fmt.Errorf("section %d: unknown type %q", i, sections[i].Type)
 		}
 	}
 	return nil
 }
 
-func renderRepeat(buf *strings.Builder, sec SectionDef, data map[string]any, mode toolkit.Mode) error {
+func renderRepeat(buf *strings.Builder, sec *SectionDef, data map[string]any, mode toolkit.Mode) error {
 	if sec.Items == "" {
 		return fmt.Errorf("repeat section requires 'items' field")
 	}
@@ -144,7 +144,7 @@ func renderRepeat(buf *strings.Builder, sec SectionDef, data map[string]any, mod
 	return nil
 }
 
-func renderHeader(buf *strings.Builder, sec SectionDef, mode toolkit.Mode) {
+func renderHeader(buf *strings.Builder, sec *SectionDef, mode toolkit.Mode) {
 	level := sec.Level
 	if level < 1 {
 		level = 1
@@ -168,7 +168,7 @@ func renderHeader(buf *strings.Builder, sec SectionDef, mode toolkit.Mode) {
 	}
 }
 
-func renderTable(buf *strings.Builder, sec SectionDef, data map[string]any, mode toolkit.Mode) error {
+func renderTable(buf *strings.Builder, sec *SectionDef, data map[string]any, mode toolkit.Mode) error {
 	if sec.Title != "" {
 		buf.WriteString(sec.Title + "\n")
 	}
@@ -204,7 +204,7 @@ func renderTable(buf *strings.Builder, sec SectionDef, data map[string]any, mode
 	return nil
 }
 
-func renderText(buf *strings.Builder, sec SectionDef, data map[string]any) error {
+func renderText(buf *strings.Builder, sec *SectionDef, data map[string]any) error {
 	tmpl, err := template.New("text").Parse(sec.Content)
 	if err != nil {
 		return fmt.Errorf("parse template: %w", err)

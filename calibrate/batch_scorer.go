@@ -6,6 +6,12 @@ import (
 	"strings"
 )
 
+const (
+	matchFnEvidenceOverlap = "evidence_overlap"
+	aggregateSum           = "sum"
+	aggregateHitRate       = "hit_rate"
+)
+
 // RegisterBatchScorers adds all 10 batch-level scorer patterns to the registry.
 func RegisterBatchScorers(reg ScorerRegistry) {
 	reg.Register("batch_field_match", batchFieldMatch)
@@ -34,7 +40,7 @@ func toBatch(caseResult any) ([]map[string]any, error) {
 //	filter — field(s) that must be truthy.
 //	fallback_text, fallback_value — if primary match fails,
 //	  check if fallback_value appears (case-insensitive) in fallback_text.
-func batchFieldMatch(caseResult, groundTruth any, params map[string]any) (float64, string, error) {
+func batchFieldMatch(caseResult, groundTruth any, params map[string]any) (score float64, detail string, err error) {
 	batch, err := toBatch(caseResult)
 	if err != nil {
 		return 0, "", err
@@ -74,7 +80,7 @@ func batchFieldMatch(caseResult, groundTruth any, params map[string]any) (float6
 //
 //	filter_value — expected value for filter_field (default true).
 //	actual_field — the bool field to check.
-func batchBoolRate(caseResult, groundTruth any, params map[string]any) (float64, string, error) {
+func batchBoolRate(caseResult, groundTruth any, params map[string]any) (score float64, detail string, err error) {
 	batch, err := toBatch(caseResult)
 	if err != nil {
 		return 0, "", err
@@ -105,7 +111,7 @@ func batchBoolRate(caseResult, groundTruth any, params map[string]any) (float64,
 //	match_fn — "evidence_overlap" for lenient matching (default: exact).
 //	aggregate — "sum" for global numerator/denominator (default: "mean" per-item average).
 //	filter — field(s) that must be truthy.
-func batchSetPrecision(caseResult, groundTruth any, params map[string]any) (float64, string, error) {
+func batchSetPrecision(caseResult, groundTruth any, params map[string]any) (score float64, detail string, err error) {
 	batch, err := toBatch(caseResult)
 	if err != nil {
 		return 0, "", err
@@ -135,7 +141,7 @@ func batchSetPrecision(caseResult, groundTruth any, params map[string]any) (floa
 		count++
 
 		var intersect int
-		if matchFn == "evidence_overlap" {
+		if matchFn == matchFnEvidenceOverlap {
 			intersect, _ = EvidenceOverlap(actual, relevant)
 		} else {
 			relSet := make(map[string]bool, len(relevant))
@@ -149,7 +155,7 @@ func batchSetPrecision(caseResult, groundTruth any, params map[string]any) (floa
 			}
 		}
 
-		if aggregate == "sum" {
+		if aggregate == aggregateSum {
 			sumNumerator += float64(intersect)
 			sumDenominator += float64(len(actual))
 		} else {
@@ -157,7 +163,7 @@ func batchSetPrecision(caseResult, groundTruth any, params map[string]any) (floa
 		}
 	}
 
-	if aggregate == "sum" {
+	if aggregate == aggregateSum {
 		return SafeDivFloat(sumNumerator, sumDenominator), fmt.Sprintf("%.0f/%.0f", sumNumerator, sumDenominator), nil
 	}
 	return SafeDivFloat(sumPrecision, float64(count)), fmt.Sprintf("avg over %d cases", count), nil
@@ -165,7 +171,7 @@ func batchSetPrecision(caseResult, groundTruth any, params map[string]any) (floa
 
 // batchSetRecall computes set recall: intersection(actual, relevant) / |relevant|.
 // Same params as batchSetPrecision.
-func batchSetRecall(caseResult, groundTruth any, params map[string]any) (float64, string, error) {
+func batchSetRecall(caseResult, groundTruth any, params map[string]any) (score float64, detail string, err error) {
 	batch, err := toBatch(caseResult)
 	if err != nil {
 		return 0, "", err
@@ -197,7 +203,7 @@ func batchSetRecall(caseResult, groundTruth any, params map[string]any) (float64
 		actual := ResolveStringSlice(item, actualField)
 
 		var intersect int
-		if matchFn == "evidence_overlap" {
+		if matchFn == matchFnEvidenceOverlap {
 			intersect, _ = EvidenceOverlap(actual, relevant)
 		} else {
 			actSet := make(map[string]bool, len(actual))
@@ -211,7 +217,7 @@ func batchSetRecall(caseResult, groundTruth any, params map[string]any) (float64
 			}
 		}
 
-		if aggregate == "sum" {
+		if aggregate == aggregateSum {
 			sumNumerator += float64(intersect)
 			sumDenominator += float64(len(relevant))
 		} else {
@@ -219,7 +225,7 @@ func batchSetRecall(caseResult, groundTruth any, params map[string]any) (float64
 		}
 	}
 
-	if aggregate == "sum" {
+	if aggregate == aggregateSum {
 		return SafeDivFloat(sumNumerator, sumDenominator), fmt.Sprintf("%.0f/%.0f", sumNumerator, sumDenominator), nil
 	}
 	return SafeDivFloat(sumRecall, float64(count)), fmt.Sprintf("avg over %d cases", count), nil
@@ -230,7 +236,7 @@ func batchSetRecall(caseResult, groundTruth any, params map[string]any) (float64
 //
 //	excluded_field — string slice field in groundTruth (batch-level context).
 //	filter — field(s) that must be truthy.
-func batchSetExclusion(caseResult, groundTruth any, params map[string]any) (float64, string, error) {
+func batchSetExclusion(caseResult, groundTruth any, params map[string]any) (score float64, detail string, err error) {
 	batch, err := toBatch(caseResult)
 	if err != nil {
 		return 0, "", err
@@ -281,7 +287,7 @@ func batchSetExclusion(caseResult, groundTruth any, params map[string]any) (floa
 //	hit_threshold — float fraction; items with matched/total >= this count as hits (M14b mode).
 //	aggregate — "hit_rate" counts items meeting hit_threshold / eligible (default: "mean").
 //	filter — field(s) that must be truthy.
-func batchKeywordScore(caseResult, groundTruth any, params map[string]any) (float64, string, error) {
+func batchKeywordScore(caseResult, groundTruth any, params map[string]any) (score float64, detail string, err error) {
 	batch, err := toBatch(caseResult)
 	if err != nil {
 		return 0, "", err
@@ -312,22 +318,23 @@ func batchKeywordScore(caseResult, groundTruth any, params map[string]any) (floa
 
 		matched := KeywordMatch(text, keywords)
 
-		if aggregate == "hit_rate" && hasHitThreshold {
+		switch {
+		case aggregate == aggregateHitRate && hasHitThreshold:
 			if float64(matched) >= float64(len(keywords))*hitThreshold {
 				hits++
 			}
-		} else if thresholdField != "" {
+		case thresholdField != "":
 			threshold, ok := ResolveFloat(item, thresholdField)
 			if !ok || threshold == 0 {
 				threshold = float64(len(keywords))
 			}
 			sumScore += math.Min(float64(matched)/threshold, 1.0)
-		} else {
+		default:
 			sumScore += SafeDivFloat(float64(matched), float64(len(keywords)))
 		}
 	}
 
-	if aggregate == "hit_rate" {
+	if aggregate == aggregateHitRate {
 		return SafeDivFloat(float64(hits), float64(count)), fmt.Sprintf("%d/%d", hits, count), nil
 	}
 	return SafeDivFloat(sumScore, float64(count)), fmt.Sprintf("avg over %d cases", count), nil
@@ -337,7 +344,7 @@ func batchKeywordScore(caseResult, groundTruth any, params map[string]any) (floa
 // params: x_field, y_field — numeric field names.
 //
 //	filter — field(s) that must be truthy.
-func batchCorrelation(caseResult, groundTruth any, params map[string]any) (float64, string, error) {
+func batchCorrelation(caseResult, groundTruth any, params map[string]any) (score float64, detail string, err error) {
 	batch, err := toBatch(caseResult)
 	if err != nil {
 		return 0, "", err
@@ -349,7 +356,8 @@ func batchCorrelation(caseResult, groundTruth any, params map[string]any) (float
 	}
 	filters := paramFilters(params)
 
-	var xs, ys []float64
+	xs := make([]float64, 0, len(batch))
+	ys := make([]float64, 0, len(batch))
 	for _, item := range batch {
 		if !passesFilters(item, filters) {
 			continue
@@ -372,7 +380,7 @@ func batchCorrelation(caseResult, groundTruth any, params map[string]any) (float
 //
 //	zero_both — value when both sums are 0 (default 1.0).
 //	zero_denom — value when denominator is 0 but numerator > 0.
-func batchSumRatio(caseResult, groundTruth any, params map[string]any) (float64, string, error) {
+func batchSumRatio(caseResult, groundTruth any, params map[string]any) (score float64, detail string, err error) {
 	batch, err := toBatch(caseResult)
 	if err != nil {
 		return 0, "", err
@@ -397,15 +405,16 @@ func batchSumRatio(caseResult, groundTruth any, params map[string]any) (float64,
 	}
 
 	var val float64
-	if sumDenom == 0 && sumNum == 0 {
+	switch {
+	case sumDenom == 0 && sumNum == 0:
 		val = zeroBoth
-	} else if sumDenom == 0 {
+	case sumDenom == 0:
 		if v, ok := paramFloat(params, "zero_denom"); ok {
 			val = v
 		} else {
 			val = sumNum + 1
 		}
-	} else {
+	default:
 		val = sumNum / sumDenom
 	}
 	return val, fmt.Sprintf("actual=%.0f expected=%.0f", sumNum, sumDenom), nil
@@ -417,7 +426,7 @@ func batchSumRatio(caseResult, groundTruth any, params map[string]any) (float64,
 //
 //	fallback_field — field to use for estimation when primary is 0.
 //	fallback_multiplier — multiplier for fallback (e.g. 1000 for tokens-per-step).
-func batchFieldSum(caseResult, groundTruth any, params map[string]any) (float64, string, error) {
+func batchFieldSum(caseResult, groundTruth any, params map[string]any) (score float64, detail string, err error) {
 	batch, err := toBatch(caseResult)
 	if err != nil {
 		return 0, "", err
@@ -462,7 +471,7 @@ func batchFieldSum(caseResult, groundTruth any, params map[string]any) (float64,
 //
 //	value_field — field that should be consistent within group (e.g. actual_rca_id).
 //	filter — field(s) that must be truthy.
-func batchGroupLinkage(caseResult, groundTruth any, params map[string]any) (float64, string, error) {
+func batchGroupLinkage(caseResult, groundTruth any, params map[string]any) (score float64, detail string, err error) {
 	batch, err := toBatch(caseResult)
 	if err != nil {
 		return 0, "", err

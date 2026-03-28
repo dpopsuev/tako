@@ -42,7 +42,7 @@ func (g *DefaultGraph) walkFanOut(
 	for i, m := range matches {
 		branchNames[i] = m.transition.NextNode
 	}
-	emitEvent(obs, circuit.WalkEvent{
+	emitEvent(obs, &circuit.WalkEvent{
 		Type:     circuit.EventFanOutStart,
 		Node:     sourceNode.Name(),
 		Walker:   walkerName,
@@ -62,7 +62,7 @@ func (g *DefaultGraph) walkFanOut(
 		}
 
 		eg.Go(func() error {
-			emitEvent(obs, circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: targetNode.Name(), Walker: walkerName})
+			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: targetNode.Name(), Walker: walkerName})
 			start := time.Now()
 
 			nc := circuit.NodeContext{
@@ -78,14 +78,14 @@ func (g *DefaultGraph) walkFanOut(
 			elapsed := time.Since(start)
 
 			if err != nil {
-				emitEvent(obs, circuit.WalkEvent{
+				emitEvent(obs, &circuit.WalkEvent{
 					Type: circuit.EventNodeExit, Node: targetNode.Name(),
 					Walker: walkerName, Elapsed: elapsed, Error: err,
 				})
 				return fmt.Errorf("node %s: %w", targetNode.Name(), err)
 			}
 
-			emitEvent(obs, circuit.WalkEvent{
+			emitEvent(obs, &circuit.WalkEvent{
 				Type: circuit.EventNodeExit, Node: targetNode.Name(),
 				Walker: walkerName, Artifact: art, Elapsed: elapsed,
 			})
@@ -103,8 +103,8 @@ func (g *DefaultGraph) walkFanOut(
 	}
 
 	if err := eg.Wait(); err != nil {
-		state.Status = "error"
-		emitEvent(obs, circuit.WalkEvent{Type: circuit.EventWalkError, Node: sourceNode.Name(), Error: err})
+		state.Status = walkStatusError
+		emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkError, Node: sourceNode.Name(), Error: err})
 		return "", err
 	}
 
@@ -115,12 +115,12 @@ func (g *DefaultGraph) walkFanOut(
 
 	mergeNodeName, err := g.findMergeTarget(results, state)
 	if err != nil {
-		state.Status = "error"
-		emitEvent(obs, circuit.WalkEvent{Type: circuit.EventWalkError, Node: sourceNode.Name(), Error: err})
+		state.Status = walkStatusError
+		emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkError, Node: sourceNode.Name(), Error: err})
 		return "", err
 	}
 
-	emitEvent(obs, circuit.WalkEvent{
+	emitEvent(obs, &circuit.WalkEvent{
 		Type:     circuit.EventFanOutEnd,
 		Node:     sourceNode.Name(),
 		Walker:   walkerName,
@@ -176,7 +176,9 @@ type ListArtifact struct {
 	Items []circuit.Artifact
 }
 
-func (a *ListArtifact) Type() string       { return "list" }
+const artifactTypeList = "list"
+
+func (a *ListArtifact) Type() string       { return artifactTypeList }
 func (a *ListArtifact) Confidence() float64 { return 0 }
 func (a *ListArtifact) Raw() any            { return a.Items }
 

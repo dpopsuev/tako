@@ -41,7 +41,8 @@ func NewCircuitStore(def *circuit.CircuitDef) *CircuitStore {
 		}
 	}
 
-	for _, nd := range def.Nodes {
+	for i := range def.Nodes {
+		nd := &def.Nodes[i]
 		elem, _ := agentport.ResolveApproach(strings.ToLower(nd.Approach))
 		elemStr := string(elem)
 		nodes[nd.Name] = NodeState{
@@ -91,7 +92,8 @@ func (cs *CircuitStore) Reset(def *circuit.CircuitDef) {
 		}
 	}
 
-	for _, nd := range def.Nodes {
+	for i := range def.Nodes {
+		nd := &def.Nodes[i]
 		elem2, _ := agentport.ResolveApproach(strings.ToLower(nd.Approach))
 		elemStr2 := string(elem2)
 		nodes[nd.Name] = NodeState{
@@ -116,7 +118,7 @@ func (cs *CircuitStore) Reset(def *circuit.CircuitDef) {
 	cs.nodeZone = nodeZone
 	cs.nodeElement = nodeElement
 
-	cs.emit(StateDiff{Type: DiffReset, Timestamp: now})
+	cs.emit(&StateDiff{Type: DiffReset, Timestamp: now})
 }
 
 // Def returns the CircuitDef used to initialize this store.
@@ -128,7 +130,7 @@ func (cs *CircuitStore) Def() *circuit.CircuitDef {
 
 // OnEvent implements circuit.WalkObserver. It updates the snapshot and
 // emits StateDiff values to subscribers.
-func (cs *CircuitStore) OnEvent(we circuit.WalkEvent) {
+func (cs *CircuitStore) OnEvent(we *circuit.WalkEvent) {
 	cs.mu.Lock()
 	defer cs.mu.Unlock()
 
@@ -175,7 +177,7 @@ func (cs *CircuitStore) OnEvent(we circuit.WalkEvent) {
 		}
 		cs.clearWalkers(we.Walker, now)
 		cs.snapshot.Completed = true
-		cs.emit(StateDiff{Type: DiffCompleted, Timestamp: now})
+		cs.emit(&StateDiff{Type: DiffCompleted, Timestamp: now})
 
 	case circuit.EventWalkError:
 		errMsg := ""
@@ -193,15 +195,15 @@ func (cs *CircuitStore) OnEvent(we circuit.WalkEvent) {
 		}
 		cs.clearWalkers(we.Walker, now)
 		cs.snapshot.Error = errMsg
-		cs.emit(StateDiff{Type: DiffError, Node: we.Node, Error: errMsg, Timestamp: now})
+		cs.emit(&StateDiff{Type: DiffError, Node: we.Node, Error: errMsg, Timestamp: now})
 
 	case circuit.EventWalkInterrupted:
 		cs.snapshot.Paused = true
-		cs.emit(StateDiff{Type: DiffPaused, Node: we.Node, Timestamp: now})
+		cs.emit(&StateDiff{Type: DiffPaused, Node: we.Node, Timestamp: now})
 
 	case circuit.EventWalkResumed:
 		cs.snapshot.Paused = false
-		cs.emit(StateDiff{Type: DiffResumed, Timestamp: now})
+		cs.emit(&StateDiff{Type: DiffResumed, Timestamp: now})
 	}
 }
 
@@ -283,12 +285,12 @@ func (cs *CircuitStore) SetBreakpoints(nodes []string) {
 	for _, n := range nodes {
 		cs.snapshot.Breakpoints[n] = true
 		if !old[n] {
-			cs.emit(StateDiff{Type: DiffBreakpointSet, Node: n, Timestamp: now})
+			cs.emit(&StateDiff{Type: DiffBreakpointSet, Node: n, Timestamp: now})
 		}
 	}
 	for n := range old {
 		if !cs.snapshot.Breakpoints[n] {
-			cs.emit(StateDiff{Type: DiffBreakpointCleared, Node: n, Timestamp: now})
+			cs.emit(&StateDiff{Type: DiffBreakpointCleared, Node: n, Timestamp: now})
 		}
 	}
 }
@@ -303,9 +305,9 @@ func (cs *CircuitStore) SetPaused(paused bool) {
 	now := time.Now().UTC()
 	cs.snapshot.Paused = paused
 	if paused {
-		cs.emit(StateDiff{Type: DiffPaused, Timestamp: now})
+		cs.emit(&StateDiff{Type: DiffPaused, Timestamp: now})
 	} else {
-		cs.emit(StateDiff{Type: DiffResumed, Timestamp: now})
+		cs.emit(&StateDiff{Type: DiffResumed, Timestamp: now})
 	}
 }
 
@@ -328,7 +330,7 @@ func (cs *CircuitStore) setNodeState(node string, state NodeVisualState, ts time
 		ns.State = state
 		cs.snapshot.Nodes[node] = ns
 	}
-	cs.emit(StateDiff{Type: DiffNodeState, Node: node, State: state, Timestamp: ts})
+	cs.emit(&StateDiff{Type: DiffNodeState, Node: node, State: state, Timestamp: ts})
 }
 
 func (cs *CircuitStore) moveWalker(walkerID, node string, ts time.Time) {
@@ -350,7 +352,7 @@ func (cs *CircuitStore) moveWalker(walkerID, node string, ts time.Time) {
 		ci.Element = cs.nodeElement[node]
 		cs.snapshot.Cases[walkerID] = ci
 	}
-	cs.emit(StateDiff{Type: DiffWalkerMoved, Walker: walkerID, Node: node, Timestamp: ts})
+	cs.emit(&StateDiff{Type: DiffWalkerMoved, Walker: walkerID, Node: node, Timestamp: ts})
 }
 
 func (cs *CircuitStore) addWalker(walkerID, node string, ts time.Time) {
@@ -367,12 +369,12 @@ func (cs *CircuitStore) addWalker(walkerID, node string, ts time.Time) {
 			Element: cs.nodeElement[node],
 		}
 	}
-	cs.emit(StateDiff{Type: DiffWalkerAdded, Walker: walkerID, Node: node, Timestamp: ts})
+	cs.emit(&StateDiff{Type: DiffWalkerAdded, Walker: walkerID, Node: node, Timestamp: ts})
 }
 
 func (cs *CircuitStore) removeWalker(walkerID string, ts time.Time) {
 	delete(cs.snapshot.Walkers, walkerID)
-	cs.emit(StateDiff{Type: DiffWalkerRemoved, Walker: walkerID, Timestamp: ts})
+	cs.emit(&StateDiff{Type: DiffWalkerRemoved, Walker: walkerID, Timestamp: ts})
 }
 
 // clearWalkers removes walkers on terminal events (complete, error).
@@ -392,10 +394,10 @@ func (cs *CircuitStore) clearWalkers(walkerID string, ts time.Time) {
 
 // emit broadcasts a diff to all subscribers. Non-blocking: slow subscribers
 // that fall behind have diffs dropped. Must be called with cs.mu held.
-func (cs *CircuitStore) emit(diff StateDiff) {
+func (cs *CircuitStore) emit(diff *StateDiff) {
 	for _, ch := range cs.subscribers {
 		select {
-		case ch <- diff:
+		case ch <- *diff:
 		default:
 		}
 	}

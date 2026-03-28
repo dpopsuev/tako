@@ -7,6 +7,12 @@ import (
 	"time"
 )
 
+const (
+	outputTypeString = "string"
+	outputTypeArray  = "array"
+	outputTypeObject = "object"
+)
+
 // CircuitDef is the top-level DSL structure for declaring a circuit graph.
 // Layout follows P3 (reading-first): circuit > zones > nodes > edges > start/done.
 //
@@ -152,7 +158,7 @@ type NodeDef struct {
 
 // EffectiveHandlerType returns the handler type for this node, resolving
 // the node-level override or circuit-level default.
-func (nd NodeDef) EffectiveHandlerType(circuitDefault string) string {
+func (nd *NodeDef) EffectiveHandlerType(circuitDefault string) string {
 	if nd.HandlerType != "" {
 		return nd.HandlerType
 	}
@@ -164,7 +170,7 @@ func (nd NodeDef) EffectiveHandlerType(circuitDefault string) string {
 
 // EffectiveHandler returns the handler name for this node.
 // Falls back to the node name when handler is not set.
-func (nd NodeDef) EffectiveHandler() string {
+func (nd *NodeDef) EffectiveHandler() string {
 	if nd.Handler != "" {
 		return nd.Handler
 	}
@@ -172,13 +178,13 @@ func (nd NodeDef) EffectiveHandler() string {
 }
 
 // OutputFields returns the output field declarations, or nil if none declared.
-func (nd NodeDef) OutputFields() []OutputField {
+func (nd *NodeDef) OutputFields() []OutputField {
 	return nd.Output
 }
 
 // ValidateOutput checks that a map of output values satisfies the declared schema.
 // Returns nil if no schema declared or all required fields present with correct types.
-func (nd NodeDef) ValidateOutput(output map[string]any) error {
+func (nd *NodeDef) ValidateOutput(output map[string]any) error {
 	if len(nd.Output) == 0 {
 		return nil
 	}
@@ -196,7 +202,7 @@ func (nd NodeDef) ValidateOutput(output map[string]any) error {
 
 func checkOutputType(val any, expected string) bool {
 	switch expected {
-	case "string":
+	case outputTypeString:
 		_, ok := val.(string)
 		return ok
 	case "float":
@@ -211,13 +217,13 @@ func checkOutputType(val any, expected string) bool {
 			return true
 		}
 		return false
-	case "array":
+	case outputTypeArray:
 		switch val.(type) {
 		case []any, []string, []float64, []int:
 			return true
 		}
 		return false
-	case "object":
+	case outputTypeObject:
 		_, ok := val.(map[string]any)
 		return ok
 	default:
@@ -228,7 +234,7 @@ func checkOutputType(val any, expected string) bool {
 // EffectiveTimeout returns the timeout for this node, resolving the
 // node-level override against the circuit-level default. Returns 0 if
 // neither is set.
-func (nd NodeDef) EffectiveTimeout(circuitDefault string) (time.Duration, error) {
+func (nd *NodeDef) EffectiveTimeout(circuitDefault string) (time.Duration, error) {
 	raw := nd.Timeout
 	if raw == "" {
 		raw = circuitDefault
@@ -302,14 +308,14 @@ func (def *CircuitDef) Validate() error {
 	}
 
 	nodeSet := make(map[string]bool, len(def.Nodes))
-	for _, n := range def.Nodes {
-		if n.Name == "" {
+	for i := range def.Nodes {
+		if def.Nodes[i].Name == "" {
 			return fmt.Errorf("node name is required")
 		}
-		if nodeSet[n.Name] {
-			return fmt.Errorf("duplicate node name %q", n.Name)
+		if nodeSet[def.Nodes[i].Name] {
+			return fmt.Errorf("duplicate node name %q", def.Nodes[i].Name)
 		}
-		nodeSet[n.Name] = true
+		nodeSet[def.Nodes[i].Name] = true
 	}
 
 	if !nodeSet[def.Start] {
@@ -317,20 +323,20 @@ func (def *CircuitDef) Validate() error {
 	}
 
 	edgeIDs := make(map[string]bool, len(def.Edges))
-	for _, e := range def.Edges {
-		if e.ID == "" {
+	for i := range def.Edges {
+		if def.Edges[i].ID == "" {
 			return fmt.Errorf("edge id is required")
 		}
-		if edgeIDs[e.ID] {
-			return fmt.Errorf("duplicate edge id %q", e.ID)
+		if edgeIDs[def.Edges[i].ID] {
+			return fmt.Errorf("duplicate edge id %q", def.Edges[i].ID)
 		}
-		edgeIDs[e.ID] = true
+		edgeIDs[def.Edges[i].ID] = true
 
-		if !nodeSet[e.From] {
-			return fmt.Errorf("edge %s references unknown source node %q", e.ID, e.From)
+		if !nodeSet[def.Edges[i].From] {
+			return fmt.Errorf("edge %s references unknown source node %q", def.Edges[i].ID, def.Edges[i].From)
 		}
-		if e.To != def.Done && !nodeSet[e.To] {
-			return fmt.Errorf("edge %s references unknown target node %q", e.ID, e.To)
+		if def.Edges[i].To != def.Done && !nodeSet[def.Edges[i].To] {
+			return fmt.Errorf("edge %s references unknown target node %q", def.Edges[i].ID, def.Edges[i].To)
 		}
 	}
 
@@ -350,7 +356,8 @@ func (def *CircuitDef) Validate() error {
 // the code->name and a "code_NAME" alias. Edges with DisplayName register
 // the edge ID->name mapping.
 func (def *CircuitDef) RegisterVocabulary(v *RichMapVocabulary) {
-	for _, n := range def.Nodes {
+	for i := range def.Nodes {
+		n := &def.Nodes[i]
 		if n.Code != "" && n.DisplayName != "" {
 			v.RegisterEntry(n.Code, VocabEntry{Short: n.Code, Long: n.DisplayName})
 			alias := n.Code + "_" + toUpperReplace(n.DisplayName, " ", "_")
@@ -360,9 +367,9 @@ func (def *CircuitDef) RegisterVocabulary(v *RichMapVocabulary) {
 			v.RegisterEntry(n.Name, VocabEntry{Long: n.DisplayName})
 		}
 	}
-	for _, e := range def.Edges {
-		if e.DisplayName != "" {
-			v.RegisterEntry(e.ID, VocabEntry{Long: e.DisplayName})
+	for i := range def.Edges {
+		if def.Edges[i].DisplayName != "" {
+			v.RegisterEntry(def.Edges[i].ID, VocabEntry{Long: def.Edges[i].DisplayName})
 		}
 	}
 }

@@ -76,9 +76,10 @@ type rgSubmatch struct {
 }
 
 func parseRipgrepJSON(data []byte, basePath string) ([]LocalSearchResult, error) {
-	var results []LocalSearchResult
+	lines := strings.Split(string(data), "\n")
+	results := make([]LocalSearchResult, 0, len(lines))
 
-	for _, line := range strings.Split(string(data), "\n") {
+	for _, line := range lines {
 		if line == "" {
 			continue
 		}

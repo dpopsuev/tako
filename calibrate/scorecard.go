@@ -36,7 +36,7 @@ type MetricDef struct {
 
 // Evaluate checks whether a metric value passes given this definition's
 // direction and threshold.
-func (d MetricDef) Evaluate(value float64) bool {
+func (d *MetricDef) Evaluate(value float64) bool {
 	switch d.Direction {
 	case LowerIsBetter:
 		return value <= d.Threshold
@@ -48,7 +48,7 @@ func (d MetricDef) Evaluate(value float64) bool {
 }
 
 // ToMetric converts a MetricDef and a computed value into a runtime Metric.
-func (d MetricDef) ToMetric(value float64, detail string) Metric {
+func (d *MetricDef) ToMetric(value float64, detail string) Metric {
 	return Metric{
 		ID:        d.ID,
 		Name:      d.Name,
@@ -116,12 +116,12 @@ func (sc *ScoreCard) FindDef(id string) *MetricDef {
 // listing ALL missing scorer names (not just the first).
 func (sc *ScoreCard) ValidateScorers(reg ScorerRegistry) error {
 	var missing []string
-	for _, def := range sc.MetricDefs {
-		if def.Scorer == "" {
+	for i := range sc.MetricDefs {
+		if sc.MetricDefs[i].Scorer == "" {
 			continue
 		}
-		if _, err := reg.Get(def.Scorer); err != nil {
-			missing = append(missing, def.Scorer)
+		if _, err := reg.Get(sc.MetricDefs[i].Scorer); err != nil {
+			missing = append(missing, sc.MetricDefs[i].Scorer)
 		}
 	}
 	if len(missing) > 0 {
@@ -133,17 +133,17 @@ func (sc *ScoreCard) ValidateScorers(reg ScorerRegistry) error {
 // Evaluate takes a map of metric ID → computed value (with optional detail)
 // and produces a MetricSet with direction-aware pass/fail for each defined metric.
 func (sc *ScoreCard) Evaluate(values map[string]float64, details map[string]string) MetricSet {
-	var metrics []Metric
-	for _, def := range sc.MetricDefs {
-		val, ok := values[def.ID]
+	metrics := make([]Metric, 0, len(sc.MetricDefs))
+	for i := range sc.MetricDefs {
+		val, ok := values[sc.MetricDefs[i].ID]
 		if !ok {
 			continue
 		}
 		detail := ""
 		if details != nil {
-			detail = details[def.ID]
+			detail = details[sc.MetricDefs[i].ID]
 		}
-		metrics = append(metrics, def.ToMetric(val, detail))
+		metrics = append(metrics, sc.MetricDefs[i].ToMetric(val, detail))
 	}
 	return MetricSet{Metrics: metrics}
 }
@@ -167,16 +167,16 @@ func (sc *ScoreCard) ComputeAggregate(ms MetricSet) (Metric, error) {
 	weightedSum := 0.0
 	totalWeight := 0.0
 
-	for _, def := range sc.MetricDefs {
-		if !includeSet[def.ID] {
+	for i := range sc.MetricDefs {
+		if !includeSet[sc.MetricDefs[i].ID] {
 			continue
 		}
-		m, ok := byID[def.ID]
+		m, ok := byID[sc.MetricDefs[i].ID]
 		if !ok {
 			continue
 		}
-		weightedSum += m.Value * def.Weight
-		totalWeight += def.Weight
+		weightedSum += m.Value * sc.MetricDefs[i].Weight
+		totalWeight += sc.MetricDefs[i].Weight
 	}
 
 	var aggValue float64
@@ -347,8 +347,8 @@ func (b *ScoreCardBuilder) WithMetrics(defs ...MetricDef) *ScoreCardBuilder {
 }
 
 // WithAggregate sets the aggregate config.
-func (b *ScoreCardBuilder) WithAggregate(ac AggregateConfig) *ScoreCardBuilder {
-	b.sc.Aggregate = &ac
+func (b *ScoreCardBuilder) WithAggregate(ac *AggregateConfig) *ScoreCardBuilder {
+	b.sc.Aggregate = ac
 	return b
 }
 

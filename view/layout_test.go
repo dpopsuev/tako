@@ -104,7 +104,7 @@ func assertRowSpan(t *testing.T, layout CircuitLayout, expected int) {
 	}
 }
 
-func assertMinRowSpan(t *testing.T, layout CircuitLayout, min int) {
+func assertMinRowSpan(t *testing.T, layout CircuitLayout, minSpan int) {
 	t.Helper()
 	if len(layout.Grid) == 0 {
 		t.Fatal("empty grid")
@@ -119,8 +119,8 @@ func assertMinRowSpan(t *testing.T, layout CircuitLayout, min int) {
 		}
 	}
 	span := maxR - minR + 1
-	if span < min {
-		t.Errorf("row span = %d, want >= %d", span, min)
+	if span < minSpan {
+		t.Errorf("row span = %d, want >= %d", span, minSpan)
 	}
 }
 

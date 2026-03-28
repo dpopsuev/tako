@@ -93,7 +93,7 @@ func TestHookingWalker_FiresHooks(t *testing.T) {
 		Done:  "_done",
 	}
 
-	runner, err := NewRunnerWith(def, GraphRegistries{
+	runner, err := NewRunnerWith(def, &GraphRegistries{
 		Transformers: TransformerRegistry{"echo": trans},
 		Hooks:        hooks,
 	})
@@ -133,7 +133,7 @@ func TestHookingWalker_MissingHookContinues(t *testing.T) {
 		Done:  "_done",
 	}
 
-	runner, err := NewRunnerWith(def, GraphRegistries{
+	runner, err := NewRunnerWith(def, &GraphRegistries{
 		Transformers: TransformerRegistry{"echo": trans},
 		Hooks:        hooks,
 	})
@@ -171,7 +171,7 @@ func TestFileWriteHook_WritesArtifact(t *testing.T) {
 		Done:  "_done",
 	}
 
-	runner, err := NewRunnerWith(def, GraphRegistries{})
+	runner, err := NewRunnerWith(def, &GraphRegistries{})
 	if err != nil {
 		t.Fatalf("NewRunnerWith: %v", err)
 	}
@@ -219,7 +219,7 @@ func TestFileWriteHook_TemplatedPath(t *testing.T) {
 		Done:  "_done",
 	}
 
-	runner, err := NewRunnerWith(def, GraphRegistries{})
+	runner, err := NewRunnerWith(def, &GraphRegistries{})
 	if err != nil {
 		t.Fatalf("NewRunnerWith: %v", err)
 	}
@@ -272,7 +272,7 @@ func TestFileWriteHook_AutoRegisteredByRunner(t *testing.T) {
 		Done:  "_done",
 	}
 
-	runner, err := NewRunnerWith(def, GraphRegistries{})
+	runner, err := NewRunnerWith(def, &GraphRegistries{})
 	if err != nil {
 		t.Fatalf("runner should auto-register file-write hook: %v", err)
 	}
@@ -317,7 +317,7 @@ func TestBeforeHooks_FireBeforeNodeProcessing(t *testing.T) {
 		Done:  "_done",
 	}
 
-	runner, err := NewRunnerWith(def, GraphRegistries{
+	runner, err := NewRunnerWith(def, &GraphRegistries{
 		Transformers: TransformerRegistry{"echo": &echoTransformer{}},
 		Hooks:        hooks,
 	})
@@ -374,7 +374,7 @@ func TestBeforeHooks_InjectIntoWalkerContext(t *testing.T) {
 		Done:  "_done",
 	}
 
-	runner, err := NewRunnerWith(def, GraphRegistries{
+	runner, err := NewRunnerWith(def, &GraphRegistries{
 		Transformers: TransformerRegistry{"capture": captureTrans},
 		Hooks:        hooks,
 	})
@@ -418,7 +418,7 @@ func TestBeforeHooks_OnlyOnDeclaredNodes(t *testing.T) {
 		Done:  "_done",
 	}
 
-	runner, err := NewRunnerWith(def, GraphRegistries{
+	runner, err := NewRunnerWith(def, &GraphRegistries{
 		Transformers: TransformerRegistry{"echo": &echoTransformer{}},
 		Hooks:        hooks,
 	})
@@ -451,7 +451,7 @@ func TestBeforeHooks_MissingHookContinues(t *testing.T) {
 		Done:  "_done",
 	}
 
-	runner, err := NewRunnerWith(def, GraphRegistries{
+	runner, err := NewRunnerWith(def, &GraphRegistries{
 		Transformers: TransformerRegistry{"echo": &echoTransformer{}},
 		Hooks:        hooks,
 	})
@@ -510,7 +510,7 @@ func TestHookingWalker_NoHooksNoWrap(t *testing.T) {
 		Done:     "_done",
 	}
 
-	runner, err := NewRunnerWith(def, GraphRegistries{
+	runner, err := NewRunnerWith(def, &GraphRegistries{
 		Transformers: TransformerRegistry{"echo": trans},
 	})
 	if err != nil {

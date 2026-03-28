@@ -47,18 +47,18 @@ type WalkEvent struct {
 // design (like http.Handler) so adding new event types never breaks
 // existing observers.
 type WalkObserver interface {
-	OnEvent(WalkEvent)
+	OnEvent(*WalkEvent)
 }
 
 // WalkObserverFunc adapts a plain function to the WalkObserver interface.
-type WalkObserverFunc func(WalkEvent)
+type WalkObserverFunc func(*WalkEvent)
 
-func (f WalkObserverFunc) OnEvent(e WalkEvent) { f(e) }
+func (f WalkObserverFunc) OnEvent(e *WalkEvent) { f(e) }
 
 // MultiObserver fans out events to multiple observers.
 type MultiObserver []WalkObserver
 
-func (m MultiObserver) OnEvent(e WalkEvent) {
+func (m MultiObserver) OnEvent(e *WalkEvent) {
 	for _, obs := range m {
 		obs.OnEvent(e)
 	}

@@ -8,6 +8,8 @@ import (
 	"text/template"
 )
 
+const goNilLiteral = "nil"
+
 // GenerateDomainServe produces Go source for a domain-serve binary that
 // embeds domain files and serves them over MCP via domainserve.New().
 // Supports both legacy (embed: directory) and assets (keyed file map) modes.
@@ -62,7 +64,7 @@ type domainServeContext struct {
 // goStringMap formats map[string]string as a Go literal.
 func goStringMap(m map[string]string) string {
 	if len(m) == 0 {
-		return "nil"
+		return goNilLiteral
 	}
 	var b strings.Builder
 	b.WriteString("map[string]string{")
@@ -81,7 +83,7 @@ func goStringMap(m map[string]string) string {
 // goNestedMap formats map[string]map[string]string as a Go literal.
 func goNestedMap(m map[string]map[string]string) string {
 	if len(m) == 0 {
-		return "nil"
+		return goNilLiteral
 	}
 	var b strings.Builder
 	b.WriteString("map[string]map[string]string{\n")
@@ -112,8 +114,8 @@ func GenerateWiredBinary(m *Manifest, g *ResolvedGraph) ([]byte, error) {
 	}
 
 	needsOrigami := false
-	for _, s := range g.Schematics {
-		if s.Resolver != "" {
+	for i := range g.Schematics {
+		if g.Schematics[i].Resolver != "" {
 			needsOrigami = true
 			break
 		}
@@ -185,7 +187,8 @@ func renderWiring(g *ResolvedGraph, productName string) string {
 		}
 	}
 
-	for _, sch := range g.Schematics {
+	for i := range g.Schematics {
+		sch := &g.Schematics[i]
 		fmt.Fprintf(&b, "\t%sInstance := %s.%s(\n", sch.Alias, sch.Alias, sch.Factory)
 		for _, opt := range sch.Options {
 			fmt.Fprintf(&b, "\t\t%s.%s(%s),\n", sch.Alias, opt.OptionFunc, opt.Provider)
@@ -217,10 +220,10 @@ func renderAssetIndex(b *strings.Builder, a *AssetMap) {
 	}
 	b.WriteString("\t\tAssets: &domainserve.AssetIndex{\n")
 	if len(sections) > 0 {
-		b.WriteString(fmt.Sprintf("\t\t\tSections: %s,\n", goNestedMap(sections)))
+		fmt.Fprintf(b, "\t\t\tSections: %s,\n", goNestedMap(sections))
 	}
 	if len(files) > 0 {
-		b.WriteString(fmt.Sprintf("\t\t\tFiles:    %s,\n", goStringMap(files)))
+		fmt.Fprintf(b, "\t\t\tFiles:    %s,\n", goStringMap(files))
 	}
 	b.WriteString("\t\t},\n")
 }
@@ -242,10 +245,10 @@ func renderServerCreation(g *ResolvedGraph, productName string) string {
 	}
 
 	var resolverEntries []string
-	for _, s := range g.Schematics {
-		if s.Resolver != "" {
+	for i := range g.Schematics {
+		if g.Schematics[i].Resolver != "" {
 			resolverEntries = append(resolverEntries,
-				fmt.Sprintf("\t\t\t%q: %s.%s(),", s.Name, s.Alias, s.Resolver))
+				fmt.Sprintf("\t\t\t%q: %s.%s(),", g.Schematics[i].Name, g.Schematics[i].Alias, g.Schematics[i].Resolver))
 		}
 	}
 	if len(resolverEntries) > 0 {

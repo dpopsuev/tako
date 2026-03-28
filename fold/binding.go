@@ -9,6 +9,11 @@ import (
 	"github.com/dpopsuev/origami/circuit"
 )
 
+const (
+	useKindSchematic = "schematic"
+	wireInstance     = "instance"
+)
+
 // bridgeUsesToLegacy converts the new Uses/Bind DSL to the legacy
 // Schematics/Connectors fields so the existing resolution pipeline works.
 // This is a temporary bridge — once all consumers use Uses/Bind, the
@@ -22,7 +27,7 @@ func bridgeUsesToLegacy(m *Manifest) {
 	}
 	for name, u := range m.Uses {
 		switch u.Kind {
-		case "schematic":
+		case useKindSchematic:
 			bindings := m.Bind[name] // may be nil
 			m.Schematics[name] = SchematicRef{
 				Path:     u.Module,
@@ -139,7 +144,7 @@ func Resolve(m *Manifest, origamiRoot string, resolver ModuleResolver) (*Resolve
 	connIndex := buildConnectorIndex(m, connManifests)
 	schemIndex := buildSchematicIndex(m, schemManifests)
 
-	var resolvedSchematics []ResolvedSchematic
+	resolvedSchematics := make([]ResolvedSchematic, 0, len(depOrder))
 	varNames := make(map[string]string) // schematic name -> variable name
 
 	for _, name := range depOrder {
@@ -204,7 +209,7 @@ func resolveSchematic(
 	ref := m.Schematics[name]
 	bindings := ref.Bindings
 
-	var options []ResolvedOption
+	options := make([]ResolvedOption, 0, len(cm.Needs.Transports)+len(cm.Needs.Sources)+len(cm.Needs.Storage))
 	// Iterate all typed socket sections: transports, sources, storage.
 	allSockets := make([]circuit.SocketDef, 0, len(cm.Needs.Transports)+len(cm.Needs.Sources)+len(cm.Needs.Storage))
 	allSockets = append(allSockets, cm.Needs.Transports...)
@@ -223,7 +228,7 @@ func resolveSchematic(
 			return nil, fmt.Errorf("schematic %q: socket %q has no binding and is not optional", name, sock.Name)
 		}
 
-		opt, err := resolveSocketBinding(name, sock, boundTo, connIdx, schemIdx, varNames)
+		opt, err := resolveSocketBinding(name, &sock, boundTo, connIdx, schemIdx, varNames)
 		if err != nil {
 			return nil, err
 		}
@@ -246,7 +251,7 @@ func resolveSchematic(
 }
 
 func resolveSocketBinding(
-	name string, sock circuit.SocketDef, boundTo string,
+	name string, sock *circuit.SocketDef, boundTo string,
 	connIdx map[string]connectorEntry, schemIdx map[string]schematicEntry, varNames map[string]string,
 ) (ResolvedOption, error) {
 	if conn, ok := connIdx[boundTo]; ok {
@@ -257,7 +262,7 @@ func resolveSocketBinding(
 		}
 		alias := importAlias(conn.manifest.Module)
 		provider := alias + "." + sat.Factory
-		if sat.WireMode() == "instance" {
+		if sat.WireMode() == wireInstance {
 			provider = varName(boundTo, sock.Name)
 		}
 		return ResolvedOption{
@@ -275,7 +280,7 @@ func resolveSocketBinding(
 		return ResolvedOption{
 			OptionFunc: sock.Option,
 			Provider:   vn,
-			Wire:       "instance",
+			Wire:       wireInstance,
 		}, nil
 	}
 	return ResolvedOption{}, fmt.Errorf("schematic %q socket %q: binding %q is neither a connector nor a schematic",
@@ -408,11 +413,11 @@ func buildResolvedConnectors(connIdx map[string]connectorEntry) []ResolvedConnec
 		cm := entry.manifest
 		var entries []ResolvedSatisfy
 		for _, sat := range cm.Gives {
-			if sat.WireMode() == "instance" {
+			if sat.WireMode() == wireInstance {
 				entries = append(entries, ResolvedSatisfy{
 					Socket:  sat.Socket,
 					Factory: sat.Factory,
-					Wire:    "instance",
+					Wire:    wireInstance,
 				})
 			}
 		}
@@ -446,8 +451,8 @@ func collectImports(
 	for _, cm := range connManifests {
 		add(cm.Module)
 	}
-	for _, s := range schematics {
-		add(s.Module)
+	for i := range schematics {
+		add(schematics[i].Module)
 	}
 	add(root.Module)
 

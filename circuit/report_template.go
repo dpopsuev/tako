@@ -72,13 +72,14 @@ func MergeReportTemplates(base, overlay *ReportTemplate) (*ReportTemplate, error
 	// Collect overlay sections by type
 	var overrideSections, insertAfterSections, extraColumnsSections, appendSections []ReportSectionDef
 	for _, s := range overlay.Sections {
-		if s.Override {
+		switch {
+		case s.Override:
 			overrideSections = append(overrideSections, s)
-		} else if s.InsertAfter != "" {
+		case s.InsertAfter != "":
 			insertAfterSections = append(insertAfterSections, s)
-		} else if len(s.ExtraColumns) > 0 {
+		case len(s.ExtraColumns) > 0:
 			extraColumnsSections = append(extraColumnsSections, s)
-		} else {
+		default:
 			appendSections = append(appendSections, s)
 		}
 	}
@@ -87,15 +88,16 @@ func MergeReportTemplates(base, overlay *ReportTemplate) (*ReportTemplate, error
 	for _, ov := range overrideSections {
 		found := false
 		for i := range merged.Sections {
-			if merged.Sections[i].Name == ov.Name {
-				replacement := ov
-				replacement.Override = false
-				replacement.InsertAfter = ""
-				replacement.ExtraColumns = nil
-				merged.Sections[i] = replacement
-				found = true
-				break
+			if merged.Sections[i].Name != ov.Name {
+				continue
 			}
+			replacement := ov
+			replacement.Override = false
+			replacement.InsertAfter = ""
+			replacement.ExtraColumns = nil
+			merged.Sections[i] = replacement
+			found = true
+			break
 		}
 		if !found {
 			return nil, fmt.Errorf("report template: override section %q not found in base", ov.Name)

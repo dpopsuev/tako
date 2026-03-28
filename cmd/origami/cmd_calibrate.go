@@ -48,7 +48,7 @@ func calibrateCmd(args []string) error {
 		return fmt.Errorf("connect to %s: %w", *endpoint, err)
 	}
 	defer session.Close()
-	logger.Info("connected", "endpoint", *endpoint)
+	logger.InfoContext(ctx, "connected", "endpoint", *endpoint)
 
 	// Start circuit.
 	extra := map[string]any{
@@ -78,7 +78,7 @@ func calibrateCmd(args []string) error {
 		return fmt.Errorf("parse start_circuit: %w", err)
 	}
 	sessionID := startOut.SessionID
-	logger.Info("circuit started",
+	logger.InfoContext(ctx, "circuit started",
 		"session_id", sessionID,
 		"total_cases", startOut.TotalCases,
 		"scenario", startOut.Scenario,
@@ -115,10 +115,10 @@ func calibrateCmd(args []string) error {
 	wg.Wait()
 	close(errCh)
 	for err := range errCh {
-		logger.Error("worker failed", "error", err)
+		logger.ErrorContext(ctx, "worker failed", "error", err)
 	}
 
-	logger.Info("all workers done", "steps_completed", stepsCompleted)
+	logger.InfoContext(ctx, "all workers done", "steps_completed", stepsCompleted)
 
 	// Get report.
 	reportResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
@@ -205,7 +205,7 @@ func runCalibrateWorker(
 
 		if step.Done {
 			if step.Error != "" {
-				wlog.Warn("circuit done with error", "error", step.Error)
+				wlog.WarnContext(ctx, "circuit done with error", "error", step.Error)
 			}
 			return nil
 		}
@@ -214,7 +214,7 @@ func runCalibrateWorker(
 			continue
 		}
 
-		wlog.Info("processing", "case_id", step.CaseID, "step", step.Step, "dispatch_id", step.DispatchID)
+		wlog.InfoContext(ctx, "processing", "case_id", step.CaseID, "step", step.Step, "dispatch_id", step.DispatchID)
 
 		// Prepend worker preamble (step schemas + output format instructions)
 		// so the CLI knows what JSON fields to produce.
@@ -226,7 +226,7 @@ func runCalibrateWorker(
 		// Execute CLI with prompt.
 		artifact, err := execCLI(ctx, cliCommand, cliArgs, fullPrompt)
 		if err != nil {
-			wlog.Error("CLI failed", "case_id", step.CaseID, "step", step.Step, "error", err)
+			wlog.ErrorContext(ctx, "CLI failed", "case_id", step.CaseID, "step", step.Step, "error", err)
 			continue
 		}
 
@@ -252,7 +252,7 @@ func runCalibrateWorker(
 			return fmt.Errorf("circuit/submit %s/%s: %w", step.CaseID, step.Step, err)
 		}
 		if submitResult.IsError {
-			wlog.Warn("submit_step rejected", "case_id", step.CaseID, "step", step.Step,
+			wlog.WarnContext(ctx, "submit_step rejected", "case_id", step.CaseID, "step", step.Step,
 				"error", calTextContent(submitResult))
 			continue
 		}
@@ -260,7 +260,7 @@ func runCalibrateWorker(
 		mu.Lock()
 		*stepsCompleted++
 		mu.Unlock()
-		wlog.Info("submitted", "case_id", step.CaseID, "step", step.Step)
+		wlog.InfoContext(ctx, "submitted", "case_id", step.CaseID, "step", step.Step)
 	}
 }
 

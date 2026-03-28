@@ -25,7 +25,7 @@ func TestDocsDriver_Ensure(t *testing.T) {
 	defer srv.Close()
 
 	d := docs.NewDocsDriver(docs.WithHTTPClient(srv.Client()))
-	src := toolkit.Source{Name: "test-docs", Kind: toolkit.SourceKindDoc, URI: srv.URL}
+	src := &toolkit.Source{Name: "test-docs", Kind: toolkit.SourceKindDoc, URI: srv.URL}
 
 	if err := d.Ensure(context.Background(), src); err != nil {
 		t.Fatalf("Ensure: %v", err)
@@ -39,7 +39,7 @@ func TestDocsDriver_Ensure_Failure(t *testing.T) {
 	defer srv.Close()
 
 	d := docs.NewDocsDriver(docs.WithHTTPClient(srv.Client()))
-	src := toolkit.Source{Name: "test-docs", Kind: toolkit.SourceKindDoc, URI: srv.URL}
+	src := &toolkit.Source{Name: "test-docs", Kind: toolkit.SourceKindDoc, URI: srv.URL}
 
 	if err := d.Ensure(context.Background(), src); err == nil {
 		t.Fatal("expected error for 404")
@@ -70,7 +70,7 @@ func TestDocsDriver_Search(t *testing.T) {
 		docs.WithCacheDir(t.TempDir()),
 	)
 
-	src := toolkit.Source{
+	src := &toolkit.Source{
 		Name: "rh-docs",
 		Kind: toolkit.SourceKindDoc,
 		URI:  srv.URL,
@@ -113,7 +113,7 @@ func TestDocsDriver_Search_Cached(t *testing.T) {
 		docs.WithCacheDir(t.TempDir()),
 	)
 
-	src := toolkit.Source{Name: "docs", Kind: toolkit.SourceKindDoc, URI: srv.URL}
+	src := &toolkit.Source{Name: "docs", Kind: toolkit.SourceKindDoc, URI: srv.URL}
 
 	// First call hits server
 	_, _ = d.Search(context.Background(), src, "test", 10)
@@ -139,7 +139,7 @@ func TestDocsDriver_Read(t *testing.T) {
 		docs.WithCacheDir(t.TempDir()),
 	)
 
-	src := toolkit.Source{Name: "docs", Kind: toolkit.SourceKindDoc, URI: srv.URL}
+	src := &toolkit.Source{Name: "docs", Kind: toolkit.SourceKindDoc, URI: srv.URL}
 
 	content, err := d.Read(context.Background(), src, "/networking/ptp")
 	if err != nil {
@@ -162,7 +162,7 @@ func TestDocsDriver_Read(t *testing.T) {
 
 func TestDocsDriver_List(t *testing.T) {
 	d := docs.NewDocsDriver()
-	src := toolkit.Source{Name: "docs", Kind: toolkit.SourceKindDoc, URI: "https://docs.example.com"}
+	src := &toolkit.Source{Name: "docs", Kind: toolkit.SourceKindDoc, URI: "https://docs.example.com"}
 
 	entries, err := d.List(context.Background(), src, ".", 2)
 	if err != nil {
@@ -179,7 +179,7 @@ func TestDocsDriver_Interface(t *testing.T) {
 }
 
 func containsSubstring(s, sub string) bool {
-	return len(s) >= len(sub) && (s == sub || len(s) > 0 && findSubstring(s, sub))
+	return len(s) >= len(sub) && (s == sub || s != "" && findSubstring(s, sub))
 }
 
 func findSubstring(s, sub string) bool {

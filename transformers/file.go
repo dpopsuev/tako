@@ -35,7 +35,9 @@ func NewFile(opts ...FileOption) *FileTransformer {
 	return t
 }
 
-func (t *FileTransformer) Name() string        { return "file" }
+const transformerNameFile = "file"
+
+func (t *FileTransformer) Name() string        { return transformerNameFile }
 func (t *FileTransformer) Deterministic() bool { return true }
 
 func (t *FileTransformer) Transform(ctx context.Context, tc *engine.TransformerContext) (any, error) {

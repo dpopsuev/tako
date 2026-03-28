@@ -8,11 +8,11 @@ import (
 
 // PassEvaluator decides whether a metric passes after aggregation.
 // Consumers provide domain-specific logic (e.g. "M4 uses <= instead of >=").
-type PassEvaluator func(Metric) bool
+type PassEvaluator func(*Metric) bool
 
 // DefaultPassEvaluator returns true when the metric value meets or exceeds
 // its threshold. Suitable for "higher is better" metrics.
-func DefaultPassEvaluator(m Metric) bool {
+func DefaultPassEvaluator(m *Metric) bool {
 	return m.Value >= m.Threshold
 }
 
@@ -46,7 +46,7 @@ func AggregateRunMetrics(runs []MetricSet, eval PassEvaluator) MetricSet {
 		agg.Metrics[i].Value = mathutil.Mean(vals)
 		sd := mathutil.Stddev(vals)
 		agg.Metrics[i].Detail = fmt.Sprintf("mean of %d runs (σ=%.3f)", len(runs), sd)
-		agg.Metrics[i].Pass = eval(agg.Metrics[i])
+		agg.Metrics[i].Pass = eval(&agg.Metrics[i])
 	}
 
 	return agg

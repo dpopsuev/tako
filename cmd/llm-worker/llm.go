@@ -12,6 +12,12 @@ import (
 	"time"
 )
 
+const (
+	defaultClaudeModel    = "claude-sonnet-4-20250514"
+	defaultOpenAIEndpoint = "https://api.openai.com"
+	contentTypeText       = "text"
+)
+
 // Message represents a chat message with a role and content.
 type Message struct {
 	Role    string `json:"role"`
@@ -37,7 +43,7 @@ func NewLLMClient(provider, model, endpoint string) (LLMClient, error) {
 			return nil, fmt.Errorf("ANTHROPIC_API_KEY required for claude provider")
 		}
 		if model == "" {
-			model = "claude-sonnet-4-20250514"
+			model = defaultClaudeModel
 		}
 		return &AnthropicClient{APIKey: key, Model: model}, nil
 	case "gemini":
@@ -59,7 +65,7 @@ func NewLLMClient(provider, model, endpoint string) (LLMClient, error) {
 		}
 		endpoint := os.Getenv("OPENAI_API_BASE")
 		if endpoint == "" {
-			endpoint = "https://api.openai.com"
+			endpoint = defaultOpenAIEndpoint
 		}
 		return &OpenAIClient{APIKey: key, Model: model, Endpoint: endpoint}, nil
 	default:
@@ -82,7 +88,11 @@ func (c *OllamaClient) Chat(ctx context.Context, systemPrompt string, messages [
 		Role    string `json:"role"`
 		Content string `json:"content"`
 	}
-	var msgs []ollamaMsg
+	msgCap := len(messages)
+	if systemPrompt != "" {
+		msgCap++
+	}
+	msgs := make([]ollamaMsg, 0, msgCap)
 	if systemPrompt != "" {
 		msgs = append(msgs, ollamaMsg{Role: "system", Content: systemPrompt})
 	}
@@ -137,7 +147,7 @@ func (c *AnthropicClient) Chat(ctx context.Context, systemPrompt string, message
 		Role    string `json:"role"`
 		Content string `json:"content"`
 	}
-	var msgs []anthropicMsg
+	msgs := make([]anthropicMsg, 0, len(messages))
 	for _, m := range messages {
 		msgs = append(msgs, anthropicMsg(m))
 	}
@@ -181,9 +191,9 @@ func (c *AnthropicClient) Chat(ctx context.Context, systemPrompt string, message
 		return "", fmt.Errorf("anthropic: decode: %w", err)
 	}
 
-	var texts []string
+	texts := make([]string, 0, len(result.Content))
 	for _, c := range result.Content {
-		if c.Type == "text" {
+		if c.Type == contentTypeText {
 			texts = append(texts, c.Text)
 		}
 	}
@@ -207,7 +217,7 @@ func (c *GeminiClient) Chat(ctx context.Context, systemPrompt string, messages [
 		Parts []part `json:"parts"`
 	}
 
-	var contents []content
+	contents := make([]content, 0, len(messages))
 	for _, m := range messages {
 		role := m.Role
 		if role == "assistant" {
@@ -278,7 +288,11 @@ func (c *OpenAIClient) Chat(ctx context.Context, systemPrompt string, messages [
 		Role    string `json:"role"`
 		Content string `json:"content"`
 	}
-	var msgs []openaiMsg
+	msgCap := len(messages)
+	if systemPrompt != "" {
+		msgCap++
+	}
+	msgs := make([]openaiMsg, 0, msgCap)
 	if systemPrompt != "" {
 		msgs = append(msgs, openaiMsg{Role: "system", Content: systemPrompt})
 	}
@@ -293,7 +307,7 @@ func (c *OpenAIClient) Chat(ctx context.Context, systemPrompt string, messages [
 
 	endpoint := c.Endpoint
 	if endpoint == "" {
-		endpoint = "https://api.openai.com"
+		endpoint = defaultOpenAIEndpoint
 	}
 	req, err := http.NewRequestWithContext(ctx, "POST", endpoint+"/v1/chat/completions", bytes.NewReader(body))
 	if err != nil {

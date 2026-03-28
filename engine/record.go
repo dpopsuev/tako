@@ -23,12 +23,12 @@ type RunRecord struct {
 }
 
 // SaveRunRecord writes a RunRecord as run.json in the given directory.
-func SaveRunRecord(dir string, rec RunRecord) error {
+func SaveRunRecord(dir string, rec *RunRecord) error {
 	data, err := json.MarshalIndent(rec, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(dir, "run.json"), data, 0644)
+	return os.WriteFile(filepath.Join(dir, "run.json"), data, 0o644)
 }
 
 // LoadRunRecord reads a RunRecord from run.json in the given directory.

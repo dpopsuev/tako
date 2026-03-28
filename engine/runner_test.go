@@ -39,7 +39,7 @@ type runnerTestWalker struct {
 }
 
 func (w *runnerTestWalker) Identity() circuit.AgentIdentity      { return w.identity }
-func (w *runnerTestWalker) SetIdentity(id circuit.AgentIdentity)  { w.identity = id }
+func (w *runnerTestWalker) SetIdentity(id *circuit.AgentIdentity)  { w.identity = *id }
 func (w *runnerTestWalker) State() *circuit.WalkerState           { return w.state }
 func (w *runnerTestWalker) Handle(ctx context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
 	w.visited = append(w.visited, node.Name())
@@ -277,7 +277,7 @@ func TestRunner_Walk_NilWalker(t *testing.T) {
 		Done:  "_done",
 	}
 
-	reg := GraphRegistries{
+	reg := &GraphRegistries{
 		Transformers: TransformerRegistry{"echo": &echoTransformer{}},
 	}
 	runner, err := NewRunnerWith(def, reg)

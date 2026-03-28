@@ -9,7 +9,7 @@ import (
 
 func TestSignalExprHelpers_HasFinding(t *testing.T) {
 	c := &InMemoryFindingCollector{}
-	_ = c.Report(context.Background(), circuit.Finding{Severity: circuit.FindingWarning, Domain: "test"})
+	_ = c.Report(context.Background(), &circuit.Finding{Severity: circuit.FindingWarning, Domain: "test"})
 
 	h := SignalExprHelpers{Collector: c}
 
@@ -34,9 +34,9 @@ func TestSignalExprHelpers_HasFinding_NilCollector(t *testing.T) {
 func TestSignalExprHelpers_FindingCount(t *testing.T) {
 	c := &InMemoryFindingCollector{}
 	ctx := context.Background()
-	_ = c.Report(ctx, circuit.Finding{Severity: circuit.FindingInfo})
-	_ = c.Report(ctx, circuit.Finding{Severity: circuit.FindingWarning})
-	_ = c.Report(ctx, circuit.Finding{Severity: circuit.FindingError})
+	_ = c.Report(ctx, &circuit.Finding{Severity: circuit.FindingInfo})
+	_ = c.Report(ctx, &circuit.Finding{Severity: circuit.FindingWarning})
+	_ = c.Report(ctx, &circuit.Finding{Severity: circuit.FindingError})
 
 	h := SignalExprHelpers{Collector: c}
 
@@ -54,8 +54,8 @@ func TestSignalExprHelpers_FindingCount(t *testing.T) {
 func TestSignalExprHelpers_FindingDomain(t *testing.T) {
 	c := &InMemoryFindingCollector{}
 	ctx := context.Background()
-	_ = c.Report(ctx, circuit.Finding{Severity: circuit.FindingInfo, Domain: "test.unit"})
-	_ = c.Report(ctx, circuit.Finding{Severity: circuit.FindingWarning, Domain: "security.auth"})
+	_ = c.Report(ctx, &circuit.Finding{Severity: circuit.FindingInfo, Domain: "test.unit"})
+	_ = c.Report(ctx, &circuit.Finding{Severity: circuit.FindingWarning, Domain: "security.auth"})
 
 	h := SignalExprHelpers{Collector: c}
 
@@ -78,7 +78,7 @@ func TestSignalExprHelpers_FindingDomain_NilCollector(t *testing.T) {
 }
 
 func TestExpressionEdge_WithFindingCondition(t *testing.T) {
-	edge, err := CompileExpressionEdge(circuit.EdgeDef{
+	edge, err := CompileExpressionEdge(&circuit.EdgeDef{
 		ID:   "veto-edge",
 		From: "nodeA",
 		To:   "error-handler",
@@ -99,7 +99,7 @@ func TestExpressionEdge_WithFindingCondition(t *testing.T) {
 	}
 
 	// Add error finding: edge should fire
-	_ = collector.Report(context.Background(), circuit.Finding{Severity: circuit.FindingError, Domain: "security"})
+	_ = collector.Report(context.Background(), &circuit.Finding{Severity: circuit.FindingError, Domain: "security"})
 	tr := edge.Evaluate(artifact, state)
 	if tr == nil {
 		t.Fatal("edge did not fire with FindingError")
@@ -110,7 +110,7 @@ func TestExpressionEdge_WithFindingCondition(t *testing.T) {
 }
 
 func TestExpressionEdge_FindingCount(t *testing.T) {
-	edge, err := CompileExpressionEdge(circuit.EdgeDef{
+	edge, err := CompileExpressionEdge(&circuit.EdgeDef{
 		ID:   "multi-finding",
 		From: "nodeA",
 		To:   "error-handler",
@@ -125,19 +125,19 @@ func TestExpressionEdge_FindingCount(t *testing.T) {
 	state.Context[circuit.FindingCollectorKey] = collector
 	artifact := &stubArtifact{typ: "test", confidence: 0.8, raw: map[string]any{}}
 
-	_ = collector.Report(context.Background(), circuit.Finding{Severity: circuit.FindingWarning})
+	_ = collector.Report(context.Background(), &circuit.Finding{Severity: circuit.FindingWarning})
 	if tr := edge.Evaluate(artifact, state); tr != nil {
 		t.Error("edge fired with only 1 warning")
 	}
 
-	_ = collector.Report(context.Background(), circuit.Finding{Severity: circuit.FindingWarning})
+	_ = collector.Report(context.Background(), &circuit.Finding{Severity: circuit.FindingWarning})
 	if tr := edge.Evaluate(artifact, state); tr == nil {
 		t.Error("edge did not fire with 2 warnings")
 	}
 }
 
 func TestExpressionEdge_FindingDomain(t *testing.T) {
-	edge, err := CompileExpressionEdge(circuit.EdgeDef{
+	edge, err := CompileExpressionEdge(&circuit.EdgeDef{
 		ID:   "domain-edge",
 		From: "nodeA",
 		To:   "security-handler",
@@ -152,19 +152,19 @@ func TestExpressionEdge_FindingDomain(t *testing.T) {
 	state.Context[circuit.FindingCollectorKey] = collector
 	artifact := &stubArtifact{typ: "test", confidence: 0.8, raw: map[string]any{}}
 
-	_ = collector.Report(context.Background(), circuit.Finding{Severity: circuit.FindingInfo, Domain: "test.unit"})
+	_ = collector.Report(context.Background(), &circuit.Finding{Severity: circuit.FindingInfo, Domain: "test.unit"})
 	if tr := edge.Evaluate(artifact, state); tr != nil {
 		t.Error("edge fired for non-security domain")
 	}
 
-	_ = collector.Report(context.Background(), circuit.Finding{Severity: circuit.FindingWarning, Domain: "security.auth"})
+	_ = collector.Report(context.Background(), &circuit.Finding{Severity: circuit.FindingWarning, Domain: "security.auth"})
 	if tr := edge.Evaluate(artifact, state); tr == nil {
 		t.Error("edge did not fire for security domain")
 	}
 }
 
 func TestExpressionEdge_NoCollector_GracefulNoop(t *testing.T) {
-	edge, err := CompileExpressionEdge(circuit.EdgeDef{
+	edge, err := CompileExpressionEdge(&circuit.EdgeDef{
 		ID:   "noop-edge",
 		From: "nodeA",
 		To:   "error-handler",

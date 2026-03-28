@@ -102,7 +102,7 @@ func TestWalkTeam_MaxStepsGuard(t *testing.T) {
 	}
 	if !errors.Is(err, nil) {
 		// Just check that the error message mentions max steps
-		if got := err.Error(); len(got) == 0 {
+		if got := err.Error(); got == "" {
 			t.Fatal("expected non-empty error message")
 		}
 	}

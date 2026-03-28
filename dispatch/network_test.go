@@ -1,6 +1,7 @@
 package dispatch
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"sync"
@@ -87,7 +88,7 @@ func TestNetworkDispatch_SingleAgent(t *testing.T) {
 	if dispatchErr != nil {
 		t.Fatalf("Dispatch: %v", dispatchErr)
 	}
-	if string(dispatchResult) != string(artifact) {
+	if !bytes.Equal(dispatchResult, artifact) {
 		t.Errorf("dispatch result = %q, want %q", dispatchResult, artifact)
 	}
 }

@@ -24,12 +24,12 @@ func TestOTelObserver_SpanTree(t *testing.T) {
 
 	obs.StartWalk("test-circuit", attribute.String("element", "fire"))
 
-	obs.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall", Walker: "w1"})
-	obs.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "recall", Elapsed: 100 * time.Millisecond})
-	obs.OnEvent(circuit.WalkEvent{Type: circuit.EventTransition, Edge: "e1", Node: "triage"})
-	obs.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "triage", Walker: "w1"})
-	obs.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "triage", Elapsed: 200 * time.Millisecond})
-	obs.OnEvent(circuit.WalkEvent{Type: circuit.EventWalkComplete})
+	obs.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall", Walker: "w1"})
+	obs.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "recall", Elapsed: 100 * time.Millisecond})
+	obs.OnEvent(&circuit.WalkEvent{Type: circuit.EventTransition, Edge: "e1", Node: "triage"})
+	obs.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "triage", Walker: "w1"})
+	obs.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "triage", Elapsed: 200 * time.Millisecond})
+	obs.OnEvent(&circuit.WalkEvent{Type: circuit.EventWalkComplete})
 
 	spans := exporter.GetSpans()
 	if len(spans) < 3 {
@@ -94,7 +94,7 @@ func TestOTelObserver_WalkError(t *testing.T) {
 	obs := NewOTelObserver(tracer)
 
 	obs.StartWalk("error-circuit")
-	obs.OnEvent(circuit.WalkEvent{
+	obs.OnEvent(&circuit.WalkEvent{
 		Type:  circuit.EventWalkError,
 		Error: fmt.Errorf("node failed"),
 	})
@@ -121,13 +121,13 @@ func TestPrometheusCollector_Metrics(t *testing.T) {
 
 	col.StartWalk("my-circuit")
 
-	col.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall"})
-	col.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "recall", Elapsed: 150 * time.Millisecond})
-	col.OnEvent(circuit.WalkEvent{Type: circuit.EventTransition, Node: "recall", Edge: "e1",
+	col.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "recall"})
+	col.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "recall", Elapsed: 150 * time.Millisecond})
+	col.OnEvent(&circuit.WalkEvent{Type: circuit.EventTransition, Node: "recall", Edge: "e1",
 		Metadata: map[string]any{"from": "recall", "to": "triage"}})
-	col.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "triage"})
-	col.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "triage", Elapsed: 200 * time.Millisecond})
-	col.OnEvent(circuit.WalkEvent{Type: circuit.EventWalkComplete})
+	col.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "triage"})
+	col.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "triage", Elapsed: 200 * time.Millisecond})
+	col.OnEvent(&circuit.WalkEvent{Type: circuit.EventWalkComplete})
 
 	families, err := reg.Gather()
 	if err != nil {
@@ -188,7 +188,7 @@ func TestPrometheusCollector_ErrorStatus(t *testing.T) {
 	col := NewPrometheusCollector(reg)
 
 	col.StartWalk("fail-circuit")
-	col.OnEvent(circuit.WalkEvent{
+	col.OnEvent(&circuit.WalkEvent{
 		Type:  circuit.EventWalkError,
 		Error: fmt.Errorf("boom"),
 	})
@@ -342,11 +342,11 @@ func TestPrometheusCollector_AllNineMetrics(t *testing.T) {
 	col := NewPrometheusCollector(reg)
 
 	col.StartWalk("test-circuit")
-	col.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "a"})
-	col.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "a", Elapsed: 100 * time.Millisecond})
-	col.OnEvent(circuit.WalkEvent{Type: circuit.EventTransition, Node: "a",
+	col.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "a"})
+	col.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "a", Elapsed: 100 * time.Millisecond})
+	col.OnEvent(&circuit.WalkEvent{Type: circuit.EventTransition, Node: "a",
 		Metadata: map[string]any{"from": "a", "to": "b"}})
-	col.OnEvent(circuit.WalkEvent{Type: circuit.EventWalkComplete})
+	col.OnEvent(&circuit.WalkEvent{Type: circuit.EventWalkComplete})
 	col.RecordTokens("a", "node_a", 100, 50, 0.001)
 	col.RecordDispatch("default", "a", 100*time.Millisecond, nil)
 	col.RecordDispatch("default", "a", 50*time.Millisecond, fmt.Errorf("fail"))

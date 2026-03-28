@@ -95,7 +95,7 @@ func TestCalibrateWithCLI(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	report, err := Run(ctx, HarnessConfig{
+	report, err := Run(ctx, &HarnessConfig{
 		CircuitDef: circuitDef,
 		ScoreCard:  sc,
 		Loader:     loader,

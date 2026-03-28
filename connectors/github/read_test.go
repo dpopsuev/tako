@@ -9,7 +9,7 @@ import (
 
 func TestReadFile(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "test.go"), []byte("package main"), 0644)
+	os.WriteFile(filepath.Join(dir, "test.go"), []byte("package main"), 0o644)
 
 	data, err := ReadFile(context.Background(), dir, "test.go")
 	if err != nil {
@@ -38,10 +38,10 @@ func TestReadFile_NotFound(t *testing.T) {
 
 func TestListTree(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, "pkg", "sub"), 0755)
-	os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main"), 0644)
-	os.WriteFile(filepath.Join(dir, "pkg", "lib.go"), []byte("package pkg"), 0644)
-	os.WriteFile(filepath.Join(dir, "pkg", "sub", "deep.go"), []byte("package sub"), 0644)
+	os.MkdirAll(filepath.Join(dir, "pkg", "sub"), 0o755)
+	os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main"), 0o644)
+	os.WriteFile(filepath.Join(dir, "pkg", "lib.go"), []byte("package pkg"), 0o644)
+	os.WriteFile(filepath.Join(dir, "pkg", "sub", "deep.go"), []byte("package sub"), 0o644)
 
 	entries, err := ListTree(context.Background(), dir, 3)
 	if err != nil {
@@ -62,8 +62,8 @@ func TestListTree(t *testing.T) {
 
 func TestListTree_SkipsGitDir(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git", "objects"), 0755)
-	os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main"), 0644)
+	os.MkdirAll(filepath.Join(dir, ".git", "objects"), 0o755)
+	os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main"), 0o644)
 
 	entries, err := ListTree(context.Background(), dir, 3)
 	if err != nil {
@@ -79,8 +79,8 @@ func TestListTree_SkipsGitDir(t *testing.T) {
 
 func TestListTree_MaxDepth(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, "a", "b", "c", "d"), 0755)
-	os.WriteFile(filepath.Join(dir, "a", "b", "c", "d", "deep.go"), []byte("deep"), 0644)
+	os.MkdirAll(filepath.Join(dir, "a", "b", "c", "d"), 0o755)
+	os.WriteFile(filepath.Join(dir, "a", "b", "c", "d", "deep.go"), []byte("deep"), 0o644)
 
 	entries, err := ListTree(context.Background(), dir, 2)
 	if err != nil {

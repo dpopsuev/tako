@@ -49,7 +49,7 @@ func DefaultScorerRegistry() ScorerRegistry {
 // accuracyScorer compares two field values for equality.
 // params: "predicted" (field name in caseResult), "expected" (field name in groundTruth).
 // Both caseResult and groundTruth must be map[string]any. Returns 1.0 on match, 0.0 otherwise.
-func accuracyScorer(caseResult, groundTruth any, params map[string]any) (float64, string, error) {
+func accuracyScorer(caseResult, groundTruth any, params map[string]any) (score float64, detail string, err error) {
 	predictedField, _ := params["predicted"].(string)
 	expectedField, _ := params["expected"].(string)
 	if predictedField == "" || expectedField == "" {
@@ -79,7 +79,7 @@ func accuracyScorer(caseResult, groundTruth any, params map[string]any) (float64
 // "result_field" and "truth_field" for comparing elements.
 // Both caseResult and groundTruth must be map[string]any with list fields.
 // Returns matched/total.
-func rateScorer(caseResult, groundTruth any, params map[string]any) (float64, string, error) {
+func rateScorer(caseResult, groundTruth any, params map[string]any) (score float64, detail string, err error) {
 	field, _ := params["field"].(string)
 	if field == "" {
 		return 0, "", fmt.Errorf("rate scorer: params must include 'field'")
@@ -126,7 +126,7 @@ func rateScorer(caseResult, groundTruth any, params map[string]any) (float64, st
 // thresholdCheckScorer checks if a numeric field meets a threshold.
 // params: "field" (field name in caseResult), "min" (minimum value, optional),
 // "max" (maximum value, optional). Returns 1.0 if within bounds, 0.0 otherwise.
-func thresholdCheckScorer(caseResult, _ any, params map[string]any) (float64, string, error) {
+func thresholdCheckScorer(caseResult, _ any, params map[string]any) (score float64, detail string, err error) {
 	field, _ := params["field"].(string)
 	if field == "" {
 		return 0, "", fmt.Errorf("threshold_check scorer: params must include 'field'")
@@ -183,10 +183,11 @@ func toFloat64(v any) (float64, error) {
 // have a Scorer field. Returns metric ID -> value and metric ID -> detail.
 // Metrics without a Scorer field are skipped (backward compatible — consumers
 // provide those values via the existing CaseScorer interface).
-func (sc *ScoreCard) ScoreCase(caseResult, groundTruth any, reg ScorerRegistry) (map[string]float64, map[string]string, error) {
+func (sc *ScoreCard) ScoreCase(caseResult, groundTruth any, reg ScorerRegistry) (metricValues map[string]float64, metricDetails map[string]string, err error) {
 	values := make(map[string]float64)
 	details := make(map[string]string)
-	for _, def := range sc.MetricDefs {
+	for i := range sc.MetricDefs {
+		def := &sc.MetricDefs[i]
 		if def.Scorer == "" {
 			continue
 		}

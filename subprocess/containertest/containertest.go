@@ -104,14 +104,14 @@ type ServiceConfig struct {
 // for /healthz to return 200.
 func (e *Env) StartServiceWithArgs(ctx context.Context, name, image string, port int, env, args []string) {
 	e.t.Helper()
-	e.StartServiceWithConfig(ctx, ServiceConfig{
+	e.StartServiceWithConfig(ctx, &ServiceConfig{
 		Name: name, Image: image, Port: port, Env: env, Args: args,
 	})
 }
 
 // StartServiceWithConfig starts a container from a full ServiceConfig and
 // waits for /healthz to return 200.
-func (e *Env) StartServiceWithConfig(ctx context.Context, cfg ServiceConfig) {
+func (e *Env) StartServiceWithConfig(ctx context.Context, cfg *ServiceConfig) {
 	e.t.Helper()
 	opts := subprocess.RunOptions{
 		Name:          cfg.Name,
@@ -126,7 +126,7 @@ func (e *Env) StartServiceWithConfig(ctx context.Context, cfg ServiceConfig) {
 		opts.HostPort = 0
 		opts.ContainerPort = 0
 	}
-	id, err := e.runtime.RunWithOptions(ctx, opts)
+	id, err := e.runtime.RunWithOptions(ctx, &opts)
 	if err != nil {
 		e.t.Fatalf("start service %s: %v", cfg.Name, err)
 	}
@@ -148,7 +148,7 @@ func (e *Env) StartWorker(ctx context.Context, name, image string, env, args []s
 		Args:    args,
 		Network: "host",
 	}
-	id, err := e.runtime.RunWithOptions(ctx, opts)
+	id, err := e.runtime.RunWithOptions(ctx, &opts)
 	if err != nil {
 		e.t.Fatalf("start worker %s: %v", name, err)
 	}

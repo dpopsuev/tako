@@ -1,10 +1,18 @@
 package curate
 
 import (
-	"github.com/dpopsuev/origami/circuit"
 	"context"
 	"fmt"
 	"log/slog"
+
+	"github.com/dpopsuev/origami/circuit"
+)
+
+const (
+	nodeFetch    = "fetch"
+	nodeExtract  = "extract"
+	nodeValidate = "validate"
+	nodeEnrich   = "enrich"
 )
 
 // CurationWalker is a circuit.Walker that walks the curation circuit.
@@ -31,7 +39,7 @@ type CurationWalkerConfig struct {
 
 // NewCurationWalker creates a walker configured with sources, extractors,
 // and a schema for validation.
-func NewCurationWalker(cfg CurationWalkerConfig) *CurationWalker {
+func NewCurationWalker(cfg *CurationWalkerConfig) *CurationWalker {
 	r := NewRecord(cfg.RecordID)
 	if cfg.InitialRecord != nil {
 		r = *cfg.InitialRecord
@@ -51,7 +59,7 @@ func NewCurationWalker(cfg CurationWalkerConfig) *CurationWalker {
 }
 
 func (w *CurationWalker) Identity() circuit.AgentIdentity      { return w.identity }
-func (w *CurationWalker) SetIdentity(id circuit.AgentIdentity)  { w.identity = id }
+func (w *CurationWalker) SetIdentity(id *circuit.AgentIdentity)  { w.identity = *id }
 func (w *CurationWalker) State() *circuit.WalkerState           { return w.state }
 
 // Record returns the curated record after walking.
@@ -64,13 +72,13 @@ func (w *CurationWalker) Promoted() bool { return w.promoted }
 // CurationArtifact outputs that the edge evaluators use for routing.
 func (w *CurationWalker) Handle(ctx context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
 	switch node.Name() {
-	case "fetch":
+	case nodeFetch:
 		return w.handleFetch(ctx)
-	case "extract":
+	case nodeExtract:
 		return w.handleExtract(ctx, nc)
-	case "validate":
+	case nodeValidate:
 		return w.handleValidate()
-	case "enrich":
+	case nodeEnrich:
 		return w.handleEnrich(ctx)
 	case "promote":
 		return w.handlePromote()
@@ -87,10 +95,10 @@ func (w *CurationWalker) handleFetch(ctx context.Context) (circuit.Artifact, err
 		}
 		raw, err := src.Fetch(ctx, w.record.ID)
 		if err != nil {
-			slog.Warn("source fetch failed",
-				slog.String("source", src.Type()),
-				slog.String("record", w.record.ID),
-				slog.String("error", err.Error()),
+			slog.WarnContext(ctx, "source fetch failed",
+				"source", src.Type(),
+				"record", w.record.ID,
+				"error", err.Error(),
 			)
 			continue
 		}
@@ -99,7 +107,7 @@ func (w *CurationWalker) handleFetch(ctx context.Context) (circuit.Artifact, err
 	}
 
 	return &CurationArtifact{
-		ArtifactType: "fetch",
+		ArtifactType: nodeFetch,
 		Rec:          &w.record,
 		RawEvid:      lastRaw,
 	}, nil
@@ -111,15 +119,15 @@ func (w *CurationWalker) handleExtract(ctx context.Context, nc circuit.NodeConte
 		raw = prior.RawEvid
 	}
 	if raw == nil {
-		return &CurationArtifact{ArtifactType: "extract", Rec: &w.record}, nil
+		return &CurationArtifact{ArtifactType: nodeExtract, Rec: &w.record}, nil
 	}
 
 	for _, ext := range w.extractors {
 		fields, err := ext.Extract(ctx, raw)
 		if err != nil {
-			slog.Warn("extractor failed",
-				slog.String("extractor", ext.Type()),
-				slog.String("error", err.Error()),
+			slog.WarnContext(ctx, "extractor failed",
+				"extractor", ext.Type(),
+				"error", err.Error(),
 			)
 			continue
 		}
@@ -129,7 +137,7 @@ func (w *CurationWalker) handleExtract(ctx context.Context, nc circuit.NodeConte
 	}
 
 	return &CurationArtifact{
-		ArtifactType: "extract",
+		ArtifactType: nodeExtract,
 		Rec:          &w.record,
 	}, nil
 }
@@ -146,7 +154,7 @@ func (w *CurationWalker) handleValidate() (circuit.Artifact, error) {
 	}
 
 	return &CurationArtifact{
-		ArtifactType: "validate",
+		ArtifactType: nodeValidate,
 		Rec:          &w.record,
 		Complete:     cr.Promotable,
 		MoreSources:  moreSources && !cr.Promotable,
@@ -157,7 +165,7 @@ func (w *CurationWalker) handleValidate() (circuit.Artifact, error) {
 func (w *CurationWalker) handleEnrich(_ context.Context) (circuit.Artifact, error) {
 	cr := CheckCompleteness(w.record, w.schema)
 	return &CurationArtifact{
-		ArtifactType: "enrich",
+		ArtifactType: nodeEnrich,
 		Rec:          &w.record,
 		Complete:     cr.Promotable,
 		Conf:         cr.Score,
@@ -166,9 +174,9 @@ func (w *CurationWalker) handleEnrich(_ context.Context) (circuit.Artifact, erro
 
 func (w *CurationWalker) handlePromote() (circuit.Artifact, error) {
 	w.promoted = true
-	slog.Info("record promoted",
-		slog.String("record_id", w.record.ID),
-		slog.Int("fields", len(w.record.Fields)),
+	slog.InfoContext(context.Background(), "record promoted",
+		"record_id", w.record.ID,
+		"fields", len(w.record.Fields),
 	)
 	return &CurationArtifact{
 		ArtifactType: "promote",

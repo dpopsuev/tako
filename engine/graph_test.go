@@ -19,7 +19,7 @@ type visitTrackingWalker struct {
 }
 
 func (w *visitTrackingWalker) Identity() circuit.AgentIdentity      { return w.identity }
-func (w *visitTrackingWalker) SetIdentity(id circuit.AgentIdentity) { w.identity = id }
+func (w *visitTrackingWalker) SetIdentity(id *circuit.AgentIdentity) { w.identity = *id }
 func (w *visitTrackingWalker) State() *circuit.WalkerState          { return w.state }
 func (w *visitTrackingWalker) Handle(ctx context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
 	w.visited = append(w.visited, node.Name())

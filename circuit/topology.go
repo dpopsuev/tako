@@ -15,8 +15,8 @@ func InferTopology(def *CircuitDef) {
 	}
 
 	edgesByNode := make(map[string][]int)
-	for i, e := range def.Edges {
-		edgesByNode[e.From] = append(edgesByNode[e.From], i)
+	for i := range def.Edges {
+		edgesByNode[def.Edges[i].From] = append(edgesByNode[def.Edges[i].From], i)
 	}
 
 	const (
@@ -46,9 +46,9 @@ func InferTopology(def *CircuitDef) {
 	dfs(def.Start)
 
 	dagAdj := make(map[string][]string)
-	for _, e := range def.Edges {
-		if !e.Loop {
-			dagAdj[e.From] = append(dagAdj[e.From], e.To)
+	for i := range def.Edges {
+		if !def.Edges[i].Loop {
+			dagAdj[def.Edges[i].From] = append(dagAdj[def.Edges[i].From], def.Edges[i].To)
 		}
 	}
 
@@ -121,6 +121,6 @@ func RegisterTopologyValidator(v TopologyValidator) {
 }
 
 // toUpperReplace is a helper to uppercase and replace characters in a string.
-func toUpperReplace(s, old, new string) string {
-	return strings.ToUpper(strings.ReplaceAll(s, old, new))
+func toUpperReplace(s, old, replacement string) string {
+	return strings.ToUpper(strings.ReplaceAll(s, old, replacement))
 }

@@ -29,7 +29,7 @@ func NewOTelObserver(tracer trace.Tracer) *OTelObserver {
 	}
 }
 
-func (o *OTelObserver) OnEvent(e circuit.WalkEvent) {
+func (o *OTelObserver) OnEvent(e *circuit.WalkEvent) {
 	switch e.Type {
 	case circuit.EventNodeEnter:
 		o.onNodeEnter(e)
@@ -44,7 +44,7 @@ func (o *OTelObserver) OnEvent(e circuit.WalkEvent) {
 	}
 }
 
-func (o *OTelObserver) onNodeEnter(e circuit.WalkEvent) {
+func (o *OTelObserver) onNodeEnter(e *circuit.WalkEvent) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
@@ -64,7 +64,7 @@ func (o *OTelObserver) onNodeEnter(e circuit.WalkEvent) {
 	o.nodeSpans[e.Node] = span
 }
 
-func (o *OTelObserver) onNodeExit(e circuit.WalkEvent) {
+func (o *OTelObserver) onNodeExit(e *circuit.WalkEvent) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
@@ -75,7 +75,7 @@ func (o *OTelObserver) onNodeExit(e circuit.WalkEvent) {
 	}
 }
 
-func (o *OTelObserver) onTransition(e circuit.WalkEvent) {
+func (o *OTelObserver) onTransition(e *circuit.WalkEvent) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
@@ -87,7 +87,7 @@ func (o *OTelObserver) onTransition(e circuit.WalkEvent) {
 	}
 }
 
-func (o *OTelObserver) onWalkComplete(_ circuit.WalkEvent) {
+func (o *OTelObserver) onWalkComplete(_ *circuit.WalkEvent) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
@@ -99,7 +99,7 @@ func (o *OTelObserver) onWalkComplete(_ circuit.WalkEvent) {
 	}
 }
 
-func (o *OTelObserver) onWalkError(e circuit.WalkEvent) {
+func (o *OTelObserver) onWalkError(e *circuit.WalkEvent) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 

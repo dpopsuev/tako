@@ -39,7 +39,7 @@ func NewRepoCache(baseDir, token string) *RepoCache {
 func (c *RepoCache) EnsureCloned(ctx context.Context, org, repo, branch string) (string, error) {
 	localPath := c.repoPath(org, repo, branch)
 
-	if info, err := os.Stat(filepath.Join(localPath, ".git")); err == nil && info.IsDir() {
+	if info, err := os.Stat(filepath.Join(localPath, gitDir)); err == nil && info.IsDir() {
 		return localPath, nil
 	}
 
@@ -71,7 +71,7 @@ func (c *RepoCache) repoPath(org, repo, branch string) string {
 }
 
 func (c *RepoCache) doClone(ctx context.Context, org, repo, branch, dest string) error {
-	if err := os.MkdirAll(filepath.Dir(dest), 0700); err != nil {
+	if err := os.MkdirAll(filepath.Dir(dest), 0o700); err != nil {
 		return fmt.Errorf("create cache dir: %w", err)
 	}
 	tok := TokenForOrg(c.privateTokens, org, repo, c.token)

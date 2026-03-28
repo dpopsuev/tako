@@ -132,7 +132,7 @@ func (c *PrometheusCollector) SetCircuit(name string) {
 	c.mu.Unlock()
 }
 
-func (c *PrometheusCollector) OnEvent(e fw.WalkEvent) {
+func (c *PrometheusCollector) OnEvent(e *fw.WalkEvent) {
 	c.mu.Lock()
 	circuit := c.circuit
 	c.mu.Unlock()

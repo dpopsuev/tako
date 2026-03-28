@@ -80,13 +80,13 @@ func MergeScorecardDefs(base, overlay *ScorecardDef) (*ScorecardDef, error) {
 			merged.Metrics = append(merged.Metrics, om)
 			continue
 		}
-		applyMetricOverlay(&merged.Metrics[idx], om)
+		applyMetricOverlay(&merged.Metrics[idx], &om)
 	}
 
 	return &merged, nil
 }
 
-func applyMetricOverlay(base *ScorecardMetric, om ScorecardMetric) {
+func applyMetricOverlay(base, om *ScorecardMetric) {
 	if om.Threshold != 0 {
 		base.Threshold = om.Threshold
 	}

@@ -52,7 +52,7 @@ func NewFindingRouter(rules []RouteRule, handlers FindingHandlers) *FindingRoute
 	return &FindingRouter{rules: rules, handlers: handlers}
 }
 
-func (r *FindingRouter) Report(_ context.Context, f circuit.Finding) error {
+func (r *FindingRouter) Report(_ context.Context, f *circuit.Finding) error {
 	if f.Timestamp.IsZero() {
 		f.Timestamp = time.Now().UTC()
 	}
@@ -62,7 +62,7 @@ func (r *FindingRouter) Report(_ context.Context, f circuit.Finding) error {
 
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	r.findings = append(r.findings, f)
+	r.findings = append(r.findings, *f)
 	return nil
 }
 
@@ -74,7 +74,7 @@ func (r *FindingRouter) Findings() []circuit.Finding {
 	return out
 }
 
-func (r *FindingRouter) route(f circuit.Finding) RouteTarget {
+func (r *FindingRouter) route(f *circuit.Finding) RouteTarget {
 	for _, rule := range r.rules {
 		if rule.Severity != "" && rule.Severity != f.Severity {
 			continue
@@ -101,19 +101,19 @@ func (r *FindingRouter) defaultTarget(severity circuit.FindingSeverity) RouteTar
 	}
 }
 
-func (r *FindingRouter) dispatch(target RouteTarget, f circuit.Finding) {
+func (r *FindingRouter) dispatch(target RouteTarget, f *circuit.Finding) {
 	switch target {
 	case TargetManager:
 		if r.handlers.Manager != nil {
-			r.handlers.Manager(f)
+			r.handlers.Manager(*f)
 		}
 	case TargetBroker:
 		if r.handlers.Broker != nil {
-			r.handlers.Broker(f)
+			r.handlers.Broker(*f)
 		}
 	case TargetLog:
 		if r.handlers.Log != nil {
-			r.handlers.Log(f)
+			r.handlers.Log(*f)
 		}
 	}
 }

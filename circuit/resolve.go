@@ -71,7 +71,7 @@ func ResolveCircuitPath(name string, opts ...ResolveOption) ([]byte, error) {
 		candidates = append(candidates, name+".yaml", name+".yml")
 	}
 
-	var searched []string
+	searched := make([]string, 0, len(candidates)*2)
 
 	if envDir := os.Getenv("ORIGAMI_CIRCUITS"); envDir != "" {
 		for _, c := range candidates {

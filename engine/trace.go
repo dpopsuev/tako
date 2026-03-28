@@ -59,7 +59,7 @@ func NewTraceRecorder(path string) (*TraceRecorder, error) {
 }
 
 // OnEvent implements WalkObserver.
-func (r *TraceRecorder) OnEvent(e circuit.WalkEvent) {
+func (r *TraceRecorder) OnEvent(e *circuit.WalkEvent) {
 	te := TraceEvent{
 		Timestamp: time.Now().UTC().Format(time.RFC3339Nano),
 		Level:     LevelDebug,
@@ -80,7 +80,7 @@ func (r *TraceRecorder) OnEvent(e circuit.WalkEvent) {
 		te.Metadata = e.Metadata
 	}
 
-	r.write(te)
+	r.write(&te)
 
 	if e.Type == circuit.EventNodeExit && e.Artifact != nil {
 		artEvent := TraceEvent{
@@ -92,7 +92,7 @@ func (r *TraceRecorder) OnEvent(e circuit.WalkEvent) {
 			CaseID:    e.Walker,
 			ElapsedMs: te.ElapsedMs,
 		}
-		r.write(artEvent)
+		r.write(&artEvent)
 	}
 }
 
@@ -112,7 +112,7 @@ func (r *TraceRecorder) HandleSignal(ts, event, agent, caseID, step string, meta
 			te.Metadata[k] = v
 		}
 	}
-	r.write(te)
+	r.write(&te)
 }
 
 // Close flushes the buffer and closes the file.
@@ -135,7 +135,7 @@ func (r *TraceRecorder) EventCount() int {
 	return r.eventCount
 }
 
-func (r *TraceRecorder) write(te TraceEvent) {
+func (r *TraceRecorder) write(te *TraceEvent) {
 	data, err := json.Marshal(te)
 	if err != nil {
 		return

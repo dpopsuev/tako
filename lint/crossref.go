@@ -7,6 +7,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const kindCircuit = "circuit"
+
 // CrossRefRule declares a cross-file symbol validation rule.
 // File A exports names at a YAML path; file B references them.
 // The engine validates that references resolve to exports.
@@ -45,13 +47,13 @@ func (e *CrossRefEngine) Check(ctx *LintContext) []Finding {
 	}
 
 	var findings []Finding
-	for _, rule := range e.Rules {
-		findings = append(findings, e.checkRule(rule, ctx)...)
+	for i := range e.Rules {
+		findings = append(findings, e.checkRule(&e.Rules[i], ctx)...)
 	}
 	return findings
 }
 
-func (e *CrossRefEngine) checkRule(rule CrossRefRule, ctx *LintContext) []Finding {
+func (e *CrossRefEngine) checkRule(rule *CrossRefRule, ctx *LintContext) []Finding {
 	// Extract exports from all files matching ExportKind.
 	exports := make(map[string]bool)
 	for _, doc := range ctx.ProjectFiles[rule.ExportKind] {
@@ -200,8 +202,7 @@ func splitPath(path string) []string {
 	var segments []string
 	for _, part := range strings.Split(path, ".") {
 		if strings.HasSuffix(part, "[]") {
-			segments = append(segments, strings.TrimSuffix(part, "[]"))
-			segments = append(segments, "[]")
+			segments = append(segments, strings.TrimSuffix(part, "[]"), "[]")
 		} else {
 			segments = append(segments, part)
 		}
@@ -274,8 +275,8 @@ func LoadProjectFiles(files map[string][]byte) map[string][]ProjectFile {
 		kind, _ := doc["kind"].(string)
 		if kind == "" {
 			// Infer kind from common fields.
-			if _, ok := doc["circuit"]; ok {
-				kind = "circuit"
+			if _, ok := doc[kindCircuit]; ok {
+				kind = kindCircuit
 			} else if _, ok := doc["scorecard"]; ok {
 				kind = "scorecard"
 			} else if _, ok := doc["rcas"]; ok {

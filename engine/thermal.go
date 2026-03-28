@@ -35,7 +35,7 @@ type thermalObserver struct {
 	aborted bool
 }
 
-func (t *thermalObserver) OnEvent(e circuit.WalkEvent) {
+func (t *thermalObserver) OnEvent(e *circuit.WalkEvent) {
 	if t.inner != nil {
 		t.inner.OnEvent(e)
 	}
@@ -51,7 +51,7 @@ func (t *thermalObserver) OnEvent(e circuit.WalkEvent) {
 
 	if !t.warned && t.warning > 0 && t.total >= t.warning {
 		t.warned = true
-		emitEvent(t.inner, circuit.WalkEvent{
+		emitEvent(t.inner, &circuit.WalkEvent{
 			Type: circuit.EventThermalWarning,
 			Metadata: map[string]any{
 				"cumulative": t.total.Seconds(),

@@ -30,7 +30,7 @@ func (d *StubDriver) Handles() toolkit.SourceKind {
 	return d.kind
 }
 
-func (d *StubDriver) Ensure(ctx context.Context, src toolkit.Source) error {
+func (d *StubDriver) Ensure(ctx context.Context, src *toolkit.Source) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.calls = append(d.calls, "Ensure:"+src.Name)
@@ -40,7 +40,7 @@ func (d *StubDriver) Ensure(ctx context.Context, src toolkit.Source) error {
 	return d.reader.Ensure(ctx, src)
 }
 
-func (d *StubDriver) Search(ctx context.Context, src toolkit.Source, query string, maxResults int) ([]toolkit.SearchResult, error) {
+func (d *StubDriver) Search(ctx context.Context, src *toolkit.Source, query string, maxResults int) ([]toolkit.SearchResult, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.calls = append(d.calls, "Search:"+src.Name+":"+query)
@@ -50,7 +50,7 @@ func (d *StubDriver) Search(ctx context.Context, src toolkit.Source, query strin
 	return d.reader.Search(ctx, src, query, maxResults)
 }
 
-func (d *StubDriver) Read(ctx context.Context, src toolkit.Source, path string) ([]byte, error) {
+func (d *StubDriver) Read(ctx context.Context, src *toolkit.Source, path string) ([]byte, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.calls = append(d.calls, "Read:"+src.Name+":"+path)
@@ -60,7 +60,7 @@ func (d *StubDriver) Read(ctx context.Context, src toolkit.Source, path string) 
 	return d.reader.Read(ctx, src, path)
 }
 
-func (d *StubDriver) List(ctx context.Context, src toolkit.Source, root string, maxDepth int) ([]toolkit.ContentEntry, error) {
+func (d *StubDriver) List(ctx context.Context, src *toolkit.Source, root string, maxDepth int) ([]toolkit.ContentEntry, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.calls = append(d.calls, "List:"+src.Name+":"+root)

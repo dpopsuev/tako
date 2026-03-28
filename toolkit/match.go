@@ -129,7 +129,7 @@ func NewMatchEvaluator(yamlData []byte) (*MatchEvaluator, error) {
 		return nil, fmt.Errorf("match evaluator: parse YAML: %w", err)
 	}
 	sets := make(map[string]*MatchRuleSet, len(raw))
-	for k, node := range raw {
+	for k, node := range raw { //nolint:gocritic // rangeValCopy: map value; unavoidable copy
 		if node.Kind != yaml.MappingNode {
 			continue
 		}
@@ -153,12 +153,12 @@ func (e *MatchEvaluator) Get(name string) (*MatchRuleSet, error) {
 
 // Evaluate runs the named rule set against text. Returns the matching
 // result, or the rule set's default.
-func (e *MatchEvaluator) Evaluate(ruleSetName, text string) (any, bool, error) {
+func (e *MatchEvaluator) Evaluate(ruleSetName, text string) (result any, matched bool, err error) {
 	rs, err := e.Get(ruleSetName)
 	if err != nil {
 		return nil, false, err
 	}
-	result, matched := rs.Evaluate(text)
+	result, matched = rs.Evaluate(text)
 	return result, matched, nil
 }
 

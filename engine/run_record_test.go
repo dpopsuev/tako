@@ -25,7 +25,7 @@ func TestRunRecord_RoundTrip(t *testing.T) {
 		TraceEvents: 42,
 	}
 
-	if err := SaveRunRecord(dir, rec); err != nil {
+	if err := SaveRunRecord(dir, &rec); err != nil {
 		t.Fatalf("SaveRunRecord: %v", err)
 	}
 
@@ -95,7 +95,7 @@ func TestRunRecord_TraceIDRoundTrip(t *testing.T) {
 		CaseCount:   5,
 	}
 
-	if err := SaveRunRecord(dir, rec); err != nil {
+	if err := SaveRunRecord(dir, &rec); err != nil {
 		t.Fatalf("SaveRunRecord: %v", err)
 	}
 
@@ -120,7 +120,7 @@ func TestRunRecord_TraceIDOmittedWhenEmpty(t *testing.T) {
 		CompletedAt: time.Now(),
 	}
 
-	if err := SaveRunRecord(dir, rec); err != nil {
+	if err := SaveRunRecord(dir, &rec); err != nil {
 		t.Fatalf("SaveRunRecord: %v", err)
 	}
 

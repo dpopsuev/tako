@@ -9,6 +9,15 @@ import (
 	"github.com/dpopsuev/origami/agentport"
 )
 
+const (
+	ruleInvalidApproach = "S2/invalid-approach"
+	ruleInvalidMerge    = "S3/invalid-merge-strategy"
+	ruleMissingEdgeName = "S4/missing-edge-name"
+	ruleInvalidCacheTTL = "S7/invalid-cache-ttl"
+	ruleMissingCircDesc = "S8/missing-circuit-description"
+	ruleInvalidPersona  = "S11/invalid-walker-persona"
+)
+
 var validApproaches = map[string]bool{
 	"rapid": true, "aggressive": true, "methodical": true,
 	"rigorous": true, "analytical": true, "holistic": true,
@@ -21,9 +30,10 @@ var validMergeStrategies = map[string]bool{
 }
 
 func knownPersonas() map[string]bool {
+	all := agentport.PersonaAll()
 	m := make(map[string]bool)
-	for _, p := range agentport.PersonaAll() {
-		m[strings.ToLower(p.Identity.PersonaName)] = true
+	for i := range all {
+		m[strings.ToLower(all[i].Identity.PersonaName)] = true
 	}
 	return m
 }
@@ -53,14 +63,14 @@ func (r *MissingNodeApproach) Tags() []string       { return []string{"structura
 
 func (r *MissingNodeApproach) Check(ctx *LintContext) []Finding {
 	var out []Finding
-	for _, nd := range ctx.Def.Nodes {
-		if nd.Approach == "" {
+	for i := range ctx.Def.Nodes {
+		if ctx.Def.Nodes[i].Approach == "" {
 			out = append(out, Finding{
 				RuleID:   r.ID(),
 				Severity: r.Severity(),
-				Message:  fmt.Sprintf("node %q has no approach", nd.Name),
+				Message:  fmt.Sprintf("node %q has no approach", ctx.Def.Nodes[i].Name),
 				File:     ctx.File,
-				Line:     ctx.NodeLine(nd.Name),
+				Line:     ctx.NodeLine(ctx.Def.Nodes[i].Name),
 			})
 		}
 	}
@@ -70,14 +80,15 @@ func (r *MissingNodeApproach) Check(ctx *LintContext) []Finding {
 // InvalidApproach checks that node approach values are known approaches.
 type InvalidApproach struct{}
 
-func (r *InvalidApproach) ID() string          { return "S2/invalid-approach" }
+func (r *InvalidApproach) ID() string          { return ruleInvalidApproach }
 func (r *InvalidApproach) Description() string { return "approach value must be a known approach" }
 func (r *InvalidApproach) Severity() Severity   { return SeverityError }
 func (r *InvalidApproach) Tags() []string       { return []string{"structural"} }
 
 func (r *InvalidApproach) Check(ctx *LintContext) []Finding {
 	var out []Finding
-	for _, nd := range ctx.Def.Nodes {
+	for i := range ctx.Def.Nodes {
+		nd := &ctx.Def.Nodes[i]
 		if nd.Approach != "" && !validApproaches[strings.ToLower(nd.Approach)] {
 			f := Finding{
 				RuleID:   r.ID(),
@@ -108,7 +119,8 @@ func (r *MissingEdgeID) Tags() []string      { return []string{"structural"} }
 
 func (r *MissingEdgeID) Check(ctx *LintContext) []Finding {
 	var out []Finding
-	for _, ed := range ctx.Def.Edges {
+	for i := range ctx.Def.Edges {
+		ed := &ctx.Def.Edges[i]
 		if ed.ID == "" {
 			msg := fmt.Sprintf("edge from %q to %q has no id", ed.From, ed.To)
 			out = append(out, Finding{
@@ -127,21 +139,21 @@ func (r *MissingEdgeID) Check(ctx *LintContext) []Finding {
 // InvalidMergeStrategy checks that edge merge values are valid strategies.
 type InvalidMergeStrategy struct{}
 
-func (r *InvalidMergeStrategy) ID() string          { return "S3/invalid-merge-strategy" }
+func (r *InvalidMergeStrategy) ID() string          { return ruleInvalidMerge }
 func (r *InvalidMergeStrategy) Description() string { return "merge strategy must be append, latest, or custom" }
 func (r *InvalidMergeStrategy) Severity() Severity   { return SeverityError }
 func (r *InvalidMergeStrategy) Tags() []string       { return []string{"structural"} }
 
 func (r *InvalidMergeStrategy) Check(ctx *LintContext) []Finding {
 	var out []Finding
-	for _, ed := range ctx.Def.Edges {
-		if ed.Merge != "" && !validMergeStrategies[ed.Merge] {
+	for i := range ctx.Def.Edges {
+		if ctx.Def.Edges[i].Merge != "" && !validMergeStrategies[ctx.Def.Edges[i].Merge] {
 			out = append(out, Finding{
 				RuleID:   r.ID(),
 				Severity: r.Severity(),
-				Message:  fmt.Sprintf("edge %q: unknown merge strategy %q (valid: append, latest, custom)", ed.ID, ed.Merge),
+				Message:  fmt.Sprintf("edge %q: unknown merge strategy %q (valid: append, latest, custom)", ctx.Def.Edges[i].ID, ctx.Def.Edges[i].Merge),
 				File:     ctx.File,
-				Line:     ctx.EdgeLine(ed.ID),
+				Line:     ctx.EdgeLine(ctx.Def.Edges[i].ID),
 			})
 		}
 	}
@@ -151,21 +163,21 @@ func (r *InvalidMergeStrategy) Check(ctx *LintContext) []Finding {
 // MissingEdgeName checks that every edge has a human-readable name.
 type MissingEdgeName struct{}
 
-func (r *MissingEdgeName) ID() string          { return "S4/missing-edge-name" }
+func (r *MissingEdgeName) ID() string          { return ruleMissingEdgeName }
 func (r *MissingEdgeName) Description() string { return "edges should have a human-readable name" }
 func (r *MissingEdgeName) Severity() Severity   { return SeverityInfo }
 func (r *MissingEdgeName) Tags() []string       { return []string{"structural"} }
 
 func (r *MissingEdgeName) Check(ctx *LintContext) []Finding {
 	var out []Finding
-	for _, ed := range ctx.Def.Edges {
-		if ed.Name == "" {
+	for i := range ctx.Def.Edges {
+		if ctx.Def.Edges[i].Name == "" {
 			out = append(out, Finding{
 				RuleID:       r.ID(),
 				Severity:     r.Severity(),
-				Message:      fmt.Sprintf("edge %q has no name", ed.ID),
+				Message:      fmt.Sprintf("edge %q has no name", ctx.Def.Edges[i].ID),
 				File:         ctx.File,
-				Line:         ctx.EdgeLine(ed.ID),
+				Line:         ctx.EdgeLine(ctx.Def.Edges[i].ID),
 				FixAvailable: true,
 			})
 		}
@@ -185,7 +197,8 @@ func (r *DuplicateEdgeCondition) Check(ctx *LintContext) []Finding {
 	type key struct{ from, when string }
 	seen := make(map[key]string)
 	var out []Finding
-	for _, ed := range ctx.Def.Edges {
+	for i := range ctx.Def.Edges {
+		ed := &ctx.Def.Edges[i]
 		if ed.When == "" || ed.Parallel {
 			continue
 		}
@@ -215,7 +228,8 @@ func (r *EmptyPrompt) Tags() []string       { return []string{"structural"} }
 
 func (r *EmptyPrompt) Check(ctx *LintContext) []Finding {
 	var out []Finding
-	for _, nd := range ctx.Def.Nodes {
+	for i := range ctx.Def.Nodes {
+		nd := &ctx.Def.Nodes[i]
 		ht := nd.EffectiveHandlerType(ctx.Def.HandlerType)
 		// node/delegate/circuit/extractor/renderer handler types provide their own logic
 		if ht == circuit.HandlerTypeNode || ht == circuit.HandlerTypeDelegate ||
@@ -243,14 +257,15 @@ func (r *EmptyPrompt) Check(ctx *LintContext) []Finding {
 // InvalidCacheTTL checks that node cache TTL values are valid Go durations.
 type InvalidCacheTTL struct{}
 
-func (r *InvalidCacheTTL) ID() string          { return "S7/invalid-cache-ttl" }
+func (r *InvalidCacheTTL) ID() string          { return ruleInvalidCacheTTL }
 func (r *InvalidCacheTTL) Description() string { return "cache TTL must be a valid Go duration" }
 func (r *InvalidCacheTTL) Severity() Severity   { return SeverityError }
 func (r *InvalidCacheTTL) Tags() []string       { return []string{"structural"} }
 
 func (r *InvalidCacheTTL) Check(ctx *LintContext) []Finding {
 	var out []Finding
-	for _, nd := range ctx.Def.Nodes {
+	for i := range ctx.Def.Nodes {
+		nd := &ctx.Def.Nodes[i]
 		if nd.Cache != nil && nd.Cache.TTL != "" {
 			if _, err := time.ParseDuration(nd.Cache.TTL); err != nil {
 				out = append(out, Finding{
@@ -269,7 +284,7 @@ func (r *InvalidCacheTTL) Check(ctx *LintContext) []Finding {
 // MissingCircuitDescription checks that the circuit has a description field.
 type MissingCircuitDescription struct{}
 
-func (r *MissingCircuitDescription) ID() string        { return "S8/missing-circuit-description" }
+func (r *MissingCircuitDescription) ID() string        { return ruleMissingCircDesc }
 func (r *MissingCircuitDescription) Description() string { return "circuit should have a description" }
 func (r *MissingCircuitDescription) Severity() Severity { return SeverityInfo }
 func (r *MissingCircuitDescription) Tags() []string     { return []string{"structural"} }
@@ -298,8 +313,8 @@ func (r *UnnamedNode) Tags() []string       { return []string{"structural"} }
 
 func (r *UnnamedNode) Check(ctx *LintContext) []Finding {
 	var out []Finding
-	for i, nd := range ctx.Def.Nodes {
-		if nd.Name == "" {
+	for i := range ctx.Def.Nodes {
+		if ctx.Def.Nodes[i].Name == "" {
 			out = append(out, Finding{
 				RuleID:   r.ID(),
 				Severity: r.Severity(),
@@ -343,7 +358,7 @@ func (r *InvalidWalkerApproach) Check(ctx *LintContext) []Finding {
 // InvalidWalkerPersona checks that walker persona values are known personas.
 type InvalidWalkerPersona struct{}
 
-func (r *InvalidWalkerPersona) ID() string          { return "S11/invalid-walker-persona" }
+func (r *InvalidWalkerPersona) ID() string          { return ruleInvalidPersona }
 func (r *InvalidWalkerPersona) Description() string { return "walker persona must be a known persona" }
 func (r *InvalidWalkerPersona) Severity() Severity   { return SeverityError }
 func (r *InvalidWalkerPersona) Tags() []string       { return []string{"structural"} }
@@ -383,21 +398,21 @@ func (r *SchemaInUnstructuredZone) Tags() []string       { return []string{"stru
 func (r *SchemaInUnstructuredZone) Check(ctx *LintContext) []Finding {
 	var out []Finding
 	for zoneName, zd := range ctx.Def.Zones {
-		if strings.ToLower(zd.Domain) != "unstructured" {
+		if !strings.EqualFold(zd.Domain, "unstructured") {
 			continue
 		}
 		nodeSet := make(map[string]bool, len(zd.Nodes))
 		for _, n := range zd.Nodes {
 			nodeSet[n] = true
 		}
-		for _, nd := range ctx.Def.Nodes {
-			if nodeSet[nd.Name] && nd.Schema != nil {
+		for j := range ctx.Def.Nodes {
+			if nodeSet[ctx.Def.Nodes[j].Name] && ctx.Def.Nodes[j].Schema != nil {
 				out = append(out, Finding{
 					RuleID:   r.ID(),
 					Severity: r.Severity(),
-					Message:  fmt.Sprintf("node %q has schema but is in unstructured zone %q", nd.Name, zoneName),
+					Message:  fmt.Sprintf("node %q has schema but is in unstructured zone %q", ctx.Def.Nodes[j].Name, zoneName),
 					File:     ctx.File,
-					Line:     ctx.NodeLine(nd.Name),
+					Line:     ctx.NodeLine(ctx.Def.Nodes[j].Name),
 				})
 			}
 		}
@@ -518,7 +533,8 @@ func (r *DelegateWithoutGenerator) Tags() []string     { return []string{"struct
 
 func (r *DelegateWithoutGenerator) Check(ctx *LintContext) []Finding {
 	var out []Finding
-	for _, nd := range ctx.Def.Nodes {
+	for i := range ctx.Def.Nodes {
+		nd := &ctx.Def.Nodes[i]
 		ht := nd.EffectiveHandlerType(ctx.Def.HandlerType)
 		if ht == circuit.HandlerTypeDelegate && nd.Handler == "" {
 			out = append(out, Finding{
@@ -547,7 +563,8 @@ var removedNodeFields = []string{"family", "transformer", "extractor", "renderer
 
 func (r *DeprecatedHandlerFields) Check(ctx *LintContext) []Finding {
 	var out []Finding
-	for _, nd := range ctx.Def.Nodes {
+	for i := range ctx.Def.Nodes {
+		nd := &ctx.Def.Nodes[i]
 		keys := ctx.NodeYAMLKeys(nd.Name)
 		if keys == nil {
 			continue

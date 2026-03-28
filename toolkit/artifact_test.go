@@ -9,8 +9,8 @@ import (
 
 func TestCaseDir(t *testing.T) {
 	t.Parallel()
-	got := CaseDir("/data", 10, 42)
-	want := filepath.Join("/data", "10", "42")
+	got := CaseDir("data", 10, 42)
+	want := filepath.Join("data", "10", "42")
 	if got != want {
 		t.Errorf("CaseDir = %q, want %q", got, want)
 	}
@@ -60,7 +60,7 @@ func TestListCaseDirs(t *testing.T) {
 
 	_, _ = EnsureCaseDir(base, 5, 10)
 	_, _ = EnsureCaseDir(base, 5, 20)
-	os.WriteFile(filepath.Join(base, "5", "not-a-dir.txt"), []byte("x"), 0644)
+	os.WriteFile(filepath.Join(base, "5", "not-a-dir.txt"), []byte("x"), 0o644)
 
 	dirs, err = ListCaseDirs(base, 5)
 	if err != nil {
@@ -113,7 +113,7 @@ func TestReadMapArtifact(t *testing.T) {
 		t.Errorf("missing file should return nil map, got %v", got)
 	}
 
-	os.WriteFile(filepath.Join(dir, "bad.json"), []byte("{invalid"), 0644)
+	os.WriteFile(filepath.Join(dir, "bad.json"), []byte("{invalid"), 0o644)
 	_, err = ReadMapArtifact(dir, "bad.json")
 	if err == nil {
 		t.Error("invalid JSON should return error")
@@ -121,7 +121,7 @@ func TestReadMapArtifact(t *testing.T) {
 
 	payload := map[string]any{"status": "pass", "score": float64(0.95)}
 	raw, _ := json.Marshal(payload)
-	os.WriteFile(filepath.Join(dir, "good.json"), raw, 0644)
+	os.WriteFile(filepath.Join(dir, "good.json"), raw, 0o644)
 	got, err = ReadMapArtifact(dir, "good.json")
 	if err != nil {
 		t.Fatalf("valid JSON error: %v", err)

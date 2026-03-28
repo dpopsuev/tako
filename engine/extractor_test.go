@@ -189,7 +189,7 @@ done: _done
 		t.Fatalf("LoadCircuit: %v", err)
 	}
 
-	g, err := BuildGraph(def, GraphRegistries{Nodes: nodeReg, Extractors: extReg})
+	g, err := BuildGraph(def, &GraphRegistries{Nodes: nodeReg, Extractors: extReg})
 	if err != nil {
 		t.Fatalf("BuildGraph: %v", err)
 	}
@@ -226,7 +226,7 @@ done: _done
 		t.Fatalf("LoadCircuit: %v", err)
 	}
 
-	_, err = BuildGraph(def, GraphRegistries{Nodes: nodeReg, Extractors: extReg})
+	_, err = BuildGraph(def, &GraphRegistries{Nodes: nodeReg, Extractors: extReg})
 	if err == nil {
 		t.Fatal("expected error for unregistered extractor")
 	}
@@ -371,7 +371,7 @@ done: _done
 		t.Fatalf("LoadCircuit: %v", err)
 	}
 
-	g, err := BuildGraph(def, GraphRegistries{})
+	g, err := BuildGraph(def, &GraphRegistries{})
 	if err != nil {
 		t.Fatalf("BuildGraph: %v", err)
 	}
@@ -410,7 +410,7 @@ func TestBuildGraph_BuiltinJSONSchemaExtractor_NoRegistry(t *testing.T) {
 		Done:  "_done",
 	}
 
-	_, err := BuildGraph(def, GraphRegistries{})
+	_, err := BuildGraph(def, &GraphRegistries{})
 	if err != nil {
 		t.Fatalf("BuildGraph should succeed without extractor registry for built-in: %v", err)
 	}

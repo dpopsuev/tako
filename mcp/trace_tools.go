@@ -17,6 +17,8 @@ import (
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
+const traceLabelUnknown = "unknown"
+
 // --- MCP tool input/output types for trace tools ---
 
 // traceInput is the unified input for the consolidated "trace" tool.
@@ -79,7 +81,7 @@ func (s *CircuitServer) registerTraceTools() {
 }
 
 // handleTraceDispatch routes the consolidated trace tool to the appropriate handler.
-func (s *CircuitServer) handleTraceDispatch(ctx context.Context, req *sdkmcp.CallToolRequest, input traceInput) (*sdkmcp.CallToolResult, any, error) {
+func (s *CircuitServer) handleTraceDispatch(ctx context.Context, req *sdkmcp.CallToolRequest, input *traceInput) (*sdkmcp.CallToolResult, any, error) {
 	switch input.Action {
 	case "events":
 		eventsInput := getTraceInput{
@@ -91,7 +93,7 @@ func (s *CircuitServer) handleTraceDispatch(ctx context.Context, req *sdkmcp.Cal
 			Limit:             input.Limit,
 			FollowDelegations: input.FollowDelegations,
 		}
-		res, out, err := s.handleGetTrace(ctx, req, eventsInput)
+		res, out, err := s.handleGetTrace(ctx, req, &eventsInput)
 		return res, out, err
 
 	case "report":
@@ -111,7 +113,7 @@ func (s *CircuitServer) handleTraceDispatch(ctx context.Context, req *sdkmcp.Cal
 	}
 }
 
-func (s *CircuitServer) handleGetTrace(_ context.Context, _ *sdkmcp.CallToolRequest, input getTraceInput) (*sdkmcp.CallToolResult, getTraceOutput, error) {
+func (s *CircuitServer) handleGetTrace(_ context.Context, _ *sdkmcp.CallToolRequest, input *getTraceInput) (*sdkmcp.CallToolResult, getTraceOutput, error) {
 	runDir := s.resolveRunDir(input.SessionID)
 	if runDir == "" {
 		return nil, getTraceOutput{}, fmt.Errorf("no trace data: StateDir not configured or run not found")
@@ -164,15 +166,15 @@ func (s *CircuitServer) handleGetTrace(_ context.Context, _ *sdkmcp.CallToolRequ
 
 	// Apply pagination.
 	total := len(allEvents)
-	var events []engine.TraceEvent
-	for i, ev := range allEvents {
+	events := make([]engine.TraceEvent, 0, limit)
+	for i := range allEvents {
 		if i < input.Since {
 			continue
 		}
 		if len(events) >= limit {
 			break
 		}
-		events = append(events, ev)
+		events = append(events, allEvents[i])
 	}
 
 	return nil, getTraceOutput{Events: events, Total: total}, nil
@@ -234,7 +236,7 @@ func (s *CircuitServer) handleDiffRuns(_ context.Context, _ *sdkmcp.CallToolRequ
 		byID[m.ID] = m
 	}
 
-	var deltas []metricDelta
+	deltas := make([]metricDelta, 0, len(metricsB))
 	for _, mb := range metricsB {
 		ma := byID[mb.ID]
 		deltas = append(deltas, metricDelta{
@@ -270,13 +272,13 @@ func (s *CircuitServer) resolveRunDir(sessionID string) string {
 }
 
 // levelIncludes returns true if the event level is within the max level.
-func levelIncludes(max, event engine.TraceLevel) bool {
+func levelIncludes(maxLevel, event engine.TraceLevel) bool {
 	order := map[engine.TraceLevel]int{
 		engine.LevelInfo:  0,
 		engine.LevelDebug: 1,
 		engine.LevelTrace: 2,
 	}
-	return order[event] <= order[max]
+	return order[event] <= order[maxLevel]
 }
 
 // mergeChildTraces annotates delegate_start/delegate_end events and inlines
@@ -289,14 +291,15 @@ func mergeChildTraces(events []engine.TraceEvent, stateDir, mediatorEndpoint str
 	childByTraceID := indexRunsByTraceID(stateDir)
 
 	var out []engine.TraceEvent
-	for _, ev := range events {
-		ct, _ := ev.Metadata[circuit.ExtraKeyCircuitType].(string)
-		switch ev.Event {
+	for i := range events {
+		ct, _ := events[i].Metadata[circuit.ExtraKeyCircuitType].(string)
+		switch events[i].Event {
 		case "delegate_start":
 			label := ct
 			if label == "" {
-				label = "unknown"
+				label = traceLabelUnknown
 			}
+			ev := events[i]
 			if ev.Metadata == nil {
 				ev.Metadata = make(map[string]any)
 			}
@@ -313,30 +316,31 @@ func mergeChildTraces(events []engine.TraceEvent, stateDir, mediatorEndpoint str
 				// Local child trace found.
 				childPath := filepath.Join(childDir, "trace.jsonl")
 				childEvents := readTraceFile(childPath)
-				for _, ce := range childEvents {
-					if ce.Metadata == nil {
-						ce.Metadata = make(map[string]any)
+				for j := range childEvents {
+					if childEvents[j].Metadata == nil {
+						childEvents[j].Metadata = make(map[string]any)
 					}
-					ce.Metadata[circuit.TraceMetaSource] = label
-					out = append(out, ce)
+					childEvents[j].Metadata[circuit.TraceMetaSource] = label
+					out = append(out, childEvents[j])
 				}
 			} else if mediatorEndpoint != "" {
 				// Cross-service: fetch child trace via mediator.
 				childEvents := fetchRemoteTrace(mediatorEndpoint, traceID)
-				for _, ce := range childEvents {
-					if ce.Metadata == nil {
-						ce.Metadata = make(map[string]any)
+				for j := range childEvents {
+					if childEvents[j].Metadata == nil {
+						childEvents[j].Metadata = make(map[string]any)
 					}
-					ce.Metadata[circuit.TraceMetaSource] = label + " (remote)"
-					out = append(out, ce)
+					childEvents[j].Metadata[circuit.TraceMetaSource] = label + " (remote)"
+					out = append(out, childEvents[j])
 				}
 			}
 
 		case "delegate_end":
 			label := ct
 			if label == "" {
-				label = "unknown"
+				label = traceLabelUnknown
 			}
+			ev := events[i]
 			if ev.Metadata == nil {
 				ev.Metadata = make(map[string]any)
 			}
@@ -344,7 +348,7 @@ func mergeChildTraces(events []engine.TraceEvent, stateDir, mediatorEndpoint str
 			out = append(out, ev)
 
 		default:
-			out = append(out, ev)
+			out = append(out, events[i])
 		}
 	}
 

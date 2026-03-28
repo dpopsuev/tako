@@ -9,7 +9,7 @@ import (
 )
 
 func TestPreflight_ValidCircuit(t *testing.T) {
-	report, err := Preflight(context.Background(), HarnessConfig{
+	report, err := Preflight(context.Background(), &HarnessConfig{
 		CircuitDef: testCircuitDef(),
 	})
 	if err != nil {
@@ -48,7 +48,7 @@ func TestPreflight_MissingTransformer(t *testing.T) {
 		},
 	}
 
-	report, err := Preflight(context.Background(), HarnessConfig{
+	report, err := Preflight(context.Background(), &HarnessConfig{
 		CircuitDef: def,
 	})
 	if err == nil {
@@ -76,7 +76,7 @@ func TestPreflight_InvalidStartNode(t *testing.T) {
 		},
 	}
 
-	report, err := Preflight(context.Background(), HarnessConfig{
+	report, err := Preflight(context.Background(), &HarnessConfig{
 		CircuitDef: def,
 	})
 	if err == nil {
@@ -92,7 +92,7 @@ func TestPreflight_InvalidStartNode(t *testing.T) {
 }
 
 func TestPreflight_NilCircuitDef(t *testing.T) {
-	report, err := Preflight(context.Background(), HarnessConfig{})
+	report, err := Preflight(context.Background(), &HarnessConfig{})
 	if err == nil {
 		t.Fatal("expected error for nil CircuitDef, got nil")
 	}
@@ -109,7 +109,7 @@ func TestPreflight_NilCircuitDef(t *testing.T) {
 
 func TestPreflight_CompletesQuickly(t *testing.T) {
 	start := time.Now()
-	report, err := Preflight(context.Background(), HarnessConfig{
+	report, err := Preflight(context.Background(), &HarnessConfig{
 		CircuitDef: testCircuitDef(),
 	})
 	elapsed := time.Since(start)
@@ -144,7 +144,7 @@ func TestPreflight_MultiNodeCircuit(t *testing.T) {
 		},
 	}
 
-	report, err := Preflight(context.Background(), HarnessConfig{
+	report, err := Preflight(context.Background(), &HarnessConfig{
 		CircuitDef: def,
 	})
 	if err != nil {
@@ -169,7 +169,7 @@ func TestPreflight_BrokenEdgeExpression(t *testing.T) {
 		},
 	}
 
-	report, err := Preflight(context.Background(), HarnessConfig{
+	report, err := Preflight(context.Background(), &HarnessConfig{
 		CircuitDef: def,
 	})
 	if err == nil {
@@ -200,7 +200,7 @@ func TestPreflight_PartialReport_OnBuildError(t *testing.T) {
 		},
 	}
 
-	report, err := Preflight(context.Background(), HarnessConfig{
+	report, err := Preflight(context.Background(), &HarnessConfig{
 		CircuitDef: def,
 	})
 	if err == nil {

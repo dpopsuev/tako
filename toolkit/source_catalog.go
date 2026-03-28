@@ -25,9 +25,9 @@ func (c *SliceCatalog) AlwaysReadSources() []Source {
 		return nil
 	}
 	var out []Source
-	for _, s := range c.Items {
-		if s.IsAlwaysRead() {
-			out = append(out, s)
+	for i := range c.Items {
+		if c.Items[i].IsAlwaysRead() {
+			out = append(out, c.Items[i])
 		}
 	}
 	return out

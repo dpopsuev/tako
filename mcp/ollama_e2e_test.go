@@ -86,6 +86,7 @@ type captureHandler struct {
 
 func (h *captureHandler) Enabled(_ context.Context, _ slog.Level) bool { return true }
 
+//nolint:gocritic // hugeParam: slog.Handler interface conformance
 func (h *captureHandler) Handle(_ context.Context, r slog.Record) error {
 	rec := logRecord{
 		Level:   r.Level,
@@ -139,7 +140,7 @@ func requireOllama(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, "GET", "http://localhost:11434/api/tags", nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", "http://localhost:11434/api/tags", http.NoBody)
 	if err != nil {
 		t.Skipf("Ollama not available: %v", err)
 	}
@@ -314,7 +315,7 @@ func TestOllamaE2E_SimpleCircuit(t *testing.T) {
 		},
 	}
 
-	srv := newTestServer(t, cfg)
+	srv := newTestServer(t, &cfg)
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
@@ -400,7 +401,7 @@ func TestOllamaE2E_MultiStepCascade(t *testing.T) {
 		},
 	}
 
-	srv := newTestServer(t, cfg)
+	srv := newTestServer(t, &cfg)
 	ctx, cancel := context.WithTimeout(context.Background(), 180*time.Second)
 	defer cancel()
 
@@ -501,7 +502,7 @@ func TestOllamaE2E_DelegatedCircuit(t *testing.T) {
 		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus agentport.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 			return func(ctx context.Context) (any, error) {
 				dt := &dispatchTransformer{disp: disp}
-				reg := engine.GraphRegistries{
+				reg := &engine.GraphRegistries{
 					Transformers: engine.TransformerRegistry{"dispatch": dt},
 					Circuits:     map[string]*circuit.CircuitDef{"analysis": innerDef},
 				}
@@ -524,7 +525,7 @@ func TestOllamaE2E_DelegatedCircuit(t *testing.T) {
 		},
 	}
 
-	srv := newTestServer(t, cfg)
+	srv := newTestServer(t, &cfg)
 	ctx, cancel := context.WithTimeout(context.Background(), 240*time.Second)
 	defer cancel()
 
@@ -619,7 +620,7 @@ func TestOllamaE2E_UnhappyPaths(t *testing.T) {
 			},
 		}
 
-		srv := newTestServer(t, cfg)
+		srv := newTestServer(t, &cfg)
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
@@ -686,7 +687,7 @@ func TestOllamaE2E_UnhappyPaths(t *testing.T) {
 			},
 		}
 
-		srv := newTestServer(t, cfg)
+		srv := newTestServer(t, &cfg)
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
@@ -750,7 +751,7 @@ func TestOllamaE2E_UnhappyPaths(t *testing.T) {
 			},
 		}
 
-		srv := newTestServer(t, cfg)
+		srv := newTestServer(t, &cfg)
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
@@ -805,7 +806,7 @@ func assertLogExists(t *testing.T, logs *logBuffer, msg string) {
 	}
 }
 
-func assertLog(t *testing.T, logs *logBuffer, msg string, key string, value any) {
+func assertLog(t *testing.T, logs *logBuffer, msg, key string, value any) {
 	t.Helper()
 	matches := logs.MessagesWithAttr(msg, key, value)
 	if len(matches) == 0 {

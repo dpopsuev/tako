@@ -252,7 +252,7 @@ func TestHealth(t *testing.T) {
 	})
 
 	for _, path := range []string{"/healthz", "/readyz"} {
-		req := httptest.NewRequest(http.MethodGet, path, nil)
+		req := httptest.NewRequest(http.MethodGet, path, http.NoBody)
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, req)
 		if w.Code != http.StatusOK {
@@ -417,10 +417,10 @@ func TestEmbedVsMounted_FunctionalEquivalence(t *testing.T) {
 	diskDir := t.TempDir()
 	for path, content := range files {
 		full := filepath.Join(diskDir, path)
-		if err := os.MkdirAll(filepath.Dir(full), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(full, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(full, []byte(content), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}

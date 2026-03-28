@@ -48,7 +48,7 @@ func main() {
 		log.Fatal("at least one --backend is required")
 	}
 
-	var configs []mediator.BackendConfig
+	configs := make([]mediator.BackendConfig, 0, len(backends))
 	for _, b := range backends {
 		parts := strings.SplitN(b, "=", 2)
 		if len(parts) != 2 {
@@ -65,17 +65,23 @@ func main() {
 		configs = append(configs, cfg)
 	}
 
+	if err := run(*port, configs); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run(port int, configs []mediator.BackendConfig) error {
 	m := mediator.New(configs)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
 	if err := m.Start(ctx); err != nil {
-		log.Fatalf("start mediator: %v", err)
+		return fmt.Errorf("start mediator: %w", err)
 	}
 	defer m.Stop(context.Background())
 
-	addr := fmt.Sprintf(":%d", *port)
+	addr := fmt.Sprintf(":%d", port)
 	httpServer := &http.Server{Addr: addr, Handler: m.Handler()}
 
 	go func() {
@@ -85,6 +91,7 @@ func main() {
 
 	log.Printf("mediator listening on %s", addr)
 	if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatalf("server error: %v", err)
+		return fmt.Errorf("server error: %w", err)
 	}
+	return nil
 }

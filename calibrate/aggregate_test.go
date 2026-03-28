@@ -56,7 +56,7 @@ func TestAggregateRunMetrics_CustomEvaluator(t *testing.T) {
 	run := calibrate.MetricSet{
 		Metrics: []calibrate.Metric{{ID: "X", Value: 0.20, Threshold: 0.30}},
 	}
-	alwaysFail := func(_ calibrate.Metric) bool { return false }
+	alwaysFail := func(_ *calibrate.Metric) bool { return false }
 	agg := calibrate.AggregateRunMetrics([]calibrate.MetricSet{run, run}, alwaysFail)
 	if agg.Metrics[0].Pass {
 		t.Error("custom eval: want pass=false")

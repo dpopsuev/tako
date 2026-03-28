@@ -114,7 +114,7 @@ func (n *transformerNode) Process(ctx context.Context, nc circuit.NodeContext) (
 	if n.input != "" {
 		resolved, err := ResolveInput(n.input, nc.WalkerState.Outputs)
 		if err != nil {
-			logger.Warn("input resolution failed",
+			logger.WarnContext(ctx, "input resolution failed",
 				"node", n.name, "input_expr", n.input, "error", err.Error())
 			return nil, fmt.Errorf("node %s: resolve input: %w", n.name, err)
 		}
@@ -171,7 +171,7 @@ func (n *transformerNode) Process(ctx context.Context, nc circuit.NodeContext) (
 		return nil, err
 	}
 
-	logger.Debug("transformer executing",
+	logger.DebugContext(ctx, "transformer executing",
 		"node", n.name, "transformer", n.trans.Name(),
 		"has_input", input != nil, "has_prompt", prompt != "")
 
@@ -180,13 +180,13 @@ func (n *transformerNode) Process(ctx context.Context, nc circuit.NodeContext) (
 	elapsed := time.Since(start)
 
 	if err != nil {
-		logger.Error("transformer failed",
+		logger.ErrorContext(ctx, "transformer failed",
 			"node", n.name, "transformer", n.trans.Name(),
 			"error", err.Error(), "elapsed_ms", elapsed.Milliseconds())
 		return nil, fmt.Errorf("transformer %q (node %s): %w", n.trans.Name(), n.name, err)
 	}
 
-	logger.Debug("transformer completed",
+	logger.DebugContext(ctx, "transformer completed",
 		"node", n.name, "transformer", n.trans.Name(),
 		"elapsed_ms", elapsed.Milliseconds())
 

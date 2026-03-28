@@ -25,7 +25,7 @@ type lifecycleTransformer struct {
 
 func (t *lifecycleTransformer) Name() string { return "dispatch-lifecycle" }
 func (t *lifecycleTransformer) Transform(ctx context.Context, tc *engine.TransformerContext) (any, error) {
-	prompt := fmt.Sprintf(`{"node":"%s","step":"test"}`, tc.NodeName)
+	prompt := fmt.Sprintf(`{"node":%q,"step":"test"}`, tc.NodeName)
 	data, err := t.disp.Dispatch(ctx, agentport.Context{
 		CaseID:        tc.WalkerState.ID,
 		Step:          tc.NodeName,
@@ -114,7 +114,7 @@ func lifecycleConfig(circuitYAML string, nCases int) mcp.CircuitConfig {
 			}
 
 			dt := &lifecycleTransformer{disp: disp}
-			reg := engine.GraphRegistries{
+			reg := &engine.GraphRegistries{
 				Transformers: engine.TransformerRegistry{
 					"dispatch-lifecycle": dt,
 				},
@@ -163,7 +163,7 @@ func TestSessionLifecycle_StartGetSubmitReport(t *testing.T) {
 	defer cancel()
 
 	cfg := lifecycleConfig(linearCircuitYAML, 1)
-	srv := newTestServer(t, cfg)
+	srv := newTestServer(t, &cfg)
 	session := connectInMemory(t, ctx, srv)
 
 	// 1. Start circuit
@@ -237,7 +237,7 @@ func TestSessionLifecycle_MultiCase(t *testing.T) {
 
 	const nCases = 3
 	cfg := lifecycleConfig(singleNodeCircuitYAML, nCases)
-	srv := newTestServer(t, cfg)
+	srv := newTestServer(t, &cfg)
 	session := connectInMemory(t, ctx, srv)
 
 	// Start circuit

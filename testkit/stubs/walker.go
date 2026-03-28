@@ -58,9 +58,9 @@ func (w *StubWalker) Identity() circuit.AgentIdentity {
 }
 
 // SetIdentity sets the walker's AgentIdentity.
-func (w *StubWalker) SetIdentity(id circuit.AgentIdentity) {
+func (w *StubWalker) SetIdentity(id *circuit.AgentIdentity) {
 	w.mu.Lock()
-	w.identity = id
+	w.identity = *id
 	w.mu.Unlock()
 }
 

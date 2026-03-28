@@ -18,7 +18,7 @@ func TestThermalObserver_WarningEmitted(t *testing.T) {
 		cancel:  cancel,
 	}
 
-	obs.OnEvent(circuit.WalkEvent{
+	obs.OnEvent(&circuit.WalkEvent{
 		Type:    circuit.EventNodeExit,
 		Node:    "A",
 		Elapsed: 60 * time.Millisecond,
@@ -45,7 +45,7 @@ func TestThermalObserver_WarningOnlyOnce(t *testing.T) {
 	}
 
 	for i := 0; i < 5; i++ {
-		obs.OnEvent(circuit.WalkEvent{
+		obs.OnEvent(&circuit.WalkEvent{
 			Type:    circuit.EventNodeExit,
 			Node:    "A",
 			Elapsed: 20 * time.Millisecond,
@@ -68,7 +68,7 @@ func TestThermalObserver_CeilingCancelsContext(t *testing.T) {
 		cancel:  cancel,
 	}
 
-	obs.OnEvent(circuit.WalkEvent{
+	obs.OnEvent(&circuit.WalkEvent{
 		Type:    circuit.EventNodeExit,
 		Node:    "A",
 		Elapsed: 100 * time.Millisecond,
@@ -88,7 +88,7 @@ func TestThermalObserver_IgnoresErrors(t *testing.T) {
 		cancel:  func() {},
 	}
 
-	obs.OnEvent(circuit.WalkEvent{
+	obs.OnEvent(&circuit.WalkEvent{
 		Type:    circuit.EventNodeExit,
 		Node:    "A",
 		Elapsed: 100 * time.Millisecond,
@@ -109,7 +109,7 @@ func TestThermalObserver_ForwardsToInner(t *testing.T) {
 		cancel:  func() {},
 	}
 
-	obs.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "A"})
+	obs.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "A"})
 
 	if len(inner.Events()) != 1 {
 		t.Errorf("expected inner observer to receive event, got %d", len(inner.Events()))

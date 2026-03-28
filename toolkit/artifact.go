@@ -15,7 +15,7 @@ func CaseDir(basePath string, suiteID, caseID int64) string {
 // EnsureCaseDir creates the per-case directory if it doesn't exist.
 func EnsureCaseDir(basePath string, suiteID, caseID int64) (string, error) {
 	dir := CaseDir(basePath, suiteID, caseID)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", fmt.Errorf("create case dir: %w", err)
 	}
 	return dir, nil
@@ -87,20 +87,20 @@ func WriteArtifact(dir, filename string, data any) error {
 	if err != nil {
 		return fmt.Errorf("marshal artifact %s: %w", filename, err)
 	}
-	if err := os.WriteFile(path, raw, 0644); err != nil {
+	if err := os.WriteFile(path, raw, 0o644); err != nil {
 		return fmt.Errorf("write artifact %s: %w", filename, err)
 	}
 	return nil
 }
 
 // WriteNodePrompt writes a filled prompt to a directory using a node name.
-func WriteNodePrompt(dir string, nodeName string, loopIter int, content string) (string, error) {
+func WriteNodePrompt(dir, nodeName string, loopIter int, content string) (string, error) {
 	filename := NodePromptFilename(nodeName, loopIter)
 	if filename == "" {
 		return "", fmt.Errorf("no prompt filename for node %s", nodeName)
 	}
 	path := filepath.Join(dir, filename)
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		return "", fmt.Errorf("write prompt: %w", err)
 	}
 	return path, nil

@@ -8,8 +8,10 @@ import (
 	"time"
 )
 
+const statusComplete = "complete"
+
 // FinalizeSignals walks the calibration directory and sets every signal.json
-// to status "complete".
+// to status statusComplete.
 func FinalizeSignals(dir string) {
 	count := 0
 	_ = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
@@ -30,11 +32,11 @@ func FinalizeSignals(dir string) {
 			return nil
 		}
 
-		if sig.Status == "complete" {
+		if sig.Status == statusComplete {
 			return nil
 		}
 
-		sig.Status = "complete"
+		sig.Status = statusComplete
 		sig.Timestamp = time.Now().UTC().Format(time.RFC3339)
 		if err := WriteSignal(path, &sig); err != nil {
 			fmt.Fprintf(os.Stderr, "[lifecycle] finalize %s: %v\n", path, err)

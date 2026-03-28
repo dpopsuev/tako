@@ -35,7 +35,7 @@ type stubCaseCollector struct {
 }
 
 func (c *stubCaseCollector) Collect(_ context.Context, results []engine.BatchWalkResult) (
-	map[string]float64, map[string]string, error,
+	values map[string]float64, details map[string]string, err error,
 ) {
 	c.casesProcessed = len(results)
 	return map[string]float64{
@@ -110,7 +110,7 @@ func TestE2E_Calibration_AllStubs(t *testing.T) {
 	}
 
 	// Step 6: Call calibrate.Run().
-	report, err := calibrate.Run(ctx, cfg)
+	report, err := calibrate.Run(ctx, &cfg)
 
 	// Step 7: Verify.
 	if err != nil {
@@ -202,7 +202,7 @@ func TestE2E_MCP_AllStubs(t *testing.T) {
 	}
 
 	// Create server and connect in-memory.
-	srv := mcp.NewCircuitServer(cfg)
+	srv := mcp.NewCircuitServer(&cfg)
 	t.Cleanup(srv.Shutdown)
 
 	t1, t2 := sdkmcp.NewInMemoryTransports()

@@ -65,7 +65,7 @@ func TestCurationWalker_FullCircuit(t *testing.T) {
 		},
 	}
 
-	walker := NewCurationWalker(CurationWalkerConfig{
+	walker := NewCurationWalker(&CurationWalkerConfig{
 		RecordID:   "R01",
 		Schema:     testSchema(),
 		Sources:    []EvidenceSource{src},
@@ -125,7 +125,7 @@ func TestCurationWalker_IncompleteRecord(t *testing.T) {
 		},
 	}
 
-	walker := NewCurationWalker(CurationWalkerConfig{
+	walker := NewCurationWalker(&CurationWalkerConfig{
 		RecordID:   "R01",
 		Schema:     testSchema(),
 		Sources:    []EvidenceSource{src},
@@ -169,7 +169,7 @@ func TestCurationWalker_WithInitialRecord(t *testing.T) {
 	src := &stubSource{recordID: "R01", data: []byte("x")}
 	ext := &stubExtractor{fields: nil}
 
-	walker := NewCurationWalker(CurationWalkerConfig{
+	walker := NewCurationWalker(&CurationWalkerConfig{
 		RecordID:      "R01",
 		Schema:        testSchema(),
 		Sources:       []EvidenceSource{src},
@@ -199,7 +199,7 @@ func TestCurationWalker_WithInitialRecord(t *testing.T) {
 }
 
 func TestCurationWalker_NoSources(t *testing.T) {
-	walker := NewCurationWalker(CurationWalkerConfig{
+	walker := NewCurationWalker(&CurationWalkerConfig{
 		RecordID: "R01",
 		Schema:   testSchema(),
 	})
@@ -217,7 +217,7 @@ func TestCurationWalker_NoSources(t *testing.T) {
 }
 
 func TestCurationWalker_InterfaceCompliance(t *testing.T) {
-	walker := NewCurationWalker(CurationWalkerConfig{
+	walker := NewCurationWalker(&CurationWalkerConfig{
 		RecordID: "R01",
 		Schema:   testSchema(),
 	})

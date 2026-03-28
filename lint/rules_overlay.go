@@ -5,6 +5,14 @@ import (
 	"strings"
 )
 
+const (
+	ruleImportOverlay   = "S18/import-overlay"
+	rulePortValidation  = "S19/port-validation"
+	ruleCalibContract   = "S20/calibration-contract"
+	msgFieldRequired    = ": field is required"
+	msgScorerRequired   = ": scorer_name is required"
+)
+
 var validPortDirections = map[string]bool{
 	"in": true, "out": true, "loop": true,
 }
@@ -14,7 +22,7 @@ var validPortDirections = map[string]bool{
 // ImportOverlay validates circuits with import: directives (overlay-aware linting).
 type ImportOverlay struct{}
 
-func (r *ImportOverlay) ID() string          { return "S18/import-overlay" }
+func (r *ImportOverlay) ID() string          { return ruleImportOverlay }
 func (r *ImportOverlay) Description() string { return "import: must be non-empty if present; overlay should not redefine start/done" }
 func (r *ImportOverlay) Severity() Severity   { return SeverityWarning }
 func (r *ImportOverlay) Tags() []string       { return []string{"structural"} }
@@ -65,7 +73,7 @@ func (r *ImportOverlay) Check(ctx *LintContext) []Finding {
 // PortValidation checks port direction and uniqueness.
 type PortValidation struct{}
 
-func (r *PortValidation) ID() string          { return "S19/port-validation" }
+func (r *PortValidation) ID() string          { return rulePortValidation }
 func (r *PortValidation) Description() string { return "port direction must be in/out/loop; port names must be unique" }
 func (r *PortValidation) Severity() Severity   { return SeverityError }
 func (r *PortValidation) Tags() []string       { return []string{"structural"} }
@@ -117,7 +125,7 @@ func (r *PortValidation) Check(ctx *LintContext) []Finding {
 // CalibrationContract validates calibration inputs/outputs when calibration: is declared.
 type CalibrationContract struct{}
 
-func (r *CalibrationContract) ID() string          { return "S20/calibration-contract" }
+func (r *CalibrationContract) ID() string          { return ruleCalibContract }
 func (r *CalibrationContract) Description() string { return "calibration inputs/outputs must have non-empty field and scorer_name" }
 func (r *CalibrationContract) Severity() Severity   { return SeverityError }
 func (r *CalibrationContract) Tags() []string       { return []string{"structural"} }
@@ -136,9 +144,9 @@ func (r *CalibrationContract) Check(ctx *LintContext) []Finding {
 				msg = fmt.Sprintf("calibration input %q", f.Field)
 			}
 			if strings.TrimSpace(f.Field) == "" {
-				msg += ": field is required"
+				msg += msgFieldRequired
 			} else {
-				msg += ": scorer_name is required"
+				msg += msgScorerRequired
 			}
 			out = append(out, Finding{
 				RuleID:   r.ID(),
@@ -157,9 +165,9 @@ func (r *CalibrationContract) Check(ctx *LintContext) []Finding {
 				msg = fmt.Sprintf("calibration output %q", f.Field)
 			}
 			if strings.TrimSpace(f.Field) == "" {
-				msg += ": field is required"
+				msg += msgFieldRequired
 			} else {
-				msg += ": scorer_name is required"
+				msg += msgScorerRequired
 			}
 			out = append(out, Finding{
 				RuleID:   r.ID(),

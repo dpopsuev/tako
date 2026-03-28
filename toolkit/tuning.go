@@ -1,10 +1,16 @@
 package toolkit
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 
 	"gopkg.in/yaml.v3"
+)
+
+const (
+	tuningNotImplemented = "not yet implemented"
+	tuningQWExhausted    = "all quick wins exhausted"
 )
 
 // QuickWin defines a targeted improvement step in a tuning loop.
@@ -29,7 +35,7 @@ type quickWinsFile struct {
 func LoadQuickWins(data []byte) []QuickWin {
 	var f quickWinsFile
 	if err := yaml.Unmarshal(data, &f); err != nil {
-		slog.Error("failed to parse tuning-quickwins YAML", "error", err)
+		slog.ErrorContext(context.Background(), "failed to parse tuning-quickwins YAML", "error", err)
 		return nil
 	}
 	return f.QuickWins
@@ -99,20 +105,20 @@ func (r *TuningRunner) Run(baselineVal float64) TuningReport {
 		}
 
 		if qw.Apply == nil {
-			slog.Info("tuning QW skipped (not yet implemented)",
-				slog.String("qw", qw.ID),
-				slog.String("name", qw.Name),
+			slog.InfoContext(context.Background(), "tuning QW skipped (not yet implemented)",
+				"qw", qw.ID,
+				"name", qw.Name,
 			)
-			result.Error = "not yet implemented"
+			result.Error = tuningNotImplemented
 			report.Results = append(report.Results, result)
 			noImproveStreak++
 			continue
 		}
 
 		if err := qw.Apply(); err != nil {
-			slog.Error("tuning QW apply failed",
-				slog.String("qw", qw.ID),
-				slog.String("error", err.Error()),
+			slog.ErrorContext(context.Background(), "tuning QW apply failed",
+				"qw", qw.ID,
+				"error", err.Error(),
 			)
 			result.Error = err.Error()
 			report.Results = append(report.Results, result)
@@ -139,7 +145,7 @@ func (r *TuningRunner) Run(baselineVal float64) TuningReport {
 	}
 
 	if report.StopReason == "" {
-		report.StopReason = "all quick wins exhausted"
+		report.StopReason = tuningQWExhausted
 	}
 
 	report.FinalVal = currentVal

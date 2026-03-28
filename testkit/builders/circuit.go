@@ -39,8 +39,8 @@ func (b *CircuitDefBuilder) AddNode(name, handler string) *CircuitDefBuilder {
 }
 
 // AddNodeDef adds a fully specified NodeDef.
-func (b *CircuitDefBuilder) AddNodeDef(nd circuit.NodeDef) *CircuitDefBuilder {
-	b.def.Nodes = append(b.def.Nodes, nd)
+func (b *CircuitDefBuilder) AddNodeDef(nd *circuit.NodeDef) *CircuitDefBuilder {
+	b.def.Nodes = append(b.def.Nodes, *nd)
 	return b
 }
 
@@ -59,8 +59,8 @@ func (b *CircuitDefBuilder) AddEdge(from, to, when string) *CircuitDefBuilder {
 }
 
 // AddEdgeDef adds a fully specified EdgeDef.
-func (b *CircuitDefBuilder) AddEdgeDef(ed circuit.EdgeDef) *CircuitDefBuilder {
-	b.def.Edges = append(b.def.Edges, ed)
+func (b *CircuitDefBuilder) AddEdgeDef(ed *circuit.EdgeDef) *CircuitDefBuilder {
+	b.def.Edges = append(b.def.Edges, *ed)
 	return b
 }
 

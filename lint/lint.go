@@ -16,6 +16,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	yamlKeyName  = "name"
+	yamlKeyEdges = "edges"
+)
+
 // Severity levels for lint findings, ordered by importance.
 type Severity int
 
@@ -221,7 +226,7 @@ func (c *LintContext) NodeYAMLKeys(nodeName string) map[string]bool {
 		}
 		var name string
 		for j := 0; j+1 < len(item.Content); j += 2 {
-			if item.Content[j].Value == "name" {
+			if item.Content[j].Value == yamlKeyName {
 				name = item.Content[j+1].Value
 				break
 			}
@@ -267,14 +272,14 @@ func buildFieldLineMap(root *yaml.Node) map[string]int {
 
 		switch key.Value {
 		case "nodes":
-			mapSequenceByField(val, "name", "node:", m)
+			mapSequenceByField(val, yamlKeyName, "node:", m)
 			mapInlineEdges(val, m)
-		case "edges":
+		case yamlKeyEdges:
 			mapSequenceByField(val, "id", "edge:", m)
 		case "walkers":
-			mapSequenceByField(val, "name", "walker:", m)
+			mapSequenceByField(val, yamlKeyName, "walker:", m)
 		case "ports":
-			mapSequenceByField(val, "name", "port:", m)
+			mapSequenceByField(val, yamlKeyName, "port:", m)
 		case "calibration":
 			mapCalibrationFields(val, m)
 		}
@@ -297,7 +302,7 @@ func mapInlineEdges(nodesSeq *yaml.Node, m map[string]int) {
 		var edgesNode *yaml.Node
 		for j := 0; j+1 < len(nodeItem.Content); j += 2 {
 			switch nodeItem.Content[j].Value {
-			case "name":
+			case yamlKeyName:
 				nodeName = nodeItem.Content[j+1].Value
 			case "edges":
 				edgesNode = nodeItem.Content[j+1]
@@ -537,7 +542,7 @@ func matchesTags(ruleTags []string, want map[string]bool) bool {
 // For non-circuit YAML (kind is set but not "circuit"), only envelope rules run.
 func Run(raw []byte, file string, opts ...Option) ([]Finding, error) {
 	env, _ := circuit.ParseEnvelope(raw)
-	isCircuit := env == nil || env.Kind == "" || env.Kind == "circuit"
+	isCircuit := env == nil || env.Kind == "" || env.Kind == kindCircuit
 
 	if isCircuit {
 		ctx, err := NewLintContext(raw, file)

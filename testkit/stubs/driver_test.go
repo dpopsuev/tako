@@ -29,7 +29,7 @@ func TestStubDriver_Handles_ReturnsDocKind(t *testing.T) {
 
 func TestStubDriver_Ensure_TracksCall(t *testing.T) {
 	d := NewStubDriver(toolkit.SourceKindRepo)
-	src := toolkit.Source{Name: "test-repo"}
+	src := &toolkit.Source{Name: "test-repo"}
 
 	if err := d.Ensure(context.Background(), src); err != nil {
 		t.Fatalf("Ensure: %v", err)
@@ -48,7 +48,7 @@ func TestStubDriver_Read_ReturnsCannedData(t *testing.T) {
 	d := NewStubDriver(toolkit.SourceKindRepo)
 	d.WithReadData("myrepo:main.go", []byte("package main"))
 
-	data, err := d.Read(context.Background(), toolkit.Source{Name: "myrepo"}, "main.go")
+	data, err := d.Read(context.Background(), &toolkit.Source{Name: "myrepo"}, "main.go")
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -62,7 +62,7 @@ func TestStubDriver_Search_ReturnsCannedResults(t *testing.T) {
 	want := []toolkit.SearchResult{{Path: "foo.go", Line: 10, Snippet: "func Foo()"}}
 	d.WithSearchData("myrepo:Foo", want)
 
-	got, err := d.Search(context.Background(), toolkit.Source{Name: "myrepo"}, "Foo", 10)
+	got, err := d.Search(context.Background(), &toolkit.Source{Name: "myrepo"}, "Foo", 10)
 	if err != nil {
 		t.Fatalf("Search: %v", err)
 	}
@@ -76,7 +76,7 @@ func TestStubDriver_List_ReturnsCannedEntries(t *testing.T) {
 	want := []toolkit.ContentEntry{{Path: "src/", IsDir: true}}
 	d.WithListData("myrepo:.", want)
 
-	got, err := d.List(context.Background(), toolkit.Source{Name: "myrepo"}, ".", 1)
+	got, err := d.List(context.Background(), &toolkit.Source{Name: "myrepo"}, ".", 1)
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
@@ -90,12 +90,12 @@ func TestStubDriver_SetError_InjectsError(t *testing.T) {
 	injected := &testError{"injected"}
 	d.SetError(injected)
 
-	_, err := d.Read(context.Background(), toolkit.Source{Name: "x"}, "y")
+	_, err := d.Read(context.Background(), &toolkit.Source{Name: "x"}, "y")
 	if !errors.Is(err, injected) {
 		t.Errorf("Read error = %v, want %v", err, injected)
 	}
 
-	err = d.Ensure(context.Background(), toolkit.Source{Name: "x"})
+	err = d.Ensure(context.Background(), &toolkit.Source{Name: "x"})
 	if !errors.Is(err, injected) {
 		t.Errorf("Ensure error = %v, want %v", err, injected)
 	}
@@ -104,14 +104,14 @@ func TestStubDriver_SetError_InjectsError(t *testing.T) {
 func TestStubDriver_Reset_ClearsState(t *testing.T) {
 	d := NewStubDriver(toolkit.SourceKindRepo)
 	d.SetError(&testError{"boom"})
-	_ = d.Ensure(context.Background(), toolkit.Source{Name: "x"})
+	_ = d.Ensure(context.Background(), &toolkit.Source{Name: "x"})
 
 	d.Reset()
 
 	if len(d.Calls()) != 0 {
 		t.Errorf("Calls after Reset = %d, want 0", len(d.Calls()))
 	}
-	if err := d.Ensure(context.Background(), toolkit.Source{Name: "x"}); err != nil {
+	if err := d.Ensure(context.Background(), &toolkit.Source{Name: "x"}); err != nil {
 		t.Errorf("Ensure after Reset = %v, want nil", err)
 	}
 }
@@ -125,8 +125,8 @@ func TestStubDriver_ThreadSafety(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_, _ = d.Read(context.Background(), toolkit.Source{Name: "repo"}, "file.go")
-			_ = d.Ensure(context.Background(), toolkit.Source{Name: "repo"})
+			_, _ = d.Read(context.Background(), &toolkit.Source{Name: "repo"}, "file.go")
+			_ = d.Ensure(context.Background(), &toolkit.Source{Name: "repo"})
 		}()
 	}
 	wg.Wait()

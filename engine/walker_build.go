@@ -34,17 +34,17 @@ func ValidateElement(name string) (circuit.Element, error) {
 // by name, overriding the element, and applying the preamble and step affinity.
 func BuildWalkersFromDef(defs []circuit.WalkerDef) ([]circuit.Walker, error) {
 	walkers := make([]circuit.Walker, 0, len(defs))
-	for _, d := range defs {
-		w, err := buildWalker(d)
+	for i := range defs {
+		w, err := buildWalker(&defs[i])
 		if err != nil {
-			return nil, fmt.Errorf("walker %q: %w", d.Name, err)
+			return nil, fmt.Errorf("walker %q: %w", defs[i].Name, err)
 		}
 		walkers = append(walkers, w)
 	}
 	return walkers, nil
 }
 
-func buildWalker(d circuit.WalkerDef) (*circuit.ProcessWalker, error) {
+func buildWalker(d *circuit.WalkerDef) (*circuit.ProcessWalker, error) {
 	if d.Name == "" {
 		return nil, fmt.Errorf("walker name is required")
 	}
@@ -95,5 +95,5 @@ func buildWalker(d circuit.WalkerDef) (*circuit.ProcessWalker, error) {
 		id.Role = r
 	}
 
-	return circuit.NewProcessWalkerWithIdentity(id, d.Name), nil
+	return circuit.NewProcessWalkerWithIdentity(&id, d.Name), nil
 }

@@ -30,7 +30,7 @@ func TestLoadPriorArtifacts_MixedPresence(t *testing.T) {
 
 	data := map[string]any{"status": "pass"}
 	raw, _ := json.Marshal(data)
-	os.WriteFile(filepath.Join(dir, "recall-result.json"), raw, 0644)
+	os.WriteFile(filepath.Join(dir, "recall-result.json"), raw, 0o644)
 
 	got := LoadPriorArtifacts(dir, []string{"recall", "triage"}, func(n string) string {
 		return NodeArtifactFilename(n, nil)
@@ -52,7 +52,7 @@ func TestLoadPriorArtifacts_EmptyFilename(t *testing.T) {
 
 	data := map[string]any{"ok": true}
 	raw, _ := json.Marshal(data)
-	os.WriteFile(filepath.Join(dir, "a-result.json"), raw, 0644)
+	os.WriteFile(filepath.Join(dir, "a-result.json"), raw, 0o644)
 
 	got := LoadPriorArtifacts(dir, []string{"a", "skip"}, func(n string) string {
 		if n == "skip" {

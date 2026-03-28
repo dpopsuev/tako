@@ -41,7 +41,7 @@ type Finding struct {
 
 // FindingCollector accumulates findings during a walk.
 type FindingCollector interface {
-	Report(ctx context.Context, f Finding) error
+	Report(ctx context.Context, f *Finding) error
 	Findings() []Finding
 }
 

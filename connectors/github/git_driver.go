@@ -59,7 +59,7 @@ func (d *GitDriver) Handles() toolkit.SourceKind {
 	return toolkit.SourceKindRepo
 }
 
-func (d *GitDriver) Ensure(ctx context.Context, src toolkit.Source) error {
+func (d *GitDriver) Ensure(ctx context.Context, src *toolkit.Source) error {
 	org, repo, err := parseGitURI(src.URI)
 	if err != nil {
 		return err
@@ -76,7 +76,7 @@ func (d *GitDriver) Ensure(ctx context.Context, src toolkit.Source) error {
 	return nil
 }
 
-func (d *GitDriver) Search(ctx context.Context, src toolkit.Source, query string, maxResults int) ([]toolkit.SearchResult, error) {
+func (d *GitDriver) Search(ctx context.Context, src *toolkit.Source, query string, maxResults int) ([]toolkit.SearchResult, error) {
 	localPath, err := d.resolvePath(ctx, src)
 	if err != nil {
 		return nil, err
@@ -107,7 +107,7 @@ func (d *GitDriver) Search(ctx context.Context, src toolkit.Source, query string
 	return results, nil
 }
 
-func (d *GitDriver) Read(ctx context.Context, src toolkit.Source, path string) ([]byte, error) {
+func (d *GitDriver) Read(ctx context.Context, src *toolkit.Source, path string) ([]byte, error) {
 	localPath, err := d.resolvePath(ctx, src)
 	if err != nil {
 		return nil, err
@@ -115,7 +115,7 @@ func (d *GitDriver) Read(ctx context.Context, src toolkit.Source, path string) (
 	return ReadFile(ctx, localPath, path)
 }
 
-func (d *GitDriver) List(ctx context.Context, src toolkit.Source, root string, maxDepth int) ([]toolkit.ContentEntry, error) {
+func (d *GitDriver) List(ctx context.Context, src *toolkit.Source, root string, maxDepth int) ([]toolkit.ContentEntry, error) {
 	localPath, err := d.resolvePath(ctx, src)
 	if err != nil {
 		return nil, err
@@ -139,7 +139,7 @@ func (d *GitDriver) List(ctx context.Context, src toolkit.Source, root string, m
 	return entries, nil
 }
 
-func (d *GitDriver) resolvePath(ctx context.Context, src toolkit.Source) (string, error) {
+func (d *GitDriver) resolvePath(ctx context.Context, src *toolkit.Source) (string, error) {
 	d.mu.RLock()
 	lp, ok := d.localPaths[src.URI]
 	d.mu.RUnlock()
@@ -159,7 +159,7 @@ func (d *GitDriver) resolvePath(ctx context.Context, src toolkit.Source) (string
 // parseGitURI extracts org and repo from a GitHub URI.
 // Handles "https://github.com/org/repo" and "https://github.com/org/repo.git".
 func parseGitURI(uri string) (org, repo string, err error) {
-	uri = strings.TrimSuffix(uri, ".git")
+	uri = strings.TrimSuffix(uri, gitDir)
 	parts := strings.Split(uri, "/")
 	if len(parts) < 2 {
 		return "", "", fmt.Errorf("cannot parse git URI %q: expected at least org/repo", uri)

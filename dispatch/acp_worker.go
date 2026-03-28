@@ -121,7 +121,7 @@ func (d *ACPWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 		if prompt == "" && dc.PromptPath != "" {
 			data, readErr := readPromptFile(dc.PromptPath)
 			if readErr != nil {
-				d.log.Error("read prompt file", "worker", workerID, "path", dc.PromptPath, "error", readErr)
+				d.log.ErrorContext(ctx, "read prompt file", "worker", workerID, "path", dc.PromptPath, "error", readErr)
 				continue
 			}
 			prompt = string(data)
@@ -130,12 +130,12 @@ func (d *ACPWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 		// Route hard steps through collective debate, others to single agent.
 		var response string
 		if d.collective != nil && collectiveSteps[dc.Step] {
-			d.log.Info("routing to collective", "step", dc.Step, "case", dc.CaseID)
+			d.log.InfoContext(ctx, "routing to collective", "step", dc.Step, "case", dc.CaseID)
 			response, err = d.collective.Ask(ctx, prompt)
 		} else {
 			workers := d.staff.FindByRole(d.role)
 			if len(workers) == 0 {
-				d.log.Error("no workers available", "role", d.role)
+				d.log.ErrorContext(ctx, "no workers available", "role", d.role)
 				continue
 			}
 			worker := workers[int(dc.DispatchID)%len(workers)]
@@ -146,7 +146,7 @@ func (d *ACPWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 				agentport.MetaKeyWorkerID: workerID,
 				agentport.MetaKeyError:    err.Error(),
 			})
-			d.log.Error("ACP agent failed", "worker", workerID, "case", dc.CaseID, "step", dc.Step, "error", err)
+			d.log.ErrorContext(ctx, "ACP agent failed", "worker", workerID, "case", dc.CaseID, "step", dc.Step, "error", err)
 			continue
 		}
 
@@ -163,7 +163,7 @@ func (d *ACPWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 			agentport.MetaKeyBytes:    fmt.Sprintf("%d", len(response)),
 		})
 
-		d.log.Info("step complete", "worker", workerID, "case", dc.CaseID, "step", dc.Step, "bytes", len(response))
+		d.log.InfoContext(ctx, "step complete", "worker", workerID, "case", dc.CaseID, "step", dc.Step, "bytes", len(response))
 	}
 }
 

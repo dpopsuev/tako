@@ -34,7 +34,7 @@ func NewStubSourceReader(readData map[string][]byte) *StubSourceReader {
 }
 
 // Ensure records that a source was ensured.
-func (s *StubSourceReader) Ensure(_ context.Context, src toolkit.Source) error {
+func (s *StubSourceReader) Ensure(_ context.Context, src *toolkit.Source) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -48,7 +48,7 @@ func (s *StubSourceReader) Ensure(_ context.Context, src toolkit.Source) error {
 }
 
 // Search returns canned search results for a source+query pair.
-func (s *StubSourceReader) Search(_ context.Context, src toolkit.Source, query string, _ int) ([]toolkit.SearchResult, error) {
+func (s *StubSourceReader) Search(_ context.Context, src *toolkit.Source, query string, _ int) ([]toolkit.SearchResult, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -66,7 +66,7 @@ func (s *StubSourceReader) Search(_ context.Context, src toolkit.Source, query s
 }
 
 // Read returns canned data for a source+path pair.
-func (s *StubSourceReader) Read(_ context.Context, src toolkit.Source, path string) ([]byte, error) {
+func (s *StubSourceReader) Read(_ context.Context, src *toolkit.Source, path string) ([]byte, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -84,7 +84,7 @@ func (s *StubSourceReader) Read(_ context.Context, src toolkit.Source, path stri
 }
 
 // List returns canned content entries for a source+root pair.
-func (s *StubSourceReader) List(_ context.Context, src toolkit.Source, root string, _ int) ([]toolkit.ContentEntry, error) {
+func (s *StubSourceReader) List(_ context.Context, src *toolkit.Source, root string, _ int) ([]toolkit.ContentEntry, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

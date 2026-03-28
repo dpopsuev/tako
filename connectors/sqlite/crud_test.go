@@ -30,7 +30,7 @@ func TestInsert_and_QueryOne(t *testing.T) {
 	}
 
 	var name, email string
-	row := db.QueryOne(QueryParams{
+	row := db.QueryOne(&QueryParams{
 		Table:   "users",
 		Columns: []string{"name", "email"},
 		Where:   "id = ?",
@@ -62,7 +62,7 @@ func TestQueryRows(t *testing.T) {
 		}
 	}
 
-	rows, err := db.QueryRows(QueryParams{
+	rows, err := db.QueryRows(&QueryParams{
 		Table:   "users",
 		Columns: []string{"name"},
 		OrderBy: "name",
@@ -103,7 +103,7 @@ func TestQueryRows_WithLimit(t *testing.T) {
 		})
 	}
 
-	rows, err := db.QueryRows(QueryParams{
+	rows, err := db.QueryRows(&QueryParams{
 		Table:   "users",
 		Columns: []string{"name"},
 		OrderBy: "name",
@@ -148,7 +148,7 @@ func TestUpdate(t *testing.T) {
 	}
 
 	var name string
-	db.QueryOne(QueryParams{
+	db.QueryOne(&QueryParams{
 		Table:   "users",
 		Columns: []string{"name"},
 		Where:   "id = ?",
@@ -253,7 +253,7 @@ func TestForeignKey_Insert(t *testing.T) {
 	}
 
 	var title string
-	db.QueryOne(QueryParams{
+	db.QueryOne(&QueryParams{
 		Table:   "posts",
 		Columns: []string{"title"},
 		Where:   "id = ?",

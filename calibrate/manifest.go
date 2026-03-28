@@ -17,7 +17,7 @@ func WriteManifest(dir string, m *Manifest) error {
 	if err != nil {
 		return fmt.Errorf("marshal manifest: %w", err)
 	}
-	return os.WriteFile(filepath.Join(dir, ManifestFile), data, 0644)
+	return os.WriteFile(filepath.Join(dir, ManifestFile), data, 0o644)
 }
 
 // ReadManifest parses manifest.yaml from an fs.FS bundle root.

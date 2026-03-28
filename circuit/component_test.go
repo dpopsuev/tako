@@ -15,7 +15,7 @@ func loadComponentFixture(t *testing.T, name string) string {
 	}
 	dir := t.TempDir()
 	path := filepath.Join(dir, "component.yaml")
-	os.WriteFile(path, data, 0644)
+	os.WriteFile(path, data, 0o644)
 	return path
 }
 

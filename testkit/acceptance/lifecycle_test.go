@@ -65,7 +65,7 @@ func TestLifecycle_MissingTransformerReturnsBuildError(t *testing.T) {
 		Edges:       []circuit.EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 	}
 
-	_, err := engine.BuildGraph(def, engine.GraphRegistries{})
+	_, err := engine.BuildGraph(def, &engine.GraphRegistries{})
 	if err == nil {
 		t.Fatal("expected error for missing transformer, got nil")
 	}

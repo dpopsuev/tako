@@ -33,7 +33,7 @@ func captureCmd(args []string) error {
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level}))
 	_ = logger // available for capturers that need it
 
-	cap, err := calibrate.GetCapturer(*schematic)
+	capturer, err := calibrate.GetCapturer(*schematic)
 	if err != nil {
 		return fmt.Errorf("schematic %q: %w (capturers are registered by schematics at init time; use a folded binary)", *schematic, err)
 	}
@@ -48,7 +48,7 @@ func captureCmd(args []string) error {
 		Overwrite:  *overwrite,
 	}
 
-	if err := cap.Capture(ctx, cfg); err != nil {
+	if err := capturer.Capture(ctx, cfg); err != nil {
 		return fmt.Errorf("capture failed: %w", err)
 	}
 

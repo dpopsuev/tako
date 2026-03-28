@@ -8,6 +8,11 @@ import (
 	"github.com/dpopsuev/origami/format"
 )
 
+const (
+	markPass = "✓"
+	markFail = "✗"
+)
+
 // MetricSection groups metrics under a titled section for report formatting.
 type MetricSection struct {
 	Title   string
@@ -19,11 +24,11 @@ type FormatConfig struct {
 	Title          string
 	Sections       []MetricSection
 	MetricNameFunc func(id string) string
-	ThresholdFunc  func(Metric) string
+	ThresholdFunc  func(*Metric) string
 }
 
 // DefaultThresholdFormat renders the threshold as ">= X.XX".
-func DefaultThresholdFormat(m Metric) string {
+func DefaultThresholdFormat(m *Metric) string {
 	return fmt.Sprintf("≥%.2f", m.Threshold)
 }
 
@@ -43,7 +48,7 @@ var tierTitle = map[CostTier]string{
 // sectionsFromTier auto-generates MetricSections grouped by Tier.
 func sectionsFromTier(ms MetricSet) []MetricSection {
 	byTier := ms.ByTier()
-	var sections []MetricSection
+	sections := make([]MetricSection, 0, len(tierOrder))
 	for _, tier := range tierOrder {
 		metrics, ok := byTier[tier]
 		if !ok || len(metrics) == 0 {
@@ -117,7 +122,7 @@ func FormatReport(report *CalibrationReport, cfg FormatConfig) string {
 				fmt.Sprintf("%.2f", m.Value),
 				m.Detail,
 				passMark,
-				threshFunc(m),
+				threshFunc(&m),
 			)
 		}
 		b.WriteString(tbl.String())
@@ -155,7 +160,7 @@ type ResolutionComparison struct {
 // metrics degrade when moving from isolated to integrated calibration.
 func CompareResolutions(a, b *CalibrationReport) []ResolutionComparison {
 	bMap := b.Metrics.ByID()
-	var comps []ResolutionComparison
+	comps := make([]ResolutionComparison, 0, len(a.Metrics.Metrics))
 	for _, ma := range a.Metrics.Metrics {
 		comp := ResolutionComparison{
 			MetricID:   ma.ID,
@@ -182,13 +187,13 @@ func FormatResolutionComparison(comps []ResolutionComparison, labelA, labelB str
 	tbl.Header("ID", "NAME", labelA, "", labelB, "", "DELTA")
 
 	for _, c := range comps {
-		passA := "✓"
+		passA := markPass
 		if !c.PassA {
-			passA = "✗"
+			passA = markFail
 		}
-		passB := "✓"
+		passB := markPass
 		if !c.PassB {
-			passB = "✗"
+			passB = markFail
 		}
 		tbl.Row(
 			c.MetricID, c.MetricName,

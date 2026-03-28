@@ -59,7 +59,7 @@ func RenderPrompt(tmplContent string, tc TemplateContext) (string, error) {
 }
 
 // MergeVars merges CLI overrides into circuit vars. Overrides take precedence.
-func MergeVars(base map[string]any, overrides map[string]any) map[string]any {
+func MergeVars(base, overrides map[string]any) map[string]any {
 	if base == nil {
 		base = make(map[string]any)
 	}

@@ -8,6 +8,12 @@ import (
 	"os"
 )
 
+const (
+	kindSchematic = "Schematic"
+	kindComponent = "Component"
+	wireFactory   = "factory"
+)
+
 // SocketDef declares a typed dependency slot that a schematic requires.
 // Connectors satisfy sockets by declaring a matching factory in their manifest.
 type SocketDef struct {
@@ -28,8 +34,8 @@ type GivesDef struct {
 
 // WireMode returns the effective wire mode, defaulting to "instance".
 func (g GivesDef) WireMode() string {
-	if g.Wire == "factory" {
-		return "factory"
+	if g.Wire == wireFactory {
+		return wireFactory
 	}
 	return "instance"
 }
@@ -156,7 +162,7 @@ func LoadComponentManifest(path string) (*ComponentManifest, error) {
 	if raw.APIVersion != "origami/v1" {
 		return nil, fmt.Errorf("component manifest %s: apiVersion must be 'origami/v1', got %q", path, raw.APIVersion)
 	}
-	if raw.Kind != "Schematic" && raw.Kind != "Component" {
+	if raw.Kind != kindSchematic && raw.Kind != kindComponent {
 		return nil, fmt.Errorf("component manifest %s: kind must be 'Schematic' or 'Component', got %q", path, raw.Kind)
 	}
 	if raw.Metadata.Namespace == "" {

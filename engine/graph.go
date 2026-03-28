@@ -11,6 +11,12 @@ import (
 	"github.com/dpopsuev/origami/circuit"
 )
 
+const (
+	walkStatusError       = "error"
+	walkStatusDone        = "done"
+	walkStatusInterrupted = "interrupted"
+)
+
 // walkInterrupted is the sentinel error returned by Walk when a node
 // signals an Interrupt. The Run() function checks for this to decide
 // whether to clean up the checkpoint.
@@ -163,7 +169,7 @@ func (g *DefaultGraph) Walk(ctx context.Context, walker circuit.Walker, startNod
 	node, ok := g.nodeIndex[startNode]
 	if !ok {
 		err := fmt.Errorf("%w: start node %q", circuit.ErrNodeNotFound, startNode)
-		emitEvent(obs, circuit.WalkEvent{Type: circuit.EventWalkError, Node: startNode, Error: err})
+		emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkError, Node: startNode, Error: err})
 		return err
 	}
 
@@ -173,13 +179,13 @@ func (g *DefaultGraph) Walk(ctx context.Context, walker circuit.Walker, startNod
 
 	for {
 		if err := ctx.Err(); err != nil {
-			state.Status = "error"
-			emitEvent(obs, circuit.WalkEvent{Type: circuit.EventWalkError, Error: err})
+			state.Status = walkStatusError
+			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkError, Error: err})
 			return err
 		}
 
-		emitEvent(obs, circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: node.Name(), Walker: walkerName})
-		slog.Debug(circuit.LogNodeEnter, circuit.LogKeyComponent, circuit.LogComponentWalk, "node", node.Name(), "walker", walkerName)
+		emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: node.Name(), Walker: walkerName})
+		slog.DebugContext(ctx, circuit.LogNodeEnter, circuit.LogKeyComponent, circuit.LogComponentWalk, "node", node.Name(), "walker", walkerName)
 		nodeStart := time.Now()
 
 		nc := circuit.NodeContext{
@@ -202,11 +208,11 @@ func (g *DefaultGraph) Walk(ctx context.Context, walker circuit.Walker, startNod
 
 		if err != nil {
 			if intr, ok := AsInterrupt(err); ok {
-				state.Status = "interrupted"
+				state.Status = walkStatusInterrupted
 				if intr.Data != nil {
 					state.Context["interrupt_data"] = intr.Data
 				}
-				emitEvent(obs, circuit.WalkEvent{
+				emitEvent(obs, &circuit.WalkEvent{
 					Type:   circuit.EventWalkInterrupted,
 					Node:   node.Name(),
 					Walker: walkerName,
@@ -216,9 +222,9 @@ func (g *DefaultGraph) Walk(ctx context.Context, walker circuit.Walker, startNod
 				})
 				return walkInterrupted
 			}
-			state.Status = "error"
-			emitEvent(obs, circuit.WalkEvent{Type: circuit.EventNodeExit, Node: node.Name(), Walker: walkerName, Elapsed: nodeElapsed, Error: err})
-			emitEvent(obs, circuit.WalkEvent{Type: circuit.EventWalkError, Node: node.Name(), Error: err})
+			state.Status = walkStatusError
+			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventNodeExit, Node: node.Name(), Walker: walkerName, Elapsed: nodeElapsed, Error: err})
+			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkError, Node: node.Name(), Error: err})
 			return fmt.Errorf("node %s: %w", node.Name(), err)
 		}
 
@@ -226,8 +232,8 @@ func (g *DefaultGraph) Walk(ctx context.Context, walker circuit.Walker, startNod
 		if ca, ok := artifact.(circuit.CountableArtifact); ok {
 			exitMeta["snr"] = evidenceSNR(ca.InputCount(), ca.OutputCount())
 		}
-		emitEvent(obs, circuit.WalkEvent{Type: circuit.EventNodeExit, Node: node.Name(), Walker: walkerName, Artifact: artifact, Elapsed: nodeElapsed, Metadata: exitMeta})
-		slog.Debug(circuit.LogNodeExit, circuit.LogKeyComponent, circuit.LogComponentWalk, "node", node.Name(), "elapsed_ms", nodeElapsed.Milliseconds())
+		emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventNodeExit, Node: node.Name(), Walker: walkerName, Artifact: artifact, Elapsed: nodeElapsed, Metadata: exitMeta})
+		slog.DebugContext(ctx, circuit.LogNodeExit, circuit.LogKeyComponent, circuit.LogComponentWalk, "node", node.Name(), "elapsed_ms", nodeElapsed.Milliseconds())
 
 		if artifact != nil && artifact.Confidence() > 0 {
 			state.RecordConfidence(artifact.Confidence())
@@ -240,8 +246,8 @@ func (g *DefaultGraph) Walk(ctx context.Context, walker circuit.Walker, startNod
 
 		edges := g.EdgesFrom(node.Name())
 		if len(edges) == 0 {
-			state.Status = "done"
-			emitEvent(obs, circuit.WalkEvent{Type: circuit.EventWalkComplete, Node: node.Name(), Walker: walkerName})
+			state.Status = walkStatusDone
+			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkComplete, Node: node.Name(), Walker: walkerName})
 			return nil
 		}
 
@@ -251,7 +257,7 @@ func (g *DefaultGraph) Walk(ctx context.Context, walker circuit.Walker, startNod
 		var seqMatch *circuit.Transition
 		var seqEdge circuit.Edge
 		for _, e := range edges {
-			emitEvent(obs, circuit.WalkEvent{Type: circuit.EventEdgeEvaluate, Node: node.Name(), Edge: e.ID(), Walker: walkerName})
+			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventEdgeEvaluate, Node: node.Name(), Edge: e.ID(), Walker: walkerName})
 			t := e.Evaluate(artifact, state)
 			if t == nil {
 				continue
@@ -270,15 +276,15 @@ func (g *DefaultGraph) Walk(ctx context.Context, walker circuit.Walker, startNod
 				return err
 			}
 			if mergeNodeName == g.doneNode {
-				state.Status = "done"
-				emitEvent(obs, circuit.WalkEvent{Type: circuit.EventWalkComplete, Walker: walkerName})
+				state.Status = walkStatusDone
+				emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkComplete, Walker: walkerName})
 				return nil
 			}
 			nextNode, ok := g.nodeIndex[mergeNodeName]
 			if !ok {
-				state.Status = "error"
+				state.Status = walkStatusError
 				err := fmt.Errorf("%w: merge target %q", circuit.ErrNodeNotFound, mergeNodeName)
-				emitEvent(obs, circuit.WalkEvent{Type: circuit.EventWalkError, Error: err, Walker: walkerName})
+				emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkError, Error: err, Walker: walkerName})
 				return err
 			}
 			priorArtifact = artifact
@@ -296,18 +302,18 @@ func (g *DefaultGraph) Walk(ctx context.Context, walker circuit.Walker, startNod
 		}
 
 		if matched == nil {
-			state.Status = "error"
+			state.Status = walkStatusError
 			err := fmt.Errorf("%w: node %q, artifact type %q", circuit.ErrNoEdge, node.Name(), artifact.Type())
-			emitEvent(obs, circuit.WalkEvent{Type: circuit.EventWalkError, Node: node.Name(), Error: err})
+			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkError, Node: node.Name(), Error: err})
 			return err
 		}
 
-		emitEvent(obs, circuit.WalkEvent{Type: circuit.EventTransition, Node: node.Name(), Edge: matchedEdge.ID(), Walker: walkerName})
-		slog.Debug(circuit.LogEdgeTaken, circuit.LogKeyComponent, circuit.LogComponentWalk, circuit.LogKeyFrom, node.Name(), circuit.LogKeyEdge, matchedEdge.ID(), circuit.LogKeyTo, matched.NextNode, circuit.LogKeyLoop, matchedEdge.IsLoop(), circuit.LogKeyShortcut, matchedEdge.IsShortcut())
+		emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventTransition, Node: node.Name(), Edge: matchedEdge.ID(), Walker: walkerName})
+		slog.DebugContext(ctx, circuit.LogEdgeTaken, circuit.LogKeyComponent, circuit.LogComponentWalk, circuit.LogKeyFrom, node.Name(), circuit.LogKeyEdge, matchedEdge.ID(), circuit.LogKeyTo, matched.NextNode, circuit.LogKeyLoop, matchedEdge.IsLoop(), circuit.LogKeyShortcut, matchedEdge.IsShortcut())
 
 		if matchedEdge.IsLoop() {
 			state.IncrementLoop(node.Name())
-			slog.Debug(circuit.LogLoopIncremented, circuit.LogKeyComponent, circuit.LogComponentWalk, circuit.LogKeyNode, node.Name(), circuit.LogKeyCount, state.LoopCounts[node.Name()])
+			slog.DebugContext(ctx, circuit.LogLoopIncremented, circuit.LogKeyComponent, circuit.LogComponentWalk, circuit.LogKeyNode, node.Name(), circuit.LogKeyCount, state.LoopCounts[node.Name()])
 		}
 
 		state.RecordStep(node.Name(), matchedEdge.ID(), matchedEdge.ID(), time.Now().UTC().Format(time.RFC3339))
@@ -320,16 +326,16 @@ func (g *DefaultGraph) Walk(ctx context.Context, walker circuit.Walker, startNod
 		}
 
 		if matched.NextNode == g.doneNode {
-			state.Status = "done"
-			emitEvent(obs, circuit.WalkEvent{Type: circuit.EventWalkComplete, Walker: walkerName})
+			state.Status = walkStatusDone
+			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkComplete, Walker: walkerName})
 			return nil
 		}
 
 		nextNode, ok := g.nodeIndex[matched.NextNode]
 		if !ok {
-			state.Status = "error"
+			state.Status = walkStatusError
 			err := fmt.Errorf("%w: transition target %q from edge %s", circuit.ErrNodeNotFound, matched.NextNode, matchedEdge.ID())
-			emitEvent(obs, circuit.WalkEvent{Type: circuit.EventWalkError, Error: err})
+			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkError, Error: err})
 			return err
 		}
 
@@ -351,7 +357,7 @@ func (g *DefaultGraph) WalkTeam(ctx context.Context, team *Team, startNode strin
 
 	node, ok := g.nodeIndex[startNode]
 	if !ok {
-		emitEvent(obs, circuit.WalkEvent{Type: circuit.EventWalkError, Node: startNode, Error: fmt.Errorf("%w: start node %q", circuit.ErrNodeNotFound, startNode)})
+		emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkError, Node: startNode, Error: fmt.Errorf("%w: start node %q", circuit.ErrNodeNotFound, startNode)})
 		return fmt.Errorf("%w: start node %q", circuit.ErrNodeNotFound, startNode)
 	}
 
@@ -365,13 +371,13 @@ func (g *DefaultGraph) WalkTeam(ctx context.Context, team *Team, startNode strin
 
 	for {
 		if err := ctx.Err(); err != nil {
-			emitEvent(obs, circuit.WalkEvent{Type: circuit.EventWalkError, Error: err})
+			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkError, Error: err})
 			return err
 		}
 
 		if team.MaxSteps > 0 && steps >= team.MaxSteps {
 			err := fmt.Errorf("max steps (%d) exceeded at node %q", team.MaxSteps, node.Name())
-			emitEvent(obs, circuit.WalkEvent{Type: circuit.EventWalkError, Node: node.Name(), Error: err})
+			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkError, Node: node.Name(), Error: err})
 			return err
 		}
 
@@ -388,7 +394,7 @@ func (g *DefaultGraph) WalkTeam(ctx context.Context, team *Team, startNode strin
 			if as, ok := team.Scheduler.(*AffinityScheduler); ok {
 				meta["mismatch"] = as.LastMismatch()
 			}
-			emitEvent(obs, circuit.WalkEvent{
+			emitEvent(obs, &circuit.WalkEvent{
 				Type:     circuit.EventWalkerSwitch,
 				Node:     node.Name(),
 				Walker:   walker.Identity().PersonaName,
@@ -396,7 +402,7 @@ func (g *DefaultGraph) WalkTeam(ctx context.Context, team *Team, startNode strin
 			})
 		}
 
-		emitEvent(obs, circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: node.Name(), Walker: walker.Identity().PersonaName})
+		emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: node.Name(), Walker: walker.Identity().PersonaName})
 		nodeStart := time.Now()
 
 		state := walker.State()
@@ -421,15 +427,15 @@ func (g *DefaultGraph) WalkTeam(ctx context.Context, team *Team, startNode strin
 		nodeElapsed := time.Since(nodeStart)
 
 		if err != nil {
-			state.Status = "error"
-			emitEvent(obs, circuit.WalkEvent{
+			state.Status = walkStatusError
+			emitEvent(obs, &circuit.WalkEvent{
 				Type:    circuit.EventNodeExit,
 				Node:    node.Name(),
 				Walker:  walker.Identity().PersonaName,
 				Elapsed: nodeElapsed,
 				Error:   err,
 			})
-			emitEvent(obs, circuit.WalkEvent{Type: circuit.EventWalkError, Node: node.Name(), Error: err})
+			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkError, Node: node.Name(), Error: err})
 			return fmt.Errorf("node %s: %w", node.Name(), err)
 		}
 
@@ -437,7 +443,7 @@ func (g *DefaultGraph) WalkTeam(ctx context.Context, team *Team, startNode strin
 		if ca, ok := artifact.(circuit.CountableArtifact); ok {
 			teamExitMeta["snr"] = evidenceSNR(ca.InputCount(), ca.OutputCount())
 		}
-		emitEvent(obs, circuit.WalkEvent{
+		emitEvent(obs, &circuit.WalkEvent{
 			Type:     circuit.EventNodeExit,
 			Node:     node.Name(),
 			Walker:   walker.Identity().PersonaName,
@@ -452,8 +458,8 @@ func (g *DefaultGraph) WalkTeam(ctx context.Context, team *Team, startNode strin
 
 		edges := g.EdgesFrom(node.Name())
 		if len(edges) == 0 {
-			state.Status = "done"
-			emitEvent(obs, circuit.WalkEvent{Type: circuit.EventWalkComplete, Node: node.Name(), Walker: walker.Identity().PersonaName})
+			state.Status = walkStatusDone
+			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkComplete, Node: node.Name(), Walker: walker.Identity().PersonaName})
 			return nil
 		}
 
@@ -461,7 +467,7 @@ func (g *DefaultGraph) WalkTeam(ctx context.Context, team *Team, startNode strin
 		var matchedEdge circuit.Edge
 		for _, e := range edges {
 			wName := walker.Identity().PersonaName
-			emitEvent(obs, circuit.WalkEvent{Type: circuit.EventEdgeEvaluate, Node: node.Name(), Edge: e.ID(), Walker: wName})
+			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventEdgeEvaluate, Node: node.Name(), Edge: e.ID(), Walker: wName})
 			t := e.Evaluate(artifact, state)
 			if t != nil {
 				matched = t
@@ -471,13 +477,13 @@ func (g *DefaultGraph) WalkTeam(ctx context.Context, team *Team, startNode strin
 		}
 
 		if matched == nil {
-			state.Status = "error"
+			state.Status = walkStatusError
 			err := fmt.Errorf("%w: node %q, artifact type %q", circuit.ErrNoEdge, node.Name(), artifact.Type())
-			emitEvent(obs, circuit.WalkEvent{Type: circuit.EventWalkError, Node: node.Name(), Error: err, Walker: walker.Identity().PersonaName})
+			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkError, Node: node.Name(), Error: err, Walker: walker.Identity().PersonaName})
 			return err
 		}
 
-		emitEvent(obs, circuit.WalkEvent{Type: circuit.EventTransition, Node: node.Name(), Edge: matchedEdge.ID(), Walker: walker.Identity().PersonaName})
+		emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventTransition, Node: node.Name(), Edge: matchedEdge.ID(), Walker: walker.Identity().PersonaName})
 
 		if matchedEdge.IsLoop() {
 			state.IncrementLoop(node.Name())
@@ -493,16 +499,16 @@ func (g *DefaultGraph) WalkTeam(ctx context.Context, team *Team, startNode strin
 		}
 
 		if matched.NextNode == g.doneNode {
-			state.Status = "done"
-			emitEvent(obs, circuit.WalkEvent{Type: circuit.EventWalkComplete, Walker: walker.Identity().PersonaName})
+			state.Status = walkStatusDone
+			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkComplete, Walker: walker.Identity().PersonaName})
 			return nil
 		}
 
 		nextNode, ok := g.nodeIndex[matched.NextNode]
 		if !ok {
-			state.Status = "error"
+			state.Status = walkStatusError
 			err := fmt.Errorf("%w: transition target %q from edge %s", circuit.ErrNodeNotFound, matched.NextNode, matchedEdge.ID())
-			emitEvent(obs, circuit.WalkEvent{Type: circuit.EventWalkError, Error: err})
+			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkError, Error: err})
 			return err
 		}
 
@@ -566,7 +572,7 @@ func (g *DefaultGraph) nodeCtx(parent context.Context, nodeName string) (context
 func (g *DefaultGraph) walkDelegate(ctx context.Context, walker circuit.Walker, obs circuit.WalkObserver, dn DelegateNode, nc circuit.NodeContext) (*DelegateArtifact, error) {
 	circuitType := delegateCircuitType(dn)
 
-	emitEvent(obs, circuit.WalkEvent{
+	emitEvent(obs, &circuit.WalkEvent{
 		Type:   circuit.EventDelegateStart,
 		Node:   dn.Name(),
 		Walker: walker.Identity().PersonaName,
@@ -574,7 +580,7 @@ func (g *DefaultGraph) walkDelegate(ctx context.Context, walker circuit.Walker, 
 			circuit.ExtraKeyCircuitType: circuitType,
 		},
 	})
-	slog.Debug(circuit.LogDelegateStart, circuit.LogKeyComponent, circuit.LogComponentWalk, circuit.LogKeyNode, dn.Name(), circuit.LogKeyCircuit, circuitType)
+	slog.DebugContext(ctx, circuit.LogDelegateStart, circuit.LogKeyComponent, circuit.LogComponentWalk, circuit.LogKeyNode, dn.Name(), circuit.LogKeyCircuit, circuitType)
 
 	circuitDef, err := dn.GenerateCircuit(ctx, nc)
 	if err != nil {
@@ -586,9 +592,9 @@ func (g *DefaultGraph) walkDelegate(ctx context.Context, walker circuit.Walker, 
 		circuitType = circuitDef.Circuit
 	}
 
-	var reg GraphRegistries
-	if g.registries != nil {
-		reg = *g.registries
+	reg := g.registries
+	if reg == nil {
+		reg = &GraphRegistries{}
 	}
 
 	runner, err := NewRunnerWith(circuitDef, reg)
@@ -597,7 +603,8 @@ func (g *DefaultGraph) walkDelegate(ctx context.Context, walker circuit.Walker, 
 	}
 
 	subWalker := circuit.NewProcessWalker(walker.State().ID + ":delegate:" + dn.Name())
-	subWalker.SetIdentity(walker.Identity())
+	id := walker.Identity()
+	subWalker.SetIdentity(&id)
 
 	for k, v := range walker.State().Context {
 		subWalker.State().Context[k] = v
@@ -628,7 +635,7 @@ func (g *DefaultGraph) walkDelegate(ctx context.Context, walker circuit.Walker, 
 		outerState.Outputs["delegate:"+dn.Name()+":"+innerName] = art
 	}
 
-	emitEvent(obs, circuit.WalkEvent{
+	emitEvent(obs, &circuit.WalkEvent{
 		Type:     circuit.EventDelegateEnd,
 		Node:     dn.Name(),
 		Walker:   walker.Identity().PersonaName,
@@ -653,11 +660,8 @@ func (g *DefaultGraph) walkDelegate(ctx context.Context, walker circuit.Walker, 
 // dslDelegateNode it is only determined after GenerateCircuit runs, so
 // this function returns "" in that case (the caller backfills after generation).
 func delegateCircuitType(dn DelegateNode) string {
-	switch n := dn.(type) {
-	case *circuitRefNode:
-		if n.circuitDef != nil {
-			return n.circuitDef.Circuit
-		}
+	if n, ok := dn.(*circuitRefNode); ok && n.circuitDef != nil {
+		return n.circuitDef.Circuit
 	}
 	return ""
 }
@@ -669,17 +673,18 @@ type delegateObserver struct {
 	prefix string
 }
 
-func (d *delegateObserver) OnEvent(e circuit.WalkEvent) {
+func (d *delegateObserver) OnEvent(e *circuit.WalkEvent) {
 	if d.inner == nil {
 		return
 	}
-	if e.Node != "" {
-		e.Node = d.prefix + e.Node
+	prefixed := *e
+	if prefixed.Node != "" {
+		prefixed.Node = d.prefix + prefixed.Node
 	}
-	if e.Edge != "" {
-		e.Edge = d.prefix + e.Edge
+	if prefixed.Edge != "" {
+		prefixed.Edge = d.prefix + prefixed.Edge
 	}
-	d.inner.OnEvent(e)
+	d.inner.OnEvent(&prefixed)
 }
 
 // evidenceSNR computes signal-to-noise ratio: outputItems / inputItems.
@@ -692,7 +697,7 @@ func evidenceSNR(inputItems, outputItems int) float64 {
 }
 
 // emitEvent is a helper to safely emit an event to a possibly-nil observer.
-func emitEvent(obs circuit.WalkObserver, e circuit.WalkEvent) {
+func emitEvent(obs circuit.WalkObserver, e *circuit.WalkEvent) {
 	if obs != nil {
 		obs.OnEvent(e)
 	}

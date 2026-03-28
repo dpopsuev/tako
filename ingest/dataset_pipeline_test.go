@@ -107,7 +107,7 @@ func TestDatasetPipeline_RunSync(t *testing.T) {
 
 	promoter := &stubPromoter{}
 
-	result, err := ingest.RunPipeline(context.Background(), manifest, ingest.PipelineOpts{
+	result, err := ingest.RunPipeline(context.Background(), manifest, &ingest.PipelineOpts{
 		Source:    src,
 		Matcher:   &stubMatcher{},
 		Verifiers: []ingest.Verifier{&stubVerifier{name: "jira"}, &stubVerifier{name: "github"}},
@@ -145,7 +145,7 @@ func TestDatasetPipeline_VerifierRejects(t *testing.T) {
 	rejectVerifier := &rejectVerifier{}
 	promoter := &stubPromoter{}
 
-	result, err := ingest.RunPipeline(context.Background(), manifest, ingest.PipelineOpts{
+	result, err := ingest.RunPipeline(context.Background(), manifest, &ingest.PipelineOpts{
 		Source:    &stubSource{records: []ingest.Record{{ID: "F1", DedupKey: "k1", Fields: map[string]any{}}}},
 		Matcher:   &stubMatcher{},
 		Verifiers: []ingest.Verifier{rejectVerifier},

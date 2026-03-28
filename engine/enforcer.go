@@ -63,7 +63,7 @@ type artifactCaptureObserver struct {
 	inner         circuit.WalkObserver
 }
 
-func (o *artifactCaptureObserver) OnEvent(e circuit.WalkEvent) {
+func (o *artifactCaptureObserver) OnEvent(e *circuit.WalkEvent) {
 	if e.Type == circuit.EventNodeExit && e.Artifact != nil {
 		if len(o.observedNodes) == 0 || o.observedNodes[e.Node] {
 			o.store.Set(e.Node, e.Artifact)
@@ -77,7 +77,7 @@ func (o *artifactCaptureObserver) OnEvent(e circuit.WalkEvent) {
 // ParallelEnforcerConfig configures a parallel enforcement circuit.
 type ParallelEnforcerConfig struct {
 	EnforcerDef   *circuit.CircuitDef
-	Registries    GraphRegistries
+	Registries    *GraphRegistries
 	ObservedNodes []string
 	CheckInterval time.Duration
 	Router        *FindingRouter
@@ -88,8 +88,8 @@ type ParallelEnforcerConfig struct {
 func RunWithEnforcer(
 	ctx context.Context,
 	workDef *circuit.CircuitDef,
-	workReg GraphRegistries,
-	enforcerCfg ParallelEnforcerConfig,
+	workReg *GraphRegistries,
+	enforcerCfg *ParallelEnforcerConfig,
 ) ([]circuit.Finding, error) {
 
 	router := enforcerCfg.Router

@@ -5,13 +5,21 @@ import (
 	"strings"
 )
 
+const (
+	ruleExpectedPath    = "S35/expected-path-node-names"
+	ruleHandlerResolve  = "S36/circuit-handler-resolution"
+	ruleDeadNode        = "S37/dead-node-detection"
+	ruleMediatorBackend = "S38/mediator-backend-coverage"
+	rulePortConsistency = "S39/port-type-consistency"
+)
+
 // --- S35: expected-path-node-names ---
 
 // ExpectedPathNodeNames checks that expected_path elements in scenario files
 // are valid node names from the circuit definition.
 type ExpectedPathNodeNames struct{}
 
-func (r *ExpectedPathNodeNames) ID() string        { return "S35/expected-path-node-names" }
+func (r *ExpectedPathNodeNames) ID() string        { return ruleExpectedPath }
 func (r *ExpectedPathNodeNames) Description() string { return "expected_path elements must be valid circuit node names" }
 func (r *ExpectedPathNodeNames) Severity() Severity { return SeverityError }
 func (r *ExpectedPathNodeNames) Tags() []string     { return []string{"scenario", "cross-ref"} }
@@ -23,8 +31,8 @@ func (r *ExpectedPathNodeNames) Check(ctx *LintContext) []Finding {
 
 	// Collect valid node names from the circuit definition.
 	nodeNames := make(map[string]bool, len(ctx.Def.Nodes))
-	for _, n := range ctx.Def.Nodes {
-		nodeNames[n.Name] = true
+	for i := range ctx.Def.Nodes {
+		nodeNames[ctx.Def.Nodes[i].Name] = true
 	}
 	// Include start and done as valid names.
 	if ctx.Def.Start != "" {
@@ -88,7 +96,7 @@ func extractExpectedPaths(doc map[string]any) []string {
 // a resolvable circuit file.
 type CircuitHandlerResolution struct{}
 
-func (r *CircuitHandlerResolution) ID() string        { return "S36/circuit-handler-resolution" }
+func (r *CircuitHandlerResolution) ID() string        { return ruleHandlerResolve }
 func (r *CircuitHandlerResolution) Description() string { return "handler_type=circuit handler must resolve to a known circuit file" }
 func (r *CircuitHandlerResolution) Severity() Severity { return SeverityError }
 func (r *CircuitHandlerResolution) Tags() []string     { return []string{"structural", "cross-ref"} }
@@ -113,10 +121,11 @@ func (r *CircuitHandlerResolution) Check(ctx *LintContext) []Finding {
 		}
 	}
 
-	var findings []Finding
-	for _, nd := range ctx.Def.Nodes {
+	findings := make([]Finding, 0, len(ctx.Def.Nodes))
+	for i := range ctx.Def.Nodes {
+		nd := &ctx.Def.Nodes[i]
 		ht := nd.EffectiveHandlerType(ctx.Def.HandlerType)
-		if ht != "circuit" {
+		if ht != kindCircuit {
 			continue
 		}
 		handler := nd.Handler
@@ -155,7 +164,7 @@ func (r *CircuitHandlerResolution) Check(ctx *LintContext) []Finding {
 // appear in any scenario expected_path (untested).
 type DeadNodeDetection struct{}
 
-func (r *DeadNodeDetection) ID() string        { return "S37/dead-node-detection" }
+func (r *DeadNodeDetection) ID() string        { return ruleDeadNode }
 func (r *DeadNodeDetection) Description() string { return "reachable nodes not covered by any scenario expected_path are untested" }
 func (r *DeadNodeDetection) Severity() Severity { return SeverityWarning }
 func (r *DeadNodeDetection) Tags() []string     { return []string{"scenario", "cross-ref"} }
@@ -167,9 +176,9 @@ func (r *DeadNodeDetection) Check(ctx *LintContext) []Finding {
 
 	// Collect all nodes referenced in edges (reachable graph nodes).
 	edgeNodes := make(map[string]bool)
-	for _, e := range ctx.Def.Edges {
-		edgeNodes[e.From] = true
-		edgeNodes[e.To] = true
+	for i := range ctx.Def.Edges {
+		edgeNodes[ctx.Def.Edges[i].From] = true
+		edgeNodes[ctx.Def.Edges[i].To] = true
 	}
 
 	// Collect all nodes from all scenario expected_path arrays.
@@ -196,23 +205,23 @@ func (r *DeadNodeDetection) Check(ctx *LintContext) []Finding {
 		excluded[ctx.Def.Done] = true
 	}
 
-	var findings []Finding
-	for _, nd := range ctx.Def.Nodes {
-		if excluded[nd.Name] {
+	findings := make([]Finding, 0, len(ctx.Def.Nodes))
+	for i := range ctx.Def.Nodes {
+		if excluded[ctx.Def.Nodes[i].Name] {
 			continue
 		}
-		if !edgeNodes[nd.Name] {
+		if !edgeNodes[ctx.Def.Nodes[i].Name] {
 			continue // not reachable via edges — already caught by G1/orphan-node
 		}
-		if testedNodes[nd.Name] {
+		if testedNodes[ctx.Def.Nodes[i].Name] {
 			continue // covered by at least one scenario
 		}
 		findings = append(findings, Finding{
 			RuleID:   r.ID(),
 			Severity: r.Severity(),
-			Message:  fmt.Sprintf("node %q is reachable via edges but never appears in any scenario expected_path", nd.Name),
+			Message:  fmt.Sprintf("node %q is reachable via edges but never appears in any scenario expected_path", ctx.Def.Nodes[i].Name),
 			File:     ctx.File,
-			Line:     ctx.NodeLine(nd.Name),
+			Line:     ctx.NodeLine(ctx.Def.Nodes[i].Name),
 		})
 	}
 	return findings
@@ -225,7 +234,7 @@ func (r *DeadNodeDetection) Check(ctx *LintContext) []Finding {
 // on a mediator endpoint at runtime.
 type MediatorBackendCoverage struct{}
 
-func (r *MediatorBackendCoverage) ID() string        { return "S38/mediator-backend-coverage" }
+func (r *MediatorBackendCoverage) ID() string        { return ruleMediatorBackend }
 func (r *MediatorBackendCoverage) Description() string { return "handler_type=circuit nodes should have a local circuit or registered resolver" }
 func (r *MediatorBackendCoverage) Severity() Severity { return SeverityWarning }
 func (r *MediatorBackendCoverage) Tags() []string     { return []string{"structural"} }
@@ -256,10 +265,11 @@ func (r *MediatorBackendCoverage) Check(ctx *LintContext) []Finding {
 
 	hasMediatorEndpoint := ctx.Registries != nil && ctx.Registries.MediatorEndpoint != ""
 
-	var findings []Finding
-	for _, nd := range ctx.Def.Nodes {
+	findings := make([]Finding, 0, len(ctx.Def.Nodes))
+	for i := range ctx.Def.Nodes {
+		nd := &ctx.Def.Nodes[i]
 		ht := nd.EffectiveHandlerType(ctx.Def.HandlerType)
-		if ht != "circuit" {
+		if ht != kindCircuit {
 			continue
 		}
 		handler := nd.Handler
@@ -293,7 +303,7 @@ func (r *MediatorBackendCoverage) Check(ctx *LintContext) []Finding {
 // PortTypeConsistency checks that wiring entries connect ports with matching types.
 type PortTypeConsistency struct{}
 
-func (r *PortTypeConsistency) ID() string        { return "S39/port-type-consistency" }
+func (r *PortTypeConsistency) ID() string        { return rulePortConsistency }
 func (r *PortTypeConsistency) Description() string { return "wiring from/to ports must have matching types" }
 func (r *PortTypeConsistency) Severity() Severity { return SeverityWarning }
 func (r *PortTypeConsistency) Tags() []string     { return []string{"structural"} }
@@ -373,12 +383,7 @@ func parseWiringRef(ref string) (circuit, direction, port string) {
 	}
 	circuit = ref[:dotIdx]
 	rest := ref[dotIdx+1:]
-	colonIdx := strings.Index(rest, ":")
-	if colonIdx < 0 {
-		return circuit, rest, ""
-	}
-	direction = rest[:colonIdx]
-	port = rest[colonIdx+1:]
+	direction, port, _ = strings.Cut(rest, ":")
 	return circuit, direction, port
 }
 

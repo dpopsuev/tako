@@ -99,12 +99,12 @@ func classifyPosition(name, start, done string, inputs, outputs int) Position {
 	return PositionIntermediate
 }
 
-func cardinalityRange(min, max int) string {
-	if min == max {
-		return fmt.Sprintf("exactly %d", min)
+func cardinalityRange(lo, hi int) string {
+	if lo == hi {
+		return fmt.Sprintf("exactly %d", lo)
 	}
-	if max < 0 {
-		return fmt.Sprintf(">= %d", min)
+	if hi < 0 {
+		return fmt.Sprintf(">= %d", lo)
 	}
-	return fmt.Sprintf("%d..%d", min, max)
+	return fmt.Sprintf("%d..%d", lo, hi)
 }

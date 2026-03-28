@@ -30,10 +30,16 @@ func main() {
 		log.Fatalf("create LLM client: %v", err)
 	}
 
+	if err := run(llm, *gatewayEndpoint, *scenario, *backend); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run(llm LLMClient, gatewayEndpoint, scenario, backend string) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	transport := &sdkmcp.StreamableClientTransport{Endpoint: *gatewayEndpoint}
+	transport := &sdkmcp.StreamableClientTransport{Endpoint: gatewayEndpoint}
 	client := sdkmcp.NewClient(
 		&sdkmcp.Implementation{Name: "origami-llm-worker", Version: "v0.1.0"},
 		nil,
@@ -41,26 +47,26 @@ func main() {
 
 	session, err := client.Connect(ctx, transport, nil)
 	if err != nil {
-		log.Fatalf("connect to gateway: %v", err)
+		return fmt.Errorf("connect to gateway: %w", err)
 	}
 	defer session.Close()
-	log.Printf("connected to gateway at %s", *gatewayEndpoint)
+	log.Printf("connected to gateway at %s", gatewayEndpoint)
 
 	startResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
 		Name: "circuit",
 		Arguments: mustMarshal(map[string]any{
 			"action": "start",
 			"extra": map[string]any{
-				"scenario": *scenario,
-				"backend":  *backend,
+				"scenario": scenario,
+				"backend":  backend,
 			},
 		}),
 	})
 	if err != nil {
-		log.Fatalf("circuit/start: %v", err)
+		return fmt.Errorf("circuit/start: %w", err)
 	}
 	if startResult.IsError {
-		log.Fatalf("circuit/start error: %s", textContent(startResult))
+		return fmt.Errorf("circuit/start error: %s", textContent(startResult))
 	}
 	log.Printf("circuit started: %s", textContent(startResult))
 
@@ -70,7 +76,7 @@ func main() {
 			Arguments: mustMarshal(map[string]any{"action": "step"}),
 		})
 		if err != nil {
-			log.Fatalf("circuit/step: %v", err)
+			return fmt.Errorf("circuit/step: %w", err)
 		}
 
 		nextText := textContent(nextResult)
@@ -81,7 +87,7 @@ func main() {
 		}
 		if err := json.Unmarshal([]byte(nextText), &step); err != nil {
 			log.Printf("get_next_step response: %s", nextText)
-			log.Fatalf("parse get_next_step: %v", err)
+			return fmt.Errorf("parse get_next_step: %w", err)
 		}
 
 		if step.Done {
@@ -95,7 +101,7 @@ func main() {
 			{Role: "user", Content: step.Prompt},
 		})
 		if err != nil {
-			log.Fatalf("LLM chat for step %s: %v", step.Step, err)
+			return fmt.Errorf("LLM chat for step %s: %w", step.Step, err)
 		}
 
 		submitResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
@@ -107,7 +113,7 @@ func main() {
 			}),
 		})
 		if err != nil {
-			log.Fatalf("circuit/submit %s: %v", step.Step, err)
+			return fmt.Errorf("circuit/submit %s: %w", step.Step, err)
 		}
 		if submitResult.IsError {
 			log.Printf("circuit/submit %s warning: %s", step.Step, textContent(submitResult))
@@ -121,9 +127,10 @@ func main() {
 		Arguments: mustMarshal(map[string]any{"action": "report"}),
 	})
 	if err != nil {
-		log.Fatalf("circuit/report: %v", err)
+		return fmt.Errorf("circuit/report: %w", err)
 	}
 	fmt.Println(textContent(reportResult))
+	return nil
 }
 
 func textContent(result *sdkmcp.CallToolResult) string {

@@ -81,7 +81,7 @@ func Run(ctx context.Context, cfg Config, src Source, m Matcher, dedup DedupStor
 		return summary, nil
 	}
 
-	var candidates []Candidate
+	candidates := make([]Candidate, 0, len(matched))
 	now := time.Now()
 
 	for i, rec := range matched {

@@ -28,7 +28,7 @@ type PipelineResult struct {
 
 // RunPipeline executes the full dataset pipeline:
 // discover → match → dedup → verify → promote.
-func RunPipeline(ctx context.Context, manifest *DatasetManifest, opts PipelineOpts) (*PipelineResult, error) {
+func RunPipeline(ctx context.Context, manifest *DatasetManifest, opts *PipelineOpts) (*PipelineResult, error) {
 	if opts.Source == nil {
 		return nil, fmt.Errorf("pipeline: Source is required")
 	}
@@ -67,7 +67,7 @@ func RunPipeline(ctx context.Context, manifest *DatasetManifest, opts PipelineOp
 		Duplicates: summary.Duplicates,
 	}
 
-	logger.Info("ingest complete",
+	logger.InfoContext(ctx, "ingest complete",
 		"discovered", result.Discovered,
 		"matched", result.Matched,
 		"duplicates", result.Duplicates)
@@ -83,28 +83,29 @@ func RunPipeline(ctx context.Context, manifest *DatasetManifest, opts PipelineOp
 
 	// Step 2: Verify — check each candidate against external systems.
 	var verified []Candidate
-	for _, cand := range candidates {
+	for ci := range candidates {
+		cand := &candidates[ci]
 		allPassed := true
 		for _, v := range opts.Verifiers {
 			vr, verifyErr := v.Verify(ctx, cand.Record)
 			if verifyErr != nil {
-				logger.Warn("verifier failed", "verifier", v.Name(), "candidate", cand.ID, "error", verifyErr)
+				logger.WarnContext(ctx, "verifier failed", "verifier", v.Name(), "candidate", cand.ID, "error", verifyErr)
 				allPassed = false
 				break
 			}
 			if !vr.Verified {
-				logger.Info("candidate not verified", "verifier", v.Name(), "candidate", cand.ID, "reason", vr.Reason)
+				logger.InfoContext(ctx, "candidate not verified", "verifier", v.Name(), "candidate", cand.ID, "reason", vr.Reason)
 				allPassed = false
 				break
 			}
 		}
 		if allPassed {
-			verified = append(verified, cand)
+			verified = append(verified, *cand)
 		}
 	}
 	result.Verified = len(verified)
 
-	logger.Info("verification complete", "verified", result.Verified, "total", len(candidates))
+	logger.InfoContext(ctx, "verification complete", "verified", result.Verified, "total", len(candidates))
 
 	// Step 3: Promote — append verified candidates to scenario YAML.
 	if opts.Promoter != nil && len(verified) > 0 && manifest.Output.Scenario != "" {
@@ -113,7 +114,7 @@ func RunPipeline(ctx context.Context, manifest *DatasetManifest, opts PipelineOp
 			return result, fmt.Errorf("pipeline promote: %w", promoteErr)
 		}
 		result.Promoted = promoted
-		logger.Info("promotion complete", "promoted", result.Promoted)
+		logger.InfoContext(ctx, "promotion complete", "promoted", result.Promoted)
 	}
 
 	return result, nil

@@ -245,7 +245,7 @@ func circuitsFromDir(fsys fs.FS) []CircuitInfo {
 	if err != nil {
 		return nil
 	}
-	var circuits []CircuitInfo
+	circuits := make([]CircuitInfo, 0, len(entries))
 	for _, e := range entries {
 		if e.IsDir() || !strings.HasSuffix(e.Name(), ".yaml") {
 			continue

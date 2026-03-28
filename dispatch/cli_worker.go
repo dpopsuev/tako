@@ -135,11 +135,11 @@ func (d *CLIWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 				agentport.MetaKeyWorkerID: workerID,
 				agentport.MetaKeyError:    err.Error(),
 			})
-			d.log.Error("CLI execution failed",
-				slog.String("worker_id", workerID),
-				slog.String("case_id", dc.CaseID),
-				slog.String("step", dc.Step),
-				slog.String("error", err.Error()),
+			d.log.ErrorContext(ctx, "CLI execution failed",
+				"worker_id", workerID,
+				"case_id", dc.CaseID,
+				"step", dc.Step,
+				"error", err.Error(),
 			)
 			continue
 		}
@@ -157,15 +157,16 @@ func (d *CLIWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 			agentport.MetaKeyBytes:    fmt.Sprintf("%d", len(artifact)),
 		})
 
-		d.log.Info("step complete",
-			slog.String("worker_id", workerID),
-			slog.String("case_id", dc.CaseID),
-			slog.String("step", dc.Step),
-			slog.Int("bytes", len(artifact)),
+		d.log.InfoContext(ctx, "step complete",
+			"worker_id", workerID,
+			"case_id", dc.CaseID,
+			"step", dc.Step,
+			"bytes", len(artifact),
 		)
 	}
 }
 
+//nolint:gocritic // hugeParam: mirrors Dispatcher interface signature
 func (d *CLIWorkerDispatcher) execCLI(ctx context.Context, dc agentport.Context) ([]byte, error) {
 	prompt, err := os.ReadFile(dc.PromptPath)
 	if err != nil {
@@ -199,11 +200,11 @@ func (d *CLIWorkerDispatcher) execCLI(ctx context.Context, dc agentport.Context)
 		return nil, fmt.Errorf("command produced no output (stderr: %s)", stderr.String())
 	}
 
-	d.log.Debug("CLI exec",
-		slog.String("case_id", dc.CaseID),
-		slog.String("step", dc.Step),
-		slog.Int("bytes", len(output)),
-		slog.Duration("elapsed", time.Since(start)),
+	d.log.DebugContext(ctx, "CLI exec",
+		"case_id", dc.CaseID,
+		"step", dc.Step,
+		"bytes", len(output),
+		"elapsed", time.Since(start),
 	)
 
 	return output, nil

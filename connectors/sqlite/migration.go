@@ -84,7 +84,7 @@ func (m *Migration) GenerateSQL() string {
 func generateOpSQL(op Operation) string {
 	switch {
 	case op.CreateTable != nil:
-		return generateTableDDL(*op.CreateTable)
+		return generateTableDDL(op.CreateTable)
 	case op.AddColumn != nil:
 		ac := op.AddColumn
 		return fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s;\n",

@@ -3,6 +3,7 @@ package engine
 // Category: Execution — narration observer.
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"sync"
@@ -70,7 +71,7 @@ type NarrationObserver struct {
 func NewNarrationObserver(opts ...NarrationOption) *NarrationObserver {
 	n := &NarrationObserver{
 		vocab:          circuit.VocabularyFunc(func(code string) string { return code }),
-		sink:           func(line string) { slog.Info(line) },
+		sink:           func(line string) { slog.InfoContext(context.Background(), line) },
 		milestoneEvery: 5,
 		showETA:        true,
 	}
@@ -97,7 +98,7 @@ func (n *NarrationObserver) Progress() Progress {
 }
 
 // OnEvent implements WalkObserver.
-func (n *NarrationObserver) OnEvent(e circuit.WalkEvent) {
+func (n *NarrationObserver) OnEvent(e *circuit.WalkEvent) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
 
@@ -120,12 +121,13 @@ func (n *NarrationObserver) OnEvent(e circuit.WalkEvent) {
 	case circuit.EventNodeExit:
 		n.nodesVisited++
 		name := n.vocab.Name(e.Node)
-		if e.Error != nil {
+		switch {
+		case e.Error != nil:
 			n.errors++
 			n.emit(fmt.Sprintf("Failed at %s: %v", name, e.Error))
-		} else if e.Elapsed > 0 {
+		case e.Elapsed > 0:
 			n.emit(fmt.Sprintf("Completed %s (%s)", name, FmtNarrateDuration(e.Elapsed)))
-		} else {
+		default:
 			n.emit(fmt.Sprintf("Completed %s", name))
 		}
 		if n.milestoneEvery > 0 && n.nodesVisited%n.milestoneEvery == 0 {

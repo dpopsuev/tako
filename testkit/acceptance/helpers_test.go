@@ -58,8 +58,8 @@ func standardTransformers() engine.TransformerRegistry {
 }
 
 // standardRegistries returns GraphRegistries with standard test transformers.
-func standardRegistries() engine.GraphRegistries {
-	return engine.GraphRegistries{
+func standardRegistries() *engine.GraphRegistries {
+	return &engine.GraphRegistries{
 		Transformers: standardTransformers(),
 	}
 }

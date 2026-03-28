@@ -23,13 +23,13 @@ func computeDiagnostics(doc *document) []protocol.Diagnostic {
 	}
 
 	diags := make([]protocol.Diagnostic, 0, len(findings))
-	for _, f := range findings {
-		diags = append(diags, findingToDiagnostic(f))
+	for i := range findings {
+		diags = append(diags, findingToDiagnostic(&findings[i]))
 	}
 	return diags
 }
 
-func findingToDiagnostic(f lint.Finding) protocol.Diagnostic {
+func findingToDiagnostic(f *lint.Finding) protocol.Diagnostic {
 	line := f.Line
 	if line > 0 {
 		line--

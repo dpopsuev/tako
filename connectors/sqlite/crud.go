@@ -55,7 +55,7 @@ type QueryParams struct {
 
 // QueryRows executes a parameterized SELECT and returns the rows.
 // Caller is responsible for closing the rows.
-func (d *DB) QueryRows(p QueryParams) (*sql.Rows, error) {
+func (d *DB) QueryRows(p *QueryParams) (*sql.Rows, error) {
 	if p.Table == "" {
 		return nil, fmt.Errorf("query: table name is required")
 	}
@@ -80,7 +80,7 @@ func (d *DB) QueryRows(p QueryParams) (*sql.Rows, error) {
 }
 
 // QueryRow executes a parameterized SELECT expecting a single row.
-func (d *DB) QueryOne(p QueryParams) *sql.Row {
+func (d *DB) QueryOne(p *QueryParams) *sql.Row {
 	p.Limit = 1
 	cols := "*"
 	if len(p.Columns) > 0 {
@@ -117,8 +117,8 @@ func (d *DB) Update(p UpdateParams) (int64, error) {
 		return 0, fmt.Errorf("update %s: set columns are required", p.Table)
 	}
 
-	var setClauses []string
-	var args []any
+	setClauses := make([]string, 0, len(p.Set))
+	args := make([]any, 0, len(p.Set)+len(p.Args))
 	for col, val := range p.Set {
 		setClauses = append(setClauses, col+" = ?")
 		args = append(args, val)

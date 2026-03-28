@@ -80,7 +80,7 @@ type stubWalker struct {
 }
 
 func (w *stubWalker) Identity() circuit.AgentIdentity     { return w.identity }
-func (w *stubWalker) SetIdentity(id circuit.AgentIdentity) { w.identity = id }
+func (w *stubWalker) SetIdentity(id *circuit.AgentIdentity) { w.identity = *id }
 func (w *stubWalker) State() *circuit.WalkerState          { return w.state }
 func (w *stubWalker) Handle(_ context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
 	w.visited = append(w.visited, node.Name())

@@ -30,7 +30,7 @@ func reportCmd(w io.Writer, args []string) error {
 	}
 
 	switch *format {
-	case "json":
+	case formatJSON:
 		// Pass through raw JSON.
 		_, err := w.Write(data)
 		return err
@@ -160,7 +160,7 @@ func renderCaseResults(w io.Writer, cases []caseResult) {
 		if c.CategoryCorrect {
 			catOK++
 		}
-		renderCaseRow(w, c)
+		renderCaseRow(w, &c)
 	}
 
 	total := len(cases)
@@ -177,7 +177,7 @@ func renderCaseResults(w io.Writer, cases []caseResult) {
 		catOK, total, pct(catOK))
 }
 
-func renderCaseRow(w io.Writer, c caseResult) {
+func renderCaseRow(w io.Writer, c *caseResult) {
 	comp := boolMark(c.ComponentCorrect)
 	def := boolMark(c.DefectTypeCorrect)
 	cat := boolMark(c.CategoryCorrect)

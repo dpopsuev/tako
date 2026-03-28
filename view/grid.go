@@ -31,8 +31,8 @@ func (GridLayout) Layout(def *circuit.CircuitDef) (CircuitLayout, error) {
 	grid := assignGridCells(rank, nodeZone, def.Start)
 
 	edges := make([]EdgeLayout, 0, len(def.Edges))
-	for _, e := range def.Edges {
-		edges = append(edges, EdgeLayout{From: e.From, To: e.To})
+	for i := range def.Edges {
+		edges = append(edges, EdgeLayout{From: def.Edges[i].From, To: def.Edges[i].To})
 	}
 
 	zones := make([]ZoneLayout, 0, len(def.Zones))
@@ -44,19 +44,19 @@ func (GridLayout) Layout(def *circuit.CircuitDef) (CircuitLayout, error) {
 	return CircuitLayout{Grid: grid, Edges: edges, Zones: zones}, nil
 }
 
-func buildAdjacency(def *circuit.CircuitDef) (map[string][]string, map[string]int) {
-	adj := make(map[string][]string, len(def.Nodes))
-	inDeg := make(map[string]int, len(def.Nodes))
-	for _, n := range def.Nodes {
-		adj[n.Name] = nil
-		inDeg[n.Name] = 0
+func buildAdjacency(def *circuit.CircuitDef) (adj map[string][]string, inDeg map[string]int) {
+	adj = make(map[string][]string, len(def.Nodes))
+	inDeg = make(map[string]int, len(def.Nodes))
+	for i := range def.Nodes {
+		adj[def.Nodes[i].Name] = nil
+		inDeg[def.Nodes[i].Name] = 0
 	}
-	for _, e := range def.Edges {
-		if e.Loop {
+	for i := range def.Edges {
+		if def.Edges[i].Loop {
 			continue
 		}
-		adj[e.From] = append(adj[e.From], e.To)
-		inDeg[e.To]++
+		adj[def.Edges[i].From] = append(adj[def.Edges[i].From], def.Edges[i].To)
+		inDeg[def.Edges[i].To]++
 	}
 	return adj, inDeg
 }
@@ -69,9 +69,9 @@ func topoSort(def *circuit.CircuitDef, adj map[string][]string, inDeg map[string
 			queue = append(queue, def.Start)
 		}
 	}
-	for _, n := range def.Nodes {
-		if inDeg[n.Name] == 0 && n.Name != def.Start {
-			queue = append(queue, n.Name)
+	for i := range def.Nodes {
+		if inDeg[def.Nodes[i].Name] == 0 && def.Nodes[i].Name != def.Start {
+			queue = append(queue, def.Nodes[i].Name)
 		}
 	}
 
@@ -96,9 +96,9 @@ func topoSort(def *circuit.CircuitDef, adj map[string][]string, inDeg map[string
 		for _, n := range order {
 			sorted[n] = true
 		}
-		for _, n := range def.Nodes {
-			if !sorted[n.Name] {
-				order = append(order, n.Name)
+		for i := range def.Nodes {
+			if !sorted[def.Nodes[i].Name] {
+				order = append(order, def.Nodes[i].Name)
 			}
 		}
 	}

@@ -23,7 +23,7 @@ const (
 // EmitFinding encodes a Finding as a Signal on the bus.
 // Event format: "enforcer:<severity>". Meta carries domain, source,
 // node_name, message, and JSON-encoded evidence.
-func EmitFinding(bus agentport.Bus, f circuit.Finding) {
+func EmitFinding(bus agentport.Bus, f *circuit.Finding) {
 	meta := map[string]string{
 		MetaKeyDomain:   f.Domain,
 		MetaKeySource:   f.Source,
@@ -45,7 +45,7 @@ func EmitFinding(bus agentport.Bus, f circuit.Finding) {
 
 // DecodeFinding converts a Signal back to a Finding.
 // Returns false if the signal is not a finding agentport.
-func DecodeFinding(s agentport.Signal) (circuit.Finding, bool) {
+func DecodeFinding(s *agentport.Signal) (circuit.Finding, bool) {
 	if !strings.HasPrefix(s.Event, findingEventPrefix) {
 		return circuit.Finding{}, false
 	}
@@ -74,8 +74,8 @@ func DecodeFinding(s agentport.Signal) (circuit.Finding, bool) {
 func FindingsSince(bus agentport.Bus, idx int) []circuit.Finding {
 	signals := bus.Since(idx)
 	var findings []circuit.Finding
-	for _, s := range signals {
-		if f, ok := DecodeFinding(s); ok {
+	for i := range signals {
+		if f, ok := DecodeFinding(&signals[i]); ok {
 			findings = append(findings, f)
 		}
 	}

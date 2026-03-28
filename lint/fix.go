@@ -56,7 +56,8 @@ func applyLineReplacements(raw []byte, fixes []Fix) []byte {
 		}
 	}
 
-	for _, fix := range sorted {
+	for i := range sorted {
+		fix := &sorted[i]
 		if fix.StartLine < 1 || fix.StartLine > len(lines) {
 			continue
 		}
@@ -84,8 +85,9 @@ func applyLineReplacements(raw []byte, fixes []Fix) []byte {
 
 // Fix for S2/invalid-approach: replace with closest valid approach via fuzzy match.
 func (r *InvalidApproach) Fix(ctx *LintContext) []Fix {
-	var fixes []Fix
-	for _, nd := range ctx.Def.Nodes {
+	fixes := make([]Fix, 0, len(ctx.Def.Nodes))
+	for i := range ctx.Def.Nodes {
+		nd := &ctx.Def.Nodes[i]
 		if nd.Approach == "" || validApproaches[strings.ToLower(nd.Approach)] {
 			continue
 		}
@@ -119,8 +121,9 @@ func (r *InvalidApproach) Fix(ctx *LintContext) []Fix {
 
 // Fix for B1/prefer-when-over-condition: rename condition → when.
 func (r *PreferWhenOverCondition) Fix(ctx *LintContext) []Fix {
-	var fixes []Fix
-	for _, ed := range ctx.Def.Edges {
+	fixes := make([]Fix, 0, len(ctx.Def.Edges))
+	for i := range ctx.Def.Edges {
+		ed := &ctx.Def.Edges[i]
 		if ed.Condition == "" || ed.When != "" {
 			continue
 		}
@@ -150,8 +153,9 @@ func (r *PreferWhenOverCondition) Fix(ctx *LintContext) []Fix {
 
 // Fix for S4/missing-edge-name: generate name from "from → to".
 func (r *MissingEdgeName) Fix(ctx *LintContext) []Fix {
-	var fixes []Fix
-	for _, ed := range ctx.Def.Edges {
+	fixes := make([]Fix, 0, len(ctx.Def.Edges))
+	for i := range ctx.Def.Edges {
+		ed := &ctx.Def.Edges[i]
 		if ed.Name != "" {
 			continue
 		}

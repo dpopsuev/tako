@@ -15,6 +15,8 @@ import (
 	"github.com/dpopsuev/origami/engine"
 )
 
+const labelUnknown = "unknown"
+
 func traceCmd(w io.Writer, args []string) error {
 	fs := flag.NewFlagSet("trace", flag.ContinueOnError)
 	stateDir := fs.String("state-dir", "", "state directory (default: .origami/state or $ORIGAMI_STATE_DIR)")
@@ -35,7 +37,7 @@ func traceCmd(w io.Writer, args []string) error {
 		sd = os.Getenv("ORIGAMI_STATE_DIR")
 	}
 	if sd == "" {
-		sd = ".origami/state"
+		sd = defaultStateDir
 	}
 
 	tracePath, err := resolveTracePath(sd, *runID)
@@ -64,9 +66,9 @@ func traceCmd(w io.Writer, args []string) error {
 	}
 
 	switch *format {
-	case "json":
+	case formatJSON:
 		return renderTraceJSON(w, filtered)
-	case "text":
+	case formatText:
 		return renderTraceText(w, filtered)
 	default:
 		return fmt.Errorf("unknown format: %s", *format)
@@ -78,7 +80,7 @@ func resolveTracePath(stateDir, runID string) (string, error) {
 		stateDir = os.Getenv("ORIGAMI_STATE_DIR")
 	}
 	if stateDir == "" {
-		stateDir = ".origami/state"
+		stateDir = defaultStateDir
 	}
 
 	runsDir := filepath.Join(stateDir, "runs")
@@ -151,8 +153,9 @@ func traceLevelRank(l engine.TraceLevel) int {
 
 func filterEvents(events []engine.TraceEvent, maxLevel engine.TraceLevel, caseID, node string, errorsOnly bool) []engine.TraceEvent {
 	maxRank := traceLevelRank(maxLevel)
-	var out []engine.TraceEvent
-	for _, ev := range events {
+	out := make([]engine.TraceEvent, 0, len(events))
+	for i := range events {
+		ev := &events[i]
 		if traceLevelRank(ev.Level) > maxRank {
 			continue
 		}
@@ -165,15 +168,15 @@ func filterEvents(events []engine.TraceEvent, maxLevel engine.TraceLevel, caseID
 		if errorsOnly && ev.Error == "" {
 			continue
 		}
-		out = append(out, ev)
+		out = append(out, events[i])
 	}
 	return out
 }
 
 func renderTraceJSON(w io.Writer, events []engine.TraceEvent) error {
 	enc := json.NewEncoder(w)
-	for _, ev := range events {
-		if err := enc.Encode(ev); err != nil {
+	for i := range events {
+		if err := enc.Encode(events[i]); err != nil {
 			return err
 		}
 	}
@@ -181,7 +184,8 @@ func renderTraceJSON(w io.Writer, events []engine.TraceEvent) error {
 }
 
 func renderTraceText(w io.Writer, events []engine.TraceEvent) error {
-	for _, ev := range events {
+	for i := range events {
+		ev := &events[i]
 		ts := formatTimestamp(ev.Timestamp)
 		level := strings.ToUpper(string(ev.Level))
 
@@ -263,19 +267,19 @@ func annotateDelegations(events []engine.TraceEvent, stateDir string) []engine.T
 	childByTraceID := indexChildRuns(stateDir)
 
 	var out []engine.TraceEvent
-	for _, ev := range events {
-		ct, _ := ev.Metadata[circuit.ExtraKeyCircuitType].(string)
-		switch ev.Event {
+	for i := range events {
+		ct, _ := events[i].Metadata[circuit.ExtraKeyCircuitType].(string)
+		switch events[i].Event {
 		case "delegate_start":
 			label := ct
 			if label == "" {
-				label = "unknown"
+				label = labelUnknown
 			}
-			ev = annotateEvent(ev, fmt.Sprintf("[DELEGATION START: %s]", label))
+			ev := annotateEvent(&events[i], fmt.Sprintf("[DELEGATION START: %s]", label))
 			out = append(out, ev)
 
 			// Try to inline child trace events.
-			traceID, _ := ev.Metadata[circuit.ExtraKeyTraceID].(string)
+			traceID, _ := events[i].Metadata[circuit.ExtraKeyTraceID].(string)
 			if traceID == "" {
 				// No trace_id in the event metadata — can't look up child.
 				continue
@@ -284,8 +288,8 @@ func annotateDelegations(events []engine.TraceEvent, stateDir string) []engine.T
 				childPath := filepath.Join(childDir, "trace.jsonl")
 				childEvents, err := readTraceEvents(childPath)
 				if err == nil {
-					for _, ce := range childEvents {
-						ce = annotateEvent(ce, fmt.Sprintf("  [%s]", label))
+					for j := range childEvents {
+						ce := annotateEvent(&childEvents[j], fmt.Sprintf("  [%s]", label))
 						out = append(out, ce)
 					}
 				}
@@ -294,22 +298,22 @@ func annotateDelegations(events []engine.TraceEvent, stateDir string) []engine.T
 		case "delegate_end":
 			label := ct
 			if label == "" {
-				label = "unknown"
+				label = labelUnknown
 			}
-			ev = annotateEvent(ev, fmt.Sprintf("[DELEGATION END: %s]", label))
+			ev := annotateEvent(&events[i], fmt.Sprintf("[DELEGATION END: %s]", label))
 			out = append(out, ev)
 
 		default:
-			out = append(out, ev)
+			out = append(out, events[i])
 		}
 	}
 	return out
 }
 
 // annotateEvent prepends a marker to an event's Event field.
-func annotateEvent(ev engine.TraceEvent, marker string) engine.TraceEvent {
+func annotateEvent(ev *engine.TraceEvent, marker string) engine.TraceEvent {
 	ev.Event = marker + " " + ev.Event
-	return ev
+	return *ev
 }
 
 // indexChildRuns scans {stateDir}/runs/*/run.json and returns a map from

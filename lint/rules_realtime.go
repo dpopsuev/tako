@@ -7,13 +7,19 @@ import (
 	"github.com/dpopsuev/origami/circuit"
 )
 
+const (
+	ruleEdgeNodeRef     = "S21/edge-node-reference"
+	ruleHookRef         = "S22/hook-reference"
+	ruleInvalidHandler  = "S23/invalid-handler-type"
+)
+
 // --- S21: edge-node-reference ---
 
 // EdgeNodeReference checks that every edge from/to value references a declared
 // node name or the circuit's done sentinel. Catches typos like "recal" for "recall".
 type EdgeNodeReference struct{}
 
-func (r *EdgeNodeReference) ID() string          { return "S21/edge-node-reference" }
+func (r *EdgeNodeReference) ID() string          { return ruleEdgeNodeRef }
 func (r *EdgeNodeReference) Description() string { return "edge from/to must reference a declared node or the done sentinel" }
 func (r *EdgeNodeReference) Severity() Severity  { return SeverityError }
 func (r *EdgeNodeReference) Tags() []string      { return []string{"structural"} }
@@ -25,8 +31,8 @@ func (r *EdgeNodeReference) Check(ctx *LintContext) []Finding {
 
 	// Build set of valid node names.
 	validNodes := make(map[string]bool, len(ctx.Def.Nodes)+2)
-	for _, nd := range ctx.Def.Nodes {
-		validNodes[nd.Name] = true
+	for i := range ctx.Def.Nodes {
+		validNodes[ctx.Def.Nodes[i].Name] = true
 	}
 	// The done sentinel is always a valid edge target.
 	if ctx.Def.Done != "" {
@@ -38,7 +44,8 @@ func (r *EdgeNodeReference) Check(ctx *LintContext) []Finding {
 	}
 
 	var out []Finding
-	for _, ed := range ctx.Def.Edges {
+	for i := range ctx.Def.Edges {
+		ed := &ctx.Def.Edges[i]
 		if ed.From != "" && !validNodes[ed.From] {
 			f := Finding{
 				RuleID:   r.ID(),
@@ -94,7 +101,7 @@ func nodeSuggestion(val string, valid map[string]bool) string {
 // checking against other hook references in the same circuit for likely typos.
 type HookReference struct{}
 
-func (r *HookReference) ID() string          { return "S22/hook-reference" }
+func (r *HookReference) ID() string          { return ruleHookRef }
 func (r *HookReference) Description() string { return "hook references in before/after should be well-formed identifiers" }
 func (r *HookReference) Severity() Severity  { return SeverityWarning }
 func (r *HookReference) Tags() []string      { return []string{"structural"} }
@@ -106,17 +113,18 @@ func (r *HookReference) Check(ctx *LintContext) []Finding {
 
 	// Collect all distinct hook names used across the circuit.
 	allHooks := make(map[string]bool)
-	for _, nd := range ctx.Def.Nodes {
-		for _, h := range nd.Before {
+	for i := range ctx.Def.Nodes {
+		for _, h := range ctx.Def.Nodes[i].Before {
 			allHooks[h] = true
 		}
-		for _, h := range nd.After {
+		for _, h := range ctx.Def.Nodes[i].After {
 			allHooks[h] = true
 		}
 	}
 
 	var out []Finding
-	for _, nd := range ctx.Def.Nodes {
+	for i := range ctx.Def.Nodes {
+		nd := &ctx.Def.Nodes[i]
 		out = append(out, checkHookRefs(ctx, nd.Name, "before", nd.Before, allHooks)...)
 		out = append(out, checkHookRefs(ctx, nd.Name, "after", nd.After, allHooks)...)
 	}
@@ -129,7 +137,7 @@ func checkHookRefs(ctx *LintContext, nodeName, phase string, hooks []string, all
 		// Hooks should not contain spaces.
 		if strings.ContainsAny(hookName, " \t") {
 			out = append(out, Finding{
-				RuleID:   "S22/hook-reference",
+				RuleID:   ruleHookRef,
 				Severity: SeverityWarning,
 				Message:  fmt.Sprintf("node %q: %s hook %q contains whitespace; hook names should be identifiers", nodeName, phase, hookName),
 				File:     ctx.File,
@@ -149,7 +157,7 @@ func checkHookRefs(ctx *LintContext, nodeName, phase string, hooks []string, all
 			}
 			if emptySegment {
 				out = append(out, Finding{
-					RuleID:   "S22/hook-reference",
+					RuleID:   ruleHookRef,
 					Severity: SeverityWarning,
 					Message:  fmt.Sprintf("node %q: %s hook %q has empty segment in dot-qualified name", nodeName, phase, hookName),
 					File:     ctx.File,
@@ -167,7 +175,7 @@ func checkHookRefs(ctx *LintContext, nodeName, phase string, hooks []string, all
 			d := levenshtein(hookName, other)
 			if d > 0 && d <= 2 {
 				out = append(out, Finding{
-					RuleID:     "S22/hook-reference",
+					RuleID:     ruleHookRef,
 					Severity:   SeverityWarning,
 					Message:    fmt.Sprintf("node %q: %s hook %q is similar to %q (edit distance %d); possible typo?", nodeName, phase, hookName, other, d),
 					File:       ctx.File,
@@ -186,7 +194,7 @@ func checkHookRefs(ctx *LintContext, nodeName, phase string, hooks []string, all
 // values are recognized handler types.
 type InvalidHandlerType struct{}
 
-func (r *InvalidHandlerType) ID() string          { return "S23/invalid-handler-type" }
+func (r *InvalidHandlerType) ID() string          { return ruleInvalidHandler }
 func (r *InvalidHandlerType) Description() string { return "handler_type must be a recognized type (transformer, extractor, renderer, node, delegate, circuit)" }
 func (r *InvalidHandlerType) Severity() Severity  { return SeverityError }
 func (r *InvalidHandlerType) Tags() []string      { return []string{"structural"} }
@@ -220,7 +228,8 @@ func (r *InvalidHandlerType) Check(ctx *LintContext) []Finding {
 	}
 
 	// Check node-level handler_type.
-	for _, nd := range ctx.Def.Nodes {
+	for i := range ctx.Def.Nodes {
+		nd := &ctx.Def.Nodes[i]
 		if nd.HandlerType != "" && !validHandlerTypes[nd.HandlerType] {
 			out = append(out, Finding{
 				RuleID:     r.ID(),

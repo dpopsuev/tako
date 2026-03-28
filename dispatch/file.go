@@ -12,6 +12,8 @@ import (
 	"github.com/dpopsuev/origami/agentport"
 )
 
+const statusProcessing = "processing"
+
 // FileDispatcherConfig configures the FileDispatcher behavior.
 type FileDispatcherConfig struct {
 	PollInterval    time.Duration // how often to check for the artifact; default 500ms
@@ -80,6 +82,8 @@ func NewFileDispatcher(cfg FileDispatcherConfig) *FileDispatcher {
 // Dispatch writes signal.json with a monotonic dispatch_id, polls for an
 // artifact whose wrapper echoes the same dispatch_id, validates JSON, and
 // returns the inner "data" bytes.
+//
+//nolint:gocritic // hugeParam: interface conformance (agentport.Dispatcher)
 func (d *FileDispatcher) Dispatch(_ context.Context, ctx agentport.Context) ([]byte, error) {
 	signalDir := d.cfg.SignalDir
 	if signalDir == "" {
@@ -91,11 +95,11 @@ func (d *FileDispatcher) Dispatch(_ context.Context, ctx agentport.Context) ([]b
 	did := d.dispatchID
 
 	dl := d.log.With("case", ctx.CaseID, "step", ctx.Step, "dispatch_id", did)
-	dl.Debug("dispatch begin", "artifact_path", ctx.ArtifactPath, "signal_path", signalPath)
+	dl.DebugContext(context.Background(),"dispatch begin", "artifact_path", ctx.ArtifactPath, "signal_path", signalPath)
 
 	// Remove any existing artifact file before writing the signal.
 	if _, err := os.Stat(ctx.ArtifactPath); err == nil {
-		dl.Debug("removing stale artifact before dispatch", "path", ctx.ArtifactPath)
+		dl.DebugContext(context.Background(),"removing stale artifact before dispatch", "path", ctx.ArtifactPath)
 		_ = os.Remove(ctx.ArtifactPath)
 	}
 
@@ -112,9 +116,9 @@ func (d *FileDispatcher) Dispatch(_ context.Context, ctx agentport.Context) ([]b
 	if err := WriteSignal(signalPath, &sig); err != nil {
 		return nil, fmt.Errorf("write signal: %w", err)
 	}
-	dl.Debug("signal written", "status", "waiting")
+	dl.DebugContext(context.Background(),"signal written", "status", "waiting")
 
-	dl.Info("signal.json written, waiting for artifact",
+	dl.InfoContext(context.Background(),"signal.json written, waiting for artifact",
 		"artifact_path", ctx.ArtifactPath, "timeout", d.cfg.Timeout)
 
 	// Poll for artifact file with matching dispatch_id
@@ -123,8 +127,8 @@ func (d *FileDispatcher) Dispatch(_ context.Context, ctx agentport.Context) ([]b
 	staleCount := 0
 	for {
 		if time.Now().After(deadline) {
-			dl.Debug("timeout reached", "polls", pollCount)
-			sig.Status = "error"
+			dl.DebugContext(context.Background(),"timeout reached", "polls", pollCount)
+			sig.Status = statusError
 			sig.Error = "timeout waiting for artifact"
 			_ = WriteSignal(signalPath, &sig)
 			return nil, fmt.Errorf("timeout after %s waiting for artifact at %s", d.cfg.Timeout, ctx.ArtifactPath)
@@ -133,8 +137,8 @@ func (d *FileDispatcher) Dispatch(_ context.Context, ctx agentport.Context) ([]b
 		// Check if the responder reported an error via signal.json
 		if sigData, readErr := os.ReadFile(signalPath); readErr == nil {
 			var liveSig SignalFile
-			if json.Unmarshal(sigData, &liveSig) == nil && liveSig.DispatchID == did && liveSig.Status == "error" {
-				dl.Debug("responder reported error via signal", "error", liveSig.Error)
+			if json.Unmarshal(sigData, &liveSig) == nil && liveSig.DispatchID == did && liveSig.Status == statusError {
+				dl.DebugContext(context.Background(),"responder reported error via signal", "error", liveSig.Error)
 				return nil, fmt.Errorf("responder error: %s", liveSig.Error)
 			}
 		}
@@ -143,14 +147,14 @@ func (d *FileDispatcher) Dispatch(_ context.Context, ctx agentport.Context) ([]b
 		data, err := os.ReadFile(ctx.ArtifactPath)
 		if err != nil {
 			if pollCount <= 3 || pollCount%20 == 0 {
-				dl.Debug("poll: artifact not found", "poll", pollCount, "err", err)
+				dl.DebugContext(context.Background(),"poll: artifact not found", "poll", pollCount, "err", err)
 			}
 			staleCount = 0
 			time.Sleep(d.cfg.PollInterval)
 			continue
 		}
 
-		dl.Debug("poll: artifact file found", "poll", pollCount, "bytes", len(data))
+		dl.DebugContext(context.Background(),"poll: artifact file found", "poll", pollCount, "bytes", len(data))
 
 		// Parse the wrapper to check dispatch_id.
 		// Invalid JSON is treated as transient (partial write from a concurrent
@@ -160,11 +164,11 @@ func (d *FileDispatcher) Dispatch(_ context.Context, ctx agentport.Context) ([]b
 		var wrapper ArtifactWrapper
 		if err := json.Unmarshal(data, &wrapper); err != nil {
 			staleCount++
-			dl.Debug("poll: invalid JSON (possible partial write)",
+			dl.DebugContext(context.Background(),"poll: invalid JSON (possible partial write)",
 				"poll", pollCount, "err", err,
 				"bad_read_streak", staleCount, "max", d.cfg.MaxStaleRejects)
 			if staleCount >= d.cfg.MaxStaleRejects {
-				sig.Status = "error"
+				sig.Status = statusError
 				sig.Error = fmt.Sprintf("stale artifact tolerance exceeded: %d consecutive unusable reads (last: invalid JSON: %v)",
 					staleCount, err)
 				_ = WriteSignal(signalPath, &sig)
@@ -178,11 +182,11 @@ func (d *FileDispatcher) Dispatch(_ context.Context, ctx agentport.Context) ([]b
 		// Reject stale artifacts deterministically by dispatch_id
 		if wrapper.DispatchID != did {
 			staleCount++
-			dl.Debug("poll: stale artifact (dispatch_id mismatch)",
+			dl.DebugContext(context.Background(),"poll: stale artifact (dispatch_id mismatch)",
 				"poll", pollCount, "want", did, "got", wrapper.DispatchID,
 				"stale_streak", staleCount, "max", d.cfg.MaxStaleRejects)
 			if staleCount >= d.cfg.MaxStaleRejects {
-				sig.Status = "error"
+				sig.Status = statusError
 				sig.Error = fmt.Sprintf("exceeded stale tolerance: %d consecutive artifacts with wrong dispatch_id (want %d, last got %d)",
 					staleCount, did, wrapper.DispatchID)
 				_ = WriteSignal(signalPath, &sig)
@@ -195,20 +199,20 @@ func (d *FileDispatcher) Dispatch(_ context.Context, ctx agentport.Context) ([]b
 
 		// dispatch_id matches — this is our artifact
 		if len(wrapper.Data) == 0 {
-			sig.Status = "error"
+			sig.Status = statusError
 			sig.Error = "artifact wrapper has empty 'data' field"
 			_ = WriteSignal(signalPath, &sig)
 			return nil, fmt.Errorf("artifact at %s has matching dispatch_id but empty 'data'", ctx.ArtifactPath)
 		}
 
-		dl.Debug("artifact validated", "poll", pollCount, "bytes", len(wrapper.Data))
+		dl.DebugContext(context.Background(),"artifact validated", "poll", pollCount, "bytes", len(wrapper.Data))
 
 		// Update signal: status=processing
-		sig.Status = "processing"
+		sig.Status = statusProcessing
 		sig.Error = ""
 		_ = WriteSignal(signalPath, &sig)
 
-		dl.Info("artifact validated and accepted", "bytes", len(wrapper.Data))
+		dl.InfoContext(context.Background(),"artifact validated and accepted", "bytes", len(wrapper.Data))
 		return wrapper.Data, nil
 	}
 }
@@ -223,16 +227,16 @@ func (d *FileDispatcher) MarkDone(artifactPath string) {
 
 	data, err := os.ReadFile(signalPath)
 	if err != nil {
-		d.log.Debug("mark-done: cannot read signal", "path", signalPath, "err", err)
+		d.log.DebugContext(context.Background(),"mark-done: cannot read signal", "path", signalPath, "err", err)
 		return
 	}
 	var sig SignalFile
 	if err := json.Unmarshal(data, &sig); err != nil {
-		d.log.Debug("mark-done: cannot parse signal", "path", signalPath, "err", err)
+		d.log.DebugContext(context.Background(),"mark-done: cannot parse signal", "path", signalPath, "err", err)
 		return
 	}
-	d.log.Debug("mark-done", "prev_status", sig.Status, "case", sig.CaseID, "step", sig.Step, "dispatch_id", sig.DispatchID)
-	sig.Status = "done"
+	d.log.DebugContext(context.Background(),"mark-done", "prev_status", sig.Status, "case", sig.CaseID, "step", sig.Step, "dispatch_id", sig.DispatchID)
+	sig.Status = statusDone
 	_ = WriteSignal(signalPath, &sig)
 }
 
@@ -248,12 +252,12 @@ func WriteSignal(path string, sig *SignalFile) error {
 		return fmt.Errorf("marshal signal: %w", err)
 	}
 	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, data, 0644); err != nil {
+	if err := os.WriteFile(tmp, data, 0o644); err != nil {
 		return fmt.Errorf("write signal tmp: %w", err)
 	}
 	if err := os.Rename(tmp, path); err != nil {
 		defer os.Remove(tmp)
-		return os.WriteFile(path, data, 0644)
+		return os.WriteFile(path, data, 0o644)
 	}
 	return nil
 }

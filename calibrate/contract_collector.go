@@ -35,7 +35,7 @@ func NewContractCollector(contract *CalibrationContract, sc *ScoreCard, scenario
 // Collect extracts values from BatchWalkResults using the contract, merges
 // with expected values from the scenario, and runs each scorecard scorer.
 func (c *ContractCollector) Collect(_ context.Context, results []engine.BatchWalkResult) (
-	map[string]float64, map[string]string, error,
+	values map[string]float64, details map[string]string, err error,
 ) {
 	// Build batch: one item per case with actual (contract) + expected (scenario).
 	batch := make([]map[string]any, len(results))
@@ -66,10 +66,11 @@ func (c *ContractCollector) Collect(_ context.Context, results []engine.BatchWal
 	}
 
 	// Run each scorer from the scorecard against the batch.
-	values := make(map[string]float64)
-	details := make(map[string]string)
+	values = make(map[string]float64)
+	details = make(map[string]string)
 
-	for _, def := range c.ScoreCard.MetricDefs {
+	for i := range c.ScoreCard.MetricDefs {
+		def := &c.ScoreCard.MetricDefs[i]
 		if def.Scorer == "" {
 			continue
 		}

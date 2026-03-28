@@ -61,8 +61,8 @@ func (LogicalLayout) Layout(def *circuit.CircuitDef) (CircuitLayout, error) {
 	}
 
 	edges := make([]EdgeLayout, 0, len(def.Edges))
-	for _, e := range def.Edges {
-		edges = append(edges, EdgeLayout{From: e.From, To: e.To})
+	for i := range def.Edges {
+		edges = append(edges, EdgeLayout{From: def.Edges[i].From, To: def.Edges[i].To})
 	}
 
 	zones := make([]ZoneLayout, 0, len(def.Zones))

@@ -40,7 +40,7 @@ type PreflightError struct {
 //
 // Returns a structured PreflightReport with Passed/Warnings/Errors.
 // On fatal error the report is partial and error is non-nil.
-func Preflight(ctx context.Context, cfg HarnessConfig) (*PreflightReport, error) {
+func Preflight(ctx context.Context, cfg *HarnessConfig) (*PreflightReport, error) {
 	start := time.Now()
 	report := &PreflightReport{}
 
@@ -66,6 +66,9 @@ func Preflight(ctx context.Context, cfg HarnessConfig) (*PreflightReport, error)
 
 	// Merge components into shared registries (same as Run does).
 	shared := cfg.Shared
+	if shared == nil {
+		shared = &engine.GraphRegistries{}
+	}
 	if len(cfg.Components) > 0 {
 		merged, err := engine.MergeComponents(shared, cfg.Components...)
 		if err != nil {
@@ -154,7 +157,7 @@ type preflightWalker struct {
 }
 
 func (w *preflightWalker) Identity() circuit.AgentIdentity      { return w.identity }
-func (w *preflightWalker) SetIdentity(id circuit.AgentIdentity)  { w.identity = id }
+func (w *preflightWalker) SetIdentity(id *circuit.AgentIdentity)  { w.identity = *id }
 func (w *preflightWalker) State() *circuit.WalkerState           { return w.state }
 
 func (w *preflightWalker) Handle(_ context.Context, _ circuit.Node, _ circuit.NodeContext) (circuit.Artifact, error) {

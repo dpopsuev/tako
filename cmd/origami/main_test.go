@@ -67,7 +67,7 @@ func TestCLI_Validate(t *testing.T) {
 	bin := buildBinary(t)
 	dir := t.TempDir()
 	circuitPath := filepath.Join(dir, "circuit.yaml")
-	if err := os.WriteFile(circuitPath, []byte(integrationCircuit), 0644); err != nil {
+	if err := os.WriteFile(circuitPath, []byte(integrationCircuit), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -85,7 +85,7 @@ func TestCLI_Validate_Invalid(t *testing.T) {
 	bin := buildBinary(t)
 	dir := t.TempDir()
 	circuitPath := filepath.Join(dir, "bad.yaml")
-	if err := os.WriteFile(circuitPath, []byte("circuit: bad\nnodes: []\n"), 0644); err != nil {
+	if err := os.WriteFile(circuitPath, []byte("circuit: bad\nnodes: []\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -122,7 +122,7 @@ func TestCLI_Run(t *testing.T) {
 	dir := t.TempDir()
 
 	dataPath := filepath.Join(dir, "data.json")
-	if err := os.WriteFile(dataPath, []byte(`{"result":"hello"}`), 0644); err != nil {
+	if err := os.WriteFile(dataPath, []byte(`{"result":"hello"}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -156,7 +156,7 @@ start: load
 done: _done
 `
 	circuitPath := filepath.Join(dir, "circuit.yaml")
-	if err := os.WriteFile(circuitPath, []byte(circuitYAML), 0644); err != nil {
+	if err := os.WriteFile(circuitPath, []byte(circuitYAML), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -198,7 +198,7 @@ start: scan
 done: _done
 `
 	circuitPath := filepath.Join(dir, "circuit.yaml")
-	if err := os.WriteFile(circuitPath, []byte(circuitYAML), 0644); err != nil {
+	if err := os.WriteFile(circuitPath, []byte(circuitYAML), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -254,7 +254,7 @@ start: start
 done: _done
 `
 	circuitPath := filepath.Join(dir, "circuit.yaml")
-	os.WriteFile(circuitPath, []byte(circuitYAML), 0644)
+	os.WriteFile(circuitPath, []byte(circuitYAML), 0o644)
 
 	cmd := exec.Command(bin, "skill", "scaffold", circuitPath)
 	cmd.Dir = dir

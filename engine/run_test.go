@@ -38,7 +38,7 @@ func writeTempCircuit(t *testing.T, content string) string {
 	t.Helper()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "circuit.yaml")
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	return path
@@ -293,7 +293,9 @@ done: _done
 		t.Fatal("neither walker visited any nodes")
 	}
 
-	allVisited := append(herald.visited, seeker.visited...)
+	allVisited := make([]string, 0, len(herald.visited)+len(seeker.visited))
+	allVisited = append(allVisited, herald.visited...)
+	allVisited = append(allVisited, seeker.visited...)
 	hasClassify, hasInvestigate := false, false
 	for _, v := range allVisited {
 		if v == "classify" {

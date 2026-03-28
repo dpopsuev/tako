@@ -18,7 +18,7 @@ func TestEmitFinding_RoundTrip(t *testing.T) {
 		Evidence: map[string]any{"field": "password"},
 	}
 
-	EmitFinding(bus, f)
+	EmitFinding(bus, &f)
 
 	if bus.Len() != 1 {
 		t.Fatalf("bus.Len() = %d, want 1", bus.Len())
@@ -32,7 +32,7 @@ func TestEmitFinding_RoundTrip(t *testing.T) {
 		t.Errorf("Meta[domain] = %q, want %q", sig.Meta["domain"], "security.auth")
 	}
 
-	decoded, ok := DecodeFinding(sig)
+	decoded, ok := DecodeFinding(&sig)
 	if !ok {
 		t.Fatal("DecodeFinding returned false")
 	}
@@ -49,7 +49,7 @@ func TestEmitFinding_RoundTrip(t *testing.T) {
 
 func TestDecodeFinding_NonFindingSignal(t *testing.T) {
 	sig := agentport.Signal{Event: "step:complete", Meta: map[string]string{"node": "a"}}
-	_, ok := DecodeFinding(sig)
+	_, ok := DecodeFinding(&sig)
 	if ok {
 		t.Error("DecodeFinding should return false for non-finding signal")
 	}
@@ -59,9 +59,9 @@ func TestFindingsSince_MixedSignals(t *testing.T) {
 	bus := agentport.NewMemBus()
 
 	bus.Emit(&agentport.Signal{Event: "step:start", Agent: "agent", Step: "nodeA"})
-	EmitFinding(bus, circuit.Finding{Severity: circuit.FindingWarning, Domain: "test", Source: "tester", Message: "flaky"})
+	EmitFinding(bus, &circuit.Finding{Severity: circuit.FindingWarning, Domain: "test", Source: "tester", Message: "flaky"})
 	bus.Emit(&agentport.Signal{Event: "step:complete", Agent: "agent", Step: "nodeA"})
-	EmitFinding(bus, circuit.Finding{Severity: circuit.FindingError, Domain: "security", Source: "auditor", Message: "vuln"})
+	EmitFinding(bus, &circuit.Finding{Severity: circuit.FindingError, Domain: "security", Source: "auditor", Message: "vuln"})
 
 	findings := FindingsSince(bus, 0)
 	if len(findings) != 2 {
@@ -77,8 +77,8 @@ func TestFindingsSince_MixedSignals(t *testing.T) {
 
 func TestFindingsSince_Offset(t *testing.T) {
 	bus := agentport.NewMemBus()
-	EmitFinding(bus, circuit.Finding{Severity: circuit.FindingInfo, Message: "first"})
-	EmitFinding(bus, circuit.Finding{Severity: circuit.FindingWarning, Message: "second"})
+	EmitFinding(bus, &circuit.Finding{Severity: circuit.FindingInfo, Message: "first"})
+	EmitFinding(bus, &circuit.Finding{Severity: circuit.FindingWarning, Message: "second"})
 
 	findings := FindingsSince(bus, 1)
 	if len(findings) != 1 {
@@ -91,14 +91,14 @@ func TestFindingsSince_Offset(t *testing.T) {
 
 func TestEmitFinding_NoEvidence(t *testing.T) {
 	bus := agentport.NewMemBus()
-	EmitFinding(bus, circuit.Finding{Severity: circuit.FindingInfo, Message: "no evidence"})
+	EmitFinding(bus, &circuit.Finding{Severity: circuit.FindingInfo, Message: "no evidence"})
 
 	sig := bus.Since(0)[0]
 	if _, ok := sig.Meta["evidence"]; ok {
 		t.Error("evidence meta should not be set when Evidence is nil")
 	}
 
-	decoded, ok := DecodeFinding(sig)
+	decoded, ok := DecodeFinding(&sig)
 	if !ok {
 		t.Fatal("DecodeFinding returned false")
 	}

@@ -31,9 +31,9 @@ func RunGraphContract(t *testing.T, factory func() (engine.Graph, circuit.Walker
 
 		var mu sync.Mutex
 		var events []circuit.WalkEvent
-		dg.SetObserver(circuit.WalkObserverFunc(func(e circuit.WalkEvent) {
+		dg.SetObserver(circuit.WalkObserverFunc(func(e *circuit.WalkEvent) {
 			mu.Lock()
-			events = append(events, e)
+			events = append(events, *e)
 			mu.Unlock()
 		}))
 

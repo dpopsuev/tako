@@ -21,7 +21,7 @@ func TestFindings_VetoHookZeroesConfidence(t *testing.T) {
 	//   Then the artifact confidence is zeroed
 
 	collector := &engine.InMemoryFindingCollector{}
-	_ = collector.Report(context.Background(), circuit.Finding{
+	_ = collector.Report(context.Background(), &circuit.Finding{
 		Severity: circuit.FindingError,
 		NodeName: "analyze",
 		Domain:   "security",
@@ -47,7 +47,7 @@ func TestFindings_VetoHookZeroesConfidence(t *testing.T) {
 	}
 
 	// Build runner (not raw graph) — hooks are processed by Runner, not Graph
-	runner, err := engine.NewRunnerWith(def, engine.GraphRegistries{
+	runner, err := engine.NewRunnerWith(def, &engine.GraphRegistries{
 		Transformers: standardTransformers(),
 		Hooks:        hooks,
 	})
@@ -83,13 +83,13 @@ func TestFindings_ExpressionEdgeFiringOnFindingCount(t *testing.T) {
 	ctx := context.Background()
 
 	// Report 2 warning findings
-	_ = collector.Report(ctx, circuit.Finding{
+	_ = collector.Report(ctx, &circuit.Finding{
 		Severity: circuit.FindingWarning,
 		NodeName: "validate",
 		Domain:   "lint",
 		Message:  "style violation",
 	})
-	_ = collector.Report(ctx, circuit.Finding{
+	_ = collector.Report(ctx, &circuit.Finding{
 		Severity: circuit.FindingWarning,
 		NodeName: "validate",
 		Domain:   "lint",
@@ -128,7 +128,7 @@ func TestFindings_ExpressionEdgeFiringOnFindingCount(t *testing.T) {
 		},
 	}
 
-	g, err := engine.BuildGraph(def, engine.GraphRegistries{
+	g, err := engine.BuildGraph(def, &engine.GraphRegistries{
 		Transformers: standardTransformers(),
 	})
 	if err != nil {

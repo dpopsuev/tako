@@ -431,10 +431,10 @@ func origamiRootE2E(t *testing.T) string {
 func writeTestFile(t *testing.T, base, name, content string) {
 	t.Helper()
 	p := filepath.Join(base, name)
-	if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(p, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(p, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
 }

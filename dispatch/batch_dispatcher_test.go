@@ -15,7 +15,7 @@ import (
 func TestBatchFileDispatcher_AllComplete(t *testing.T) {
 	dir := t.TempDir()
 	suiteDir := filepath.Join(dir, "suite")
-	os.MkdirAll(suiteDir, 0755)
+	os.MkdirAll(suiteDir, 0o755)
 
 	cfg := BatchFileDispatcherConfig{
 		FileConfig: FileDispatcherConfig{
@@ -25,13 +25,13 @@ func TestBatchFileDispatcher_AllComplete(t *testing.T) {
 		SuiteDir:  suiteDir,
 		BatchSize: 4,
 	}
-	bfd := NewBatchFileDispatcher(cfg)
+	bfd := NewBatchFileDispatcher(&cfg)
 
 	// Create 2 cases with pre-written artifacts
 	cases := make([]agentport.Context, 2)
 	for i := 0; i < 2; i++ {
 		caseDir := filepath.Join(dir, "cases", caseID(i))
-		os.MkdirAll(caseDir, 0755)
+		os.MkdirAll(caseDir, 0o755)
 		artifactPath := filepath.Join(caseDir, "recall-result.json")
 
 		cases[i] = agentport.Context{
@@ -41,7 +41,7 @@ func TestBatchFileDispatcher_AllComplete(t *testing.T) {
 			ArtifactPath: artifactPath,
 		}
 		// Write prompt
-		os.WriteFile(cases[i].PromptPath, []byte("test prompt"), 0644)
+		os.WriteFile(cases[i].PromptPath, []byte("test prompt"), 0o644)
 	}
 
 	// Start a goroutine that writes artifacts after a short delay
@@ -76,7 +76,7 @@ func TestBatchFileDispatcher_AllComplete(t *testing.T) {
 				Data:       json.RawMessage(`{"match":true,"confidence":0.95}`),
 			}
 			data, _ := json.Marshal(wrapper)
-			os.WriteFile(ctx.ArtifactPath, data, 0644)
+			os.WriteFile(ctx.ArtifactPath, data, 0o644)
 		}
 	}()
 
@@ -110,7 +110,7 @@ func TestBatchFileDispatcher_AllComplete(t *testing.T) {
 func TestBatchFileDispatcher_PartialFailure(t *testing.T) {
 	dir := t.TempDir()
 	suiteDir := filepath.Join(dir, "suite")
-	os.MkdirAll(suiteDir, 0755)
+	os.MkdirAll(suiteDir, 0o755)
 
 	cfg := BatchFileDispatcherConfig{
 		FileConfig: FileDispatcherConfig{
@@ -120,20 +120,20 @@ func TestBatchFileDispatcher_PartialFailure(t *testing.T) {
 		SuiteDir:  suiteDir,
 		BatchSize: 4,
 	}
-	bfd := NewBatchFileDispatcher(cfg)
+	bfd := NewBatchFileDispatcher(&cfg)
 
 	// Case 0: will succeed, Case 1: will timeout (no artifact written)
 	cases := make([]agentport.Context, 2)
 	for i := 0; i < 2; i++ {
 		caseDir := filepath.Join(dir, "cases", caseID(i))
-		os.MkdirAll(caseDir, 0755)
+		os.MkdirAll(caseDir, 0o755)
 		cases[i] = agentport.Context{
 			CaseID:       caseID(i),
 			Step:         "F0_RECALL",
 			PromptPath:   filepath.Join(caseDir, "prompt.md"),
 			ArtifactPath: filepath.Join(caseDir, "recall-result.json"),
 		}
-		os.WriteFile(cases[i].PromptPath, []byte("test"), 0644)
+		os.WriteFile(cases[i].PromptPath, []byte("test"), 0o644)
 	}
 
 	// Write artifact for case 0 only
@@ -151,7 +151,7 @@ func TestBatchFileDispatcher_PartialFailure(t *testing.T) {
 						Data:       json.RawMessage(`{"match":true}`),
 					}
 					d, _ := json.Marshal(wrapper)
-					os.WriteFile(cases[0].ArtifactPath, d, 0644)
+					os.WriteFile(cases[0].ArtifactPath, d, 0o644)
 					return
 				}
 			}
@@ -191,11 +191,11 @@ func TestBatchFileDispatcher_ManifestLifecycle(t *testing.T) {
 		SuiteDir:  suiteDir,
 		BatchSize: 4,
 	}
-	bfd := NewBatchFileDispatcher(cfg)
+	bfd := NewBatchFileDispatcher(&cfg)
 
 	caseDir := filepath.Join(dir, "cases", "C1")
-	os.MkdirAll(caseDir, 0755)
-	os.WriteFile(filepath.Join(caseDir, "prompt.md"), []byte("test"), 0644)
+	os.MkdirAll(caseDir, 0o755)
+	os.WriteFile(filepath.Join(caseDir, "prompt.md"), []byte("test"), 0o644)
 
 	ctx := agentport.Context{
 		CaseID:       "C1",
@@ -232,7 +232,7 @@ func TestBatchFileDispatcher_ManifestLifecycle(t *testing.T) {
 						Data:       json.RawMessage(`{"match":true}`),
 					}
 					d, _ := json.Marshal(wrapper)
-					os.WriteFile(ctx.ArtifactPath, d, 0644)
+					os.WriteFile(ctx.ArtifactPath, d, 0o644)
 					return
 				}
 			}
@@ -255,7 +255,7 @@ func TestBatchFileDispatcher_ManifestLifecycle(t *testing.T) {
 }
 
 func TestBatchFileDispatcher_EmptyBatch(t *testing.T) {
-	bfd := NewBatchFileDispatcher(BatchFileDispatcherConfig{
+	bfd := NewBatchFileDispatcher(&BatchFileDispatcherConfig{
 		SuiteDir: t.TempDir(),
 	})
 	data, errs := bfd.DispatchBatch(context.Background(), nil, "triage", "")
@@ -275,11 +275,11 @@ func TestBatchFileDispatcher_SingleDispatchInterface(t *testing.T) {
 		},
 		SuiteDir: suiteDir,
 	}
-	bfd := NewBatchFileDispatcher(cfg)
+	bfd := NewBatchFileDispatcher(&cfg)
 
 	caseDir := filepath.Join(dir, "cases", "C1")
-	os.MkdirAll(caseDir, 0755)
-	os.WriteFile(filepath.Join(caseDir, "prompt.md"), []byte("test"), 0644)
+	os.MkdirAll(caseDir, 0o755)
+	os.WriteFile(filepath.Join(caseDir, "prompt.md"), []byte("test"), 0o644)
 
 	ctx := agentport.Context{
 		CaseID:       "C1",
@@ -302,7 +302,7 @@ func TestBatchFileDispatcher_SingleDispatchInterface(t *testing.T) {
 						Data:       json.RawMessage(`{"ok":true}`),
 					}
 					d, _ := json.Marshal(wrapper)
-					os.WriteFile(ctx.ArtifactPath, d, 0644)
+					os.WriteFile(ctx.ArtifactPath, d, 0o644)
 					return
 				}
 			}
@@ -323,7 +323,7 @@ func TestBatchFileDispatcher_SingleDispatchInterface(t *testing.T) {
 
 func TestBatchFileDispatcher_WriteBriefing(t *testing.T) {
 	dir := t.TempDir()
-	bfd := NewBatchFileDispatcher(BatchFileDispatcherConfig{
+	bfd := NewBatchFileDispatcher(&BatchFileDispatcherConfig{
 		SuiteDir: dir,
 	})
 

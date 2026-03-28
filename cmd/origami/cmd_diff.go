@@ -10,6 +10,12 @@ import (
 	"path/filepath"
 )
 
+const (
+	formatJSON      = "json"
+	formatText      = "text"
+	defaultStateDir = ".origami/state"
+)
+
 func diffCmd(w io.Writer, args []string) error {
 	fs := flag.NewFlagSet("diff", flag.ContinueOnError)
 	stateDir := fs.String("state-dir", "", "state directory (default: .origami/state or $ORIGAMI_STATE_DIR)")
@@ -43,9 +49,9 @@ func diffCmd(w io.Writer, args []string) error {
 	diffs := computeMetricDiffs(reportA, reportB)
 
 	switch *format {
-	case "json":
+	case formatJSON:
 		return renderDiffJSON(w, dirA, dirB, reportA, reportB, diffs)
-	case "text":
+	case formatText:
 		return renderDiffText(w, dirA, dirB, reportA, reportB, diffs)
 	default:
 		return fmt.Errorf("unknown format: %s", *format)
@@ -66,7 +72,7 @@ func resolveRunDir(stateDir, runRef string) (string, error) {
 		stateDir = os.Getenv("ORIGAMI_STATE_DIR")
 	}
 	if stateDir == "" {
-		stateDir = ".origami/state"
+		stateDir = defaultStateDir
 	}
 
 	dir := filepath.Join(stateDir, "runs", runRef)
@@ -119,7 +125,7 @@ func computeMetricDiffs(a, b *diffReport) []metricDiff {
 	// Track which B metrics we've seen.
 	seen := make(map[string]bool)
 
-	var diffs []metricDiff
+	diffs := make([]metricDiff, 0, len(a.Metrics.Metrics)+len(b.Metrics.Metrics))
 
 	for _, ma := range a.Metrics.Metrics {
 		d := metricDiff{

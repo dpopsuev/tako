@@ -84,7 +84,7 @@ func computeInlayHints(doc *document) []InlayHint {
 }
 
 func approachTraitHints(doc *document, lines []string) []InlayHint {
-	var hints []InlayHint
+	hints := make([]InlayHint, 0, len(lines))
 	for i, line := range lines {
 		trimmed := strings.TrimSpace(line)
 		if !strings.HasPrefix(trimmed, "approach:") {
@@ -112,7 +112,7 @@ func approachTraitHints(doc *document, lines []string) []InlayHint {
 }
 
 func personaHints(doc *document, lines []string) []InlayHint {
-	var hints []InlayHint
+	hints := make([]InlayHint, 0, len(lines))
 	for i, line := range lines {
 		trimmed := strings.TrimSpace(line)
 		if !strings.HasPrefix(trimmed, "persona:") {
@@ -146,8 +146,9 @@ func edgeConnectionHints(doc *document, lines []string) []InlayHint {
 
 	inferred := inferEdgeCopy(doc.Def)
 
-	var hints []InlayHint
-	for i, edge := range doc.Def.Edges {
+	hints := make([]InlayHint, 0, len(doc.Def.Edges))
+	for i := range doc.Def.Edges {
+		edge := &doc.Def.Edges[i]
 		line := findEdgeIDLine(lines, edge.ID)
 		if line < 0 {
 			continue
@@ -212,12 +213,13 @@ func neighborHints(doc *document, lines []string) []InlayHint {
 
 	inbound := map[string][]edgeNeighbor{}
 	outbound := map[string][]edgeNeighbor{}
-	for _, e := range doc.Def.Edges {
+	for i := range doc.Def.Edges {
+		e := &doc.Def.Edges[i]
 		outbound[e.From] = append(outbound[e.From], edgeNeighbor{e.To, e.Loop})
 		inbound[e.To] = append(inbound[e.To], edgeNeighbor{e.From, false})
 	}
 
-	var hints []InlayHint
+	hints := make([]InlayHint, 0, len(lines))
 	for i, line := range lines {
 		trimmed := strings.TrimSpace(line)
 		if !strings.HasPrefix(trimmed, "- name:") && !strings.HasPrefix(trimmed, "name:") {
@@ -230,8 +232,8 @@ func neighborHints(doc *document, lines []string) []InlayHint {
 		}
 
 		found := false
-		for _, n := range doc.Def.Nodes {
-			if n.Name == nodeName {
+		for j := range doc.Def.Nodes {
+			if doc.Def.Nodes[j].Name == nodeName {
 				found = true
 				break
 			}
@@ -296,7 +298,8 @@ func compactNeighbors(inbound, outbound []edgeNeighbor, isStart bool) string {
 
 func neighborTooltip(nodeName string, doc *document) string {
 	md := fmt.Sprintf("### %s — connected edges\n\n", nodeName)
-	for _, e := range doc.Def.Edges {
+	for i := range doc.Def.Edges {
+		e := &doc.Def.Edges[i]
 		if e.From != nodeName && e.To != nodeName {
 			continue
 		}
@@ -305,7 +308,7 @@ func neighborTooltip(nodeName string, doc *document) string {
 			cond = e.Condition
 		}
 		if cond == "" {
-			cond = "unconditional"
+			cond = condUnconditional
 		}
 
 		var tags []string

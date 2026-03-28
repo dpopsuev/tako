@@ -34,7 +34,7 @@ type expressionEdge struct {
 }
 
 // CompileExpressionEdge compiles a When expression with a typed environment.
-func CompileExpressionEdge(def circuit.EdgeDef, config ...map[string]any) (*expressionEdge, error) {
+func CompileExpressionEdge(def *circuit.EdgeDef, config ...map[string]any) (*expressionEdge, error) {
 	if def.When == "" {
 		return nil, fmt.Errorf("edge %s: When expression is empty", def.ID)
 	}
@@ -52,7 +52,7 @@ func CompileExpressionEdge(def circuit.EdgeDef, config ...map[string]any) (*expr
 		cfg = config[0]
 	}
 
-	return &expressionEdge{def: def, program: program, config: cfg}, nil
+	return &expressionEdge{def: *def, program: program, config: cfg}, nil
 }
 
 // Program returns the compiled program for test inspection.

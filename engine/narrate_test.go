@@ -50,10 +50,10 @@ func TestNarrationObserver_NodeEnterExit(t *testing.T) {
 		WithMilestoneInterval(0),
 	)
 
-	obs.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "F0"})
-	obs.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "F0", Elapsed: 150 * time.Millisecond})
-	obs.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "F1"})
-	obs.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "F1", Elapsed: 2 * time.Second})
+	obs.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "F0"})
+	obs.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "F0", Elapsed: 150 * time.Millisecond})
+	obs.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "F1"})
+	obs.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "F1", Elapsed: 2 * time.Second})
 
 	lines := c.all()
 	if len(lines) != 4 {
@@ -83,7 +83,7 @@ func TestNarrationObserver_WalkerSwitch(t *testing.T) {
 	c := &collector{}
 	obs := NewNarrationObserver(WithSink(c.sink), WithMilestoneInterval(0))
 
-	obs.OnEvent(circuit.WalkEvent{Type: circuit.EventWalkerSwitch, Walker: "Ember", Node: "F2"})
+	obs.OnEvent(&circuit.WalkEvent{Type: circuit.EventWalkerSwitch, Walker: "Ember", Node: "F2"})
 	lines := c.all()
 	if len(lines) != 1 {
 		t.Fatalf("expected 1 line, got %d", len(lines))
@@ -97,9 +97,9 @@ func TestNarrationObserver_WalkComplete(t *testing.T) {
 	c := &collector{}
 	obs := NewNarrationObserver(WithSink(c.sink), WithMilestoneInterval(0))
 
-	obs.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "start"})
-	obs.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "start", Elapsed: time.Millisecond})
-	obs.OnEvent(circuit.WalkEvent{Type: circuit.EventWalkComplete})
+	obs.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "start"})
+	obs.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeExit, Node: "start", Elapsed: time.Millisecond})
+	obs.OnEvent(&circuit.WalkEvent{Type: circuit.EventWalkComplete})
 
 	lines := c.all()
 	last := lines[len(lines)-1]
@@ -115,7 +115,7 @@ func TestNarrationObserver_WalkError(t *testing.T) {
 	c := &collector{}
 	obs := NewNarrationObserver(WithSink(c.sink), WithMilestoneInterval(0))
 
-	obs.OnEvent(circuit.WalkEvent{Type: circuit.EventWalkError, Node: "F3", Error: errors.New("timeout")})
+	obs.OnEvent(&circuit.WalkEvent{Type: circuit.EventWalkError, Node: "F3", Error: errors.New("timeout")})
 	lines := c.all()
 	if len(lines) != 1 {
 		t.Fatalf("expected 1 line, got %d", len(lines))
@@ -138,8 +138,8 @@ func TestNarrationObserver_Milestone(t *testing.T) {
 
 	for i := 0; i < 6; i++ {
 		node := "N"
-		obs.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: node})
-		obs.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeExit, Node: node, Elapsed: time.Millisecond})
+		obs.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: node})
+		obs.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeExit, Node: node, Elapsed: time.Millisecond})
 	}
 
 	lines := c.all()
@@ -158,7 +158,7 @@ func TestNarrationObserver_WithWalkerTag(t *testing.T) {
 	c := &collector{}
 	obs := NewNarrationObserver(WithSink(c.sink), WithMilestoneInterval(0))
 
-	obs.OnEvent(circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "F0", Walker: "Ember"})
+	obs.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: "F0", Walker: "Ember"})
 	lines := c.all()
 	if !strings.Contains(lines[0], "[Ember]") {
 		t.Errorf("line: %q, want '[Ember]' prefix", lines[0])
@@ -169,7 +169,7 @@ func TestNarrationObserver_ErrorInExit(t *testing.T) {
 	c := &collector{}
 	obs := NewNarrationObserver(WithSink(c.sink), WithMilestoneInterval(0))
 
-	obs.OnEvent(circuit.WalkEvent{
+	obs.OnEvent(&circuit.WalkEvent{
 		Type:  circuit.EventNodeExit,
 		Node:  "F3",
 		Error: errors.New("node failed"),
@@ -185,8 +185,8 @@ func TestNarrationObserver_SilentEvents(t *testing.T) {
 	c := &collector{}
 	obs := NewNarrationObserver(WithSink(c.sink), WithMilestoneInterval(0))
 
-	obs.OnEvent(circuit.WalkEvent{Type: circuit.EventTransition, Node: "F0", Edge: "e1"})
-	obs.OnEvent(circuit.WalkEvent{Type: circuit.EventEdgeEvaluate, Node: "F0", Edge: "e1"})
+	obs.OnEvent(&circuit.WalkEvent{Type: circuit.EventTransition, Node: "F0", Edge: "e1"})
+	obs.OnEvent(&circuit.WalkEvent{Type: circuit.EventEdgeEvaluate, Node: "F0", Edge: "e1"})
 
 	if len(c.all()) != 0 {
 		t.Errorf("transition and edge_evaluate should be silent, got %d lines", len(c.all()))

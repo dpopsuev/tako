@@ -29,7 +29,7 @@ type mockCollector struct {
 	calls   int
 }
 
-func (m *mockCollector) Collect(_ context.Context, _ []engine.BatchWalkResult) (map[string]float64, map[string]string, error) {
+func (m *mockCollector) Collect(_ context.Context, _ []engine.BatchWalkResult) (values map[string]float64, details map[string]string, err error) {
 	m.calls++
 	return m.values, m.details, m.err
 }
@@ -57,14 +57,14 @@ func testCircuitDef() *circuit.CircuitDef {
 // --- Tests ---
 
 func TestRun_MissingLoader(t *testing.T) {
-	_, err := Run(context.Background(), HarnessConfig{})
+	_, err := Run(context.Background(), &HarnessConfig{})
 	if err == nil {
 		t.Fatal("expected error for missing Loader")
 	}
 }
 
 func TestRun_MissingCollector(t *testing.T) {
-	_, err := Run(context.Background(), HarnessConfig{
+	_, err := Run(context.Background(), &HarnessConfig{
 		Loader: &mockLoader{},
 	})
 	if err == nil {
@@ -73,7 +73,7 @@ func TestRun_MissingCollector(t *testing.T) {
 }
 
 func TestRun_MissingCircuitDef(t *testing.T) {
-	_, err := Run(context.Background(), HarnessConfig{
+	_, err := Run(context.Background(), &HarnessConfig{
 		Loader:    &mockLoader{},
 		Collector: &mockCollector{},
 	})
@@ -83,7 +83,7 @@ func TestRun_MissingCircuitDef(t *testing.T) {
 }
 
 func TestRun_MissingScoreCard(t *testing.T) {
-	_, err := Run(context.Background(), HarnessConfig{
+	_, err := Run(context.Background(), &HarnessConfig{
 		Loader:     &mockLoader{},
 		Collector:  &mockCollector{},
 		CircuitDef: testCircuitDef(),
@@ -94,7 +94,7 @@ func TestRun_MissingScoreCard(t *testing.T) {
 }
 
 func TestRun_LoaderError(t *testing.T) {
-	_, err := Run(context.Background(), HarnessConfig{
+	_, err := Run(context.Background(), &HarnessConfig{
 		Loader:     &mockLoader{err: fmt.Errorf("load failed")},
 		Collector:  &mockCollector{},
 		CircuitDef: testCircuitDef(),
@@ -107,7 +107,7 @@ func TestRun_LoaderError(t *testing.T) {
 }
 
 func TestRun_CollectorError(t *testing.T) {
-	_, err := Run(context.Background(), HarnessConfig{
+	_, err := Run(context.Background(), &HarnessConfig{
 		Loader: &mockLoader{cases: []engine.BatchCase{
 			{ID: "C1", Context: map[string]any{}},
 		}},
@@ -130,7 +130,7 @@ func TestRun_SingleRun(t *testing.T) {
 		details: map[string]string{"M1": "9/10", "M2": "17/20"},
 	}
 
-	report, err := Run(context.Background(), HarnessConfig{
+	report, err := Run(context.Background(), &HarnessConfig{
 		Loader:      loader,
 		Collector:   collector,
 		CircuitDef:  testCircuitDef(),
@@ -174,7 +174,7 @@ func TestRun_MultiRun(t *testing.T) {
 		details: map[string]string{},
 	}
 
-	report, err := Run(context.Background(), HarnessConfig{
+	report, err := Run(context.Background(), &HarnessConfig{
 		Loader:      loader,
 		Collector:   collector,
 		CircuitDef:  testCircuitDef(),
@@ -209,7 +209,7 @@ func TestRun_DefaultRuns(t *testing.T) {
 		values: map[string]float64{"M1": 1.0, "M2": 1.0},
 	}
 
-	report, err := Run(context.Background(), HarnessConfig{
+	report, err := Run(context.Background(), &HarnessConfig{
 		Loader:     loader,
 		Collector:  collector,
 		CircuitDef: testCircuitDef(),

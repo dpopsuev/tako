@@ -9,6 +9,13 @@ import (
 	"go.lsp.dev/protocol"
 )
 
+const (
+	ctxNodes   = "nodes"
+	ctxEdges   = "edges"
+	ctxWalkers = "walkers"
+	ctxZones   = "zones"
+)
+
 var topLevelKeys = []string{
 	"circuit", "description", "imports", "vars", "zones",
 	"nodes", "edges", "walkers", "start", "done",
@@ -91,11 +98,11 @@ func computeCompletions(doc *document, pos protocol.Position) []protocol.Complet
 	// Node field completion (indent ~4-6, inside nodes list)
 	ctx := guessContext(lines, int(pos.Line))
 	switch ctx {
-	case "nodes":
+	case ctxNodes:
 		return keyCompletions(nodeFieldKeys, protocol.CompletionItemKindField)
-	case "edges":
+	case ctxEdges:
 		return keyCompletions(edgeFieldKeys, protocol.CompletionItemKindField)
-	case "walkers":
+	case ctxWalkers:
 		if isStepAffinityChild(lines, int(pos.Line)) {
 			return nodeNameCompletions(doc)
 		}
@@ -110,13 +117,13 @@ func guessContext(lines []string, curLine int) string {
 		line := strings.TrimSpace(lines[i])
 		switch {
 		case line == "nodes:" || strings.HasPrefix(line, "nodes:"):
-			return "nodes"
+			return ctxNodes
 		case line == "edges:" || strings.HasPrefix(line, "edges:"):
-			return "edges"
+			return ctxEdges
 		case line == "walkers:" || strings.HasPrefix(line, "walkers:"):
-			return "walkers"
+			return ctxWalkers
 		case line == "zones:" || strings.HasPrefix(line, "zones:"):
-			return "zones"
+			return ctxZones
 		}
 	}
 	return ""
@@ -150,8 +157,8 @@ func nodeNameCompletions(doc *document) []protocol.CompletionItem {
 		return nil
 	}
 	names := make([]string, 0, len(doc.Def.Nodes))
-	for _, n := range doc.Def.Nodes {
-		names = append(names, n.Name)
+	for i := range doc.Def.Nodes {
+		names = append(names, doc.Def.Nodes[i].Name)
 	}
 	return valueCompletions(names, protocol.CompletionItemKindReference)
 }

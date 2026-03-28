@@ -38,7 +38,7 @@ func TestResolve_BoardUsesAndBind(t *testing.T) {
 		t.Errorf("root = %q, want rca", g.Root.Name)
 	}
 
-	var optNames []string
+	optNames := make([]string, 0, len(g.Root.Options))
 	for _, o := range g.Root.Options {
 		optNames = append(optNames, o.OptionFunc)
 	}

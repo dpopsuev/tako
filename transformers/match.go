@@ -27,7 +27,9 @@ func NewMatch() engine.Transformer {
 	return &matchTransformer{}
 }
 
-func (t *matchTransformer) Name() string        { return "match" }
+const transformerNameMatch = "match"
+
+func (t *matchTransformer) Name() string        { return transformerNameMatch }
 func (t *matchTransformer) Deterministic() bool { return true }
 
 func (t *matchTransformer) Transform(_ context.Context, tc *engine.TransformerContext) (any, error) {

@@ -874,10 +874,8 @@ done: DONE`
 
 	if label, ok := neighborLabels["review"]; !ok {
 		t.Error("expected neighbor hint on review")
-	} else {
-		if !strings.Contains(label, "recall") && !strings.Contains(label, "triage") {
-			t.Errorf("review should show inbound recall and triage, got %q", label)
-		}
+	} else if !strings.Contains(label, "recall") && !strings.Contains(label, "triage") {
+		t.Errorf("review should show inbound recall and triage, got %q", label)
 	}
 }
 

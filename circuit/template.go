@@ -41,15 +41,16 @@ func renderWithZones(b *strings.Builder, def *CircuitDef) {
 		b.WriteString("    end\n")
 	}
 
-	for _, n := range def.Nodes {
-		if !zonedNodes[n.Name] {
-			fmt.Fprintf(b, "    %s\n", sanitizeID(n.Name))
+	for i := range def.Nodes {
+		if !zonedNodes[def.Nodes[i].Name] {
+			fmt.Fprintf(b, "    %s\n", sanitizeID(def.Nodes[i].Name))
 		}
 	}
 }
 
 func renderEdges(b *strings.Builder, def *CircuitDef) {
-	for _, e := range def.Edges {
+	for i := range def.Edges {
+		e := &def.Edges[i]
 		from := sanitizeID(e.From)
 		to := sanitizeID(e.To)
 		label := e.Name

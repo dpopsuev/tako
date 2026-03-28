@@ -653,7 +653,7 @@ func newNamedCircuitBackend(t *testing.T, label string) *httptest.Server {
 		},
 	}
 
-	srv := mcp.NewCircuitServer(cfg)
+	srv := mcp.NewCircuitServer(&cfg)
 	t.Cleanup(srv.Shutdown)
 
 	h := sdkmcp.NewStreamableHTTPHandler(
@@ -871,7 +871,7 @@ func newCircuitBackend(t *testing.T) (*httptest.Server, *mcp.CircuitServer) {
 		},
 	}
 
-	srv := mcp.NewCircuitServer(cfg)
+	srv := mcp.NewCircuitServer(&cfg)
 	t.Cleanup(srv.Shutdown)
 
 	h := sdkmcp.NewStreamableHTTPHandler(

@@ -38,7 +38,9 @@ func NewLLM(d agentport.Dispatcher, opts ...LLMOption) *LLMTransformer {
 	return t
 }
 
-func (t *LLMTransformer) Name() string        { return "llm" }
+const transformerNameLLM = "llm"
+
+func (t *LLMTransformer) Name() string        { return transformerNameLLM }
 func (t *LLMTransformer) Deterministic() bool { return false }
 
 func (t *LLMTransformer) Transform(ctx context.Context, tc *engine.TransformerContext) (any, error) {

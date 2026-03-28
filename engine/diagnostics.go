@@ -1,22 +1,24 @@
 package engine
 
 import (
-	"github.com/dpopsuev/origami/circuit"
+	"context"
 	"log/slog"
 	"sort"
 	"strings"
+
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // runBuildDiagnostics performs post-build static analysis on the circuit graph.
 // All diagnostics emit slog.Warn — they do not fail the build.
-func runBuildDiagnostics(def *circuit.CircuitDef, reg GraphRegistries) {
+func runBuildDiagnostics(def *circuit.CircuitDef, reg *GraphRegistries) {
 	diagUnreferencedHooks(def, reg)
 	diagMissingHookRefs(def, reg)
 }
 
 // diagUnreferencedHooks (D1): hooks registered in HookRegistry but not
 // referenced by any node's before: or after: field.
-func diagUnreferencedHooks(def *circuit.CircuitDef, reg GraphRegistries) {
+func diagUnreferencedHooks(def *circuit.CircuitDef, reg *GraphRegistries) {
 	if len(reg.Hooks) == 0 {
 		return
 	}
@@ -25,7 +27,7 @@ func diagUnreferencedHooks(def *circuit.CircuitDef, reg GraphRegistries) {
 
 	for name := range reg.Hooks {
 		if !referenced[name] {
-			slog.Warn("unreferenced hook",
+			slog.WarnContext(context.Background(), "unreferenced hook",
 				"component", "build",
 				"diagnostic", "D1",
 				"hook", name,
@@ -36,14 +38,15 @@ func diagUnreferencedHooks(def *circuit.CircuitDef, reg GraphRegistries) {
 }
 
 // diagMissingHookRefs (D2+D4): nodes reference hooks that don't exist in the registry.
-func diagMissingHookRefs(def *circuit.CircuitDef, reg GraphRegistries) {
-	for _, nd := range def.Nodes {
+func diagMissingHookRefs(def *circuit.CircuitDef, reg *GraphRegistries) {
+	for i := range def.Nodes {
+		nd := &def.Nodes[i]
 		checkHookList(nd.Name, "before", nd.Before, reg, def.Circuit)
 		checkHookList(nd.Name, "after", nd.After, reg, def.Circuit)
 	}
 }
 
-func checkHookList(nodeName, phase string, hooks []string, reg GraphRegistries, circuit string) {
+func checkHookList(nodeName, phase string, hooks []string, reg *GraphRegistries, circuit string) {
 	if len(hooks) == 0 {
 		return
 	}
@@ -64,7 +67,7 @@ func checkHookList(nodeName, phase string, hooks []string, reg GraphRegistries, 
 	}
 
 	available := registeredHookNames(reg)
-	slog.Warn("missing hook references",
+	slog.WarnContext(context.Background(), "missing hook references",
 		"component", "build",
 		"diagnostic", "D2",
 		"node", nodeName,
@@ -79,18 +82,18 @@ func checkHookList(nodeName, phase string, hooks []string, reg GraphRegistries, 
 
 func collectReferencedHooks(def *circuit.CircuitDef) map[string]bool {
 	refs := make(map[string]bool)
-	for _, nd := range def.Nodes {
-		for _, h := range nd.Before {
+	for i := range def.Nodes {
+		for _, h := range def.Nodes[i].Before {
 			refs[h] = true
 		}
-		for _, h := range nd.After {
+		for _, h := range def.Nodes[i].After {
 			refs[h] = true
 		}
 	}
 	return refs
 }
 
-func registeredHookNames(reg GraphRegistries) []string {
+func registeredHookNames(reg *GraphRegistries) []string {
 	if reg.Hooks == nil {
 		return nil
 	}

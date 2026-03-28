@@ -31,11 +31,11 @@ type workerEntry struct {
 }
 
 // NewWorkerPool creates a pool that is not yet started.
-func NewWorkerPool(cfg WorkerPoolConfig) *WorkerPool {
+func NewWorkerPool(cfg *WorkerPoolConfig) *WorkerPool {
 	if cfg.Runtime == nil {
 		cfg.Runtime = NewContainerRuntime("")
 	}
-	return &WorkerPool{config: cfg}
+	return &WorkerPool{config: *cfg}
 }
 
 // Start launches cfg.Replicas worker containers.
@@ -45,7 +45,7 @@ func (wp *WorkerPool) Start(ctx context.Context) error {
 
 	for i := range wp.config.Replicas {
 		name := fmt.Sprintf("worker-%d", i)
-		id, err := wp.config.Runtime.RunWithOptions(ctx, RunOptions{
+		id, err := wp.config.Runtime.RunWithOptions(ctx, &RunOptions{
 			Name:    name,
 			Image:   wp.config.Image,
 			Env:     wp.config.Env,
@@ -70,7 +70,7 @@ func (wp *WorkerPool) Scale(ctx context.Context, n int) error {
 	if n > current {
 		for i := current; i < n; i++ {
 			name := fmt.Sprintf("worker-%d", i)
-			id, err := wp.config.Runtime.RunWithOptions(ctx, RunOptions{
+			id, err := wp.config.Runtime.RunWithOptions(ctx, &RunOptions{
 				Name:    name,
 				Image:   wp.config.Image,
 				Env:     wp.config.Env,

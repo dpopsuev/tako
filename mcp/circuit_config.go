@@ -136,7 +136,7 @@ func (c *CircuitConfig) FindSchema(step string) (StepSchema, error) {
 	if len(c.StepSchemas) == 0 {
 		return StepSchema{Name: step}, nil
 	}
-	var names []string
+	names := make([]string, 0, len(c.StepSchemas))
 	for _, s := range c.StepSchemas {
 		if s.Name == step {
 			return s, nil

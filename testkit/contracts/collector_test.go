@@ -13,10 +13,10 @@ import (
 type stubCollector struct{}
 
 func (s *stubCollector) Collect(_ context.Context, results []engine.BatchWalkResult) (
-	map[string]float64, map[string]string, error,
+	values map[string]float64, details map[string]string, err error,
 ) {
-	values := map[string]float64{"cases_processed": float64(len(results))}
-	details := map[string]string{"cases_processed": "count of results"}
+	values = map[string]float64{"cases_processed": float64(len(results))}
+	details = map[string]string{"cases_processed": "count of results"}
 	return values, details, nil
 }
 

@@ -46,7 +46,7 @@ type HarnessConfig struct {
 
 	CircuitDef *circuit.CircuitDef
 	ScoreCard  *ScoreCard
-	Shared     engine.GraphRegistries
+	Shared     *engine.GraphRegistries
 
 	// Contract enables contract-driven field extraction. When set, the
 	// harness extracts scorer-addressable values from BatchWalkResults
@@ -107,7 +107,7 @@ type HarnessConfig struct {
 // Run orchestrates a generic calibration: load → walk → collect → score → aggregate.
 // It returns the generic CalibrationReport. Domain-specific state (e.g., per-case
 // results) is stored inside the CaseCollector and can be retrieved by the caller.
-func Run(ctx context.Context, cfg HarnessConfig) (*CalibrationReport, error) {
+func Run(ctx context.Context, cfg *HarnessConfig) (*CalibrationReport, error) {
 	if cfg.Loader == nil {
 		return nil, fmt.Errorf("calibrate.Run: Loader is required")
 	}
@@ -143,6 +143,9 @@ func Run(ctx context.Context, cfg HarnessConfig) (*CalibrationReport, error) {
 	}
 
 	// Merge components into shared registries.
+	if cfg.Shared == nil {
+		cfg.Shared = &engine.GraphRegistries{}
+	}
 	if len(cfg.Components) > 0 {
 		merged, err := engine.MergeComponents(cfg.Shared, cfg.Components...)
 		if err != nil {
@@ -155,7 +158,7 @@ func Run(ctx context.Context, cfg HarnessConfig) (*CalibrationReport, error) {
 	var allRunMetrics []MetricSet
 
 	for run := 0; run < cfg.Runs; run++ {
-		logger.Info("starting run", "run", run+1, "total", cfg.Runs)
+		logger.InfoContext(ctx, "starting run", "run", run+1, "total", cfg.Runs)
 
 		cases, err := cfg.Loader.Load(ctx)
 		if err != nil {
@@ -172,9 +175,9 @@ func Run(ctx context.Context, cfg HarnessConfig) (*CalibrationReport, error) {
 
 		// Fail-fast: detect circuit delegate nodes that need PromptRelayer.
 		if cfg.PromptRelayer == nil && cfg.Shared.MediatorEndpoint != "" && cfg.CircuitDef != nil {
-			for _, nd := range cfg.CircuitDef.Nodes {
-				if nd.EffectiveHandlerType(cfg.CircuitDef.HandlerType) == circuit.HandlerTypeCircuit {
-					return nil, fmt.Errorf("circuit has handler_type:circuit node %q but no PromptRelayer configured; set HarnessConfig.PromptRelayer for mediator delegation", nd.Name)
+			for i := range cfg.CircuitDef.Nodes {
+				if cfg.CircuitDef.Nodes[i].EffectiveHandlerType(cfg.CircuitDef.HandlerType) == circuit.HandlerTypeCircuit {
+					return nil, fmt.Errorf("circuit has handler_type:circuit node %q but no PromptRelayer configured; set HarnessConfig.PromptRelayer for mediator delegation", cfg.CircuitDef.Nodes[i].Name)
 				}
 			}
 		}
@@ -216,7 +219,7 @@ func Run(ctx context.Context, cfg HarnessConfig) (*CalibrationReport, error) {
 			return nil, fmt.Errorf("run %d: all %d cases failed (first: %w)", run+1, errCount, firstErr)
 		}
 		if errCount > 0 {
-			logger.Warn("partial failures", "failed", errCount, "total", len(batchResults), "first_error", firstErr)
+			logger.WarnContext(ctx, "partial failures", "failed", errCount, "total", len(batchResults), "first_error", firstErr)
 		}
 
 		// Error rate gate: fail if the fraction of errored cases exceeds the threshold.
@@ -264,7 +267,7 @@ func Run(ctx context.Context, cfg HarnessConfig) (*CalibrationReport, error) {
 		report.Plan = cfg.Plan.Name
 	}
 
-	eval := func(m Metric) bool {
+	eval := func(m *Metric) bool {
 		if def := cfg.ScoreCard.FindDef(m.ID); def != nil {
 			return def.Evaluate(m.Value)
 		}

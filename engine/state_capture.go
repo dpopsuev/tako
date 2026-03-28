@@ -31,7 +31,7 @@ func NewCapture() (circuit.WalkObserver, circuit.ArtifactCapture) {
 }
 
 // OnEvent implements WalkObserver. It captures artifacts from node_exit events.
-func (c *OutputCapture) OnEvent(e circuit.WalkEvent) {
+func (c *OutputCapture) OnEvent(e *circuit.WalkEvent) {
 	if e.Type != circuit.EventNodeExit || e.Node == "" {
 		return
 	}

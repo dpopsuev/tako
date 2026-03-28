@@ -42,7 +42,9 @@ func NewHTTP(opts ...HTTPOption) *HTTPTransformer {
 	return t
 }
 
-func (t *HTTPTransformer) Name() string        { return "http" }
+const transformerNameHTTP = "http"
+
+func (t *HTTPTransformer) Name() string        { return transformerNameHTTP }
 func (t *HTTPTransformer) Deterministic() bool { return true }
 
 func (t *HTTPTransformer) Transform(ctx context.Context, tc *engine.TransformerContext) (any, error) {

@@ -13,7 +13,7 @@ func TestVetoHook_ImplementsHook(t *testing.T) {
 
 func TestHookingWalker_VetoIntercept(t *testing.T) {
 	collector := &InMemoryFindingCollector{}
-	_ = collector.Report(context.Background(), circuit.Finding{
+	_ = collector.Report(context.Background(), &circuit.Finding{
 		Severity: circuit.FindingError,
 		NodeName: "nodeA",
 		Domain:   "security",
@@ -55,7 +55,7 @@ func TestHookingWalker_VetoIntercept(t *testing.T) {
 
 func TestHookingWalker_NoVeto_PassThrough(t *testing.T) {
 	collector := &InMemoryFindingCollector{}
-	_ = collector.Report(context.Background(), circuit.Finding{
+	_ = collector.Report(context.Background(), &circuit.Finding{
 		Severity: circuit.FindingWarning,
 		NodeName: "nodeA",
 	})

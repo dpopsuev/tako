@@ -12,8 +12,8 @@ import (
 func AssertTraceContains(t testing.TB, events []engine.TraceEvent, caseID, eventType, node string) {
 	t.Helper()
 
-	for _, e := range events {
-		if e.CaseID == caseID && e.Event == eventType && e.Node == node {
+	for i := range events {
+		if events[i].CaseID == caseID && events[i].Event == eventType && events[i].Node == node {
 			return
 		}
 	}
@@ -26,9 +26,9 @@ func AssertPath(t testing.TB, events []engine.TraceEvent, caseID string, expecte
 	t.Helper()
 
 	var actualNodes []string
-	for _, e := range events {
-		if e.CaseID == caseID && e.Event == string(circuit.EventNodeEnter) {
-			actualNodes = append(actualNodes, e.Node)
+	for i := range events {
+		if events[i].CaseID == caseID && events[i].Event == string(circuit.EventNodeEnter) {
+			actualNodes = append(actualNodes, events[i].Node)
 		}
 	}
 

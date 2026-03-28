@@ -35,7 +35,7 @@ func LoadCheckpointState(checkpointDir, walkerID string) (*circuit.WalkerState, 
 func BuildHITLResult(walker circuit.Walker, walkErr error) (*HITLResult, error) {
 	state := walker.State()
 
-	if state.Status == "interrupted" {
+	if state.Status == walkStatusInterrupted {
 		step := state.CurrentNode
 		promptPath := ""
 		if data, ok := state.Context["interrupt_data"].(map[string]any); ok {

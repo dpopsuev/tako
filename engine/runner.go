@@ -60,7 +60,7 @@ func NewRunner(def *circuit.CircuitDef, nodes NodeRegistry, edges EdgeFactory, e
 	if len(extractors) > 0 {
 		extReg = extractors[0]
 	}
-	return NewRunnerWith(def, GraphRegistries{
+	return NewRunnerWith(def, &GraphRegistries{
 		Nodes:      nodes,
 		Edges:      edges,
 		Extractors: extReg,
@@ -68,7 +68,7 @@ func NewRunner(def *circuit.CircuitDef, nodes NodeRegistry, edges EdgeFactory, e
 }
 
 // NewRunnerWith constructs a Runner using the full registries bundle.
-func NewRunnerWith(def *circuit.CircuitDef, reg GraphRegistries) (*Runner, error) {
+func NewRunnerWith(def *circuit.CircuitDef, reg *GraphRegistries) (*Runner, error) {
 	graph, err := BuildGraph(def, reg)
 	if err != nil {
 		return nil, fmt.Errorf("build graph: %w", err)
@@ -79,7 +79,8 @@ func NewRunnerWith(def *circuit.CircuitDef, reg GraphRegistries) (*Runner, error
 	nodeHooks := make(map[string][]string, len(def.Nodes))
 	nodeMeta := make(map[string]map[string]any, len(def.Nodes))
 	needsFileWrite := false
-	for _, nd := range def.Nodes {
+	for i := range def.Nodes {
+		nd := &def.Nodes[i]
 		if nd.Schema != nil {
 			schemas[nd.Name] = nd.Schema
 		}
@@ -155,7 +156,7 @@ type validatingWalker struct {
 }
 
 func (vw *validatingWalker) Identity() circuit.AgentIdentity     { return vw.inner.Identity() }
-func (vw *validatingWalker) SetIdentity(id circuit.AgentIdentity) { vw.inner.SetIdentity(id) }
+func (vw *validatingWalker) SetIdentity(id *circuit.AgentIdentity) { vw.inner.SetIdentity(id) }
 func (vw *validatingWalker) State() *circuit.WalkerState          { return vw.inner.State() }
 
 func (vw *validatingWalker) Handle(ctx context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
@@ -171,9 +172,9 @@ func (vw *validatingWalker) Handle(ctx context.Context, node circuit.Node, nc ci
 
 	if err := ValidateArtifact(schema, artifact); err != nil {
 		if vw.log != nil {
-			vw.log.Warn("artifact schema validation failed",
-				slog.String("node", node.Name()),
-				slog.String("error", err.Error()),
+			vw.log.WarnContext(ctx, "artifact schema validation failed",
+				"node", node.Name(),
+				"error", err.Error(),
 			)
 		}
 		return nil, fmt.Errorf("node %s: artifact schema violation: %w", node.Name(), err)
@@ -200,7 +201,7 @@ type hookingWalker struct {
 }
 
 func (hw *hookingWalker) Identity() circuit.AgentIdentity     { return hw.inner.Identity() }
-func (hw *hookingWalker) SetIdentity(id circuit.AgentIdentity) { hw.inner.SetIdentity(id) }
+func (hw *hookingWalker) SetIdentity(id *circuit.AgentIdentity) { hw.inner.SetIdentity(id) }
 func (hw *hookingWalker) State() *circuit.WalkerState          { return hw.inner.State() }
 
 func (hw *hookingWalker) Handle(ctx context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
@@ -209,13 +210,13 @@ func (hw *hookingWalker) Handle(ctx context.Context, node circuit.Node, nc circu
 		hook, hErr := hw.hooks.Get(name)
 		if hErr != nil {
 			if hw.log != nil {
-				hw.log.Warn("before-hook not found", slog.String("hook", name), slog.String("node", node.Name()))
+				hw.log.WarnContext(ctx, "before-hook not found", "hook", name, "node", node.Name())
 			}
 			continue
 		}
 		if hErr = hook.Run(hookCtx, node.Name(), nil); hErr != nil {
 			if hw.log != nil {
-				hw.log.Warn("before-hook error", slog.String("hook", name), slog.String("node", node.Name()), slog.String("error", hErr.Error()))
+				hw.log.WarnContext(ctx, "before-hook error", "hook", name, "node", node.Name(), "error", hErr.Error())
 			}
 		}
 		if hw.onHookEvent != nil {
@@ -232,7 +233,7 @@ func (hw *hookingWalker) Handle(ctx context.Context, node circuit.Node, nc circu
 		hook, hErr := hw.hooks.Get(name)
 		if hErr != nil {
 			if hw.log != nil {
-				hw.log.Warn("hook not found", slog.String("hook", name), slog.String("node", node.Name()))
+				hw.log.WarnContext(ctx, "hook not found", "hook", name, "node", node.Name())
 			}
 			continue
 		}
@@ -245,7 +246,7 @@ func (hw *hookingWalker) Handle(ctx context.Context, node circuit.Node, nc circu
 			continue
 		}
 		if hErr != nil && hw.log != nil {
-			hw.log.Warn("hook error", slog.String("hook", name), slog.String("node", node.Name()), slog.String("error", hErr.Error()))
+			hw.log.WarnContext(ctx, "hook error", "hook", name, "node", node.Name(), "error", hErr.Error())
 		}
 		if hw.onHookEvent != nil {
 			hw.onHookEvent(name, "after", hErr)
@@ -270,7 +271,7 @@ type checkpointingWalker struct {
 }
 
 func (cw *checkpointingWalker) Identity() circuit.AgentIdentity     { return cw.inner.Identity() }
-func (cw *checkpointingWalker) SetIdentity(id circuit.AgentIdentity) { cw.inner.SetIdentity(id) }
+func (cw *checkpointingWalker) SetIdentity(id *circuit.AgentIdentity) { cw.inner.SetIdentity(id) }
 func (cw *checkpointingWalker) State() *circuit.WalkerState          { return cw.inner.State() }
 
 func (cw *checkpointingWalker) Handle(ctx context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {

@@ -74,7 +74,7 @@ func (o *Orchestrator) Swap(ctx context.Context, name string, newBackend Schemat
 }
 
 // CallTool calls a tool on a named schematic.
-func (o *Orchestrator) CallTool(ctx context.Context, name string, tool string, args map[string]any) (*sdkmcp.CallToolResult, error) {
+func (o *Orchestrator) CallTool(ctx context.Context, name, tool string, args map[string]any) (*sdkmcp.CallToolResult, error) {
 	o.mu.RLock()
 	backend, ok := o.schematics[name]
 	o.mu.RUnlock()
