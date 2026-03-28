@@ -34,3 +34,6 @@ deploy/.origami/
 deploy/ca-certificates.crt
 .claude/scheduled_tasks.lock
 .claude/worktrees/
+limes.db
+limes.db-shm
+limes.db-wal
