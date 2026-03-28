@@ -242,7 +242,6 @@ func resolveHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegi
 			provider:   nd.Provider,
 			config:     def.Vars,
 			nodeConfig: nd.EffectiveConfig(),
-			meta:       nd.Meta,
 		}, nil
 
 	case HandlerTypeExtractor:
@@ -254,7 +253,6 @@ func resolveHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegi
 			name:    nd.Name,
 			element: elem,
 			ext:     ext,
-			meta:    nd.Meta,
 		}, nil
 
 	case HandlerTypeRenderer:
@@ -266,7 +264,6 @@ func resolveHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegi
 			name:    nd.Name,
 			element: elem,
 			rnd:     rnd,
-			meta:    nd.Meta,
 		}, nil
 
 	case HandlerTypeNode:
@@ -293,7 +290,6 @@ func resolveHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegi
 			gen:        gen,
 			config:     def.Vars,
 			nodeConfig: nd.EffectiveConfig(),
-			meta:       nd.Meta,
 		}, nil
 
 	case HandlerTypeCircuit:
@@ -316,7 +312,6 @@ func resolveHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegi
 					name:       nd.Name,
 					element:    elem,
 					circuitDef: cd,
-					meta:       nd.Meta,
 				}, nil
 			}
 		}
@@ -333,7 +328,6 @@ func resolveHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegi
 				trans:      &MCPCircuitTransformer{CircuitType: handler, Endpoint: reg.MediatorEndpoint},
 				config:     def.Vars,
 				nodeConfig: nd.EffectiveConfig(),
-				meta:       nd.Meta,
 			}, nil
 		}
 		return nil, fmt.Errorf("node %q: circuit handler %q not found (no local circuit and no mediator endpoint)", nd.Name, handler)

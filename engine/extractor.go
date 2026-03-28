@@ -57,7 +57,6 @@ type extractorNode struct {
 	name    string
 	element circuit.Element
 	ext     Extractor
-	meta    map[string]any
 }
 
 func (n *extractorNode) Name() string             { return n.name }

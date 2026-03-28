@@ -20,9 +20,12 @@ func (t *JQTransformer) Name() string        { return "jq" }
 func (t *JQTransformer) Deterministic() bool { return true }
 
 func (t *JQTransformer) Transform(ctx context.Context, tc *engine.TransformerContext) (any, error) {
-	expression, _ := metaString(tc, "expr")
+	expression := ""
+	if tc.NodeConfig != nil {
+		expression = tc.NodeConfig.Expr
+	}
 	if expression == "" {
-		return nil, fmt.Errorf("jq transformer: 'expr' is required in meta")
+		return nil, fmt.Errorf("jq transformer: 'expr' is required in node config")
 	}
 
 	input := normalizeToMap(tc.Input)

@@ -161,7 +161,7 @@ func TestFileWriteHook_WritesArtifact(t *testing.T) {
 				Handler:   "go-template",
 				Prompt:    "test data",
 				After:     []string{"file-write"},
-				Meta:      map[string]any{"output_path": outPath},
+				Config:    &circuit.NodeConfig{OutputPath: outPath},
 			},
 		},
 		Edges: []circuit.EdgeDef{
@@ -209,7 +209,7 @@ func TestFileWriteHook_TemplatedPath(t *testing.T) {
 				Handler:  "go-template",
 				Prompt:   "triage output",
 				After:    []string{"file-write"},
-				Meta:     map[string]any{"output_path": pathTmpl},
+				Config:   &circuit.NodeConfig{OutputPath: pathTmpl},
 			},
 		},
 		Edges: []circuit.EdgeDef{
@@ -237,7 +237,7 @@ func TestFileWriteHook_TemplatedPath(t *testing.T) {
 
 func TestFileWriteHook_MissingOutputPath(t *testing.T) {
 	hook := &FileWriteHook{
-		NodeMeta: map[string]map[string]any{
+		NodeConfigs: map[string]*circuit.NodeConfig{
 			"node": {},
 		},
 	}
@@ -262,7 +262,7 @@ func TestFileWriteHook_AutoRegisteredByRunner(t *testing.T) {
 				Approach: "rapid",
 				Handler:  "passthrough",
 				After:    []string{"file-write"},
-				Meta:     map[string]any{"output_path": outPath},
+				Config:   &circuit.NodeConfig{OutputPath: outPath},
 			},
 		},
 		Edges: []circuit.EdgeDef{

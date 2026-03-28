@@ -42,11 +42,13 @@ func (t *FileTransformer) Deterministic() bool { return true }
 
 func (t *FileTransformer) Transform(ctx context.Context, tc *engine.TransformerContext) (any, error) {
 	path := tc.Prompt
-	if path == "" {
-		path, _ = metaString(tc, "path")
+	if path == "" && tc.NodeConfig != nil {
+		if p, ok := tc.NodeConfig.Extras["path"].(string); ok {
+			path = p
+		}
 	}
 	if path == "" {
-		return nil, fmt.Errorf("file transformer: file path required (set prompt: or meta.path)")
+		return nil, fmt.Errorf("file transformer: file path required (set prompt: or config.extras.path)")
 	}
 
 	if !filepath.IsAbs(path) {

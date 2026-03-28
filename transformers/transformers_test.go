@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/origami/agentport"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
 )
 
@@ -22,9 +23,9 @@ func TestJQ_Transform(t *testing.T) {
 	}
 
 	tc := &engine.TransformerContext{
-		Input:  map[string]any{"items": []any{1.0, 2.0, 3.0}},
-		Config: map[string]any{"multiplier": 10.0},
-		Meta:   map[string]any{"expr": "len(input.items)"},
+		Input:      map[string]any{"items": []any{1.0, 2.0, 3.0}},
+		Config:     map[string]any{"multiplier": 10.0},
+		NodeConfig: &circuit.NodeConfig{Expr: "len(input.items)"},
 	}
 	result, err := jq.Transform(context.Background(), tc)
 	if err != nil {
@@ -38,9 +39,9 @@ func TestJQ_Transform(t *testing.T) {
 func TestJQ_TransformWithConfig(t *testing.T) {
 	jq := NewJQ()
 	tc := &engine.TransformerContext{
-		Input:  map[string]any{"value": 5.0},
-		Config: map[string]any{"threshold": 3.0},
-		Meta:   map[string]any{"expr": "input.value > config.threshold"},
+		Input:      map[string]any{"value": 5.0},
+		Config:     map[string]any{"threshold": 3.0},
+		NodeConfig: &circuit.NodeConfig{Expr: "input.value > config.threshold"},
 	}
 	result, err := jq.Transform(context.Background(), tc)
 	if err != nil {
@@ -53,7 +54,7 @@ func TestJQ_TransformWithConfig(t *testing.T) {
 
 func TestJQ_NoExpression(t *testing.T) {
 	jq := NewJQ()
-	tc := &engine.TransformerContext{Meta: map[string]any{}}
+	tc := &engine.TransformerContext{NodeConfig: &circuit.NodeConfig{}}
 	_, err := jq.Transform(context.Background(), tc)
 	if err == nil {
 		t.Fatal("expected error for missing expr")
@@ -63,8 +64,8 @@ func TestJQ_NoExpression(t *testing.T) {
 func TestJQ_InvalidExpression(t *testing.T) {
 	jq := NewJQ()
 	tc := &engine.TransformerContext{
-		Input: map[string]any{},
-		Meta:  map[string]any{"expr": ">>>invalid"},
+		Input:      map[string]any{},
+		NodeConfig: &circuit.NodeConfig{Expr: ">>>invalid"},
 	}
 	_, err := jq.Transform(context.Background(), tc)
 	if err == nil {
@@ -152,7 +153,7 @@ func TestHTTP_Get(t *testing.T) {
 	}
 
 	tc := &engine.TransformerContext{
-		Meta: map[string]any{"url": ts.URL},
+		NodeConfig: &circuit.NodeConfig{URL: ts.URL},
 	}
 	result, err := ht.Transform(context.Background(), tc)
 	if err != nil {
@@ -169,7 +170,7 @@ func TestHTTP_Get(t *testing.T) {
 
 func TestHTTP_NoURL(t *testing.T) {
 	ht := NewHTTP()
-	tc := &engine.TransformerContext{Meta: map[string]any{}}
+	tc := &engine.TransformerContext{NodeConfig: &circuit.NodeConfig{}}
 	_, err := ht.Transform(context.Background(), tc)
 	if err == nil {
 		t.Fatal("expected error for missing url")
@@ -179,7 +180,7 @@ func TestHTTP_NoURL(t *testing.T) {
 func TestHTTP_AllowedHosts(t *testing.T) {
 	ht := NewHTTP(WithAllowedHosts("api.example.com"))
 	tc := &engine.TransformerContext{
-		Meta: map[string]any{"url": "https://evil.com/steal"},
+		NodeConfig: &circuit.NodeConfig{URL: "https://evil.com/steal"},
 	}
 	_, err := ht.Transform(context.Background(), tc)
 	if err == nil {
@@ -195,7 +196,7 @@ func TestHTTP_ServerError(t *testing.T) {
 	defer ts.Close()
 
 	ht := NewHTTP()
-	tc := &engine.TransformerContext{Meta: map[string]any{"url": ts.URL}}
+	tc := &engine.TransformerContext{NodeConfig: &circuit.NodeConfig{URL: ts.URL}}
 	_, err := ht.Transform(context.Background(), tc)
 	if err == nil {
 		t.Fatal("expected error for 500 response")
@@ -223,10 +224,12 @@ func TestLLM_Transform(t *testing.T) {
 		t.Fatalf("Name() = %q, want llm", llm.Name())
 	}
 
+	state := circuit.NewWalkerState("test")
+	state.Context["case_id"] = "C1"
 	tc := &engine.TransformerContext{
-		NodeName: "test-node",
-		Prompt:   "test-prompt.md",
-		Meta:     map[string]any{"case_id": "C1"},
+		NodeName:    "test-node",
+		Prompt:      "test-prompt.md",
+		WalkerState: state,
 	}
 	result, err := llm.Transform(context.Background(), tc)
 	if err != nil {

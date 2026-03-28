@@ -72,7 +72,6 @@ type dslDelegateNode struct {
 	gen        Transformer
 	config     map[string]any
 	nodeConfig *circuit.NodeConfig
-	meta       map[string]any
 }
 
 func (n *dslDelegateNode) Name() string             { return n.name }
@@ -97,7 +96,6 @@ func (n *dslDelegateNode) GenerateCircuit(ctx context.Context, nc circuit.NodeCo
 		Config:      n.config,
 		NodeName:    n.name,
 		NodeConfig:  n.nodeConfig,
-		Meta:        n.meta,
 		WalkerState: nc.WalkerState,
 	}
 
@@ -131,7 +129,6 @@ type circuitRefNode struct {
 	name       string
 	element    circuit.Element
 	circuitDef *circuit.CircuitDef
-	meta       map[string]any
 }
 
 func (n *circuitRefNode) Name() string             { return n.name }

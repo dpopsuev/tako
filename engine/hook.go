@@ -91,19 +91,22 @@ func (h *HookFunc) Run(ctx context.Context, nodeName string, artifact circuit.Ar
 const BuiltinHookFileWrite = "file-write"
 
 // FileWriteHook is a built-in hook that writes an artifact to a JSON file.
-// The output path is read from circuit.NodeDef.Meta["output_path"] and supports
+// The output path is read from NodeConfig.OutputPath and supports
 // Go template variables: {{ .NodeName }}.
 type FileWriteHook struct {
-	NodeMeta map[string]map[string]any // node name -> meta (set by Runner)
+	NodeConfigs map[string]*circuit.NodeConfig // node name -> config (set by Runner)
 }
 
 func (h *FileWriteHook) Name() string { return BuiltinHookFileWrite }
 
 func (h *FileWriteHook) Run(_ context.Context, nodeName string, artifact circuit.Artifact) error {
-	meta := h.NodeMeta[nodeName]
-	pathTmpl, _ := meta["output_path"].(string)
+	cfg := h.NodeConfigs[nodeName]
+	pathTmpl := ""
+	if cfg != nil {
+		pathTmpl = cfg.OutputPath
+	}
 	if pathTmpl == "" {
-		return fmt.Errorf("file-write hook: node %q missing meta.output_path", nodeName)
+		return fmt.Errorf("file-write hook: node %q missing config.output_path", nodeName)
 	}
 
 	tmpl, err := template.New("path").Parse(pathTmpl)

@@ -77,7 +77,7 @@ func NewRunnerWith(def *circuit.CircuitDef, reg *GraphRegistries) (*Runner, erro
 	schemas := make(map[string]*circuit.ArtifactSchema, len(def.Nodes))
 	nodeBefore := make(map[string][]string, len(def.Nodes))
 	nodeHooks := make(map[string][]string, len(def.Nodes))
-	nodeMeta := make(map[string]map[string]any, len(def.Nodes))
+	nodeConfigs := make(map[string]*circuit.NodeConfig, len(def.Nodes))
 	needsFileWrite := false
 	for i := range def.Nodes {
 		nd := &def.Nodes[i]
@@ -95,8 +95,9 @@ func NewRunnerWith(def *circuit.CircuitDef, reg *GraphRegistries) (*Runner, erro
 				}
 			}
 		}
-		if len(nd.Meta) > 0 {
-			nodeMeta[nd.Name] = nd.Meta
+		cfg := nd.EffectiveConfig()
+		if cfg.OutputPath != "" || cfg.SQLiteQuery != "" {
+			nodeConfigs[nd.Name] = cfg
 		}
 	}
 
@@ -106,7 +107,7 @@ func NewRunnerWith(def *circuit.CircuitDef, reg *GraphRegistries) (*Runner, erro
 			hooks = make(HookRegistry)
 		}
 		if _, err := hooks.Get(BuiltinHookFileWrite); err != nil {
-			hooks.Register(&FileWriteHook{NodeMeta: nodeMeta})
+			hooks.Register(&FileWriteHook{NodeConfigs: nodeConfigs})
 		}
 	}
 

@@ -72,7 +72,6 @@ type rendererNode struct {
 	name    string
 	element circuit.Element
 	rnd     Renderer
-	meta    map[string]any
 }
 
 func (n *rendererNode) Name() string             { return n.name }

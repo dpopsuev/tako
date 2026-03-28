@@ -238,20 +238,22 @@ func TestTransformerNode_EmptyInput_FallsBackToPrior(t *testing.T) {
 	}
 }
 
-func TestTransformerNode_MetaFromNodeDef(t *testing.T) {
-	captureMeta := TransformerFunc("capture-meta", func(_ context.Context, tc *TransformerContext) (any, error) {
-		return tc.Meta, nil
+func TestTransformerNode_NodeConfigReachesTransformer(t *testing.T) {
+	captureConfig := TransformerFunc("capture-config", func(_ context.Context, tc *TransformerContext) (any, error) {
+		return map[string]any{
+			"output_path": tc.NodeConfig.OutputPath,
+			"max_retries": tc.NodeConfig.MaxRetries,
+		}, nil
 	})
 	node := &transformerNode{
-		name:    "test-node",
-		element: circuit.ElementFire,
-		trans:   captureMeta,
-		meta:    map[string]any{"output_path": "recall.json", "retries": 3},
+		name:       "test-node",
+		element:    circuit.ElementFire,
+		trans:      captureConfig,
+		nodeConfig: &circuit.NodeConfig{OutputPath: "recall.json", MaxRetries: 3},
 	}
 
 	nc := circuit.NodeContext{
 		WalkerState: circuit.NewWalkerState("test"),
-		Meta:        map[string]any{"existing": true},
 	}
 
 	artifact, err := node.Process(context.Background(), nc)
@@ -263,25 +265,21 @@ func TestTransformerNode_MetaFromNodeDef(t *testing.T) {
 	if m["output_path"] != "recall.json" {
 		t.Errorf("output_path = %v, want recall.json", m["output_path"])
 	}
-	if m["retries"] != 3 {
-		t.Errorf("retries = %v, want 3", m["retries"])
-	}
-	if m["existing"] != true {
-		t.Errorf("existing context key should be preserved")
+	if m["max_retries"] != 3 {
+		t.Errorf("max_retries = %v, want 3", m["max_retries"])
 	}
 }
 
-func TestNodeDef_MetaParsedFromYAML(t *testing.T) {
-	yaml := `
-circuit: test-meta
+func TestNodeDef_ConfigParsedFromYAML(t *testing.T) {
+	yamlData := `
+circuit: test-config
 nodes:
   - name: recall
     element: earth
     transformer: echo
     meta:
-      prompt_template: "prompts/recall.md"
-      persist_to: cases
       max_retries: 3
+      output_path: "output/recall.json"
   - name: triage
     element: fire
     transformer: echo
@@ -299,35 +297,30 @@ edges:
 start: recall
 done: _done
 `
-	def, err := circuit.LoadCircuit([]byte(yaml))
+	def, err := circuit.LoadCircuit([]byte(yamlData))
 	if err != nil {
 		t.Fatalf("LoadCircuit: %v", err)
 	}
 
 	recallDef := def.Nodes[0]
-	if recallDef.Meta == nil {
-		t.Fatal("recall node Meta should not be nil")
+	cfg := recallDef.EffectiveConfig()
+	if cfg.MaxRetries != 3 {
+		t.Errorf("max_retries = %v, want 3", cfg.MaxRetries)
 	}
-	if recallDef.Meta["prompt_template"] != "prompts/recall.md" {
-		t.Errorf("prompt_template = %v", recallDef.Meta["prompt_template"])
-	}
-	if recallDef.Meta["persist_to"] != "cases" {
-		t.Errorf("persist_to = %v", recallDef.Meta["persist_to"])
-	}
-	if recallDef.Meta["max_retries"] != 3 {
-		t.Errorf("max_retries = %v", recallDef.Meta["max_retries"])
+	if cfg.OutputPath != "output/recall.json" {
+		t.Errorf("output_path = %v, want output/recall.json", cfg.OutputPath)
 	}
 
 	triageDef := def.Nodes[1]
-	if triageDef.Meta != nil {
-		t.Errorf("triage node Meta should be nil, got %v", triageDef.Meta)
+	if triageDef.Config != nil {
+		t.Errorf("triage node Config should be nil, got %v", triageDef.Config)
 	}
 }
 
-func TestBuildGraph_MetaReachesTransformerContext(t *testing.T) {
-	var capturedMeta map[string]any
+func TestBuildGraph_NodeConfigReachesTransformerContext(t *testing.T) {
+	var capturedConfig *circuit.NodeConfig
 	captureTrans := TransformerFunc("capture", func(_ context.Context, tc *TransformerContext) (any, error) {
-		capturedMeta = tc.Meta
+		capturedConfig = tc.NodeConfig
 		return map[string]any{"ok": true}, nil
 	})
 
@@ -339,7 +332,7 @@ func TestBuildGraph_MetaReachesTransformerContext(t *testing.T) {
 				Name:     "a",
 				Approach: "rapid",
 				Handler:  "capture",
-				Meta:     map[string]any{"key1": "val1", "key2": 42},
+				Config:   &circuit.NodeConfig{OutputPath: "out.json", MaxRetries: 5},
 			},
 		},
 		Edges: []circuit.EdgeDef{
@@ -361,14 +354,14 @@ func TestBuildGraph_MetaReachesTransformerContext(t *testing.T) {
 		t.Fatalf("Walk: %v", err)
 	}
 
-	if capturedMeta == nil {
-		t.Fatal("meta was not captured")
+	if capturedConfig == nil {
+		t.Fatal("NodeConfig was not captured")
 	}
-	if capturedMeta["key1"] != "val1" {
-		t.Errorf("key1 = %v, want val1", capturedMeta["key1"])
+	if capturedConfig.OutputPath != "out.json" {
+		t.Errorf("OutputPath = %v, want out.json", capturedConfig.OutputPath)
 	}
-	if capturedMeta["key2"] != 42 {
-		t.Errorf("key2 = %v, want 42", capturedMeta["key2"])
+	if capturedConfig.MaxRetries != 5 {
+		t.Errorf("MaxRetries = %v, want 5", capturedConfig.MaxRetries)
 	}
 }
 
@@ -477,10 +470,10 @@ func TestBuiltinGoTemplate_NoRegistry(t *testing.T) {
 	}
 }
 
-func TestBuiltinGoTemplate_WithMeta(t *testing.T) {
-	var capturedMeta map[string]any
-	metaCapture := TransformerFunc("meta-capture", func(_ context.Context, tc *TransformerContext) (any, error) {
-		capturedMeta = tc.Meta
+func TestBuiltinTransformer_WithNodeConfig(t *testing.T) {
+	var capturedConfig *circuit.NodeConfig
+	configCapture := TransformerFunc("config-capture", func(_ context.Context, tc *TransformerContext) (any, error) {
+		capturedConfig = tc.NodeConfig
 		return tc.Prompt, nil
 	})
 
@@ -491,8 +484,8 @@ func TestBuiltinGoTemplate_WithMeta(t *testing.T) {
 			{
 				Name:     "a",
 				Approach: "rapid",
-				Handler:  "meta-capture",
-				Meta:     map[string]any{"template_dir": "/prompts", "max_tokens": 1000},
+				Handler:  "config-capture",
+				Config:   &circuit.NodeConfig{MaxTokens: 1000, ArtifactPath: "/prompts"},
 			},
 		},
 		Edges: []circuit.EdgeDef{
@@ -503,7 +496,7 @@ func TestBuiltinGoTemplate_WithMeta(t *testing.T) {
 	}
 
 	runner, err := NewRunnerWith(def, &GraphRegistries{
-		Transformers: TransformerRegistry{"meta-capture": metaCapture},
+		Transformers: TransformerRegistry{"config-capture": configCapture},
 	})
 	if err != nil {
 		t.Fatalf("NewRunnerWith: %v", err)
@@ -514,11 +507,11 @@ func TestBuiltinGoTemplate_WithMeta(t *testing.T) {
 		t.Fatalf("Walk: %v", err)
 	}
 
-	if capturedMeta["template_dir"] != "/prompts" {
-		t.Errorf("template_dir = %v", capturedMeta["template_dir"])
+	if capturedConfig.ArtifactPath != "/prompts" {
+		t.Errorf("ArtifactPath = %v", capturedConfig.ArtifactPath)
 	}
-	if capturedMeta["max_tokens"] != 1000 {
-		t.Errorf("max_tokens = %v", capturedMeta["max_tokens"])
+	if capturedConfig.MaxTokens != 1000 {
+		t.Errorf("MaxTokens = %v", capturedConfig.MaxTokens)
 	}
 }
 

@@ -63,8 +63,8 @@ func (t *LLMTransformer) Transform(ctx context.Context, tc *engine.TransformerCo
 	}
 
 	caseID := ""
-	if tc.Meta != nil {
-		if c, ok := tc.Meta["case_id"].(string); ok {
+	if tc.WalkerState != nil {
+		if c, ok := tc.WalkerState.Context["case_id"].(string); ok {
 			caseID = c
 		}
 	}

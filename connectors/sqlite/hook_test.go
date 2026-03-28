@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
+	fw "github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
-
 )
 
 type hookArtifact struct {
@@ -54,10 +54,10 @@ func TestExecHook_NoQuerySkips(t *testing.T) {
 	}
 	defer db.Close()
 
-	meta := map[string]map[string]any{
-		"step": {"other_key": "value"},
+	configs := map[string]*fw.NodeConfig{
+		"step": {OutputPath: "some/path"},
 	}
-	hook := NewExecHook(db, meta)
+	hook := NewExecHook(db, configs)
 	art := hookArtifact{data: map[string]any{"id": "1"}}
 
 	if err := hook.Run(context.Background(), "step", art); err != nil {
@@ -81,14 +81,14 @@ func TestExecHook_ExecQuery(t *testing.T) {
 		t.Fatalf("insert: %v", err)
 	}
 
-	meta := map[string]map[string]any{
+	configs := map[string]*fw.NodeConfig{
 		"update-status": {
-			"sqlite_query":  "UPDATE cases SET status = ? WHERE id = ?",
-			"sqlite_params": []any{"closed", "C1"},
+			SQLiteQuery:  "UPDATE cases SET status = ? WHERE id = ?",
+			SQLiteParams: []any{"closed", "C1"},
 		},
 	}
 
-	hook := NewExecHook(db, meta)
+	hook := NewExecHook(db, configs)
 	art := hookArtifact{data: map[string]any{"case_id": "C1"}}
 
 	if err := hook.Run(context.Background(), "update-status", art); err != nil {
@@ -116,14 +116,14 @@ func TestExecHook_TemplateRendering(t *testing.T) {
 		t.Fatalf("create table: %v", err)
 	}
 
-	meta := map[string]map[string]any{
+	configs := map[string]*fw.NodeConfig{
 		"store": {
-			"sqlite_query":  "INSERT INTO results VALUES ('{{ .NodeName }}', '{{ .finding }}')",
-			"sqlite_params": []any{},
+			SQLiteQuery:  "INSERT INTO results VALUES ('{{ .NodeName }}', '{{ .finding }}')",
+			SQLiteParams: []any{},
 		},
 	}
 
-	hook := NewExecHook(db, meta)
+	hook := NewExecHook(db, configs)
 	art := hookArtifact{data: map[string]any{"finding": "bug-123"}}
 
 	if err := hook.Run(context.Background(), "store", art); err != nil {

@@ -11,7 +11,7 @@ import (
 )
 
 // ExecHook is a framework Hook that executes SQL statements on step completion.
-// The query and parameters are read from NodeDef.Meta and support Go template
+// The query and parameters are read from NodeConfig and support Go template
 // variables: {{ .NodeName }}, {{ .ArtifactField }}.
 //
 // Usage in circuit YAML:
@@ -23,14 +23,14 @@ import (
 //	      sqlite_query: "UPDATE cases SET symptom_id = ? WHERE id = ?"
 //	      sqlite_params: ["{{ .symptom_id }}", "{{ .case_id }}"]
 type ExecHook struct {
-	db       *DB
-	nodeMeta map[string]map[string]any
+	db          *DB
+	nodeConfigs map[string]*fw.NodeConfig
 }
 
 // NewExecHook creates a Hook that executes SQL via the given DB.
-// nodeMeta maps node names to their Meta configuration.
-func NewExecHook(db *DB, nodeMeta map[string]map[string]any) *ExecHook {
-	return &ExecHook{db: db, nodeMeta: nodeMeta}
+// nodeConfigs maps node names to their NodeConfig.
+func NewExecHook(db *DB, nodeConfigs map[string]*fw.NodeConfig) *ExecHook {
+	return &ExecHook{db: db, nodeConfigs: nodeConfigs}
 }
 
 const BuiltinHookSQLiteExec = "sqlite-exec"
@@ -38,12 +38,12 @@ const BuiltinHookSQLiteExec = "sqlite-exec"
 func (h *ExecHook) Name() string { return BuiltinHookSQLiteExec }
 
 func (h *ExecHook) Run(_ context.Context, nodeName string, artifact fw.Artifact) error {
-	meta := h.nodeMeta[nodeName]
-	if meta == nil {
+	cfg := h.nodeConfigs[nodeName]
+	if cfg == nil {
 		return nil
 	}
 
-	query, _ := meta["sqlite_query"].(string)
+	query := cfg.SQLiteQuery
 	if query == "" {
 		return nil
 	}
@@ -58,20 +58,18 @@ func (h *ExecHook) Run(_ context.Context, nodeName string, artifact fw.Artifact)
 		return fmt.Errorf("sqlite-exec hook: render query: %w", err)
 	}
 
-	var args []any
-	if paramTmpls, ok := meta["sqlite_params"].([]any); ok {
-		for i, pt := range paramTmpls {
-			s, ok := pt.(string)
-			if !ok {
-				args = append(args, pt)
-				continue
-			}
-			resolved, err := renderTemplate(fmt.Sprintf("param[%d]", i), s, artMap)
-			if err != nil {
-				return fmt.Errorf("sqlite-exec hook: render param %d: %w", i, err)
-			}
-			args = append(args, resolved)
+	args := make([]any, 0, len(cfg.SQLiteParams))
+	for i, pt := range cfg.SQLiteParams {
+		s, ok := pt.(string)
+		if !ok {
+			args = append(args, pt)
+			continue
 		}
+		resolved, err := renderTemplate(fmt.Sprintf("param[%d]", i), s, artMap)
+		if err != nil {
+			return fmt.Errorf("sqlite-exec hook: render param %d: %w", i, err)
+		}
+		args = append(args, resolved)
 	}
 
 	_, err = h.db.Exec(resolvedQuery, args...)

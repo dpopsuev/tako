@@ -55,7 +55,7 @@ type TransformerContext struct {
 	Prompt      string               // prompt template path or content
 	NodeName    string               // current node name
 	NodeConfig  *circuit.NodeConfig  // typed node configuration
-	Meta        map[string]any       // deprecated: use NodeConfig
+	Provider    string               // from NodeDef.Provider (e.g. "cursor", "codex")
 	WalkerState *circuit.WalkerState // walker state including context, outputs, and loop counts
 }
 
@@ -103,7 +103,6 @@ type transformerNode struct {
 	provider   string              // from circuit.NodeDef.Provider (e.g. "cursor", "codex")
 	config     map[string]any      // circuit vars (from circuit.CircuitDef.Vars)
 	nodeConfig *circuit.NodeConfig // from NodeDef.EffectiveConfig()
-	meta       map[string]any      // deprecated: from circuit.NodeDef.Meta
 }
 
 func (n *transformerNode) Name() string             { return n.name }
@@ -149,24 +148,13 @@ func (n *transformerNode) Process(ctx context.Context, nc circuit.NodeContext) (
 		prompt = rendered
 	}
 
-	meta := nc.Meta
-	if meta == nil {
-		meta = make(map[string]any)
-	}
-	for k, v := range n.meta {
-		meta[k] = v
-	}
-	if n.provider != "" {
-		meta["provider"] = n.provider
-	}
-
 	tc := &TransformerContext{
 		Input:       input,
 		Config:      n.config,
 		Prompt:      prompt,
 		NodeName:    n.name,
 		NodeConfig:  n.nodeConfig,
-		Meta:        meta,
+		Provider:    n.provider,
 		WalkerState: nc.WalkerState,
 	}
 

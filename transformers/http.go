@@ -48,9 +48,12 @@ func (t *HTTPTransformer) Name() string        { return transformerNameHTTP }
 func (t *HTTPTransformer) Deterministic() bool { return true }
 
 func (t *HTTPTransformer) Transform(ctx context.Context, tc *engine.TransformerContext) (any, error) {
-	url, _ := metaString(tc, "url")
+	url := ""
+	if tc.NodeConfig != nil {
+		url = tc.NodeConfig.URL
+	}
 	if url == "" {
-		return nil, fmt.Errorf("http transformer: 'url' is required in meta")
+		return nil, fmt.Errorf("http transformer: 'url' is required in node config")
 	}
 
 	if len(t.allowedHosts) > 0 {
@@ -66,7 +69,10 @@ func (t *HTTPTransformer) Transform(ctx context.Context, tc *engine.TransformerC
 		}
 	}
 
-	method, _ := metaString(tc, "method")
+	method := ""
+	if tc.NodeConfig != nil {
+		method = tc.NodeConfig.Method
+	}
 	if method == "" {
 		method = "GET"
 	}
@@ -117,10 +123,3 @@ func (t *HTTPTransformer) Transform(ctx context.Context, tc *engine.TransformerC
 	return result, nil
 }
 
-func metaString(tc *engine.TransformerContext, key string) (string, bool) {
-	if tc.Meta == nil {
-		return "", false
-	}
-	v, ok := tc.Meta[key].(string)
-	return v, ok
-}
