@@ -54,6 +54,7 @@ type Options struct {
 	DomainOnly     bool // force domain-serve build even when schematics are declared
 	ImageName      string
 	ExportDataDir  string // export flattened domain data to this directory (for volume mounts)
+	Local          bool   // use local module overrides via replace directives (dev only)
 	ModuleResolver ModuleResolver
 }
 
@@ -223,7 +224,7 @@ func buildWiredBinary(ctx context.Context, m *Manifest, opts *Options) error {
 		return err
 	}
 
-	if err := createWiredBuildModule(tmpDir, m.Name, resolver, g); err != nil {
+	if err := createWiredBuildModule(tmpDir, m.Name, resolver, g, opts.Local); err != nil {
 		return fmt.Errorf("create build module: %w", err)
 	}
 
@@ -271,7 +272,7 @@ func buildWiredBinary(ctx context.Context, m *Manifest, opts *Options) error {
 	return nil
 }
 
-func createWiredBuildModule(tmpDir, name string, resolver ModuleResolver, g *ResolvedGraph) error {
+func createWiredBuildModule(tmpDir, name string, resolver ModuleResolver, g *ResolvedGraph, local bool) error {
 	var buf strings.Builder
 	buf.WriteString(fmt.Sprintf("module %s-build\n\ngo 1.24\n\nrequire (\n", name))
 	buf.WriteString(fmt.Sprintf("\t%s v0.0.0\n", origamiModule))
@@ -292,13 +293,17 @@ func createWiredBuildModule(tmpDir, name string, resolver ModuleResolver, g *Res
 	}
 	buf.WriteString(")\n\n")
 
-	// Add replace directives for locally available modules.
-	if localPath := resolver.FindLocalModule(origamiModule); localPath != "" {
-		buf.WriteString(fmt.Sprintf("replace %s => %s\n", origamiModule, localPath))
-	}
-	for _, mod := range externalModules {
-		if localPath := resolver.FindLocalModule(mod); localPath != "" {
-			buf.WriteString(fmt.Sprintf("replace %s => %s\n", mod, localPath))
+	// Add replace directives only when explicitly requested (--local flag).
+	if local {
+		if localPath := resolver.FindLocalModule(origamiModule); localPath != "" {
+			fmt.Fprintf(os.Stderr, "WARNING: using local module %s => %s\n", origamiModule, localPath)
+			buf.WriteString(fmt.Sprintf("replace %s => %s\n", origamiModule, localPath))
+		}
+		for _, mod := range externalModules {
+			if localPath := resolver.FindLocalModule(mod); localPath != "" {
+				fmt.Fprintf(os.Stderr, "WARNING: using local module %s => %s\n", mod, localPath)
+				buf.WriteString(fmt.Sprintf("replace %s => %s\n", mod, localPath))
+			}
 		}
 	}
 
@@ -354,7 +359,7 @@ func buildDomainServe(ctx context.Context, m *Manifest, opts *Options) error {
 		resolver = &DefaultModuleResolver{}
 	}
 
-	if err := createDomainServeBuildModule(tmpDir, m.Name, resolver); err != nil {
+	if err := createDomainServeBuildModule(tmpDir, m.Name, resolver, opts.Local); err != nil {
 		return fmt.Errorf("create build module: %w", err)
 	}
 
@@ -471,15 +476,17 @@ func buildContainerImage(ctx context.Context, m *Manifest, binaryPath string, op
 	return nil
 }
 
-func createDomainServeBuildModule(tmpDir, name string, resolver ModuleResolver) error {
+func createDomainServeBuildModule(tmpDir, name string, resolver ModuleResolver, local bool) error {
 	var buf strings.Builder
 	buf.WriteString(fmt.Sprintf("module %s-domain-serve-build\n\ngo 1.24\n\nrequire (\n", name))
 	buf.WriteString(fmt.Sprintf("\t%s v0.0.0\n", origamiModule))
 	buf.WriteString(")\n\n")
 
-	localPath := resolver.FindLocalModule(origamiModule)
-	if localPath != "" {
-		buf.WriteString(fmt.Sprintf("replace %s => %s\n", origamiModule, localPath))
+	if local {
+		if localPath := resolver.FindLocalModule(origamiModule); localPath != "" {
+			fmt.Fprintf(os.Stderr, "WARNING: using local module %s => %s\n", origamiModule, localPath)
+			buf.WriteString(fmt.Sprintf("replace %s => %s\n", origamiModule, localPath))
+		}
 	}
 
 	return os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(buf.String()), 0o600)

@@ -61,6 +61,7 @@ spec:
 	err := Run(context.Background(), &Options{
 		ManifestPath: manifest,
 		Output:       output,
+		Local:        true,
 		Verbose:      true,
 	})
 	if err != nil {
@@ -382,6 +383,7 @@ spec:
 	err := Run(context.Background(), &Options{
 		ManifestPath: manifest,
 		Output:       output,
+		Local:        true,
 		Verbose:      true,
 	})
 	if err != nil {
@@ -826,6 +828,7 @@ spec:
 		ManifestPath: manifest,
 		Output:       output,
 		DomainOnly:   true,
+		Local:        true,
 		Verbose:      true,
 	})
 	if err != nil {
