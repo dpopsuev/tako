@@ -98,4 +98,10 @@ var (
 
 	// ErrMaxStepsExceeded is returned when the maximum step count is reached.
 	ErrMaxStepsExceeded = errors.New("max steps exceeded")
+
+	// ErrWalkerNotFound is returned when a checkpoint does not exist for the given walker ID.
+	ErrWalkerNotFound = errors.New("walker checkpoint not found")
+
+	// ErrWalkerNotInterrupted is returned when trying to resume a walker that is not in interrupted state.
+	ErrWalkerNotInterrupted = errors.New("walker is not in interrupted state")
 )

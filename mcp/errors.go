@@ -56,4 +56,10 @@ var (
 
 	// ErrSessionTTLExpired is returned when a session's TTL is exceeded.
 	ErrSessionTTLExpired = errors.New("session TTL expired: no activity")
+
+	// ErrCheckpointerNotConfigured is returned when inspect/resume is called without a Checkpointer.
+	ErrCheckpointerNotConfigured = errors.New("checkpointer not configured; set CircuitConfig.Checkpointer for HITL")
+
+	// ErrWalkerIDRequired is returned when inspect/resume is called without a walker_id.
+	ErrWalkerIDRequired = errors.New("walker_id is required")
 )

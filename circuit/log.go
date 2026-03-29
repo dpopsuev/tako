@@ -65,6 +65,10 @@ const (
 	LogCacheHit  = "cache hit"
 	LogCacheMiss = "cache miss"
 
+	// HITL
+	LogInspectCheckpoint = "inspect checkpoint"
+	LogResumeWalk        = "resume walk"
+
 	// Runner / hooks
 	LogSchemaValidationFailed = "artifact schema validation failed"
 	LogBeforeHookNotFound     = "before-hook not found"

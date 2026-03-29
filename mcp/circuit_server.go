@@ -148,7 +148,7 @@ func setupTraceRecorder(stateDir, sessID string, bus *agentport.MemBus, logger *
 
 // circuitInput is the unified input for the consolidated "circuit" tool.
 type circuitInput struct {
-	Action    string `json:"action"`               // start, step, submit, report, summary, detail, failing, weak
+	Action    string `json:"action"`               // start, step, submit, report, summary, detail, failing, weak, inspect, resume
 	SessionID string `json:"session_id,omitempty"` // required for all actions except start
 	// start params
 	Parallel int            `json:"parallel,omitempty"`
@@ -168,6 +168,9 @@ type circuitInput struct {
 	CaseID string `json:"case_id,omitempty"`
 	// weak params
 	Threshold float64 `json:"threshold,omitempty"`
+	// inspect/resume params
+	WalkerID    string         `json:"walker_id,omitempty"`
+	ResumeInput map[string]any `json:"resume_input,omitempty"`
 }
 
 // signalInput is the unified input for the consolidated "signal" tool.
@@ -432,8 +435,22 @@ func (s *CircuitServer) dispatchCircuitAction(ctx context.Context, req *sdkmcp.C
 		}
 		return marshalToolResult(out)
 
+	case "inspect":
+		out, err := s.handleInspectCircuit(ctx, input)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return marshalToolResult(out)
+
+	case "resume":
+		out, err := s.handleResumeCircuit(ctx, input)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return marshalToolResult(out)
+
 	default:
-		return toolError(fmt.Errorf("%w: %q; valid actions: start, step, submit, report, summary, detail, failing, weak", ErrUnknownCircuitAction, input.Action)), nil
+		return toolError(fmt.Errorf("%w: %q; valid actions: start, step, submit, report, summary, detail, failing, weak, inspect, resume", ErrUnknownCircuitAction, input.Action)), nil
 	}
 }
 
@@ -952,6 +969,87 @@ func (s *CircuitServer) handleGetWorkerHealth(_ context.Context, _ *sdkmcp.CallT
 	health.QueueDepth = sess.dispatcher.ActiveDispatches()
 
 	return nil, getWorkerHealthOutput{health}, nil
+}
+
+// --- HITL handlers ---
+
+type inspectOutput struct {
+	WalkerID      string               `json:"walker_id"`
+	CurrentNode   string               `json:"current_node"`
+	Status        string               `json:"status"`
+	InterruptData map[string]any       `json:"interrupt_data,omitempty"`
+	History       []circuit.StepRecord `json:"history"`
+	LoopCounts    map[string]int       `json:"loop_counts,omitempty"`
+}
+
+type resumeOutput struct {
+	Status string `json:"status"` // "resumed"
+}
+
+func (s *CircuitServer) handleInspectCircuit(ctx context.Context, input *circuitInput) (inspectOutput, error) {
+	logger := slog.Default().With(slog.Any(circuit.LogKeyComponent, circuit.LogComponentCircuitSession))
+
+	if s.Config.Checkpointer == nil {
+		return inspectOutput{}, ErrCheckpointerNotConfigured
+	}
+	if input.WalkerID == "" {
+		return inspectOutput{}, ErrWalkerIDRequired
+	}
+
+	inspection, err := engine.InspectCheckpoint(s.Config.Checkpointer, input.WalkerID)
+	if err != nil {
+		return inspectOutput{}, err
+	}
+
+	logger.InfoContext(ctx, circuit.LogInspectCheckpoint,
+		slog.Any(circuit.LogKeyWalkerID, input.WalkerID),
+		slog.Any(circuit.LogKeyNode, inspection.CurrentNode),
+		slog.Any(circuit.LogKeyStatus, inspection.Status))
+
+	return inspectOutput{
+		WalkerID:      inspection.WalkerID,
+		CurrentNode:   inspection.CurrentNode,
+		Status:        inspection.Status,
+		InterruptData: inspection.InterruptData,
+		History:       inspection.History,
+		LoopCounts:    inspection.LoopCounts,
+	}, nil
+}
+
+func (s *CircuitServer) handleResumeCircuit(ctx context.Context, input *circuitInput) (resumeOutput, error) {
+	logger := slog.Default().With(slog.Any(circuit.LogKeyComponent, circuit.LogComponentCircuitSession))
+
+	if s.Config.Checkpointer == nil {
+		return resumeOutput{}, ErrCheckpointerNotConfigured
+	}
+	if input.WalkerID == "" {
+		return resumeOutput{}, ErrWalkerIDRequired
+	}
+
+	// Verify checkpoint exists and walker is interrupted.
+	inspection, err := engine.InspectCheckpoint(s.Config.Checkpointer, input.WalkerID)
+	if err != nil {
+		return resumeOutput{}, err
+	}
+	if inspection.Status != "interrupted" {
+		return resumeOutput{}, fmt.Errorf("%w: status is %q", engine.ErrWalkerNotInterrupted, inspection.Status)
+	}
+
+	sess, err := s.getSession(input.SessionID)
+	if err != nil {
+		return resumeOutput{}, err
+	}
+
+	// Inject resume input and restart the walk via the session.
+	if err := sess.ResumeWalk(s.Config.Checkpointer, input.WalkerID, input.ResumeInput); err != nil {
+		return resumeOutput{}, fmt.Errorf("resume walk: %w", err)
+	}
+
+	logger.InfoContext(ctx, circuit.LogResumeWalk,
+		slog.Any(circuit.LogKeySessionID, input.SessionID),
+		slog.Any(circuit.LogKeyWalkerID, input.WalkerID))
+
+	return resumeOutput{Status: "resumed"}, nil
 }
 
 // --- Post-mortem handlers ---

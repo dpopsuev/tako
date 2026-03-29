@@ -293,6 +293,15 @@ func Run(ctx context.Context, circuitPath string, input any, opts ...RunOption) 
 	return err
 }
 
+// Resume loads a checkpoint and continues a previously interrupted walk.
+// humanInput is injected into the walker context as "resume_input" before
+// the walk resumes from the checkpointed node.
+func Resume(ctx context.Context, circuitPath string, cp circuit.Checkpointer,
+	walkerID string, humanInput any, opts ...RunOption) error {
+	opts = append(opts, WithCheckpointer(cp), WithResumeInput(walkerID, humanInput))
+	return Run(ctx, circuitPath, nil, opts...)
+}
+
 func resumeFromCheckpoint(cfg *runConfig, walker circuit.Walker, startNode string) (string, error) {
 	loaded, loadErr := cfg.checkpointer.Load(cfg.resumeID)
 	if loadErr != nil {

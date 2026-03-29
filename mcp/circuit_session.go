@@ -111,6 +111,40 @@ func (s *CircuitSession) Start() {
 	go s.run(s.runCtx, s.runFn)
 }
 
+// ResumeWalk loads a checkpoint, injects human input, and restarts
+// the walk from the interrupted node. The session's done channel is
+// recreated so callers can wait for the resumed walk to complete.
+func (s *CircuitSession) ResumeWalk(cp circuit.Checkpointer, walkerID string, input map[string]any) error {
+	state, err := cp.Load(walkerID)
+	if err != nil {
+		return fmt.Errorf("load checkpoint %s: %w", walkerID, err)
+	}
+	if state == nil {
+		return fmt.Errorf("checkpoint %s: %w", walkerID, engine.ErrWalkerNotFound)
+	}
+
+	s.mu.Lock()
+	// Reset session state for the resumed walk.
+	s.state = StateRunning
+	s.err = nil
+	s.result = nil
+	s.doneCh = make(chan struct{})
+	s.mu.Unlock()
+
+	// Create a resume RunFunc that injects the checkpoint and human input.
+	resumeFn := func(ctx context.Context) (any, error) {
+		walker := circuit.NewProcessWalker(walkerID)
+		engine.RestoreWalkerState(walker, state)
+		if input != nil {
+			walker.State().Context["resume_input"] = input
+		}
+		return s.runFn(ctx)
+	}
+
+	go s.run(s.runCtx, resumeFn)
+	return nil
+}
+
 // GetState returns the current session state in a thread-safe manner.
 func (s *CircuitSession) GetState() SessionState {
 	s.mu.Lock()

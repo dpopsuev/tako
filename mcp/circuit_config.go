@@ -127,6 +127,11 @@ type CircuitConfig struct {
 	// the four On* callbacks. Consumer-set callbacks compose — both
 	// the observer and any explicit callback fire.
 	Observer SessionObserver
+
+	// Checkpointer enables HITL inspect/resume actions. When set,
+	// the circuit tool gains "inspect" (view paused walker state)
+	// and "resume" (continue walk with human input) actions.
+	Checkpointer circuit.Checkpointer
 }
 
 // FindSchema returns the StepSchema for the given step name, or an error

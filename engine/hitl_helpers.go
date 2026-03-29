@@ -15,6 +15,43 @@ type HITLResult struct {
 	Explanation string
 }
 
+// CheckpointInspection contains structured metadata about a checkpointed walker
+// for HITL inspection — current node, status, interrupt data, and history.
+type CheckpointInspection struct {
+	WalkerID      string               `json:"walker_id"`
+	CurrentNode   string               `json:"current_node"`
+	Status        string               `json:"status"`
+	InterruptData map[string]any       `json:"interrupt_data,omitempty"`
+	History       []circuit.StepRecord `json:"history"`
+	LoopCounts    map[string]int       `json:"loop_counts,omitempty"`
+}
+
+// InspectCheckpoint loads a checkpoint and returns structured metadata
+// for HITL inspection. Returns an error if the checkpoint does not exist.
+func InspectCheckpoint(cp circuit.Checkpointer, walkerID string) (*CheckpointInspection, error) {
+	state, err := cp.Load(walkerID)
+	if err != nil {
+		return nil, fmt.Errorf("load checkpoint %s: %w", walkerID, err)
+	}
+	if state == nil {
+		return nil, fmt.Errorf("checkpoint %s: %w", walkerID, ErrWalkerNotFound)
+	}
+
+	var interruptData map[string]any
+	if data, ok := state.Context["interrupt_data"].(map[string]any); ok {
+		interruptData = data
+	}
+
+	return &CheckpointInspection{
+		WalkerID:      state.ID,
+		CurrentNode:   state.CurrentNode,
+		Status:        state.Status,
+		InterruptData: interruptData,
+		History:       state.History,
+		LoopCounts:    state.LoopCounts,
+	}, nil
+}
+
 // LoadCheckpointState loads a WalkerState from a JSON checkpoint directory.
 // Returns nil, nil if no checkpoint exists for the given walker ID.
 func LoadCheckpointState(checkpointDir, walkerID string) (*circuit.WalkerState, error) {
