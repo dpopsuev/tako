@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"sync"
@@ -8,6 +9,18 @@ import (
 
 	"github.com/dpopsuev/origami/circuit"
 )
+
+// mockEmbedder returns deterministic vectors for testing.
+type mockEmbedder struct {
+	vectors map[string][]float64
+}
+
+func (m *mockEmbedder) Embed(_ context.Context, text string) ([]float64, error) {
+	if v, ok := m.vectors[text]; ok {
+		return v, nil
+	}
+	return []float64{0, 0, 0}, nil
+}
 
 func newTestStore(t *testing.T) *PersistentStore {
 	t.Helper()
@@ -123,5 +136,81 @@ func TestPersistentStore_ConcurrentAccess(t *testing.T) {
 	keys := s.KeysNS("ns", "w1")
 	if len(keys) != workers {
 		t.Errorf("expected %d keys, got %d", workers, len(keys))
+	}
+}
+
+func newTestStoreWithEmbeddings(t *testing.T, emb circuit.EmbeddingProvider) *PersistentStore {
+	t.Helper()
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+	s, err := NewMemoryStore(dbPath, WithPersistentEmbeddings(emb))
+	if err != nil {
+		t.Fatalf("NewMemoryStore: %v", err)
+	}
+	t.Cleanup(func() { s.Close() })
+	return s
+}
+
+func TestPersistentStore_SearchSubstringFallback(t *testing.T) {
+	// No embedder — uses LIKE-based substring matching.
+	s := newTestStore(t)
+	s.SetNS("semantic", "w1", "dark-theme", "enable dark mode")
+	s.SetNS("semantic", "w1", "language", "english")
+
+	results := s.Search("semantic", "dark")
+	if len(results) != 1 {
+		t.Fatalf("expected 1 result, got %d", len(results))
+	}
+	if results[0].Key != "dark-theme" {
+		t.Errorf("key = %q, want dark-theme", results[0].Key)
+	}
+}
+
+func TestPersistentStore_SearchWithEmbeddings(t *testing.T) {
+	emb := &mockEmbedder{
+		vectors: map[string][]float64{
+			"cats are great":     {1, 0, 0},
+			"dogs are fine":      {0.9, 0.1, 0},
+			"math is hard":       {0, 0, 1},
+			"tell me about cats": {0.95, 0.05, 0},
+		},
+	}
+	s := newTestStoreWithEmbeddings(t, emb)
+	s.SetNS("semantic", "w1", "k1", "cats are great")
+	s.SetNS("semantic", "w1", "k2", "dogs are fine")
+	s.SetNS("semantic", "w1", "k3", "math is hard")
+
+	results := s.Search("semantic", "tell me about cats")
+	if len(results) != 3 {
+		t.Fatalf("expected 3 results, got %d", len(results))
+	}
+	if results[0].Key != "k1" {
+		t.Errorf("top result = %q, want k1", results[0].Key)
+	}
+	if results[1].Key != "k2" {
+		t.Errorf("second result = %q, want k2", results[1].Key)
+	}
+	if results[2].Key != "k3" {
+		t.Errorf("third result = %q, want k3", results[2].Key)
+	}
+}
+
+func TestPersistentStore_EmbeddingNamespaceIsolation(t *testing.T) {
+	emb := &mockEmbedder{
+		vectors: map[string][]float64{
+			"alpha": {1, 0, 0},
+			"beta":  {0, 1, 0},
+			"query": {1, 0, 0},
+		},
+	}
+	s := newTestStoreWithEmbeddings(t, emb)
+	s.SetNS("ns1", "w1", "k1", "alpha")
+	s.SetNS("ns2", "w1", "k2", "beta")
+
+	results := s.Search("ns1", "query")
+	if len(results) != 1 {
+		t.Fatalf("expected 1 result in ns1, got %d", len(results))
+	}
+	if results[0].Key != "k1" {
+		t.Errorf("key = %q, want k1", results[0].Key)
 	}
 }

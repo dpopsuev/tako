@@ -1,0 +1,11 @@
+kind: component
+component: origami-cli
+module: github.com/dpopsuev/origami/connectors/cli
+namespace: cli
+version: "0.1.0"
+description: CLI connector for headless circuit execution
+provides:
+  transformers: []
+  hooks: []
+requires:
+  origami: ">=0.3.0"

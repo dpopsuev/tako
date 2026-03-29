@@ -1,12 +1,36 @@
 package engine
 
 import (
+	"context"
+	"fmt"
 	"sort"
 	"sync"
 	"testing"
 
 	"github.com/dpopsuev/origami/circuit"
 )
+
+// mockEmbedder returns deterministic vectors for testing.
+// It maps known texts to fixed unit vectors so cosine similarity
+// produces predictable rankings.
+type mockEmbedder struct {
+	vectors map[string][]float64
+}
+
+func (m *mockEmbedder) Embed(_ context.Context, text string) ([]float64, error) {
+	if v, ok := m.vectors[text]; ok {
+		return v, nil
+	}
+	// Default: return zero vector.
+	return []float64{0, 0, 0}, nil
+}
+
+// failEmbedder always returns an error.
+type failEmbedder struct{}
+
+func (f *failEmbedder) Embed(_ context.Context, _ string) ([]float64, error) {
+	return nil, fmt.Errorf("embedding unavailable")
+}
 
 func TestInMemoryStoreSetAndGet(t *testing.T) {
 	store := NewInMemoryStore()
@@ -268,4 +292,112 @@ func TestInMemoryStore_ImplementsMemoryStore(t *testing.T) {
 
 func TestTaggedMemoryStore_ImplementsMemoryStore(t *testing.T) {
 	var _ circuit.MemoryStore = (*TaggedMemoryStore)(nil)
+}
+
+func TestInMemoryStore_SearchSubstringFallback(t *testing.T) {
+	// No embedder configured — must use substring matching.
+	store := NewInMemoryStore()
+	store.SetNS("semantic", "w1", "dark-theme", "enable dark mode")
+	store.SetNS("semantic", "w1", "language", "english")
+
+	results := store.Search("semantic", "dark")
+	if len(results) != 1 {
+		t.Fatalf("expected 1 result, got %d", len(results))
+	}
+	if results[0].Key != "dark-theme" {
+		t.Errorf("key = %q, want dark-theme", results[0].Key)
+	}
+}
+
+func TestInMemoryStore_SearchWithEmbeddings(t *testing.T) {
+	emb := &mockEmbedder{
+		vectors: map[string][]float64{
+			"cats are great":     {1, 0, 0},
+			"dogs are fine":      {0.9, 0.1, 0},
+			"math is hard":       {0, 0, 1},
+			"tell me about cats": {0.95, 0.05, 0},
+		},
+	}
+	store := NewInMemoryStore(WithEmbeddings(emb))
+	store.SetNS("semantic", "w1", "k1", "cats are great")
+	store.SetNS("semantic", "w1", "k2", "dogs are fine")
+	store.SetNS("semantic", "w1", "k3", "math is hard")
+
+	results := store.Search("semantic", "tell me about cats")
+	if len(results) != 3 {
+		t.Fatalf("expected 3 results, got %d", len(results))
+	}
+	// "cats are great" should rank first (highest cosine similarity to query).
+	if results[0].Key != "k1" {
+		t.Errorf("top result key = %q, want k1 (cats are great)", results[0].Key)
+	}
+	// "dogs are fine" should rank second.
+	if results[1].Key != "k2" {
+		t.Errorf("second result key = %q, want k2 (dogs are fine)", results[1].Key)
+	}
+	// "math is hard" should rank last.
+	if results[2].Key != "k3" {
+		t.Errorf("third result key = %q, want k3 (math is hard)", results[2].Key)
+	}
+}
+
+func TestInMemoryStore_SearchEmbeddingFallback(t *testing.T) {
+	// When the embedder fails on the query, fall back to substring.
+	store := NewInMemoryStore(WithEmbeddings(&failEmbedder{}))
+	store.SetNS("semantic", "w1", "dark-theme", "enable dark mode")
+	store.SetNS("semantic", "w1", "language", "english")
+
+	// The SetNS embeddings will fail too, so no vectors are stored.
+	// Fallback to substring should still work.
+	results := store.Search("semantic", "dark")
+	if len(results) != 1 {
+		t.Fatalf("expected 1 result via fallback, got %d", len(results))
+	}
+	if results[0].Key != "dark-theme" {
+		t.Errorf("key = %q, want dark-theme", results[0].Key)
+	}
+}
+
+func TestInMemoryStore_EmbeddingNamespaceIsolation(t *testing.T) {
+	emb := &mockEmbedder{
+		vectors: map[string][]float64{
+			"alpha": {1, 0, 0},
+			"beta":  {0, 1, 0},
+			"query": {1, 0, 0}, // identical to alpha
+		},
+	}
+	store := NewInMemoryStore(WithEmbeddings(emb))
+	store.SetNS("ns1", "w1", "k1", "alpha")
+	store.SetNS("ns2", "w1", "k2", "beta")
+
+	results := store.Search("ns1", "query")
+	if len(results) != 1 {
+		t.Fatalf("expected 1 result in ns1, got %d", len(results))
+	}
+	if results[0].Key != "k1" {
+		t.Errorf("key = %q, want k1", results[0].Key)
+	}
+}
+
+func TestCosineSimilarity(t *testing.T) {
+	tests := []struct {
+		name string
+		a, b []float64
+		want float64
+	}{
+		{"identical", []float64{1, 0, 0}, []float64{1, 0, 0}, 1.0},
+		{"orthogonal", []float64{1, 0, 0}, []float64{0, 1, 0}, 0.0},
+		{"opposite", []float64{1, 0, 0}, []float64{-1, 0, 0}, -1.0},
+		{"empty", nil, nil, 0.0},
+		{"length_mismatch", []float64{1}, []float64{1, 2}, 0.0},
+		{"zero_vector", []float64{0, 0}, []float64{1, 0}, 0.0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := cosineSimilarity(tt.a, tt.b)
+			if diff := got - tt.want; diff > 1e-9 || diff < -1e-9 {
+				t.Errorf("cosineSimilarity(%v, %v) = %f, want %f", tt.a, tt.b, got, tt.want)
+			}
+		})
+	}
 }

@@ -2,7 +2,10 @@ package circuit
 
 // Category: Execution
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 // MemoryStore provides cross-walk, identity-scoped key-value persistence.
 // Walker identity (walkerID) is the scoping dimension: each walker has
@@ -20,6 +23,14 @@ type MemoryStore interface {
 	SetNS(namespace, walkerID, key string, value any)
 	KeysNS(namespace, walkerID string) []string
 	Search(namespace, query string) []MemoryItem
+}
+
+// EmbeddingProvider computes vector embeddings for text.
+// When configured on a MemoryStore, Search uses cosine similarity
+// instead of substring matching. Consumers supply the implementation
+// (e.g. backed by an LLM embedding API).
+type EmbeddingProvider interface {
+	Embed(ctx context.Context, text string) ([]float64, error)
 }
 
 // MemoryItem represents a stored memory entry with metadata.

@@ -1,0 +1,11 @@
+start: begin
+done: finish
+nodes:
+  - name: begin
+    handler: passthrough
+  - name: finish
+    handler: passthrough
+edges:
+  - from: begin
+    to: finish
+    condition: always

@@ -11,13 +11,14 @@ import (
 func TestCachingWalker_CacheHit(t *testing.T) {
 	cache := NewInMemoryCache()
 	cached := &stubCacheArtifact{val: "cached-result"}
-	cache.Set("nodeA", cached, time.Minute)
+	cache.Set("testhash:nodeA", cached, time.Minute)
 
 	inner := &runnerTestWalker{state: circuit.NewWalkerState("test")}
 	cw := &cachingWalker{
-		inner:    inner,
-		cache:    cache,
-		cacheTTL: map[string]time.Duration{"nodeA": time.Minute},
+		inner:       inner,
+		cache:       cache,
+		cacheTTL:    map[string]time.Duration{"nodeA": time.Minute},
+		circuitHash: "testhash",
 	}
 
 	node := &runnerTestNode{name: "nodeA", out: &stubCacheArtifact{val: "fresh"}}
@@ -41,9 +42,10 @@ func TestCachingWalker_CacheMiss(t *testing.T) {
 	fresh := &stubCacheArtifact{val: "fresh-result"}
 	inner := &runnerTestWalker{state: circuit.NewWalkerState("test")}
 	cw := &cachingWalker{
-		inner:    inner,
-		cache:    cache,
-		cacheTTL: map[string]time.Duration{"nodeA": time.Minute},
+		inner:       inner,
+		cache:       cache,
+		cacheTTL:    map[string]time.Duration{"nodeA": time.Minute},
+		circuitHash: "testhash",
 	}
 
 	node := &runnerTestNode{name: "nodeA", out: fresh}
@@ -61,7 +63,7 @@ func TestCachingWalker_CacheMiss(t *testing.T) {
 	}
 
 	// Verify result was stored in cache.
-	got, ok := cache.Get("nodeA")
+	got, ok := cache.Get("testhash:nodeA")
 	if !ok {
 		t.Fatal("expected result to be cached after miss")
 	}
@@ -75,9 +77,10 @@ func TestCachingWalker_NoCacheDef_Passthrough(t *testing.T) {
 	fresh := &stubCacheArtifact{val: "passthrough"}
 	inner := &runnerTestWalker{state: circuit.NewWalkerState("test")}
 	cw := &cachingWalker{
-		inner:    inner,
-		cache:    cache,
-		cacheTTL: map[string]time.Duration{}, // no nodes configured for caching
+		inner:       inner,
+		cache:       cache,
+		cacheTTL:    map[string]time.Duration{}, // no nodes configured for caching
+		circuitHash: "testhash",
 	}
 
 	node := &runnerTestNode{name: "nodeB", out: fresh}
@@ -102,9 +105,10 @@ func TestCachingWalker_InnerError_NotCached(t *testing.T) {
 	cache := NewInMemoryCache()
 	inner := &runnerTestWalker{state: circuit.NewWalkerState("test")}
 	cw := &cachingWalker{
-		inner:    inner,
-		cache:    cache,
-		cacheTTL: map[string]time.Duration{"nodeA": time.Minute},
+		inner:       inner,
+		cache:       cache,
+		cacheTTL:    map[string]time.Duration{"nodeA": time.Minute},
+		circuitHash: "testhash",
 	}
 
 	node := &runnerTestNode{name: "nodeA", err: circuit.ErrNode}
@@ -125,9 +129,10 @@ func TestCachingWalker_DelegatesIdentityAndState(t *testing.T) {
 		state:    circuit.NewWalkerState("test-id"),
 	}
 	cw := &cachingWalker{
-		inner:    inner,
-		cache:    NewInMemoryCache(),
-		cacheTTL: map[string]time.Duration{},
+		inner:       inner,
+		cache:       NewInMemoryCache(),
+		cacheTTL:    map[string]time.Duration{},
+		circuitHash: "testhash",
 	}
 
 	if cw.Identity().PersonaName != "test-persona" {
@@ -145,36 +150,67 @@ func TestCachingWalker_DelegatesIdentityAndState(t *testing.T) {
 }
 
 func TestCacheKey_WithInput(t *testing.T) {
+	cw := &cachingWalker{circuitHash: "abc123"}
+
 	state := circuit.NewWalkerState("test")
 	state.Context["input"] = map[string]any{"query": "hello"}
 	nc := circuit.NodeContext{WalkerState: state}
 
-	key := cacheKey("nodeA", nc)
-	if key == "nodeA" {
+	key := cw.cacheKey("nodeA", nc)
+	if key == "abc123:nodeA" {
 		t.Error("cache key should include input hash when input is present")
 	}
 
 	// Same input should produce the same key.
-	key2 := cacheKey("nodeA", nc)
+	key2 := cw.cacheKey("nodeA", nc)
 	if key != key2 {
 		t.Errorf("same input produced different keys: %q vs %q", key, key2)
 	}
 
 	// Different input should produce a different key.
 	state.Context["input"] = map[string]any{"query": "world"}
-	key3 := cacheKey("nodeA", nc)
+	key3 := cw.cacheKey("nodeA", nc)
 	if key == key3 {
 		t.Error("different input should produce different cache key")
 	}
 }
 
 func TestCacheKey_WithoutInput(t *testing.T) {
+	cw := &cachingWalker{circuitHash: "abc123"}
+
 	state := circuit.NewWalkerState("test")
 	nc := circuit.NodeContext{WalkerState: state}
 
-	key := cacheKey("nodeA", nc)
-	if key != "nodeA" {
-		t.Errorf("cache key without input = %q, want nodeA", key)
+	key := cw.cacheKey("nodeA", nc)
+	if key != "abc123:nodeA" {
+		t.Errorf("cache key without input = %q, want abc123:nodeA", key)
+	}
+}
+
+func TestCacheKey_DifferentCircuitHash(t *testing.T) {
+	state := circuit.NewWalkerState("test")
+	state.Context["input"] = map[string]any{"query": "hello"}
+	nc := circuit.NodeContext{WalkerState: state}
+
+	cw1 := &cachingWalker{circuitHash: "hash_v1"}
+	cw2 := &cachingWalker{circuitHash: "hash_v2"}
+
+	key1 := cw1.cacheKey("nodeA", nc)
+	key2 := cw2.cacheKey("nodeA", nc)
+
+	if key1 == key2 {
+		t.Errorf("different circuit hashes should produce different cache keys, both got %q", key1)
+	}
+
+	// Also verify without input.
+	stateNoInput := circuit.NewWalkerState("test")
+	ncNoInput := circuit.NodeContext{WalkerState: stateNoInput}
+
+	key3 := cw1.cacheKey("nodeA", ncNoInput)
+	key4 := cw2.cacheKey("nodeA", ncNoInput)
+
+	if key3 == key4 {
+		t.Errorf("different circuit hashes without input should produce different keys, both got %q", key3)
 	}
 }
 

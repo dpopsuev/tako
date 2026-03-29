@@ -4,6 +4,7 @@ package engine
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -169,6 +170,14 @@ func Run(ctx context.Context, circuitPath string, input any, opts ...RunOption) 
 		def.Vars = MergeVars(def.Vars, cfg.overrides)
 	}
 
+	if len(def.Vars) > 0 {
+		resolved, err := circuit.ResolveSecrets(def.Vars)
+		if err != nil {
+			return fmt.Errorf("resolve secrets: %w", err)
+		}
+		def.Vars = resolved
+	}
+
 	reg := &GraphRegistries{
 		Nodes:        cfg.nodes,
 		Edges:        cfg.edges,
@@ -270,10 +279,11 @@ func Run(ctx context.Context, circuitPath string, input any, opts ...RunOption) 
 		ttls := buildCacheTTLs(def)
 		if len(ttls) > 0 {
 			walker = &cachingWalker{
-				inner:    walker,
-				cache:    cfg.nodeCache,
-				cacheTTL: ttls,
-				log:      cfg.logger,
+				inner:       walker,
+				cache:       cfg.nodeCache,
+				cacheTTL:    ttls,
+				circuitHash: fmt.Sprintf("%x", sha256.Sum256(data)),
+				log:         cfg.logger,
 			}
 		}
 	}

@@ -361,4 +361,10 @@ const (
 	LogKeyOverlayEdges   = "overlay_edges"
 	LogKeyStart          = "start"
 	LogKeyDone           = "done"
+
+	// --- Embedding / memory ---
+	LogKeyNamespace  = "namespace"
+	LogKeyQuery      = "query"
+	LogKeySimilarity = "similarity"
+	LogKeyResults    = "results"
 )

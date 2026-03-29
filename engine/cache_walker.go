@@ -20,10 +20,11 @@ const defaultCacheTTL = time.Hour
 // and store the result after a successful execution. Nodes without a cache
 // TTL entry are passed through to the inner walker unchanged.
 type cachingWalker struct {
-	inner    circuit.Walker
-	cache    circuit.NodeCache
-	cacheTTL map[string]time.Duration // node name → TTL from CacheDef
-	log      *slog.Logger
+	inner       circuit.Walker
+	cache       circuit.NodeCache
+	cacheTTL    map[string]time.Duration // node name → TTL from CacheDef
+	circuitHash string                   // SHA-256 hex of circuit YAML bytes
+	log         *slog.Logger
 }
 
 func (cw *cachingWalker) Identity() circuit.AgentIdentity       { return cw.inner.Identity() }
@@ -36,7 +37,7 @@ func (cw *cachingWalker) Handle(ctx context.Context, node circuit.Node, nc circu
 		return cw.inner.Handle(ctx, node, nc)
 	}
 
-	key := cacheKey(node.Name(), nc)
+	key := cw.cacheKey(node.Name(), nc)
 
 	if art, ok := cw.cache.Get(key); ok {
 		if cw.log != nil {
@@ -66,22 +67,24 @@ func (cw *cachingWalker) Handle(ctx context.Context, node circuit.Node, nc circu
 	return art, nil
 }
 
-// cacheKey builds a deterministic cache key from the node name and the
-// walker state context "input" value. When the input is not JSON-serializable
-// (or absent), only the node name is used.
-func cacheKey(nodeName string, nc circuit.NodeContext) string {
+// cacheKey builds a deterministic cache key from the circuit hash, node name,
+// and the walker state context "input" value. Including the circuit hash
+// ensures stale entries are unreachable when the circuit YAML changes.
+// When the input is not JSON-serializable (or absent), the input hash is
+// omitted.
+func (cw *cachingWalker) cacheKey(nodeName string, nc circuit.NodeContext) string {
 	input, ok := nc.WalkerState.Context["input"]
 	if !ok {
-		return nodeName
+		return fmt.Sprintf("%s:%s", cw.circuitHash, nodeName)
 	}
 
 	data, err := json.Marshal(input)
 	if err != nil {
-		return nodeName
+		return fmt.Sprintf("%s:%s", cw.circuitHash, nodeName)
 	}
 
 	h := sha256.Sum256(data)
-	return fmt.Sprintf("%s:%x", nodeName, h)
+	return fmt.Sprintf("%s:%s:%x", cw.circuitHash, nodeName, h)
 }
 
 // buildCacheTTLs extracts per-node cache TTLs from the circuit definition.
