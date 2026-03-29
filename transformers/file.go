@@ -48,7 +48,7 @@ func (t *FileTransformer) Transform(ctx context.Context, tc *engine.TransformerC
 		}
 	}
 	if path == "" {
-		return nil, fmt.Errorf("file transformer: file path required (set prompt: or config.extras.path)")
+		return nil, ErrFileTransformerFilePathRequiredSetPromptOrConfigExtr
 	}
 
 	if !filepath.IsAbs(path) {
@@ -64,7 +64,7 @@ func (t *FileTransformer) Transform(ctx context.Context, tc *engine.TransformerC
 		return nil, fmt.Errorf("file transformer: resolve root: %w", err)
 	}
 	if !strings.HasPrefix(absPath, absRoot) {
-		return nil, fmt.Errorf("file transformer: path %q escapes root %q", path, t.rootDir)
+		return nil, fmt.Errorf("%w: %q escapes root %q", ErrFileTransformerPath, path, t.rootDir)
 	}
 
 	data, err := os.ReadFile(absPath)

@@ -114,7 +114,7 @@ func (e *EntityStore) DB() *DB { return e.db }
 func (e *EntityStore) Create(table string, row Row) (int64, error) {
 	t, ok := e.tables[table]
 	if !ok {
-		return 0, fmt.Errorf("entity create: unknown table %q", table)
+		return 0, fmt.Errorf("entity create: %w: %q", ErrUnknownTable, table)
 	}
 
 	cols := make([]string, 0, len(t.Columns))
@@ -132,7 +132,7 @@ func (e *EntityStore) Create(table string, row Row) (int64, error) {
 	}
 
 	if len(cols) == 0 {
-		return 0, fmt.Errorf("entity create %s: no columns provided", table)
+		return 0, fmt.Errorf("entity create %s: %w", table, ErrNoColumns)
 	}
 
 	return e.db.Insert(InsertParams{
@@ -146,7 +146,7 @@ func (e *EntityStore) Create(table string, row Row) (int64, error) {
 func (e *EntityStore) Get(table string, id int64) (Row, error) {
 	t, ok := e.tables[table]
 	if !ok {
-		return nil, fmt.Errorf("entity get: unknown table %q", table)
+		return nil, fmt.Errorf("entity get: %w: %q", ErrUnknownTable, table)
 	}
 
 	pk := primaryKeyCol(t)
@@ -171,10 +171,10 @@ func (e *EntityStore) Get(table string, id int64) (Row, error) {
 func (e *EntityStore) GetBy(table string, where Row) (Row, error) {
 	t, ok := e.tables[table]
 	if !ok {
-		return nil, fmt.Errorf("entity get_by: unknown table %q", table)
+		return nil, fmt.Errorf("entity get_by: %w: %q", ErrUnknownTable, table)
 	}
 	if len(where) == 0 {
-		return nil, fmt.Errorf("entity get_by %s: conditions required", table)
+		return nil, fmt.Errorf("entity get_by %s: %w", table, ErrConditionsRequired)
 	}
 
 	cols := columnNames(t)
@@ -199,7 +199,7 @@ func (e *EntityStore) GetBy(table string, where Row) (Row, error) {
 func (e *EntityStore) List(table string, where Row, orderBy string) ([]Row, error) {
 	t, ok := e.tables[table]
 	if !ok {
-		return nil, fmt.Errorf("entity list: unknown table %q", table)
+		return nil, fmt.Errorf("entity list: %w: %q", ErrUnknownTable, table)
 	}
 
 	cols := columnNames(t)
@@ -240,7 +240,7 @@ func (e *EntityStore) List(table string, where Row, orderBy string) ([]Row, erro
 func (e *EntityStore) Update(table string, id int64, set Row) error {
 	t, ok := e.tables[table]
 	if !ok {
-		return fmt.Errorf("entity update: unknown table %q", table)
+		return fmt.Errorf("entity update: %w: %q", ErrUnknownTable, table)
 	}
 
 	pk := primaryKeyCol(t)
@@ -254,7 +254,7 @@ func (e *EntityStore) Update(table string, id int64, set Row) error {
 		return fmt.Errorf("entity update %s: %w", table, err)
 	}
 	if n == 0 {
-		return fmt.Errorf("entity update %s: id %d not found", table, id)
+		return fmt.Errorf("entity update %s: id %d: %w", table, id, ErrNotFound)
 	}
 	return nil
 }
@@ -263,7 +263,7 @@ func (e *EntityStore) Update(table string, id int64, set Row) error {
 func (e *EntityStore) Delete(table string, id int64) error {
 	t, ok := e.tables[table]
 	if !ok {
-		return fmt.Errorf("entity delete: unknown table %q", table)
+		return fmt.Errorf("entity delete: %w: %q", ErrUnknownTable, table)
 	}
 
 	pk := primaryKeyCol(t)

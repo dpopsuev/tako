@@ -1,12 +1,16 @@
 package autodoc
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
+
+// ErrMissingName is returned when a manifest is missing the required name field.
+var ErrMissingName = errors.New("manifest missing required field: name")
 
 // Manifest represents an origami.yaml project manifest.
 type Manifest struct {
@@ -27,7 +31,7 @@ func LoadManifest(path string) (*Manifest, error) {
 		return nil, fmt.Errorf("parse manifest: %w", err)
 	}
 	if m.Name == "" {
-		return nil, fmt.Errorf("manifest missing required field: name")
+		return nil, ErrMissingName
 	}
 	return &m, nil
 }

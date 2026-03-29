@@ -9,9 +9,9 @@ import (
 )
 
 const (
-	ruleOrphanNode   = "G1/orphan-node"
-	ruleUnreachDone  = "G2/unreachable-done"
-	ruleFanInMerge   = "G7/fan-in-without-merge"
+	ruleOrphanNode  = "G1/orphan-node"
+	ruleUnreachDone = "G2/unreachable-done"
+	ruleFanInMerge  = "G7/fan-in-without-merge"
 )
 
 // --- G1: orphan-node ---
@@ -20,8 +20,8 @@ type OrphanNode struct{}
 
 func (r *OrphanNode) ID() string          { return ruleOrphanNode }
 func (r *OrphanNode) Description() string { return "node not reachable from start via any edge path" }
-func (r *OrphanNode) Severity() Severity   { return SeverityWarning }
-func (r *OrphanNode) Tags() []string       { return []string{"semantic"} }
+func (r *OrphanNode) Severity() Severity  { return SeverityWarning }
+func (r *OrphanNode) Tags() []string      { return []string{"semantic"} }
 
 func (r *OrphanNode) Check(ctx *LintContext) []Finding {
 	reachable := reachableNodes(ctx.Def)
@@ -46,8 +46,8 @@ type UnreachableDone struct{}
 
 func (r *UnreachableDone) ID() string          { return ruleUnreachDone }
 func (r *UnreachableDone) Description() string { return "no edge path from start reaches done" }
-func (r *UnreachableDone) Severity() Severity   { return SeverityError }
-func (r *UnreachableDone) Tags() []string       { return []string{"semantic"} }
+func (r *UnreachableDone) Severity() Severity  { return SeverityError }
+func (r *UnreachableDone) Tags() []string      { return []string{"semantic"} }
 
 func (r *UnreachableDone) Check(ctx *LintContext) []Finding {
 	if ctx.Def.Done == "" || ctx.Def.Start == "" {
@@ -73,14 +73,14 @@ type DeadEdge struct{}
 
 func (r *DeadEdge) ID() string          { return "G3/dead-edge" }
 func (r *DeadEdge) Description() string { return "edge from unreachable node is dead" }
-func (r *DeadEdge) Severity() Severity   { return SeverityWarning }
-func (r *DeadEdge) Tags() []string       { return []string{"semantic"} }
+func (r *DeadEdge) Severity() Severity  { return SeverityWarning }
+func (r *DeadEdge) Tags() []string      { return []string{"semantic"} }
 
 func (r *DeadEdge) Check(ctx *LintContext) []Finding {
 	reachable := reachableNodes(ctx.Def)
 	var out []Finding
 	for i := range ctx.Def.Edges {
-		if !reachable[string(string(ctx.Def.Edges[i].From))] {
+		if !reachable[string(ctx.Def.Edges[i].From)] {
 			out = append(out, Finding{
 				RuleID:   r.ID(),
 				Severity: r.Severity(),
@@ -97,8 +97,10 @@ func (r *DeadEdge) Check(ctx *LintContext) []Finding {
 
 type ShortcutBypassesRequired struct{}
 
-func (r *ShortcutBypassesRequired) ID() string        { return "G4/shortcut-bypasses-required" }
-func (r *ShortcutBypassesRequired) Description() string { return "shortcut edge skips a node with a schema" }
+func (r *ShortcutBypassesRequired) ID() string { return "G4/shortcut-bypasses-required" }
+func (r *ShortcutBypassesRequired) Description() string {
+	return "shortcut edge skips a node with a schema"
+}
 func (r *ShortcutBypassesRequired) Severity() Severity { return SeverityWarning }
 func (r *ShortcutBypassesRequired) Tags() []string     { return []string{"semantic"} }
 
@@ -116,7 +118,7 @@ func (r *ShortcutBypassesRequired) Check(ctx *LintContext) []Finding {
 	normalAdj := make(map[string][]string)
 	for i := range ctx.Def.Edges {
 		if !ctx.Def.Edges[i].Shortcut {
-			normalAdj[string(string(ctx.Def.Edges[i].From))] = append(normalAdj[string(string(ctx.Def.Edges[i].From))], string(ctx.Def.Edges[i].To))
+			normalAdj[string(ctx.Def.Edges[i].From)] = append(normalAdj[string(ctx.Def.Edges[i].From)], string(ctx.Def.Edges[i].To))
 		}
 	}
 
@@ -146,10 +148,12 @@ func (r *ShortcutBypassesRequired) Check(ctx *LintContext) []Finding {
 
 type ZoneApproachMismatch struct{}
 
-func (r *ZoneApproachMismatch) ID() string          { return "G5/zone-approach-mismatch" }
-func (r *ZoneApproachMismatch) Description() string { return "zone approach differs from contained node approaches" }
-func (r *ZoneApproachMismatch) Severity() Severity   { return SeverityInfo }
-func (r *ZoneApproachMismatch) Tags() []string       { return []string{"semantic"} }
+func (r *ZoneApproachMismatch) ID() string { return "G5/zone-approach-mismatch" }
+func (r *ZoneApproachMismatch) Description() string {
+	return "zone approach differs from contained node approaches"
+}
+func (r *ZoneApproachMismatch) Severity() Severity { return SeverityInfo }
+func (r *ZoneApproachMismatch) Tags() []string     { return []string{"semantic"} }
 
 func (r *ZoneApproachMismatch) Check(ctx *LintContext) []Finding {
 	nodeApproaches := make(map[string]string)
@@ -191,8 +195,8 @@ type ExpressionCompileError struct{}
 
 func (r *ExpressionCompileError) ID() string          { return "G6/expression-compile-error" }
 func (r *ExpressionCompileError) Description() string { return "when expression does not compile" }
-func (r *ExpressionCompileError) Severity() Severity   { return SeverityError }
-func (r *ExpressionCompileError) Tags() []string       { return []string{"semantic"} }
+func (r *ExpressionCompileError) Severity() Severity  { return SeverityError }
+func (r *ExpressionCompileError) Tags() []string      { return []string{"semantic"} }
 
 func (r *ExpressionCompileError) Check(ctx *LintContext) []Finding {
 	var out []Finding
@@ -217,10 +221,12 @@ func (r *ExpressionCompileError) Check(ctx *LintContext) []Finding {
 
 type FanInWithoutMerge struct{}
 
-func (r *FanInWithoutMerge) ID() string          { return ruleFanInMerge }
-func (r *FanInWithoutMerge) Description() string { return "multiple edges converge on a node without merge strategy" }
-func (r *FanInWithoutMerge) Severity() Severity   { return SeverityWarning }
-func (r *FanInWithoutMerge) Tags() []string       { return []string{"semantic"} }
+func (r *FanInWithoutMerge) ID() string { return ruleFanInMerge }
+func (r *FanInWithoutMerge) Description() string {
+	return "multiple edges converge on a node without merge strategy"
+}
+func (r *FanInWithoutMerge) Severity() Severity { return SeverityWarning }
+func (r *FanInWithoutMerge) Tags() []string     { return []string{"semantic"} }
 
 func (r *FanInWithoutMerge) Check(ctx *LintContext) []Finding {
 	type edgeInfo struct {
@@ -237,7 +243,7 @@ func (r *FanInWithoutMerge) Check(ctx *LintContext) []Finding {
 	hasMerge := make(map[string]bool)
 	for i := range ctx.Def.Edges {
 		if ctx.Def.Edges[i].Merge != "" {
-			hasMerge[string(string(ctx.Def.Edges[i].To))] = true
+			hasMerge[string(ctx.Def.Edges[i].To)] = true
 		}
 	}
 
@@ -272,70 +278,74 @@ func (r *FanInWithoutMerge) Check(ctx *LintContext) []Finding {
 
 type UnacknowledgedShortcut struct{}
 
-func (r *UnacknowledgedShortcut) ID() string          { return "G8/unacknowledged-shortcut" }
-func (r *UnacknowledgedShortcut) Description() string { return "edge is topologically a shortcut but not declared as such" }
-func (r *UnacknowledgedShortcut) Severity() Severity   { return SeverityWarning }
-func (r *UnacknowledgedShortcut) Tags() []string       { return []string{"semantic"} }
+func (r *UnacknowledgedShortcut) ID() string { return "G8/unacknowledged-shortcut" }
+func (r *UnacknowledgedShortcut) Description() string {
+	return "edge is topologically a shortcut but not declared as such"
+}
+func (r *UnacknowledgedShortcut) Severity() Severity { return SeverityWarning }
+func (r *UnacknowledgedShortcut) Tags() []string     { return []string{"semantic"} }
 
 func (r *UnacknowledgedShortcut) Check(ctx *LintContext) []Finding {
-	inferred := inferEdgeTopology(ctx.Def)
-	var out []Finding
-	for i := range ctx.Def.Edges {
-		orig := &ctx.Def.Edges[i]
-		inf := inferred[i]
-		if inf.Shortcut && !orig.Shortcut {
-			out = append(out, Finding{
-				RuleID:     r.ID(),
-				Severity:   r.Severity(),
-				Message:    fmt.Sprintf("edge %q (%s -> %s) is a topological shortcut but lacks shortcut: true", orig.ID, orig.From, orig.To),
-				File:       ctx.File,
-				Line:       ctx.EdgeLine(orig.ID),
-				Suggestion: "add 'shortcut: true' to acknowledge this forward skip",
-			})
-		}
-		if !inf.Shortcut && orig.Shortcut {
-			out = append(out, Finding{
-				RuleID:   r.ID(),
-				Severity: SeverityError,
-				Message:  fmt.Sprintf("edge %q (%s -> %s) declares shortcut: true but is not a topological shortcut", orig.ID, orig.From, orig.To),
-				File:     ctx.File,
-				Line:     ctx.EdgeLine(orig.ID),
-			})
-		}
-	}
-	return out
+	return checkUnacknowledgedTopology(ctx, r.ID(), r.Severity(),
+		func(e *circuit.EdgeDef) bool { return e.Shortcut },
+		"shortcut", "forward skip")
 }
 
 // --- G9: unacknowledged-loop ---
 
 type UnacknowledgedLoop struct{}
 
-func (r *UnacknowledgedLoop) ID() string          { return "G9/unacknowledged-loop" }
-func (r *UnacknowledgedLoop) Description() string { return "edge is topologically a loop but not declared as such" }
-func (r *UnacknowledgedLoop) Severity() Severity   { return SeverityWarning }
-func (r *UnacknowledgedLoop) Tags() []string       { return []string{"semantic"} }
+func (r *UnacknowledgedLoop) ID() string { return "G9/unacknowledged-loop" }
+func (r *UnacknowledgedLoop) Description() string {
+	return "edge is topologically a loop but not declared as such"
+}
+func (r *UnacknowledgedLoop) Severity() Severity { return SeverityWarning }
+func (r *UnacknowledgedLoop) Tags() []string     { return []string{"semantic"} }
 
 func (r *UnacknowledgedLoop) Check(ctx *LintContext) []Finding {
+	return checkUnacknowledgedTopology(ctx, r.ID(), r.Severity(),
+		func(e *circuit.EdgeDef) bool { return e.Loop },
+		"loop", "backward edge")
+}
+
+// checkUnacknowledgedTopology is a shared helper for G8 and G9.
+// It compares a declared boolean flag on each edge against the inferred topology.
+func checkUnacknowledgedTopology(
+	ctx *LintContext,
+	ruleID string,
+	severity Severity,
+	declaredFlag func(*circuit.EdgeDef) bool,
+	flagName string,
+	suggestion string,
+) []Finding {
 	inferred := inferEdgeTopology(ctx.Def)
 	var out []Finding
 	for i := range ctx.Def.Edges {
 		orig := &ctx.Def.Edges[i]
 		inf := inferred[i]
-		if inf.Loop && !orig.Loop {
+		inferredFlag := false
+		switch flagName {
+		case "shortcut":
+			inferredFlag = inf.Shortcut
+		case "loop":
+			inferredFlag = inf.Loop
+		}
+		declared := declaredFlag(orig)
+		if inferredFlag && !declared {
 			out = append(out, Finding{
-				RuleID:     r.ID(),
-				Severity:   r.Severity(),
-				Message:    fmt.Sprintf("edge %q (%s -> %s) is a topological loop but lacks loop: true", orig.ID, orig.From, orig.To),
+				RuleID:     ruleID,
+				Severity:   severity,
+				Message:    fmt.Sprintf("edge %q (%s -> %s) is a topological %s but lacks %s: true", orig.ID, orig.From, orig.To, flagName, flagName),
 				File:       ctx.File,
 				Line:       ctx.EdgeLine(orig.ID),
-				Suggestion: "add 'loop: true' to acknowledge this backward edge",
+				Suggestion: fmt.Sprintf("add '%s: true' to acknowledge this %s", flagName, suggestion),
 			})
 		}
-		if !inf.Loop && orig.Loop {
+		if !inferredFlag && declared {
 			out = append(out, Finding{
-				RuleID:   r.ID(),
+				RuleID:   ruleID,
 				Severity: SeverityError,
-				Message:  fmt.Sprintf("edge %q (%s -> %s) declares loop: true but is not a topological loop", orig.ID, orig.From, orig.To),
+				Message:  fmt.Sprintf("edge %q (%s -> %s) declares %s: true but is not a topological %s", orig.ID, orig.From, orig.To, flagName, flagName),
 				File:     ctx.File,
 				Line:     ctx.EdgeLine(orig.ID),
 			})

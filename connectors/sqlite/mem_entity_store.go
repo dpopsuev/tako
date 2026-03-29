@@ -40,7 +40,7 @@ func (m *MemEntityStore) Create(table string, row Row) (int64, error) {
 
 	t, ok := m.tables[table]
 	if !ok {
-		return 0, fmt.Errorf("mem entity create: unknown table %q", table)
+		return 0, fmt.Errorf("mem entity create: %w: %q", ErrUnknownTable, table)
 	}
 
 	mt := m.data[table]
@@ -66,7 +66,7 @@ func (m *MemEntityStore) Get(table string, id int64) (Row, error) {
 
 	mt, ok := m.data[table]
 	if !ok {
-		return nil, fmt.Errorf("mem entity get: unknown table %q", table)
+		return nil, fmt.Errorf("mem entity get: %w: %q", ErrUnknownTable, table)
 	}
 
 	row, ok := mt.rows[id]
@@ -83,7 +83,7 @@ func (m *MemEntityStore) GetBy(table string, where Row) (Row, error) {
 
 	mt, ok := m.data[table]
 	if !ok {
-		return nil, fmt.Errorf("mem entity get_by: unknown table %q", table)
+		return nil, fmt.Errorf("mem entity get_by: %w: %q", ErrUnknownTable, table)
 	}
 
 	// Iterate in ID order for determinism.
@@ -104,7 +104,7 @@ func (m *MemEntityStore) List(table string, where Row, _ string) ([]Row, error) 
 
 	mt, ok := m.data[table]
 	if !ok {
-		return nil, fmt.Errorf("mem entity list: unknown table %q", table)
+		return nil, fmt.Errorf("mem entity list: %w: %q", ErrUnknownTable, table)
 	}
 
 	ids := sortedIDs(mt.rows)
@@ -125,12 +125,12 @@ func (m *MemEntityStore) Update(table string, id int64, set Row) error {
 
 	mt, ok := m.data[table]
 	if !ok {
-		return fmt.Errorf("mem entity update: unknown table %q", table)
+		return fmt.Errorf("mem entity update: %w: %q", ErrUnknownTable, table)
 	}
 
 	row, ok := mt.rows[id]
 	if !ok {
-		return fmt.Errorf("mem entity update %s: id %d not found", table, id)
+		return fmt.Errorf("mem entity update %s: id %d: %w", table, id, ErrNotFound)
 	}
 
 	for k, v := range set {
@@ -146,7 +146,7 @@ func (m *MemEntityStore) Delete(table string, id int64) error {
 
 	mt, ok := m.data[table]
 	if !ok {
-		return fmt.Errorf("mem entity delete: unknown table %q", table)
+		return fmt.Errorf("mem entity delete: %w: %q", ErrUnknownTable, table)
 	}
 
 	delete(mt.rows, id)
@@ -161,12 +161,12 @@ func (m *MemEntityStore) Mutate(table string, id int64, fn func(Row)) error {
 
 	mt, ok := m.data[table]
 	if !ok {
-		return fmt.Errorf("mem entity mutate: unknown table %q", table)
+		return fmt.Errorf("mem entity mutate: %w: %q", ErrUnknownTable, table)
 	}
 
 	row, ok := mt.rows[id]
 	if !ok {
-		return fmt.Errorf("mem entity mutate %s: id %d not found", table, id)
+		return fmt.Errorf("mem entity mutate %s: id %d: %w", table, id, ErrNotFound)
 	}
 
 	fn(row)
@@ -181,7 +181,7 @@ func (m *MemEntityStore) MutateAll(table string, fn func(Row) bool) (int64, erro
 
 	mt, ok := m.data[table]
 	if !ok {
-		return 0, fmt.Errorf("mem entity mutate_all: unknown table %q", table)
+		return 0, fmt.Errorf("mem entity mutate_all: %w: %q", ErrUnknownTable, table)
 	}
 
 	var count int64

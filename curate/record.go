@@ -19,8 +19,8 @@ type Field struct {
 // It represents one item being curated (e.g. a test case, a document,
 // a dataset entry). Fields are keyed by name for O(1) lookup.
 type Record struct {
-	ID     string           `json:"id"`
-	Fields map[string]Field `json:"fields"`
+	ID     string            `json:"id"`
+	Fields map[string]Field  `json:"fields"`
 	Tags   map[string]string `json:"tags,omitempty"`
 }
 

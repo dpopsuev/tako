@@ -491,8 +491,8 @@ func TestScaffold_WithScorecards(t *testing.T) {
 // --- Enrichment tests ---
 
 type mockEnricher struct {
-	called  int
-	lastIn  string
+	called int
+	lastIn string
 }
 
 func (m *mockEnricher) Enrich(_ context.Context, prompt string) (string, error) {

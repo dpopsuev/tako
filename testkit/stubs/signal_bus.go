@@ -48,24 +48,24 @@ func (s *StubSignalBus) Emit(event, agent, caseID, step string, meta map[string]
 }
 
 // AssertEventEmitted verifies that the given event was emitted at least once.
-func (s *StubSignalBus) AssertEventEmitted(t testing.TB, event string) {
-	t.Helper()
+func (s *StubSignalBus) AssertEventEmitted(tb testing.TB, event string) {
+	tb.Helper()
 	s.mu.Lock()
 	count := s.events[event]
 	s.mu.Unlock()
 	if count == 0 {
-		t.Errorf("expected event %q to be emitted, but it was not", event)
+		tb.Errorf("expected event %q to be emitted, but it was not", event)
 	}
 }
 
 // AssertEventCount verifies that the given event was emitted exactly n times.
-func (s *StubSignalBus) AssertEventCount(t testing.TB, event string, n int) {
-	t.Helper()
+func (s *StubSignalBus) AssertEventCount(tb testing.TB, event string, n int) {
+	tb.Helper()
 	s.mu.Lock()
 	count := s.events[event]
 	s.mu.Unlock()
 	if count != n {
-		t.Errorf("expected event %q to be emitted %d times, got %d", event, n, count)
+		tb.Errorf("expected event %q to be emitted %d times, got %d", event, n, count)
 	}
 }
 

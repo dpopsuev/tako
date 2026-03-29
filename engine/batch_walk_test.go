@@ -84,7 +84,7 @@ func TestBatchWalk_Parallel(t *testing.T) {
 				cur := concurrency.Add(1)
 				for {
 					old := maxConcurrency.Load()
-					if int32(cur) <= old || maxConcurrency.CompareAndSwap(old, int32(cur)) {
+					if cur <= old || maxConcurrency.CompareAndSwap(old, cur) {
 						break
 					}
 				}

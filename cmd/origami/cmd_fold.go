@@ -34,4 +34,3 @@ func foldCmd(args []string) error {
 		Verbose:       *verbose,
 	})
 }
-

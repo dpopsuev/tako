@@ -23,7 +23,7 @@ func captureCmd(args []string) error {
 	}
 
 	if *schematic == "" || *sourcePack == "" || *output == "" {
-		return fmt.Errorf("usage: origami capture --schematic=<name> --source-pack=<path> --output=<dir>")
+		return ErrUsageOrigamiCaptureSchematicNameSourcePackPathOutput
 	}
 
 	level := slog.LevelInfo

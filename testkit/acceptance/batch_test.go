@@ -6,9 +6,10 @@ package acceptance
 //   So that I can process batches efficiently with optional parallelism
 
 import (
-	"github.com/dpopsuev/origami/circuit"
 	"context"
 	"testing"
+
+	"github.com/dpopsuev/origami/circuit"
 
 	"github.com/dpopsuev/origami/engine"
 )

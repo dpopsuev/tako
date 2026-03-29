@@ -28,7 +28,7 @@ type ExtractorRegistry map[string]Extractor
 // Supports FQCN resolution.
 func (r ExtractorRegistry) Get(name string) (Extractor, error) {
 	if r == nil {
-		return nil, fmt.Errorf("extractor registry is nil")
+		return nil, ErrExtractorRegistryIsNil
 	}
 	if ext, ok := r[name]; ok {
 		return ext, nil
@@ -41,7 +41,7 @@ func (r ExtractorRegistry) Get(name string) (Extractor, error) {
 			}
 		}
 	}
-	return nil, fmt.Errorf("extractor %q not registered", name)
+	return nil, fmt.Errorf("%w: %q not registered", ErrExtractor, name)
 }
 
 // Register adds an extractor to the registry. Panics on duplicate name.
@@ -59,7 +59,7 @@ type extractorNode struct {
 	ext     Extractor
 }
 
-func (n *extractorNode) Name() string             { return n.name }
+func (n *extractorNode) Name() string                     { return n.name }
 func (n *extractorNode) ElementAffinity() circuit.Element { return n.element }
 
 func (n *extractorNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
@@ -85,7 +85,7 @@ type extractorArtifact struct {
 	raw        any
 }
 
-func (a *extractorArtifact) Type() string       { return a.typeName }
+func (a *extractorArtifact) Type() string        { return a.typeName }
 func (a *extractorArtifact) Confidence() float64 { return a.confidence }
 func (a *extractorArtifact) Raw() any            { return a.raw }
 
@@ -154,7 +154,7 @@ func (e *jsonExtractor[T]) Extract(_ context.Context, input any) (any, error) {
 		if s, ok2 := input.(string); ok2 {
 			data = []byte(s)
 		} else {
-			return nil, fmt.Errorf("JSONExtractor %q: expected []byte or string, got %T", e.name, input)
+			return nil, fmt.Errorf("%w: %q: expected []byte or string, got %T", ErrJSONExtractor, e.name, input)
 		}
 	}
 	var result T
@@ -192,11 +192,11 @@ func (e *regexExtractor) Name() string { return e.name }
 func (e *regexExtractor) Extract(_ context.Context, input any) (any, error) {
 	text, ok := input.(string)
 	if !ok {
-		return nil, fmt.Errorf("RegexExtractor %q: expected string, got %T", e.name, input)
+		return nil, fmt.Errorf("%w: %q: expected string, got %T", ErrRegexExtractor, e.name, input)
 	}
 	match := e.re.FindStringSubmatch(text)
 	if match == nil {
-		return nil, fmt.Errorf("RegexExtractor %q: no match in input (len=%d)", e.name, len(text))
+		return nil, fmt.Errorf("%w: %q: no match in input (len=%d)", ErrRegexExtractor, e.name, len(text))
 	}
 	result := make(map[string]string)
 	for i, name := range e.re.SubexpNames() {
@@ -224,13 +224,13 @@ func (e *codeBlockExtractor) Name() string { return e.name }
 func (e *codeBlockExtractor) Extract(_ context.Context, input any) (any, error) {
 	text, ok := input.(string)
 	if !ok {
-		return nil, fmt.Errorf("CodeBlockExtractor %q: expected string, got %T", e.name, input)
+		return nil, fmt.Errorf("%w: %q: expected string, got %T", ErrCodeBlockExtractor, e.name, input)
 	}
 	match := codeBlockRe.FindStringSubmatch(text)
 	if len(match) >= 2 {
 		return strings.TrimSpace(match[1]), nil
 	}
-	return nil, fmt.Errorf("CodeBlockExtractor %q: no fenced code block found (len=%d)", e.name, len(text))
+	return nil, fmt.Errorf("%w: %q: no fenced code block found (len=%d)", ErrCodeBlockExtractor, e.name, len(text))
 }
 
 // NewLineSplitExtractor splits text on newlines and removes blank lines.
@@ -247,7 +247,7 @@ func (e *lineSplitExtractor) Name() string { return e.name }
 func (e *lineSplitExtractor) Extract(_ context.Context, input any) (any, error) {
 	text, ok := input.(string)
 	if !ok {
-		return nil, fmt.Errorf("LineSplitExtractor %q: expected string, got %T", e.name, input)
+		return nil, fmt.Errorf("%w: %q: expected string, got %T", ErrLineSplitExtractor, e.name, input)
 	}
 	raw := strings.Split(text, "\n")
 	lines := make([]string, 0, len(raw))

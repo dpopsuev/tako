@@ -47,7 +47,7 @@ type HookRegistry map[string]Hook
 // an unqualified name tries direct first, then scans for a matching suffix.
 func (r HookRegistry) Get(name string) (Hook, error) {
 	if r == nil {
-		return nil, fmt.Errorf("hook registry is nil")
+		return nil, ErrHookRegistryIsNil
 	}
 	if h, ok := r[name]; ok {
 		return h, nil
@@ -60,7 +60,7 @@ func (r HookRegistry) Get(name string) (Hook, error) {
 			}
 		}
 	}
-	return nil, fmt.Errorf("hook %q not registered", name)
+	return nil, fmt.Errorf("%w: %q not registered", ErrHook, name)
 }
 
 // Register adds a hook. Panics on duplicate.
@@ -106,7 +106,7 @@ func (h *FileWriteHook) Run(_ context.Context, nodeName string, artifact circuit
 		pathTmpl = cfg.OutputPath
 	}
 	if pathTmpl == "" {
-		return fmt.Errorf("file-write hook: node %q missing config.output_path", nodeName)
+		return fmt.Errorf("%w: %q missing config.output_path", ErrFileWriteHookNode, nodeName)
 	}
 
 	tmpl, err := template.New("path").Parse(pathTmpl)
@@ -133,7 +133,7 @@ func (h *FileWriteHook) Run(_ context.Context, nodeName string, artifact circuit
 		return fmt.Errorf("file-write hook: marshal: %w", err)
 	}
 
-	if err := os.WriteFile(outPath, jsonData, 0o644); err != nil {
+	if err := os.WriteFile(outPath, jsonData, 0o600); err != nil {
 		return fmt.Errorf("file-write hook: write: %w", err)
 	}
 

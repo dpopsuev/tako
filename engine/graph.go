@@ -17,10 +17,10 @@ const (
 	walkStatusInterrupted = "interrupted"
 )
 
-// walkInterrupted is the sentinel error returned by Walk when a node
+// errWalkInterrupted is the sentinel error returned by Walk when a node
 // signals an Interrupt. The Run() function checks for this to decide
 // whether to clean up the checkpoint.
-var walkInterrupted = fmt.Errorf("walk interrupted")
+var errWalkInterrupted = fmt.Errorf("walk interrupted")
 
 // Graph is a directed graph of Nodes connected by Edges, partitioned into Zones.
 type Graph interface {
@@ -56,11 +56,11 @@ type DefaultGraph struct {
 	edges        []circuit.Edge
 	zones        []Zone
 	nodeIndex    map[string]circuit.Node
-	edgeIndex    map[string][]circuit.Edge   // from-node -> edges in definition order
-	nodeTimeouts map[string]time.Duration // per-node timeout (from DSL)
-	doneNode     string                   // terminal pseudo-node name (walk stops here)
-	observer     circuit.WalkObserver        // graph-level observer, used by Walk and composed with team observer in WalkTeam
-	registries   *GraphRegistries         // retained for DelegateNode sub-walk building
+	edgeIndex    map[string][]circuit.Edge // from-node -> edges in definition order
+	nodeTimeouts map[string]time.Duration  // per-node timeout (from DSL)
+	doneNode     string                    // terminal pseudo-node name (walk stops here)
+	observer     circuit.WalkObserver      // graph-level observer, used by Walk and composed with team observer in WalkTeam
+	registries   *GraphRegistries          // retained for DelegateNode sub-walk building
 }
 
 // GraphOption configures a DefaultGraph during construction.
@@ -85,7 +85,7 @@ func WithObserver(obs circuit.WalkObserver) GraphOption {
 
 // WithNodeTimeouts sets per-node timeout durations. When a node with a timeout
 // is encountered during Walk, a derived context.WithTimeout is created so the
-// node's Process (or delegate sub-walk) is cancelled if it exceeds the budget.
+// node's Process (or delegate sub-walk) is canceled if it exceeds the budget.
 func WithNodeTimeouts(m map[string]time.Duration) GraphOption {
 	return func(g *DefaultGraph) {
 		g.nodeTimeouts = m
@@ -140,10 +140,10 @@ func NewGraph(name string, nodes []circuit.Node, edges []circuit.Edge, zones []Z
 	return g, nil
 }
 
-func (g *DefaultGraph) Name() string       { return g.name }
+func (g *DefaultGraph) Name() string          { return g.name }
 func (g *DefaultGraph) Nodes() []circuit.Node { return g.nodes }
 func (g *DefaultGraph) Edges() []circuit.Edge { return g.edges }
-func (g *DefaultGraph) Zones() []Zone      { return g.zones }
+func (g *DefaultGraph) Zones() []Zone         { return g.zones }
 
 func (g *DefaultGraph) NodeByName(name string) (circuit.Node, bool) {
 	n, ok := g.nodeIndex[name]
@@ -162,6 +162,8 @@ func (g *DefaultGraph) EdgesFrom(nodeName string) []circuit.Edge {
 //
 // If a graph-level observer is set via WithObserver, walk events are emitted
 // at the same points as WalkTeam (node enter/exit, transitions, completion, errors).
+//
+//nolint:gocyclo,funlen // core graph traversal state machine — complexity is inherent
 func (g *DefaultGraph) Walk(ctx context.Context, walker circuit.Walker, startNode string) error {
 	obs := g.observer
 	walkerName := walker.Identity().PersonaName
@@ -220,7 +222,7 @@ func (g *DefaultGraph) Walk(ctx context.Context, walker circuit.Walker, startNod
 						"reason": intr.Reason,
 					},
 				})
-				return walkInterrupted
+				return errWalkInterrupted
 			}
 			state.Status = walkStatusError
 			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventNodeExit, Node: node.Name(), Walker: walkerName, Elapsed: nodeElapsed, Error: err})
@@ -352,6 +354,8 @@ func (g *DefaultGraph) Walk(ctx context.Context, walker circuit.Walker, startNod
 //
 // When both a graph-level observer (WithObserver) and team.Observer are set,
 // events are fanned out to both via MultiObserver.
+//
+//nolint:gocyclo,funlen // multi-walker graph traversal — complexity is inherent
 func (g *DefaultGraph) WalkTeam(ctx context.Context, team *Team, startNode string) error {
 	obs := composeObservers(g.observer, team.Observer)
 
@@ -362,7 +366,7 @@ func (g *DefaultGraph) WalkTeam(ctx context.Context, team *Team, startNode strin
 	}
 
 	if len(team.Walkers) == 0 {
-		return fmt.Errorf("team has no walkers")
+		return ErrTeamNoWalkers
 	}
 
 	var priorWalker circuit.Walker
@@ -376,7 +380,7 @@ func (g *DefaultGraph) WalkTeam(ctx context.Context, team *Team, startNode strin
 		}
 
 		if team.MaxSteps > 0 && steps >= team.MaxSteps {
-			err := fmt.Errorf("max steps (%d) exceeded at node %q", team.MaxSteps, node.Name())
+			err := fmt.Errorf("%w (%d) at node %q", ErrMaxStepsExceeded, team.MaxSteps, node.Name())
 			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkError, Node: node.Name(), Error: err})
 			return err
 		}
@@ -522,9 +526,9 @@ func (g *DefaultGraph) WalkTeam(ctx context.Context, team *Team, startNode strin
 // applyContextFilter strips or keeps context keys based on a zone's filter.
 // Block takes precedence: if both pass and block are set, blocked keys are
 // removed first, then only passed keys survive.
-func applyContextFilter(ctx map[string]any, filter *circuit.ContextFilterDef) map[string]any {
+func applyContextFilter(ctx map[string]any, filter *circuit.ContextFilterDef) {
 	if filter == nil {
-		return ctx
+		return
 	}
 	if len(filter.Block) > 0 {
 		for _, key := range filter.Block {
@@ -542,7 +546,6 @@ func applyContextFilter(ctx map[string]any, filter *circuit.ContextFilterDef) ma
 			}
 		}
 	}
-	return ctx
 }
 
 // composeObservers returns a single observer from two possibly-nil observers.
@@ -644,8 +647,8 @@ func (g *DefaultGraph) walkDelegate(ctx context.Context, walker circuit.Walker, 
 		Error:    walkErr,
 		Metadata: map[string]any{
 			circuit.ExtraKeyCircuitType: circuitType,
-			"node_count":             da.NodeCount,
-			"inner_error":            walkErr != nil,
+			"node_count":                da.NodeCount,
+			"inner_error":               walkErr != nil,
 		},
 	})
 

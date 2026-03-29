@@ -87,7 +87,7 @@ func WriteArtifact(dir, filename string, data any) error {
 	if err != nil {
 		return fmt.Errorf("marshal artifact %s: %w", filename, err)
 	}
-	if err := os.WriteFile(path, raw, 0o644); err != nil {
+	if err := os.WriteFile(path, raw, 0o600); err != nil {
 		return fmt.Errorf("write artifact %s: %w", filename, err)
 	}
 	return nil
@@ -97,10 +97,10 @@ func WriteArtifact(dir, filename string, data any) error {
 func WriteNodePrompt(dir, nodeName string, loopIter int, content string) (string, error) {
 	filename := NodePromptFilename(nodeName, loopIter)
 	if filename == "" {
-		return "", fmt.Errorf("no prompt filename for node %s", nodeName)
+		return "", fmt.Errorf("%w: %s", ErrNoPromptFilenameForNode, nodeName)
 	}
 	path := filepath.Join(dir, filename)
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		return "", fmt.Errorf("write prompt: %w", err)
 	}
 	return path, nil

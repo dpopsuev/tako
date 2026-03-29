@@ -162,7 +162,7 @@ func parseGitURI(uri string) (org, repo string, err error) {
 	uri = strings.TrimSuffix(uri, gitDir)
 	parts := strings.Split(uri, "/")
 	if len(parts) < 2 {
-		return "", "", fmt.Errorf("cannot parse git URI %q: expected at least org/repo", uri)
+		return "", "", fmt.Errorf("%w: %q: expected at least org/repo", ErrCannotParseGitURI, uri)
 	}
 	return parts[len(parts)-2], parts[len(parts)-1], nil
 }

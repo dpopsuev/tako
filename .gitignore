@@ -1,19 +1,12 @@
-# Compiled binaries — everything goes in bin/
+# Go
 /bin/
 *.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-
-# Test binary, built with `go test -c`
 *.test
-
-# Output of `go cover`
 *.out
 
-# IDE / editor
+# IDE
 .idea/
+.vscode/
 *.swp
 *.swo
 *~
@@ -25,15 +18,18 @@ Thumbs.db
 # Debug
 __debug_bin*
 
-# Frontend
+# Frontend (LSP extension)
 lsp/vscode/node_modules/
 
-# Sensitive / non-distributable assets
-rh-presentation-assets.pdf
+# Deploy runtime
 deploy/.origami/
 deploy/ca-certificates.crt
+
+# Claude Code
 .claude/scheduled_tasks.lock
 .claude/worktrees/
-limes.db
-limes.db-shm
-limes.db-wal
+
+# MCP runtime databases
+*.db
+*.db-shm
+*.db-wal

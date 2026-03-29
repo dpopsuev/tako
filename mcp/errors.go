@@ -9,4 +9,51 @@ var (
 	ErrStepRequired       = errors.New("step is required")
 	ErrEventRequired      = errors.New("event is required")
 	ErrAgentRequired      = errors.New("agent is required")
+	// ErrUnknownStep is returned for: unknown step
+	ErrUnknownStep = errors.New("unknown step")
+
+	// ErrCircuitTypeIsRequiredInExtraWhenMultipleTypesAreRegi is returned for: circuit_type is required in extra when multiple types are registered (available
+	ErrCircuitTypeIsRequiredInExtraWhenMultipleTypesAreRegi = errors.New("circuit_type is required in extra when multiple types are registered (available")
+
+	// ErrUnknownCircuitType is returned for: unknown circuit_type
+	ErrUnknownCircuitType = errors.New("unknown circuit_type")
+
+	// ErrUnknownCircuitAction is returned for: unknown circuit action
+	ErrUnknownCircuitAction = errors.New("unknown circuit action")
+
+	// ErrUnknownSignalAction is returned for: unknown signal action
+	ErrUnknownSignalAction = errors.New("unknown signal action")
+
+	// ErrACircuitSessionIsAlreadyRunningId is returned for: a circuit session is already running (id=
+	ErrACircuitSessionIsAlreadyRunningId = errors.New("a circuit session is already running (id=")
+
+	// ErrNoResultAvailable is returned for: no result available
+	ErrNoResultAvailable = errors.New("no result available")
+
+	// ErrCaseIdIsRequiredForDetailAction is returned for: case_id is required for detail action
+	ErrCaseIdIsRequiredForDetailAction = errors.New("case_id is required for detail action")
+
+	// ErrCaseId is returned for: case_id
+	ErrCaseId = errors.New("case_id")
+
+	// ErrSessionId is returned for: session_id
+	ErrSessionId = errors.New("session_id")
+
+	// ErrUnknownTraceAction is returned for: unknown trace action
+	ErrUnknownTraceAction = errors.New("unknown trace action")
+
+	// ErrNoTraceDataStateDirNotConfiguredOrRunNotFound is returned for: no trace data: StateDir not configured or run not found
+	ErrNoTraceDataStateDirNotConfiguredOrRunNotFound = errors.New("no trace data: StateDir not configured or run not found")
+
+	// ErrNoReportDataStateDirNotConfiguredOrRunNotFound is returned for: no report data: StateDir not configured or run not found
+	ErrNoReportDataStateDirNotConfiguredOrRunNotFound = errors.New("no report data: StateDir not configured or run not found")
+
+	// ErrStateDirNotConfigured is returned for: StateDir not configured
+	ErrStateDirNotConfigured = errors.New("StateDir not configured")
+
+	// ErrCapacityGate is returned when the capacity gate detects insufficient workers.
+	ErrCapacityGate = errors.New("capacity gate: insufficient concurrent workers")
+
+	// ErrSessionTTLExpired is returned when a session's TTL is exceeded.
+	ErrSessionTTLExpired = errors.New("session TTL expired: no activity")
 )

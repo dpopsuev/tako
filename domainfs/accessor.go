@@ -36,20 +36,20 @@ func NewDomainAssets(fsys fs.FS, sections map[string]map[string]string) *DomainA
 // is not registered, the error message lists the available alternatives.
 func (d *DomainAssets) ReadAsset(section, key string) ([]byte, error) {
 	if d.fsys == nil {
-		return nil, fmt.Errorf("domainfs: nil filesystem")
+		return nil, ErrNilFilesystem
 	}
 	keys, ok := d.sections[section]
 	if !ok {
 		return nil, fmt.Errorf(
-			"domainfs: section %q not found; available sections: %s",
-			section, sortedKeys(d.sections),
+			"%w: %q not found; available sections: %s",
+			ErrSection, section, sortedKeys(d.sections),
 		)
 	}
 	path, ok := keys[key]
 	if !ok {
 		return nil, fmt.Errorf(
-			"domainfs: asset %q not found in section %q; available keys: %s",
-			key, section, sortedKeysFlat(keys),
+			"%w: %q not found in section %q; available keys: %s",
+			ErrAsset, key, section, sortedKeysFlat(keys),
 		)
 	}
 	return fs.ReadFile(d.fsys, path)

@@ -11,7 +11,7 @@ const (
 	KindSchematic      Kind = "schematic"
 	KindComponent      Kind = "component"
 	KindBoard          Kind = "board"
-	KindCircuit        Kind = "circuit"        // legacy alias for schematic (migration)
+	KindCircuit        Kind = "circuit" // legacy alias for schematic (migration)
 	KindStoreSchema    Kind = "store-schema"
 	KindScorecard      Kind = "scorecard"
 	KindScenario       Kind = "scenario"

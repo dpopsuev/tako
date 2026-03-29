@@ -76,7 +76,7 @@ func TestRender_WithZones(t *testing.T) {
 func TestRender_EdgeLabelFallback(t *testing.T) {
 	def := &CircuitDef{
 		Circuit: "fallback",
-		Nodes:    []NodeDef{{Name: "a"}, {Name: "b"}},
+		Nodes:   []NodeDef{{Name: "a"}, {Name: "b"}},
 		Edges: []EdgeDef{
 			{ID: "E1", From: "a", To: "b"},
 		},
@@ -91,7 +91,7 @@ func TestRender_EdgeLabelFallback(t *testing.T) {
 func TestRender_HyphenatedNodes(t *testing.T) {
 	def := &CircuitDef{
 		Circuit: "hyphens",
-		Nodes:    []NodeDef{{Name: "cross-examine"}, {Name: "counter-investigate"}},
+		Nodes:   []NodeDef{{Name: "cross-examine"}, {Name: "counter-investigate"}},
 		Edges: []EdgeDef{
 			{ID: "D1", Name: "proceed", From: "cross-examine", To: "counter-investigate"},
 		},

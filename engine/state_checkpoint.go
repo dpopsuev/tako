@@ -39,7 +39,7 @@ func (c *JSONCheckpointer) Save(state *circuit.WalkerState) error {
 		return fmt.Errorf("checkpoint: marshal state: %w", err)
 	}
 	path := c.path(state.ID)
-	if err := os.WriteFile(path, data, 0o644); err != nil {
+	if err := os.WriteFile(path, data, 0o600); err != nil {
 		return fmt.Errorf("checkpoint: write %s: %w", path, err)
 	}
 	return nil

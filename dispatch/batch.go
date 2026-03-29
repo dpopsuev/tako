@@ -44,7 +44,7 @@ func NewBatchFileDispatcher(cfg *BatchFileDispatcherConfig) *BatchFileDispatcher
 	}
 	l := cfg.Logger
 	if l == nil {
-		l = slog.Default().With("component", "batch-dispatch")
+		l = slog.Default().With(slog.Any("component", "batch-dispatch"))
 	}
 	return &BatchFileDispatcher{
 		cfg:         cfg.FileConfig,
@@ -73,8 +73,7 @@ func (d *BatchFileDispatcher) DispatchBatch(ctx context.Context, ctxs []agentpor
 	d.batchID++
 	bid := d.batchID
 
-	d.log.DebugContext(ctx, "batch dispatch begin",
-		"batch_id", bid, "signals", n, "phase", phase)
+	d.log.DebugContext(ctx, "batch dispatch begin", slog.Any("batch_id", bid), slog.Any("signals", n), slog.Any("phase", phase))
 
 	signals := make([]BatchSignalEntry, n)
 	for i, dc := range ctxs {
@@ -103,8 +102,7 @@ func (d *BatchFileDispatcher) DispatchBatch(ctx context.Context, ctxs []agentpor
 		return make([][]byte, n), errs
 	}
 
-	d.log.DebugContext(ctx, "manifest written",
-		"batch_id", bid, "path", manifestPath, "signals", n)
+	d.log.DebugContext(ctx, "manifest written", slog.Any("batch_id", bid), slog.Any("path", manifestPath), slog.Any("signals", n))
 
 	manifest.Status = "in_progress"
 	_ = WriteManifest(manifestPath, manifest)
@@ -152,12 +150,11 @@ func (d *BatchFileDispatcher) DispatchBatch(ctx context.Context, ctxs []agentpor
 	if d.tokenBudget > 0 {
 		budgetPath := filepath.Join(d.suiteDir, "budget-status.json")
 		if err := WriteBudgetStatus(budgetPath, d.tokenBudget, d.tokenUsed); err != nil {
-			d.log.WarnContext(ctx, "failed to write budget status", "error", err)
+			d.log.WarnContext(ctx, "failed to write budget status", slog.Any("error", err))
 		}
 	}
 
-	d.log.DebugContext(ctx, "batch dispatch complete",
-		"batch_id", bid, "status", manifest.Status)
+	d.log.DebugContext(ctx, "batch dispatch complete", slog.Any("batch_id", bid), slog.Any("status", manifest.Status))
 
 	data := make([][]byte, n)
 	errs := make([]error, n)
@@ -170,8 +167,6 @@ func (d *BatchFileDispatcher) DispatchBatch(ctx context.Context, ctxs []agentpor
 }
 
 // Dispatch implements the Dispatcher interface for single-signal compatibility.
-//
-//nolint:gocritic // hugeParam: interface conformance (agentport.Dispatcher)
 func (d *BatchFileDispatcher) Dispatch(ctx context.Context, dc agentport.Context) ([]byte, error) {
 	data, errs := d.DispatchBatch(ctx, []agentport.Context{dc}, "single", "")
 	if len(errs) > 0 && errs[0] != nil {
@@ -180,7 +175,7 @@ func (d *BatchFileDispatcher) Dispatch(ctx context.Context, dc agentport.Context
 	if len(data) > 0 {
 		return data[0], nil
 	}
-	return nil, fmt.Errorf("batch dispatch returned no results")
+	return nil, ErrBatchDispatchReturnedNoResults
 }
 
 // SuiteDir returns the configured suite directory.
@@ -204,7 +199,7 @@ func (d *BatchFileDispatcher) WriteBriefing(content string) (string, error) {
 	if err := os.MkdirAll(d.suiteDir, 0o755); err != nil {
 		return "", fmt.Errorf("mkdir for briefing: %w", err)
 	}
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		return "", fmt.Errorf("write briefing: %w", err)
 	}
 	return path, nil

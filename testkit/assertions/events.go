@@ -13,8 +13,8 @@ import (
 
 // AssertEventOrder verifies that the given events contain the expected event
 // types in order. Extra events between expected types are allowed (subsequence match).
-func AssertEventOrder(t testing.TB, events []circuit.WalkEvent, expectedTypes []circuit.WalkEventType) {
-	t.Helper()
+func AssertEventOrder(tb testing.TB, events []circuit.WalkEvent, expectedTypes []circuit.WalkEventType) {
+	tb.Helper()
 
 	idx := 0
 	for _, e := range events {
@@ -26,18 +26,18 @@ func AssertEventOrder(t testing.TB, events []circuit.WalkEvent, expectedTypes []
 		}
 	}
 	if idx < len(expectedTypes) {
-		t.Errorf("event order mismatch: found %d of %d expected types; missing from index %d (%s)",
+		tb.Errorf("event order mismatch: found %d of %d expected types; missing from index %d (%s)",
 			idx, len(expectedTypes), idx, expectedTypes[idx])
 	}
 }
 
 // AssertNoEvent verifies that no event of the given type exists in events.
-func AssertNoEvent(t testing.TB, events []circuit.WalkEvent, eventType circuit.WalkEventType) {
-	t.Helper()
+func AssertNoEvent(tb testing.TB, events []circuit.WalkEvent, eventType circuit.WalkEventType) {
+	tb.Helper()
 
 	for i, e := range events {
 		if e.Type == eventType {
-			t.Errorf("unexpected event %s at index %d (node=%q)", eventType, i, e.Node)
+			tb.Errorf("unexpected event %s at index %d (node=%q)", eventType, i, e.Node)
 			return
 		}
 	}
@@ -45,8 +45,8 @@ func AssertNoEvent(t testing.TB, events []circuit.WalkEvent, eventType circuit.W
 
 // WaitForSignal polls the signal bus until an event with the given name appears
 // or the timeout expires. Fails the test on timeout.
-func WaitForSignal(t testing.TB, bus agentport.Bus, event string, timeout time.Duration) {
-	t.Helper()
+func WaitForSignal(tb testing.TB, bus agentport.Bus, event string, timeout time.Duration) {
+	tb.Helper()
 
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
@@ -58,5 +58,5 @@ func WaitForSignal(t testing.TB, bus agentport.Bus, event string, timeout time.D
 		}
 		time.Sleep(5 * time.Millisecond)
 	}
-	t.Errorf("timed out waiting for signal %q after %s", event, timeout)
+	tb.Errorf("timed out waiting for signal %q after %s", event, timeout)
 }

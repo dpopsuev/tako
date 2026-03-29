@@ -13,10 +13,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/agentport"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
+	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/mcp"
 )
 
@@ -241,7 +241,7 @@ func (t *dispatchTransformer) Transform(ctx context.Context, tc *engine.Transfor
 // --- client loop helper ---
 
 // runOllamaLoop runs the standard MCP client loop: get_next_step -> Ollama -> submit_step -> repeat.
-func runOllamaLoop(t *testing.T, ctx context.Context, sessionID, model string, callTool func(name string, args map[string]any) map[string]any, callToolErr func(name string, args map[string]any) (map[string]any, error)) int {
+func runOllamaLoop(ctx context.Context, t *testing.T, sessionID, model string, callTool func(name string, args map[string]any) map[string]any, _ func(name string, args map[string]any) (map[string]any, error)) int {
 	t.Helper()
 	steps := 0
 	for {
@@ -291,9 +291,9 @@ func TestOllamaE2E_SimpleCircuit(t *testing.T) {
 	logs := captureLogs(t)
 
 	cfg := mcp.CircuitConfig{
-		Name:        "ollama-simple",
-		Version:     "test",
-		StepSchemas: findSchemas("ASK"),
+		Name:                      "ollama-simple",
+		Version:                   "test",
+		StepSchemas:               findSchemas("ASK"),
 		DefaultGetNextStepTimeout: 60000,
 		DefaultSessionTTL:         120000,
 		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus agentport.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
@@ -319,27 +319,27 @@ func TestOllamaE2E_SimpleCircuit(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
 	model := ollamaModel()
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{})
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{})
 	sessionID := startResult["session_id"].(string)
 	t.Logf("session: %s, model: %s", sessionID, model)
 
 	ct := func(name string, args map[string]any) map[string]any {
-		return callTool(t, ctx, session, name, args)
+		return callTool(ctx, t, session, name, args)
 	}
 	cte := func(name string, args map[string]any) (map[string]any, error) {
 		return callToolE(ctx, session, name, args)
 	}
 
-	steps := runOllamaLoop(t, ctx, sessionID, model, ct, cte)
+	steps := runOllamaLoop(ctx, t, sessionID, model, ct, cte)
 	if steps != 1 {
 		t.Fatalf("expected 1 step, got %d", steps)
 	}
 
-	report := callTool(t, ctx, session, "get_report", map[string]any{
+	report := callTool(ctx, t, session, "get_report", map[string]any{
 		"session_id": sessionID,
 	})
 	if status, _ := report["status"].(string); status != "done" {
@@ -373,9 +373,9 @@ func TestOllamaE2E_MultiStepCascade(t *testing.T) {
 	stepOrder := []string{"STEP_A", "STEP_B", "STEP_C"}
 
 	cfg := mcp.CircuitConfig{
-		Name:        "ollama-cascade",
-		Version:     "test",
-		StepSchemas: findSchemas("STEP_A", "STEP_B", "STEP_C"),
+		Name:                      "ollama-cascade",
+		Version:                   "test",
+		StepSchemas:               findSchemas("STEP_A", "STEP_B", "STEP_C"),
 		DefaultGetNextStepTimeout: 60000,
 		DefaultSessionTTL:         120000,
 		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus agentport.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
@@ -405,27 +405,27 @@ func TestOllamaE2E_MultiStepCascade(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 180*time.Second)
 	defer cancel()
 
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
 	model := ollamaModel()
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{})
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{})
 	sessionID := startResult["session_id"].(string)
 	t.Logf("session: %s, model: %s", sessionID, model)
 
 	ct := func(name string, args map[string]any) map[string]any {
-		return callTool(t, ctx, session, name, args)
+		return callTool(ctx, t, session, name, args)
 	}
 	cte := func(name string, args map[string]any) (map[string]any, error) {
 		return callToolE(ctx, session, name, args)
 	}
 
-	steps := runOllamaLoop(t, ctx, sessionID, model, ct, cte)
+	steps := runOllamaLoop(ctx, t, sessionID, model, ct, cte)
 	if steps != 3 {
 		t.Fatalf("expected 3 steps, got %d", steps)
 	}
 
-	report := callTool(t, ctx, session, "get_report", map[string]any{
+	report := callTool(ctx, t, session, "get_report", map[string]any{
 		"session_id": sessionID,
 	})
 	if status, _ := report["status"].(string); status != "done" {
@@ -494,9 +494,9 @@ func TestOllamaE2E_DelegatedCircuit(t *testing.T) {
 	}
 
 	cfg := mcp.CircuitConfig{
-		Name:        "ollama-delegated",
-		Version:     "test",
-		StepSchemas: findSchemas("classify", "analyze", "conclude", "summarize"),
+		Name:                      "ollama-delegated",
+		Version:                   "test",
+		StepSchemas:               findSchemas("classify", "analyze", "conclude", "summarize"),
 		DefaultGetNextStepTimeout: 60000,
 		DefaultSessionTTL:         180000,
 		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus agentport.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
@@ -529,28 +529,28 @@ func TestOllamaE2E_DelegatedCircuit(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 240*time.Second)
 	defer cancel()
 
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
 	model := ollamaModel()
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{})
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{})
 	sessionID := startResult["session_id"].(string)
 	t.Logf("session: %s, model: %s", sessionID, model)
 
 	ct := func(name string, args map[string]any) map[string]any {
-		return callTool(t, ctx, session, name, args)
+		return callTool(ctx, t, session, name, args)
 	}
 	cte := func(name string, args map[string]any) (map[string]any, error) {
 		return callToolE(ctx, session, name, args)
 	}
 
-	steps := runOllamaLoop(t, ctx, sessionID, model, ct, cte)
+	steps := runOllamaLoop(ctx, t, sessionID, model, ct, cte)
 	// 4 steps: classify + analyze + conclude + summarize
 	if steps != 4 {
 		t.Fatalf("expected 4 steps (2 outer + 2 inner), got %d", steps)
 	}
 
-	report := callTool(t, ctx, session, "get_report", map[string]any{
+	report := callTool(ctx, t, session, "get_report", map[string]any{
 		"session_id": sessionID,
 	})
 	if status, _ := report["status"].(string); status != "done" {
@@ -624,13 +624,13 @@ func TestOllamaE2E_UnhappyPaths(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		session := connectInMemory(t, ctx, srv)
+		session := connectInMemory(ctx, t, srv)
 		defer session.Close()
 
-		startResult := callTool(t, ctx, session, "start_circuit", map[string]any{})
+		startResult := callTool(ctx, t, session, "start_circuit", map[string]any{})
 		sessionID := startResult["session_id"].(string)
 
-		res := callTool(t, ctx, session, "get_next_step", map[string]any{
+		res := callTool(ctx, t, session, "get_next_step", map[string]any{
 			"session_id": sessionID,
 			"timeout_ms": 5000,
 		})
@@ -691,13 +691,13 @@ func TestOllamaE2E_UnhappyPaths(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		session := connectInMemory(t, ctx, srv)
+		session := connectInMemory(ctx, t, srv)
 		defer session.Close()
 
-		startResult := callTool(t, ctx, session, "start_circuit", map[string]any{})
+		startResult := callTool(ctx, t, session, "start_circuit", map[string]any{})
 		sessionID := startResult["session_id"].(string)
 
-		res := callTool(t, ctx, session, "get_next_step", map[string]any{
+		res := callTool(ctx, t, session, "get_next_step", map[string]any{
 			"session_id": sessionID,
 			"timeout_ms": 5000,
 		})
@@ -755,13 +755,13 @@ func TestOllamaE2E_UnhappyPaths(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		session := connectInMemory(t, ctx, srv)
+		session := connectInMemory(ctx, t, srv)
 		defer session.Close()
 
-		startResult := callTool(t, ctx, session, "start_circuit", map[string]any{})
+		startResult := callTool(ctx, t, session, "start_circuit", map[string]any{})
 		sessionID := startResult["session_id"].(string)
 
-		res := callTool(t, ctx, session, "get_next_step", map[string]any{
+		res := callTool(ctx, t, session, "get_next_step", map[string]any{
 			"session_id": sessionID,
 			"timeout_ms": 30000,
 		})
@@ -774,7 +774,7 @@ func TestOllamaE2E_UnhappyPaths(t *testing.T) {
 		_, err := ollamaChat(timeoutCtx, ollamaModel(), prompt)
 		if err == nil {
 			t.Log("Ollama responded before timeout; timeout test is non-deterministic, submitting anyway")
-			callTool(t, ctx, session, "submit_step", map[string]any{
+			callTool(ctx, t, session, "submit_step", map[string]any{
 				"session_id":  sessionID,
 				"dispatch_id": int64(dispatchID),
 				"step":        "SLOW",
@@ -783,7 +783,7 @@ func TestOllamaE2E_UnhappyPaths(t *testing.T) {
 		} else {
 			t.Logf("Ollama timed out as expected: %v", err)
 			// Submit a fallback so the circuit can complete
-			callTool(t, ctx, session, "submit_step", map[string]any{
+			callTool(ctx, t, session, "submit_step", map[string]any{
 				"session_id":  sessionID,
 				"dispatch_id": int64(dispatchID),
 				"step":        "SLOW",

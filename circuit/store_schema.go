@@ -14,8 +14,8 @@ type StoreWiring struct {
 
 // StoreBinding maps a named store to a specific engine and optional config.
 type StoreBinding struct {
-	Engine string            `yaml:"engine"`            // e.g. "sqlite", "memory", "postgres"
-	Config map[string]string `yaml:"config,omitempty"`  // engine-specific config
+	Engine string            `yaml:"engine"`           // e.g. "sqlite", "memory", "postgres"
+	Config map[string]string `yaml:"config,omitempty"` // engine-specific config
 }
 
 // StoreLifecycle controls creation and disposal of a named store.
@@ -49,7 +49,7 @@ type StoreSchema struct {
 	SchemaVersion int                      `yaml:"schema_version"`
 	Import        string                   `yaml:"import,omitempty"`
 	Extend        bool                     `yaml:"extend,omitempty"`
-	Tables        map[string]StoreTableDef  `yaml:"tables"`
+	Tables        map[string]StoreTableDef `yaml:"tables"`
 	Stores        []StoreDeclaration       `yaml:"stores,omitempty"`
 }
 
@@ -196,7 +196,7 @@ func mergeTable(base, overlay StoreTableDef) (StoreTableDef, error) {
 		bc, exists := baseCols[oc.Name]
 		if exists {
 			if bc.Type != oc.Type || bc.Required != oc.Required || bc.Default != oc.Default {
-				return StoreTableDef{}, fmt.Errorf("cannot redefine existing column %q", oc.Name)
+				return StoreTableDef{}, fmt.Errorf("%w: %q", ErrCannotRedefineExistingColumn, oc.Name)
 			}
 			continue
 		}

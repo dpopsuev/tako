@@ -77,7 +77,7 @@ func TestThermalObserver_CeilingCancelsContext(t *testing.T) {
 	select {
 	case <-ctx.Done():
 	default:
-		t.Error("expected context to be cancelled at ceiling")
+		t.Error("expected context to be canceled at ceiling")
 	}
 }
 

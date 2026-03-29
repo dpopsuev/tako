@@ -30,8 +30,8 @@ type Goal struct {
 // SystemState is the current observed state provided by Operator.Observe.
 type SystemState struct {
 	Artifacts map[string]circuit.Artifact `json:"-"`
-	Iteration int                      `json:"iteration"`
-	Elapsed   time.Duration            `json:"elapsed"`
+	Iteration int                         `json:"iteration"`
+	Elapsed   time.Duration               `json:"elapsed"`
 }
 
 // Evaluation is the result of Operator.Evaluate.
@@ -46,8 +46,8 @@ type Evaluation struct {
 // reconciliation loop.
 type WalkResult struct {
 	Artifacts map[string]circuit.Artifact `json:"-"`
-	Elapsed   time.Duration            `json:"elapsed"`
-	Error     error                    `json:"error,omitempty"`
+	Elapsed   time.Duration               `json:"elapsed"`
+	Error     error                       `json:"error,omitempty"`
 }
 
 // Operator implements the Kubernetes-style reconciliation loop for agentic circuits.
@@ -132,7 +132,7 @@ func NewInMemoryContainer(id string, def *circuit.CircuitDef, walkObs circuit.Wa
 	}
 }
 
-func (c *InMemoryContainer) ID() string       { return c.id }
+func (c *InMemoryContainer) ID() string               { return c.id }
 func (c *InMemoryContainer) Def() *circuit.CircuitDef { return c.def }
 
 func (c *InMemoryContainer) Status() ContainerStatus {
@@ -151,7 +151,7 @@ func (c *InMemoryContainer) Walk(ctx context.Context, reg *GraphRegistries) (*Wa
 	c.mu.Lock()
 	if c.status == StatusAborted {
 		c.mu.Unlock()
-		return nil, fmt.Errorf("container %s: already aborted", c.id)
+		return nil, fmt.Errorf("%w: %s: already aborted", ErrContainer, c.id)
 	}
 	c.status = StatusRunning
 	walkCtx, cancel := context.WithCancel(ctx)
@@ -198,7 +198,7 @@ func (c *InMemoryContainer) Abort(reason string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.status != StatusPending && c.status != StatusRunning {
-		return fmt.Errorf("container %s: cannot abort in status %s", c.id, c.status)
+		return fmt.Errorf("%w: %s: cannot abort in status %s", ErrContainer, c.id, c.status)
 	}
 	c.status = StatusAborted
 	if c.cancel != nil {

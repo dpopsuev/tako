@@ -15,11 +15,11 @@ const goNilLiteral = "nil"
 // Supports both legacy (embed: directory) and assets (keyed file map) modes.
 func GenerateDomainServe(m *Manifest) ([]byte, error) {
 	if m.DomainServe == nil {
-		return nil, fmt.Errorf("manifest has no domain_serve section")
+		return nil, ErrManifestHasNoDomainServeSection
 	}
 	ds := m.DomainServe
 	if ds.Assets == nil {
-		return nil, fmt.Errorf("domain_serve: assets is required")
+		return nil, ErrDomainServeAssetsIsRequired
 	}
 
 	port := ds.Port
@@ -104,7 +104,7 @@ func goNestedMap(m map[string]map[string]string) string {
 // serves both domain data and the circuit MCP server over Streamable HTTP.
 func GenerateWiredBinary(m *Manifest, g *ResolvedGraph) ([]byte, error) {
 	if m.DomainServe == nil {
-		return nil, fmt.Errorf("manifest has no domain_serve section")
+		return nil, ErrManifestHasNoDomainServeSection
 	}
 	ds := m.DomainServe
 
@@ -124,15 +124,15 @@ func GenerateWiredBinary(m *Manifest, g *ResolvedGraph) ([]byte, error) {
 	needsFactory := g.Root.SessionFactory != ""
 
 	ctx := wiredBinaryContext{
-		Name:          m.Name,
-		Version:       m.Version,
-		Port:          port,
-		ImportBlock:   renderImports(g),
-		WiringBlock:   renderWiring(g, m.Name),
-		DomainConfig:  renderDomainConfig(m),
-		ServerBlock:   renderServerCreation(g, m.Name),
-		NeedsOrigami:  needsOrigami,
-		NeedsFactory:  needsFactory,
+		Name:         m.Name,
+		Version:      m.Version,
+		Port:         port,
+		ImportBlock:  renderImports(g),
+		WiringBlock:  renderWiring(g),
+		DomainConfig: renderDomainConfig(m),
+		ServerBlock:  renderServerCreation(g, m.Name),
+		NeedsOrigami: needsOrigami,
+		NeedsFactory: needsFactory,
 	}
 
 	if ds.Assets != nil {
@@ -153,16 +153,16 @@ func GenerateWiredBinary(m *Manifest, g *ResolvedGraph) ([]byte, error) {
 }
 
 type wiredBinaryContext struct {
-	Name          string
-	Version       string
-	Port          int
-	EmbedPaths    []string
-	ImportBlock   string
-	WiringBlock   string
-	DomainConfig  string
-	ServerBlock   string
-	NeedsOrigami  bool
-	NeedsFactory  bool
+	Name         string
+	Version      string
+	Port         int
+	EmbedPaths   []string
+	ImportBlock  string
+	WiringBlock  string
+	DomainConfig string
+	ServerBlock  string
+	NeedsOrigami bool
+	NeedsFactory bool
 }
 
 func renderImports(g *ResolvedGraph) string {
@@ -173,7 +173,7 @@ func renderImports(g *ResolvedGraph) string {
 	return b.String()
 }
 
-func renderWiring(g *ResolvedGraph, productName string) string {
+func renderWiring(g *ResolvedGraph) string {
 	var b strings.Builder
 
 	for _, conn := range g.Connectors {

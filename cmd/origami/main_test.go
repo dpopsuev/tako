@@ -167,7 +167,6 @@ done: _done
 	}
 }
 
-
 func TestCLI_Skill_Scaffold(t *testing.T) {
 	bin := buildBinary(t)
 	dir := t.TempDir()
@@ -268,4 +267,3 @@ done: _done
 		t.Fatalf("expected SKILL.md at %s: %v", skillPath, err)
 	}
 }
-

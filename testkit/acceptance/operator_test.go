@@ -6,9 +6,10 @@ package acceptance
 //   So that circuits can self-correct and converge to desired states
 
 import (
-	"github.com/dpopsuev/origami/circuit"
 	"context"
 	"testing"
+
+	"github.com/dpopsuev/origami/circuit"
 
 	"github.com/dpopsuev/origami/engine"
 )

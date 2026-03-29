@@ -89,12 +89,12 @@ func (ms *MetricSet) ByID() map[string]Metric {
 // Consumers embed this struct and add domain-specific fields
 // (e.g. CaseResults, DatasetHealth).
 type CalibrationReport struct {
-	Scenario    string                 `json:"scenario"`
-	Transformer string                 `json:"transformer"`
-	Resolution  string                 `json:"resolution,omitempty"`
-	Plan        string                 `json:"plan,omitempty"`
-	Runs        int                    `json:"runs"`
-	Metrics     MetricSet              `json:"metrics"`
-	RunMetrics  []MetricSet            `json:"run_metrics,omitempty"`
+	Scenario    string                  `json:"scenario"`
+	Transformer string                  `json:"transformer"`
+	Resolution  string                  `json:"resolution,omitempty"`
+	Plan        string                  `json:"plan,omitempty"`
+	Runs        int                     `json:"runs"`
+	Metrics     MetricSet               `json:"metrics"`
+	RunMetrics  []MetricSet             `json:"run_metrics,omitempty"`
 	Tokens      *agentport.TokenSummary `json:"tokens,omitempty"`
 }

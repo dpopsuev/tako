@@ -40,12 +40,7 @@ func MergeComponents(base *GraphRegistries, components ...*Component) (*GraphReg
 		MediatorEndpoint: base.MediatorEndpoint,
 	}
 
-	slog.DebugContext(context.Background(), "merge components",
-		"component", "registry",
-		"base_circuits", len(base.Circuits),
-		"mediator_endpoint", base.MediatorEndpoint,
-		"components", len(components),
-	)
+	slog.DebugContext(context.Background(), "merge components", slog.Any("component", "registry"), slog.Any("base_circuits", len(base.Circuits)), slog.Any("mediator_endpoint", base.MediatorEndpoint), slog.Any("components", len(components)))
 
 	for _, a := range components {
 		if err := mergeTransformers(merged.Transformers, a); err != nil {
@@ -65,7 +60,7 @@ func mergeTransformers(dst TransformerRegistry, a *Component) error {
 	for name, t := range a.Transformers {
 		fqcn := a.Namespace + "." + name
 		if _, exists := dst[fqcn]; exists {
-			return fmt.Errorf("transformer %q collision (component %s)", fqcn, a.Namespace)
+			return fmt.Errorf("%w: %q collision (component %s)", ErrTransformer, fqcn, a.Namespace)
 		}
 		dst[fqcn] = t
 		if _, exists := dst[name]; !exists {
@@ -79,7 +74,7 @@ func mergeExtractors(dst ExtractorRegistry, a *Component) error {
 	for name, e := range a.Extractors {
 		fqcn := a.Namespace + "." + name
 		if _, exists := dst[fqcn]; exists {
-			return fmt.Errorf("extractor %q collision (component %s)", fqcn, a.Namespace)
+			return fmt.Errorf("%w: %q collision (component %s)", ErrExtractor, fqcn, a.Namespace)
 		}
 		dst[fqcn] = e
 		if _, exists := dst[name]; !exists {
@@ -93,7 +88,7 @@ func mergeHooks(dst HookRegistry, a *Component) error {
 	for name, h := range a.Hooks {
 		fqcn := a.Namespace + "." + name
 		if _, exists := dst[fqcn]; exists {
-			return fmt.Errorf("hook %q collision (component %s)", fqcn, a.Namespace)
+			return fmt.Errorf("%w: %q collision (component %s)", ErrHook, fqcn, a.Namespace)
 		}
 		dst[fqcn] = h
 		if _, exists := dst[name]; !exists {

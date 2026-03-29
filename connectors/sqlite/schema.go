@@ -91,7 +91,7 @@ var knownColumnTypes = map[string]bool{
 // Modifiers: not_null, unique, pk, auto, default=VALUE, -> TABLE
 func (c *Column) UnmarshalYAML(value *yaml.Node) error {
 	if value.Kind != yaml.MappingNode {
-		return fmt.Errorf("column must be a mapping")
+		return ErrColumnMustBeMapping
 	}
 	if hasYAMLKey(value, "type") {
 		type plain Column
@@ -125,7 +125,7 @@ func (c *Column) parseShorthand(name, spec string) error {
 	c.Name = name
 	tokens := strings.Fields(spec)
 	if len(tokens) == 0 {
-		return fmt.Errorf("column %q: type is required in shorthand", name)
+		return fmt.Errorf("column %q: %w", name, ErrColumnTypeRequired)
 	}
 	c.Type = tokens[0]
 	for i := 1; i < len(tokens); i++ {
@@ -143,7 +143,7 @@ func (c *Column) parseShorthand(name, spec string) error {
 			c.Default = strings.TrimPrefix(tok, "default=")
 		case tok == "->" || tok == "references":
 			if i+1 >= len(tokens) {
-				return fmt.Errorf("column %q: %s requires a table name", name, tok)
+				return fmt.Errorf("column %q: %s %w", name, tok, ErrReferenceTableRequired)
 			}
 			i++
 			ref := tokens[i]
@@ -152,7 +152,7 @@ func (c *Column) parseShorthand(name, spec string) error {
 			}
 			c.References = ref
 		default:
-			return fmt.Errorf("column %q: unknown modifier %q", name, tok)
+			return fmt.Errorf("column %q: %w %q", name, ErrUnknownModifier, tok)
 		}
 	}
 	return nil
@@ -200,7 +200,7 @@ func (raw *rawSchema) normalize() (*Schema, error) {
 	}
 	for _, rt := range raw.Tables {
 		if len(rt.Columns) == 0 {
-			return nil, fmt.Errorf("table %q has no columns", rt.Name)
+			return nil, fmt.Errorf("table %q: %w", rt.Name, ErrTableNoColumns)
 		}
 		t := Table{
 			Name:        rt.Name,
@@ -242,47 +242,47 @@ func (rt *rawTable) shouldAutoID() bool {
 // Validate checks the schema for structural errors.
 func (s *Schema) Validate() error {
 	if s.Version == 0 {
-		return fmt.Errorf("schema version is required")
+		return ErrSchemaVersionRequired
 	}
 	tables := make(map[string]bool, len(s.Tables))
 	for _, t := range s.Tables {
 		if t.Name == "" {
-			return fmt.Errorf("table name is required")
+			return ErrTableNameRequired
 		}
 		if tables[t.Name] {
-			return fmt.Errorf("duplicate table %q", t.Name)
+			return fmt.Errorf("%w %q", ErrDuplicateTable, t.Name)
 		}
 		tables[t.Name] = true
 		if len(t.Columns) == 0 {
-			return fmt.Errorf("table %q has no columns", t.Name)
+			return fmt.Errorf("table %q: %w", t.Name, ErrTableNoColumns)
 		}
 		cols := make(map[string]bool, len(t.Columns))
 		for _, c := range t.Columns {
 			if c.Name == "" {
-				return fmt.Errorf("table %q: column name is required", t.Name)
+				return fmt.Errorf("table %q: %w", t.Name, ErrColumnNameRequired)
 			}
 			if cols[c.Name] {
-				return fmt.Errorf("table %q: duplicate column %q", t.Name, c.Name)
+				return fmt.Errorf("table %q: %w %q", t.Name, ErrDuplicateColumn, c.Name)
 			}
 			cols[c.Name] = true
 			if c.Type == "" {
-				return fmt.Errorf("table %q: column %q type is required", t.Name, c.Name)
+				return fmt.Errorf("table %q: column %q: %w", t.Name, c.Name, ErrColumnTypeRequired)
 			}
 		}
 		for _, uc := range t.Unique {
 			for _, col := range uc {
 				if !cols[col] {
-					return fmt.Errorf("table %q: unique constraint references unknown column %q", t.Name, col)
+					return fmt.Errorf("table %q: unique constraint %w %q", t.Name, ErrUnknownColumnRef, col)
 				}
 			}
 		}
 	}
 	for _, idx := range s.Indexes {
 		if idx.Name == "" {
-			return fmt.Errorf("index name is required")
+			return ErrIndexNameRequired
 		}
 		if !tables[idx.Table] {
-			return fmt.Errorf("index %q references unknown table %q", idx.Name, idx.Table)
+			return fmt.Errorf("index %q: %w %q", idx.Name, ErrIndexUnknownTable, idx.Table)
 		}
 	}
 	return nil

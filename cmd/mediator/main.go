@@ -10,6 +10,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -17,6 +18,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"time"
 
 	"github.com/dpopsuev/origami/mediator"
 )
@@ -37,8 +39,13 @@ func main() {
 	flag.Parse()
 
 	if *healthz {
-		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/healthz", *port))
-		if err != nil || resp.StatusCode != http.StatusOK {
+		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/healthz", *port)) //nolint:noctx // simple health probe, no context needed
+		if err != nil {
+			os.Exit(1)
+		}
+		code := resp.StatusCode
+		resp.Body.Close()
+		if code != http.StatusOK {
 			os.Exit(1)
 		}
 		os.Exit(0)
@@ -82,7 +89,7 @@ func run(port int, configs []mediator.BackendConfig) error {
 	defer m.Stop(context.Background())
 
 	addr := fmt.Sprintf(":%d", port)
-	httpServer := &http.Server{Addr: addr, Handler: m.Handler()}
+	httpServer := &http.Server{Addr: addr, Handler: m.Handler(), ReadHeaderTimeout: 10 * time.Second}
 
 	go func() {
 		<-ctx.Done()
@@ -90,7 +97,7 @@ func run(port int, configs []mediator.BackendConfig) error {
 	}()
 
 	log.Printf("mediator listening on %s", addr)
-	if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return fmt.Errorf("server error: %w", err)
 	}
 	return nil

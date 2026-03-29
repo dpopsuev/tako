@@ -117,13 +117,13 @@ func stubRunFuncInstant(nCases int) mcp.RunFunc {
 }
 
 // newTestConfig creates a CircuitConfig for testing.
-func newTestConfig(nCases, nSteps int, promptDir string) *mcp.CircuitConfig {
+func newTestConfig(nCases, nSteps int, promptDir string) *mcp.CircuitConfig { //nolint:unparam // test flexibility
 	steps := []string{"STEP_A", "STEP_B", "STEP_C"}
 	return &mcp.CircuitConfig{
-		Name:        "test-circuit",
-		Version:     "dev",
-		StepSchemas: testStepSchemas,
-		WorkerPreamble: "You are a test circuit worker.",
+		Name:                      "test-circuit",
+		Version:                   "dev",
+		StepSchemas:               testStepSchemas,
+		WorkerPreamble:            "You are a test circuit worker.",
 		DefaultGetNextStepTimeout: 1000,
 		DefaultSessionTTL:         300000,
 		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus agentport.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
@@ -147,9 +147,9 @@ func newTestConfig(nCases, nSteps int, promptDir string) *mcp.CircuitConfig {
 
 func newTestConfigStub(nCases int) *mcp.CircuitConfig {
 	return &mcp.CircuitConfig{
-		Name:        "test-circuit",
-		Version:     "dev",
-		StepSchemas: testStepSchemas,
+		Name:                      "test-circuit",
+		Version:                   "dev",
+		StepSchemas:               testStepSchemas,
 		DefaultGetNextStepTimeout: 1000,
 		DefaultSessionTTL:         300000,
 		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus agentport.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
@@ -174,7 +174,7 @@ func newTestServer(t *testing.T, cfg *mcp.CircuitConfig) *mcp.CircuitServer {
 	return srv
 }
 
-func connectInMemory(t *testing.T, ctx context.Context, srv *mcp.CircuitServer) *sdkmcp.ClientSession {
+func connectInMemory(ctx context.Context, t *testing.T, srv *mcp.CircuitServer) *sdkmcp.ClientSession {
 	t.Helper()
 	t1, t2 := sdkmcp.NewInMemoryTransports()
 	serverSession, err := srv.MCPServer.Connect(ctx, t1, nil)
@@ -191,7 +191,7 @@ func connectInMemory(t *testing.T, ctx context.Context, srv *mcp.CircuitServer) 
 	return session
 }
 
-func callTool(t *testing.T, ctx context.Context, session *sdkmcp.ClientSession, name string, args map[string]any) map[string]any {
+func callTool(ctx context.Context, t *testing.T, session *sdkmcp.ClientSession, name string, args map[string]any) map[string]any {
 	t.Helper()
 	actualName := toolName(name)
 	actualArgs := toolArgs(name, args)
@@ -319,7 +319,7 @@ func containsAll(s string, substrs ...string) bool {
 func TestCircuitServer_ToolDiscovery(t *testing.T) {
 	srv := newTestServer(t, newTestConfigStub(3))
 	ctx := context.Background()
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
 	tools, err := session.ListTools(ctx, nil)
@@ -348,10 +348,10 @@ func TestCircuitServer_StubFullLoop(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{})
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{})
 	sessionID, ok := startResult["session_id"].(string)
 	if !ok || sessionID == "" {
 		t.Fatalf("expected non-empty session_id, got %v", startResult["session_id"])
@@ -362,7 +362,7 @@ func TestCircuitServer_StubFullLoop(t *testing.T) {
 	}
 
 	time.Sleep(300 * time.Millisecond)
-	stepResult := callTool(t, ctx, session, "get_next_step", map[string]any{
+	stepResult := callTool(ctx, t, session, "get_next_step", map[string]any{
 		"session_id": sessionID,
 	})
 	done, _ := stepResult["done"].(bool)
@@ -370,7 +370,7 @@ func TestCircuitServer_StubFullLoop(t *testing.T) {
 		t.Fatalf("expected done=true for stub RunFunc, got %v", stepResult)
 	}
 
-	reportResult := callTool(t, ctx, session, "get_report", map[string]any{
+	reportResult := callTool(ctx, t, session, "get_report", map[string]any{
 		"session_id": sessionID,
 	})
 	status, _ := reportResult["status"].(string)
@@ -387,7 +387,7 @@ func TestCircuitServer_StubFullLoop(t *testing.T) {
 func TestCircuitServer_GetNextStep_NoSession(t *testing.T) {
 	srv := newTestServer(t, newTestConfigStub(1))
 	ctx := context.Background()
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
 	res, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
@@ -408,10 +408,10 @@ func TestCircuitServer_DoubleStart_WhileRunning(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	callTool(t, ctx, session, "start_circuit", map[string]any{})
+	callTool(ctx, t, session, "start_circuit", map[string]any{})
 
 	res, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
 		Name:      "circuit",
@@ -431,13 +431,13 @@ func TestCircuitServer_ForceStart_ReplacesRunning(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	start1 := callTool(t, ctx, session, "start_circuit", map[string]any{})
+	start1 := callTool(ctx, t, session, "start_circuit", map[string]any{})
 	sid1 := start1["session_id"].(string)
 
-	start2 := callTool(t, ctx, session, "start_circuit", map[string]any{"force": true})
+	start2 := callTool(ctx, t, session, "start_circuit", map[string]any{"force": true})
 	sid2 := start2["session_id"].(string)
 
 	if sid2 == sid1 {
@@ -453,10 +453,10 @@ func TestStartCircuit_WorkerPrompt(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{
 		"parallel": 4,
 	})
 	sessionID := startResult["session_id"].(string)
@@ -488,10 +488,10 @@ func TestStartCircuit_WorkerPrompt_Serial(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{
 		"parallel": 1,
 	})
 
@@ -508,15 +508,15 @@ func TestCapacityWarning_ProtocolAgnostic(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{
 		"parallel": 4,
 	})
 	sessionID := startResult["session_id"].(string)
 
-	step := callTool(t, ctx, session, "get_next_step", map[string]any{
+	step := callTool(ctx, t, session, "get_next_step", map[string]any{
 		"session_id": sessionID,
 	})
 	warning, _ := step["capacity_warning"].(string)
@@ -574,16 +574,16 @@ func TestWorkerMode_StreamRegistration(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{
 		"parallel": 4,
 	})
 	sessionID := startResult["session_id"].(string)
 
 	for i := 0; i < 4; i++ {
-		callTool(t, ctx, session, "emit_signal", map[string]any{
+		callTool(ctx, t, session, "emit_signal", map[string]any{
 			"session_id": sessionID,
 			"event":      "worker_started",
 			"agent":      "worker",
@@ -591,7 +591,7 @@ func TestWorkerMode_StreamRegistration(t *testing.T) {
 		})
 	}
 
-	signals := callTool(t, ctx, session, "get_signals", map[string]any{
+	signals := callTool(ctx, t, session, "get_signals", map[string]any{
 		"session_id": sessionID,
 	})
 	signalList, _ := signals["signals"].([]any)
@@ -619,22 +619,22 @@ func TestWorkerMode_NoWorkerID_Ignored(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{
 		"parallel": 2,
 	})
 	sessionID := startResult["session_id"].(string)
 
-	callTool(t, ctx, session, "emit_signal", map[string]any{
+	callTool(ctx, t, session, "emit_signal", map[string]any{
 		"session_id": sessionID,
 		"event":      "worker_started",
 		"agent":      "worker",
 		"meta":       map[string]any{"mode": "stream"},
 	})
 
-	callTool(t, ctx, session, "emit_signal", map[string]any{
+	callTool(ctx, t, session, "emit_signal", map[string]any{
 		"session_id": sessionID,
 		"event":      "worker_started",
 		"agent":      "worker",
@@ -643,17 +643,17 @@ func TestWorkerMode_NoWorkerID_Ignored(t *testing.T) {
 	t.Log("worker_started without worker_id accepted without panic")
 }
 
-// TestV2Workers_FullDrain_Deterministic is the definitive v2 choreography test.
+//nolint:gocyclo // integration test requires sequential orchestration steps
 func TestV2Workers_FullDrain_Deterministic(t *testing.T) {
 	cfg := newTestConfig(4, 2, "")
 	srv := newTestServer(t, cfg)
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{
 		"parallel": 4,
 	})
 	sessionID := startResult["session_id"].(string)
@@ -769,7 +769,7 @@ func TestV2Workers_FullDrain_Deterministic(t *testing.T) {
 	}
 	t.Logf("total steps: %d across 4 workers", totalSteps)
 
-	signals := callTool(t, ctx, session, "get_signals", map[string]any{
+	signals := callTool(ctx, t, session, "get_signals", map[string]any{
 		"session_id": sessionID,
 	})
 	signalList, _ := signals["signals"].([]any)
@@ -795,7 +795,7 @@ func TestV2Workers_FullDrain_Deterministic(t *testing.T) {
 		t.Errorf("expected 4 worker_stopped signals, got %d", len(stoppedWorkers))
 	}
 
-	reportResult := callTool(t, ctx, session, "get_report", map[string]any{
+	reportResult := callTool(ctx, t, session, "get_report", map[string]any{
 		"session_id": sessionID,
 	})
 	status, _ := reportResult["status"].(string)
@@ -811,10 +811,10 @@ func TestV2Workers_ConcurrencyTiming_Deterministic(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{
 		"parallel": 4,
 	})
 	sessionID := startResult["session_id"].(string)
@@ -956,14 +956,14 @@ func TestSignalBus_EmitAndGet(t *testing.T) {
 	srv := newTestServer(t, newTestConfigStub(3))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{})
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{})
 	sessionID := startResult["session_id"].(string)
 	time.Sleep(300 * time.Millisecond)
 
-	emitResult := callTool(t, ctx, session, "emit_signal", map[string]any{
+	emitResult := callTool(ctx, t, session, "emit_signal", map[string]any{
 		"session_id": sessionID,
 		"event":      "dispatch",
 		"agent":      "main",
@@ -975,7 +975,7 @@ func TestSignalBus_EmitAndGet(t *testing.T) {
 		t.Fatalf("expected ok='signal emitted', got %v", emitResult)
 	}
 
-	getResult := callTool(t, ctx, session, "get_signals", map[string]any{
+	getResult := callTool(ctx, t, session, "get_signals", map[string]any{
 		"session_id": sessionID,
 	})
 	total, _ := getResult["total"].(float64)
@@ -1009,10 +1009,10 @@ func TestSignalBus_EmitRejectsEmpty(t *testing.T) {
 	srv := newTestServer(t, newTestConfigStub(1))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{})
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{})
 	sessionID := startResult["session_id"].(string)
 	time.Sleep(300 * time.Millisecond)
 
@@ -1050,15 +1050,15 @@ func TestSession_TTL_Abort(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{
 		"parallel": 1,
 	})
 	sessionID := startResult["session_id"].(string)
 
-	step := callTool(t, ctx, session, "get_next_step", map[string]any{
+	step := callTool(ctx, t, session, "get_next_step", map[string]any{
 		"session_id": sessionID,
 	})
 	if done, _ := step["done"].(bool); done {
@@ -1068,7 +1068,7 @@ func TestSession_TTL_Abort(t *testing.T) {
 	srv.SetSessionTTL(200 * time.Millisecond)
 	time.Sleep(500 * time.Millisecond)
 
-	res := callTool(t, ctx, session, "get_next_step", map[string]any{
+	res := callTool(ctx, t, session, "get_next_step", map[string]any{
 		"session_id": sessionID,
 	})
 	done, _ := res["done"].(bool)
@@ -1104,16 +1104,16 @@ func TestCleanArtifactJSON(t *testing.T) {
 func TestCircuitServer_GetWorkerHealth(t *testing.T) {
 	srv := newTestServer(t, newTestConfig(2, 1, ""))
 	ctx := context.Background()
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{
 		"parallel": 1,
 	})
 	sessionID := startResult["session_id"].(string)
 
 	// Emit worker signals manually
-	callTool(t, ctx, session, "emit_signal", map[string]any{
+	callTool(ctx, t, session, "emit_signal", map[string]any{
 		"session_id": sessionID,
 		"event":      "worker_started",
 		"agent":      "worker",
@@ -1121,7 +1121,7 @@ func TestCircuitServer_GetWorkerHealth(t *testing.T) {
 			"worker_id": "test-w1",
 		},
 	})
-	callTool(t, ctx, session, "emit_signal", map[string]any{
+	callTool(ctx, t, session, "emit_signal", map[string]any{
 		"session_id": sessionID,
 		"event":      "error",
 		"agent":      "worker",
@@ -1133,7 +1133,7 @@ func TestCircuitServer_GetWorkerHealth(t *testing.T) {
 		},
 	})
 
-	health := callTool(t, ctx, session, "get_worker_health", map[string]any{
+	health := callTool(ctx, t, session, "get_worker_health", map[string]any{
 		"session_id": sessionID,
 	})
 
@@ -1248,15 +1248,15 @@ func TestSubmitStep_FullLoop(t *testing.T) {
 	srv := newTestServer(t, newTestConfig(1, 1, ""))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{
 		"parallel": 1,
 	})
 	sessionID := startResult["session_id"].(string)
 
-	res := callTool(t, ctx, session, "get_next_step", map[string]any{
+	res := callTool(ctx, t, session, "get_next_step", map[string]any{
 		"session_id": sessionID,
 		"timeout_ms": 2000,
 	})
@@ -1268,7 +1268,7 @@ func TestSubmitStep_FullLoop(t *testing.T) {
 	step, _ := res["step"].(string)
 	dispatchID, _ := res["dispatch_id"].(float64)
 
-	result := callTool(t, ctx, session, "submit_step", map[string]any{
+	result := callTool(ctx, t, session, "submit_step", map[string]any{
 		"session_id":  sessionID,
 		"dispatch_id": int64(dispatchID),
 		"step":        step,
@@ -1284,15 +1284,15 @@ func TestSubmitStep_UnknownStep(t *testing.T) {
 	srv := newTestServer(t, newTestConfig(1, 1, ""))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{
 		"parallel": 1,
 	})
 	sessionID := startResult["session_id"].(string)
 
-	res := callTool(t, ctx, session, "get_next_step", map[string]any{
+	res := callTool(ctx, t, session, "get_next_step", map[string]any{
 		"session_id": sessionID,
 		"timeout_ms": 2000,
 	})
@@ -1316,15 +1316,15 @@ func TestSubmitStep_MissingRequiredField(t *testing.T) {
 	srv := newTestServer(t, newTestConfig(1, 1, ""))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{
 		"parallel": 1,
 	})
 	sessionID := startResult["session_id"].(string)
 
-	res := callTool(t, ctx, session, "get_next_step", map[string]any{
+	res := callTool(ctx, t, session, "get_next_step", map[string]any{
 		"session_id": sessionID,
 		"timeout_ms": 2000,
 	})
@@ -1349,10 +1349,10 @@ func TestSubmitStep_ZeroDispatchID(t *testing.T) {
 	srv := newTestServer(t, newTestConfig(1, 1, ""))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{
 		"parallel": 1,
 	})
 	sessionID := startResult["session_id"].(string)
@@ -1372,10 +1372,10 @@ func TestSubmitStep_ZeroDispatchID(t *testing.T) {
 
 func TestSession_MaxDuration_AbortsCircuit(t *testing.T) {
 	cfg := &mcp.CircuitConfig{
-		Name:               "test-circuit",
-		Version:            "dev",
-		StepSchemas:        testStepSchemas,
-		MaxSessionDuration: 200, // 200ms max
+		Name:                      "test-circuit",
+		Version:                   "dev",
+		StepSchemas:               testStepSchemas,
+		MaxSessionDuration:        200, // 200ms max
 		DefaultGetNextStepTimeout: 1000,
 		DefaultSessionTTL:         300000,
 		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus agentport.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
@@ -1397,10 +1397,10 @@ func TestSession_MaxDuration_AbortsCircuit(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{})
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{})
 	sessionID := startResult["session_id"].(string)
 
 	// Poll get_next_step until done=true (session should abort within ~200ms)
@@ -1428,7 +1428,7 @@ func TestSession_MaxDuration_AbortsCircuit(t *testing.T) {
 
 	// get_report should show error status
 	time.Sleep(100 * time.Millisecond)
-	reportResult := callTool(t, ctx, session, "get_report", map[string]any{
+	reportResult := callTool(ctx, t, session, "get_report", map[string]any{
 		"session_id": sessionID,
 	})
 	status, _ := reportResult["status"].(string)
@@ -1439,10 +1439,10 @@ func TestSession_MaxDuration_AbortsCircuit(t *testing.T) {
 
 func TestSession_MaxDuration_ZeroIsNoLimit(t *testing.T) {
 	cfg := &mcp.CircuitConfig{
-		Name:               "test-circuit",
-		Version:            "dev",
-		StepSchemas:        testStepSchemas,
-		MaxSessionDuration: 0, // no limit
+		Name:                      "test-circuit",
+		Version:                   "dev",
+		StepSchemas:               testStepSchemas,
+		MaxSessionDuration:        0, // no limit
 		DefaultGetNextStepTimeout: 1000,
 		DefaultSessionTTL:         300000,
 		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus agentport.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
@@ -1458,15 +1458,15 @@ func TestSession_MaxDuration_ZeroIsNoLimit(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{})
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{})
 	sessionID := startResult["session_id"].(string)
 
 	time.Sleep(300 * time.Millisecond)
 
-	res := callTool(t, ctx, session, "get_next_step", map[string]any{
+	res := callTool(ctx, t, session, "get_next_step", map[string]any{
 		"session_id": sessionID,
 	})
 	done, _ := res["done"].(bool)
@@ -1474,7 +1474,7 @@ func TestSession_MaxDuration_ZeroIsNoLimit(t *testing.T) {
 		t.Fatal("expected done=true for instant RunFunc with MaxSessionDuration=0")
 	}
 
-	reportResult := callTool(t, ctx, session, "get_report", map[string]any{
+	reportResult := callTool(ctx, t, session, "get_report", map[string]any{
 		"session_id": sessionID,
 	})
 	status, _ := reportResult["status"].(string)
@@ -1485,10 +1485,10 @@ func TestSession_MaxDuration_ZeroIsNoLimit(t *testing.T) {
 
 func TestSession_MaxDuration_InteractionWithTTL(t *testing.T) {
 	cfg := &mcp.CircuitConfig{
-		Name:               "test-circuit",
-		Version:            "dev",
-		StepSchemas:        testStepSchemas,
-		MaxSessionDuration: 5000, // 5s max (long)
+		Name:                      "test-circuit",
+		Version:                   "dev",
+		StepSchemas:               testStepSchemas,
+		MaxSessionDuration:        5000, // 5s max (long)
 		DefaultGetNextStepTimeout: 1000,
 		DefaultSessionTTL:         200, // 200ms TTL (short — should win)
 		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus agentport.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
@@ -1503,16 +1503,16 @@ func TestSession_MaxDuration_InteractionWithTTL(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{
 		"parallel": 1,
 	})
 	sessionID := startResult["session_id"].(string)
 
 	// Pull one step to prove the session is running
-	step := callTool(t, ctx, session, "get_next_step", map[string]any{
+	step := callTool(ctx, t, session, "get_next_step", map[string]any{
 		"session_id": sessionID,
 	})
 	if done, _ := step["done"].(bool); done {
@@ -1522,7 +1522,7 @@ func TestSession_MaxDuration_InteractionWithTTL(t *testing.T) {
 	// Don't submit — let TTL expire (200ms)
 	time.Sleep(500 * time.Millisecond)
 
-	res := callTool(t, ctx, session, "get_next_step", map[string]any{
+	res := callTool(ctx, t, session, "get_next_step", map[string]any{
 		"session_id": sessionID,
 	})
 	done, _ := res["done"].(bool)
@@ -1532,17 +1532,17 @@ func TestSession_MaxDuration_InteractionWithTTL(t *testing.T) {
 }
 
 // TestGetReport_ContextCancellation verifies that get_report returns promptly when
-// the MCP handler context is cancelled.
+// the MCP handler context is canceled.
 func TestGetReport_ContextCancellation(t *testing.T) {
 	cfg := newTestConfig(3, 3, "")
 	srv := newTestServer(t, cfg)
 	mainCtx, mainCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer mainCancel()
 
-	session := connectInMemory(t, mainCtx, srv)
+	session := connectInMemory(mainCtx, t, srv)
 	defer session.Close()
 
-	startResult := callTool(t, mainCtx, session, "start_circuit", map[string]any{
+	startResult := callTool(mainCtx, t, session, "start_circuit", map[string]any{
 		"parallel": 1,
 	})
 	sessionID := startResult["session_id"].(string)
@@ -1558,12 +1558,12 @@ func TestGetReport_ContextCancellation(t *testing.T) {
 	elapsed := time.Since(start)
 
 	if err == nil {
-		t.Fatal("expected error from cancelled context on get_report")
+		t.Fatal("expected error from canceled context on get_report")
 	}
 	if elapsed > 1*time.Second {
 		t.Errorf("get_report took %v to fail, expected ~100ms abort", elapsed)
 	}
-	t.Logf("get_report cancelled in %v", elapsed)
+	t.Logf("get_report canceled in %v", elapsed)
 }
 
 func testFieldsForStep(step string) map[string]any {
@@ -1657,10 +1657,10 @@ func TestCircuitServer_MCP_LateWorkerEndToEnd(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{
 		"parallel": 1,
 	})
 	sessionID := startResult["session_id"].(string)
@@ -1712,10 +1712,10 @@ func TestCircuitServer_MCP_LateWorker_ReportProduced(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{
 		"parallel": 1,
 	})
 	sessionID := startResult["session_id"].(string)
@@ -1841,10 +1841,10 @@ func TestToolContract_StartCircuit(t *testing.T) {
 	srv := newTestServer(t, newTestConfigStub(3))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	out := callTool(t, ctx, session, "start_circuit", map[string]any{})
+	out := callTool(ctx, t, session, "start_circuit", map[string]any{})
 	requireField(t, out, "session_id", "start_circuit")
 	requireField(t, out, "total_cases", "start_circuit")
 	requireField(t, out, "status", "start_circuit")
@@ -1854,14 +1854,14 @@ func TestToolContract_GetNextStep(t *testing.T) {
 	srv := newTestServer(t, newTestConfigStub(1))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	start := callTool(t, ctx, session, "start_circuit", map[string]any{})
+	start := callTool(ctx, t, session, "start_circuit", map[string]any{})
 	sid := start["session_id"].(string)
 	time.Sleep(300 * time.Millisecond)
 
-	out := callTool(t, ctx, session, "get_next_step", map[string]any{
+	out := callTool(ctx, t, session, "get_next_step", map[string]any{
 		"session_id": sid,
 	})
 	// Stub completes immediately — should return done=true.
@@ -1874,13 +1874,13 @@ func TestToolContract_EmitSignal(t *testing.T) {
 	srv := newTestServer(t, newTestConfigStub(1))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	start := callTool(t, ctx, session, "start_circuit", map[string]any{})
+	start := callTool(ctx, t, session, "start_circuit", map[string]any{})
 	sid := start["session_id"].(string)
 
-	out := callTool(t, ctx, session, "emit_signal", map[string]any{
+	out := callTool(ctx, t, session, "emit_signal", map[string]any{
 		"session_id": sid,
 		"event":      "test_event",
 		"agent":      "test_agent",
@@ -1893,13 +1893,13 @@ func TestToolContract_GetSignals(t *testing.T) {
 	srv := newTestServer(t, newTestConfigStub(1))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	start := callTool(t, ctx, session, "start_circuit", map[string]any{})
+	start := callTool(ctx, t, session, "start_circuit", map[string]any{})
 	sid := start["session_id"].(string)
 
-	out := callTool(t, ctx, session, "get_signals", map[string]any{
+	out := callTool(ctx, t, session, "get_signals", map[string]any{
 		"session_id": sid,
 	})
 	requireField(t, out, "signals", "get_signals")
@@ -1910,13 +1910,13 @@ func TestToolContract_GetWorkerHealth(t *testing.T) {
 	srv := newTestServer(t, newTestConfigStub(1))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	start := callTool(t, ctx, session, "start_circuit", map[string]any{})
+	start := callTool(ctx, t, session, "start_circuit", map[string]any{})
 	sid := start["session_id"].(string)
 
-	out := callTool(t, ctx, session, "get_worker_health", map[string]any{
+	out := callTool(ctx, t, session, "get_worker_health", map[string]any{
 		"session_id": sid,
 	})
 	// Worker health returns summary even with no workers.
@@ -1929,14 +1929,14 @@ func TestToolContract_GetReport(t *testing.T) {
 	srv := newTestServer(t, newTestConfigStub(1))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	start := callTool(t, ctx, session, "start_circuit", map[string]any{})
+	start := callTool(ctx, t, session, "start_circuit", map[string]any{})
 	sid := start["session_id"].(string)
 	time.Sleep(300 * time.Millisecond)
 
-	out := callTool(t, ctx, session, "get_report", map[string]any{
+	out := callTool(ctx, t, session, "get_report", map[string]any{
 		"session_id": sid,
 	})
 	requireField(t, out, "status", "get_report")
@@ -1946,10 +1946,10 @@ func TestToolContract_SubmitStep_RequiresDispatchID(t *testing.T) {
 	srv := newTestServer(t, newTestConfig(1, 1, ""))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	start := callTool(t, ctx, session, "start_circuit", map[string]any{})
+	start := callTool(ctx, t, session, "start_circuit", map[string]any{})
 	sid := start["session_id"].(string)
 
 	// dispatch_id=0 should fail (zero value treated as missing).

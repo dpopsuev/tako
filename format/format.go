@@ -10,7 +10,7 @@ type Mode int
 
 const (
 	ASCII    Mode = iota // Fixed-width terminal tables
-	Markdown             // GitHub-flavoured Markdown tables
+	Markdown             // GitHub-flavored Markdown tables
 )
 
 // ColumnAlign specifies the horizontal alignment for a column.

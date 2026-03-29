@@ -63,7 +63,7 @@ func (r *MCPRemoteFS) Open(name string) (fs.File, error) {
 		if isNotFoundError(text) {
 			return nil, &fs.PathError{Op: "open", Path: name, Err: fs.ErrNotExist}
 		}
-		return nil, &fs.PathError{Op: "open", Path: name, Err: fmt.Errorf("%s", text)}
+		return nil, &fs.PathError{Op: "open", Path: name, Err: fmt.Errorf("%w: %s", ErrRemoteCall, text)}
 	}
 
 	return newMemFile(name, []byte(text)), nil
@@ -79,7 +79,7 @@ func (r *MCPRemoteFS) openDir(ctx context.Context, name string) (fs.File, error)
 		if isNotFoundError(text) {
 			return nil, &fs.PathError{Op: "open", Path: name, Err: fs.ErrNotExist}
 		}
-		return nil, &fs.PathError{Op: "open", Path: name, Err: fmt.Errorf("%s", text)}
+		return nil, &fs.PathError{Op: "open", Path: name, Err: fmt.Errorf("%w: %s", ErrRemoteCall, text)}
 	}
 
 	var entries []dirEntryJSON
@@ -147,8 +147,10 @@ func (d *memDir) Stat() (fs.FileInfo, error) {
 	return &staticFileInfo{name: baseName(d.name), isDir: true}, nil
 }
 
-func (d *memDir) Read([]byte) (int, error) { return 0, &fs.PathError{Op: "read", Path: d.name, Err: fmt.Errorf("is a directory")} }
-func (d *memDir) Close() error             { return nil }
+func (d *memDir) Read([]byte) (int, error) {
+	return 0, &fs.PathError{Op: "read", Path: d.name, Err: ErrIsADirectory}
+}
+func (d *memDir) Close() error { return nil }
 
 func (d *memDir) ReadDir(n int) ([]fs.DirEntry, error) {
 	if n <= 0 {
@@ -179,12 +181,17 @@ type staticFileInfo struct {
 	isDir bool
 }
 
-func (fi *staticFileInfo) Name() string      { return fi.name }
-func (fi *staticFileInfo) Size() int64       { return fi.size }
-func (fi *staticFileInfo) Mode() fs.FileMode { if fi.isDir { return fs.ModeDir | 0o555 }; return 0o444 }
+func (fi *staticFileInfo) Name() string { return fi.name }
+func (fi *staticFileInfo) Size() int64  { return fi.size }
+func (fi *staticFileInfo) Mode() fs.FileMode {
+	if fi.isDir {
+		return fs.ModeDir | 0o555
+	}
+	return 0o444
+}
 func (fi *staticFileInfo) ModTime() time.Time { return time.Time{} }
-func (fi *staticFileInfo) IsDir() bool       { return fi.isDir }
-func (fi *staticFileInfo) Sys() any          { return nil }
+func (fi *staticFileInfo) IsDir() bool        { return fi.isDir }
+func (fi *staticFileInfo) Sys() any           { return nil }
 
 // --- static fs.DirEntry ---
 
@@ -193,10 +200,17 @@ type staticDirEntry struct {
 	isDir bool
 }
 
-func (e *staticDirEntry) Name() string               { return e.name }
-func (e *staticDirEntry) IsDir() bool                { return e.isDir }
-func (e *staticDirEntry) Type() fs.FileMode          { if e.isDir { return fs.ModeDir }; return 0 }
-func (e *staticDirEntry) Info() (fs.FileInfo, error)  { return &staticFileInfo{name: e.name, isDir: e.isDir}, nil }
+func (e *staticDirEntry) Name() string { return e.name }
+func (e *staticDirEntry) IsDir() bool  { return e.isDir }
+func (e *staticDirEntry) Type() fs.FileMode {
+	if e.isDir {
+		return fs.ModeDir
+	}
+	return 0
+}
+func (e *staticDirEntry) Info() (fs.FileInfo, error) {
+	return &staticFileInfo{name: e.name, isDir: e.isDir}, nil
+}
 
 func baseName(path string) string {
 	if path == "." {

@@ -24,9 +24,9 @@ type BundleValidator interface {
 }
 
 var (
-	captureMu   sync.RWMutex
-	capturers   = map[string]Capturer{}
-	validators  = map[string]BundleValidator{}
+	captureMu  sync.RWMutex
+	capturers  = map[string]Capturer{}
+	validators = map[string]BundleValidator{}
 )
 
 // RegisterCapturer registers a Capturer for a schematic name.
@@ -49,7 +49,7 @@ func GetCapturer(schematic string) (Capturer, error) {
 	defer captureMu.RUnlock()
 	c, ok := capturers[schematic]
 	if !ok {
-		return nil, fmt.Errorf("no capturer registered for schematic %q", schematic)
+		return nil, fmt.Errorf("%w: %q", ErrNoCapturerRegisteredForSchematic, schematic)
 	}
 	return c, nil
 }
@@ -60,7 +60,7 @@ func GetValidator(schematic string) (BundleValidator, error) {
 	defer captureMu.RUnlock()
 	v, ok := validators[schematic]
 	if !ok {
-		return nil, fmt.Errorf("no validator registered for schematic %q", schematic)
+		return nil, fmt.Errorf("%w: %q", ErrNoValidatorRegisteredForSchematic, schematic)
 	}
 	return v, nil
 }

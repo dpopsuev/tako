@@ -100,7 +100,7 @@ func ResolveCircuitPath(name string, opts ...ResolveOption) ([]byte, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("circuit %q not found; searched: %s", name, strings.Join(searched, ", "))
+	return nil, fmt.Errorf("%w: %q not found; searched: %s", ErrCircuit, name, strings.Join(searched, ", "))
 }
 
 // ClearEmbeddedCircuits is for testing only.

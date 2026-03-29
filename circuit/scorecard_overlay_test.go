@@ -112,12 +112,12 @@ func TestMergeScorecardDefs_AddNewMetrics(t *testing.T) {
 
 func TestMergeScorecardDefs_CostModelOverride(t *testing.T) {
 	base := &ScorecardDef{
-		Name: "base",
+		Name:      "base",
 		CostModel: &CostModelDef{TokenCost: 0.001, TimeCost: 0.05},
 		Metrics:   []ScorecardMetric{{ID: "m1", Name: "M1"}},
 	}
 	overlay := &ScorecardDef{
-		Import: "base",
+		Import:    "base",
 		CostModel: &CostModelDef{TokenCost: 0.003, TimeCost: 0.2},
 		Metrics:   []ScorecardMetric{},
 	}

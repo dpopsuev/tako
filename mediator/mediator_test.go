@@ -43,7 +43,7 @@ func newTestBackend(t *testing.T, tools map[string]func(ctx context.Context, req
 	return ts
 }
 
-func echoHandler(_ context.Context, req *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error) {
+func echoHandler(_ context.Context, req *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error) { //nolint:unparam // signature required by handler type
 	var args struct{ Message string }
 	json.Unmarshal(req.Params.Arguments, &args)
 	return &sdkmcp.CallToolResult{
@@ -51,7 +51,7 @@ func echoHandler(_ context.Context, req *sdkmcp.CallToolRequest) (*sdkmcp.CallTo
 	}, nil
 }
 
-func addHandler(_ context.Context, req *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error) {
+func addHandler(_ context.Context, req *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error) { //nolint:unparam // signature required by handler type
 	var args struct {
 		A int `json:"a"`
 		B int `json:"b"`
@@ -628,8 +628,8 @@ func TestMediator_TypedBackendParamsReachBackend(t *testing.T) {
 func newNamedCircuitBackend(t *testing.T, label string) *httptest.Server {
 	t.Helper()
 	cfg := mcp.CircuitConfig{
-		Name:        label + "-circuit",
-		Version:     "dev",
+		Name:    label + "-circuit",
+		Version: "dev",
 		StepSchemas: []mcp.StepSchema{
 			{
 				Name: "STEP",
@@ -751,7 +751,7 @@ func TestMediator_SessionAffinityRouting(t *testing.T) {
 			_, err = session.CallTool(ctx, &sdkmcp.CallToolParams{
 				Name: "circuit",
 				Arguments: mustJSON(map[string]any{
-					"action": "submit",
+					"action":     "submit",
 					"session_id": sessionID, "dispatch_id": dispatchID,
 					"step": step, "fields": map[string]any{"value": "test"},
 				}),
@@ -836,11 +836,11 @@ func TestMediator_SingleBackend_NoPapercupCollision(t *testing.T) {
 
 // --- Gap 2: MCP routing gap — tools reachable via HTTP ---
 
-func newCircuitBackend(t *testing.T) (*httptest.Server, *mcp.CircuitServer) {
+func newCircuitBackend(t *testing.T) *httptest.Server {
 	t.Helper()
 	cfg := mcp.CircuitConfig{
-		Name:        "test-circuit",
-		Version:     "dev",
+		Name:    "test-circuit",
+		Version: "dev",
 		StepSchemas: []mcp.StepSchema{
 			{
 				Name: "STEP_A",
@@ -880,11 +880,11 @@ func newCircuitBackend(t *testing.T) (*httptest.Server, *mcp.CircuitServer) {
 	)
 	ts := httptest.NewServer(h)
 	t.Cleanup(ts.Close)
-	return ts, srv
+	return ts
 }
 
 func TestMediator_MCPToolsReachableViaHTTP(t *testing.T) {
-	backend, _ := newCircuitBackend(t)
+	backend := newCircuitBackend(t)
 
 	gw := mediator.New([]mediator.BackendConfig{
 		{Name: "rca", Endpoint: backend.URL + "/mcp"},
@@ -922,7 +922,7 @@ func TestMediator_MCPToolsReachableViaHTTP(t *testing.T) {
 }
 
 func TestWorker_CanCallToolsViaHTTPTransport(t *testing.T) {
-	backend, _ := newCircuitBackend(t)
+	backend := newCircuitBackend(t)
 
 	gw := mediator.New([]mediator.BackendConfig{
 		{Name: "rca", Endpoint: backend.URL + "/mcp"},

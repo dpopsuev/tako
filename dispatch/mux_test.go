@@ -298,7 +298,7 @@ func TestMux_DispatcherContextCancel(t *testing.T) {
 		select {
 		case err := <-errCh:
 			if err == nil {
-				t.Error("expected error from cancelled dispatcher context")
+				t.Error("expected error from canceled dispatcher context")
 			}
 		case <-time.After(2 * time.Second):
 			t.Fatal("Dispatch did not unblock after dispatcher context cancel")
@@ -372,14 +372,14 @@ func TestMux_GetNextStep_BlocksUntilDispatch(t *testing.T) {
 	}
 }
 
-func TestMux_GetNextStep_Cancelled(t *testing.T) {
+func TestMux_GetNextStep_Canceled(t *testing.T) {
 	d := dispatch.NewMuxDispatcher(context.Background())
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
 	_, err := d.GetNextStep(ctx)
 	if err == nil {
-		t.Fatal("expected error from cancelled context")
+		t.Fatal("expected error from canceled context")
 	}
 }
 
@@ -806,8 +806,8 @@ func TestMux_PerDispatchTimeout_ZeroIsNoLimit(t *testing.T) {
 		if strings.Contains(err.Error(), "dispatch timeout") {
 			t.Errorf("Timeout=0 should not trigger dispatch timeout, got: %v", err)
 		}
-		if !strings.Contains(err.Error(), "cancelled") {
-			t.Errorf("expected 'cancelled' in error, got: %v", err)
+		if !strings.Contains(err.Error(), "canceled") {
+			t.Errorf("expected 'canceled' in error, got: %v", err)
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("dispatch did not unblock after context cancel")

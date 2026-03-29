@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/agentport"
+	"github.com/dpopsuev/origami/circuit"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 )
@@ -38,7 +38,6 @@ var personaDocs = map[string]string{
 	"oracle":   "Void persona. Pattern recognizer across time. Sees trends invisible to others.",
 	"phantom":  "Antithesis persona. The adversarial counterpart used in the Dialectic system.",
 }
-
 
 var exprContextDocs = map[string]string{
 	"output": "The artifact produced by the source node. Fields depend on the node family.",
@@ -130,7 +129,7 @@ func computeHover(doc *document, pos protocol.Position, vocab circuit.RichVocabu
 
 	// Top-level key hover
 	topLevelDocs := map[string]string{
-		"circuit":    "Circuit name identifier. Used in logs, reports, and MCP routing.",
+		"circuit":     "Circuit name identifier. Used in logs, reports, and MCP routing.",
 		"description": "Human-readable circuit description.",
 		"imports":     "List of external circuit files to import and merge.",
 		"vars":        "Circuit variables. Accessible in edge expressions as `config.<name>`.",

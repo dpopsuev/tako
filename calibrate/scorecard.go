@@ -64,10 +64,10 @@ func (d *MetricDef) ToMetric(value float64, detail string) Metric {
 
 // CostModel captures the economic context for ROI-based threshold decisions.
 type CostModel struct {
-	CasesPerBatch              int     `json:"cases_per_batch" yaml:"cases_per_batch"`
-	CostPerBatchUSD            float64 `json:"cost_per_batch_usd" yaml:"cost_per_batch_usd"`
+	CasesPerBatch                int     `json:"cases_per_batch" yaml:"cases_per_batch"`
+	CostPerBatchUSD              float64 `json:"cost_per_batch_usd" yaml:"cost_per_batch_usd"`
 	LaborSavedPerBatchPersonDays float64 `json:"labor_saved_per_batch_person_days" yaml:"labor_saved_per_batch_person_days"`
-	PersonDayCostUSD           float64 `json:"person_day_cost_usd" yaml:"person_day_cost_usd"`
+	PersonDayCostUSD             float64 `json:"person_day_cost_usd" yaml:"person_day_cost_usd"`
 }
 
 // ROI returns (savings - cost) / cost. Returns 0 if cost is zero.
@@ -83,21 +83,21 @@ func (cm CostModel) ROI() float64 {
 // AggregateConfig defines how to compute a composite aggregate metric
 // from individual metric scores.
 type AggregateConfig struct {
-	ID        string  `json:"id" yaml:"id"`
-	Name      string  `json:"name" yaml:"name"`
-	Formula   string  `json:"formula" yaml:"formula"`
-	Threshold float64 `json:"threshold" yaml:"threshold"`
+	ID        string   `json:"id" yaml:"id"`
+	Name      string   `json:"name" yaml:"name"`
+	Formula   string   `json:"formula" yaml:"formula"`
+	Threshold float64  `json:"threshold" yaml:"threshold"`
 	Include   []string `json:"include" yaml:"include"`
 }
 
 // ScoreCard is a named collection of MetricDefs with an aggregate formula.
 // It is the "test suite" for a domain's calibration quality.
 type ScoreCard struct {
-	Name        string          `json:"scorecard" yaml:"scorecard"`
-	Description string          `json:"description" yaml:"description"`
-	Version     int             `json:"version" yaml:"version"`
-	CostModel   *CostModel      `json:"cost_model,omitempty" yaml:"cost_model,omitempty"`
-	MetricDefs  []MetricDef     `json:"metrics" yaml:"metrics"`
+	Name        string           `json:"scorecard" yaml:"scorecard"`
+	Description string           `json:"description" yaml:"description"`
+	Version     int              `json:"version" yaml:"version"`
+	CostModel   *CostModel       `json:"cost_model,omitempty" yaml:"cost_model,omitempty"`
+	MetricDefs  []MetricDef      `json:"metrics" yaml:"metrics"`
 	Aggregate   *AggregateConfig `json:"aggregate,omitempty" yaml:"aggregate,omitempty"`
 }
 
@@ -125,7 +125,7 @@ func (sc *ScoreCard) ValidateScorers(reg ScorerRegistry) error {
 		}
 	}
 	if len(missing) > 0 {
-		return fmt.Errorf("scorecard %q references unknown scorers: %v", sc.Name, missing)
+		return fmt.Errorf("%w: %q references unknown scorers: %v", ErrScorecard, sc.Name, missing)
 	}
 	return nil
 }
@@ -154,7 +154,7 @@ func (sc *ScoreCard) Evaluate(values map[string]float64, details map[string]stri
 // Currently supports "weighted_average" formula.
 func (sc *ScoreCard) ComputeAggregate(ms MetricSet) (Metric, error) {
 	if sc.Aggregate == nil {
-		return Metric{}, fmt.Errorf("no aggregate config defined")
+		return Metric{}, ErrNoAggregateConfigDefined
 	}
 	ac := sc.Aggregate
 
@@ -239,7 +239,7 @@ func LoadScoreCard(path string) (*ScoreCard, error) {
 	case ".yaml", ".yml":
 		return ParseScoreCard(data)
 	default:
-		return nil, fmt.Errorf("unsupported scorecard format: %s (use .yaml or .yml)", ext)
+		return nil, fmt.Errorf("%w: %s (use .yaml or .yml)", ErrUnsupportedScorecardFormat, ext)
 	}
 }
 

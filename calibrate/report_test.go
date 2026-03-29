@@ -10,9 +10,9 @@ import (
 
 func testReport() *calibrate.CalibrationReport {
 	return &calibrate.CalibrationReport{
-		Scenario: "unit-test",
+		Scenario:    "unit-test",
 		Transformer: "stub",
-		Runs:     1,
+		Runs:        1,
 		Metrics: calibrate.MetricSet{
 			Metrics: []calibrate.Metric{
 				{ID: "M1", Name: "Accuracy", Value: 0.80, Threshold: 0.80, Pass: true, Tier: calibrate.TierOutcome},
@@ -56,9 +56,9 @@ func TestFormatReport_PassFail(t *testing.T) {
 
 func TestFormatReport_AllPass(t *testing.T) {
 	r := &calibrate.CalibrationReport{
-		Scenario: "pass-test",
+		Scenario:    "pass-test",
 		Transformer: "stub",
-		Runs:     1,
+		Runs:        1,
 		Metrics: calibrate.MetricSet{
 			Metrics: []calibrate.Metric{
 				{ID: "M1", Name: "A", Value: 0.90, Threshold: 0.80, Pass: true, Tier: calibrate.TierOutcome},
@@ -108,9 +108,9 @@ func TestFormatReport_WithTokens(t *testing.T) {
 
 func TestFormatReport_DryCappedMark(t *testing.T) {
 	r := &calibrate.CalibrationReport{
-		Scenario: "dry-test",
+		Scenario:    "dry-test",
 		Transformer: "stub",
-		Runs:     1,
+		Runs:        1,
 		Metrics: calibrate.MetricSet{
 			Metrics: []calibrate.Metric{
 				{ID: "M12", Name: "Evidence", Value: 0.60, Threshold: 0.60, Pass: true, DryCapped: true, Tier: calibrate.TierDetection},
@@ -129,10 +129,10 @@ func TestFormatReport_DryCappedMark(t *testing.T) {
 
 func TestFormatReport_Empty(t *testing.T) {
 	r := &calibrate.CalibrationReport{
-		Scenario: "empty",
+		Scenario:    "empty",
 		Transformer: "stub",
-		Runs:     0,
-		Metrics:  calibrate.MetricSet{},
+		Runs:        0,
+		Metrics:     calibrate.MetricSet{},
 	}
 	out := calibrate.FormatReport(r, calibrate.FormatConfig{})
 	if !strings.Contains(out, "PASS (0/0") {

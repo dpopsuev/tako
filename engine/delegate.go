@@ -40,7 +40,7 @@ type DelegateArtifact struct {
 	InnerError error `json:"inner_error,omitempty"`
 }
 
-func (a *DelegateArtifact) Type() string       { return artifactTypeDelegate }
+func (a *DelegateArtifact) Type() string        { return artifactTypeDelegate }
 func (a *DelegateArtifact) Confidence() float64 { return a.confidence() }
 func (a *DelegateArtifact) Raw() any            { return a.InnerArtifacts }
 
@@ -74,7 +74,7 @@ type dslDelegateNode struct {
 	nodeConfig *circuit.NodeConfig
 }
 
-func (n *dslDelegateNode) Name() string             { return n.name }
+func (n *dslDelegateNode) Name() string                     { return n.name }
 func (n *dslDelegateNode) ElementAffinity() circuit.Element { return n.element }
 
 func (n *dslDelegateNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
@@ -120,7 +120,7 @@ func (n *dslDelegateNode) GenerateCircuit(ctx context.Context, nc circuit.NodeCo
 	case []byte:
 		return LoadCircuit(v)
 	default:
-		return nil, fmt.Errorf("generator %s: unexpected result type %T (want *circuit.CircuitDef, map, string, or []byte)", n.gen.Name(), result)
+		return nil, fmt.Errorf("%w: %s: unexpected result type %T (want *circuit.CircuitDef, map, string, or []byte)", ErrGenerator, n.gen.Name(), result)
 	}
 }
 
@@ -131,7 +131,7 @@ type circuitRefNode struct {
 	circuitDef *circuit.CircuitDef
 }
 
-func (n *circuitRefNode) Name() string             { return n.name }
+func (n *circuitRefNode) Name() string                     { return n.name }
 func (n *circuitRefNode) ElementAffinity() circuit.Element { return n.element }
 
 func (n *circuitRefNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {

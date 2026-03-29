@@ -60,4 +60,3 @@ func TestFinding_Construction(t *testing.T) {
 		t.Errorf("Evidence[field] = %v, want %q", f.Evidence["field"], "password")
 	}
 }
-

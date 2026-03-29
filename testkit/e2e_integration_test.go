@@ -45,7 +45,7 @@ func TestE2E_Integration_ComposeStack(t *testing.T) {
 	defer session.Close()
 
 	// Start circuit with stub backend.
-	startResult := callToolIntegration(t, ctx, session, "circuit", map[string]any{
+	startResult := callToolIntegration(ctx, t, session, "circuit", map[string]any{
 		"action": "start",
 		"extra": map[string]any{
 			"scenario": "ptp",
@@ -60,7 +60,7 @@ func TestE2E_Integration_ComposeStack(t *testing.T) {
 
 	// Drain the circuit: circuit(action=step)/circuit(action=submit) loop.
 	for {
-		stepResult := callToolIntegration(t, ctx, session, "circuit", map[string]any{
+		stepResult := callToolIntegration(ctx, t, session, "circuit", map[string]any{
 			"action":     "step",
 			"session_id": sessionID,
 			"timeout_ms": 5000,
@@ -75,7 +75,7 @@ func TestE2E_Integration_ComposeStack(t *testing.T) {
 		step, _ := stepResult["step"].(string)
 		dispatchID, _ := stepResult["dispatch_id"].(float64)
 
-		callToolIntegration(t, ctx, session, "circuit", map[string]any{
+		callToolIntegration(ctx, t, session, "circuit", map[string]any{
 			"action":      "submit",
 			"session_id":  sessionID,
 			"dispatch_id": int64(dispatchID),
@@ -85,7 +85,7 @@ func TestE2E_Integration_ComposeStack(t *testing.T) {
 	}
 
 	// Get report.
-	reportResult := callToolIntegration(t, ctx, session, "circuit", map[string]any{
+	reportResult := callToolIntegration(ctx, t, session, "circuit", map[string]any{
 		"action":     "report",
 		"session_id": sessionID,
 	})
@@ -97,7 +97,7 @@ func TestE2E_Integration_ComposeStack(t *testing.T) {
 }
 
 // callToolIntegration is the integration-test variant of callTool.
-func callToolIntegration(t *testing.T, ctx context.Context, session *sdkmcp.ClientSession, name string, args map[string]any) map[string]any {
+func callToolIntegration(ctx context.Context, t *testing.T, session *sdkmcp.ClientSession, name string, args map[string]any) map[string]any { //nolint:unparam // test flexibility
 	t.Helper()
 	if args == nil {
 		args = map[string]any{}

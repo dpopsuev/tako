@@ -26,7 +26,7 @@ type findingEnforcerNodeImpl struct {
 	finding   *circuit.Finding
 }
 
-func (n *findingEnforcerNodeImpl) Name() string                { return n.name }
+func (n *findingEnforcerNodeImpl) Name() string                     { return n.name }
 func (n *findingEnforcerNodeImpl) ElementAffinity() circuit.Element { return "" }
 func (n *findingEnforcerNodeImpl) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	if n.finding != nil {
@@ -175,7 +175,7 @@ func TestRunWithEnforcer_WorkAndEnforcerBothRun(t *testing.T) {
 	}
 }
 
-func TestRunWithEnforcer_EnforcerCancelledOnWorkComplete(t *testing.T) {
+func TestRunWithEnforcer_EnforcerCanceledOnWorkComplete(t *testing.T) {
 	workDef := twoNodeCircuit()
 
 	enforcerDef := &circuit.CircuitDef{
@@ -222,7 +222,7 @@ func TestRunWithEnforcer_EnforcerCancelledOnWorkComplete(t *testing.T) {
 		t.Fatalf("RunWithEnforcer error: %v", err)
 	}
 	if elapsed > 3*time.Second {
-		t.Errorf("RunWithEnforcer took %v; enforcer should have been cancelled quickly", elapsed)
+		t.Errorf("RunWithEnforcer took %v; enforcer should have been canceled quickly", elapsed)
 	}
 }
 

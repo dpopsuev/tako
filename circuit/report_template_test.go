@@ -145,11 +145,11 @@ func TestMergeReportTemplates_ExtraColumns(t *testing.T) {
 
 func TestMergeReportTemplates_OverlayWithoutImport(t *testing.T) {
 	base := &ReportTemplate{
-		Name: "base",
+		Name:     "base",
 		Sections: []ReportSectionDef{{Name: "x"}},
 	}
 	overlay := &ReportTemplate{
-		Name:   "standalone",
+		Name:     "standalone",
 		Sections: []ReportSectionDef{{Name: "y", Title: "Y"}},
 	}
 	merged, err := MergeReportTemplates(base, overlay)

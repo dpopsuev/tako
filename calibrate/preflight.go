@@ -50,7 +50,7 @@ func Preflight(ctx context.Context, cfg *HarnessConfig) (*PreflightReport, error
 			Detail: "CircuitDef is required",
 		})
 		report.Elapsed = time.Since(start)
-		return report, fmt.Errorf("preflight: CircuitDef is required")
+		return report, ErrPreflightCircuitDefIsRequired
 	}
 
 	// Step 1: Validate the CircuitDef (YAML structure, referential integrity).
@@ -156,8 +156,8 @@ type preflightWalker struct {
 	cancel   context.CancelFunc
 }
 
-func (w *preflightWalker) Identity() circuit.AgentIdentity      { return w.identity }
-func (w *preflightWalker) SetIdentity(id *circuit.AgentIdentity)  { w.identity = *id }
+func (w *preflightWalker) Identity() circuit.AgentIdentity       { return w.identity }
+func (w *preflightWalker) SetIdentity(id *circuit.AgentIdentity) { w.identity = *id }
 func (w *preflightWalker) State() *circuit.WalkerState           { return w.state }
 
 func (w *preflightWalker) Handle(_ context.Context, _ circuit.Node, _ circuit.NodeContext) (circuit.Artifact, error) {
@@ -169,6 +169,6 @@ func (w *preflightWalker) Handle(_ context.Context, _ circuit.Node, _ circuit.No
 // preflightArtifact is a minimal Artifact returned by the preflight walker.
 type preflightArtifact struct{}
 
-func (a *preflightArtifact) Type() string       { return "preflight" }
+func (a *preflightArtifact) Type() string        { return "preflight" }
 func (a *preflightArtifact) Confidence() float64 { return 1.0 }
 func (a *preflightArtifact) Raw() any            { return nil }

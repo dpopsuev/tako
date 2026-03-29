@@ -41,12 +41,9 @@ type MCPCircuitTransformer struct {
 
 func (t *MCPCircuitTransformer) Name() string { return "mediator.circuit" }
 
+//nolint:gocyclo,funlen // MCP client loop with session lifecycle — complexity is inherent
 func (t *MCPCircuitTransformer) Transform(ctx context.Context, tc *TransformerContext) (any, error) {
-	slog.DebugContext(ctx, "mediator delegate start",
-		"circuit_type", t.CircuitType,
-		"endpoint", t.Endpoint,
-		"node", tc.NodeName,
-	)
+	slog.DebugContext(ctx, "mediator delegate start", slog.Any("circuit_type", t.CircuitType), slog.Any("endpoint", t.Endpoint), slog.Any("node", tc.NodeName))
 
 	var relayer PromptRelayer
 	if tc.WalkerState != nil {
@@ -91,14 +88,10 @@ func (t *MCPCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 	}
 	sessionID, _ := startOut["session_id"].(string)
 	if sessionID == "" {
-		return nil, fmt.Errorf("mediator circuit/start(%s): no session_id in response", t.CircuitType)
+		return nil, fmt.Errorf("%w: (%s): no session_id in response", ErrMediatorCircuitStart, t.CircuitType)
 	}
 
-	slog.DebugContext(ctx, "mediator delegate session started",
-		"circuit_type", t.CircuitType,
-		"session_id", sessionID,
-		"has_relayer", relayer != nil,
-	)
+	slog.DebugContext(ctx, "mediator delegate session started", slog.Any("circuit_type", t.CircuitType), slog.Any("session_id", sessionID), slog.Any("has_relayer", relayer != nil))
 
 	for {
 		stepResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
@@ -119,7 +112,7 @@ func (t *MCPCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 
 		if done, _ := stepOut[circuit.ProtoKeyDone].(bool); done {
 			if errMsg, ok := stepOut[circuit.ProtoKeyError].(string); ok && errMsg != "" {
-				return nil, fmt.Errorf("mediator circuit %q failed: %s", t.CircuitType, errMsg)
+				return nil, fmt.Errorf("%w: %q failed: %s", ErrMediatorCircuit, t.CircuitType, errMsg)
 			}
 			break
 		}
@@ -135,12 +128,7 @@ func (t *MCPCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 		childCaseID, _ := stepOut[circuit.ProtoKeyCaseID].(string)
 		childArtifactPath, _ := stepOut[circuit.ProtoKeyArtifactPath].(string)
 
-		slog.DebugContext(ctx, "mediator relay child prompt",
-			"circuit_type", t.CircuitType,
-			"child_step", childStep,
-			"child_case_id", childCaseID,
-			"child_dispatch_id", int64(childDispatchID),
-		)
+		slog.DebugContext(ctx, "mediator relay child prompt", slog.Any("circuit_type", t.CircuitType), slog.Any("child_step", childStep), slog.Any("child_case_id", childCaseID), slog.Any("child_dispatch_id", int64(childDispatchID)))
 
 		var artifactData []byte
 		if relayer != nil {
@@ -154,7 +142,7 @@ func (t *MCPCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 				return nil, fmt.Errorf("mediator relay dispatch(%s/%s): %w", t.CircuitType, childStep, err)
 			}
 		} else {
-			return nil, fmt.Errorf("mediator circuit %q dispatched prompt for step %q but no PromptRelayer configured (set ContextKeyPromptRelayer in walker context)", t.CircuitType, childStep)
+			return nil, fmt.Errorf("%w: %q dispatched prompt for step %q but no PromptRelayer configured (set ContextKeyPromptRelayer in walker context)", ErrMediatorCircuit, t.CircuitType, childStep)
 		}
 
 		var fields map[string]any
@@ -190,14 +178,10 @@ func (t *MCPCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 	}
 
 	if errMsg, ok := reportOut[circuit.ProtoKeyError].(string); ok && errMsg != "" {
-		return nil, fmt.Errorf("mediator circuit %q error: %s", t.CircuitType, errMsg)
+		return nil, fmt.Errorf("%w: %q error: %s", ErrMediatorCircuit, t.CircuitType, errMsg)
 	}
 
-	slog.DebugContext(ctx, "mediator delegate complete",
-		"circuit_type", t.CircuitType,
-		"session_id", sessionID,
-		"status", reportOut[circuit.ProtoKeyStatus],
-	)
+	slog.DebugContext(ctx, "mediator delegate complete", slog.Any("circuit_type", t.CircuitType), slog.Any("session_id", sessionID), slog.Any("status", reportOut[circuit.ProtoKeyStatus]))
 
 	if structured, ok := reportOut[circuit.ProtoKeyStructured]; ok {
 		return structured, nil
@@ -212,15 +196,15 @@ func mustMarshal(v any) json.RawMessage {
 
 func parseToolResult(result *sdkmcp.CallToolResult) (map[string]any, error) {
 	if result == nil {
-		return nil, fmt.Errorf("nil result")
+		return nil, ErrNilResult
 	}
 	if result.IsError {
 		for _, c := range result.Content {
 			if tc, ok := c.(*sdkmcp.TextContent); ok {
-				return nil, fmt.Errorf("%s", tc.Text)
+				return nil, fmt.Errorf("%w: %s", ErrToolError, tc.Text)
 			}
 		}
-		return nil, fmt.Errorf("tool returned error")
+		return nil, ErrToolReturnedError
 	}
 	for _, c := range result.Content {
 		if tc, ok := c.(*sdkmcp.TextContent); ok {
@@ -231,5 +215,5 @@ func parseToolResult(result *sdkmcp.CallToolResult) (map[string]any, error) {
 			return out, nil
 		}
 	}
-	return nil, fmt.Errorf("no text content in result")
+	return nil, ErrNoTextContentInResult
 }

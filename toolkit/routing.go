@@ -51,7 +51,7 @@ func SaveRoutingLog(path string, log RoutingLog) error {
 	if err != nil {
 		return fmt.Errorf("marshal routing log: %w", err)
 	}
-	if err := os.WriteFile(path, data, 0o644); err != nil {
+	if err := os.WriteFile(path, data, 0o600); err != nil {
 		return fmt.Errorf("write routing log to %s: %w", path, err)
 	}
 	return nil

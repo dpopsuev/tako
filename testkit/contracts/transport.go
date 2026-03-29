@@ -20,7 +20,7 @@ func RunTransportContract(t *testing.T, factory func() toolkit.Transport) {
 		defer cancel()
 
 		err := tr.Serve(ctx, nil)
-		// Must return when context is cancelled — either nil or context error
+		// Must return when context is canceled — either nil or context error
 		if err != nil && !errors.Is(err, context.DeadlineExceeded) && !errors.Is(err, context.Canceled) {
 			t.Errorf("Serve returned unexpected error: %v", err)
 		}
@@ -69,7 +69,7 @@ func RunTriggerContract(t *testing.T, factory func() toolkit.Trigger, handle too
 		tr := factory()
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
-		// Should not panic on cancelled context
+		// Should not panic on canceled context
 		_, _ = tr.Start(ctx, toolkit.TriggerParams{})
 	})
 }

@@ -195,7 +195,7 @@ type testGeminiClient struct {
 	model string
 }
 
-func (c *testGeminiClient) Chat(ctx context.Context, systemPrompt string, messages []Message) (string, error) {
+func (c *testGeminiClient) Chat(ctx context.Context, _ string, messages []Message) (string, error) {
 	type part struct {
 		Text string `json:"text"`
 	}

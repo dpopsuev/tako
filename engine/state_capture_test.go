@@ -9,7 +9,7 @@ import (
 
 type captureTestArtifact string
 
-func (a captureTestArtifact) Type() string       { return "test" }
+func (a captureTestArtifact) Type() string        { return "test" }
 func (a captureTestArtifact) Confidence() float64 { return 1.0 }
 func (a captureTestArtifact) Raw() any            { return string(a) }
 
@@ -68,13 +68,13 @@ func TestOutputCapture_ConcurrentSafety(t *testing.T) {
 
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
-		go func(n int) {
+		go func() {
 			defer wg.Done()
 			node := "node"
 			capture.OnEvent(&circuit.WalkEvent{Type: circuit.EventNodeExit, Node: node, Artifact: captureTestArtifact("data")})
 			capture.Artifacts()
 			capture.ArtifactAt(node)
-		}(i)
+		}()
 	}
 	wg.Wait()
 }

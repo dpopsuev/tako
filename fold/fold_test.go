@@ -444,11 +444,11 @@ spec:
 
 	// Verify flattened domain files exist at the expected paths.
 	wantFiles := map[string]string{
-		"circuits/rca.yaml":          "circuit: rca\n",
-		"prompts/recall/judge.md":    "prompt: recall\n",
-		"vocabulary.yaml":            "metrics:\n  M1: accuracy\n",
-		"scenarios/ptp.yaml":         "scenario: ptp\ncases: []\n",
-		"offline/rp/12345.json":      `{"id": 12345}`,
+		"circuits/rca.yaml":       "circuit: rca\n",
+		"prompts/recall/judge.md": "prompt: recall\n",
+		"vocabulary.yaml":         "metrics:\n  M1: accuracy\n",
+		"scenarios/ptp.yaml":      "scenario: ptp\ncases: []\n",
+		"offline/rp/12345.json":   `{"id": 12345}`,
 	}
 
 	for relPath, wantContent := range wantFiles {

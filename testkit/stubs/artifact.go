@@ -14,7 +14,7 @@ func NewStubArtifact(typ, node string) *StubArtifact {
 	return &StubArtifact{Typ: typ, Node: node, Conf: 1.0}
 }
 
-func (a *StubArtifact) Type() string       { return a.Typ }
+func (a *StubArtifact) Type() string { return a.Typ }
 func (a *StubArtifact) Confidence() float64 {
 	if a.Conf == 0 {
 		return 1.0

@@ -22,9 +22,9 @@ type ReportSectionDef struct {
 	Name         string   `yaml:"name"`
 	Title        string   `yaml:"title,omitempty"`
 	Template     string   `yaml:"template,omitempty"`      // Go template string
-	Columns      []string `yaml:"columns,omitempty"`      // table columns
+	Columns      []string `yaml:"columns,omitempty"`       // table columns
 	InsertAfter  string   `yaml:"insert_after,omitempty"`  // overlay: insert after named section
-	Override     bool     `yaml:"override,omitempty"`     // overlay: replace named section
+	Override     bool     `yaml:"override,omitempty"`      // overlay: replace named section
 	ExtraColumns []string `yaml:"extra_columns,omitempty"` // overlay: append columns to existing section
 }
 
@@ -35,7 +35,7 @@ func LoadReportTemplate(data []byte) (*ReportTemplate, error) {
 		return nil, fmt.Errorf("report template: parse YAML: %w", err)
 	}
 	if t.Name == "" {
-		return nil, fmt.Errorf("report template: missing name")
+		return nil, ErrReportTemplateMissingName
 	}
 	return &t, nil
 }
@@ -100,7 +100,7 @@ func MergeReportTemplates(base, overlay *ReportTemplate) (*ReportTemplate, error
 			break
 		}
 		if !found {
-			return nil, fmt.Errorf("report template: override section %q not found in base", ov.Name)
+			return nil, fmt.Errorf("%w: %q not found in base", ErrReportTemplateOverrideSection, ov.Name)
 		}
 	}
 
@@ -115,7 +115,7 @@ func MergeReportTemplates(base, overlay *ReportTemplate) (*ReportTemplate, error
 			}
 		}
 		if !found {
-			return nil, fmt.Errorf("report template: extra_columns section %q not found in base", ov.Name)
+			return nil, fmt.Errorf("%w: %q not found in base", ErrReportTemplateExtraColumnsSection, ov.Name)
 		}
 	}
 
@@ -133,7 +133,7 @@ func MergeReportTemplates(base, overlay *ReportTemplate) (*ReportTemplate, error
 			}
 		}
 		if idx < 0 {
-			return nil, fmt.Errorf("report template: insert_after section %q not found in base", afterName)
+			return nil, fmt.Errorf("%w: %q not found in base", ErrReportTemplateInsertAfterSection, afterName)
 		}
 
 		// Insert at idx+1

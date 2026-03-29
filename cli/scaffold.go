@@ -30,17 +30,17 @@ type DatasetStore interface {
 
 // DatasetSummary is the short view of a dataset.
 type DatasetSummary struct {
-	Name       string `json:"name"`
-	CaseCount  int    `json:"case_count"`
-	Status     string `json:"status"`
+	Name      string `json:"name"`
+	CaseCount int    `json:"case_count"`
+	Status    string `json:"status"`
 }
 
 // DatasetStatus is the detailed view of a dataset.
 type DatasetStatus struct {
-	Name       string `json:"name"`
-	CaseCount  int    `json:"case_count"`
-	Reviewed   int    `json:"reviewed"`
-	Promoted   int    `json:"promoted"`
+	Name      string `json:"name"`
+	CaseCount int    `json:"case_count"`
+	Reviewed  int    `json:"reviewed"`
+	Promoted  int    `json:"promoted"`
 }
 
 // Candidate is a case that can be promoted into a dataset.
@@ -82,15 +82,15 @@ type CLIBuilder struct {
 	analyzeFn   AnalyzeFunc
 	dataset     DatasetStore
 	calibrate   CalibrateRunner
-	circuits   []string
+	circuits    []string
 	consume     *string
 	serve       *ServeConfig
 	demo        *DemoConfig
 	profile     *ProfileConfig
-	extra        []*cobra.Command
-	observers    []circuit.WalkObserver
-	obsExplicit  bool
-	promReg      *prometheus.Registry
+	extra       []*cobra.Command
+	observers   []circuit.WalkObserver
+	obsExplicit bool
+	promReg     *prometheus.Registry
 }
 
 // NewCLI creates a CLI builder for the named tool.
@@ -427,7 +427,7 @@ func (b *CLIBuilder) buildCircuit() *cobra.Command {
 				for _, f := range findings {
 					fmt.Fprintln(os.Stderr, f.String())
 				}
-				return fmt.Errorf("%s has %d error(s)", args[0], len(findings))
+				return fmt.Errorf("%w: %s has %d error(s)", ErrLintErrors, args[0], len(findings))
 			}
 			if lint.HasWarnings(findings) {
 				for _, f := range findings {

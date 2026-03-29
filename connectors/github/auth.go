@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	defaultTokenFile       = ".github-token"
-	tokenEnvVar            = "GITHUB_TOKEN"
-	privateRepoTokensEnvVar = "GITHUB_PRIVATE_REPO_TOKENS"
+	defaultTokenFile        = ".github-token"              //nolint:gosec // env var name, not a credential
+	tokenEnvVar             = "GITHUB_TOKEN"               //nolint:gosec // env var name, not a credential
+	privateRepoTokensEnvVar = "GITHUB_PRIVATE_REPO_TOKENS" //nolint:gosec // env var name, not a credential
 )
 
 // ResolveToken finds a GitHub token using the following precedence:

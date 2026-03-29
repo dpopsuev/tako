@@ -6,9 +6,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/agentport"
 )
 
 func resolveApproachElement(approach string) agentport.Element {
@@ -38,7 +38,7 @@ type curationNode struct {
 }
 
 func (n *curationNode) Name() string                       { return n.name }
-func (n *curationNode) ElementAffinity() agentport.Element   { return n.element }
+func (n *curationNode) ElementAffinity() agentport.Element { return n.element }
 func (n *curationNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return nil, nil
 }
@@ -91,7 +91,7 @@ type CurationArtifact struct {
 	MoreSources  bool         `json:"more_sources"`
 }
 
-func (a *CurationArtifact) Type() string       { return a.ArtifactType }
+func (a *CurationArtifact) Type() string        { return a.ArtifactType }
 func (a *CurationArtifact) Confidence() float64 { return a.Conf }
 func (a *CurationArtifact) Raw() any            { return a }
 

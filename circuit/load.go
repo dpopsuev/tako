@@ -13,23 +13,23 @@ import (
 // verbose (top-level edges) and compact (node-scoped edges) forms.
 // normalize() converts it to the canonical CircuitDef.
 type rawCircuitDef struct {
-	Circuit     string             `yaml:"circuit"`
-	Description string             `yaml:"description,omitempty"`
-	Import      string             `yaml:"import,omitempty"`
-	Topology    string             `yaml:"topology,omitempty"`
-	HandlerType string             `yaml:"handler_type,omitempty"`
-	Timeout     string             `yaml:"timeout,omitempty"`
-	Imports     []string           `yaml:"imports,omitempty"`
-	Vars        map[string]any     `yaml:"vars,omitempty"`
-	Extractors  []ExtractorDef     `yaml:"extractors,omitempty"`
-	Ports       []PortDef          `yaml:"ports,omitempty"`
-	Wiring      []WiringDef       `yaml:"wiring,omitempty"`
-	Zones       map[string]ZoneDef `yaml:"zones,omitempty"`
-	Nodes       []rawNodeDef       `yaml:"nodes"`
-	Edges       []EdgeDef          `yaml:"edges,omitempty"`
-	Walkers     []WalkerDef        `yaml:"walkers,omitempty"`
-	Start       string             `yaml:"start"`
-	Done        string             `yaml:"done"`
+	Circuit     string                  `yaml:"circuit"`
+	Description string                  `yaml:"description,omitempty"`
+	Import      string                  `yaml:"import,omitempty"`
+	Topology    string                  `yaml:"topology,omitempty"`
+	HandlerType string                  `yaml:"handler_type,omitempty"`
+	Timeout     string                  `yaml:"timeout,omitempty"`
+	Imports     []string                `yaml:"imports,omitempty"`
+	Vars        map[string]any          `yaml:"vars,omitempty"`
+	Extractors  []ExtractorDef          `yaml:"extractors,omitempty"`
+	Ports       []PortDef               `yaml:"ports,omitempty"`
+	Wiring      []WiringDef             `yaml:"wiring,omitempty"`
+	Zones       map[string]ZoneDef      `yaml:"zones,omitempty"`
+	Nodes       []rawNodeDef            `yaml:"nodes"`
+	Edges       []EdgeDef               `yaml:"edges,omitempty"`
+	Walkers     []WalkerDef             `yaml:"walkers,omitempty"`
+	Start       string                  `yaml:"start"`
+	Done        string                  `yaml:"done"`
 	Calibration *CalibrationContractDef `yaml:"calibration,omitempty"`
 }
 
@@ -58,7 +58,7 @@ type rawEdgeList []rawEdgeDef
 
 func (l *rawEdgeList) UnmarshalYAML(value *yamlNode) error {
 	if value.Kind != yamlSequenceNode {
-		return fmt.Errorf("edges must be a sequence")
+		return ErrEdgesMustBeASequence
 	}
 	for _, item := range value.Content {
 		switch item.Kind {
@@ -71,7 +71,7 @@ func (l *rawEdgeList) UnmarshalYAML(value *yamlNode) error {
 			}
 			*l = append(*l, ed)
 		default:
-			return fmt.Errorf("edge element must be a string or mapping")
+			return ErrEdgeElementMustBeAStringOrMapping
 		}
 	}
 	return nil
@@ -112,7 +112,7 @@ func (raw *rawCircuitDef) normalize() (*CircuitDef, error) {
 		nodeName := raw.Nodes[i].Name
 		for _, re := range raw.Nodes[i].Edges {
 			if re.To == "" {
-				return nil, fmt.Errorf("node %q: inline edge missing 'to' field", nodeName)
+				return nil, fmt.Errorf("%w: %q: inline edge missing 'to' field", ErrNode, nodeName)
 			}
 			id := generateEdgeID(string(nodeName), &re, edgeIDs)
 			def.Edges = append(def.Edges, EdgeDef{
@@ -186,7 +186,7 @@ func LoadCircuitWithOverlay(overlayData []byte, resolver AssetResolver) (*Circui
 	}
 
 	if resolver == nil {
-		return nil, fmt.Errorf("overlay imports %q but no asset resolver provided", overlay.Import)
+		return nil, fmt.Errorf("%w: %q but no asset resolver provided", ErrOverlayImports, overlay.Import)
 	}
 
 	baseData, err := resolver(overlay.Import)
@@ -219,6 +219,7 @@ func LoadCircuitWithOverlay(overlayData []byte, resolver AssetResolver) (*Circui
 	return merged, nil
 }
 
+//nolint:gocyclo,funlen // merges all CircuitDef sections — one block per field
 func mergeCircuits(base, overlay *CircuitDef) (*CircuitDef, error) {
 	merged := *base
 	merged.Import = ""
@@ -281,7 +282,7 @@ func mergeCircuits(base, overlay *CircuitDef) (*CircuitDef, error) {
 		}
 		for i := range overlay.Nodes {
 			if baseNodeSet[overlay.Nodes[i].Name] {
-				return nil, fmt.Errorf("overlay cannot override base node %q (append-only)", overlay.Nodes[i].Name)
+				return nil, fmt.Errorf("%w: %q (append-only)", ErrOverlayCannotOverrideBaseNode, overlay.Nodes[i].Name)
 			}
 			merged.Nodes = append(merged.Nodes, overlay.Nodes[i])
 		}
@@ -340,7 +341,7 @@ func mergeCircuits(base, overlay *CircuitDef) (*CircuitDef, error) {
 		}
 		for _, op := range overlay.Ports {
 			if basePortSet[op.Name] {
-				return nil, fmt.Errorf("overlay cannot override base port %q (append-only)", op.Name)
+				return nil, fmt.Errorf("%w: %q (append-only)", ErrOverlayCannotOverrideBasePort, op.Name)
 			}
 			merged.Ports = append(merged.Ports, op)
 		}

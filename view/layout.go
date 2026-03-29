@@ -6,9 +6,9 @@ import (
 
 // GridCell is a cell-based position in a row/column grid.
 type GridCell struct {
-	Row    int    `json:"row"`
-	Col    int    `json:"col"`
-	Zone   string `json:"zone,omitempty"`
+	Row  int    `json:"row"`
+	Col  int    `json:"col"`
+	Zone string `json:"zone,omitempty"`
 }
 
 // LogicalPosition is a coordinate-based position for GUI layouts.
@@ -35,10 +35,10 @@ type ZoneLayout struct {
 // zones in a circuit. It is the output of a LayoutEngine and the input
 // to a CircuitRenderer.
 type CircuitLayout struct {
-	Grid     map[string]GridCell       `json:"grid,omitempty"`
-	Logical  map[string]LogicalPosition `json:"logical,omitempty"`
-	Edges    []EdgeLayout              `json:"edges"`
-	Zones    []ZoneLayout              `json:"zones,omitempty"`
+	Grid    map[string]GridCell        `json:"grid,omitempty"`
+	Logical map[string]LogicalPosition `json:"logical,omitempty"`
+	Edges   []EdgeLayout               `json:"edges"`
+	Zones   []ZoneLayout               `json:"zones,omitempty"`
 }
 
 // LayoutEngine computes positions for circuit nodes and edges.

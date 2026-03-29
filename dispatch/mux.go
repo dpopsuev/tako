@@ -53,7 +53,7 @@ func WithMuxSignalBus(bus agentport.Bus) MuxOption {
 func NewMuxDispatcher(ctx context.Context, opts ...MuxOption) *MuxDispatcher {
 	d := &MuxDispatcher{
 		ctx:      ctx,
-		log:      slog.Default().With("component", "mux-dispatch"),
+		log:      slog.Default().With(slog.Any("component", "mux-dispatch")),
 		pending:  make(map[int64]chan []byte),
 		closed:   make(map[int64]struct{}),
 		promptCh: make(chan agentport.Context),
@@ -68,8 +68,6 @@ func NewMuxDispatcher(ctx context.Context, opts ...MuxOption) *MuxDispatcher {
 // Dispatch assigns a unique dispatch ID, sends the prompt to the agent side,
 // and blocks until the matching SubmitArtifact delivers the response.
 // Satisfies the Dispatcher interface.
-//
-//nolint:gocritic // hugeParam: interface conformance (agentport.Dispatcher)
 func (d *MuxDispatcher) Dispatch(ctx context.Context, dc agentport.Context) ([]byte, error) {
 	dispatchStart := time.Now()
 
@@ -83,39 +81,22 @@ func (d *MuxDispatcher) Dispatch(ctx context.Context, dc agentport.Context) ([]b
 
 	dc.DispatchID = id
 
-	d.log.DebugContext(ctx, "mux dispatch registered",
-		"dispatch_id", id,
-		"case_id", dc.CaseID,
-		"step", dc.Step,
-		"pending_count", pendingCount,
-	)
+	d.log.DebugContext(ctx, "mux dispatch registered", slog.Any("dispatch_id", id), slog.Any("case_id", dc.CaseID), slog.Any("step", dc.Step), slog.Any("pending_count", pendingCount))
 
 	// Send prompt to the agent side
 	select {
 	case d.promptCh <- dc:
 	case <-ctx.Done():
 		d.removePending(id)
-		d.log.WarnContext(ctx, "mux dispatch cancelled while sending prompt",
-			"case_id", dc.CaseID,
-			"step", dc.Step,
-			"dispatch_id", id,
-		)
-		return nil, fmt.Errorf("mux dispatch cancelled: %w", ctx.Err())
+		d.log.WarnContext(ctx, "mux dispatch canceled while sending prompt", slog.Any("case_id", dc.CaseID), slog.Any("step", dc.Step), slog.Any("dispatch_id", id))
+		return nil, fmt.Errorf("mux dispatch canceled: %w", ctx.Err())
 	case <-d.ctx.Done():
 		d.removePending(id)
-		d.log.WarnContext(ctx, "mux dispatch cancelled while sending prompt",
-			"case_id", dc.CaseID,
-			"step", dc.Step,
-			"dispatch_id", id,
-		)
-		return nil, fmt.Errorf("mux dispatch cancelled: %w", d.ctx.Err())
+		d.log.WarnContext(ctx, "mux dispatch canceled while sending prompt", slog.Any("case_id", dc.CaseID), slog.Any("step", dc.Step), slog.Any("dispatch_id", id))
+		return nil, fmt.Errorf("mux dispatch canceled: %w", d.ctx.Err())
 	case <-d.abortCh:
 		d.removePending(id)
-		d.log.WarnContext(ctx, "mux dispatch aborted while sending prompt",
-			"case_id", dc.CaseID,
-			"step", dc.Step,
-			"dispatch_id", id,
-		)
+		d.log.WarnContext(ctx, "mux dispatch aborted while sending prompt", slog.Any("case_id", dc.CaseID), slog.Any("step", dc.Step), slog.Any("dispatch_id", id))
 		return nil, fmt.Errorf("mux dispatch aborted: %w", d.getAbortErr())
 	}
 
@@ -131,39 +112,20 @@ func (d *MuxDispatcher) Dispatch(ctx context.Context, dc agentport.Context) ([]b
 			return nil, fmt.Errorf("mux dispatch aborted: %w", d.getAbortErr())
 		}
 		latency := time.Since(dispatchStart)
-		d.log.InfoContext(ctx, "dispatch round-trip",
-			"dispatch_id", id,
-			"case_id", dc.CaseID,
-			"step", dc.Step,
-			"latency_ms", latency.Milliseconds(),
-			"artifact_bytes", len(data),
-		)
+		d.log.InfoContext(ctx, "dispatch round-trip", slog.Any("dispatch_id", id), slog.Any("case_id", dc.CaseID), slog.Any("step", dc.Step), slog.Any("latency_ms", latency.Milliseconds()), slog.Any("artifact_bytes", len(data)))
 		return data, nil
 	case <-timeoutCh:
 		d.removePending(id)
-		d.log.WarnContext(ctx, "dispatch timeout",
-			"dispatch_id", id,
-			"case_id", dc.CaseID,
-			"step", dc.Step,
-			"timeout", dc.Timeout,
-		)
-		return nil, fmt.Errorf("dispatch timeout after %v for %s/%s", dc.Timeout, dc.CaseID, dc.Step)
+		d.log.WarnContext(ctx, "dispatch timeout", slog.Any("dispatch_id", id), slog.Any("case_id", dc.CaseID), slog.Any("step", dc.Step), slog.Any("timeout", dc.Timeout))
+		return nil, fmt.Errorf("%w: %v for %s/%s", ErrDispatchTimeoutAfter, dc.Timeout, dc.CaseID, dc.Step)
 	case <-ctx.Done():
 		d.removePending(id)
-		d.log.WarnContext(ctx, "mux dispatch cancelled while waiting for artifact",
-			"case_id", dc.CaseID,
-			"step", dc.Step,
-			"dispatch_id", id,
-		)
-		return nil, fmt.Errorf("mux dispatch cancelled: %w", ctx.Err())
+		d.log.WarnContext(ctx, "mux dispatch canceled while waiting for artifact", slog.Any("case_id", dc.CaseID), slog.Any("step", dc.Step), slog.Any("dispatch_id", id))
+		return nil, fmt.Errorf("mux dispatch canceled: %w", ctx.Err())
 	case <-d.ctx.Done():
 		d.removePending(id)
-		d.log.WarnContext(ctx, "mux dispatch cancelled while waiting for artifact",
-			"case_id", dc.CaseID,
-			"step", dc.Step,
-			"dispatch_id", id,
-		)
-		return nil, fmt.Errorf("mux dispatch cancelled: %w", d.ctx.Err())
+		d.log.WarnContext(ctx, "mux dispatch canceled while waiting for artifact", slog.Any("case_id", dc.CaseID), slog.Any("step", dc.Step), slog.Any("dispatch_id", id))
+		return nil, fmt.Errorf("mux dispatch canceled: %w", d.ctx.Err())
 	case <-d.abortCh:
 		d.removePending(id)
 		return nil, fmt.Errorf("mux dispatch aborted: %w", d.getAbortErr())
@@ -256,13 +218,12 @@ func (d *MuxDispatcher) receiveOne(ctx context.Context) (agentport.Context, erro
 		return agentport.Context{}, fmt.Errorf("dispatcher shutdown: %w", d.ctx.Err())
 	case dc, ok := <-d.promptCh:
 		if !ok {
-			return agentport.Context{}, fmt.Errorf("dispatcher closed")
+			return agentport.Context{}, ErrDispatcherClosed
 		}
 		return dc, nil
 	}
 }
 
-//nolint:gocritic // hugeParam: consistent with Dispatcher interface value type
 func (d *MuxDispatcher) matchesHints(dc agentport.Context, hints agentport.PullHints) bool {
 	if hints.PreferredCaseID != "" && dc.CaseID == hints.PreferredCaseID {
 		return true
@@ -306,7 +267,6 @@ func (d *MuxDispatcher) drainAvailable() {
 	}
 }
 
-//nolint:gocritic // hugeParam: consistent with Dispatcher interface value type
 func (d *MuxDispatcher) enqueue(dc agentport.Context) {
 	d.queueMu.Lock()
 	d.queue = append(d.queue, dc)
@@ -324,7 +284,6 @@ func (d *MuxDispatcher) dequeueAny() (agentport.Context, bool) {
 	return dc, true
 }
 
-//nolint:gocritic // hugeParam: consistent with Dispatcher interface value type
 func (d *MuxDispatcher) emitZoneShift(hints agentport.PullHints, dc agentport.Context) {
 	if d.bus == nil {
 		return
@@ -345,7 +304,6 @@ func (d *MuxDispatcher) emitZoneShift(hints agentport.PullHints, dc agentport.Co
 	})
 }
 
-//nolint:gocritic // hugeParam: consistent with Dispatcher interface value type
 func (d *MuxDispatcher) emitDispatchRouted(dc agentport.Context, reason string) {
 	if d.bus == nil {
 		return
@@ -388,18 +346,13 @@ func (d *MuxDispatcher) SubmitArtifact(ctx context.Context, dispatchID int64, da
 	if !ok {
 		if _, wasClosed := d.closed[dispatchID]; wasClosed {
 			d.mu.Unlock()
-			d.log.ErrorContext(ctx, "double submit detected",
-				"dispatch_id", dispatchID,
-			)
-			return fmt.Errorf("dispatch_id %d already submitted", dispatchID)
+			d.log.ErrorContext(ctx, "double submit detected", slog.Any("dispatch_id", dispatchID))
+			return fmt.Errorf("%w: %d already submitted", ErrDispatchId, dispatchID)
 		}
 		pendingCount := len(d.pending)
 		d.mu.Unlock()
-		d.log.WarnContext(ctx, "submit for unknown dispatch ID",
-			"dispatch_id", dispatchID,
-			"active_dispatches", pendingCount,
-		)
-		return fmt.Errorf("unknown dispatch_id %d", dispatchID)
+		d.log.WarnContext(ctx, "submit for unknown dispatch ID", slog.Any("dispatch_id", dispatchID), slog.Any("active_dispatches", pendingCount))
+		return fmt.Errorf("%w: %d", ErrUnknownDispatchId, dispatchID)
 	}
 	delete(d.pending, dispatchID)
 	d.closed[dispatchID] = struct{}{}
@@ -407,10 +360,7 @@ func (d *MuxDispatcher) SubmitArtifact(ctx context.Context, dispatchID int64, da
 
 	select {
 	case ch <- data:
-		d.log.DebugContext(ctx, "mux artifact routed",
-			"dispatch_id", dispatchID,
-			"bytes", len(data),
-		)
+		d.log.DebugContext(ctx, "mux artifact routed", slog.Any("dispatch_id", dispatchID), slog.Any("bytes", len(data)))
 		return nil
 	case <-ctx.Done():
 		return ctx.Err()
@@ -432,7 +382,7 @@ func (d *MuxDispatcher) Abort(err error) {
 
 	d.abortErr = err
 	close(d.abortCh)
-	d.log.WarnContext(context.Background(), "mux dispatcher abort", "error", err.Error())
+	d.log.WarnContext(context.Background(), "mux dispatcher abort", slog.Any("error", err.Error()))
 
 	for id, ch := range d.pending {
 		close(ch)
@@ -464,5 +414,5 @@ func (d *MuxDispatcher) getAbortErr() error {
 	if d.abortErr != nil {
 		return d.abortErr
 	}
-	return fmt.Errorf("aborted")
+	return ErrAborted
 }

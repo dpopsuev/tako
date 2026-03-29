@@ -31,8 +31,8 @@ const (
 
 // Signal meta key constants used in mediator routing signals.
 const (
-	MetaKeyBackend    = "backend"
-	MetaKeySessionID  = "session_id"
+	MetaKeyBackend   = "backend"
+	MetaKeySessionID = "session_id"
 )
 
 // PapercupTools enumerates the Papercup protocol tool names (consolidated).
@@ -84,8 +84,8 @@ type Mediator struct {
 
 	// Observability: routing signals and optional trace recording.
 	Bus      *agentport.MemBus
-	stateDir string                            // empty = tracing disabled
-	recorder *engine.TraceRecorder          // nil when tracing disabled
+	stateDir string                // empty = tracing disabled
+	recorder *engine.TraceRecorder // nil when tracing disabled
 }
 
 // New creates a Mediator that will connect to the given backends.
@@ -164,14 +164,13 @@ func (gw *Mediator) Start(ctx context.Context) error {
 
 func (gw *Mediator) initTraceRecording() {
 	if err := os.MkdirAll(gw.stateDir, 0o755); err != nil {
-		slog.WarnContext(context.Background(), "failed to create mediator state dir, tracing disabled",
-			"state_dir", gw.stateDir, "error", err)
+		slog.WarnContext(context.Background(), "failed to create mediator state dir, tracing disabled", slog.Any("state_dir", gw.stateDir), slog.Any("error", err))
 		return
 	}
 	tracePath := filepath.Join(gw.stateDir, "mediator-trace.jsonl")
 	rec, err := engine.NewTraceRecorder(tracePath)
 	if err != nil {
-		slog.WarnContext(context.Background(), "failed to create mediator trace recorder", "error", err)
+		slog.WarnContext(context.Background(), "failed to create mediator trace recorder", slog.Any("error", err))
 		return
 	}
 	gw.recorder = rec
@@ -299,11 +298,7 @@ func (gw *Mediator) routeStartCircuit(ctx context.Context, args map[string]any) 
 			},
 		})
 
-		slog.DebugContext(ctx, "session affinity registered",
-			"session_id", sessionID,
-			"backend", backendName,
-			"circuit_type", circuitType,
-		)
+		slog.DebugContext(ctx, "session affinity registered", slog.Any("session_id", sessionID), slog.Any("backend", backendName), slog.Any("circuit_type", circuitType))
 	}
 
 	return result, nil

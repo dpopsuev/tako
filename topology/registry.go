@@ -22,7 +22,7 @@ func (r *Registry) Register(def *TopologyDef) error {
 	defer r.mu.Unlock()
 
 	if _, exists := r.topos[def.Name]; exists {
-		return fmt.Errorf("topology %q already registered", def.Name)
+		return fmt.Errorf("%w: %q", ErrTopologyAlreadyRegistered, def.Name)
 	}
 	r.topos[def.Name] = def
 	return nil

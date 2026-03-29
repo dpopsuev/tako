@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/calibrate"
+	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/testkit/contracts"
 )
 

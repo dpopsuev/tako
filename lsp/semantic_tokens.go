@@ -81,9 +81,9 @@ func computeSemanticTokens(doc *document) []uint32 {
 				col := strings.Index(line, val)
 				if col >= 0 {
 					hits = append(hits, tokenHit{
-						line:      uint32(i),
-						startChar: uint32(col),
-						length:    uint32(len(val)),
+						line:      safeUint32(i),
+						startChar: safeUint32(col),
+						length:    safeUint32(len(val)),
 						tokenType: idx,
 					})
 				}
@@ -126,9 +126,9 @@ func appendZoneLineHits(hits []tokenHit, lines []string, zoneName string, tokenT
 		col := strings.Index(line, zoneName)
 		if col >= 0 {
 			hits = append(hits, tokenHit{
-				line:      uint32(i),
-				startChar: uint32(col),
-				length:    uint32(len(zoneName)),
+				line:      safeUint32(i),
+				startChar: safeUint32(col),
+				length:    safeUint32(len(zoneName)),
 				tokenType: tokenType,
 			})
 		}

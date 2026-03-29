@@ -33,7 +33,7 @@ type GenericScenarioLoader struct {
 // template variables.
 func (l *GenericScenarioLoader) Load(_ context.Context) ([]engine.BatchCase, error) {
 	if l.Scenario == nil || len(l.Scenario.Cases) == 0 {
-		return nil, fmt.Errorf("scenario has no cases")
+		return nil, ErrScenarioHasNoCases
 	}
 	cases := make([]engine.BatchCase, len(l.Scenario.Cases))
 	for i, c := range l.Scenario.Cases {
@@ -52,10 +52,10 @@ func LoadGenericScenario(data []byte) (*GenericScenario, error) {
 		return nil, fmt.Errorf("parse scenario: %w", err)
 	}
 	if s.Name == "" {
-		return nil, fmt.Errorf("scenario name is required")
+		return nil, ErrScenarioNameIsRequired
 	}
 	if len(s.Cases) == 0 {
-		return nil, fmt.Errorf("scenario has no cases")
+		return nil, ErrScenarioHasNoCases
 	}
 	return &s, nil
 }
@@ -78,14 +78,14 @@ func (c *CompositeScenarioLoader) Load(ctx context.Context) ([]engine.BatchCase,
 		}
 		for _, bc := range cases {
 			if seen[bc.ID] {
-				return nil, fmt.Errorf("duplicate case ID %q across loaders", bc.ID)
+				return nil, fmt.Errorf("%w: %q across loaders", ErrDuplicateCaseID, bc.ID)
 			}
 			seen[bc.ID] = true
 		}
 		all = append(all, cases...)
 	}
 	if len(all) == 0 {
-		return nil, fmt.Errorf("composite scenario has no cases")
+		return nil, ErrCompositeScenarioHasNoCases
 	}
 	return all, nil
 }
@@ -107,7 +107,7 @@ func LoadAndMergeScenarios(datasets ...[]byte) (*GenericScenario, error) {
 		}
 		for _, c := range s.Cases {
 			if seen[c.ID] {
-				return nil, fmt.Errorf("duplicate case ID %q in scenario %d", c.ID, i)
+				return nil, fmt.Errorf("%w: %q in scenario %d", ErrDuplicateCaseID, c.ID, i)
 			}
 			seen[c.ID] = true
 		}

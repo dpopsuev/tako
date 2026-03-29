@@ -68,7 +68,7 @@ type TransformerRegistry map[string]Transformer
 // matching ".name" suffix among registered FQCNs.
 func (r TransformerRegistry) Get(name string) (Transformer, error) {
 	if r == nil {
-		return nil, fmt.Errorf("transformer registry is nil")
+		return nil, ErrTransformerRegistryIsNil
 	}
 	if t, ok := r[name]; ok {
 		return t, nil
@@ -81,7 +81,7 @@ func (r TransformerRegistry) Get(name string) (Transformer, error) {
 			}
 		}
 	}
-	return nil, fmt.Errorf("transformer %q not registered", name)
+	return nil, fmt.Errorf("%w: %q not registered", ErrTransformer, name)
 }
 
 // Register adds a transformer. Panics on duplicate.
@@ -105,18 +105,17 @@ type transformerNode struct {
 	nodeConfig *circuit.NodeConfig // from NodeDef.EffectiveConfig()
 }
 
-func (n *transformerNode) Name() string             { return n.name }
+func (n *transformerNode) Name() string                     { return n.name }
 func (n *transformerNode) ElementAffinity() circuit.Element { return n.element }
 
 func (n *transformerNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
-	logger := slog.Default().With("component", "transformer")
+	logger := slog.Default().With(slog.Any("component", "transformer"))
 	var input any
 
 	if n.input != "" {
 		resolved, err := ResolveInput(n.input, nc.WalkerState.Outputs)
 		if err != nil {
-			logger.WarnContext(ctx, "input resolution failed",
-				"node", n.name, "input_expr", n.input, "error", err.Error())
+			logger.WarnContext(ctx, "input resolution failed", slog.Any("node", n.name), slog.Any("input_expr", n.input), slog.Any("error", err.Error()))
 			return nil, fmt.Errorf("node %s: resolve input: %w", n.name, err)
 		}
 		if resolved != nil {
@@ -162,24 +161,18 @@ func (n *transformerNode) Process(ctx context.Context, nc circuit.NodeContext) (
 		return nil, err
 	}
 
-	logger.DebugContext(ctx, "transformer executing",
-		"node", n.name, "transformer", n.trans.Name(),
-		"has_input", input != nil, "has_prompt", prompt != "")
+	logger.DebugContext(ctx, "transformer executing", slog.Any("node", n.name), slog.Any("transformer", n.trans.Name()), slog.Any("has_input", input != nil), slog.Any("has_prompt", prompt != ""))
 
 	start := time.Now()
 	result, err := n.trans.Transform(ctx, tc)
 	elapsed := time.Since(start)
 
 	if err != nil {
-		logger.ErrorContext(ctx, "transformer failed",
-			"node", n.name, "transformer", n.trans.Name(),
-			"error", err.Error(), "elapsed_ms", elapsed.Milliseconds())
+		logger.ErrorContext(ctx, "transformer failed", slog.Any("node", n.name), slog.Any("transformer", n.trans.Name()), slog.Any("error", err.Error()), slog.Any("elapsed_ms", elapsed.Milliseconds()))
 		return nil, fmt.Errorf("transformer %q (node %s): %w", n.trans.Name(), n.name, err)
 	}
 
-	logger.DebugContext(ctx, "transformer completed",
-		"node", n.name, "transformer", n.trans.Name(),
-		"elapsed_ms", elapsed.Milliseconds())
+	logger.DebugContext(ctx, "transformer completed", slog.Any("node", n.name), slog.Any("transformer", n.trans.Name()), slog.Any("elapsed_ms", elapsed.Milliseconds()))
 
 	return &transformerArtifact{
 		typeName:   n.trans.Name(),
@@ -198,11 +191,11 @@ func checkTransformerInputType(trans Transformer, tc *TransformerContext) error 
 		return nil
 	}
 	if tc.Input == nil {
-		return fmt.Errorf("node %s: expected input type %s but got nil", tc.NodeName, expected)
+		return fmt.Errorf("%w: %s: expected input type %s but got nil", ErrNode, tc.NodeName, expected)
 	}
 	actual := reflect.TypeOf(tc.Input)
 	if !actual.AssignableTo(expected) {
-		return fmt.Errorf("node %s: input type %s not assignable to expected %s", tc.NodeName, actual, expected)
+		return fmt.Errorf("%w: %s: input type %s not assignable to expected %s", ErrNode, tc.NodeName, actual, expected)
 	}
 	return nil
 }
@@ -214,7 +207,7 @@ type transformerArtifact struct {
 	raw        any
 }
 
-func (a *transformerArtifact) Type() string       { return a.typeName }
+func (a *transformerArtifact) Type() string        { return a.typeName }
 func (a *transformerArtifact) Confidence() float64 { return a.confidence }
 func (a *transformerArtifact) Raw() any            { return a.raw }
 

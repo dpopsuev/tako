@@ -101,4 +101,3 @@ func (w *StubWalker) Reset() {
 	w.err = nil
 	w.mu.Unlock()
 }
-

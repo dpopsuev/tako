@@ -197,11 +197,11 @@ done: DONE`
 	}
 
 	tests := []struct {
-		name     string
-		line     uint32
-		wantIn   []string
-		wantOut  []string
-		noWant   []string
+		name    string
+		line    uint32
+		wantIn  []string
+		wantOut []string
+		noWant  []string
 	}{
 		{
 			name:    "recall node declaration has outbound E1 and E2",
@@ -216,9 +216,9 @@ done: DONE`
 			noWant:  []string{"E2"},
 		},
 		{
-			name:    "review has inbound E2 and E3",
-			line:    6,
-			wantIn:  []string{"E2", "E3", "recall", "triage"},
+			name:   "review has inbound E2 and E3",
+			line:   6,
+			wantIn: []string{"E2", "E3", "recall", "triage"},
 		},
 	}
 
@@ -609,7 +609,7 @@ done: DONE`
 		}
 	}
 	if found < 2 {
-		t.Errorf("expected at least 2 behaviour profile hints (fast, deep), found %d", found)
+		t.Errorf("expected at least 2 behavior profile hints (fast, deep), found %d", found)
 	}
 }
 

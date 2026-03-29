@@ -55,7 +55,7 @@ func EnrichDocs(ctx context.Context, cfg EnrichConfig) error {
 			return fmt.Errorf("enrich %s: %w", e.Name(), err)
 		}
 
-		if err := os.WriteFile(path, []byte(enriched), 0o644); err != nil {
+		if err := os.WriteFile(path, []byte(enriched), 0o600); err != nil {
 			return fmt.Errorf("write enriched %s: %w", e.Name(), err)
 		}
 	}

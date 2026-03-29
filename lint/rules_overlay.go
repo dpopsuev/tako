@@ -3,14 +3,16 @@ package lint
 import (
 	"fmt"
 	"strings"
+
+	"github.com/dpopsuev/origami/circuit"
 )
 
 const (
-	ruleImportOverlay   = "S18/import-overlay"
-	rulePortValidation  = "S19/port-validation"
-	ruleCalibContract   = "S20/calibration-contract"
-	msgFieldRequired    = ": field is required"
-	msgScorerRequired   = ": scorer_name is required"
+	ruleImportOverlay  = "S18/import-overlay"
+	rulePortValidation = "S19/port-validation"
+	ruleCalibContract  = "S20/calibration-contract"
+	msgFieldRequired   = ": field is required"
+	msgScorerRequired  = ": scorer_name is required"
 )
 
 var validPortDirections = map[string]bool{
@@ -22,10 +24,12 @@ var validPortDirections = map[string]bool{
 // ImportOverlay validates circuits with import: directives (overlay-aware linting).
 type ImportOverlay struct{}
 
-func (r *ImportOverlay) ID() string          { return ruleImportOverlay }
-func (r *ImportOverlay) Description() string { return "import: must be non-empty if present; overlay should not redefine start/done" }
-func (r *ImportOverlay) Severity() Severity   { return SeverityWarning }
-func (r *ImportOverlay) Tags() []string       { return []string{"structural"} }
+func (r *ImportOverlay) ID() string { return ruleImportOverlay }
+func (r *ImportOverlay) Description() string {
+	return "import: must be non-empty if present; overlay should not redefine start/done"
+}
+func (r *ImportOverlay) Severity() Severity { return SeverityWarning }
+func (r *ImportOverlay) Tags() []string     { return []string{"structural"} }
 
 func (r *ImportOverlay) Check(ctx *LintContext) []Finding {
 	if ctx.Def == nil {
@@ -73,10 +77,12 @@ func (r *ImportOverlay) Check(ctx *LintContext) []Finding {
 // PortValidation checks port direction and uniqueness.
 type PortValidation struct{}
 
-func (r *PortValidation) ID() string          { return rulePortValidation }
-func (r *PortValidation) Description() string { return "port direction must be in/out/loop; port names must be unique" }
-func (r *PortValidation) Severity() Severity   { return SeverityError }
-func (r *PortValidation) Tags() []string       { return []string{"structural"} }
+func (r *PortValidation) ID() string { return rulePortValidation }
+func (r *PortValidation) Description() string {
+	return "port direction must be in/out/loop; port names must be unique"
+}
+func (r *PortValidation) Severity() Severity { return SeverityError }
+func (r *PortValidation) Tags() []string     { return []string{"structural"} }
 
 func (r *PortValidation) Check(ctx *LintContext) []Finding {
 	if ctx.Def == nil {
@@ -125,10 +131,12 @@ func (r *PortValidation) Check(ctx *LintContext) []Finding {
 // CalibrationContract validates calibration inputs/outputs when calibration: is declared.
 type CalibrationContract struct{}
 
-func (r *CalibrationContract) ID() string          { return ruleCalibContract }
-func (r *CalibrationContract) Description() string { return "calibration inputs/outputs must have non-empty field and scorer_name" }
-func (r *CalibrationContract) Severity() Severity   { return SeverityError }
-func (r *CalibrationContract) Tags() []string       { return []string{"structural"} }
+func (r *CalibrationContract) ID() string { return ruleCalibContract }
+func (r *CalibrationContract) Description() string {
+	return "calibration inputs/outputs must have non-empty field and scorer_name"
+}
+func (r *CalibrationContract) Severity() Severity { return SeverityError }
+func (r *CalibrationContract) Tags() []string     { return []string{"structural"} }
 
 func (r *CalibrationContract) Check(ctx *LintContext) []Finding {
 	if ctx.Def == nil || ctx.Def.Calibration == nil {
@@ -136,12 +144,17 @@ func (r *CalibrationContract) Check(ctx *LintContext) []Finding {
 	}
 	cal := ctx.Def.Calibration
 	var out []Finding
+	out = r.checkCalibFields(ctx, cal.Inputs, "input", out)
+	out = r.checkCalibFields(ctx, cal.Outputs, "output", out)
+	return out
+}
 
-	for i, f := range cal.Inputs {
+func (r *CalibrationContract) checkCalibFields(ctx *LintContext, fields []circuit.CalibrationFieldDef, kind string, out []Finding) []Finding {
+	for i, f := range fields {
 		if strings.TrimSpace(f.Field) == "" || strings.TrimSpace(f.ScorerName) == "" {
-			msg := "calibration input"
+			msg := "calibration " + kind
 			if f.Field != "" || f.ScorerName != "" {
-				msg = fmt.Sprintf("calibration input %q", f.Field)
+				msg = fmt.Sprintf("calibration %s %q", kind, f.Field)
 			}
 			if strings.TrimSpace(f.Field) == "" {
 				msg += msgFieldRequired
@@ -153,28 +166,7 @@ func (r *CalibrationContract) Check(ctx *LintContext) []Finding {
 				Severity: r.Severity(),
 				Message:  msg,
 				File:     ctx.File,
-				Line:     ctx.CalibrationFieldLine("input", i),
-			})
-		}
-	}
-
-	for i, f := range cal.Outputs {
-		if strings.TrimSpace(f.Field) == "" || strings.TrimSpace(f.ScorerName) == "" {
-			msg := "calibration output"
-			if f.Field != "" || f.ScorerName != "" {
-				msg = fmt.Sprintf("calibration output %q", f.Field)
-			}
-			if strings.TrimSpace(f.Field) == "" {
-				msg += msgFieldRequired
-			} else {
-				msg += msgScorerRequired
-			}
-			out = append(out, Finding{
-				RuleID:   r.ID(),
-				Severity: r.Severity(),
-				Message:  msg,
-				File:     ctx.File,
-				Line:     ctx.CalibrationFieldLine("output", i),
+				Line:     ctx.CalibrationFieldLine(kind, i),
 			})
 		}
 	}

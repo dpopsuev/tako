@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"strings"
 	"text/template"
-
 )
 
 var refPattern = regexp.MustCompile(`\$\{(\w+)\.output\}`)
@@ -23,24 +22,24 @@ func ResolveInput(input string, outputs map[string]Artifact) (Artifact, error) {
 
 	m := refPattern.FindStringSubmatch(input)
 	if m == nil {
-		return nil, fmt.Errorf("invalid input reference %q: expected ${node.output}", input)
+		return nil, fmt.Errorf("%w: %q: expected ${node.output}", ErrInvalidInputReference, input)
 	}
 
 	nodeName := m[1]
 	art, ok := outputs[nodeName]
 	if !ok {
-		return nil, fmt.Errorf("input reference ${%s.output}: node %q has not produced output yet", nodeName, nodeName)
+		return nil, fmt.Errorf("%w: %s.output}: node %q has not produced output yet", ErrInputReference, nodeName, nodeName)
 	}
 	return art, nil
 }
 
 // TemplateContext is the unified context available to prompt templates.
 type TemplateContext struct {
-	Output  any                // prior node's output (resolved from input: or prior artifact)
-	State   *WalkerState  // walker state (loops, history, context)
-	Config  map[string]any     // circuit vars
-	Sources map[string]any     // named outputs from prior nodes
-	Node    string             // current node name
+	Output  any            // prior node's output (resolved from input: or prior artifact)
+	State   *WalkerState   // walker state (loops, history, context)
+	Config  map[string]any // circuit vars
+	Sources map[string]any // named outputs from prior nodes
+	Node    string         // current node name
 }
 
 // RenderPrompt renders a Go text/template string against a TemplateContext.

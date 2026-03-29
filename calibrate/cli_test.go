@@ -96,15 +96,15 @@ func TestCalibrateWithCLI(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	report, err := Run(ctx, &HarnessConfig{
-		CircuitDef: circuitDef,
-		ScoreCard:  sc,
-		Loader:     loader,
-		Collector:  collector,
-		Components: []*engine.Component{coreComp},
-		Scenario:   scenario.Name,
+		CircuitDef:  circuitDef,
+		ScoreCard:   sc,
+		Loader:      loader,
+		Collector:   collector,
+		Components:  []*engine.Component{coreComp},
+		Scenario:    scenario.Name,
 		Transformer: command,
-		Runs:       1,
-		Parallel:   1,
+		Runs:        1,
+		Parallel:    1,
 		OnCaseComplete: func(i int, result engine.BatchWalkResult) {
 			if result.Error != nil {
 				t.Logf("case %d (%s) ERROR: %v", i, result.CaseID, result.Error)

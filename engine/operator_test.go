@@ -206,10 +206,12 @@ type recordingObserver struct {
 	walkResults []WalkResult
 }
 
-func (r *recordingObserver) OnObserve(s SystemState)      { r.observes = append(r.observes, s) }
-func (r *recordingObserver) OnEvaluate(e Evaluation)       { r.evaluates = append(r.evaluates, e) }
-func (r *recordingObserver) OnReconcile(d *circuit.CircuitDef)     { r.reconciles = append(r.reconciles, d) }
-func (r *recordingObserver) OnWalkComplete(w WalkResult)   { r.walkResults = append(r.walkResults, w) }
+func (r *recordingObserver) OnObserve(s SystemState) { r.observes = append(r.observes, s) }
+func (r *recordingObserver) OnEvaluate(e Evaluation) { r.evaluates = append(r.evaluates, e) }
+func (r *recordingObserver) OnReconcile(d *circuit.CircuitDef) {
+	r.reconciles = append(r.reconciles, d)
+}
+func (r *recordingObserver) OnWalkComplete(w WalkResult) { r.walkResults = append(r.walkResults, w) }
 
 func TestRunOperator_Observer(t *testing.T) {
 	obs := &recordingObserver{}

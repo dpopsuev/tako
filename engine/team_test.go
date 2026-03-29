@@ -242,7 +242,7 @@ func TestWalkTeam_ContextCancellation(t *testing.T) {
 
 	err = g.WalkTeam(ctx, team, "A")
 	if err == nil {
-		t.Fatal("expected error from cancelled context")
+		t.Fatal("expected error from canceled context")
 	}
 
 	walkErrors := tc.EventsOfType(circuit.EventWalkError)

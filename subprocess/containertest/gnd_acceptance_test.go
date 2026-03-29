@@ -17,6 +17,8 @@ import (
 // and read from a real GitHub repository. Requires docker-compose stack running.
 //
 //	go test ./subprocess/containertest/ -run TestGND_LiveAcceptance -v -count=1
+//
+//nolint:gocyclo // acceptance test with sequential MCP call choreography
 func TestGND_LiveAcceptance(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping live GND acceptance in short mode")

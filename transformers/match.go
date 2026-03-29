@@ -2,7 +2,6 @@ package transformers
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/toolkit"
@@ -34,17 +33,17 @@ func (t *matchTransformer) Deterministic() bool { return true }
 
 func (t *matchTransformer) Transform(_ context.Context, tc *engine.TransformerContext) (any, error) {
 	if tc.NodeConfig == nil {
-		return nil, fmt.Errorf("match transformer: no node config")
+		return nil, ErrMatchTransformerNoNodeConfig
 	}
 
 	evaluator, _ := tc.NodeConfig.Evaluator.(*MatchEvaluator)
 	if evaluator == nil {
-		return nil, fmt.Errorf("match transformer: no evaluator in config")
+		return nil, ErrMatchTransformerNoEvaluatorInConfig
 	}
 
 	ruleSetName := tc.NodeConfig.RuleSet
 	if ruleSetName == "" {
-		return nil, fmt.Errorf("match transformer: rule_set not specified in config")
+		return nil, ErrMatchTransformerRuleSetNotSpecifiedInConfig
 	}
 
 	text, _ := tc.Input.(string)

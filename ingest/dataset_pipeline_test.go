@@ -136,8 +136,8 @@ func TestDatasetPipeline_RunSync(t *testing.T) {
 
 func TestDatasetPipeline_VerifierRejects(t *testing.T) {
 	manifest := &ingest.DatasetManifest{
-		Kind:    "dataset",
-		Version: "v1",
+		Kind:     "dataset",
+		Version:  "v1",
 		Metadata: ingest.ManifestMetadata{Scenario: "test"},
 		Output:   ingest.ManifestOutput{Scenario: "out.yaml"},
 	}

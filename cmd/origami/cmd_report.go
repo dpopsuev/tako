@@ -37,7 +37,7 @@ func reportCmd(w io.Writer, args []string) error {
 	case "text":
 		return renderReportText(w, data)
 	default:
-		return fmt.Errorf("unknown format: %s", *format)
+		return fmt.Errorf("%w: %s", ErrUnknownFormat, *format)
 	}
 }
 
@@ -45,12 +45,17 @@ func resolveReportPath(stateDir, runID, fileArg string) (string, error) {
 	if fileArg != "" {
 		return fileArg, nil
 	}
+	return resolveRunFile(stateDir, runID, "report.json")
+}
 
+// resolveRunFile locates a file within the runs directory. If runID is empty,
+// it selects the most recent run by modification time.
+func resolveRunFile(stateDir, runID, filename string) (string, error) {
 	if stateDir == "" {
 		stateDir = os.Getenv("ORIGAMI_STATE_DIR")
 	}
 	if stateDir == "" {
-		stateDir = ".origami/state"
+		stateDir = defaultStateDir
 	}
 
 	runsDir := filepath.Join(stateDir, "runs")
@@ -67,7 +72,7 @@ func resolveReportPath(stateDir, runID, fileArg string) (string, error) {
 			}
 		}
 		if len(dirs) == 0 {
-			return "", fmt.Errorf("no runs found in %s", runsDir)
+			return "", fmt.Errorf("%w: %s", ErrNoRunsFoundIn, runsDir)
 		}
 		sort.Slice(dirs, func(i, j int) bool {
 			fi, _ := dirs[i].Info()
@@ -77,18 +82,18 @@ func resolveReportPath(stateDir, runID, fileArg string) (string, error) {
 		runID = dirs[0].Name()
 	}
 
-	return filepath.Join(runsDir, runID, "report.json"), nil
+	return filepath.Join(runsDir, runID, filename), nil
 }
 
 // reportData is the top-level structure of a report.json file.
 type reportData struct {
-	Metrics     reportMetrics   `json:"metrics"`
-	CaseResults []caseResult    `json:"case_results"`
+	Metrics     reportMetrics `json:"metrics"`
+	CaseResults []caseResult  `json:"case_results"`
 }
 
 type reportMetrics struct {
-	Metrics []metricEntry  `json:"metrics"`
-	Summary metricSummary  `json:"summary"`
+	Metrics []metricEntry `json:"metrics"`
+	Summary metricSummary `json:"summary"`
 }
 
 type metricEntry struct {
@@ -106,16 +111,16 @@ type metricSummary struct {
 }
 
 type caseResult struct {
-	CaseID             string  `json:"case_id"`
-	Version            string  `json:"version"`
-	Job                string  `json:"job"`
-	ComponentCorrect   bool    `json:"component_correct"`
-	DefectTypeCorrect  bool    `json:"defect_type_correct"`
-	CategoryCorrect    bool    `json:"category_correct"`
-	PathCorrect        bool    `json:"path_correct"`
-	StepCount          int     `json:"step_count"`
-	ActualConvergence  float64 `json:"actual_convergence"`
-	CircuitError       string  `json:"circuit_error"`
+	CaseID            string  `json:"case_id"`
+	Version           string  `json:"version"`
+	Job               string  `json:"job"`
+	ComponentCorrect  bool    `json:"component_correct"`
+	DefectTypeCorrect bool    `json:"defect_type_correct"`
+	CategoryCorrect   bool    `json:"category_correct"`
+	PathCorrect       bool    `json:"path_correct"`
+	StepCount         int     `json:"step_count"`
+	ActualConvergence float64 `json:"actual_convergence"`
+	CircuitError      string  `json:"circuit_error"`
 }
 
 func renderReportText(w io.Writer, data []byte) error {
@@ -215,4 +220,3 @@ func boolMark(b bool) string {
 	}
 	return "N"
 }
-

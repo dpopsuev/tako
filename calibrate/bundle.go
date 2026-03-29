@@ -23,12 +23,12 @@ type CaptureConfig struct {
 
 // Manifest records the provenance and integrity of a captured bundle.
 type Manifest struct {
-	SchemaVersion string         `json:"schema_version" yaml:"schema_version"`
-	Schematic     string         `json:"schematic" yaml:"schematic"`
-	CapturedAt    time.Time      `json:"captured_at" yaml:"captured_at"`
-	Repos         []RepoEntry    `json:"repos,omitempty" yaml:"repos,omitempty"`
-	Docs          []DocEntry     `json:"docs,omitempty" yaml:"docs,omitempty"`
-	ExtraFiles    []string       `json:"extra_files,omitempty" yaml:"extra_files,omitempty"`
+	SchemaVersion string      `json:"schema_version" yaml:"schema_version"`
+	Schematic     string      `json:"schematic" yaml:"schematic"`
+	CapturedAt    time.Time   `json:"captured_at" yaml:"captured_at"`
+	Repos         []RepoEntry `json:"repos,omitempty" yaml:"repos,omitempty"`
+	Docs          []DocEntry  `json:"docs,omitempty" yaml:"docs,omitempty"`
+	ExtraFiles    []string    `json:"extra_files,omitempty" yaml:"extra_files,omitempty"`
 }
 
 // RepoEntry records a captured repository snapshot.
@@ -47,6 +47,6 @@ type DocEntry struct {
 }
 
 const (
-	ManifestFile  = "manifest.yaml"
-	SchemaV1      = "v1"
+	ManifestFile = "manifest.yaml"
+	SchemaV1     = "v1"
 )

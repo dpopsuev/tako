@@ -178,7 +178,7 @@ type ListArtifact struct {
 
 const artifactTypeList = "list"
 
-func (a *ListArtifact) Type() string       { return artifactTypeList }
+func (a *ListArtifact) Type() string        { return artifactTypeList }
 func (a *ListArtifact) Confidence() float64 { return 0 }
 func (a *ListArtifact) Raw() any            { return a.Items }
 

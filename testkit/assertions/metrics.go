@@ -8,32 +8,32 @@ import (
 
 // AssertMetricPassed verifies that the metric with the given ID in the
 // CalibrationReport has Pass=true.
-func AssertMetricPassed(t testing.TB, report *calibrate.CalibrationReport, metricID string) {
-	t.Helper()
+func AssertMetricPassed(tb testing.TB, report *calibrate.CalibrationReport, metricID string) {
+	tb.Helper()
 
 	m, found := findMetric(report, metricID)
 	if !found {
-		t.Errorf("metric %q not found in report", metricID)
+		tb.Errorf("metric %q not found in report", metricID)
 		return
 	}
 	if !m.Pass {
-		t.Errorf("metric %q failed (value=%.4f, threshold=%.4f, direction=%s)",
+		tb.Errorf("metric %q failed (value=%.4f, threshold=%.4f, direction=%s)",
 			metricID, m.Value, m.Threshold, m.Direction)
 	}
 }
 
 // AssertMetricFailed verifies that the metric with the given ID in the
 // CalibrationReport has Pass=false.
-func AssertMetricFailed(t testing.TB, report *calibrate.CalibrationReport, metricID string) {
-	t.Helper()
+func AssertMetricFailed(tb testing.TB, report *calibrate.CalibrationReport, metricID string) {
+	tb.Helper()
 
 	m, found := findMetric(report, metricID)
 	if !found {
-		t.Errorf("metric %q not found in report", metricID)
+		tb.Errorf("metric %q not found in report", metricID)
 		return
 	}
 	if m.Pass {
-		t.Errorf("metric %q passed but expected failure (value=%.4f, threshold=%.4f, direction=%s)",
+		tb.Errorf("metric %q passed but expected failure (value=%.4f, threshold=%.4f, direction=%s)",
 			metricID, m.Value, m.Threshold, m.Direction)
 	}
 }

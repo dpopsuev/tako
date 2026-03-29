@@ -19,8 +19,10 @@ const (
 // are valid node names from the circuit definition.
 type ExpectedPathNodeNames struct{}
 
-func (r *ExpectedPathNodeNames) ID() string        { return ruleExpectedPath }
-func (r *ExpectedPathNodeNames) Description() string { return "expected_path elements must be valid circuit node names" }
+func (r *ExpectedPathNodeNames) ID() string { return ruleExpectedPath }
+func (r *ExpectedPathNodeNames) Description() string {
+	return "expected_path elements must be valid circuit node names"
+}
 func (r *ExpectedPathNodeNames) Severity() Severity { return SeverityError }
 func (r *ExpectedPathNodeNames) Tags() []string     { return []string{"scenario", "cross-ref"} }
 
@@ -96,8 +98,10 @@ func extractExpectedPaths(doc map[string]any) []string {
 // a resolvable circuit file.
 type CircuitHandlerResolution struct{}
 
-func (r *CircuitHandlerResolution) ID() string        { return ruleHandlerResolve }
-func (r *CircuitHandlerResolution) Description() string { return "handler_type=circuit handler must resolve to a known circuit file" }
+func (r *CircuitHandlerResolution) ID() string { return ruleHandlerResolve }
+func (r *CircuitHandlerResolution) Description() string {
+	return "handler_type=circuit handler must resolve to a known circuit file"
+}
 func (r *CircuitHandlerResolution) Severity() Severity { return SeverityError }
 func (r *CircuitHandlerResolution) Tags() []string     { return []string{"structural", "cross-ref"} }
 
@@ -164,8 +168,10 @@ func (r *CircuitHandlerResolution) Check(ctx *LintContext) []Finding {
 // appear in any scenario expected_path (untested).
 type DeadNodeDetection struct{}
 
-func (r *DeadNodeDetection) ID() string        { return ruleDeadNode }
-func (r *DeadNodeDetection) Description() string { return "reachable nodes not covered by any scenario expected_path are untested" }
+func (r *DeadNodeDetection) ID() string { return ruleDeadNode }
+func (r *DeadNodeDetection) Description() string {
+	return "reachable nodes not covered by any scenario expected_path are untested"
+}
 func (r *DeadNodeDetection) Severity() Severity { return SeverityWarning }
 func (r *DeadNodeDetection) Tags() []string     { return []string{"scenario", "cross-ref"} }
 
@@ -234,8 +240,10 @@ func (r *DeadNodeDetection) Check(ctx *LintContext) []Finding {
 // on a mediator endpoint at runtime.
 type MediatorBackendCoverage struct{}
 
-func (r *MediatorBackendCoverage) ID() string        { return ruleMediatorBackend }
-func (r *MediatorBackendCoverage) Description() string { return "handler_type=circuit nodes should have a local circuit or registered resolver" }
+func (r *MediatorBackendCoverage) ID() string { return ruleMediatorBackend }
+func (r *MediatorBackendCoverage) Description() string {
+	return "handler_type=circuit nodes should have a local circuit or registered resolver"
+}
 func (r *MediatorBackendCoverage) Severity() Severity { return SeverityWarning }
 func (r *MediatorBackendCoverage) Tags() []string     { return []string{"structural"} }
 
@@ -303,8 +311,10 @@ func (r *MediatorBackendCoverage) Check(ctx *LintContext) []Finding {
 // PortTypeConsistency checks that wiring entries connect ports with matching types.
 type PortTypeConsistency struct{}
 
-func (r *PortTypeConsistency) ID() string        { return rulePortConsistency }
-func (r *PortTypeConsistency) Description() string { return "wiring from/to ports must have matching types" }
+func (r *PortTypeConsistency) ID() string { return rulePortConsistency }
+func (r *PortTypeConsistency) Description() string {
+	return "wiring from/to ports must have matching types"
+}
 func (r *PortTypeConsistency) Severity() Severity { return SeverityWarning }
 func (r *PortTypeConsistency) Tags() []string     { return []string{"structural"} }
 
@@ -412,4 +422,3 @@ func extractPortTypes(doc map[string]any) map[string]string {
 	}
 	return result
 }
-

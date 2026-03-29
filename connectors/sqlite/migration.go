@@ -61,13 +61,13 @@ func ParseMigration(data []byte) (*Migration, error) {
 		return nil, fmt.Errorf("parse migration YAML: %w", err)
 	}
 	if m.From == 0 || m.To == 0 {
-		return nil, fmt.Errorf("migration must specify from and to versions")
+		return nil, ErrMigrationVersionRequired
 	}
 	if m.To <= m.From {
-		return nil, fmt.Errorf("migration to (%d) must be greater than from (%d)", m.To, m.From)
+		return nil, fmt.Errorf("%w (%d vs %d)", ErrMigrationVersionOrder, m.To, m.From)
 	}
 	if len(m.Operations) == 0 {
-		return nil, fmt.Errorf("migration has no operations")
+		return nil, ErrMigrationNoOps
 	}
 	return &m, nil
 }

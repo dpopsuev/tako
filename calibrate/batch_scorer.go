@@ -29,7 +29,7 @@ func RegisterBatchScorers(reg ScorerRegistry) {
 func toBatch(caseResult any) ([]map[string]any, error) {
 	batch, ok := caseResult.([]map[string]any)
 	if !ok {
-		return nil, fmt.Errorf("batch scorer: expected []map[string]any, got %T", caseResult)
+		return nil, fmt.Errorf("%w: %T", ErrBatchScorerExpectedMapStringAnyGot, caseResult)
 	}
 	return batch, nil
 }
@@ -48,7 +48,7 @@ func batchFieldMatch(caseResult, groundTruth any, params map[string]any) (score 
 	actualField := paramString(params, "actual")
 	expectedField := paramString(params, "expected")
 	if actualField == "" || expectedField == "" {
-		return 0, "", fmt.Errorf("batch_field_match: requires 'actual' and 'expected' params")
+		return 0, "", ErrBatchFieldMatchRequiresActualAndExpectedParams
 	}
 	filters := paramFilters(params)
 	fallbackText := paramString(params, "fallback_text")
@@ -88,7 +88,7 @@ func batchBoolRate(caseResult, groundTruth any, params map[string]any) (score fl
 	filterField := paramString(params, "filter_field")
 	actualField := paramString(params, "actual_field")
 	if filterField == "" || actualField == "" {
-		return 0, "", fmt.Errorf("batch_bool_rate: requires 'filter_field' and 'actual_field' params")
+		return 0, "", ErrBatchBoolRateRequiresFilterFieldAndActualFieldParams
 	}
 	filterValue := paramBool(params, "filter_value", true)
 
@@ -119,7 +119,7 @@ func batchSetPrecision(caseResult, groundTruth any, params map[string]any) (scor
 	actualField := paramString(params, "actual_field")
 	relevantField := paramString(params, "relevant_field")
 	if actualField == "" || relevantField == "" {
-		return 0, "", fmt.Errorf("batch_set_precision: requires 'actual_field' and 'relevant_field' params")
+		return 0, "", ErrBatchSetPrecisionRequiresActualFieldAndRelevantField
 	}
 	filters := paramFilters(params)
 	matchFn := paramString(params, "match_fn")
@@ -179,7 +179,7 @@ func batchSetRecall(caseResult, groundTruth any, params map[string]any) (score f
 	actualField := paramString(params, "actual_field")
 	relevantField := paramString(params, "relevant_field")
 	if actualField == "" || relevantField == "" {
-		return 0, "", fmt.Errorf("batch_set_recall: requires 'actual_field' and 'relevant_field' params")
+		return 0, "", ErrBatchSetRecallRequiresActualFieldAndRelevantFieldPar
 	}
 	filters := paramFilters(params)
 	matchFn := paramString(params, "match_fn")
@@ -244,7 +244,7 @@ func batchSetExclusion(caseResult, groundTruth any, params map[string]any) (scor
 	actualField := paramString(params, "actual_field")
 	excludedField := paramString(params, "excluded_field")
 	if actualField == "" || excludedField == "" {
-		return 0, "", fmt.Errorf("batch_set_exclusion: requires 'actual_field' and 'excluded_field' params")
+		return 0, "", ErrBatchSetExclusionRequiresActualFieldAndExcludedField
 	}
 	filters := paramFilters(params)
 
@@ -295,7 +295,7 @@ func batchKeywordScore(caseResult, groundTruth any, params map[string]any) (scor
 	textField := paramString(params, "text_field")
 	keywordsField := paramString(params, "keywords_field")
 	if textField == "" || keywordsField == "" {
-		return 0, "", fmt.Errorf("batch_keyword_score: requires 'text_field' and 'keywords_field' params")
+		return 0, "", ErrBatchKeywordScoreRequiresTextFieldAndKeywordsFieldPa
 	}
 	filters := paramFilters(params)
 	thresholdField := paramString(params, "threshold_field")
@@ -352,7 +352,7 @@ func batchCorrelation(caseResult, groundTruth any, params map[string]any) (score
 	xField := paramString(params, "x_field")
 	yField := paramString(params, "y_field")
 	if xField == "" || yField == "" {
-		return 0, "", fmt.Errorf("batch_correlation: requires 'x_field' and 'y_field' params")
+		return 0, "", ErrBatchCorrelationRequiresXFieldAndYFieldParams
 	}
 	filters := paramFilters(params)
 
@@ -388,7 +388,7 @@ func batchSumRatio(caseResult, groundTruth any, params map[string]any) (score fl
 	numField := paramString(params, "numerator_field")
 	denomField := paramString(params, "denominator_field")
 	if numField == "" || denomField == "" {
-		return 0, "", fmt.Errorf("batch_sum_ratio: requires 'numerator_field' and 'denominator_field' params")
+		return 0, "", ErrBatchSumRatioRequiresNumeratorFieldAndDenominatorFie
 	}
 
 	zeroBoth := 1.0
@@ -433,7 +433,7 @@ func batchFieldSum(caseResult, groundTruth any, params map[string]any) (score fl
 	}
 	field := paramString(params, "field")
 	if field == "" {
-		return 0, "", fmt.Errorf("batch_field_sum: requires 'field' param")
+		return 0, "", ErrBatchFieldSumRequiresFieldParam
 	}
 	fallbackField := paramString(params, "fallback_field")
 	fallbackMult, hasMult := paramFloat(params, "fallback_multiplier")
@@ -479,7 +479,7 @@ func batchGroupLinkage(caseResult, groundTruth any, params map[string]any) (scor
 	groupField := paramString(params, "group_field")
 	valueField := paramString(params, "value_field")
 	if groupField == "" || valueField == "" {
-		return 0, "", fmt.Errorf("batch_group_linkage: requires 'group_field' and 'value_field' params")
+		return 0, "", ErrBatchGroupLinkageRequiresGroupFieldAndValueFieldPara
 	}
 	filters := paramFilters(params)
 

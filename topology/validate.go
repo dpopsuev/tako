@@ -42,7 +42,7 @@ func Validate(shape GraphShape, def *TopologyDef) *ValidationResult {
 	done := shape.DoneNode()
 
 	for _, ni := range shape.NodeInfos() {
-		pos := classifyPosition(ni.Name, start, done, ni.Inputs, ni.Outputs)
+		pos := classifyPosition(ni.Name, start, done, ni.Outputs)
 		rule := def.RuleFor(pos)
 		if rule == nil {
 			continue
@@ -89,7 +89,7 @@ func Validate(shape GraphShape, def *TopologyDef) *ValidationResult {
 	return result
 }
 
-func classifyPosition(name, start, done string, inputs, outputs int) Position {
+func classifyPosition(name, start, done string, outputs int) Position {
 	if name == start {
 		return PositionEntry
 	}

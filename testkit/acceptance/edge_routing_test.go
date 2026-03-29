@@ -13,7 +13,7 @@ import (
 )
 
 // walkerWithContext creates a ProcessWalker with pre-populated context fields.
-func walkerWithContext(id string, ctx map[string]any) circuit.Walker {
+func walkerWithContext(id string, ctx map[string]any) circuit.Walker { //nolint:unparam // test flexibility
 	w := circuit.NewProcessWalker(id)
 	for k, v := range ctx {
 		w.State().Context[k] = v

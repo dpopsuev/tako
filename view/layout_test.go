@@ -8,7 +8,7 @@ import (
 
 // --- Level 1 test helpers ---
 
-func assertCol(t *testing.T, layout CircuitLayout, node string, col int) {
+func assertCol(t *testing.T, layout CircuitLayout, node string, col int) { //nolint:unparam // test flexibility
 	t.Helper()
 	gc, ok := layout.Grid[node]
 	if !ok {

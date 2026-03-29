@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-
 )
 
 // ArtifactSchema declares the expected shape of a node's output artifact.
@@ -14,9 +13,9 @@ import (
 // each node completes. Domain tools declare schemas in YAML; the framework
 // enforces them so malformed artifacts fail fast with clear diagnostics.
 type ArtifactSchema struct {
-	Type     string                    `yaml:"type" json:"type"`
-	Required []string                  `yaml:"required,omitempty" json:"required,omitempty"`
-	Fields   map[string]FieldSchema    `yaml:"fields,omitempty" json:"fields,omitempty"`
+	Type     string                 `yaml:"type" json:"type"`
+	Required []string               `yaml:"required,omitempty" json:"required,omitempty"`
+	Fields   map[string]FieldSchema `yaml:"fields,omitempty" json:"fields,omitempty"`
 }
 
 // FieldSchema describes a single field in an artifact object.
@@ -36,7 +35,7 @@ func ValidateArtifact(schema *ArtifactSchema, artifact Artifact) error {
 
 	raw := artifact.Raw()
 	if raw == nil {
-		return fmt.Errorf("artifact is nil")
+		return ErrArtifactIsNil
 	}
 
 	data, err := json.Marshal(raw)
@@ -64,20 +63,20 @@ func validateValue(typ string, required []string, fields map[string]FieldSchema,
 		return validateArray(items, value, path)
 	case "string":
 		if _, ok := value.(string); !ok {
-			return fmt.Errorf("%s: expected string, got %T", path, value)
+			return fmt.Errorf("%s: %w, got %T", path, ErrExpectedString, value)
 		}
 	case "number":
 		if _, ok := value.(float64); !ok {
-			return fmt.Errorf("%s: expected number, got %T", path, value)
+			return fmt.Errorf("%s: %w, got %T", path, ErrExpectedNumber, value)
 		}
 	case "boolean":
 		if _, ok := value.(bool); !ok {
-			return fmt.Errorf("%s: expected boolean, got %T", path, value)
+			return fmt.Errorf("%s: %w, got %T", path, ErrExpectedBoolean, value)
 		}
 	case "":
 		// no type constraint
 	default:
-		return fmt.Errorf("%s: unknown schema type %q", path, typ)
+		return fmt.Errorf("%s: %w %q", path, ErrUnknownSchemaType, typ)
 	}
 
 	return nil
@@ -86,12 +85,12 @@ func validateValue(typ string, required []string, fields map[string]FieldSchema,
 func validateObject(required []string, fields map[string]FieldSchema, value any, path string) error {
 	obj, ok := value.(map[string]any)
 	if !ok {
-		return fmt.Errorf("%s: expected object, got %T", path, value)
+		return fmt.Errorf("%s: %w, got %T", path, ErrExpectedObject, value)
 	}
 
 	for _, req := range required {
 		if _, exists := obj[req]; !exists {
-			return fmt.Errorf("%s: missing required field %q", path, req)
+			return fmt.Errorf("%s: %w %q", path, ErrMissingRequiredField, req)
 		}
 	}
 
@@ -112,7 +111,7 @@ func validateObject(required []string, fields map[string]FieldSchema, value any,
 func validateArray(items *FieldSchema, value any, path string) error {
 	arr, ok := value.([]any)
 	if !ok {
-		return fmt.Errorf("%s: expected array, got %T", path, value)
+		return fmt.Errorf("%s: %w, got %T", path, ErrExpectedArray, value)
 	}
 
 	if items == nil || len(arr) == 0 {
@@ -128,7 +127,7 @@ func validateArray(items *FieldSchema, value any, path string) error {
 	}
 
 	if len(errs) > 0 {
-		return fmt.Errorf("%s", strings.Join(errs, "; "))
+		return fmt.Errorf("%w: %s", ErrSchemaValidation, strings.Join(errs, "; "))
 	}
 	return nil
 }

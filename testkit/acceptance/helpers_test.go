@@ -79,7 +79,7 @@ func loadFixture(t *testing.T, rel string) *circuit.CircuitDef {
 }
 
 // runFixture runs a circuit file from testdata/ with standard registries.
-func runFixture(t *testing.T, rel string, input any, opts ...engine.RunOption) error {
+func runFixture(t *testing.T, rel string, input any, opts ...engine.RunOption) error { //nolint:unparam // test flexibility
 	t.Helper()
 	absPath := testdataPath(t, rel)
 	allOpts := append([]engine.RunOption{

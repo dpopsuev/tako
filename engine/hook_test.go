@@ -156,12 +156,12 @@ func TestFileWriteHook_WritesArtifact(t *testing.T) {
 		HandlerType: "transformer",
 		Nodes: []circuit.NodeDef{
 			{
-				Name:      "recall",
-				Approach:  "methodical",
-				Handler:   "go-template",
-				Prompt:    "test data",
-				After:     []string{"file-write"},
-				Config:    &circuit.NodeConfig{OutputPath: outPath},
+				Name:     "recall",
+				Approach: "methodical",
+				Handler:  "go-template",
+				Prompt:   "test data",
+				After:    []string{"file-write"},
+				Config:   &circuit.NodeConfig{OutputPath: outPath},
 			},
 		},
 		Edges: []circuit.EdgeDef{
@@ -504,10 +504,10 @@ func TestHookingWalker_NoHooksNoWrap(t *testing.T) {
 	def := &circuit.CircuitDef{
 		Circuit:     "test",
 		HandlerType: "transformer",
-		Nodes:    []circuit.NodeDef{{Name: "a", Approach: "rapid", Handler: "echo"}},
-		Edges:    []circuit.EdgeDef{{ID: "E1", From: "a", To: "_done", When: "true"}},
-		Start:    "a",
-		Done:     "_done",
+		Nodes:       []circuit.NodeDef{{Name: "a", Approach: "rapid", Handler: "echo"}},
+		Edges:       []circuit.EdgeDef{{ID: "E1", From: "a", To: "_done", When: "true"}},
+		Start:       "a",
+		Done:        "_done",
 	}
 
 	runner, err := NewRunnerWith(def, &GraphRegistries{

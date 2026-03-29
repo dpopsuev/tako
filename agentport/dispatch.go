@@ -12,9 +12,9 @@ type (
 	PullHints          = dispatch.PullHints
 	ExternalDispatcher = dispatch.ExternalDispatcher
 
-	CLIDispatcher   = dispatch.CLIDispatcher
-	HTTPDispatcher  = dispatch.HTTPDispatcher
-	StdinDispatcher = dispatch.StdinDispatcher
+	CLIDispatcher    = dispatch.CLIDispatcher
+	HTTPDispatcher   = dispatch.HTTPDispatcher
+	StdinDispatcher  = dispatch.StdinDispatcher
 	StaticDispatcher = dispatch.StaticDispatcher
 
 	CLIOption  = dispatch.CLIOption
@@ -28,10 +28,10 @@ type (
 
 // Constructors.
 var (
-	NewCLIDispatcher   = dispatch.NewCLIDispatcher
-	NewHTTPDispatcher  = dispatch.NewHTTPDispatcher
-	NewStdinDispatcher = dispatch.NewStdinDispatcher
-	NewStaticDispatcher = dispatch.NewStaticDispatcher
+	NewCLIDispatcher               = dispatch.NewCLIDispatcher
+	NewHTTPDispatcher              = dispatch.NewHTTPDispatcher
+	NewStdinDispatcher             = dispatch.NewStdinDispatcher
+	NewStaticDispatcher            = dispatch.NewStaticDispatcher
 	NewStdinDispatcherWithTemplate = dispatch.NewStdinDispatcherWithTemplate
 	DefaultStdinTemplate           = dispatch.DefaultStdinTemplate
 )
@@ -45,8 +45,8 @@ var (
 
 // HTTP options.
 var (
-	WithModel     = dispatch.WithModel
-	WithAPIKeyEnv = dispatch.WithAPIKeyEnv
+	WithModel      = dispatch.WithModel
+	WithAPIKeyEnv  = dispatch.WithAPIKeyEnv
 	WithHTTPClient = dispatch.WithHTTPClient
 	WithHTTPLogger = dispatch.WithHTTPLogger
 )

@@ -407,7 +407,7 @@ done: _done
 	m := &Manifest{
 		Name: "missing-ref",
 		DomainServe: &DomainServeConfig{
-			Port: 9300,
+			Port:   9300,
 			Assets: &AssetMap{Circuits: map[string]string{"main": "circuits/main.yaml"}},
 		},
 	}

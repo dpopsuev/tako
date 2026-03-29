@@ -190,5 +190,5 @@ func (e *Env) waitHealthy(ctx context.Context, port int, timeout time.Duration) 
 		case <-time.After(500 * time.Millisecond):
 		}
 	}
-	return fmt.Errorf("timeout waiting for healthz on port %d", port)
+	return fmt.Errorf("%w: %d", ErrTimeoutWaitingForHealthzOnPort, port)
 }

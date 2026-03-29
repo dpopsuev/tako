@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/agentport"
-	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/calibrate"
 	"github.com/dpopsuev/origami/dispatch"
+	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/mcp"
 	"github.com/dpopsuev/origami/testkit/builders"
 	"github.com/dpopsuev/origami/testkit/stubs"
@@ -39,10 +39,10 @@ func (c *stubCaseCollector) Collect(_ context.Context, results []engine.BatchWal
 ) {
 	c.casesProcessed = len(results)
 	return map[string]float64{
-		"M1": float64(len(results)),
-	}, map[string]string{
-		"M1": fmt.Sprintf("%d cases processed", len(results)),
-	}, nil
+			"M1": float64(len(results)),
+		}, map[string]string{
+			"M1": fmt.Sprintf("%d cases processed", len(results)),
+		}, nil
 }
 
 func TestE2E_Calibration_AllStubs(t *testing.T) {
@@ -172,9 +172,9 @@ func TestE2E_MCP_AllStubs(t *testing.T) {
 	steps := []string{"STEP_A", "STEP_B"}
 
 	cfg := mcp.CircuitConfig{
-		Name:        "testkit-e2e",
-		Version:     "dev",
-		StepSchemas: stepSchemas,
+		Name:                      "testkit-e2e",
+		Version:                   "dev",
+		StepSchemas:               stepSchemas,
 		DefaultGetNextStepTimeout: 2000,
 		DefaultSessionTTL:         30000,
 		CreateSession: func(ctx context.Context, _ mcp.StartParams, disp *dispatch.MuxDispatcher, bus agentport.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
@@ -220,7 +220,7 @@ func TestE2E_MCP_AllStubs(t *testing.T) {
 	defer session.Close()
 
 	// Call circuit(action=start).
-	startResult := callTool(t, ctx, session, "circuit", map[string]any{"action": "start"})
+	startResult := callTool(ctx, t, session, "circuit", map[string]any{"action": "start"})
 	sessionID, ok := startResult["session_id"].(string)
 	if !ok || sessionID == "" {
 		t.Fatalf("circuit/start: expected non-empty session_id, got %v", startResult)
@@ -233,7 +233,7 @@ func TestE2E_MCP_AllStubs(t *testing.T) {
 	// Loop: circuit(action=step) / circuit(action=submit) until done.
 	stepsProcessed := 0
 	for {
-		stepResult := callTool(t, ctx, session, "circuit", map[string]any{
+		stepResult := callTool(ctx, t, session, "circuit", map[string]any{
 			"action":     "step",
 			"session_id": sessionID,
 			"timeout_ms": 2000,
@@ -258,7 +258,7 @@ func TestE2E_MCP_AllStubs(t *testing.T) {
 			fields["data"] = step
 		}
 
-		callTool(t, ctx, session, "circuit", map[string]any{
+		callTool(ctx, t, session, "circuit", map[string]any{
 			"action":      "submit",
 			"session_id":  sessionID,
 			"dispatch_id": int64(dispatchID),
@@ -273,7 +273,7 @@ func TestE2E_MCP_AllStubs(t *testing.T) {
 	}
 
 	// Get report.
-	reportResult := callTool(t, ctx, session, "circuit", map[string]any{
+	reportResult := callTool(ctx, t, session, "circuit", map[string]any{
 		"action":     "report",
 		"session_id": sessionID,
 	})
@@ -290,7 +290,7 @@ func TestE2E_MCP_AllStubs(t *testing.T) {
 
 // --- Helper: callTool (local copy for testkit_test package) ---
 
-func callTool(t *testing.T, ctx context.Context, session *sdkmcp.ClientSession, name string, args map[string]any) map[string]any {
+func callTool(ctx context.Context, t *testing.T, session *sdkmcp.ClientSession, name string, args map[string]any) map[string]any { //nolint:unparam // test flexibility
 	t.Helper()
 	if args == nil {
 		args = map[string]any{}

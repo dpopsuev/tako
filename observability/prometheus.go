@@ -12,18 +12,18 @@ import (
 // It also exposes RecordTokens and RecordDispatch for bridging with
 // the dispatch layer without creating import cycles.
 type PrometheusCollector struct {
-	NodeDuration     *prometheus.HistogramVec
-	EdgeTransitions  *prometheus.CounterVec
-	WalkActive       *prometheus.GaugeVec
-	WalkCompleted    *prometheus.CounterVec
-	LoopsTotal       *prometheus.CounterVec
+	NodeDuration    *prometheus.HistogramVec
+	EdgeTransitions *prometheus.CounterVec
+	WalkActive      *prometheus.GaugeVec
+	WalkCompleted   *prometheus.CounterVec
+	LoopsTotal      *prometheus.CounterVec
 
-	TokensTotal      *prometheus.CounterVec
-	TokensCostUSD    *prometheus.CounterVec
+	TokensTotal   *prometheus.CounterVec
+	TokensCostUSD *prometheus.CounterVec
 
-	EvidenceSNR      *prometheus.GaugeVec
-	WalkerMismatch   *prometheus.GaugeVec
-	ConvergenceType  *prometheus.CounterVec
+	EvidenceSNR     *prometheus.GaugeVec
+	WalkerMismatch  *prometheus.GaugeVec
+	ConvergenceType *prometheus.CounterVec
 
 	CircuitBreakerState *prometheus.GaugeVec
 	RateLimitWaits      *prometheus.CounterVec
@@ -34,7 +34,7 @@ type PrometheusCollector struct {
 
 	Registry *prometheus.Registry
 
-	mu       sync.Mutex
+	mu      sync.Mutex
 	circuit string
 }
 
@@ -132,6 +132,7 @@ func (c *PrometheusCollector) SetCircuit(name string) {
 	c.mu.Unlock()
 }
 
+//nolint:gocyclo // event type switch for Prometheus metrics — one case per event
 func (c *PrometheusCollector) OnEvent(e *fw.WalkEvent) {
 	c.mu.Lock()
 	circuit := c.circuit

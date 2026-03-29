@@ -124,7 +124,7 @@ func requireExec(t *testing.T) {
 	}
 }
 
-func newTestServer(t *testing.T, serverName string) *subprocess.Server {
+func newTestServer(t *testing.T, serverName string) *subprocess.Server { //nolint:unparam // test flexibility
 	t.Helper()
 	exe, err := os.Executable()
 	if err != nil {

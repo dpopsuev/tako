@@ -8,10 +8,10 @@ type testGraph struct {
 	nodes []NodeInfo
 }
 
-func (g *testGraph) StartNode() string    { return g.start }
-func (g *testGraph) DoneNode() string     { return g.done }
+func (g *testGraph) StartNode() string     { return g.start }
+func (g *testGraph) DoneNode() string      { return g.done }
 func (g *testGraph) NodeInfos() []NodeInfo { return g.nodes }
-func (g *testGraph) NodeCount() int       { return len(g.nodes) }
+func (g *testGraph) NodeCount() int        { return len(g.nodes) }
 
 func TestValidate_CascadeValid(t *testing.T) {
 	r := DefaultRegistry()

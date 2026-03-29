@@ -23,7 +23,7 @@ const traceLabelUnknown = "unknown"
 
 // traceInput is the unified input for the consolidated "trace" tool.
 type traceInput struct {
-	Action            string `json:"action"`               // events, report, diff
+	Action            string `json:"action"` // events, report, diff
 	SessionID         string `json:"session_id,omitempty"`
 	Level             string `json:"level,omitempty"`
 	CaseID            string `json:"case_id,omitempty"`
@@ -47,7 +47,7 @@ type getTraceInput struct {
 
 type getTraceOutput struct {
 	Events []engine.TraceEvent `json:"events"`
-	Total  int                    `json:"total"`
+	Total  int                 `json:"total"`
 }
 
 type getRunReportInput struct {
@@ -109,14 +109,14 @@ func (s *CircuitServer) handleTraceDispatch(ctx context.Context, req *sdkmcp.Cal
 		return res, out, err
 
 	default:
-		return nil, nil, fmt.Errorf("unknown trace action %q; valid actions: events, report, diff", input.Action)
+		return nil, nil, fmt.Errorf("%w: %q; valid actions: events, report, diff", ErrUnknownTraceAction, input.Action)
 	}
 }
 
 func (s *CircuitServer) handleGetTrace(_ context.Context, _ *sdkmcp.CallToolRequest, input *getTraceInput) (*sdkmcp.CallToolResult, getTraceOutput, error) {
 	runDir := s.resolveRunDir(input.SessionID)
 	if runDir == "" {
-		return nil, getTraceOutput{}, fmt.Errorf("no trace data: StateDir not configured or run not found")
+		return nil, getTraceOutput{}, ErrNoTraceDataStateDirNotConfiguredOrRunNotFound
 	}
 
 	tracePath := filepath.Join(runDir, "trace.jsonl")
@@ -183,7 +183,7 @@ func (s *CircuitServer) handleGetTrace(_ context.Context, _ *sdkmcp.CallToolRequ
 func (s *CircuitServer) handleGetRunReport(_ context.Context, _ *sdkmcp.CallToolRequest, input getRunReportInput) (*sdkmcp.CallToolResult, any, error) {
 	runDir := s.resolveRunDir(input.SessionID)
 	if runDir == "" {
-		return nil, nil, fmt.Errorf("no report data: StateDir not configured or run not found")
+		return nil, nil, ErrNoReportDataStateDirNotConfiguredOrRunNotFound
 	}
 
 	reportPath := filepath.Join(runDir, "report.json")
@@ -199,10 +199,10 @@ func (s *CircuitServer) handleGetRunReport(_ context.Context, _ *sdkmcp.CallTool
 	return nil, result, nil
 }
 
-func (s *CircuitServer) handleDiffRuns(_ context.Context, _ *sdkmcp.CallToolRequest, input diffRunsInput) (*sdkmcp.CallToolResult, diffRunsOutput, error) {
+func (s *CircuitServer) handleDiffRuns(_ context.Context, _ *sdkmcp.CallToolRequest, input diffRunsInput) (*sdkmcp.CallToolResult, diffRunsOutput, error) { //nolint:unparam // handler pattern
 	stateDir := s.Config.StateDir
 	if stateDir == "" {
-		return nil, diffRunsOutput{}, fmt.Errorf("StateDir not configured")
+		return nil, diffRunsOutput{}, ErrStateDirNotConfigured
 	}
 
 	loadMetrics := func(runID string) ([]metricEntry, error) {
@@ -408,9 +408,9 @@ func fetchRemoteTrace(endpoint, traceID string) []engine.TraceEvent {
 		Name: "get_trace",
 		Arguments: mustMarshalJSON(map[string]any{
 			circuit.ProtoKeySessionID: traceID,
-			"follow_delegations":        true,
-			"level":                     "info",
-			"limit":                     1000,
+			"follow_delegations":      true,
+			"level":                   "info",
+			"limit":                   1000,
 		}),
 	})
 	if err != nil || result.IsError {

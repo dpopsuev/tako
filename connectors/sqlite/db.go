@@ -2,11 +2,12 @@ package sqlite
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
-	_ "modernc.org/sqlite"
+	_ "modernc.org/sqlite" // register sqlite3 driver
 )
 
 // DB wraps a sql.DB with schema-aware lifecycle management.
@@ -108,7 +109,7 @@ func getSchemaVersion(db *sql.DB) (int, error) {
 	}
 	var v int
 	err = db.QueryRow("SELECT version FROM schema_version LIMIT 1").Scan(&v)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return 0, nil
 	}
 	if err != nil {

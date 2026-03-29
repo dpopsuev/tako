@@ -73,7 +73,7 @@ func (cr *ContainerRuntime) RunWithOptions(ctx context.Context, opts *RunOptions
 	args = append(args, opts.Image)
 	args = append(args, opts.Args...)
 
-	cmd := exec.CommandContext(ctx, cr.Runtime, args...)
+	cmd := exec.CommandContext(ctx, cr.Runtime, args...) //nolint:gosec // args are constructed from validated config fields
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("start container %q: %s: %w", opts.Name, strings.TrimSpace(string(output)), err)
@@ -83,10 +83,10 @@ func (cr *ContainerRuntime) RunWithOptions(ctx context.Context, opts *RunOptions
 
 // Stop stops and removes a container by ID.
 func (cr *ContainerRuntime) Stop(ctx context.Context, id string) error {
-	stop := exec.CommandContext(ctx, cr.Runtime, "stop", "-t", "5", id)
+	stop := exec.CommandContext(ctx, cr.Runtime, "stop", "-t", "5", id) //nolint:gosec // runtime path is from trusted config
 	_, _ = stop.CombinedOutput()
 
-	rm := exec.CommandContext(ctx, cr.Runtime, "rm", "-f", id)
+	rm := exec.CommandContext(ctx, cr.Runtime, "rm", "-f", id) //nolint:gosec // runtime path is from trusted config
 	output, err := rm.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("remove container %s: %s: %w", id, strings.TrimSpace(string(output)), err)
@@ -96,7 +96,7 @@ func (cr *ContainerRuntime) Stop(ctx context.Context, id string) error {
 
 // WaitContainer blocks until the container exits.
 func (cr *ContainerRuntime) WaitContainer(ctx context.Context, id string) error {
-	cmd := exec.CommandContext(ctx, cr.Runtime, "wait", id)
+	cmd := exec.CommandContext(ctx, cr.Runtime, "wait", id) //nolint:gosec // runtime path is from trusted config
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("wait container %s: %s: %w", id, strings.TrimSpace(string(output)), err)
@@ -129,7 +129,7 @@ func (cb *ContainerBackend) Start(ctx context.Context) error {
 	defer cb.mu.Unlock()
 
 	if cb.session != nil {
-		return fmt.Errorf("container %q already started", cb.Name)
+		return fmt.Errorf("%w: %q already started", ErrContainer, cb.Name)
 	}
 
 	rt := cb.Runtime
@@ -190,7 +190,7 @@ func (cb *ContainerBackend) CallTool(ctx context.Context, name string, args map[
 	cb.mu.Unlock()
 
 	if session == nil {
-		return nil, fmt.Errorf("container %q not started", cb.Name)
+		return nil, fmt.Errorf("%w: %q not started", ErrContainer, cb.Name)
 	}
 	return session.CallTool(ctx, &sdkmcp.CallToolParams{
 		Name:      name,
@@ -294,7 +294,7 @@ func (cm *ContainerManager) Start(ctx context.Context, name, image string, port 
 	defer cm.mu.Unlock()
 
 	if _, exists := cm.containers[name]; exists {
-		return fmt.Errorf("container %q already running", name)
+		return fmt.Errorf("%w: %q already running", ErrContainer, name)
 	}
 
 	backend := &ContainerBackend{
@@ -350,7 +350,7 @@ func (cm *ContainerManager) CallTool(ctx context.Context, name, tool string, arg
 	entry, ok := cm.containers[name]
 	cm.mu.RUnlock()
 	if !ok {
-		return nil, fmt.Errorf("unknown container %q", name)
+		return nil, fmt.Errorf("%w: %q", ErrUnknownContainer, name)
 	}
 	return entry.backend.CallTool(ctx, tool, args)
 }

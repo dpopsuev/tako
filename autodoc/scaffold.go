@@ -142,21 +142,21 @@ func writeCircuitIndex(cfg *ScaffoldConfig) error {
 
 func writeStubs(cfg *ScaffoldConfig) error {
 	stubs := map[string]string{
-		filepath.Join(cfg.OutputDir, "concepts", "architecture.md"):          "# Architecture\n\n*TODO: Describe the project architecture.*\n",
-		filepath.Join(cfg.OutputDir, "concepts", "pipeline-stages.md"):       "# Pipeline Stages\n\n*TODO: Explain the pipeline stages.*\n",
-		filepath.Join(cfg.OutputDir, "getting-started", "installation.md"):   fmt.Sprintf("# Installation\n\n*TODO: Prerequisites and installation steps for %s.*\n", cfg.Manifest.Name),
-		filepath.Join(cfg.OutputDir, "getting-started", "quick-start.md"):    fmt.Sprintf("# Quick Start\n\n*TODO: First analysis in N minutes with %s.*\n", cfg.Manifest.Name),
-		filepath.Join(cfg.OutputDir, "getting-started", "configuration.md"):  "# Configuration\n\n*TODO: origami.yaml, credentials, workspace setup.*\n",
-		filepath.Join(cfg.OutputDir, "contributing", "development.md"):       "# Development\n\n*TODO: How to modify circuits, run calibration.*\n",
-		filepath.Join(cfg.OutputDir, "contributing", "conventions.md"):       "# Conventions\n\n*TODO: Project conventions.*\n",
-		filepath.Join(cfg.OutputDir, "reference", "cli.md"):                  fmt.Sprintf("# CLI Reference\n\n*TODO: Command reference for %s.*\n", cfg.Manifest.Name),
+		filepath.Join(cfg.OutputDir, "concepts", "architecture.md"):         "# Architecture\n\n*TODO: Describe the project architecture.*\n",
+		filepath.Join(cfg.OutputDir, "concepts", "pipeline-stages.md"):      "# Pipeline Stages\n\n*TODO: Explain the pipeline stages.*\n",
+		filepath.Join(cfg.OutputDir, "getting-started", "installation.md"):  fmt.Sprintf("# Installation\n\n*TODO: Prerequisites and installation steps for %s.*\n", cfg.Manifest.Name),
+		filepath.Join(cfg.OutputDir, "getting-started", "quick-start.md"):   fmt.Sprintf("# Quick Start\n\n*TODO: First analysis in N minutes with %s.*\n", cfg.Manifest.Name),
+		filepath.Join(cfg.OutputDir, "getting-started", "configuration.md"): "# Configuration\n\n*TODO: origami.yaml, credentials, workspace setup.*\n",
+		filepath.Join(cfg.OutputDir, "contributing", "development.md"):      "# Development\n\n*TODO: How to modify circuits, run calibration.*\n",
+		filepath.Join(cfg.OutputDir, "contributing", "conventions.md"):      "# Conventions\n\n*TODO: Project conventions.*\n",
+		filepath.Join(cfg.OutputDir, "reference", "cli.md"):                 fmt.Sprintf("# CLI Reference\n\n*TODO: Command reference for %s.*\n", cfg.Manifest.Name),
 	}
 
 	for path, content := range stubs {
 		if _, err := os.Stat(path); err == nil {
 			continue // don't overwrite existing stubs with hand-written content
 		}
-		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 			return fmt.Errorf("write stub %s: %w", path, err)
 		}
 	}
@@ -186,23 +186,23 @@ func writeScorecardRef(cfg *ScaffoldConfig) error {
 func writeIdempotent(path, content string) error {
 	existing, err := os.ReadFile(path)
 	if err != nil || !strings.Contains(string(existing), markerBegin) {
-		return os.WriteFile(path, []byte(content), 0o644)
+		return os.WriteFile(path, []byte(content), 0o600)
 	}
 
 	old := string(existing)
 	beginIdx := strings.Index(old, markerBegin)
 	endIdx := strings.Index(old, markerEnd)
 	if beginIdx < 0 || endIdx < 0 || endIdx < beginIdx {
-		return os.WriteFile(path, []byte(content), 0o644)
+		return os.WriteFile(path, []byte(content), 0o600)
 	}
 
 	newBeginIdx := strings.Index(content, markerBegin)
 	newEndIdx := strings.Index(content, markerEnd)
 	if newBeginIdx < 0 || newEndIdx < 0 {
-		return os.WriteFile(path, []byte(content), 0o644)
+		return os.WriteFile(path, []byte(content), 0o600)
 	}
 
 	newSection := content[newBeginIdx : newEndIdx+len(markerEnd)]
 	updated := old[:beginIdx] + newSection + old[endIdx+len(markerEnd):]
-	return os.WriteFile(path, []byte(updated), 0o644)
+	return os.WriteFile(path, []byte(updated), 0o600)
 }

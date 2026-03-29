@@ -24,7 +24,7 @@ type LocalTreeEntry struct {
 func ReadFile(_ context.Context, localPath, filePath string) ([]byte, error) {
 	full := filepath.Join(localPath, filePath)
 	if !strings.HasPrefix(full, localPath) {
-		return nil, fmt.Errorf("path traversal: %s", filePath)
+		return nil, fmt.Errorf("%w: %s", ErrPathTraversal, filePath)
 	}
 	data, err := os.ReadFile(full)
 	if err != nil {

@@ -28,24 +28,24 @@ const (
 // and merge overlay fields on top of the base.
 type CircuitDef struct {
 	Envelope    `yaml:",inline"`
-	Circuit     string             `yaml:"circuit"`
-	Description string             `yaml:"description,omitempty"`
-	Import      string             `yaml:"import,omitempty"`
-	Topology    string             `yaml:"topology,omitempty"`
-	HandlerType string             `yaml:"handler_type,omitempty"`
-	Timeout     string             `yaml:"timeout,omitempty"`
-	Imports     []string           `yaml:"imports,omitempty"`
-	Vars        map[string]any     `yaml:"vars,omitempty"`
-	Extractors  []ExtractorDef     `yaml:"extractors,omitempty"`
-	Ports       []PortDef          `yaml:"ports,omitempty"`
-	Wiring      []WiringDef       `yaml:"wiring,omitempty"`
-	Zones       map[string]ZoneDef `yaml:"zones,omitempty"`
-	Nodes       []NodeDef          `yaml:"nodes"`
-	Edges       []EdgeDef          `yaml:"edges"`
-	Walkers     []WalkerDef        `yaml:"walkers,omitempty"`
-	Start       NodeName           `yaml:"start"`
-	Done        NodeName           `yaml:"done"`
-	Scorecard   string             `yaml:"scorecard,omitempty"`
+	Circuit     string                  `yaml:"circuit"`
+	Description string                  `yaml:"description,omitempty"`
+	Import      string                  `yaml:"import,omitempty"`
+	Topology    string                  `yaml:"topology,omitempty"`
+	HandlerType string                  `yaml:"handler_type,omitempty"`
+	Timeout     string                  `yaml:"timeout,omitempty"`
+	Imports     []string                `yaml:"imports,omitempty"`
+	Vars        map[string]any          `yaml:"vars,omitempty"`
+	Extractors  []ExtractorDef          `yaml:"extractors,omitempty"`
+	Ports       []PortDef               `yaml:"ports,omitempty"`
+	Wiring      []WiringDef             `yaml:"wiring,omitempty"`
+	Zones       map[string]ZoneDef      `yaml:"zones,omitempty"`
+	Nodes       []NodeDef               `yaml:"nodes"`
+	Edges       []EdgeDef               `yaml:"edges"`
+	Walkers     []WalkerDef             `yaml:"walkers,omitempty"`
+	Start       NodeName                `yaml:"start"`
+	Done        NodeName                `yaml:"done"`
+	Scorecard   string                  `yaml:"scorecard,omitempty"`
 	Calibration *CalibrationContractDef `yaml:"calibration,omitempty"`
 }
 
@@ -65,8 +65,8 @@ type CalibrationFieldDef struct {
 // PortDef declares a typed cross-circuit connection point.
 type PortDef struct {
 	Name        string `yaml:"name"`
-	Direction   string `yaml:"direction"`             // "in", "out", or "loop"
-	Type        string `yaml:"type,omitempty"`        // Go type for type-checking at wiring
+	Direction   string `yaml:"direction"`      // "in", "out", or "loop"
+	Type        string `yaml:"type,omitempty"` // Go type for type-checking at wiring
 	Description string `yaml:"description,omitempty"`
 }
 
@@ -130,7 +130,7 @@ const (
 // OutputField holds the structured output declaration for a node.
 type OutputField struct {
 	Name     string `yaml:"name"`
-	Type     string `yaml:"type"`                // string, float, bool, int, array, object
+	Type     string `yaml:"type"` // string, float, bool, int, array, object
 	Required bool   `yaml:"required,omitempty"`
 }
 
@@ -185,22 +185,22 @@ type NodeConfig struct {
 // Legacy fields (family, transformer, extractor, renderer, delegate+generator)
 // were removed in TSK-218; YAML files using them will fail to resolve.
 type NodeDef struct {
-	Name        NodeName        `yaml:"name"`
-	Description string          `yaml:"description,omitempty"`
-	Approach    string          `yaml:"approach,omitempty"`
-	HandlerType string          `yaml:"handler_type,omitempty"`
-	Handler     string          `yaml:"handler,omitempty"`
+	Name        NodeName `yaml:"name"`
+	Description string   `yaml:"description,omitempty"`
+	Approach    string   `yaml:"approach,omitempty"`
+	HandlerType string   `yaml:"handler_type,omitempty"`
+	Handler     string   `yaml:"handler,omitempty"`
 
 	Timeout      string          `yaml:"timeout,omitempty"`
 	Provider     string          `yaml:"provider,omitempty"`
 	Prompt       string          `yaml:"prompt,omitempty"`
 	OutputSchema string          `yaml:"output_schema,omitempty"`
 	Input        string          `yaml:"input,omitempty"`
-	Before      []string        `yaml:"before,omitempty"`
-	After       []string        `yaml:"after,omitempty"`
-	Schema      *ArtifactSchema `yaml:"schema,omitempty"`
-	Cache       *CacheDef       `yaml:"cache,omitempty"`
-	Config      *NodeConfig     `yaml:"meta,omitempty"`
+	Before       []string        `yaml:"before,omitempty"`
+	After        []string        `yaml:"after,omitempty"`
+	Schema       *ArtifactSchema `yaml:"schema,omitempty"`
+	Cache        *CacheDef       `yaml:"cache,omitempty"`
+	Config       *NodeConfig     `yaml:"meta,omitempty"`
 
 	// Vocabulary and output schema
 	Code        string        `yaml:"code,omitempty"`         // machine code (e.g. "F0")
@@ -251,10 +251,10 @@ func (nd *NodeDef) ValidateOutput(output map[string]any) error {
 	for _, f := range nd.Output {
 		val, exists := output[f.Name]
 		if !exists && f.Required {
-			return fmt.Errorf("node %q: required output field %q missing", string(nd.Name), f.Name)
+			return fmt.Errorf("%w: %q: required output field %q missing", ErrNode, string(nd.Name), f.Name)
 		}
 		if exists && !checkOutputType(val, f.Type) {
-			return fmt.Errorf("node %q: output field %q: expected type %s, got %T", string(nd.Name), f.Name, f.Type, val)
+			return fmt.Errorf("%w: %q: output field %q: expected type %s, got %T", ErrNode, string(nd.Name), f.Name, f.Type, val)
 		}
 	}
 	return nil
@@ -352,58 +352,58 @@ func (def *CircuitDef) MarshalYAML() ([]byte, error) {
 //   - all zone node references exist
 func (def *CircuitDef) Validate() error {
 	if def.Circuit == "" {
-		return fmt.Errorf("circuit name is required")
+		return ErrCircuitNameIsRequired
 	}
 	if len(def.Nodes) == 0 {
-		return fmt.Errorf("at least one node is required")
+		return ErrAtLeastOneNodeIsRequired
 	}
 	if len(def.Edges) == 0 {
-		return fmt.Errorf("at least one edge is required")
+		return ErrAtLeastOneEdgeIsRequired
 	}
 	if def.Start == "" {
-		return fmt.Errorf("start node is required")
+		return ErrStartNodeIsRequired
 	}
 	if def.Done == "" {
-		return fmt.Errorf("done node is required")
+		return ErrDoneNodeIsRequired
 	}
 
 	nodeSet := make(map[NodeName]bool, len(def.Nodes))
 	for i := range def.Nodes {
 		if def.Nodes[i].Name == "" {
-			return fmt.Errorf("node name is required")
+			return ErrNodeNameIsRequired
 		}
 		if nodeSet[def.Nodes[i].Name] {
-			return fmt.Errorf("duplicate node name %q", def.Nodes[i].Name)
+			return fmt.Errorf("%w: %q", ErrDuplicateNodeName, def.Nodes[i].Name)
 		}
 		nodeSet[def.Nodes[i].Name] = true
 	}
 
 	if !nodeSet[def.Start] {
-		return fmt.Errorf("start node %q not found in node list", def.Start)
+		return fmt.Errorf("%w: %q not found in node list", ErrStartNode, def.Start)
 	}
 
 	edgeIDs := make(map[string]bool, len(def.Edges))
 	for i := range def.Edges {
 		if def.Edges[i].ID == "" {
-			return fmt.Errorf("edge id is required")
+			return ErrEdgeIdIsRequired
 		}
 		if edgeIDs[def.Edges[i].ID] {
-			return fmt.Errorf("duplicate edge id %q", def.Edges[i].ID)
+			return fmt.Errorf("%w: %q", ErrDuplicateEdgeId, def.Edges[i].ID)
 		}
 		edgeIDs[def.Edges[i].ID] = true
 
 		if !nodeSet[def.Edges[i].From] {
-			return fmt.Errorf("edge %s references unknown source node %q", def.Edges[i].ID, def.Edges[i].From)
+			return fmt.Errorf("%w: %s references unknown source node %q", ErrEdge, def.Edges[i].ID, def.Edges[i].From)
 		}
 		if def.Edges[i].To != def.Done && !nodeSet[def.Edges[i].To] {
-			return fmt.Errorf("edge %s references unknown target node %q", def.Edges[i].ID, def.Edges[i].To)
+			return fmt.Errorf("%w: %s references unknown target node %q", ErrEdge, def.Edges[i].ID, def.Edges[i].To)
 		}
 	}
 
 	for zoneName, z := range def.Zones {
 		for _, nodeName := range z.Nodes {
 			if !nodeSet[nodeName] {
-				return fmt.Errorf("zone %q references unknown node %q", zoneName, nodeName)
+				return fmt.Errorf("%w: %q references unknown node %q", ErrZone, zoneName, nodeName)
 			}
 		}
 	}

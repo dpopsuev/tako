@@ -53,6 +53,7 @@ func (e *CrossRefEngine) Check(ctx *LintContext) []Finding {
 	return findings
 }
 
+//nolint:gocyclo // cross-file validation with multiple check types
 func (e *CrossRefEngine) checkRule(rule *CrossRefRule, ctx *LintContext) []Finding {
 	// Extract exports from all files matching ExportKind.
 	exports := make(map[string]bool)

@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/agentport"
 )
 
 // CaseRunner runs a single calibration case through the domain circuit.
@@ -66,16 +66,16 @@ type calibrateArtifact struct {
 	data any
 }
 
-func (a *calibrateArtifact) Type() string      { return a.typ }
+func (a *calibrateArtifact) Type() string        { return a.typ }
 func (a *calibrateArtifact) Confidence() float64 { return 1.0 }
-func (a *calibrateArtifact) Raw() any           { return a.data }
+func (a *calibrateArtifact) Raw() any            { return a.data }
 
 // CaseResultEntry holds the result of running and scoring a single case.
 type CaseResultEntry struct {
-	CaseID      string
-	Result      any
-	Scores      map[string]float64
-	Error       string
+	CaseID string
+	Result any
+	Scores map[string]float64
+	Error  string
 }
 
 // --- Node implementations ---
@@ -84,29 +84,29 @@ type CaseResultEntry struct {
 // validates it. Outputs the input as an artifact for downstream nodes.
 type LoadScenarioNode struct{}
 
-func (n *LoadScenarioNode) Name() string                 { return "load_scenario" }
+func (n *LoadScenarioNode) Name() string                       { return "load_scenario" }
 func (n *LoadScenarioNode) ElementAffinity() agentport.Element { return agentport.ElementEarth }
 
 func (n *LoadScenarioNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	raw, ok := nc.WalkerState.Context["input"]
 	if !ok {
-		return nil, fmt.Errorf("load_scenario: no input in walker context")
+		return nil, ErrLoadScenarioNoInputInWalkerContext
 	}
 	ci, ok := raw.(*CalibrationInput)
 	if !ok {
-		return nil, fmt.Errorf("load_scenario: input type %T, want *CalibrationInput", raw)
+		return nil, fmt.Errorf("%w: %T, want *CalibrationInput", ErrLoadScenarioInputType, raw)
 	}
 	if ci.ScoreCard == nil {
-		return nil, fmt.Errorf("load_scenario: ScoreCard is nil")
+		return nil, ErrLoadScenarioScoreCardIsNil
 	}
 	if ci.CaseRunner == nil {
-		return nil, fmt.Errorf("load_scenario: CaseRunner is nil")
+		return nil, ErrLoadScenarioCaseRunnerIsNil
 	}
 	if ci.CaseScorer == nil {
-		return nil, fmt.Errorf("load_scenario: CaseScorer is nil")
+		return nil, ErrLoadScenarioCaseScorerIsNil
 	}
 	if len(ci.Cases) == 0 {
-		return nil, fmt.Errorf("load_scenario: no cases")
+		return nil, ErrLoadScenarioNoCases
 	}
 	return &calibrateArtifact{typ: "scenario", data: ci}, nil
 }
@@ -115,13 +115,13 @@ func (n *LoadScenarioNode) Process(_ context.Context, nc circuit.NodeContext) (c
 // in walker state for iteration by downstream nodes.
 type FanOutCasesNode struct{}
 
-func (n *FanOutCasesNode) Name() string                 { return "fan_out" }
+func (n *FanOutCasesNode) Name() string                       { return "fan_out" }
 func (n *FanOutCasesNode) ElementAffinity() agentport.Element { return agentport.ElementWater }
 
 func (n *FanOutCasesNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	ci := extractInput(nc)
 	if ci == nil {
-		return nil, fmt.Errorf("fan_out: no CalibrationInput in context")
+		return nil, ErrFanOutNoCalibrationInputInContext
 	}
 	nc.WalkerState.Context["case_count"] = len(ci.Cases)
 	return &calibrateArtifact{typ: "case_list", data: ci.Cases}, nil
@@ -131,13 +131,13 @@ func (n *FanOutCasesNode) Process(_ context.Context, nc circuit.NodeContext) (ci
 // Supports parallel execution when CalibrationInput.Parallel > 1.
 type WalkCaseNode struct{}
 
-func (n *WalkCaseNode) Name() string                 { return "walk_case" }
+func (n *WalkCaseNode) Name() string                       { return "walk_case" }
 func (n *WalkCaseNode) ElementAffinity() agentport.Element { return agentport.ElementFire }
 
 func (n *WalkCaseNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	ci := extractInput(nc)
 	if ci == nil {
-		return nil, fmt.Errorf("walk_case: no CalibrationInput in context")
+		return nil, ErrWalkCaseNoCalibrationInputInContext
 	}
 
 	results := make([]CaseResultEntry, len(ci.Cases))
@@ -176,22 +176,22 @@ func runOneCase(ctx context.Context, runner CaseRunner, c CaseInput) CaseResultE
 // ScoreCaseNode scores each case result against ground truth using CaseScorer.
 type ScoreCaseNode struct{}
 
-func (n *ScoreCaseNode) Name() string                 { return "score_case" }
+func (n *ScoreCaseNode) Name() string                       { return "score_case" }
 func (n *ScoreCaseNode) ElementAffinity() agentport.Element { return agentport.ElementEarth }
 
 func (n *ScoreCaseNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	ci := extractInput(nc)
 	if ci == nil {
-		return nil, fmt.Errorf("score_case: no CalibrationInput in context")
+		return nil, ErrScoreCaseNoCalibrationInputInContext
 	}
 
 	prior := nc.PriorArtifact
 	if prior == nil {
-		return nil, fmt.Errorf("score_case: no prior artifact (case_results)")
+		return nil, ErrScoreCaseNoPriorArtifactCaseResults
 	}
 	results, ok := prior.Raw().([]CaseResultEntry)
 	if !ok {
-		return nil, fmt.Errorf("score_case: prior artifact type %T, want []CaseResultEntry", prior.Raw())
+		return nil, fmt.Errorf("%w: %T, want []CaseResultEntry", ErrScoreCasePriorArtifactType, prior.Raw())
 	}
 
 	for i := range results {
@@ -214,17 +214,17 @@ func (n *ScoreCaseNode) Process(_ context.Context, nc circuit.NodeContext) (circ
 // averages across all cases.
 type FanInResultsNode struct{}
 
-func (n *FanInResultsNode) Name() string                 { return "fan_in" }
+func (n *FanInResultsNode) Name() string                       { return "fan_in" }
 func (n *FanInResultsNode) ElementAffinity() agentport.Element { return agentport.ElementWater }
 
 func (n *FanInResultsNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	prior := nc.PriorArtifact
 	if prior == nil {
-		return nil, fmt.Errorf("fan_in: no prior artifact")
+		return nil, ErrFanInNoPriorArtifact
 	}
 	results, ok := prior.Raw().([]CaseResultEntry)
 	if !ok {
-		return nil, fmt.Errorf("fan_in: prior artifact type %T, want []CaseResultEntry", prior.Raw())
+		return nil, fmt.Errorf("%w: %T, want []CaseResultEntry", ErrFanInPriorArtifactType, prior.Raw())
 	}
 
 	sums := make(map[string]float64)
@@ -254,21 +254,21 @@ func (n *FanInResultsNode) Process(_ context.Context, nc circuit.NodeContext) (c
 // aggregate metric.
 type AggregateNode struct{}
 
-func (n *AggregateNode) Name() string                 { return "aggregate" }
+func (n *AggregateNode) Name() string                       { return "aggregate" }
 func (n *AggregateNode) ElementAffinity() agentport.Element { return agentport.ElementEarth }
 
 func (n *AggregateNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	ci := extractInput(nc)
 	if ci == nil {
-		return nil, fmt.Errorf("aggregate: no CalibrationInput in context")
+		return nil, ErrAggregateNoCalibrationInputInContext
 	}
 	prior := nc.PriorArtifact
 	if prior == nil {
-		return nil, fmt.Errorf("aggregate: no prior artifact")
+		return nil, ErrAggregateNoPriorArtifact
 	}
 	averages, ok := prior.Raw().(map[string]float64)
 	if !ok {
-		return nil, fmt.Errorf("aggregate: prior artifact type %T, want map[string]float64", prior.Raw())
+		return nil, fmt.Errorf("%w: %T, want map[string]float64", ErrAggregatePriorArtifactType, prior.Raw())
 	}
 
 	ms := ci.ScoreCard.Evaluate(averages, nil)
@@ -287,28 +287,28 @@ func (n *AggregateNode) Process(_ context.Context, nc circuit.NodeContext) (circ
 // ReportNode produces the final CalibrationReport from the aggregated metrics.
 type ReportNode struct{}
 
-func (n *ReportNode) Name() string                 { return "report" }
+func (n *ReportNode) Name() string                       { return "report" }
 func (n *ReportNode) ElementAffinity() agentport.Element { return agentport.ElementAir }
 
 func (n *ReportNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	ci := extractInput(nc)
 	if ci == nil {
-		return nil, fmt.Errorf("report: no CalibrationInput in context")
+		return nil, ErrReportNoCalibrationInputInContext
 	}
 	prior := nc.PriorArtifact
 	if prior == nil {
-		return nil, fmt.Errorf("report: no prior artifact")
+		return nil, ErrReportNoPriorArtifact
 	}
 	ms, ok := prior.Raw().(MetricSet)
 	if !ok {
-		return nil, fmt.Errorf("report: prior artifact type %T, want MetricSet", prior.Raw())
+		return nil, fmt.Errorf("%w: %T, want MetricSet", ErrReportPriorArtifactType, prior.Raw())
 	}
 
 	report := &CalibrationReport{
-		Scenario: ci.Scenario,
+		Scenario:    ci.Scenario,
 		Transformer: ci.Transformer,
-		Runs:     ci.Runs,
-		Metrics:  ms,
+		Runs:        ci.Runs,
+		Metrics:     ms,
 	}
 
 	return &calibrateArtifact{typ: "calibration_report", data: report}, nil
@@ -319,20 +319,20 @@ func (n *ReportNode) Process(_ context.Context, nc circuit.NodeContext) (circuit
 // resolution. Consumers register this with BuildGraphWith.
 func CalibrationNodeRegistry() engine.NodeRegistry {
 	return engine.NodeRegistry{
-		"calibrate.load":      func(_ circuit.NodeDef) circuit.Node { return &LoadScenarioNode{} },
-		"calibrate.fan_out":   func(_ circuit.NodeDef) circuit.Node { return &FanOutCasesNode{} },
-		"calibrate.walk_case": func(_ circuit.NodeDef) circuit.Node { return &WalkCaseNode{} },
+		"calibrate.load":       func(_ circuit.NodeDef) circuit.Node { return &LoadScenarioNode{} },
+		"calibrate.fan_out":    func(_ circuit.NodeDef) circuit.Node { return &FanOutCasesNode{} },
+		"calibrate.walk_case":  func(_ circuit.NodeDef) circuit.Node { return &WalkCaseNode{} },
 		"calibrate.score_case": func(_ circuit.NodeDef) circuit.Node { return &ScoreCaseNode{} },
-		"calibrate.fan_in":    func(_ circuit.NodeDef) circuit.Node { return &FanInResultsNode{} },
-		"calibrate.aggregate": func(_ circuit.NodeDef) circuit.Node { return &AggregateNode{} },
-		"calibrate.report":    func(_ circuit.NodeDef) circuit.Node { return &ReportNode{} },
-		"load_scenario":       func(_ circuit.NodeDef) circuit.Node { return &LoadScenarioNode{} },
-		"fan_out":             func(_ circuit.NodeDef) circuit.Node { return &FanOutCasesNode{} },
-		"walk_case":           func(_ circuit.NodeDef) circuit.Node { return &WalkCaseNode{} },
-		"score_case":          func(_ circuit.NodeDef) circuit.Node { return &ScoreCaseNode{} },
-		"fan_in":              func(_ circuit.NodeDef) circuit.Node { return &FanInResultsNode{} },
-		"aggregate":           func(_ circuit.NodeDef) circuit.Node { return &AggregateNode{} },
-		"report":              func(_ circuit.NodeDef) circuit.Node { return &ReportNode{} },
+		"calibrate.fan_in":     func(_ circuit.NodeDef) circuit.Node { return &FanInResultsNode{} },
+		"calibrate.aggregate":  func(_ circuit.NodeDef) circuit.Node { return &AggregateNode{} },
+		"calibrate.report":     func(_ circuit.NodeDef) circuit.Node { return &ReportNode{} },
+		"load_scenario":        func(_ circuit.NodeDef) circuit.Node { return &LoadScenarioNode{} },
+		"fan_out":              func(_ circuit.NodeDef) circuit.Node { return &FanOutCasesNode{} },
+		"walk_case":            func(_ circuit.NodeDef) circuit.Node { return &WalkCaseNode{} },
+		"score_case":           func(_ circuit.NodeDef) circuit.Node { return &ScoreCaseNode{} },
+		"fan_in":               func(_ circuit.NodeDef) circuit.Node { return &FanInResultsNode{} },
+		"aggregate":            func(_ circuit.NodeDef) circuit.Node { return &AggregateNode{} },
+		"report":               func(_ circuit.NodeDef) circuit.Node { return &ReportNode{} },
 	}
 }
 

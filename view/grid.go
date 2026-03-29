@@ -4,8 +4,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/agentport"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // GridLayout computes cell-based positions using Kahn's algorithm
@@ -20,15 +20,12 @@ func (GridLayout) Layout(def *circuit.CircuitDef) (CircuitLayout, error) {
 	}
 
 	adj, inDeg := buildAdjacency(def)
-	order, err := topoSort(def, adj, inDeg)
-	if err != nil {
-		return CircuitLayout{}, err
-	}
+	order := topoSort(def, adj, inDeg)
 
 	nodeZone := buildNodeZoneMap(def)
 	rank := assignRanks(order, adj)
 
-	grid := assignGridCells(rank, nodeZone, string(def.Start))
+	grid := assignGridCells(rank, nodeZone)
 
 	edges := make([]EdgeLayout, 0, len(def.Edges))
 	for i := range def.Edges {
@@ -64,7 +61,7 @@ func buildAdjacency(def *circuit.CircuitDef) (adj map[string][]string, inDeg map
 	return adj, inDeg
 }
 
-func topoSort(def *circuit.CircuitDef, adj map[string][]string, inDeg map[string]int) ([]string, error) {
+func topoSort(def *circuit.CircuitDef, adj map[string][]string, inDeg map[string]int) []string {
 	queue := make([]string, 0)
 	start := string(def.Start)
 
@@ -108,7 +105,7 @@ func topoSort(def *circuit.CircuitDef, adj map[string][]string, inDeg map[string
 			}
 		}
 	}
-	return order, nil
+	return order
 }
 
 func buildNodeZoneMap(def *circuit.CircuitDef) map[string]string {
@@ -139,7 +136,7 @@ func assignRanks(order []string, adj map[string][]string) map[string]int {
 // assignGridCells places nodes into grid cells. Nodes with the same rank
 // share a column. Within a column, nodes are sorted by zone to keep
 // same-zone nodes adjacent. The start node is guaranteed to be in col 0.
-func assignGridCells(rank map[string]int, nodeZone map[string]string, start string) map[string]GridCell {
+func assignGridCells(rank map[string]int, nodeZone map[string]string) map[string]GridCell {
 	cols := make(map[int][]string)
 	for node, r := range rank {
 		cols[r] = append(cols[r], node)

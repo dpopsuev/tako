@@ -15,7 +15,7 @@ type runnerTestArtifact struct {
 	raw  any
 }
 
-func (a *runnerTestArtifact) Type() string       { return a.typ }
+func (a *runnerTestArtifact) Type() string        { return a.typ }
 func (a *runnerTestArtifact) Confidence() float64 { return a.conf }
 func (a *runnerTestArtifact) Raw() any            { return a.raw }
 
@@ -26,7 +26,7 @@ type runnerTestNode struct {
 	err     error
 }
 
-func (n *runnerTestNode) Name() string                  { return n.name }
+func (n *runnerTestNode) Name() string                     { return n.name }
 func (n *runnerTestNode) ElementAffinity() circuit.Element { return n.element }
 func (n *runnerTestNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return n.out, n.err
@@ -38,8 +38,8 @@ type runnerTestWalker struct {
 	visited  []string
 }
 
-func (w *runnerTestWalker) Identity() circuit.AgentIdentity      { return w.identity }
-func (w *runnerTestWalker) SetIdentity(id *circuit.AgentIdentity)  { w.identity = *id }
+func (w *runnerTestWalker) Identity() circuit.AgentIdentity       { return w.identity }
+func (w *runnerTestWalker) SetIdentity(id *circuit.AgentIdentity) { w.identity = *id }
 func (w *runnerTestWalker) State() *circuit.WalkerState           { return w.state }
 func (w *runnerTestWalker) Handle(ctx context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
 	w.visited = append(w.visited, node.Name())
@@ -87,7 +87,7 @@ func TestRunner_Walk_SchemaPass(t *testing.T) {
 		Circuit: "schema-pass",
 		Nodes: []circuit.NodeDef{
 			{
-				Name:   "a",
+				Name:    "a",
 				Handler: "stub", HandlerType: "node",
 				Schema: &circuit.ArtifactSchema{
 					Type:     "object",
@@ -127,7 +127,7 @@ func TestRunner_Walk_SchemaFail(t *testing.T) {
 		Circuit: "schema-fail",
 		Nodes: []circuit.NodeDef{
 			{
-				Name:   "a",
+				Name:    "a",
 				Handler: "stub", HandlerType: "node",
 				Schema: &circuit.ArtifactSchema{
 					Type:     "object",
@@ -198,7 +198,7 @@ func TestRunner_Walk_MultiNodeWithSchema(t *testing.T) {
 		Circuit: "multi-schema",
 		Nodes: []circuit.NodeDef{
 			{
-				Name:   "a",
+				Name:    "a",
 				Handler: "stub", HandlerType: "node",
 				Schema: &circuit.ArtifactSchema{
 					Type:     "object",
@@ -207,11 +207,11 @@ func TestRunner_Walk_MultiNodeWithSchema(t *testing.T) {
 				},
 			},
 			{
-				Name:   "b",
+				Name:    "b",
 				Handler: "stub", HandlerType: "node",
 			},
 			{
-				Name:   "c",
+				Name:    "c",
 				Handler: "stub", HandlerType: "node",
 				Schema: &circuit.ArtifactSchema{
 					Type: "object",

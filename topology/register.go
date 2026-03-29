@@ -11,12 +11,12 @@ func init() {
 	circuit.RegisterTopologyValidator(func(topoName string, shape circuit.GraphShape) error {
 		topoDef, ok := reg.Lookup(topoName)
 		if !ok {
-			return fmt.Errorf("unknown topology %q (known: %v)", topoName, reg.List())
+			return fmt.Errorf("%w: %q (known: %v)", ErrUnknownTopology, topoName, reg.List())
 		}
 		adapted := &shapeAdapter{shape: shape}
 		result := Validate(adapted, topoDef)
 		if !result.OK() {
-			return fmt.Errorf("%s", result.Error())
+			return fmt.Errorf("%w: %s", ErrValidationFailed, result.Error())
 		}
 		return nil
 	})

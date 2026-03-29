@@ -17,7 +17,7 @@ func validateBundleCmd(args []string) error {
 	}
 
 	if *path == "" {
-		return fmt.Errorf("usage: origami validate-bundle --path=<dir> [--check-sha]")
+		return ErrUsageOrigamiValidateBundlePathDirCheckSha
 	}
 
 	bundleFS := os.DirFS(*path)
@@ -31,5 +31,5 @@ func validateBundleCmd(args []string) error {
 	for _, err := range errs {
 		fmt.Fprintf(os.Stderr, "  ERROR: %v\n", err)
 	}
-	return fmt.Errorf("bundle validation failed with %d error(s)", len(errs))
+	return fmt.Errorf("%w: %d error(s)", ErrBundleValidationFailedWith, len(errs))
 }

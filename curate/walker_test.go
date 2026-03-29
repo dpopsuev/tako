@@ -12,7 +12,7 @@ type stubSource struct {
 	consumed bool
 }
 
-func (s *stubSource) Type() string          { return "stub" }
+func (s *stubSource) Type() string { return "stub" }
 func (s *stubSource) CanHandle(ref string) bool {
 	if s.consumed {
 		return false

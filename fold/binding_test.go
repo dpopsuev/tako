@@ -127,7 +127,7 @@ func TestTopoSort_SingleRoot(t *testing.T) {
 	m := &Manifest{
 		Name: "test",
 		Schematics: map[string]SchematicRef{
-			"rca":       {Path: "github.com/dpopsuev/origami-rca", Bindings: map[string]string{"gnd": "gnd"}},
+			"rca": {Path: "github.com/dpopsuev/origami-rca", Bindings: map[string]string{"gnd": "gnd"}},
 			"gnd": {Path: "github.com/dpopsuev/origami-gnd"},
 		},
 	}

@@ -16,14 +16,14 @@ type InsertParams struct {
 // Insert executes a parameterized INSERT and returns the last inserted row ID.
 func (d *DB) Insert(p InsertParams) (int64, error) {
 	if p.Table == "" {
-		return 0, fmt.Errorf("insert: table name is required")
+		return 0, fmt.Errorf("insert: %w", ErrTableNameRequired)
 	}
 	if len(p.Columns) == 0 {
-		return 0, fmt.Errorf("insert into %s: columns are required", p.Table)
+		return 0, fmt.Errorf("insert into %s: %w", p.Table, ErrColumnsRequired)
 	}
 	if len(p.Columns) != len(p.Values) {
-		return 0, fmt.Errorf("insert into %s: columns/values count mismatch (%d vs %d)",
-			p.Table, len(p.Columns), len(p.Values))
+		return 0, fmt.Errorf("insert into %s: %w (%d vs %d)",
+			p.Table, ErrColumnValuesMismatch, len(p.Columns), len(p.Values))
 	}
 
 	placeholders := make([]string, len(p.Values))
@@ -57,7 +57,7 @@ type QueryParams struct {
 // Caller is responsible for closing the rows.
 func (d *DB) QueryRows(p *QueryParams) (*sql.Rows, error) {
 	if p.Table == "" {
-		return nil, fmt.Errorf("query: table name is required")
+		return nil, fmt.Errorf("query: %w", ErrTableNameRequired)
 	}
 	cols := "*"
 	if len(p.Columns) > 0 {
@@ -102,19 +102,19 @@ func (d *DB) QueryOne(p *QueryParams) *sql.Row {
 
 // UpdateParams holds the parameters for an UPDATE operation.
 type UpdateParams struct {
-	Table   string
-	Set     map[string]any
-	Where   string
-	Args    []any
+	Table string
+	Set   map[string]any
+	Where string
+	Args  []any
 }
 
 // Update executes a parameterized UPDATE and returns the number of affected rows.
 func (d *DB) Update(p UpdateParams) (int64, error) {
 	if p.Table == "" {
-		return 0, fmt.Errorf("update: table name is required")
+		return 0, fmt.Errorf("update: %w", ErrTableNameRequired)
 	}
 	if len(p.Set) == 0 {
-		return 0, fmt.Errorf("update %s: set columns are required", p.Table)
+		return 0, fmt.Errorf("update %s: %w", p.Table, ErrSetColumnsRequired)
 	}
 
 	setClauses := make([]string, 0, len(p.Set))

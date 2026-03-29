@@ -9,6 +9,8 @@ import (
 	"github.com/expr-lang/expr"
 )
 
+const transformerNameJQ = "jq"
+
 // JQTransformer reshapes JSON data using expr-lang expressions.
 // The expression has access to the full input as `input` and config as `config`.
 type JQTransformer struct{}
@@ -16,7 +18,7 @@ type JQTransformer struct{}
 // NewJQ creates a transformer that evaluates expressions against input data.
 func NewJQ() *JQTransformer { return &JQTransformer{} }
 
-func (t *JQTransformer) Name() string        { return "jq" }
+func (t *JQTransformer) Name() string        { return transformerNameJQ }
 func (t *JQTransformer) Deterministic() bool { return true }
 
 func (t *JQTransformer) Transform(ctx context.Context, tc *engine.TransformerContext) (any, error) {
@@ -25,7 +27,7 @@ func (t *JQTransformer) Transform(ctx context.Context, tc *engine.TransformerCon
 		expression = tc.NodeConfig.Expr
 	}
 	if expression == "" {
-		return nil, fmt.Errorf("jq transformer: 'expr' is required in node config")
+		return nil, ErrJqTransformerExprIsRequiredInNodeConfig
 	}
 
 	input := normalizeToMap(tc.Input)
@@ -37,12 +39,12 @@ func (t *JQTransformer) Transform(ctx context.Context, tc *engine.TransformerCon
 
 	program, err := expr.Compile(expression, expr.Env(env))
 	if err != nil {
-		return nil, fmt.Errorf("jq transformer: compile %q: %w", expression, err)
+		return nil, fmt.Errorf("%s transformer: compile %q: %w", transformerNameJQ, expression, err)
 	}
 
 	result, err := expr.Run(program, env)
 	if err != nil {
-		return nil, fmt.Errorf("jq transformer: eval %q: %w", expression, err)
+		return nil, fmt.Errorf("%s transformer: eval %q: %w", transformerNameJQ, expression, err)
 	}
 
 	return result, nil

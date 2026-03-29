@@ -12,6 +12,6 @@ type (
 
 // ACP constructors.
 var (
-	NewACPLauncher = acp.NewACPLauncher
+	NewACPLauncher   = acp.NewACPLauncher
 	ACPAgentCommands = acp.AgentCommands
 )

@@ -81,12 +81,12 @@ func RunCircuit(ctx context.Context, input *CalibrationInput, opts ...CircuitOpt
 
 	reportArt, ok := walker.State().Outputs["report"]
 	if !ok {
-		return nil, fmt.Errorf("circuit did not produce a report artifact")
+		return nil, ErrCircuitDidNotProduceAReportArtifact
 	}
 
 	report, ok := reportArt.Raw().(*CalibrationReport)
 	if !ok {
-		return nil, fmt.Errorf("report artifact type %T, want *CalibrationReport", reportArt.Raw())
+		return nil, fmt.Errorf("%w: %T, want *CalibrationReport", ErrReportArtifactType, reportArt.Raw())
 	}
 
 	return report, nil
@@ -123,11 +123,11 @@ type forwardEdge struct {
 	def circuit.EdgeDef
 }
 
-func (e *forwardEdge) ID() string         { return e.def.ID }
-func (e *forwardEdge) From() string       { return string(e.def.From) }
-func (e *forwardEdge) To() string         { return string(e.def.To) }
-func (e *forwardEdge) IsShortcut() bool   { return e.def.Shortcut }
-func (e *forwardEdge) IsLoop() bool       { return e.def.Loop }
+func (e *forwardEdge) ID() string       { return e.def.ID }
+func (e *forwardEdge) From() string     { return string(e.def.From) }
+func (e *forwardEdge) To() string       { return string(e.def.To) }
+func (e *forwardEdge) IsShortcut() bool { return e.def.Shortcut }
+func (e *forwardEdge) IsLoop() bool     { return e.def.Loop }
 
 func (e *forwardEdge) Evaluate(_ circuit.Artifact, _ *circuit.WalkerState) *circuit.Transition {
 	return &circuit.Transition{NextNode: string(e.def.To)}

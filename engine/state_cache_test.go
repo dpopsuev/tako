@@ -10,7 +10,7 @@ import (
 
 type stubCacheArtifact struct{ val string }
 
-func (a *stubCacheArtifact) Type() string       { return "cache-test" }
+func (a *stubCacheArtifact) Type() string        { return "cache-test" }
 func (a *stubCacheArtifact) Confidence() float64 { return 1.0 }
 func (a *stubCacheArtifact) Raw() any            { return a.val }
 

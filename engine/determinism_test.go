@@ -1,27 +1,34 @@
 package engine
 
 import (
-	"github.com/dpopsuev/origami/circuit"
 	"context"
 	"testing"
+
+	"github.com/dpopsuev/origami/circuit"
 )
 
 type deterministicStub struct{ name string }
 
-func (d *deterministicStub) Name() string                                                  { return d.name }
-func (d *deterministicStub) Deterministic() bool                                           { return true }
-func (d *deterministicStub) Transform(_ context.Context, _ *TransformerContext) (any, error) { return nil, nil }
+func (d *deterministicStub) Name() string        { return d.name }
+func (d *deterministicStub) Deterministic() bool { return true }
+func (d *deterministicStub) Transform(_ context.Context, _ *TransformerContext) (any, error) {
+	return nil, nil
+}
 
 type stochasticStub struct{ name string }
 
-func (s *stochasticStub) Name() string                                                  { return s.name }
-func (s *stochasticStub) Deterministic() bool                                           { return false }
-func (s *stochasticStub) Transform(_ context.Context, _ *TransformerContext) (any, error) { return nil, nil }
+func (s *stochasticStub) Name() string        { return s.name }
+func (s *stochasticStub) Deterministic() bool { return false }
+func (s *stochasticStub) Transform(_ context.Context, _ *TransformerContext) (any, error) {
+	return nil, nil
+}
 
 type unknownStub struct{ name string }
 
-func (u *unknownStub) Name() string                                                  { return u.name }
-func (u *unknownStub) Transform(_ context.Context, _ *TransformerContext) (any, error) { return nil, nil }
+func (u *unknownStub) Name() string { return u.name }
+func (u *unknownStub) Transform(_ context.Context, _ *TransformerContext) (any, error) {
+	return nil, nil
+}
 
 func TestIsDeterministic(t *testing.T) {
 	if !IsDeterministic(&deterministicStub{}) {

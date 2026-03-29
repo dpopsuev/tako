@@ -163,8 +163,8 @@ func NewProcessWalkerWithIdentity(id *AgentIdentity, stateID string) *ProcessWal
 	}
 }
 
-func (w *ProcessWalker) Identity() AgentIdentity      { return w.identity }
-func (w *ProcessWalker) SetIdentity(id *AgentIdentity)  { w.identity = *id }
+func (w *ProcessWalker) Identity() AgentIdentity       { return w.identity }
+func (w *ProcessWalker) SetIdentity(id *AgentIdentity) { w.identity = *id }
 func (w *ProcessWalker) State() *WalkerState           { return w.state }
 
 func (w *ProcessWalker) Handle(ctx context.Context, node Node, nc NodeContext) (Artifact, error) {

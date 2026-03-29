@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/agentport"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 const (
@@ -58,8 +58,8 @@ type MissingNodeApproach struct{}
 
 func (r *MissingNodeApproach) ID() string          { return "S1/missing-node-approach" }
 func (r *MissingNodeApproach) Description() string { return "every node should declare an approach" }
-func (r *MissingNodeApproach) Severity() Severity   { return SeverityWarning }
-func (r *MissingNodeApproach) Tags() []string       { return []string{"structural"} }
+func (r *MissingNodeApproach) Severity() Severity  { return SeverityWarning }
+func (r *MissingNodeApproach) Tags() []string      { return []string{"structural"} }
 
 func (r *MissingNodeApproach) Check(ctx *LintContext) []Finding {
 	var out []Finding
@@ -82,8 +82,8 @@ type InvalidApproach struct{}
 
 func (r *InvalidApproach) ID() string          { return ruleInvalidApproach }
 func (r *InvalidApproach) Description() string { return "approach value must be a known approach" }
-func (r *InvalidApproach) Severity() Severity   { return SeverityError }
-func (r *InvalidApproach) Tags() []string       { return []string{"structural"} }
+func (r *InvalidApproach) Severity() Severity  { return SeverityError }
+func (r *InvalidApproach) Tags() []string      { return []string{"structural"} }
 
 func (r *InvalidApproach) Check(ctx *LintContext) []Finding {
 	var out []Finding
@@ -139,10 +139,12 @@ func (r *MissingEdgeID) Check(ctx *LintContext) []Finding {
 // InvalidMergeStrategy checks that edge merge values are valid strategies.
 type InvalidMergeStrategy struct{}
 
-func (r *InvalidMergeStrategy) ID() string          { return ruleInvalidMerge }
-func (r *InvalidMergeStrategy) Description() string { return "merge strategy must be append, latest, or custom" }
-func (r *InvalidMergeStrategy) Severity() Severity   { return SeverityError }
-func (r *InvalidMergeStrategy) Tags() []string       { return []string{"structural"} }
+func (r *InvalidMergeStrategy) ID() string { return ruleInvalidMerge }
+func (r *InvalidMergeStrategy) Description() string {
+	return "merge strategy must be append, latest, or custom"
+}
+func (r *InvalidMergeStrategy) Severity() Severity { return SeverityError }
+func (r *InvalidMergeStrategy) Tags() []string     { return []string{"structural"} }
 
 func (r *InvalidMergeStrategy) Check(ctx *LintContext) []Finding {
 	var out []Finding
@@ -165,8 +167,8 @@ type MissingEdgeName struct{}
 
 func (r *MissingEdgeName) ID() string          { return ruleMissingEdgeName }
 func (r *MissingEdgeName) Description() string { return "edges should have a human-readable name" }
-func (r *MissingEdgeName) Severity() Severity   { return SeverityInfo }
-func (r *MissingEdgeName) Tags() []string       { return []string{"structural"} }
+func (r *MissingEdgeName) Severity() Severity  { return SeverityInfo }
+func (r *MissingEdgeName) Tags() []string      { return []string{"structural"} }
 
 func (r *MissingEdgeName) Check(ctx *LintContext) []Finding {
 	var out []Finding
@@ -188,8 +190,10 @@ func (r *MissingEdgeName) Check(ctx *LintContext) []Finding {
 // DuplicateEdgeCondition checks for edges from the same node sharing identical conditions.
 type DuplicateEdgeCondition struct{}
 
-func (r *DuplicateEdgeCondition) ID() string        { return "S5/duplicate-edge-condition" }
-func (r *DuplicateEdgeCondition) Description() string { return "edges from the same node should not have identical when expressions" }
+func (r *DuplicateEdgeCondition) ID() string { return "S5/duplicate-edge-condition" }
+func (r *DuplicateEdgeCondition) Description() string {
+	return "edges from the same node should not have identical when expressions"
+}
 func (r *DuplicateEdgeCondition) Severity() Severity { return SeverityWarning }
 func (r *DuplicateEdgeCondition) Tags() []string     { return []string{"structural"} }
 
@@ -221,10 +225,12 @@ func (r *DuplicateEdgeCondition) Check(ctx *LintContext) []Finding {
 // EmptyPrompt checks that nodes with an LLM transformer have a non-empty prompt.
 type EmptyPrompt struct{}
 
-func (r *EmptyPrompt) ID() string          { return "S6/empty-prompt" }
-func (r *EmptyPrompt) Description() string { return "node with no prompt, transformer, extractor, or renderer may produce empty output" }
-func (r *EmptyPrompt) Severity() Severity   { return SeverityWarning }
-func (r *EmptyPrompt) Tags() []string       { return []string{"structural"} }
+func (r *EmptyPrompt) ID() string { return "S6/empty-prompt" }
+func (r *EmptyPrompt) Description() string {
+	return "node with no prompt, transformer, extractor, or renderer may produce empty output"
+}
+func (r *EmptyPrompt) Severity() Severity { return SeverityWarning }
+func (r *EmptyPrompt) Tags() []string     { return []string{"structural"} }
 
 func (r *EmptyPrompt) Check(ctx *LintContext) []Finding {
 	var out []Finding
@@ -259,8 +265,8 @@ type InvalidCacheTTL struct{}
 
 func (r *InvalidCacheTTL) ID() string          { return ruleInvalidCacheTTL }
 func (r *InvalidCacheTTL) Description() string { return "cache TTL must be a valid Go duration" }
-func (r *InvalidCacheTTL) Severity() Severity   { return SeverityError }
-func (r *InvalidCacheTTL) Tags() []string       { return []string{"structural"} }
+func (r *InvalidCacheTTL) Severity() Severity  { return SeverityError }
+func (r *InvalidCacheTTL) Tags() []string      { return []string{"structural"} }
 
 func (r *InvalidCacheTTL) Check(ctx *LintContext) []Finding {
 	var out []Finding
@@ -284,10 +290,10 @@ func (r *InvalidCacheTTL) Check(ctx *LintContext) []Finding {
 // MissingCircuitDescription checks that the circuit has a description field.
 type MissingCircuitDescription struct{}
 
-func (r *MissingCircuitDescription) ID() string        { return ruleMissingCircDesc }
+func (r *MissingCircuitDescription) ID() string          { return ruleMissingCircDesc }
 func (r *MissingCircuitDescription) Description() string { return "circuit should have a description" }
-func (r *MissingCircuitDescription) Severity() Severity { return SeverityInfo }
-func (r *MissingCircuitDescription) Tags() []string     { return []string{"structural"} }
+func (r *MissingCircuitDescription) Severity() Severity  { return SeverityInfo }
+func (r *MissingCircuitDescription) Tags() []string      { return []string{"structural"} }
 
 func (r *MissingCircuitDescription) Check(ctx *LintContext) []Finding {
 	if ctx.Def.Description == "" {
@@ -308,8 +314,8 @@ type UnnamedNode struct{}
 
 func (r *UnnamedNode) ID() string          { return "S9/unnamed-node" }
 func (r *UnnamedNode) Description() string { return "every node must have a name" }
-func (r *UnnamedNode) Severity() Severity   { return SeverityError }
-func (r *UnnamedNode) Tags() []string       { return []string{"structural"} }
+func (r *UnnamedNode) Severity() Severity  { return SeverityError }
+func (r *UnnamedNode) Tags() []string      { return []string{"structural"} }
 
 func (r *UnnamedNode) Check(ctx *LintContext) []Finding {
 	var out []Finding
@@ -329,10 +335,12 @@ func (r *UnnamedNode) Check(ctx *LintContext) []Finding {
 // InvalidWalkerElement checks that walker element values are known elements.
 type InvalidWalkerApproach struct{}
 
-func (r *InvalidWalkerApproach) ID() string          { return "S10/invalid-walker-approach" }
-func (r *InvalidWalkerApproach) Description() string { return "walker approach must be a known approach" }
-func (r *InvalidWalkerApproach) Severity() Severity   { return SeverityError }
-func (r *InvalidWalkerApproach) Tags() []string       { return []string{"structural"} }
+func (r *InvalidWalkerApproach) ID() string { return "S10/invalid-walker-approach" }
+func (r *InvalidWalkerApproach) Description() string {
+	return "walker approach must be a known approach"
+}
+func (r *InvalidWalkerApproach) Severity() Severity { return SeverityError }
+func (r *InvalidWalkerApproach) Tags() []string     { return []string{"structural"} }
 
 func (r *InvalidWalkerApproach) Check(ctx *LintContext) []Finding {
 	var out []Finding
@@ -360,8 +368,8 @@ type InvalidWalkerPersona struct{}
 
 func (r *InvalidWalkerPersona) ID() string          { return ruleInvalidPersona }
 func (r *InvalidWalkerPersona) Description() string { return "walker persona must be a known persona" }
-func (r *InvalidWalkerPersona) Severity() Severity   { return SeverityError }
-func (r *InvalidWalkerPersona) Tags() []string       { return []string{"structural"} }
+func (r *InvalidWalkerPersona) Severity() Severity  { return SeverityError }
+func (r *InvalidWalkerPersona) Tags() []string      { return []string{"structural"} }
 
 func (r *InvalidWalkerPersona) Check(ctx *LintContext) []Finding {
 	personas := knownPersonas()
@@ -390,10 +398,12 @@ var validDomains = map[string]bool{
 // SchemaInUnstructuredZone checks for artifact schemas on nodes in zones without structured extractors.
 type SchemaInUnstructuredZone struct{}
 
-func (r *SchemaInUnstructuredZone) ID() string          { return "S12/schema-in-unstructured-zone" }
-func (r *SchemaInUnstructuredZone) Description() string { return "nodes with schema should not be in unstructured zones" }
-func (r *SchemaInUnstructuredZone) Severity() Severity   { return SeverityWarning }
-func (r *SchemaInUnstructuredZone) Tags() []string       { return []string{"structural"} }
+func (r *SchemaInUnstructuredZone) ID() string { return "S12/schema-in-unstructured-zone" }
+func (r *SchemaInUnstructuredZone) Description() string {
+	return "nodes with schema should not be in unstructured zones"
+}
+func (r *SchemaInUnstructuredZone) Severity() Severity { return SeverityWarning }
+func (r *SchemaInUnstructuredZone) Tags() []string     { return []string{"structural"} }
 
 func (r *SchemaInUnstructuredZone) Check(ctx *LintContext) []Finding {
 	var out []Finding
@@ -424,10 +434,12 @@ func (r *SchemaInUnstructuredZone) Check(ctx *LintContext) []Finding {
 // MissingZoneDomain checks that zones declare a domain field.
 type MissingZoneDomain struct{}
 
-func (r *MissingZoneDomain) ID() string          { return "S13/missing-zone-domain" }
-func (r *MissingZoneDomain) Description() string { return "zones should declare a domain (unstructured, structured, hybrid)" }
-func (r *MissingZoneDomain) Severity() Severity   { return SeverityInfo }
-func (r *MissingZoneDomain) Tags() []string       { return []string{"structural"} }
+func (r *MissingZoneDomain) ID() string { return "S13/missing-zone-domain" }
+func (r *MissingZoneDomain) Description() string {
+	return "zones should declare a domain (unstructured, structured, hybrid)"
+}
+func (r *MissingZoneDomain) Severity() Severity { return SeverityInfo }
+func (r *MissingZoneDomain) Tags() []string     { return []string{"structural"} }
 
 func (r *MissingZoneDomain) Check(ctx *LintContext) []Finding {
 	var out []Finding
@@ -448,10 +460,12 @@ func (r *MissingZoneDomain) Check(ctx *LintContext) []Finding {
 // InvalidZoneDomain checks that zone domain values are valid predefined domains.
 type InvalidZoneDomain struct{}
 
-func (r *InvalidZoneDomain) ID() string          { return "S14/invalid-zone-domain" }
-func (r *InvalidZoneDomain) Description() string { return "zone domain must be unstructured, structured, or hybrid" }
-func (r *InvalidZoneDomain) Severity() Severity   { return SeverityError }
-func (r *InvalidZoneDomain) Tags() []string       { return []string{"structural"} }
+func (r *InvalidZoneDomain) ID() string { return "S14/invalid-zone-domain" }
+func (r *InvalidZoneDomain) Description() string {
+	return "zone domain must be unstructured, structured, or hybrid"
+}
+func (r *InvalidZoneDomain) Severity() Severity { return SeverityError }
+func (r *InvalidZoneDomain) Tags() []string     { return []string{"structural"} }
 
 func (r *InvalidZoneDomain) Check(ctx *LintContext) []Finding {
 	var out []Finding
@@ -500,10 +514,12 @@ func levenshtein(a, b string) int {
 // InvalidWalkerRole checks that walker role values are recognized roles.
 type InvalidWalkerRole struct{}
 
-func (r *InvalidWalkerRole) ID() string          { return "S16/invalid-walker-role" }
-func (r *InvalidWalkerRole) Description() string { return "walker role must be a recognized role (worker, manager, enforcer, broker)" }
-func (r *InvalidWalkerRole) Severity() Severity   { return SeverityError }
-func (r *InvalidWalkerRole) Tags() []string       { return []string{"structural"} }
+func (r *InvalidWalkerRole) ID() string { return "S16/invalid-walker-role" }
+func (r *InvalidWalkerRole) Description() string {
+	return "walker role must be a recognized role (worker, manager, enforcer, broker)"
+}
+func (r *InvalidWalkerRole) Severity() Severity { return SeverityError }
+func (r *InvalidWalkerRole) Tags() []string     { return []string{"structural"} }
 
 func (r *InvalidWalkerRole) Check(ctx *LintContext) []Finding {
 	validRoles := map[string]bool{
@@ -527,8 +543,10 @@ func (r *InvalidWalkerRole) Check(ctx *LintContext) []Finding {
 // DelegateWithoutGenerator warns when a delegate node lacks a generator.
 type DelegateWithoutGenerator struct{}
 
-func (r *DelegateWithoutGenerator) ID() string        { return "S15/delegate-without-generator" }
-func (r *DelegateWithoutGenerator) Description() string { return "delegate node requires a handler (generator transformer)" }
+func (r *DelegateWithoutGenerator) ID() string { return "S15/delegate-without-generator" }
+func (r *DelegateWithoutGenerator) Description() string {
+	return "delegate node requires a handler (generator transformer)"
+}
 func (r *DelegateWithoutGenerator) Severity() Severity { return SeverityWarning }
 func (r *DelegateWithoutGenerator) Tags() []string     { return []string{"structural"} }
 
@@ -552,11 +570,13 @@ func (r *DelegateWithoutGenerator) Check(ctx *LintContext) []Finding {
 
 // DeprecatedHandlerFields errors when nodes use removed legacy handler fields
 // (family, transformer, extractor, renderer, delegate, generator) in YAML.
-// These fields are no longer recognised; use handler: + handler_type: instead.
+// These fields are no longer recognized; use handler: + handler_type: instead.
 type DeprecatedHandlerFields struct{}
 
-func (r *DeprecatedHandlerFields) ID() string        { return "S17/deprecated-handler-fields" }
-func (r *DeprecatedHandlerFields) Description() string { return "use handler: + handler_type: instead of family/transformer/extractor/renderer/delegate+generator" }
+func (r *DeprecatedHandlerFields) ID() string { return "S17/deprecated-handler-fields" }
+func (r *DeprecatedHandlerFields) Description() string {
+	return "use handler: + handler_type: instead of family/transformer/extractor/renderer/delegate+generator"
+}
 func (r *DeprecatedHandlerFields) Severity() Severity { return SeverityError }
 func (r *DeprecatedHandlerFields) Tags() []string     { return []string{"structural"} }
 

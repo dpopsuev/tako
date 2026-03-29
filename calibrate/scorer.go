@@ -26,11 +26,11 @@ func (r ScorerRegistry) Register(name string, fn ScorerFunc) {
 // Get returns the scorer registered under name, or an error if not found.
 func (r ScorerRegistry) Get(name string) (ScorerFunc, error) {
 	if r == nil {
-		return nil, fmt.Errorf("scorer registry is nil")
+		return nil, ErrScorerRegistryIsNil
 	}
 	fn, ok := r[name]
 	if !ok {
-		return nil, fmt.Errorf("scorer %q not registered", name)
+		return nil, fmt.Errorf("%w: %q not registered", ErrScorer, name)
 	}
 	return fn, nil
 }
@@ -53,16 +53,16 @@ func accuracyScorer(caseResult, groundTruth any, params map[string]any) (score f
 	predictedField, _ := params["predicted"].(string)
 	expectedField, _ := params["expected"].(string)
 	if predictedField == "" || expectedField == "" {
-		return 0, "", fmt.Errorf("accuracy scorer: params must include 'predicted' and 'expected' field names")
+		return 0, "", ErrAccuracyScorerParamsMustIncludePredictedAndExpectedF
 	}
 
 	resultMap, ok := caseResult.(map[string]any)
 	if !ok {
-		return 0, "", fmt.Errorf("accuracy scorer: caseResult must be map[string]any, got %T", caseResult)
+		return 0, "", fmt.Errorf("%w: %T", ErrAccuracyScorerCaseResultMustBeMapStringAnyGot, caseResult)
 	}
 	truthMap, ok := groundTruth.(map[string]any)
 	if !ok {
-		return 0, "", fmt.Errorf("accuracy scorer: groundTruth must be map[string]any, got %T", groundTruth)
+		return 0, "", fmt.Errorf("%w: %T", ErrAccuracyScorerGroundTruthMustBeMapStringAnyGot, groundTruth)
 	}
 
 	predicted := fmt.Sprintf("%v", resultMap[predictedField])
@@ -82,12 +82,12 @@ func accuracyScorer(caseResult, groundTruth any, params map[string]any) (score f
 func rateScorer(caseResult, groundTruth any, params map[string]any) (score float64, detail string, err error) {
 	field, _ := params["field"].(string)
 	if field == "" {
-		return 0, "", fmt.Errorf("rate scorer: params must include 'field'")
+		return 0, "", ErrRateScorerParamsMustIncludeField
 	}
 
 	truthMap, ok := groundTruth.(map[string]any)
 	if !ok {
-		return 0, "", fmt.Errorf("rate scorer: groundTruth must be map[string]any")
+		return 0, "", ErrRateScorerGroundTruthMustBeMapStringAny
 	}
 
 	truthItems, ok := truthMap[field].([]any)
@@ -100,7 +100,7 @@ func rateScorer(caseResult, groundTruth any, params map[string]any) (score float
 
 	resultMap, ok := caseResult.(map[string]any)
 	if !ok {
-		return 0, "", fmt.Errorf("rate scorer: caseResult must be map[string]any")
+		return 0, "", ErrRateScorerCaseResultMustBeMapStringAny
 	}
 
 	resultItems, ok := resultMap[field].([]any)
@@ -129,12 +129,12 @@ func rateScorer(caseResult, groundTruth any, params map[string]any) (score float
 func thresholdCheckScorer(caseResult, _ any, params map[string]any) (score float64, detail string, err error) {
 	field, _ := params["field"].(string)
 	if field == "" {
-		return 0, "", fmt.Errorf("threshold_check scorer: params must include 'field'")
+		return 0, "", ErrThresholdCheckScorerParamsMustIncludeField
 	}
 
 	resultMap, ok := caseResult.(map[string]any)
 	if !ok {
-		return 0, "", fmt.Errorf("threshold_check scorer: caseResult must be map[string]any")
+		return 0, "", ErrThresholdCheckScorerCaseResultMustBeMapStringAny
 	}
 
 	val, err := toFloat64(resultMap[field])
@@ -175,7 +175,7 @@ func toFloat64(v any) (float64, error) {
 	case int64:
 		return float64(n), nil
 	default:
-		return 0, fmt.Errorf("cannot convert %T to float64", v)
+		return 0, fmt.Errorf("%w: %T to float64", ErrCannotConvert, v)
 	}
 }
 

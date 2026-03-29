@@ -40,7 +40,7 @@ func NewLLMClient(provider, model, endpoint string) (LLMClient, error) {
 	case "claude":
 		key := os.Getenv("ANTHROPIC_API_KEY")
 		if key == "" {
-			return nil, fmt.Errorf("ANTHROPIC_API_KEY required for claude provider")
+			return nil, ErrANTHROPICAPIKEYRequiredForClaudeProvider
 		}
 		if model == "" {
 			model = defaultClaudeModel
@@ -49,7 +49,7 @@ func NewLLMClient(provider, model, endpoint string) (LLMClient, error) {
 	case "gemini":
 		key := os.Getenv("GEMINI_API_KEY")
 		if key == "" {
-			return nil, fmt.Errorf("GEMINI_API_KEY required for gemini provider")
+			return nil, ErrGEMINIAPIKEYRequiredForGeminiProvider
 		}
 		if model == "" {
 			model = "gemini-2.5-flash"
@@ -58,7 +58,7 @@ func NewLLMClient(provider, model, endpoint string) (LLMClient, error) {
 	case "openai":
 		key := os.Getenv("OPENAI_API_KEY")
 		if key == "" {
-			return nil, fmt.Errorf("OPENAI_API_KEY required for openai provider")
+			return nil, ErrOPENAIAPIKEYRequiredForOpenaiProvider
 		}
 		if model == "" {
 			model = "gpt-4o"
@@ -69,7 +69,7 @@ func NewLLMClient(provider, model, endpoint string) (LLMClient, error) {
 		}
 		return &OpenAIClient{APIKey: key, Model: model, Endpoint: endpoint}, nil
 	default:
-		return nil, fmt.Errorf("unknown provider %q (known: ollama, claude, gemini, openai)", provider)
+		return nil, fmt.Errorf("%w: %q (known: ollama, claude, gemini, openai)", ErrUnknownProvider, provider)
 	}
 }
 
@@ -120,7 +120,7 @@ func (c *OllamaClient) Chat(ctx context.Context, systemPrompt string, messages [
 
 	if resp.StatusCode != http.StatusOK {
 		b, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("ollama: status %d: %s", resp.StatusCode, b)
+		return "", fmt.Errorf("%w: %d: %s", ErrOllamaStatus, resp.StatusCode, b)
 	}
 
 	var result struct {
@@ -178,7 +178,7 @@ func (c *AnthropicClient) Chat(ctx context.Context, systemPrompt string, message
 
 	if resp.StatusCode != http.StatusOK {
 		b, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("anthropic: status %d: %s", resp.StatusCode, b)
+		return "", fmt.Errorf("%w: %d: %s", ErrAnthropicStatus, resp.StatusCode, b)
 	}
 
 	var result struct {
@@ -252,7 +252,7 @@ func (c *GeminiClient) Chat(ctx context.Context, systemPrompt string, messages [
 
 	if resp.StatusCode != http.StatusOK {
 		b, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("gemini: status %d: %s", resp.StatusCode, b)
+		return "", fmt.Errorf("%w: %d: %s", ErrGeminiStatus, resp.StatusCode, b)
 	}
 
 	var result struct {
@@ -269,7 +269,7 @@ func (c *GeminiClient) Chat(ctx context.Context, systemPrompt string, messages [
 	}
 
 	if len(result.Candidates) == 0 || len(result.Candidates[0].Content.Parts) == 0 {
-		return "", fmt.Errorf("gemini: empty response")
+		return "", ErrGeminiEmptyResponse
 	}
 	return result.Candidates[0].Content.Parts[0].Text, nil
 }
@@ -324,7 +324,7 @@ func (c *OpenAIClient) Chat(ctx context.Context, systemPrompt string, messages [
 
 	if resp.StatusCode != http.StatusOK {
 		b, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("openai: status %d: %s", resp.StatusCode, b)
+		return "", fmt.Errorf("%w: %d: %s", ErrOpenaiStatus, resp.StatusCode, b)
 	}
 
 	var result struct {
@@ -339,7 +339,7 @@ func (c *OpenAIClient) Chat(ctx context.Context, systemPrompt string, messages [
 	}
 
 	if len(result.Choices) == 0 {
-		return "", fmt.Errorf("openai: empty response")
+		return "", ErrOpenaiEmptyResponse
 	}
 	return result.Choices[0].Message.Content, nil
 }

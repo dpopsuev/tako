@@ -8,7 +8,7 @@ import (
 
 type stubMergeArtifact struct{ val string }
 
-func (a *stubMergeArtifact) Type() string       { return "merge-test" }
+func (a *stubMergeArtifact) Type() string        { return "merge-test" }
 func (a *stubMergeArtifact) Confidence() float64 { return 1.0 }
 func (a *stubMergeArtifact) Raw() any            { return a.val }
 

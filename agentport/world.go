@@ -83,14 +83,14 @@ type (
 	ColorIdentity   = palette.ColorIdentity
 	Registry        = palette.Registry
 	Shade           = palette.Shade
-	Colour          = palette.Colour
+	Colour          = palette.Colour //nolint:misspell // upstream API name
 	DefaultStrategy = palette.DefaultStrategy
 )
 
 // ColorIdentityType is the ComponentType for ColorIdentity.
 const ColorIdentityType = palette.ColorIdentityType
 
-// Palette is the full 7x8 colour palette.
+// Palette is the full 7x8 color palette.
 var Palette = palette.Palette
 
 // Constructors and lookups.

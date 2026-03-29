@@ -60,17 +60,17 @@ func LoadSubCircuitsFromFS(fsys fs.FS, resolvers map[string]AssetResolver) map[s
 		if def.Import != "" {
 			if _, hasResolver := resolvers[name]; !hasResolver {
 				slog.DebugContext(context.Background(), "skipping sub-circuit with unresolved import",
-					LogKeyComponent, LogComponentDSL,
-					LogKeyCircuit, name,
-					"import", def.Import,
+					slog.String(LogKeyComponent, LogComponentDSL),
+					slog.String(LogKeyCircuit, name), slog.Any("import", def.Import),
 				)
 				continue
 			}
 		}
 
 		circuits[name] = def
-		slog.DebugContext(context.Background(), LogSubCircuitLoaded, LogKeyComponent, LogComponentDSL,
-			LogKeyCircuit, name, "nodes", len(def.Nodes))
+		slog.DebugContext(context.Background(), LogSubCircuitLoaded,
+			slog.String(LogKeyComponent, LogComponentDSL),
+			slog.String(LogKeyCircuit, name), slog.Any("nodes", len(def.Nodes)))
 	}
 
 	if len(circuits) == 0 {

@@ -25,7 +25,7 @@ type RendererRegistry map[string]Renderer
 // Supports FQCN resolution identical to ExtractorRegistry.
 func (r RendererRegistry) Get(name string) (Renderer, error) {
 	if r == nil {
-		return nil, fmt.Errorf("renderer registry is nil")
+		return nil, ErrRendererRegistryIsNil
 	}
 	if rnd, ok := r[name]; ok {
 		return rnd, nil
@@ -38,7 +38,7 @@ func (r RendererRegistry) Get(name string) (Renderer, error) {
 			}
 		}
 	}
-	return nil, fmt.Errorf("renderer %q not registered", name)
+	return nil, fmt.Errorf("%w: %q not registered", ErrRenderer, name)
 }
 
 // Register adds a renderer to the registry. Panics on duplicate name.
@@ -62,7 +62,7 @@ func (t *TemplateRenderer) Name() string { return BuiltinRendererTemplate }
 func (t *TemplateRenderer) Render(_ context.Context, data any) (string, error) {
 	tc, ok := data.(circuit.TemplateContext)
 	if !ok {
-		return "", fmt.Errorf("template renderer: expected circuit.TemplateContext, got %T", data)
+		return "", fmt.Errorf("%w: %T", ErrTemplateRendererExpectedCircuitTemplateContextGot, data)
 	}
 	return RenderPrompt(t.Template, tc)
 }
@@ -74,7 +74,7 @@ type rendererNode struct {
 	rnd     Renderer
 }
 
-func (n *rendererNode) Name() string             { return n.name }
+func (n *rendererNode) Name() string                     { return n.name }
 func (n *rendererNode) ElementAffinity() circuit.Element { return n.element }
 
 func (n *rendererNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
@@ -100,6 +100,6 @@ type rendererArtifact struct {
 	raw        string
 }
 
-func (a *rendererArtifact) Type() string       { return a.typeName }
+func (a *rendererArtifact) Type() string        { return a.typeName }
 func (a *rendererArtifact) Confidence() float64 { return a.confidence }
 func (a *rendererArtifact) Raw() any            { return a.raw }

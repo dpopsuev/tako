@@ -9,7 +9,7 @@ import (
 
 type fakeArtifact struct{ data any }
 
-func (f fakeArtifact) Type() string       { return "test" }
+func (f fakeArtifact) Type() string        { return "test" }
 func (f fakeArtifact) Confidence() float64 { return 1.0 }
 func (f fakeArtifact) Raw() any            { return f.data }
 
@@ -142,7 +142,7 @@ func TestFoldContracts_MultiCircuit(t *testing.T) {
 		Outputs: []ContractField{{Field: "gather.files", ScorerName: "files_found", Type: "array"}},
 	}
 	folded := FoldContracts(map[string]*CalibrationContract{
-		"rca":       rca,
+		"rca": rca,
 		"gnd": harv,
 	})
 

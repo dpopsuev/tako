@@ -24,7 +24,7 @@ var validElements = map[circuit.Element]bool{
 func ValidateElement(name string) (circuit.Element, error) {
 	e := circuit.Element(strings.ToLower(name))
 	if !validElements[e] {
-		return "", fmt.Errorf("unknown element %q (valid: fire, lightning, earth, diamond, water, air)", name)
+		return "", fmt.Errorf("%w: %q (valid: fire, lightning, earth, diamond, water, air)", ErrUnknownElement, name)
 	}
 	return e, nil
 }
@@ -46,7 +46,7 @@ func BuildWalkersFromDef(defs []circuit.WalkerDef) ([]circuit.Walker, error) {
 
 func buildWalker(d *circuit.WalkerDef) (*circuit.ProcessWalker, error) {
 	if d.Name == "" {
-		return nil, fmt.Errorf("walker name is required")
+		return nil, ErrWalkerNameIsRequired
 	}
 
 	id := circuit.AgentIdentity{}
@@ -54,11 +54,11 @@ func buildWalker(d *circuit.WalkerDef) (*circuit.ProcessWalker, error) {
 	if d.Persona != "" {
 		resolver := agentport.GetDefaultPersonaResolver()
 		if resolver == nil {
-			return nil, fmt.Errorf("persona %q requested but no persona resolver registered (import _ \"github.com/dpopsuev/origami/persona\")", d.Persona)
+			return nil, fmt.Errorf("%w: %q requested but no persona resolver registered (import _ \"github.com/dpopsuev/origami/persona\")", ErrPersona, d.Persona)
 		}
 		p, ok := resolver(d.Persona)
 		if !ok {
-			return nil, fmt.Errorf("unknown persona %q", d.Persona)
+			return nil, fmt.Errorf("%w: %q", ErrUnknownPersona, d.Persona)
 		}
 		id = p.Identity
 	}
@@ -66,7 +66,7 @@ func buildWalker(d *circuit.WalkerDef) (*circuit.ProcessWalker, error) {
 	if d.Approach != "" {
 		elem, ok := circuit.ResolveApproach(strings.ToLower(d.Approach))
 		if !ok {
-			return nil, fmt.Errorf("unknown approach %q", d.Approach)
+			return nil, fmt.Errorf("%w: %q", ErrUnknownApproach, d.Approach)
 		}
 		id.Element = elem
 	}
@@ -90,7 +90,7 @@ func buildWalker(d *circuit.WalkerDef) (*circuit.ProcessWalker, error) {
 	if d.Role != "" {
 		r := circuit.Role(strings.ToLower(d.Role))
 		if !circuit.ValidRoles[r] {
-			return nil, fmt.Errorf("unknown role %q (valid: worker, manager, enforcer, broker)", d.Role)
+			return nil, fmt.Errorf("%w: %q (valid: worker, manager, enforcer, broker)", ErrUnknownRole, d.Role)
 		}
 		id.Role = r
 	}

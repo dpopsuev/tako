@@ -37,9 +37,9 @@ type ManifestSource struct {
 
 // ManifestVerifier defines a verification module (e.g. Jira, GitHub).
 type ManifestVerifier struct {
-	Module string              `yaml:"module"`
-	Config map[string]any      `yaml:"config"`
-	Rules  []VerificationRule  `yaml:"rules"`
+	Module string             `yaml:"module"`
+	Config map[string]any     `yaml:"config"`
+	Rules  []VerificationRule `yaml:"rules"`
 }
 
 // VerificationRule maps a ground truth field to a check.
@@ -82,10 +82,10 @@ func ParseDatasetManifest(data []byte) (*DatasetManifest, error) {
 		return nil, fmt.Errorf("parse dataset manifest: %w", err)
 	}
 	if m.Kind != "dataset" {
-		return nil, fmt.Errorf("dataset manifest: kind must be 'dataset', got %q", m.Kind)
+		return nil, fmt.Errorf("%w: %q", ErrDatasetManifestKindMustBeDatasetGot, m.Kind)
 	}
 	if m.Metadata.Scenario == "" {
-		return nil, fmt.Errorf("dataset manifest: metadata.scenario is required")
+		return nil, ErrDatasetManifestMetadataScenarioIsRequired
 	}
 	return &m, nil
 }

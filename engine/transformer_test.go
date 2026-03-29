@@ -632,7 +632,7 @@ func TestTransformerNode_ContextCancellation_PropagatesError(t *testing.T) {
 	elapsed := time.Since(start)
 
 	if err == nil {
-		t.Fatal("expected context cancelled error, got nil")
+		t.Fatal("expected context canceled error, got nil")
 	}
 	if !errors.Is(err, context.Canceled) {
 		t.Errorf("expected Canceled, got: %v", err)
@@ -676,7 +676,7 @@ type typedEchoTransformer struct {
 	inputType reflect.Type
 }
 
-func (t *typedEchoTransformer) Name() string           { return "typed-echo" }
+func (t *typedEchoTransformer) Name() string            { return "typed-echo" }
 func (t *typedEchoTransformer) InputType() reflect.Type { return t.inputType }
 func (t *typedEchoTransformer) Transform(_ context.Context, tc *TransformerContext) (any, error) {
 	return map[string]any{"echoed": tc.Input, "node": tc.NodeName}, nil

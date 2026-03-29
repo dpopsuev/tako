@@ -66,10 +66,10 @@ type ResolvedSchematic struct {
 	// SessionFactory mode: when set, fold generates CircuitConfig inline
 	// using the consumer's SessionFactory instead of calling Factory.
 	SessionFactory string              // Go symbol: "rca.Factory()" or "Factory()"
-	Params   []circuit.ParamDef  // extra start_circuit parameters
-	Schemas  []string            // step schema paths
-	Report   string              // report template path
-	Dispatch circuit.DispatchDef // dispatch config
+	Params         []circuit.ParamDef  // extra start_circuit parameters
+	Schemas        []string            // step schema paths
+	Report         string              // report template path
+	Dispatch       circuit.DispatchDef // dispatch config
 }
 
 // ResolvedOption is one With* call on a schematic factory.
@@ -100,7 +100,7 @@ type ImportEntry struct {
 // cycles, and returns a topologically ordered instantiation plan.
 func Resolve(m *Manifest, origamiRoot string, resolver ModuleResolver) (*ResolvedGraph, error) {
 	if !m.HasBindings() {
-		return nil, fmt.Errorf("manifest has no schematics or uses section")
+		return nil, ErrManifestHasNoSchematicsOrUsesSection
 	}
 
 	// Bridge: if Uses/Bind are set, populate legacy Schematics/Connectors
@@ -128,7 +128,7 @@ func Resolve(m *Manifest, origamiRoot string, resolver ModuleResolver) (*Resolve
 			return nil, fmt.Errorf("schematic %q: %w", name, err)
 		}
 		if cm.Factory == "" && cm.SessionFactory == "" {
-			return nil, fmt.Errorf("schematic %q: component.yaml must declare factory or session_factory", name)
+			return nil, fmt.Errorf("%w: %q: component.yaml must declare factory or session_factory", ErrSchematic, name)
 		}
 		schemManifests[name] = cm
 	}
@@ -142,8 +142,8 @@ func Resolve(m *Manifest, origamiRoot string, resolver ModuleResolver) (*Resolve
 		return nil, err
 	}
 
-	connIndex := buildConnectorIndex(m, connManifests)
-	schemIndex := buildSchematicIndex(m, schemManifests)
+	connIndex := buildConnectorIndex(connManifests)
+	schemIndex := buildSchematicIndex(schemManifests)
 
 	resolvedSchematics := make([]ResolvedSchematic, 0, len(depOrder))
 	varNames := make(map[string]string) // schematic name -> variable name
@@ -183,7 +183,7 @@ type schematicEntry struct {
 	manifest *circuit.ComponentManifest
 }
 
-func buildConnectorIndex(m *Manifest, cms map[string]*circuit.ComponentManifest) map[string]connectorEntry {
+func buildConnectorIndex(cms map[string]*circuit.ComponentManifest) map[string]connectorEntry {
 	idx := make(map[string]connectorEntry, len(cms))
 	for name, cm := range cms {
 		idx[name] = connectorEntry{name: name, manifest: cm}
@@ -191,7 +191,7 @@ func buildConnectorIndex(m *Manifest, cms map[string]*circuit.ComponentManifest)
 	return idx
 }
 
-func buildSchematicIndex(m *Manifest, cms map[string]*circuit.ComponentManifest) map[string]schematicEntry {
+func buildSchematicIndex(cms map[string]*circuit.ComponentManifest) map[string]schematicEntry {
 	idx := make(map[string]schematicEntry, len(cms))
 	for name, cm := range cms {
 		idx[name] = schematicEntry{name: name, manifest: cm}
@@ -226,7 +226,7 @@ func resolveSchematic(
 			if sock.Optional {
 				continue
 			}
-			return nil, fmt.Errorf("schematic %q: socket %q has no binding and is not optional", name, sock.Name)
+			return nil, fmt.Errorf("%w: %q: socket %q has no binding and is not optional", ErrSchematic, name, sock.Name)
 		}
 
 		opt, err := resolveSocketBinding(name, &sock, boundTo, connIdx, schemIdx, varNames)
@@ -237,17 +237,17 @@ func resolveSchematic(
 	}
 
 	return &ResolvedSchematic{
-		Name:     name,
-		Module:   cm.Module,
-		Alias:    importAlias(cm.Module),
-		Factory:  cm.Factory,
-		Resolver: cm.Resolver,
-		Options:  options,
+		Name:           name,
+		Module:         cm.Module,
+		Alias:          importAlias(cm.Module),
+		Factory:        cm.Factory,
+		Resolver:       cm.Resolver,
+		Options:        options,
 		SessionFactory: cm.SessionFactory,
-		Params:   cm.Params,
-		Schemas:  cm.Schemas,
-		Report:   cm.Report,
-		Dispatch: cm.Dispatch,
+		Params:         cm.Params,
+		Schemas:        cm.Schemas,
+		Report:         cm.Report,
+		Dispatch:       cm.Dispatch,
 	}, nil
 }
 
@@ -258,8 +258,7 @@ func resolveSocketBinding(
 	if conn, ok := connIdx[boundTo]; ok {
 		sat := findSatisfy(conn.manifest, sock.Name)
 		if sat == nil {
-			return ResolvedOption{}, fmt.Errorf("schematic %q socket %q: connector %q does not satisfy socket %q",
-				name, sock.Name, boundTo, sock.Name)
+			return ResolvedOption{}, fmt.Errorf("%w: %q socket %q: connector %q does not satisfy socket %q", ErrSchematic, name, sock.Name, boundTo, sock.Name)
 		}
 		alias := importAlias(conn.manifest.Module)
 		provider := alias + "." + sat.Factory
@@ -275,8 +274,7 @@ func resolveSocketBinding(
 	if _, ok := schemIdx[boundTo]; ok {
 		vn, exists := varNames[boundTo]
 		if !exists {
-			return ResolvedOption{}, fmt.Errorf("schematic %q socket %q: bound schematic %q not yet resolved (cycle?)",
-				name, sock.Name, boundTo)
+			return ResolvedOption{}, fmt.Errorf("%w: %q socket %q: bound schematic %q not yet resolved (cycle?)", ErrSchematic, name, sock.Name, boundTo)
 		}
 		return ResolvedOption{
 			OptionFunc: sock.Option,
@@ -284,8 +282,7 @@ func resolveSocketBinding(
 			Wire:       wireInstance,
 		}, nil
 	}
-	return ResolvedOption{}, fmt.Errorf("schematic %q socket %q: binding %q is neither a connector nor a schematic",
-		name, sock.Name, boundTo)
+	return ResolvedOption{}, fmt.Errorf("%w: %q socket %q: binding %q is neither a connector nor a schematic", ErrSchematic, name, sock.Name, boundTo)
 }
 
 func findSatisfy(cm *circuit.ComponentManifest, socketName string) *circuit.GivesDef {
@@ -319,11 +316,11 @@ func topoSort(m *Manifest) (root string, order []string, err error) {
 		}
 	}
 	if len(roots) == 0 {
-		return "", nil, fmt.Errorf("no root schematic found (all schematics are dependencies of others)")
+		return "", nil, ErrNoRootSchematicFoundAllSchematicsAreDependenciesOfOt
 	}
 	if len(roots) > 1 {
 		sort.Strings(roots)
-		return "", nil, fmt.Errorf("multiple root schematics: %s (expected exactly one)", strings.Join(roots, ", "))
+		return "", nil, fmt.Errorf("%w: %s (expected exactly one)", ErrMultipleRootSchematics, strings.Join(roots, ", "))
 	}
 	root = roots[0]
 
@@ -380,7 +377,7 @@ func detectCycles(m *Manifest) error {
 			}
 			switch color[boundTo] {
 			case grey:
-				return fmt.Errorf("cycle detected: %s -> %s", name, boundTo)
+				return fmt.Errorf("%w: %s -> %s", ErrCycleDetected, name, boundTo)
 			case white:
 				if err := dfs(boundTo); err != nil {
 					return err

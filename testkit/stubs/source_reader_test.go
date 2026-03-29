@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/dpopsuev/origami/toolkit"
 	"github.com/dpopsuev/origami/testkit/stubs"
+	"github.com/dpopsuev/origami/toolkit"
 )
 
 func TestStubSourceReader_Read_CannedData(t *testing.T) {

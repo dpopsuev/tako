@@ -47,9 +47,9 @@ type Runner struct {
 	Circuit    *circuit.CircuitDef
 	Graph      Graph
 	Schemas    map[string]*circuit.ArtifactSchema // node name -> schema (from circuit.CircuitDef)
-	NodeBefore map[string][]string        // node name -> before-hook names (from circuit.NodeDef.Before)
-	NodeHooks  map[string][]string        // node name -> after-hook names (from circuit.NodeDef.After)
-	Hooks      HookRegistry               // resolved hooks
+	NodeBefore map[string][]string                // node name -> before-hook names (from circuit.NodeDef.Before)
+	NodeHooks  map[string][]string                // node name -> after-hook names (from circuit.NodeDef.After)
+	Hooks      HookRegistry                       // resolved hooks
 	Logger     *slog.Logger
 }
 
@@ -157,9 +157,9 @@ type validatingWalker struct {
 	log     *slog.Logger
 }
 
-func (vw *validatingWalker) Identity() circuit.AgentIdentity     { return vw.inner.Identity() }
+func (vw *validatingWalker) Identity() circuit.AgentIdentity       { return vw.inner.Identity() }
 func (vw *validatingWalker) SetIdentity(id *circuit.AgentIdentity) { vw.inner.SetIdentity(id) }
-func (vw *validatingWalker) State() *circuit.WalkerState          { return vw.inner.State() }
+func (vw *validatingWalker) State() *circuit.WalkerState           { return vw.inner.State() }
 
 func (vw *validatingWalker) Handle(ctx context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
 	artifact, err := vw.inner.Handle(ctx, node, nc)
@@ -174,10 +174,7 @@ func (vw *validatingWalker) Handle(ctx context.Context, node circuit.Node, nc ci
 
 	if err := ValidateArtifact(schema, artifact); err != nil {
 		if vw.log != nil {
-			vw.log.WarnContext(ctx, "artifact schema validation failed",
-				"node", node.Name(),
-				"error", err.Error(),
-			)
+			vw.log.WarnContext(ctx, "artifact schema validation failed", slog.Any("node", node.Name()), slog.Any("error", err.Error()))
 		}
 		return nil, fmt.Errorf("node %s: artifact schema violation: %w", node.Name(), err)
 	}
@@ -202,9 +199,9 @@ type hookingWalker struct {
 	onHookEvent func(name, phase string, err error)
 }
 
-func (hw *hookingWalker) Identity() circuit.AgentIdentity     { return hw.inner.Identity() }
+func (hw *hookingWalker) Identity() circuit.AgentIdentity       { return hw.inner.Identity() }
 func (hw *hookingWalker) SetIdentity(id *circuit.AgentIdentity) { hw.inner.SetIdentity(id) }
-func (hw *hookingWalker) State() *circuit.WalkerState          { return hw.inner.State() }
+func (hw *hookingWalker) State() *circuit.WalkerState           { return hw.inner.State() }
 
 func (hw *hookingWalker) Handle(ctx context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
 	hookCtx := WithWalkerState(ctx, hw.State())
@@ -212,13 +209,13 @@ func (hw *hookingWalker) Handle(ctx context.Context, node circuit.Node, nc circu
 		hook, hErr := hw.hooks.Get(name)
 		if hErr != nil {
 			if hw.log != nil {
-				hw.log.WarnContext(ctx, "before-hook not found", "hook", name, "node", node.Name())
+				hw.log.WarnContext(ctx, "before-hook not found", slog.Any("hook", name), slog.Any("node", node.Name()))
 			}
 			continue
 		}
 		if hErr = hook.Run(hookCtx, node.Name(), nil); hErr != nil {
 			if hw.log != nil {
-				hw.log.WarnContext(ctx, "before-hook error", "hook", name, "node", node.Name(), "error", hErr.Error())
+				hw.log.WarnContext(ctx, "before-hook error", slog.Any("hook", name), slog.Any("node", node.Name()), slog.Any("error", hErr.Error()))
 			}
 		}
 		if hw.onHookEvent != nil {
@@ -235,7 +232,7 @@ func (hw *hookingWalker) Handle(ctx context.Context, node circuit.Node, nc circu
 		hook, hErr := hw.hooks.Get(name)
 		if hErr != nil {
 			if hw.log != nil {
-				hw.log.WarnContext(ctx, "hook not found", "hook", name, "node", node.Name())
+				hw.log.WarnContext(ctx, "hook not found", slog.Any("hook", name), slog.Any("node", node.Name()))
 			}
 			continue
 		}
@@ -248,7 +245,7 @@ func (hw *hookingWalker) Handle(ctx context.Context, node circuit.Node, nc circu
 			continue
 		}
 		if hErr != nil && hw.log != nil {
-			hw.log.WarnContext(ctx, "hook error", "hook", name, "node", node.Name(), "error", hErr.Error())
+			hw.log.WarnContext(ctx, "hook error", slog.Any("hook", name), slog.Any("node", node.Name()), slog.Any("error", hErr.Error()))
 		}
 		if hw.onHookEvent != nil {
 			hw.onHookEvent(name, "after", hErr)
@@ -272,9 +269,9 @@ type checkpointingWalker struct {
 	cp    circuit.Checkpointer
 }
 
-func (cw *checkpointingWalker) Identity() circuit.AgentIdentity     { return cw.inner.Identity() }
+func (cw *checkpointingWalker) Identity() circuit.AgentIdentity       { return cw.inner.Identity() }
 func (cw *checkpointingWalker) SetIdentity(id *circuit.AgentIdentity) { cw.inner.SetIdentity(id) }
-func (cw *checkpointingWalker) State() *circuit.WalkerState          { return cw.inner.State() }
+func (cw *checkpointingWalker) State() *circuit.WalkerState           { return cw.inner.State() }
 
 func (cw *checkpointingWalker) Handle(ctx context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
 	artifact, err := cw.inner.Handle(ctx, node, nc)

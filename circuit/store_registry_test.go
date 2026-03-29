@@ -10,15 +10,15 @@ type memoryEngine struct {
 	config map[string]string
 }
 
-func (e *memoryEngine) Name() string                 { return "memory" }
+func (e *memoryEngine) Name() string                     { return "memory" }
 func (e *memoryEngine) Open(cfg map[string]string) error { e.opened = true; e.config = cfg; return nil }
-func (e *memoryEngine) Close() error                 { e.closed = true; return nil }
-func (e *memoryEngine) Migrate(_ *StoreSchema) error { return nil }
+func (e *memoryEngine) Close() error                     { e.closed = true; return nil }
+func (e *memoryEngine) Migrate(_ *StoreSchema) error     { return nil }
 
 func TestStoreRegistry_ResolveByName(t *testing.T) {
 	wiring := &StoreWiring{
 		Stores: map[string]StoreBinding{
-			"rca":       {Engine: "memory"},
+			"rca": {Engine: "memory"},
 			"gnd": {Engine: "memory", Config: map[string]string{"mode": "ephemeral"}},
 		},
 	}

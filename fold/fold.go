@@ -50,8 +50,8 @@ type Options struct {
 	Output         string
 	GoFlags        []string
 	Verbose        bool
-	Container      bool   // build an OCI image instead of a local binary
-	DomainOnly     bool   // force domain-serve build even when schematics are declared
+	Container      bool // build an OCI image instead of a local binary
+	DomainOnly     bool // force domain-serve build even when schematics are declared
 	ImageName      string
 	ExportDataDir  string // export flattened domain data to this directory (for volume mounts)
 	ModuleResolver ModuleResolver
@@ -69,7 +69,7 @@ func Run(ctx context.Context, opts *Options) error {
 	}
 
 	if m.DomainServe == nil {
-		return fmt.Errorf("manifest must have a domain_serve section")
+		return ErrManifestMustHaveADomainServeSection
 	}
 
 	manifestDir := filepath.Dir(opts.ManifestPath)
@@ -109,7 +109,7 @@ func validateNoDuplicateDomains(m *Manifest) error {
 	seen := make(map[string]bool)
 	for _, d := range m.Domains {
 		if seen[d] {
-			return fmt.Errorf("manifest: duplicate domain %q", d)
+			return fmt.Errorf("%w: %q", ErrManifestDuplicateDomain, d)
 		}
 		seen[d] = true
 	}
@@ -120,7 +120,7 @@ func validateDomainDirs(m *Manifest, manifestDir string, verbose bool) error {
 	for _, d := range m.Domains {
 		dir := filepath.Join(manifestDir, "domains", d)
 		if info, err := os.Stat(dir); err != nil || !info.IsDir() {
-			return fmt.Errorf("domain %q declared in manifest but domains/%s/ not found", d, d)
+			return fmt.Errorf("%w: %q declared in manifest but domains/%s/ not found", ErrDomain, d, d)
 		}
 	}
 
@@ -164,7 +164,7 @@ func validateAssetPaths(m *Manifest, manifestDir string) error {
 	for _, p := range paths {
 		full := filepath.Join(manifestDir, p)
 		if _, err := os.Stat(full); err != nil {
-			return fmt.Errorf("asset path %q not found on disk", p)
+			return fmt.Errorf("%w: %q not found on disk", ErrAssetPath, p)
 		}
 	}
 	return nil
@@ -183,7 +183,7 @@ func buildWiredBinary(ctx context.Context, m *Manifest, opts *Options) error {
 
 	origamiRoot := resolver.FindLocalModule(origamiModule)
 	if origamiRoot == "" {
-		return fmt.Errorf("cannot find origami module on local filesystem")
+		return ErrCannotFindOrigamiModuleOnLocalFilesystem
 	}
 
 	manifestDir := filepath.Dir(opts.ManifestPath)
@@ -207,7 +207,7 @@ func buildWiredBinary(ctx context.Context, m *Manifest, opts *Options) error {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	if err := os.WriteFile(filepath.Join(tmpDir, "main.go"), src, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "main.go"), src, 0o600); err != nil {
 		return fmt.Errorf("write main.go: %w", err)
 	}
 
@@ -302,7 +302,7 @@ func createWiredBuildModule(tmpDir, name string, resolver ModuleResolver, g *Res
 		}
 	}
 
-	return os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(buf.String()), 0o644)
+	return os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(buf.String()), 0o600)
 }
 
 // moduleRoot extracts the module root from a Go import path.
@@ -333,7 +333,7 @@ func buildDomainServe(ctx context.Context, m *Manifest, opts *Options) error {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	if err := os.WriteFile(filepath.Join(tmpDir, "main.go"), src, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "main.go"), src, 0o600); err != nil {
 		return fmt.Errorf("write main.go: %w", err)
 	}
 
@@ -434,7 +434,7 @@ func buildContainerImage(ctx context.Context, m *Manifest, binaryPath string, op
 	defer os.RemoveAll(imgDir)
 
 	dockerfile := fmt.Sprintf(containerDockerfileTemplate, port)
-	if err := os.WriteFile(filepath.Join(imgDir, "Dockerfile"), []byte(dockerfile), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(imgDir, "Dockerfile"), []byte(dockerfile), 0o600); err != nil {
 		return fmt.Errorf("write Dockerfile: %w", err)
 	}
 
@@ -482,7 +482,7 @@ func createDomainServeBuildModule(tmpDir, name string, resolver ModuleResolver) 
 		buf.WriteString(fmt.Sprintf("replace %s => %s\n", origamiModule, localPath))
 	}
 
-	return os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(buf.String()), 0o644)
+	return os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(buf.String()), 0o600)
 }
 
 // copyDomainFiles copies files from domains/<path>/ into the build dir at
@@ -573,14 +573,14 @@ func validateCircuitRefs(m *Manifest, manifestDir string) error {
 		}
 		for _, ref := range refs {
 			if _, ok := circuits[ref]; !ok {
-				return fmt.Errorf("circuit %q references circuit %q which is not in assets.circuits", name, ref)
+				return fmt.Errorf("%w: %q references circuit %q which is not in assets.circuits", ErrCircuit, name, ref)
 			}
 		}
 		deps[name] = refs
 	}
 
 	if cycle := detectCircuitCycle(deps); cycle != "" {
-		return fmt.Errorf("circuit dependency cycle detected: %s", cycle)
+		return fmt.Errorf("%w: %s", ErrCircuitDependencyCycleDetected, cycle)
 	}
 	return nil
 }
@@ -673,6 +673,8 @@ type circuitPortsForValidation struct {
 // validatePortWiring checks that wiring entries across circuits connect ports
 // with matching type declarations. A type mismatch (e.g. TriageResult vs
 // []string) is reported as an error at fold time rather than at runtime.
+//
+//nolint:gocyclo // cross-circuit port type validation — inherently branchy
 func validatePortWiring(m *Manifest, manifestDir string) error {
 	if m.DomainServe == nil || m.DomainServe.Assets == nil {
 		return nil
@@ -731,8 +733,8 @@ func validatePortWiring(m *Manifest, manifestDir string) error {
 
 	// Check each wiring entry for port type compatibility.
 	for _, w := range allWiring {
-		fromCircuit, _, fromPort := parseWiringRef(w.from)
-		toCircuit, _, toPort := parseWiringRef(w.to)
+		fromCircuit, fromPort := parseWiringRef(w.from)
+		toCircuit, toPort := parseWiringRef(w.to)
 
 		if fromCircuit == "" || fromPort == "" || toCircuit == "" || toPort == "" {
 			continue // malformed — skip
@@ -755,8 +757,7 @@ func validatePortWiring(m *Manifest, manifestDir string) error {
 		}
 
 		if fromType != toType {
-			return fmt.Errorf("port wiring %s → %s: type mismatch: %s has type %q but %s has type %q",
-				w.from, w.to, w.from, fromType, w.to, toType)
+			return fmt.Errorf("%w: %s → %s: type mismatch: %s has type %q but %s has type %q", ErrPortWiring, w.from, w.to, w.from, fromType, w.to, toType)
 		}
 	}
 
@@ -764,16 +765,16 @@ func validatePortWiring(m *Manifest, manifestDir string) error {
 }
 
 // parseWiringRef parses a wiring reference like "rca.out:post-triage"
-// into (circuit, direction, port_name).
-func parseWiringRef(ref string) (circuit, direction, port string) {
+// into (circuit, port_name).
+func parseWiringRef(ref string) (circuitName, port string) {
 	dotIdx := strings.Index(ref, ".")
 	if dotIdx < 0 {
-		return "", "", ""
+		return "", ""
 	}
-	circuit = ref[:dotIdx]
+	circuitName = ref[:dotIdx]
 	rest := ref[dotIdx+1:]
-	direction, port, _ = strings.Cut(rest, ":")
-	return circuit, direction, port
+	_, port, _ = strings.Cut(rest, ":")
+	return circuitName, port
 }
 
 func copyFile(src, dst string) error {
@@ -793,4 +794,3 @@ func copyFile(src, dst string) error {
 	_, err = io.Copy(dstFile, srcFile)
 	return err
 }
-

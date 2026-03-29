@@ -34,12 +34,12 @@ var (
 
 // Cost bill options.
 var (
-	WithTitle      = billing.WithTitle
-	WithSubtitle   = billing.WithSubtitle
-	WithCostConfig = billing.WithCostConfig
-	WithStepOrder  = billing.WithStepOrder
-	WithStepNames  = billing.WithStepNames
-	WithCaseLabels = billing.WithCaseLabels
+	WithTitle       = billing.WithTitle
+	WithSubtitle    = billing.WithSubtitle
+	WithCostConfig  = billing.WithCostConfig
+	WithStepOrder   = billing.WithStepOrder
+	WithStepNames   = billing.WithStepNames
+	WithCaseLabels  = billing.WithCaseLabels
 	WithCaseDetails = billing.WithCaseDetails
 )
 

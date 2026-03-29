@@ -36,7 +36,7 @@ func RunTransformerContract(t *testing.T, factory func() engine.Transformer) {
 		tr := factory()
 		ctx := context.Background()
 		tc := &engine.TransformerContext{
-			NodeName: "test-node",
+			NodeName:    "test-node",
 			WalkerState: circuit.NewWalkerState("test"),
 		}
 		result, err := tr.Transform(ctx, tc)
@@ -54,7 +54,7 @@ func RunTransformerContract(t *testing.T, factory func() engine.Transformer) {
 		cancel() // cancel immediately
 
 		tc := &engine.TransformerContext{
-			NodeName: "test-node",
+			NodeName:    "test-node",
 			WalkerState: circuit.NewWalkerState("test"),
 		}
 		// Should either return an error or complete quickly — must not hang.

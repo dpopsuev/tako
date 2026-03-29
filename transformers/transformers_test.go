@@ -210,7 +210,6 @@ type mockDispatcher struct {
 	err      error
 }
 
-//nolint:gocritic // hugeParam: interface conformance (agentport.Dispatcher)
 func (m *mockDispatcher) Dispatch(_ context.Context, ctx agentport.Context) ([]byte, error) {
 	return m.response, m.err
 }

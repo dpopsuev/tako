@@ -14,7 +14,7 @@ const subCmdValidate = "validate"
 
 func componentCmd(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("usage: origami component <list|inspect|validate> [flags]")
+		return ErrUsageOrigamiComponentListInspectValidateFlags
 	}
 	switch args[0] {
 	case "list":
@@ -24,7 +24,7 @@ func componentCmd(args []string) error {
 	case subCmdValidate:
 		return componentValidate(args[1:])
 	default:
-		return fmt.Errorf("unknown component subcommand: %s", args[0])
+		return fmt.Errorf("%w: %s", ErrUnknownComponentSubcommand, args[0])
 	}
 }
 
@@ -77,7 +77,7 @@ func componentInspect(args []string) error {
 		return err
 	}
 	if fs.NArg() == 0 {
-		return fmt.Errorf("usage: origami component inspect <component.yaml>")
+		return ErrUsageOrigamiComponentInspectComponentYaml
 	}
 
 	m, err := circuit.LoadComponentManifest(fs.Arg(0))
@@ -112,7 +112,7 @@ func componentValidate(args []string) error {
 		return err
 	}
 	if fs.NArg() == 0 {
-		return fmt.Errorf("usage: origami component validate <component.yaml>")
+		return ErrUsageOrigamiComponentValidateComponentYaml
 	}
 
 	path := fs.Arg(0)
@@ -140,7 +140,7 @@ func componentValidate(args []string) error {
 		for _, issue := range issues {
 			fmt.Fprintf(os.Stderr, "  ✗ %s\n", issue)
 		}
-		return fmt.Errorf("component manifest %s has %d issue(s)", path, len(issues))
+		return fmt.Errorf("%w: %s has %d issue(s)", ErrComponentManifest, path, len(issues))
 	}
 
 	fmt.Printf("OK: %s (%s/%s) is valid\n", path, m.Namespace, m.Component)

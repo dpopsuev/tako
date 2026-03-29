@@ -25,6 +25,7 @@ func (s *sessionCaller) CallTool(ctx context.Context, name string, args map[stri
 	return s.session.CallTool(ctx, &sdkmcp.CallToolParams{Name: name, Arguments: args})
 }
 
+//nolint:gocyclo // integration test exercises multiple fs operations sequentially
 func TestIntegration_RoundTrip(t *testing.T) {
 	sourceFS := fstest.MapFS{
 		"circuits/rca.yaml": &fstest.MapFile{

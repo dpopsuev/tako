@@ -25,7 +25,7 @@ func diffCmd(w io.Writer, args []string) error {
 	}
 
 	if fs.NArg() < 2 {
-		return fmt.Errorf("usage: origami diff [--state-dir=DIR] <run-a> <run-b> [--format=text|json]")
+		return ErrUsageOrigamiDiffStateDirDIRRunARunBFormatTextJson
 	}
 
 	dirA, err := resolveRunDir(*stateDir, fs.Arg(0))
@@ -54,7 +54,7 @@ func diffCmd(w io.Writer, args []string) error {
 	case formatText:
 		return renderDiffText(w, dirA, dirB, reportA, reportB, diffs)
 	default:
-		return fmt.Errorf("unknown format: %s", *format)
+		return fmt.Errorf("%w: %s", ErrUnknownFormat, *format)
 	}
 }
 
@@ -77,7 +77,7 @@ func resolveRunDir(stateDir, runRef string) (string, error) {
 
 	dir := filepath.Join(stateDir, "runs", runRef)
 	if info, err := os.Stat(dir); err != nil || !info.IsDir() {
-		return "", fmt.Errorf("run directory not found: %s", dir)
+		return "", fmt.Errorf("%w: %s", ErrRunDirectoryNotFound, dir)
 	}
 	return dir, nil
 }

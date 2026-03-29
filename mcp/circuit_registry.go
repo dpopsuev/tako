@@ -92,7 +92,7 @@ func (r *CircuitTypeRegistry) RouteSession(
 			}
 		}
 		return nil, SessionMeta{}, fmt.Errorf(
-			"circuit_type is required in extra when multiple types are registered (available: %v)",
+			"%w: %v)", ErrCircuitTypeIsRequiredInExtraWhenMultipleTypesAreRegi,
 			r.Names(),
 		)
 	}
@@ -100,7 +100,7 @@ func (r *CircuitTypeRegistry) RouteSession(
 	ct, ok := r.types[typeName]
 	if !ok {
 		return nil, SessionMeta{}, fmt.Errorf(
-			"unknown circuit_type %q (available: %v)", typeName, r.Names(),
+			"%w: %q (available: %v)", ErrUnknownCircuitType, typeName, r.Names(),
 		)
 	}
 	return ct.CreateSession(ctx, params, disp, bus)

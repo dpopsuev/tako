@@ -35,7 +35,7 @@ type quickWinsFile struct {
 func LoadQuickWins(data []byte) []QuickWin {
 	var f quickWinsFile
 	if err := yaml.Unmarshal(data, &f); err != nil {
-		slog.ErrorContext(context.Background(), "failed to parse tuning-quickwins YAML", "error", err)
+		slog.ErrorContext(context.Background(), "failed to parse tuning-quickwins YAML", slog.Any("error", err))
 		return nil
 	}
 	return f.QuickWins
@@ -105,10 +105,7 @@ func (r *TuningRunner) Run(baselineVal float64) TuningReport {
 		}
 
 		if qw.Apply == nil {
-			slog.InfoContext(context.Background(), "tuning QW skipped (not yet implemented)",
-				"qw", qw.ID,
-				"name", qw.Name,
-			)
+			slog.InfoContext(context.Background(), "tuning QW skipped (not yet implemented)", slog.Any("qw", qw.ID), slog.Any("name", qw.Name))
 			result.Error = tuningNotImplemented
 			report.Results = append(report.Results, result)
 			noImproveStreak++
@@ -116,10 +113,7 @@ func (r *TuningRunner) Run(baselineVal float64) TuningReport {
 		}
 
 		if err := qw.Apply(); err != nil {
-			slog.ErrorContext(context.Background(), "tuning QW apply failed",
-				"qw", qw.ID,
-				"error", err.Error(),
-			)
+			slog.ErrorContext(context.Background(), "tuning QW apply failed", slog.Any("qw", qw.ID), slog.Any("error", err.Error()))
 			result.Error = err.Error()
 			report.Results = append(report.Results, result)
 			noImproveStreak++

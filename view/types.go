@@ -52,17 +52,17 @@ type CaseInfo struct {
 // CircuitSnapshot is the full point-in-time state of a circuit:
 // topology metadata, node visual states, walker positions, debug state.
 type CircuitSnapshot struct {
-	CircuitName string                     `json:"circuit_name"`
-	Def         *circuit.CircuitDef      `json:"def,omitempty"`
-	Nodes       map[string]NodeState       `json:"nodes"`
-	Walkers     map[string]WalkerPosition  `json:"walkers"`
-	Cases       map[string]CaseInfo        `json:"cases,omitempty"`
-	Breakpoints map[string]bool            `json:"breakpoints"`
-	Paused      bool                       `json:"paused"`
-	Completed   bool                       `json:"completed"`
-	Error       string                     `json:"error,omitempty"`
-	Timestamp   time.Time                  `json:"timestamp"`
-	CaseResults []CaseResult               `json:"case_results,omitempty"`
+	CircuitName string                    `json:"circuit_name"`
+	Def         *circuit.CircuitDef       `json:"def,omitempty"`
+	Nodes       map[string]NodeState      `json:"nodes"`
+	Walkers     map[string]WalkerPosition `json:"walkers"`
+	Cases       map[string]CaseInfo       `json:"cases,omitempty"`
+	Breakpoints map[string]bool           `json:"breakpoints"`
+	Paused      bool                      `json:"paused"`
+	Completed   bool                      `json:"completed"`
+	Error       string                    `json:"error,omitempty"`
+	Timestamp   time.Time                 `json:"timestamp"`
+	CaseResults []CaseResult              `json:"case_results,omitempty"`
 }
 
 // DiffType classifies the kind of state change in a StateDiff.

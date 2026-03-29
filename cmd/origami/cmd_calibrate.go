@@ -32,7 +32,7 @@ func calibrateCmd(args []string) error {
 		return err
 	}
 
-	logger := slog.Default().With("component", "calibrate")
+	logger := slog.Default().With(slog.Any("component", "calibrate"))
 
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
@@ -48,7 +48,7 @@ func calibrateCmd(args []string) error {
 		return fmt.Errorf("connect to %s: %w", *endpoint, err)
 	}
 	defer session.Close()
-	logger.InfoContext(ctx, "connected", "endpoint", *endpoint)
+	logger.InfoContext(ctx, "connected", slog.Any("endpoint", *endpoint))
 
 	// Start circuit.
 	extra := map[string]any{
@@ -65,7 +65,7 @@ func calibrateCmd(args []string) error {
 		return fmt.Errorf("circuit/start: %w", err)
 	}
 	if startResult.IsError {
-		return fmt.Errorf("circuit/start: %s", calTextContent(startResult))
+		return fmt.Errorf("%w: %s", ErrCircuitStart, calTextContent(startResult))
 	}
 
 	var startOut struct {
@@ -78,12 +78,7 @@ func calibrateCmd(args []string) error {
 		return fmt.Errorf("parse start_circuit: %w", err)
 	}
 	sessionID := startOut.SessionID
-	logger.InfoContext(ctx, "circuit started",
-		"session_id", sessionID,
-		"total_cases", startOut.TotalCases,
-		"scenario", startOut.Scenario,
-		"parallel", *parallel,
-	)
+	logger.InfoContext(ctx, "circuit started", slog.Any("session_id", sessionID), slog.Any("total_cases", startOut.TotalCases), slog.Any("scenario", startOut.Scenario), slog.Any("parallel", *parallel))
 
 	// Spawn parallel workers.
 	var cliArgList []string
@@ -115,10 +110,10 @@ func calibrateCmd(args []string) error {
 	wg.Wait()
 	close(errCh)
 	for err := range errCh {
-		logger.ErrorContext(ctx, "worker failed", "error", err)
+		logger.ErrorContext(ctx, "worker failed", slog.Any("error", err))
 	}
 
-	logger.InfoContext(ctx, "all workers done", "steps_completed", stepsCompleted)
+	logger.InfoContext(ctx, "all workers done", slog.Any("steps_completed", stepsCompleted))
 
 	// Get report.
 	reportResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
@@ -129,7 +124,7 @@ func calibrateCmd(args []string) error {
 		return fmt.Errorf("circuit/report: %w", err)
 	}
 	if reportResult.IsError {
-		return fmt.Errorf("circuit/report: %s", calTextContent(reportResult))
+		return fmt.Errorf("%w: %s", ErrCircuitReport, calTextContent(reportResult))
 	}
 
 	fmt.Println(calTextContent(reportResult))
@@ -146,17 +141,17 @@ func runCalibrateWorker(
 	logger *slog.Logger,
 	mu *sync.Mutex, stepsCompleted *int,
 ) error {
-	wlog := logger.With("worker_id", workerID)
+	wlog := logger.With(slog.Any("worker_id", workerID))
 
 	// Emit worker_started signal.
 	_, _ = session.CallTool(ctx, &sdkmcp.CallToolParams{
 		Name: "signal",
 		Arguments: mustMarshalCal(map[string]any{
-			"action":                    "emit",
-			circuit.ProtoKeySessionID:   sessionID,
-			"event":                     "worker_started",
-			"agent":                     "worker",
-			"meta":                      map[string]any{"worker_id": fmt.Sprintf("w%d", workerID)},
+			"action":                  "emit",
+			circuit.ProtoKeySessionID: sessionID,
+			"event":                   "worker_started",
+			"agent":                   "worker",
+			"meta":                    map[string]any{"worker_id": fmt.Sprintf("w%d", workerID)},
 		}),
 	})
 
@@ -164,11 +159,11 @@ func runCalibrateWorker(
 		_, _ = session.CallTool(ctx, &sdkmcp.CallToolParams{
 			Name: "signal",
 			Arguments: mustMarshalCal(map[string]any{
-				"action":                    "emit",
-				circuit.ProtoKeySessionID:   sessionID,
-				"event":                     "worker_stopped",
-				"agent":                     "worker",
-				"meta":                      map[string]any{"worker_id": fmt.Sprintf("w%d", workerID)},
+				"action":                  "emit",
+				circuit.ProtoKeySessionID: sessionID,
+				"event":                   "worker_stopped",
+				"agent":                   "worker",
+				"meta":                    map[string]any{"worker_id": fmt.Sprintf("w%d", workerID)},
 			}),
 		})
 	}()
@@ -205,7 +200,7 @@ func runCalibrateWorker(
 
 		if step.Done {
 			if step.Error != "" {
-				wlog.WarnContext(ctx, "circuit done with error", "error", step.Error)
+				wlog.WarnContext(ctx, "circuit done with error", slog.Any("error", step.Error))
 			}
 			return nil
 		}
@@ -214,7 +209,7 @@ func runCalibrateWorker(
 			continue
 		}
 
-		wlog.InfoContext(ctx, "processing", "case_id", step.CaseID, "step", step.Step, "dispatch_id", step.DispatchID)
+		wlog.InfoContext(ctx, "processing", slog.Any("case_id", step.CaseID), slog.Any("step", step.Step), slog.Any("dispatch_id", step.DispatchID))
 
 		// Prepend worker preamble (step schemas + output format instructions)
 		// so the CLI knows what JSON fields to produce.
@@ -226,7 +221,7 @@ func runCalibrateWorker(
 		// Execute CLI with prompt.
 		artifact, err := execCLI(ctx, cliCommand, cliArgs, fullPrompt)
 		if err != nil {
-			wlog.ErrorContext(ctx, "CLI failed", "case_id", step.CaseID, "step", step.Step, "error", err)
+			wlog.ErrorContext(ctx, "CLI failed", slog.Any("case_id", step.CaseID), slog.Any("step", step.Step), slog.Any("error", err))
 			continue
 		}
 
@@ -252,15 +247,14 @@ func runCalibrateWorker(
 			return fmt.Errorf("circuit/submit %s/%s: %w", step.CaseID, step.Step, err)
 		}
 		if submitResult.IsError {
-			wlog.WarnContext(ctx, "submit_step rejected", "case_id", step.CaseID, "step", step.Step,
-				"error", calTextContent(submitResult))
+			wlog.WarnContext(ctx, "submit_step rejected", slog.Any("case_id", step.CaseID), slog.Any("step", step.Step), slog.Any("error", calTextContent(submitResult)))
 			continue
 		}
 
 		mu.Lock()
 		*stepsCompleted++
 		mu.Unlock()
-		wlog.InfoContext(ctx, "submitted", "case_id", step.CaseID, "step", step.Step)
+		wlog.InfoContext(ctx, "submitted", slog.Any("case_id", step.CaseID), slog.Any("step", step.Step))
 	}
 }
 

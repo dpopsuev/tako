@@ -30,10 +30,10 @@ type CurationWalker struct {
 
 // CurationWalkerConfig holds the configuration for constructing a CurationWalker.
 type CurationWalkerConfig struct {
-	RecordID   string
-	Schema     Schema
-	Sources    []EvidenceSource
-	Extractors []Extractor
+	RecordID      string
+	Schema        Schema
+	Sources       []EvidenceSource
+	Extractors    []Extractor
 	InitialRecord *Record
 }
 
@@ -58,8 +58,8 @@ func NewCurationWalker(cfg *CurationWalkerConfig) *CurationWalker {
 	}
 }
 
-func (w *CurationWalker) Identity() circuit.AgentIdentity      { return w.identity }
-func (w *CurationWalker) SetIdentity(id *circuit.AgentIdentity)  { w.identity = *id }
+func (w *CurationWalker) Identity() circuit.AgentIdentity       { return w.identity }
+func (w *CurationWalker) SetIdentity(id *circuit.AgentIdentity) { w.identity = *id }
 func (w *CurationWalker) State() *circuit.WalkerState           { return w.state }
 
 // Record returns the curated record after walking.
@@ -83,7 +83,7 @@ func (w *CurationWalker) Handle(ctx context.Context, node circuit.Node, nc circu
 	case "promote":
 		return w.handlePromote()
 	default:
-		return nil, fmt.Errorf("curate walker: unknown node %q", node.Name())
+		return nil, fmt.Errorf("%w: %q", ErrUnknownNode, node.Name())
 	}
 }
 
@@ -95,11 +95,7 @@ func (w *CurationWalker) handleFetch(ctx context.Context) (circuit.Artifact, err
 		}
 		raw, err := src.Fetch(ctx, w.record.ID)
 		if err != nil {
-			slog.WarnContext(ctx, "source fetch failed",
-				"source", src.Type(),
-				"record", w.record.ID,
-				"error", err.Error(),
-			)
+			slog.WarnContext(ctx, "source fetch failed", slog.Any("source", src.Type()), slog.Any("record", w.record.ID), slog.Any("error", err.Error()))
 			continue
 		}
 		lastRaw = raw
@@ -125,10 +121,7 @@ func (w *CurationWalker) handleExtract(ctx context.Context, nc circuit.NodeConte
 	for _, ext := range w.extractors {
 		fields, err := ext.Extract(ctx, raw)
 		if err != nil {
-			slog.WarnContext(ctx, "extractor failed",
-				"extractor", ext.Type(),
-				"error", err.Error(),
-			)
+			slog.WarnContext(ctx, "extractor failed", slog.Any("extractor", ext.Type()), slog.Any("error", err.Error()))
 			continue
 		}
 		for _, f := range fields {
@@ -174,10 +167,7 @@ func (w *CurationWalker) handleEnrich(_ context.Context) (circuit.Artifact, erro
 
 func (w *CurationWalker) handlePromote() (circuit.Artifact, error) {
 	w.promoted = true
-	slog.InfoContext(context.Background(), "record promoted",
-		"record_id", w.record.ID,
-		"fields", len(w.record.Fields),
-	)
+	slog.InfoContext(context.Background(), "record promoted", slog.Any("record_id", w.record.ID), slog.Any("fields", len(w.record.Fields)))
 	return &CurationArtifact{
 		ArtifactType: "promote",
 		Rec:          &w.record,

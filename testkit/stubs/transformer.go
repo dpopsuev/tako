@@ -89,4 +89,3 @@ func (s *StubTransformer) Reset() {
 	s.errors = make(map[string]error)
 	s.mu.Unlock()
 }
-

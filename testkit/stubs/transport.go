@@ -138,7 +138,7 @@ func NewStubSessionHandle(id string) *StubSessionHandle {
 	}
 }
 
-func (h *StubSessionHandle) ID() string         { return h.id }
+func (h *StubSessionHandle) ID() string            { return h.id }
 func (h *StubSessionHandle) Done() <-chan struct{} { return h.done }
 
 func (h *StubSessionHandle) Result() any {

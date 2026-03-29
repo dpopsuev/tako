@@ -8,7 +8,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/dpopsuev/origami/circuit"
@@ -71,44 +70,12 @@ func traceCmd(w io.Writer, args []string) error {
 	case formatText:
 		return renderTraceText(w, filtered)
 	default:
-		return fmt.Errorf("unknown format: %s", *format)
+		return fmt.Errorf("%w: %s", ErrUnknownFormat, *format)
 	}
 }
 
 func resolveTracePath(stateDir, runID string) (string, error) {
-	if stateDir == "" {
-		stateDir = os.Getenv("ORIGAMI_STATE_DIR")
-	}
-	if stateDir == "" {
-		stateDir = defaultStateDir
-	}
-
-	runsDir := filepath.Join(stateDir, "runs")
-
-	if runID == "" {
-		// Find most recent run by mtime.
-		entries, err := os.ReadDir(runsDir)
-		if err != nil {
-			return "", fmt.Errorf("cannot read runs directory %s: %w", runsDir, err)
-		}
-		var dirs []os.DirEntry
-		for _, e := range entries {
-			if e.IsDir() {
-				dirs = append(dirs, e)
-			}
-		}
-		if len(dirs) == 0 {
-			return "", fmt.Errorf("no runs found in %s", runsDir)
-		}
-		sort.Slice(dirs, func(i, j int) bool {
-			fi, _ := dirs[i].Info()
-			fj, _ := dirs[j].Info()
-			return fi.ModTime().After(fj.ModTime())
-		})
-		runID = dirs[0].Name()
-	}
-
-	return filepath.Join(runsDir, runID, "trace.jsonl"), nil
+	return resolveRunFile(stateDir, runID, "trace.jsonl")
 }
 
 func readTraceEvents(path string) ([]engine.TraceEvent, error) {

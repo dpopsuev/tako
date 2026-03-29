@@ -37,7 +37,7 @@ func (o *Orchestrator) Start(ctx context.Context, name string) error {
 	backend, ok := o.schematics[name]
 	o.mu.RUnlock()
 	if !ok {
-		return fmt.Errorf("unknown schematic %q", name)
+		return fmt.Errorf("%w: %q", ErrUnknownSchematic, name)
 	}
 	return backend.Start(ctx)
 }
@@ -48,7 +48,7 @@ func (o *Orchestrator) Stop(ctx context.Context, name string) error {
 	backend, ok := o.schematics[name]
 	o.mu.RUnlock()
 	if !ok {
-		return fmt.Errorf("unknown schematic %q", name)
+		return fmt.Errorf("%w: %q", ErrUnknownSchematic, name)
 	}
 	return backend.Stop(ctx)
 }
@@ -60,7 +60,7 @@ func (o *Orchestrator) Swap(ctx context.Context, name string, newBackend Schemat
 	old, ok := o.schematics[name]
 	if !ok {
 		o.mu.Unlock()
-		return fmt.Errorf("unknown schematic %q", name)
+		return fmt.Errorf("%w: %q", ErrUnknownSchematic, name)
 	}
 
 	o.schematics[name] = newBackend
@@ -79,7 +79,7 @@ func (o *Orchestrator) CallTool(ctx context.Context, name, tool string, args map
 	backend, ok := o.schematics[name]
 	o.mu.RUnlock()
 	if !ok {
-		return nil, fmt.Errorf("unknown schematic %q", name)
+		return nil, fmt.Errorf("%w: %q", ErrUnknownSchematic, name)
 	}
 	return backend.CallTool(ctx, tool, args)
 }

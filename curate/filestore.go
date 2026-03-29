@@ -39,7 +39,7 @@ func (s *FileStore) List(_ context.Context) ([]string, error) {
 
 func validateName(name string) error {
 	if name == "" || strings.Contains(name, "..") || strings.ContainsAny(name, "/\\") {
-		return fmt.Errorf("curate: invalid dataset name %q", name)
+		return fmt.Errorf("%w: %q", ErrInvalidDatasetName, name)
 	}
 	return nil
 }
@@ -69,7 +69,7 @@ func (s *FileStore) Save(_ context.Context, d *Dataset) error {
 		return fmt.Errorf("curate: marshal %q: %w", d.Name, err)
 	}
 	path := filepath.Join(s.Dir, d.Name+".json")
-	if err := os.WriteFile(path, data, 0o644); err != nil {
+	if err := os.WriteFile(path, data, 0o600); err != nil {
 		return fmt.Errorf("curate: write %q: %w", d.Name, err)
 	}
 	return nil

@@ -69,10 +69,10 @@ func TestInMemoryFindingCollector_ConcurrentWrites(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(n)
 	for i := 0; i < n; i++ {
-		go func(i int) {
+		go func() {
 			defer wg.Done()
 			_ = c.Report(ctx, &circuit.Finding{Severity: circuit.FindingInfo, Message: "concurrent"})
-		}(i)
+		}()
 	}
 	wg.Wait()
 

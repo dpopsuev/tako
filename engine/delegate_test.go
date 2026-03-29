@@ -216,7 +216,7 @@ func TestWalk_DelegateNode_ContextCancellation(t *testing.T) {
 
 	err = g.Walk(ctx, walker, "A")
 	if err == nil {
-		t.Fatal("Walk() should fail with cancelled context")
+		t.Fatal("Walk() should fail with canceled context")
 	}
 }
 
@@ -353,7 +353,7 @@ type testDelegateNode struct {
 	err        error
 }
 
-func (n *testDelegateNode) Name() string                  { return n.name }
+func (n *testDelegateNode) Name() string                     { return n.name }
 func (n *testDelegateNode) ElementAffinity() circuit.Element { return "" }
 func (n *testDelegateNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return nil, nil

@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/dpopsuev/origami/toolkit"
 )
@@ -32,7 +33,7 @@ func NewMCPTransport(cfg MCPTransportConfig) *MCPTransport {
 	return &MCPTransport{config: cfg}
 }
 
-// Serve starts the HTTP server and blocks until ctx is cancelled.
+// Serve starts the HTTP server and blocks until ctx is canceled.
 func (t *MCPTransport) Serve(ctx context.Context, handler toolkit.TransportHandler) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
@@ -49,7 +50,7 @@ func (t *MCPTransport) Serve(ctx context.Context, handler toolkit.TransportHandl
 
 	t.mu.Lock()
 	t.listener = ln
-	t.server = &http.Server{Handler: mux}
+	t.server = &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second}
 	t.mu.Unlock()
 
 	errCh := make(chan error, 1)

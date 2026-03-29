@@ -16,24 +16,24 @@ import (
 type RunOption func(*runConfig)
 
 type runConfig struct {
-	transformers      TransformerRegistry
-	hooks             HookRegistry
-	extractors        ExtractorRegistry
-	nodes             NodeRegistry
-	edges             EdgeFactory
-	components        ComponentLoader
-	overrides         map[string]any
-	walker            circuit.Walker
-	team              *Team
-	observer          circuit.WalkObserver
-	logger            *slog.Logger
-	memory            circuit.MemoryStore
-	nodeCache         circuit.NodeCache
-	checkpointer      circuit.Checkpointer
-	resumeID          string
-	resumeInput       any
-	thermalBudget     *thermalConfig
-	offsetPreamble    string
+	transformers   TransformerRegistry
+	hooks          HookRegistry
+	extractors     ExtractorRegistry
+	nodes          NodeRegistry
+	edges          EdgeFactory
+	components     ComponentLoader
+	overrides      map[string]any
+	walker         circuit.Walker
+	team           *Team
+	observer       circuit.WalkObserver
+	logger         *slog.Logger
+	memory         circuit.MemoryStore
+	nodeCache      circuit.NodeCache
+	checkpointer   circuit.Checkpointer
+	resumeID       string
+	resumeInput    any
+	thermalBudget  *thermalConfig
+	offsetPreamble string
 }
 
 // WithTransformers registers transformers for the run.
@@ -136,6 +136,8 @@ func WithOffsetCompensation(preamble string) RunOption {
 
 // Run loads a circuit YAML, builds a graph, and walks it.
 // This is the primary Go API for executing Origami circuits.
+//
+//nolint:gocyclo // top-level orchestrator applies all RunOption combinations
 func Run(ctx context.Context, circuitPath string, input any, opts ...RunOption) error {
 	cfg := &runConfig{}
 	for _, opt := range opts {
@@ -240,17 +242,14 @@ func Run(ctx context.Context, circuitPath string, input any, opts ...RunOption) 
 
 	err = runner.Walk(ctx, walker, startNode)
 
-	if errors.Is(err, walkInterrupted) {
+	if errors.Is(err, errWalkInterrupted) {
 		return nil
 	}
 
 	if err == nil && cfg.checkpointer != nil {
 		cpID := walker.State().ID
 		if rmErr := cfg.checkpointer.Remove(cpID); rmErr != nil {
-			slog.WarnContext(ctx, "failed to remove checkpoint after successful walk",
-				"walker_id", cpID,
-				"error", rmErr.Error(),
-			)
+			slog.WarnContext(ctx, "failed to remove checkpoint after successful walk", slog.Any("walker_id", cpID), slog.Any("error", rmErr.Error()))
 		}
 	}
 	return err
@@ -350,4 +349,3 @@ func applyOffsetPreamble(w circuit.Walker, offset string) {
 	}
 	w.SetIdentity(&id)
 }
-

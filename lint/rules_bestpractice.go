@@ -22,10 +22,12 @@ const (
 
 type PreferWhenOverCondition struct{}
 
-func (r *PreferWhenOverCondition) ID() string          { return rulePreferWhen }
-func (r *PreferWhenOverCondition) Description() string { return "use when instead of deprecated condition field" }
-func (r *PreferWhenOverCondition) Severity() Severity   { return SeverityWarning }
-func (r *PreferWhenOverCondition) Tags() []string       { return []string{"best-practice"} }
+func (r *PreferWhenOverCondition) ID() string { return rulePreferWhen }
+func (r *PreferWhenOverCondition) Description() string {
+	return "use when instead of deprecated condition field"
+}
+func (r *PreferWhenOverCondition) Severity() Severity { return SeverityWarning }
+func (r *PreferWhenOverCondition) Tags() []string     { return []string{"best-practice"} }
 
 func (r *PreferWhenOverCondition) Check(ctx *LintContext) []Finding {
 	var out []Finding
@@ -64,10 +66,12 @@ func looksLikeExpression(s string) bool {
 
 type NameYourEdges struct{}
 
-func (r *NameYourEdges) ID() string          { return "B2/name-your-edges" }
-func (r *NameYourEdges) Description() string { return "circuits with many edges should name them for readability" }
-func (r *NameYourEdges) Severity() Severity   { return SeverityInfo }
-func (r *NameYourEdges) Tags() []string       { return []string{"best-practice"} }
+func (r *NameYourEdges) ID() string { return "B2/name-your-edges" }
+func (r *NameYourEdges) Description() string {
+	return "circuits with many edges should name them for readability"
+}
+func (r *NameYourEdges) Severity() Severity { return SeverityInfo }
+func (r *NameYourEdges) Tags() []string     { return []string{"best-practice"} }
 
 func (r *NameYourEdges) Check(ctx *LintContext) []Finding {
 	unnamed := 0
@@ -92,10 +96,12 @@ func (r *NameYourEdges) Check(ctx *LintContext) []Finding {
 
 type TerminalEdgeToDone struct{}
 
-func (r *TerminalEdgeToDone) ID() string          { return "B3/terminal-edge-to-done" }
-func (r *TerminalEdgeToDone) Description() string { return "terminal nodes should have an edge to done" }
-func (r *TerminalEdgeToDone) Severity() Severity   { return SeverityWarning }
-func (r *TerminalEdgeToDone) Tags() []string       { return []string{"best-practice"} }
+func (r *TerminalEdgeToDone) ID() string { return "B3/terminal-edge-to-done" }
+func (r *TerminalEdgeToDone) Description() string {
+	return "terminal nodes should have an edge to done"
+}
+func (r *TerminalEdgeToDone) Severity() Severity { return SeverityWarning }
+func (r *TerminalEdgeToDone) Tags() []string     { return []string{"best-practice"} }
 
 func (r *TerminalEdgeToDone) Check(ctx *LintContext) []Finding {
 	hasOutgoing := make(map[string]bool)
@@ -123,8 +129,10 @@ func (r *TerminalEdgeToDone) Check(ctx *LintContext) []Finding {
 
 type ZoneStickinessWithoutProvider struct{}
 
-func (r *ZoneStickinessWithoutProvider) ID() string        { return "B4/zone-stickiness-without-provider" }
-func (r *ZoneStickinessWithoutProvider) Description() string { return "zone with stickiness but no providers in its nodes" }
+func (r *ZoneStickinessWithoutProvider) ID() string { return "B4/zone-stickiness-without-provider" }
+func (r *ZoneStickinessWithoutProvider) Description() string {
+	return "zone with stickiness but no providers in its nodes"
+}
 func (r *ZoneStickinessWithoutProvider) Severity() Severity { return SeverityInfo }
 func (r *ZoneStickinessWithoutProvider) Tags() []string     { return []string{"best-practice"} }
 
@@ -163,10 +171,12 @@ func (r *ZoneStickinessWithoutProvider) Check(ctx *LintContext) []Finding {
 
 type LargeCircuitNoZones struct{}
 
-func (r *LargeCircuitNoZones) ID() string          { return "B5/large-circuit-no-zones" }
-func (r *LargeCircuitNoZones) Description() string { return "large circuits should define zones for organization" }
-func (r *LargeCircuitNoZones) Severity() Severity   { return SeverityInfo }
-func (r *LargeCircuitNoZones) Tags() []string       { return []string{"best-practice"} }
+func (r *LargeCircuitNoZones) ID() string { return "B5/large-circuit-no-zones" }
+func (r *LargeCircuitNoZones) Description() string {
+	return "large circuits should define zones for organization"
+}
+func (r *LargeCircuitNoZones) Severity() Severity { return SeverityInfo }
+func (r *LargeCircuitNoZones) Tags() []string     { return []string{"best-practice"} }
 
 func (r *LargeCircuitNoZones) Check(ctx *LintContext) []Finding {
 	if len(ctx.Def.Nodes) > 6 && len(ctx.Def.Zones) == 0 {
@@ -185,10 +195,12 @@ func (r *LargeCircuitNoZones) Check(ctx *LintContext) []Finding {
 
 type ApproachAffinityChain struct{}
 
-func (r *ApproachAffinityChain) ID() string          { return "B6/approach-affinity-chain" }
-func (r *ApproachAffinityChain) Description() string { return "three or more consecutive nodes with the same approach" }
-func (r *ApproachAffinityChain) Severity() Severity   { return SeverityInfo }
-func (r *ApproachAffinityChain) Tags() []string       { return []string{"best-practice"} }
+func (r *ApproachAffinityChain) ID() string { return "B6/approach-affinity-chain" }
+func (r *ApproachAffinityChain) Description() string {
+	return "three or more consecutive nodes with the same approach"
+}
+func (r *ApproachAffinityChain) Severity() Severity { return SeverityInfo }
+func (r *ApproachAffinityChain) Tags() []string     { return []string{"best-practice"} }
 
 func (r *ApproachAffinityChain) Check(ctx *LintContext) []Finding {
 	nodeApproaches := make(map[string]string)
@@ -263,10 +275,12 @@ var knownStochasticTransformers = map[string]bool{
 
 type StochasticTransformer struct{}
 
-func (r *StochasticTransformer) ID() string          { return ruleStochastic }
-func (r *StochasticTransformer) Description() string { return "node uses a stochastic (non-deterministic) transformer" }
-func (r *StochasticTransformer) Severity() Severity   { return SeverityInfo }
-func (r *StochasticTransformer) Tags() []string       { return []string{"best-practice", "determinism"} }
+func (r *StochasticTransformer) ID() string { return ruleStochastic }
+func (r *StochasticTransformer) Description() string {
+	return "node uses a stochastic (non-deterministic) transformer"
+}
+func (r *StochasticTransformer) Severity() Severity { return SeverityInfo }
+func (r *StochasticTransformer) Tags() []string     { return []string{"best-practice", "determinism"} }
 
 func (r *StochasticTransformer) Check(ctx *LintContext) []Finding {
 	var reg engine.TransformerRegistry
@@ -307,10 +321,12 @@ func isStochastic(name string, reg engine.TransformerRegistry) bool {
 
 type StochasticSummary struct{}
 
-func (r *StochasticSummary) ID() string          { return ruleStochasticSumm }
-func (r *StochasticSummary) Description() string { return "aggregate count of stochastic nodes in circuit" }
-func (r *StochasticSummary) Severity() Severity   { return SeverityInfo }
-func (r *StochasticSummary) Tags() []string       { return []string{"best-practice", "determinism"} }
+func (r *StochasticSummary) ID() string { return ruleStochasticSumm }
+func (r *StochasticSummary) Description() string {
+	return "aggregate count of stochastic nodes in circuit"
+}
+func (r *StochasticSummary) Severity() Severity { return SeverityInfo }
+func (r *StochasticSummary) Tags() []string     { return []string{"best-practice", "determinism"} }
 
 func (r *StochasticSummary) Check(ctx *LintContext) []Finding {
 	var reg engine.TransformerRegistry
@@ -387,10 +403,12 @@ func (r *MissingKind) Check(ctx *LintContext) []Finding {
 
 type DeprecatedArrow struct{}
 
-func (r *DeprecatedArrow) ID() string        { return ruleDeprecatedArrow }
-func (r *DeprecatedArrow) Description() string { return "use references instead of -> for foreign keys" }
-func (r *DeprecatedArrow) Severity() Severity  { return SeverityWarning }
-func (r *DeprecatedArrow) Tags() []string      { return []string{"best-practice", "schema", "envelope"} }
+func (r *DeprecatedArrow) ID() string { return ruleDeprecatedArrow }
+func (r *DeprecatedArrow) Description() string {
+	return "use references instead of -> for foreign keys"
+}
+func (r *DeprecatedArrow) Severity() Severity { return SeverityWarning }
+func (r *DeprecatedArrow) Tags() []string     { return []string{"best-practice", "schema", "envelope"} }
 
 func (r *DeprecatedArrow) Check(ctx *LintContext) []Finding {
 	if ctx.yamlRoot == nil {
@@ -430,10 +448,12 @@ var domainDirs = []string{
 
 type MissingKindDomainPath struct{}
 
-func (r *MissingKindDomainPath) ID() string          { return "B11/missing-kind-domain-path" }
-func (r *MissingKindDomainPath) Description() string { return "YAML in a domain directory should have a kind field" }
-func (r *MissingKindDomainPath) Severity() Severity  { return SeverityWarning }
-func (r *MissingKindDomainPath) Tags() []string      { return []string{"best-practice", "envelope"} }
+func (r *MissingKindDomainPath) ID() string { return "B11/missing-kind-domain-path" }
+func (r *MissingKindDomainPath) Description() string {
+	return "YAML in a domain directory should have a kind field"
+}
+func (r *MissingKindDomainPath) Severity() Severity { return SeverityWarning }
+func (r *MissingKindDomainPath) Tags() []string     { return []string{"best-practice", "envelope"} }
 
 func (r *MissingKindDomainPath) Check(ctx *LintContext) []Finding {
 	if ctx.yamlRoot == nil || ctx.File == "" {

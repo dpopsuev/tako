@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"sync"
 	"time"
@@ -23,11 +24,11 @@ import (
 type Server struct {
 	conn jsonrpc2.Conn
 
-	mu          sync.Mutex
-	docs        map[uri.URI]*document
-	ready       bool
-	kamiBridge  *KamiBridge
-	vocab       circuit.RichVocabulary
+	mu         sync.Mutex
+	docs       map[uri.URI]*document
+	ready      bool
+	kamiBridge *KamiBridge
+	vocab      circuit.RichVocabulary
 }
 
 type document struct {
@@ -268,4 +269,16 @@ func (s *Server) SetVocab(v circuit.RichVocabulary) {
 	s.mu.Lock()
 	s.vocab = v
 	s.mu.Unlock()
+}
+
+// safeUint32 converts an int to uint32, clamping negative values to 0
+// and values exceeding math.MaxUint32 to math.MaxUint32.
+func safeUint32(v int) uint32 {
+	if v < 0 {
+		return 0
+	}
+	if v > math.MaxUint32 {
+		return math.MaxUint32
+	}
+	return uint32(v)
 }

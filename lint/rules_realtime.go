@@ -8,9 +8,9 @@ import (
 )
 
 const (
-	ruleEdgeNodeRef     = "S21/edge-node-reference"
-	ruleHookRef         = "S22/hook-reference"
-	ruleInvalidHandler  = "S23/invalid-handler-type"
+	ruleEdgeNodeRef    = "S21/edge-node-reference"
+	ruleHookRef        = "S22/hook-reference"
+	ruleInvalidHandler = "S23/invalid-handler-type"
 )
 
 // --- S21: edge-node-reference ---
@@ -19,10 +19,12 @@ const (
 // node name or the circuit's done sentinel. Catches typos like "recal" for "recall".
 type EdgeNodeReference struct{}
 
-func (r *EdgeNodeReference) ID() string          { return ruleEdgeNodeRef }
-func (r *EdgeNodeReference) Description() string { return "edge from/to must reference a declared node or the done sentinel" }
-func (r *EdgeNodeReference) Severity() Severity  { return SeverityError }
-func (r *EdgeNodeReference) Tags() []string      { return []string{"structural"} }
+func (r *EdgeNodeReference) ID() string { return ruleEdgeNodeRef }
+func (r *EdgeNodeReference) Description() string {
+	return "edge from/to must reference a declared node or the done sentinel"
+}
+func (r *EdgeNodeReference) Severity() Severity { return SeverityError }
+func (r *EdgeNodeReference) Tags() []string     { return []string{"structural"} }
 
 func (r *EdgeNodeReference) Check(ctx *LintContext) []Finding {
 	if ctx.Def == nil {
@@ -46,7 +48,7 @@ func (r *EdgeNodeReference) Check(ctx *LintContext) []Finding {
 	var out []Finding
 	for i := range ctx.Def.Edges {
 		ed := &ctx.Def.Edges[i]
-		if ed.From != "" && !validNodes[string(string(ed.From))] {
+		if ed.From != "" && !validNodes[string(ed.From)] {
 			f := Finding{
 				RuleID:   r.ID(),
 				Severity: r.Severity(),
@@ -59,7 +61,7 @@ func (r *EdgeNodeReference) Check(ctx *LintContext) []Finding {
 			}
 			out = append(out, f)
 		}
-		if ed.To != "" && !validNodes[string(string(ed.To))] {
+		if ed.To != "" && !validNodes[string(ed.To)] {
 			f := Finding{
 				RuleID:   r.ID(),
 				Severity: r.Severity(),
@@ -101,10 +103,12 @@ func nodeSuggestion(val string, valid map[string]bool) string {
 // checking against other hook references in the same circuit for likely typos.
 type HookReference struct{}
 
-func (r *HookReference) ID() string          { return ruleHookRef }
-func (r *HookReference) Description() string { return "hook references in before/after should be well-formed identifiers" }
-func (r *HookReference) Severity() Severity  { return SeverityWarning }
-func (r *HookReference) Tags() []string      { return []string{"structural"} }
+func (r *HookReference) ID() string { return ruleHookRef }
+func (r *HookReference) Description() string {
+	return "hook references in before/after should be well-formed identifiers"
+}
+func (r *HookReference) Severity() Severity { return SeverityWarning }
+func (r *HookReference) Tags() []string     { return []string{"structural"} }
 
 func (r *HookReference) Check(ctx *LintContext) []Finding {
 	if ctx.Def == nil {
@@ -194,10 +198,12 @@ func checkHookRefs(ctx *LintContext, nodeName, phase string, hooks []string, all
 // values are recognized handler types.
 type InvalidHandlerType struct{}
 
-func (r *InvalidHandlerType) ID() string          { return ruleInvalidHandler }
-func (r *InvalidHandlerType) Description() string { return "handler_type must be a recognized type (transformer, extractor, renderer, node, delegate, circuit)" }
-func (r *InvalidHandlerType) Severity() Severity  { return SeverityError }
-func (r *InvalidHandlerType) Tags() []string      { return []string{"structural"} }
+func (r *InvalidHandlerType) ID() string { return ruleInvalidHandler }
+func (r *InvalidHandlerType) Description() string {
+	return "handler_type must be a recognized type (transformer, extractor, renderer, node, delegate, circuit)"
+}
+func (r *InvalidHandlerType) Severity() Severity { return SeverityError }
+func (r *InvalidHandlerType) Tags() []string     { return []string{"structural"} }
 
 var validHandlerTypes = map[string]bool{
 	circuit.HandlerTypeTransformer: true,

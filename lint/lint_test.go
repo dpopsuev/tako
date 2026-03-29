@@ -462,10 +462,10 @@ func TestLintContext_LineNumbers(t *testing.T) {
 func TestNewLintContextFromDef(t *testing.T) {
 	def := &circuit.CircuitDef{
 		Circuit: "test",
-		Nodes:    []circuit.NodeDef{{Name: "a", Approach: "rapid"}},
-		Edges:    []circuit.EdgeDef{{ID: "e1", Name: "e1", From: "a", To: "_done"}},
-		Start:    "a",
-		Done:     "_done",
+		Nodes:   []circuit.NodeDef{{Name: "a", Approach: "rapid"}},
+		Edges:   []circuit.EdgeDef{{ID: "e1", Name: "e1", From: "a", To: "_done"}},
+		Start:   "a",
+		Done:    "_done",
 	}
 	ctx := NewLintContextFromDef(def, "inline")
 	runner := DefaultRunner()
@@ -813,7 +813,10 @@ done: _done
 }
 
 func TestLevenshtein(t *testing.T) {
-	tests := []struct{ a, b string; want int }{
+	tests := []struct {
+		a, b string
+		want int
+	}{
 		{"fire", "fire", 0},
 		{"fyre", "fire", 1},
 		{"", "abc", 3},
@@ -836,7 +839,7 @@ Error: {{.Failure.ErrorMesage}}`
 No template directives here.`
 
 	promptFS := fstest.MapFS{
-		"prompts/recall/judge-similarity.md": &fstest.MapFile{Data: []byte(validTemplate)},
+		"prompts/recall/judge-similarity.md":  &fstest.MapFile{Data: []byte(validTemplate)},
 		"prompts/triage/classify-symptoms.md": &fstest.MapFile{Data: []byte(invalidTemplate)},
 		"prompts/review/gap-analysis.md":      &fstest.MapFile{Data: []byte(referenceDoc)},
 	}

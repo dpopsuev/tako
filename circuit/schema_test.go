@@ -8,7 +8,7 @@ type schemaTestArtifact struct {
 	raw  any
 }
 
-func (a *schemaTestArtifact) Type() string       { return a.typ }
+func (a *schemaTestArtifact) Type() string        { return a.typ }
 func (a *schemaTestArtifact) Confidence() float64 { return a.conf }
 func (a *schemaTestArtifact) Raw() any            { return a.raw }
 

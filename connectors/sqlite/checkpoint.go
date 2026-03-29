@@ -3,11 +3,12 @@ package sqlite
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 
 	"github.com/dpopsuev/origami/circuit"
-	_ "modernc.org/sqlite"
+	_ "modernc.org/sqlite" // register sqlite3 driver
 )
 
 // SQLiteCheckpointer implements circuit.Checkpointer backed by a SQLite
@@ -61,7 +62,7 @@ func (c *SQLiteCheckpointer) Load(id string) (*circuit.WalkerState, error) {
 	defer c.mu.Unlock()
 	var data []byte
 	err := c.db.QueryRow("SELECT state FROM checkpoints WHERE id = ?", id).Scan(&data)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {

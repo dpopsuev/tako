@@ -73,7 +73,7 @@ func NewNetworkServer(dispatcher agentport.ExternalDispatcher, addr string, opts
 		dispatcher: dispatcher,
 		log:        discardLogger(),
 		addr:       addr,
-		server:     &http.Server{Addr: addr},
+		server:     &http.Server{Addr: addr, ReadHeaderTimeout: 10 * time.Second},
 	}
 	for _, opt := range opts {
 		opt(s)
@@ -101,7 +101,7 @@ func NewNetworkServer(dispatcher agentport.ExternalDispatcher, addr string, opts
 	return s
 }
 
-// Serve starts the HTTP server and blocks until the context is cancelled or
+// Serve starts the HTTP server and blocks until the context is canceled or
 // the server encounters a fatal error.
 func (s *NetworkServer) Serve(ctx context.Context) error {
 	ln, err := net.Listen("tcp", s.addr)
@@ -114,7 +114,7 @@ func (s *NetworkServer) Serve(ctx context.Context) error {
 	s.started = true
 	s.mu.Unlock()
 
-	s.log.InfoContext(ctx, "network server started", "addr", s.addr)
+	s.log.InfoContext(ctx, "network server started", slog.Any("addr", s.addr))
 
 	go func() {
 		<-ctx.Done()
@@ -170,7 +170,7 @@ func (s *NetworkServer) handleGetNext(w http.ResponseWriter, r *http.Request) {
 
 	dc, err := s.dispatcher.GetNextStepWithHints(r.Context(), hints)
 	if err != nil {
-		s.log.ErrorContext(r.Context(), "get next step failed", "error", err)
+		s.log.ErrorContext(r.Context(), "get next step failed", slog.Any("error", err))
 		http.Error(w, "dispatch unavailable", http.StatusServiceUnavailable)
 		return
 	}
@@ -195,7 +195,7 @@ func (s *NetworkServer) handleSubmit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.dispatcher.SubmitArtifact(r.Context(), req.DispatchID, req.Data); err != nil {
-		s.log.ErrorContext(r.Context(), "submit artifact failed", "dispatch_id", req.DispatchID, "error", err)
+		s.log.ErrorContext(r.Context(), "submit artifact failed", slog.Any("dispatch_id", req.DispatchID), slog.Any("error", err))
 		http.Error(w, "submit failed", http.StatusInternalServerError)
 		return
 	}
@@ -353,8 +353,7 @@ func (c *NetworkClient) GetNextStepWithHints(ctx context.Context, hints agentpor
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return agentport.Context{}, fmt.Errorf("network client: GET /next: status %d: %s",
-			resp.StatusCode, string(body))
+		return agentport.Context{}, fmt.Errorf("%w: %d: %s", ErrNetworkClientGETNextStatus, resp.StatusCode, string(body))
 	}
 
 	var nr nextResponse
@@ -393,8 +392,7 @@ func (c *NetworkClient) SubmitArtifact(ctx context.Context, dispatchID int64, da
 
 	if resp.StatusCode != http.StatusNoContent {
 		respBody, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("network client: POST /submit: status %d: %s",
-			resp.StatusCode, string(respBody))
+		return fmt.Errorf("%w: %d: %s", ErrNetworkClientPOSTSubmitStatus, resp.StatusCode, string(respBody))
 	}
 
 	return nil
@@ -428,8 +426,7 @@ func (c *NetworkClient) EmitSignal(ctx context.Context, event, agent, caseID, st
 
 	if resp.StatusCode != http.StatusNoContent {
 		respBody, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("network client: POST /signal: status %d: %s",
-			resp.StatusCode, string(respBody))
+		return fmt.Errorf("%w: %d: %s", ErrNetworkClientPOSTSignalStatus, resp.StatusCode, string(respBody))
 	}
 
 	return nil
@@ -451,8 +448,7 @@ func (c *NetworkClient) GetSignals(ctx context.Context, since int) ([]agentport.
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("network client: GET /signals: status %d: %s",
-			resp.StatusCode, string(body))
+		return nil, fmt.Errorf("%w: %d: %s", ErrNetworkClientGETSignalsStatus, resp.StatusCode, string(body))
 	}
 
 	var sigs []agentport.Signal

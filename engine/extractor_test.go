@@ -421,7 +421,7 @@ type extTestNode struct {
 	name string
 }
 
-func (n *extTestNode) Name() string                  { return n.name }
+func (n *extTestNode) Name() string                     { return n.name }
 func (n *extTestNode) ElementAffinity() circuit.Element { return "" }
 func (n *extTestNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return nil, nil

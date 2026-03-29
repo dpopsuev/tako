@@ -35,10 +35,10 @@ func (s *Server) Start(ctx context.Context) error {
 	defer s.mu.Unlock()
 
 	if s.session != nil {
-		return fmt.Errorf("subprocess already started")
+		return ErrSubprocessAlreadyStarted
 	}
 
-	cmd := exec.CommandContext(ctx, s.BinaryPath, s.Args...)
+	cmd := exec.CommandContext(ctx, s.BinaryPath, s.Args...) //nolint:gosec // binary path is from trusted config
 	if len(s.Env) > 0 {
 		cmd.Env = append(cmd.Environ(), s.Env...)
 	}
@@ -122,7 +122,7 @@ func (s *Server) CallTool(ctx context.Context, name string, args map[string]any)
 	s.mu.Unlock()
 
 	if session == nil {
-		return nil, fmt.Errorf("subprocess not started")
+		return nil, ErrSubprocessNotStarted
 	}
 
 	return session.CallTool(ctx, &sdkmcp.CallToolParams{

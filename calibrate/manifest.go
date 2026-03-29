@@ -11,13 +11,13 @@ import (
 	yaml "go.yaml.in/yaml/v3"
 )
 
-// WriteManifest serialises a Manifest to manifest.yaml inside dir.
+// WriteManifest serializes a Manifest to manifest.yaml inside dir.
 func WriteManifest(dir string, m *Manifest) error {
 	data, err := yaml.Marshal(m)
 	if err != nil {
 		return fmt.Errorf("marshal manifest: %w", err)
 	}
-	return os.WriteFile(filepath.Join(dir, ManifestFile), data, 0o644)
+	return os.WriteFile(filepath.Join(dir, ManifestFile), data, 0o600)
 }
 
 // ReadManifest parses manifest.yaml from an fs.FS bundle root.
@@ -95,7 +95,7 @@ func verifySHA(fsys fs.FS, path, expected string) error {
 		return fmt.Errorf("checksum %s: %w", path, err)
 	}
 	if got != expected {
-		return fmt.Errorf("checksum mismatch %s: want %s, got %s", path, expected, got)
+		return fmt.Errorf("%w: %s: want %s, got %s", ErrChecksumMismatch, path, expected, got)
 	}
 	return nil
 }

@@ -18,9 +18,9 @@ type visitTrackingWalker struct {
 	visited  []string
 }
 
-func (w *visitTrackingWalker) Identity() circuit.AgentIdentity      { return w.identity }
+func (w *visitTrackingWalker) Identity() circuit.AgentIdentity       { return w.identity }
 func (w *visitTrackingWalker) SetIdentity(id *circuit.AgentIdentity) { w.identity = *id }
-func (w *visitTrackingWalker) State() *circuit.WalkerState          { return w.state }
+func (w *visitTrackingWalker) State() *circuit.WalkerState           { return w.state }
 func (w *visitTrackingWalker) Handle(ctx context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
 	w.visited = append(w.visited, node.Name())
 	return node.Process(ctx, nc)
@@ -273,7 +273,7 @@ func TestGraph_ContextCancellation(t *testing.T) {
 	w := &visitTrackingWalker{state: circuit.NewWalkerState("case-7")}
 	err = g.Walk(ctx, w, "A")
 	if err == nil {
-		t.Fatal("expected error from cancelled context")
+		t.Fatal("expected error from canceled context")
 	}
 	if w.state.Status != "error" {
 		t.Errorf("expected status error, got %s", w.state.Status)
@@ -409,7 +409,7 @@ func TestWalk_CancelDuringNodeProcess(t *testing.T) {
 	elapsed := time.Since(start)
 
 	if err == nil {
-		t.Fatal("expected context cancelled error, got nil")
+		t.Fatal("expected context canceled error, got nil")
 	}
 	if !errors.Is(err, context.Canceled) {
 		t.Errorf("expected Canceled, got: %v", err)

@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/autodoc"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 func autodocCmd(args []string) error {
@@ -38,7 +38,7 @@ func autodocCmd(args []string) error {
 		return fmt.Errorf("discover circuits: %w", err)
 	}
 	if len(circuitPaths) == 0 {
-		return fmt.Errorf("no circuits found in %s/circuits/", projectRoot)
+		return fmt.Errorf("%w: %s/circuits/", ErrNoCircuitsFoundIn, projectRoot)
 	}
 
 	circuits := make([]*circuit.CircuitDef, 0, len(circuitPaths))

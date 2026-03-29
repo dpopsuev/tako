@@ -4,12 +4,21 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+)
+
+var (
+	// ErrUnexpectedStatus is returned when an HTTP response has an unexpected status code.
+	ErrUnexpectedStatus = errors.New("unexpected status")
+
+	// ErrStreamEnded is returned when the SSE stream ends unexpectedly.
+	ErrStreamEnded = errors.New("stream ended")
 )
 
 const labelPaused = "PAUSED"
@@ -30,9 +39,9 @@ type KamiBridge struct {
 
 // CircuitState tracks live node/edge state from Kami events.
 type CircuitState struct {
-	ActiveNode  string            `json:"active_node,omitempty"`
-	ActiveAgent string            `json:"active_agent,omitempty"`
-	Paused      bool              `json:"paused,omitempty"`
+	ActiveNode  string               `json:"active_node,omitempty"`
+	ActiveAgent string               `json:"active_agent,omitempty"`
+	Paused      bool                 `json:"paused,omitempty"`
 	Visited     map[string]VisitInfo `json:"visited,omitempty"`
 	Transitions map[string]time.Time `json:"transitions,omitempty"`
 }
@@ -162,7 +171,7 @@ func (kb *KamiBridge) consumeSSE(ctx context.Context) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected status: %d", resp.StatusCode)
+		return fmt.Errorf("%w: %d", ErrUnexpectedStatus, resp.StatusCode)
 	}
 
 	scanner := bufio.NewScanner(resp.Body)
@@ -177,7 +186,7 @@ func (kb *KamiBridge) consumeSSE(ctx context.Context) error {
 	if err := scanner.Err(); err != nil {
 		return fmt.Errorf("read: %w", err)
 	}
-	return fmt.Errorf("stream ended")
+	return ErrStreamEnded
 }
 
 // kamiEvent mirrors kami.Event for JSON deserialization.
@@ -267,7 +276,7 @@ func (kb *KamiBridge) LiveInlayHints(doc *document) []InlayHint {
 				label = labelPaused
 			}
 			hints = append(hints, InlayHint{
-				Position:    Position{Line: uint32(i), Character: uint32(len(line))},
+				Position:    Position{Line: safeUint32(i), Character: safeUint32(len(line))},
 				Label:       label,
 				Kind:        1,
 				PaddingLeft: true,
@@ -276,7 +285,7 @@ func (kb *KamiBridge) LiveInlayHints(doc *document) []InlayHint {
 			ago := time.Since(visit.Timestamp).Truncate(time.Second)
 			label := fmt.Sprintf("visited (%s ago)", ago)
 			hints = append(hints, InlayHint{
-				Position:    Position{Line: uint32(i), Character: uint32(len(line))},
+				Position:    Position{Line: safeUint32(i), Character: safeUint32(len(line))},
 				Label:       label,
 				Kind:        1,
 				PaddingLeft: true,
@@ -314,7 +323,7 @@ func (kb *KamiBridge) lastTransitionHints(doc *document, state CircuitState, lin
 
 	ago := time.Since(latestTime).Truncate(time.Second)
 	return []InlayHint{{
-		Position:    Position{Line: uint32(line), Character: uint32(len(lines[line]))},
+		Position:    Position{Line: safeUint32(line), Character: safeUint32(len(lines[line]))},
 		Label:       fmt.Sprintf("last transition (%s ago)", ago),
 		Kind:        1,
 		PaddingLeft: true,

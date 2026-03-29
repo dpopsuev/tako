@@ -9,12 +9,12 @@ import (
 	"github.com/dpopsuev/origami/domainfs"
 )
 
-func newTestAssets() (*domainfs.DomainAssets, fstest.MapFS) {
+func newTestAssets() *domainfs.DomainAssets {
 	mfs := fstest.MapFS{
-		"reports/rca-report.yaml":  &fstest.MapFile{Data: []byte("rca: true")},
-		"reports/gnd-report.yaml":  &fstest.MapFile{Data: []byte("gnd: true")},
-		"prompts/recall/judge.md":  &fstest.MapFile{Data: []byte("You are a judge.")},
-		"circuits/rca.yaml":        &fstest.MapFile{Data: []byte("circuit: rca")},
+		"reports/rca-report.yaml": &fstest.MapFile{Data: []byte("rca: true")},
+		"reports/gnd-report.yaml": &fstest.MapFile{Data: []byte("gnd: true")},
+		"prompts/recall/judge.md": &fstest.MapFile{Data: []byte("You are a judge.")},
+		"circuits/rca.yaml":       &fstest.MapFile{Data: []byte("circuit: rca")},
 	}
 	sections := map[string]map[string]string{
 		"reports": {
@@ -28,11 +28,11 @@ func newTestAssets() (*domainfs.DomainAssets, fstest.MapFS) {
 			"rca": "circuits/rca.yaml",
 		},
 	}
-	return domainfs.NewDomainAssets(mfs, sections), mfs
+	return domainfs.NewDomainAssets(mfs, sections)
 }
 
 func TestReadAsset_Valid(t *testing.T) {
-	da, _ := newTestAssets()
+	da := newTestAssets()
 
 	data, err := da.ReadAsset("reports", "rca-report")
 	if err != nil {
@@ -52,7 +52,7 @@ func TestReadAsset_Valid(t *testing.T) {
 }
 
 func TestReadAsset_InvalidKey(t *testing.T) {
-	da, _ := newTestAssets()
+	da := newTestAssets()
 
 	_, err := da.ReadAsset("reports", "calibration-report")
 	if err == nil {
@@ -78,7 +78,7 @@ func TestReadAsset_InvalidKey(t *testing.T) {
 }
 
 func TestReadAsset_InvalidSection(t *testing.T) {
-	da, _ := newTestAssets()
+	da := newTestAssets()
 
 	_, err := da.ReadAsset("heuristics", "rules")
 	if err == nil {
@@ -103,7 +103,7 @@ func TestReadAsset_InvalidSection(t *testing.T) {
 }
 
 func TestHasAsset(t *testing.T) {
-	da, _ := newTestAssets()
+	da := newTestAssets()
 
 	tests := []struct {
 		section string
@@ -142,7 +142,7 @@ func TestReadAsset_NilFS(t *testing.T) {
 }
 
 func TestFS_ReturnsUnderlying(t *testing.T) {
-	da, _ := newTestAssets()
+	da := newTestAssets()
 
 	got := da.FS()
 	if got == nil {
@@ -166,7 +166,7 @@ func TestFS_NilReturnsNil(t *testing.T) {
 }
 
 func TestSection_ReturnsCopy(t *testing.T) {
-	da, _ := newTestAssets()
+	da := newTestAssets()
 
 	sec := da.Section("reports")
 	if sec == nil {
@@ -188,7 +188,7 @@ func TestSection_ReturnsCopy(t *testing.T) {
 }
 
 func TestSection_UnknownReturnsNil(t *testing.T) {
-	da, _ := newTestAssets()
+	da := newTestAssets()
 
 	if got := da.Section("nonexistent"); got != nil {
 		t.Errorf("Section('nonexistent') = %v, want nil", got)

@@ -53,7 +53,7 @@ func (t *HTTPTransformer) Transform(ctx context.Context, tc *engine.TransformerC
 		url = tc.NodeConfig.URL
 	}
 	if url == "" {
-		return nil, fmt.Errorf("http transformer: 'url' is required in node config")
+		return nil, ErrHttpTransformerUrlIsRequiredInNodeConfig
 	}
 
 	if len(t.allowedHosts) > 0 {
@@ -65,7 +65,7 @@ func (t *HTTPTransformer) Transform(ctx context.Context, tc *engine.TransformerC
 			}
 		}
 		if !allowed {
-			return nil, fmt.Errorf("http transformer: host not in allowlist for url %q", url)
+			return nil, fmt.Errorf("%w: %q", ErrHttpTransformerHostNotInAllowlistForUrl, url)
 		}
 	}
 
@@ -112,7 +112,7 @@ func (t *HTTPTransformer) Transform(ctx context.Context, tc *engine.TransformerC
 	}
 
 	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("http transformer: status %d: %s", resp.StatusCode, string(respBody))
+		return nil, fmt.Errorf("%w: %d: %s", ErrHttpTransformerStatus, resp.StatusCode, string(respBody))
 	}
 
 	var result any
@@ -122,4 +122,3 @@ func (t *HTTPTransformer) Transform(ctx context.Context, tc *engine.TransformerC
 
 	return result, nil
 }
-

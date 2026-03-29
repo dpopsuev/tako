@@ -230,4 +230,3 @@ func TestRichChainVocabulary_FirstWins(t *testing.T) {
 		t.Errorf("chain should pick first match: got %q, want First", got)
 	}
 }
-

@@ -41,12 +41,12 @@ func findingToDiagnostic(f *lint.Finding) protocol.Diagnostic {
 
 	return protocol.Diagnostic{
 		Range: protocol.Range{
-			Start: protocol.Position{Line: uint32(line), Character: uint32(col)},
-			End:   protocol.Position{Line: uint32(line), Character: uint32(col + 20)},
+			Start: protocol.Position{Line: safeUint32(line), Character: safeUint32(col)},
+			End:   protocol.Position{Line: safeUint32(line), Character: safeUint32(col + 20)},
 		},
 		Severity: severityToLSP(f.Severity),
 		Source:   "origami-lint",
-		Code:    f.RuleID,
+		Code:     f.RuleID,
 		Message:  f.Message,
 	}
 }

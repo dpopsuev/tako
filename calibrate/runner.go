@@ -107,18 +107,20 @@ type HarnessConfig struct {
 // Run orchestrates a generic calibration: load → walk → collect → score → aggregate.
 // It returns the generic CalibrationReport. Domain-specific state (e.g., per-case
 // results) is stored inside the CaseCollector and can be retrieved by the caller.
+//
+//nolint:gocyclo,funlen // calibration orchestrator — many sequential config steps + batch loop
 func Run(ctx context.Context, cfg *HarnessConfig) (*CalibrationReport, error) {
 	if cfg.Loader == nil {
-		return nil, fmt.Errorf("calibrate.Run: Loader is required")
+		return nil, ErrLoaderIsRequired
 	}
 	if cfg.Collector == nil {
-		return nil, fmt.Errorf("calibrate.Run: Collector is required")
+		return nil, ErrCollectorIsRequired
 	}
 	if cfg.CircuitDef == nil {
-		return nil, fmt.Errorf("calibrate.Run: CircuitDef is required")
+		return nil, ErrCircuitDefIsRequired
 	}
 	if cfg.ScoreCard == nil {
-		return nil, fmt.Errorf("calibrate.Run: ScoreCard is required")
+		return nil, ErrScoreCardIsRequired
 	}
 	if cfg.Runs < 1 {
 		cfg.Runs = 1
@@ -154,11 +156,11 @@ func Run(ctx context.Context, cfg *HarnessConfig) (*CalibrationReport, error) {
 		cfg.Shared = merged
 	}
 
-	logger := slog.Default().With("component", "calibrate")
+	logger := slog.Default().With(slog.String("component", "calibrate"))
 	var allRunMetrics []MetricSet
 
 	for run := 0; run < cfg.Runs; run++ {
-		logger.InfoContext(ctx, "starting run", "run", run+1, "total", cfg.Runs)
+		logger.InfoContext(ctx, "starting run", slog.Any("run", run+1), slog.Any("total", cfg.Runs))
 
 		cases, err := cfg.Loader.Load(ctx)
 		if err != nil {
@@ -177,7 +179,7 @@ func Run(ctx context.Context, cfg *HarnessConfig) (*CalibrationReport, error) {
 		if cfg.PromptRelayer == nil && cfg.Shared.MediatorEndpoint != "" && cfg.CircuitDef != nil {
 			for i := range cfg.CircuitDef.Nodes {
 				if cfg.CircuitDef.Nodes[i].EffectiveHandlerType(cfg.CircuitDef.HandlerType) == circuit.HandlerTypeCircuit {
-					return nil, fmt.Errorf("circuit has handler_type:circuit node %q but no PromptRelayer configured; set HarnessConfig.PromptRelayer for mediator delegation", cfg.CircuitDef.Nodes[i].Name)
+					return nil, fmt.Errorf("%w: %q but no PromptRelayer configured; set HarnessConfig.PromptRelayer for mediator delegation", ErrCircuitHasHandlerTypeCircuitNode, cfg.CircuitDef.Nodes[i].Name)
 				}
 			}
 		}
@@ -219,15 +221,15 @@ func Run(ctx context.Context, cfg *HarnessConfig) (*CalibrationReport, error) {
 			return nil, fmt.Errorf("run %d: all %d cases failed (first: %w)", run+1, errCount, firstErr)
 		}
 		if errCount > 0 {
-			logger.WarnContext(ctx, "partial failures", "failed", errCount, "total", len(batchResults), "first_error", firstErr)
+			logger.WarnContext(ctx, "partial failures", slog.Any("failed", errCount), slog.Any("total", len(batchResults)), slog.Any("first_error", firstErr))
 		}
 
 		// Error rate gate: fail if the fraction of errored cases exceeds the threshold.
 		if cfg.MaxErrorRate > 0 && len(batchResults) > 0 {
 			errorRate := float64(errCount) / float64(len(batchResults))
 			if errorRate > cfg.MaxErrorRate {
-				return nil, fmt.Errorf("circuit error rate %.0f%% (%d/%d cases) exceeds threshold %.0f%%; "+
-					"first error: %v", errorRate*100, errCount, len(batchResults), cfg.MaxErrorRate*100, firstErr)
+				return nil, fmt.Errorf("%w: %.0f%% (%d/%d cases) exceeds threshold %.0f%%; "+
+					"first error: %v", ErrCircuitErrorRate, errorRate*100, errCount, len(batchResults), cfg.MaxErrorRate*100, firstErr)
 			}
 		}
 

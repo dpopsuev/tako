@@ -14,9 +14,9 @@ import (
 
 // ExprContext is the evaluation context passed to when: expressions.
 type ExprContext struct {
-	Output  map[string]any   `expr:"output"`
-	State   ExprState        `expr:"state"`
-	Config  map[string]any   `expr:"config"`
+	Output  map[string]any    `expr:"output"`
+	State   ExprState         `expr:"state"`
+	Config  map[string]any    `expr:"config"`
 	Signals SignalExprHelpers `expr:"signals"`
 }
 
@@ -34,9 +34,9 @@ type expressionEdge struct {
 }
 
 // CompileExpressionEdge compiles a When expression with a typed environment.
-func CompileExpressionEdge(def *circuit.EdgeDef, config ...map[string]any) (*expressionEdge, error) {
+func CompileExpressionEdge(def *circuit.EdgeDef, config ...map[string]any) (circuit.Edge, error) {
 	if def.When == "" {
-		return nil, fmt.Errorf("edge %s: When expression is empty", def.ID)
+		return nil, fmt.Errorf("%w: %s: When expression is empty", ErrEdge, def.ID)
 	}
 
 	program, err := expr.Compile(def.When,

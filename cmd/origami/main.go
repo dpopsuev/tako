@@ -101,7 +101,7 @@ func (s setFlag) String() string { return fmt.Sprintf("%v", map[string]any(s)) }
 func (s setFlag) Set(v string) error {
 	parts := strings.SplitN(v, "=", 2)
 	if len(parts) != 2 {
-		return fmt.Errorf("expected key=value, got %q", v)
+		return fmt.Errorf("%w: %q", ErrExpectedKeyValueGot, v)
 	}
 	s[parts[0]] = parts[1]
 	return nil
@@ -115,7 +115,7 @@ func runCmd(args []string) error {
 	_ = fs.Parse(args)
 
 	if fs.NArg() < 1 {
-		return fmt.Errorf("usage: origami run [-v] [--set key=value] <circuit.yaml>")
+		return ErrUsageOrigamiRunVSetKeyValueCircuitYaml
 	}
 	circuitPath := fs.Arg(0)
 
@@ -140,7 +140,7 @@ func runCmd(args []string) error {
 		opts = append(opts, engine.WithOverrides(map[string]any(sets)))
 	}
 
-	logger.InfoContext(ctx, "running circuit", "path", circuitPath)
+	logger.InfoContext(ctx, "running circuit", slog.Any("path", circuitPath))
 	if err := engine.Run(ctx, circuitPath, nil, opts...); err != nil {
 		return err
 	}
@@ -153,7 +153,7 @@ func validateCmd(args []string) error {
 	_ = fs.Parse(args)
 
 	if fs.NArg() < 1 {
-		return fmt.Errorf("usage: origami validate <circuit.yaml>")
+		return ErrUsageOrigamiValidateCircuitYaml
 	}
 	circuitPath := fs.Arg(0)
 
@@ -164,6 +164,7 @@ func validateCmd(args []string) error {
 	return nil
 }
 
+//nolint:gocyclo // CLI command with flag parsing, file I/O, and output formatting
 func lintCmd(args []string) error {
 	fs := flag.NewFlagSet("lint", flag.ContinueOnError)
 	profile := fs.String("profile", "moderate", "lint profile: min, basic, moderate, strict")
@@ -173,7 +174,7 @@ func lintCmd(args []string) error {
 		return err
 	}
 	if fs.NArg() == 0 {
-		return fmt.Errorf("usage: origami lint [--profile <name>] [--format text|json] [--fix] <file.yaml>...")
+		return ErrUsageOrigamiLintProfileNameFormatTextJsonFixFileYaml
 	}
 
 	p := lint.Profile(*profile)
@@ -225,7 +226,7 @@ func lintCmd(args []string) error {
 				fmt.Fprintf(os.Stderr, "%s: no fixes to apply\n", file)
 				continue
 			}
-			if err := os.WriteFile(file, fixed, 0o644); err != nil {
+			if err := os.WriteFile(file, fixed, 0o600); err != nil {
 				return fmt.Errorf("write %s: %w", file, err)
 			}
 			for j := range fixes {
@@ -274,8 +275,7 @@ func lspCmd() error {
 	conn := originamilsp.ServeStream(ctx, srv, stream)
 	srv.SetConn(conn)
 
-	slog.InfoContext(ctx, "origami-lsp started", "transport", "stdio")
+	slog.InfoContext(ctx, "origami-lsp started", slog.Any("transport", "stdio"))
 	<-ctx.Done()
 	return nil
 }
-

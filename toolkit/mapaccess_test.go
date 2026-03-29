@@ -25,11 +25,11 @@ func TestMapStr(t *testing.T) {
 func TestMapFloat(t *testing.T) {
 	t.Parallel()
 	m := map[string]any{
-		"f64":    3.14,
-		"int":    42,
-		"int64":  int64(99),
-		"str":    "nope",
-		"bool":   true,
+		"f64":   3.14,
+		"int":   42,
+		"int64": int64(99),
+		"str":   "nope",
+		"bool":  true,
 	}
 
 	if got := MapFloat(m, "f64"); got != 3.14 {

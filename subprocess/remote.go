@@ -30,7 +30,7 @@ func (rb *RemoteBackend) Start(ctx context.Context) error {
 	defer rb.mu.Unlock()
 
 	if rb.session != nil {
-		return fmt.Errorf("remote %q already connected", rb.Endpoint)
+		return fmt.Errorf("%w: %q already connected", ErrRemote, rb.Endpoint)
 	}
 
 	httpTimeout := rb.HTTPTimeout
@@ -80,7 +80,7 @@ func (rb *RemoteBackend) CallTool(ctx context.Context, name string, args map[str
 	rb.mu.Unlock()
 
 	if session == nil {
-		return nil, fmt.Errorf("remote %q not connected", rb.Endpoint)
+		return nil, fmt.Errorf("%w: %q not connected", ErrRemote, rb.Endpoint)
 	}
 	return session.CallTool(ctx, &sdkmcp.CallToolParams{
 		Name:      name,

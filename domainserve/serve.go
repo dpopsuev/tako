@@ -38,15 +38,15 @@ func (idx *AssetIndex) Resolve(section, key string) (string, error) {
 		if p, ok := idx.Files[section]; ok {
 			return p, nil
 		}
-		return "", fmt.Errorf("unknown file %q", section)
+		return "", fmt.Errorf("%w: %q", ErrUnknownFile, section)
 	}
 	sec, ok := idx.Sections[section]
 	if !ok {
-		return "", fmt.Errorf("unknown section %q", section)
+		return "", fmt.Errorf("%w: %q", ErrUnknownSection, section)
 	}
 	p, ok := sec[key]
 	if !ok {
-		return "", fmt.Errorf("unknown key %q in section %q", key, section)
+		return "", fmt.Errorf("%w: %q in section %q", ErrUnknownKey, key, section)
 	}
 	return p, nil
 }

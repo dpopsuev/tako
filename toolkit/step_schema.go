@@ -23,10 +23,10 @@ func (s StepSchema) ValidateFields(fields map[string]any) error {
 	for _, def := range s.Defs {
 		v, ok := fields[def.Name]
 		if !ok && def.Required {
-			return fmt.Errorf("step %s: missing required field %q", s.Name, def.Name)
+			return fmt.Errorf("%w: %s: missing required field %q", ErrStep, s.Name, def.Name)
 		}
 		if ok && v == nil && def.Required {
-			return fmt.Errorf("step %s: field %q is null", s.Name, def.Name)
+			return fmt.Errorf("%w: %s: field %q is null", ErrStep, s.Name, def.Name)
 		}
 	}
 	return nil

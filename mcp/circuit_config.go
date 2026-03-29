@@ -143,11 +143,11 @@ func (c *CircuitConfig) FindSchema(step string) (StepSchema, error) {
 		}
 		names = append(names, s.Name)
 	}
-	return StepSchema{}, fmt.Errorf("unknown step %q; valid steps: %v", step, names)
+	return StepSchema{}, fmt.Errorf("%w: %q; valid steps: %v", ErrUnknownStep, step, names)
 }
 
 // RunFunc is the goroutine body that runs the domain circuit. It receives
-// a context (cancelled on session abort) and returns the domain result
+// a context (canceled on session abort) and returns the domain result
 // plus any error.
 type RunFunc func(ctx context.Context) (result any, err error)
 

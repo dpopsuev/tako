@@ -19,9 +19,9 @@ type ScorecardDef struct {
 type ScorecardMetric struct {
 	ID          string         `yaml:"id"`
 	Name        string         `yaml:"name"`
-	Tier        string         `yaml:"tier,omitempty"`       // outcome, investigation, detection, efficiency, meta
-	Scorer      string         `yaml:"scorer,omitempty"`     // scorer function name
-	Direction   string         `yaml:"direction,omitempty"`  // higher_is_better, lower_is_better, range
+	Tier        string         `yaml:"tier,omitempty"`      // outcome, investigation, detection, efficiency, meta
+	Scorer      string         `yaml:"scorer,omitempty"`    // scorer function name
+	Direction   string         `yaml:"direction,omitempty"` // higher_is_better, lower_is_better, range
 	Threshold   float64        `yaml:"threshold,omitempty"`
 	Weight      float64        `yaml:"weight,omitempty"`
 	Params      map[string]any `yaml:"params,omitempty"`
@@ -52,7 +52,7 @@ func MergeScorecardDefs(base, overlay *ScorecardDef) (*ScorecardDef, error) {
 		return overlay, nil
 	}
 	if base == nil {
-		return nil, fmt.Errorf("base scorecard required when overlay has import")
+		return nil, ErrBaseScorecardRequiredWhenOverlayHasImport
 	}
 
 	merged := *base

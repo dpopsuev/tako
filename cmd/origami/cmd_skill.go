@@ -13,13 +13,13 @@ import (
 
 func skillCmd(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("usage: origami skill <scaffold> [flags]")
+		return ErrUsageOrigamiSkillScaffoldFlags
 	}
 	switch args[0] {
 	case "scaffold":
 		return skillScaffold(args[1:])
 	default:
-		return fmt.Errorf("unknown skill subcommand: %s", args[0])
+		return fmt.Errorf("%w: %s", ErrUnknownSkillSubcommand, args[0])
 	}
 }
 
@@ -32,7 +32,7 @@ func skillScaffold(args []string) error {
 	}
 
 	if fs.NArg() < 1 {
-		return fmt.Errorf("usage: origami skill scaffold [--tool NAME] [--out DIR] <circuit.yaml>")
+		return ErrUsageOrigamiSkillScaffoldToolNAMEOutDIRCircuitYaml
 	}
 	circuitPath := fs.Arg(0)
 
@@ -67,13 +67,13 @@ func skillScaffold(args []string) error {
 	outPath := filepath.Join(dir, "SKILL.md")
 
 	ctx := scaffoldContext{
-		Tool:         tool,
+		Tool:        tool,
 		CircuitName: def.Circuit,
 		CircuitPath: circuitPath,
-		Nodes:        def.Nodes,
-		Edges:        def.Edges,
-		Start:        string(def.Start),
-		Done:         string(def.Done),
+		Nodes:       def.Nodes,
+		Edges:       def.Edges,
+		Start:       string(def.Start),
+		Done:        string(def.Done),
 	}
 
 	f, err := os.Create(outPath)
@@ -91,13 +91,13 @@ func skillScaffold(args []string) error {
 }
 
 type scaffoldContext struct {
-	Tool         string
+	Tool        string
 	CircuitName string
 	CircuitPath string
-	Nodes        []circuit.NodeDef
-	Edges        []circuit.EdgeDef
-	Start        string
-	Done         string
+	Nodes       []circuit.NodeDef
+	Edges       []circuit.EdgeDef
+	Start       string
+	Done        string
 }
 
 var funcMap = template.FuncMap{

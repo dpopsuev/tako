@@ -66,11 +66,11 @@ type ComponentManifest struct {
 	Gives []GivesDef `yaml:"gives,omitempty"`
 
 	// MCP server configuration — fold reads these to generate CircuitConfig.
-	Params   []ParamDef  `yaml:"params,omitempty"`  // extra start_circuit parameters
-	Schemas  []string    `yaml:"schemas,omitempty"`  // step schema paths (relative to domain FS)
-	Report   string      `yaml:"report,omitempty"`   // report template YAML path
-	Dispatch DispatchDef `yaml:"dispatch,omitempty"` // dispatch provider config
-	SessionFactory string `yaml:"session_factory,omitempty"` // Go symbol: "rca.Factory()"
+	Params         []ParamDef  `yaml:"params,omitempty"`          // extra start_circuit parameters
+	Schemas        []string    `yaml:"schemas,omitempty"`         // step schema paths (relative to domain FS)
+	Report         string      `yaml:"report,omitempty"`          // report template YAML path
+	Dispatch       DispatchDef `yaml:"dispatch,omitempty"`        // dispatch provider config
+	SessionFactory string      `yaml:"session_factory,omitempty"` // Go symbol: "rca.Factory()"
 }
 
 // ParamDef declares an extra parameter for MCP start_circuit.
@@ -108,8 +108,7 @@ func validateSocketTypes(path, section string, sockets []SocketDef) error {
 			continue
 		}
 		if forbidden[s.Type] {
-			return fmt.Errorf("component manifest %s: socket %q has type %q which is not allowed in %s: section",
-				path, s.Name, s.Type, section)
+			return fmt.Errorf("%w: %s: socket %q has type %q which is not allowed in %s: section", ErrComponentManifest, path, s.Name, s.Type, section)
 		}
 	}
 	return nil
@@ -130,7 +129,7 @@ type componentManifestYAML struct {
 		SessionFactory string `yaml:"session_factory,omitempty"`
 		Hooks          string `yaml:"hooks,omitempty"` // deprecated: use session_factory
 		Resolver       string `yaml:"resolver,omitempty"`
-		Provides  struct {
+		Provides       struct {
 			Transformers []string `yaml:"transformers,omitempty"`
 			Extractors   []string `yaml:"extractors,omitempty"`
 			Hooks        []string `yaml:"hooks,omitempty"`
@@ -161,13 +160,13 @@ func LoadComponentManifest(path string) (*ComponentManifest, error) {
 		return nil, fmt.Errorf("parse component manifest %s: %w", path, err)
 	}
 	if raw.APIVersion != "origami/v1" {
-		return nil, fmt.Errorf("component manifest %s: apiVersion must be 'origami/v1', got %q", path, raw.APIVersion)
+		return nil, fmt.Errorf("%w: %s: apiVersion must be 'origami/v1', got %q", ErrComponentManifest, path, raw.APIVersion)
 	}
 	if raw.Kind != kindSchematic && raw.Kind != kindComponent {
-		return nil, fmt.Errorf("component manifest %s: kind must be 'Schematic' or 'Component', got %q", path, raw.Kind)
+		return nil, fmt.Errorf("%w: %s: kind must be 'Schematic' or 'Component', got %q", ErrComponentManifest, path, raw.Kind)
 	}
 	if raw.Metadata.Namespace == "" {
-		return nil, fmt.Errorf("component manifest %s: metadata.namespace is required", path)
+		return nil, fmt.Errorf("%w: %s: metadata.namespace is required", ErrComponentManifest, path)
 	}
 
 	// Prefer session_factory; fall back to deprecated hooks field.

@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/agentport"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // CircuitStore is the single source of truth for a circuit's visual state.
@@ -132,6 +132,8 @@ func (cs *CircuitStore) Def() *circuit.CircuitDef {
 
 // OnEvent implements circuit.WalkObserver. It updates the snapshot and
 // emits StateDiff values to subscribers.
+//
+//nolint:gocyclo // event type switch — one case per walk event
 func (cs *CircuitStore) OnEvent(we *circuit.WalkEvent) {
 	cs.mu.Lock()
 	defer cs.mu.Unlock()

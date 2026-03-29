@@ -78,6 +78,6 @@ type testArtifact struct {
 	raw any
 }
 
-func (a *testArtifact) Type() string       { return "test" }
+func (a *testArtifact) Type() string        { return "test" }
 func (a *testArtifact) Confidence() float64 { return 1.0 }
-func (a *testArtifact) Raw() any           { return a.raw }
+func (a *testArtifact) Raw() any            { return a.raw }

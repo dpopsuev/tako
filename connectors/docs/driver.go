@@ -92,7 +92,7 @@ func (d *DocsDriver) Ensure(ctx context.Context, src *toolkit.Source) error {
 	}
 	resp.Body.Close()
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("docs ensure %s: HTTP %d", src.URI, resp.StatusCode)
+		return fmt.Errorf("%w: %s: HTTP %d", ErrDocsEnsure, src.URI, resp.StatusCode)
 	}
 	return nil
 }
@@ -162,7 +162,7 @@ func (d *DocsDriver) fetchURL(ctx context.Context, rawURL string) ([]byte, error
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("HTTP %d from %s", resp.StatusCode, rawURL)
+		return nil, fmt.Errorf("%w: %d from %s", ErrHTTP, resp.StatusCode, rawURL)
 	}
 
 	return io.ReadAll(resp.Body)
@@ -195,7 +195,7 @@ func (d *DocsDriver) persistToDisk(key string, data []byte) {
 	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(key)))
 	path := filepath.Join(d.cacheDir, hash[:2], hash)
 	_ = os.MkdirAll(filepath.Dir(path), 0o755)
-	_ = os.WriteFile(path, data, 0o644)
+	_ = os.WriteFile(path, data, 0o600)
 }
 
 func buildSearchURL(src *toolkit.Source, query string) (string, error) {

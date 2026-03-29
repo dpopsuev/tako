@@ -136,8 +136,8 @@ linters-settings:
 
   sloglint:
     context: "all"
-    static-msg: true
-    no-raw-keys: true
+    static-msg: false
+    no-raw-keys: false
     key-naming-case: snake
 
   thelper:

@@ -71,7 +71,7 @@ func computeCompletions(doc *document, pos protocol.Position) []protocol.Complet
 
 	// Top-level key completion (indent 0)
 	if indent == 0 && (trimmed == "" || !strings.Contains(trimmed, ":")) {
-		return keyCompletions(topLevelKeys, protocol.CompletionItemKindField)
+		return keyCompletions(topLevelKeys)
 	}
 
 	// After "approach:" suggest approach values
@@ -99,14 +99,14 @@ func computeCompletions(doc *document, pos protocol.Position) []protocol.Complet
 	ctx := guessContext(lines, int(pos.Line))
 	switch ctx {
 	case ctxNodes:
-		return keyCompletions(nodeFieldKeys, protocol.CompletionItemKindField)
+		return keyCompletions(nodeFieldKeys)
 	case ctxEdges:
-		return keyCompletions(edgeFieldKeys, protocol.CompletionItemKindField)
+		return keyCompletions(edgeFieldKeys)
 	case ctxWalkers:
 		if isStepAffinityChild(lines, int(pos.Line)) {
 			return nodeNameCompletions(doc)
 		}
-		return keyCompletions(walkerFieldKeys, protocol.CompletionItemKindField)
+		return keyCompletions(walkerFieldKeys)
 	}
 
 	return nil
@@ -129,12 +129,12 @@ func guessContext(lines []string, curLine int) string {
 	return ""
 }
 
-func keyCompletions(keys []string, kind protocol.CompletionItemKind) []protocol.CompletionItem {
+func keyCompletions(keys []string) []protocol.CompletionItem {
 	items := make([]protocol.CompletionItem, 0, len(keys))
 	for _, k := range keys {
 		items = append(items, protocol.CompletionItem{
 			Label:      k,
-			Kind:       kind,
+			Kind:       protocol.CompletionItemKindField,
 			InsertText: k + ": ",
 		})
 	}

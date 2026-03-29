@@ -19,10 +19,12 @@ const ruleTemplateParam = "P1/template-param-validity"
 // When PromptFS or PromptValidator is nil the rule is a silent no-op.
 type TemplateParamValidity struct{}
 
-func (r *TemplateParamValidity) ID() string          { return ruleTemplateParam }
-func (r *TemplateParamValidity) Description() string { return "prompt template references invalid parameter field" }
-func (r *TemplateParamValidity) Severity() Severity   { return SeverityWarning }
-func (r *TemplateParamValidity) Tags() []string       { return []string{"prompt"} }
+func (r *TemplateParamValidity) ID() string { return ruleTemplateParam }
+func (r *TemplateParamValidity) Description() string {
+	return "prompt template references invalid parameter field"
+}
+func (r *TemplateParamValidity) Severity() Severity { return SeverityWarning }
+func (r *TemplateParamValidity) Tags() []string     { return []string{"prompt"} }
 
 func (r *TemplateParamValidity) Check(ctx *LintContext) []Finding {
 	if ctx.PromptFS == nil || ctx.PromptValidator == nil {

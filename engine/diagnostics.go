@@ -27,12 +27,7 @@ func diagUnreferencedHooks(def *circuit.CircuitDef, reg *GraphRegistries) {
 
 	for name := range reg.Hooks {
 		if !referenced[name] {
-			slog.WarnContext(context.Background(), "unreferenced hook",
-				"component", "build",
-				"diagnostic", "D1",
-				"hook", name,
-				"circuit", def.Circuit,
-			)
+			slog.WarnContext(context.Background(), "unreferenced hook", slog.Any("component", "build"), slog.Any("diagnostic", "D1"), slog.Any("hook", name), slog.Any("circuit", def.Circuit))
 		}
 	}
 }
@@ -67,17 +62,7 @@ func checkHookList(nodeName, phase string, hooks []string, reg *GraphRegistries,
 	}
 
 	available := registeredHookNames(reg)
-	slog.WarnContext(context.Background(), "missing hook references",
-		"component", "build",
-		"diagnostic", "D2",
-		"node", nodeName,
-		"phase", phase,
-		"missing", strings.Join(missing, ", "),
-		"missing_count", len(missing),
-		"declared_count", len(hooks),
-		"available", strings.Join(available, ", "),
-		"circuit", circuit,
-	)
+	slog.WarnContext(context.Background(), "missing hook references", slog.Any("component", "build"), slog.Any("diagnostic", "D2"), slog.Any("node", nodeName), slog.Any("phase", phase), slog.Any("missing", strings.Join(missing, ", ")), slog.Any("missing_count", len(missing)), slog.Any("declared_count", len(hooks)), slog.Any("available", strings.Join(available, ", ")), slog.Any("circuit", circuit))
 }
 
 func collectReferencedHooks(def *circuit.CircuitDef) map[string]bool {

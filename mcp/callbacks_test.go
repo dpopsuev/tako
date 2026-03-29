@@ -26,13 +26,13 @@ func TestOnStepDispatched_Called(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{"parallel": 1})
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{"parallel": 1})
 	sessionID := startResult["session_id"].(string)
 
-	step := callTool(t, ctx, session, "get_next_step", map[string]any{
+	step := callTool(ctx, t, session, "get_next_step", map[string]any{
 		"session_id": sessionID,
 		"timeout_ms": 2000,
 	})
@@ -75,13 +75,13 @@ func TestOnStepCompleted_Called(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{"parallel": 1})
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{"parallel": 1})
 	sessionID := startResult["session_id"].(string)
 
-	step := callTool(t, ctx, session, "get_next_step", map[string]any{
+	step := callTool(ctx, t, session, "get_next_step", map[string]any{
 		"session_id": sessionID,
 		"timeout_ms": 2000,
 	})
@@ -92,7 +92,7 @@ func TestOnStepCompleted_Called(t *testing.T) {
 	stepName, _ := step["step"].(string)
 	dispatchID, _ := step["dispatch_id"].(float64)
 
-	callTool(t, ctx, session, "submit_step", map[string]any{
+	callTool(ctx, t, session, "submit_step", map[string]any{
 		"session_id":  sessionID,
 		"dispatch_id": int64(dispatchID),
 		"step":        stepName,
@@ -121,13 +121,13 @@ func TestCallbacks_NilSafe(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{"parallel": 1})
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{"parallel": 1})
 	sessionID := startResult["session_id"].(string)
 
-	step := callTool(t, ctx, session, "get_next_step", map[string]any{
+	step := callTool(ctx, t, session, "get_next_step", map[string]any{
 		"session_id": sessionID,
 		"timeout_ms": 2000,
 	})
@@ -138,7 +138,7 @@ func TestCallbacks_NilSafe(t *testing.T) {
 	stepName, _ := step["step"].(string)
 	dispatchID, _ := step["dispatch_id"].(float64)
 
-	callTool(t, ctx, session, "submit_step", map[string]any{
+	callTool(ctx, t, session, "submit_step", map[string]any{
 		"session_id":  sessionID,
 		"dispatch_id": int64(dispatchID),
 		"step":        stepName,
@@ -165,10 +165,10 @@ func TestCallbacks_ConcurrentDispatchSubmit(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 	defer session.Close()
 
-	startResult := callTool(t, ctx, session, "start_circuit", map[string]any{"parallel": 4})
+	startResult := callTool(ctx, t, session, "start_circuit", map[string]any{"parallel": 4})
 	sessionID := startResult["session_id"].(string)
 
 	const workers = 4

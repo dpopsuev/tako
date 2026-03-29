@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"sync"
 
 	"github.com/dpopsuev/origami/agentport"
 )
@@ -75,35 +74,12 @@ func NewACPWorkerDispatcher(mux *MuxDispatcher, staff *agentport.Staff, role str
 
 // Run starts N worker goroutines and blocks until all complete.
 func (d *ACPWorkerDispatcher) Run(ctx context.Context) error {
-	var wg sync.WaitGroup
-	errs := make(chan error, d.workers)
-
-	for i := 0; i < d.workers; i++ {
-		wg.Add(1)
-		workerID := fmt.Sprintf("acp-worker-%d", i)
-		go func() {
-			defer wg.Done()
-			if err := d.workerLoop(ctx, workerID); err != nil {
-				errs <- fmt.Errorf("%s: %w", workerID, err)
-			}
-		}()
-	}
-
-	wg.Wait()
-	close(errs)
-
-	var firstErr error
-	for err := range errs {
-		if firstErr == nil {
-			firstErr = err
-		}
-	}
-	return firstErr
+	return runWorkers(ctx, d.workers, "acp-worker", d.workerLoop)
 }
 
 func (d *ACPWorkerDispatcher) workerLoop(ctx context.Context, workerID string) error {
-	d.emit(agentport.EventWorkerStarted, agentport.AgentWorker, "", "", map[string]string{agentport.MetaKeyWorkerID: workerID})
-	defer d.emit(agentport.EventWorkerStopped, agentport.AgentWorker, "", "", map[string]string{agentport.MetaKeyWorkerID: workerID})
+	d.emit(agentport.EventWorkerStarted, "", "", map[string]string{agentport.MetaKeyWorkerID: workerID})
+	defer d.emit(agentport.EventWorkerStopped, "", "", map[string]string{agentport.MetaKeyWorkerID: workerID})
 
 	for {
 		dc, err := d.mux.GetNextStep(ctx)
@@ -114,14 +90,14 @@ func (d *ACPWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 			return fmt.Errorf("get_next_step: %w", err)
 		}
 
-		d.emit(agentport.EventWorkerStart, agentport.AgentWorker, dc.CaseID, dc.Step, map[string]string{agentport.MetaKeyWorkerID: workerID})
+		d.emit(agentport.EventWorkerStart, dc.CaseID, dc.Step, map[string]string{agentport.MetaKeyWorkerID: workerID})
 
 		// Build the prompt from content or file.
 		prompt := dc.PromptContent
 		if prompt == "" && dc.PromptPath != "" {
 			data, readErr := readPromptFile(dc.PromptPath)
 			if readErr != nil {
-				d.log.ErrorContext(ctx, "read prompt file", "worker", workerID, "path", dc.PromptPath, "error", readErr)
+				d.log.ErrorContext(ctx, "read prompt file", slog.Any("worker", workerID), slog.Any("path", dc.PromptPath), slog.Any("error", readErr))
 				continue
 			}
 			prompt = string(data)
@@ -130,48 +106,48 @@ func (d *ACPWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 		// Route hard steps through collective debate, others to single agent.
 		var response string
 		if d.collective != nil && collectiveSteps[dc.Step] {
-			d.log.InfoContext(ctx, "routing to collective", "step", dc.Step, "case", dc.CaseID)
+			d.log.InfoContext(ctx, "routing to collective", slog.Any("step", dc.Step), slog.Any("case", dc.CaseID))
 			response, err = d.collective.Ask(ctx, prompt)
 		} else {
 			workers := d.staff.FindByRole(d.role)
 			if len(workers) == 0 {
-				d.log.ErrorContext(ctx, "no workers available", "role", d.role)
+				d.log.ErrorContext(ctx, "no workers available", slog.Any("role", d.role))
 				continue
 			}
 			worker := workers[int(dc.DispatchID)%len(workers)]
 			response, err = worker.Ask(ctx, prompt)
 		}
 		if err != nil {
-			d.emit(agentport.EventWorkerError, agentport.AgentWorker, dc.CaseID, dc.Step, map[string]string{
+			d.emit(agentport.EventWorkerError, dc.CaseID, dc.Step, map[string]string{
 				agentport.MetaKeyWorkerID: workerID,
 				agentport.MetaKeyError:    err.Error(),
 			})
-			d.log.ErrorContext(ctx, "ACP agent failed", "worker", workerID, "case", dc.CaseID, "step", dc.Step, "error", err)
+			d.log.ErrorContext(ctx, "ACP agent failed", slog.Any("worker", workerID), slog.Any("case", dc.CaseID), slog.Any("step", dc.Step), slog.Any("error", err))
 			continue
 		}
 
 		if err := d.mux.SubmitArtifact(ctx, dc.DispatchID, []byte(response)); err != nil {
-			d.emit(agentport.EventWorkerError, agentport.AgentWorker, dc.CaseID, dc.Step, map[string]string{
+			d.emit(agentport.EventWorkerError, dc.CaseID, dc.Step, map[string]string{
 				agentport.MetaKeyWorkerID: workerID,
 				agentport.MetaKeyError:    err.Error(),
 			})
 			return fmt.Errorf("submit_artifact dispatch_id=%d: %w", dc.DispatchID, err)
 		}
 
-		d.emit(agentport.EventWorkerDone, agentport.AgentWorker, dc.CaseID, dc.Step, map[string]string{
+		d.emit(agentport.EventWorkerDone, dc.CaseID, dc.Step, map[string]string{
 			agentport.MetaKeyWorkerID: workerID,
 			agentport.MetaKeyBytes:    fmt.Sprintf("%d", len(response)),
 		})
 
-		d.log.InfoContext(ctx, "step complete", "worker", workerID, "case", dc.CaseID, "step", dc.Step, "bytes", len(response))
+		d.log.InfoContext(ctx, "step complete", slog.Any("worker", workerID), slog.Any("case", dc.CaseID), slog.Any("step", dc.Step), slog.Any("bytes", len(response)))
 	}
 }
 
-func (d *ACPWorkerDispatcher) emit(event, agent, caseID, step string, meta map[string]string) {
+func (d *ACPWorkerDispatcher) emit(event, caseID, step string, meta map[string]string) {
 	if d.bus != nil {
 		d.bus.Emit(&agentport.Signal{
 			Event:  event,
-			Agent:  agent,
+			Agent:  agentport.AgentWorker,
 			CaseID: caseID,
 			Step:   step,
 			Meta:   meta,

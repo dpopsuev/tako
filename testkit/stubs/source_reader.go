@@ -12,7 +12,7 @@ import (
 // Thread-safe, supports error injection and call tracking.
 type StubSourceReader struct {
 	mu          sync.Mutex
-	readData    map[string][]byte           // keyed by source.Name + ":" + path
+	readData    map[string][]byte                 // keyed by source.Name + ":" + path
 	searchData  map[string][]toolkit.SearchResult // keyed by source.Name + ":" + query
 	listData    map[string][]toolkit.ContentEntry // keyed by source.Name + ":" + root
 	ensuredSrcs []string

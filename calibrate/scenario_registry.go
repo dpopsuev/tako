@@ -39,7 +39,7 @@ func (r *ScenarioRegistry) List() []string {
 func (r *ScenarioRegistry) Load(ctx context.Context, name string) ([]engine.BatchCase, error) {
 	loader, ok := r.loaders[name]
 	if !ok {
-		return nil, fmt.Errorf("unknown scenario %q; available: %v", name, r.List())
+		return nil, fmt.Errorf("%w: %q; available: %v", ErrUnknownScenario, name, r.List())
 	}
 	return loader.Load(ctx)
 }

@@ -63,8 +63,8 @@ func computeDefinition(doc *document, pos protocol.Position) *protocol.Location 
 	return &protocol.Location{
 		URI: doc.URI,
 		Range: protocol.Range{
-			Start: protocol.Position{Line: uint32(nodeLine - 1), Character: 0},
-			End:   protocol.Position{Line: uint32(nodeLine - 1), Character: 0},
+			Start: protocol.Position{Line: safeUint32(nodeLine - 1), Character: 0},
+			End:   protocol.Position{Line: safeUint32(nodeLine - 1), Character: 0},
 		},
 	}
 }

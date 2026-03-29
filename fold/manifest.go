@@ -182,13 +182,13 @@ func ParseManifest(data []byte) (*Manifest, error) {
 		return nil, fmt.Errorf("parse manifest: %w", err)
 	}
 	if raw.APIVersion != "origami/v1" {
-		return nil, fmt.Errorf("manifest: apiVersion must be 'origami/v1', got %q", raw.APIVersion)
+		return nil, fmt.Errorf("%w: %q", ErrManifestApiVersionMustBeOrigamiV1Got, raw.APIVersion)
 	}
 	if raw.Kind != kindBoard {
-		return nil, fmt.Errorf("manifest: kind must be 'Board', got %q", raw.Kind)
+		return nil, fmt.Errorf("%w: %q", ErrManifestKindMustBeBoardGot, raw.Kind)
 	}
 	if raw.Metadata.Name == "" {
-		return nil, fmt.Errorf("manifest: metadata.name is required")
+		return nil, ErrManifestMetadataNameIsRequired
 	}
 
 	m := &Manifest{
@@ -205,21 +205,21 @@ func ParseManifest(data []byte) (*Manifest, error) {
 
 	if ds := m.DomainServe; ds != nil {
 		if ds.Assets == nil {
-			return nil, fmt.Errorf("domain_serve: assets is required")
+			return nil, ErrDomainServeAssetsIsRequired
 		}
 	}
 	for name, u := range m.Uses {
 		if u.Module == "" {
-			return nil, fmt.Errorf("uses %q: module is required", name)
+			return nil, fmt.Errorf("%w: %q: module is required", ErrUses, name)
 		}
 	}
 	for schematic, bindings := range m.Bind {
 		if _, ok := m.Uses[schematic]; !ok {
-			return nil, fmt.Errorf("bind %q: not found in uses", schematic)
+			return nil, fmt.Errorf("%w: %q: not found in uses", ErrBind, schematic)
 		}
 		for _, component := range bindings {
 			if _, ok := m.Uses[component]; !ok {
-				return nil, fmt.Errorf("bind %q: component %q not found in uses", schematic, component)
+				return nil, fmt.Errorf("%w: %q: component %q not found in uses", ErrBind, schematic, component)
 			}
 		}
 	}
@@ -246,6 +246,8 @@ var domainRecursiveDirs = []string{"offline"}
 var domainFiles = []string{"heuristics.yaml"}
 
 // MergeDiscoveredAssets scans each domain directory and merges discovered files.
+//
+//nolint:gocyclo // walks multiple directory types per domain — inherently branchy
 func (m *Manifest) MergeDiscoveredAssets(manifestDir string) error {
 	if len(m.Domains) == 0 || m.DomainServe == nil || m.DomainServe.Assets == nil {
 		return nil
@@ -256,7 +258,7 @@ func (m *Manifest) MergeDiscoveredAssets(manifestDir string) error {
 		domainDir := filepath.Join(manifestDir, "domains", domain)
 		info, err := os.Stat(domainDir)
 		if err != nil || !info.IsDir() {
-			return fmt.Errorf("domain %q: directory domains/%s/ not found", domain, domain)
+			return fmt.Errorf("%w: %q: directory domains/%s/ not found", ErrDomain, domain, domain)
 		}
 
 		for _, sub := range domainSubdirs {

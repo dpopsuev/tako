@@ -3,8 +3,8 @@ package view
 import (
 	"strings"
 
-	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/agentport"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 const (
@@ -29,10 +29,7 @@ func (LogicalLayout) Layout(def *circuit.CircuitDef) (CircuitLayout, error) {
 	}
 
 	adj, inDeg := buildAdjacency(def)
-	order, err := topoSort(def, adj, inDeg)
-	if err != nil {
-		return CircuitLayout{}, err
-	}
+	order := topoSort(def, adj, inDeg)
 
 	nodeZone := buildNodeZoneMap(def)
 	rank := assignRanks(order, adj)

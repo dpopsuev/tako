@@ -35,14 +35,14 @@ func (s *MemoryStore) Load(_ context.Context, name string) (*Dataset, error) {
 	defer s.mu.RUnlock()
 	d, ok := s.datasets[name]
 	if !ok {
-		return nil, fmt.Errorf("curate/memory: dataset %q not found", name)
+		return nil, fmt.Errorf("%w: %q not found", ErrDataset, name)
 	}
 	return d, nil
 }
 
 func (s *MemoryStore) Save(_ context.Context, d *Dataset) error {
 	if d.Name == "" {
-		return fmt.Errorf("curate/memory: dataset name must not be empty")
+		return ErrDatasetNameMustNotBeEmpty
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()

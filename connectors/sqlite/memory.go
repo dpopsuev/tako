@@ -3,13 +3,14 @@ package sqlite
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	_ "modernc.org/sqlite"
+	_ "modernc.org/sqlite" // register sqlite3 driver
 )
 
 // PersistentStore implements circuit.MemoryStore backed by SQLite.
@@ -63,7 +64,7 @@ func (s *PersistentStore) GetNS(namespace, walkerID, key string) (any, bool) {
 		"SELECT value FROM memories WHERE namespace = ? AND walker_id = ? AND key = ?",
 		namespace, walkerID, key,
 	).Scan(&data)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, false
 	}
 	if err != nil {

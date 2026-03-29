@@ -146,7 +146,7 @@ func NewMatchEvaluator(yamlData []byte) (*MatchEvaluator, error) {
 func (e *MatchEvaluator) Get(name string) (*MatchRuleSet, error) {
 	rs, ok := e.sets[name]
 	if !ok {
-		return nil, fmt.Errorf("match evaluator: rule set %q not found", name)
+		return nil, fmt.Errorf("%w: %q not found", ErrMatchEvaluatorRuleSet, name)
 	}
 	return rs, nil
 }

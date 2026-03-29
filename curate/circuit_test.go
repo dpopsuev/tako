@@ -1,11 +1,12 @@
 package curate
 
 import (
-	"github.com/dpopsuev/origami/circuit"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	"github.com/dpopsuev/origami/circuit"
 )
 
 func curationYAMLPath() string {

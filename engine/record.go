@@ -28,7 +28,7 @@ func SaveRunRecord(dir string, rec *RunRecord) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(dir, "run.json"), data, 0o644)
+	return os.WriteFile(filepath.Join(dir, "run.json"), data, 0o600)
 }
 
 // LoadRunRecord reads a RunRecord from run.json in the given directory.

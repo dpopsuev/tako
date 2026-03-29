@@ -66,7 +66,7 @@ func run(llm LLMClient, gatewayEndpoint, scenario, backend string) error {
 		return fmt.Errorf("circuit/start: %w", err)
 	}
 	if startResult.IsError {
-		return fmt.Errorf("circuit/start error: %s", textContent(startResult))
+		return fmt.Errorf("%w: %s", ErrCircuitStartError, textContent(startResult))
 	}
 	log.Printf("circuit started: %s", textContent(startResult))
 

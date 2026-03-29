@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/agentport"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
+	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/mcp"
 )
 
@@ -164,10 +164,10 @@ func TestSessionLifecycle_StartGetSubmitReport(t *testing.T) {
 
 	cfg := lifecycleConfig(linearCircuitYAML, 1)
 	srv := newTestServer(t, &cfg)
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 
 	// 1. Start circuit
-	startOut := callTool(t, ctx, session, "start_circuit", nil)
+	startOut := callTool(ctx, t, session, "start_circuit", nil)
 	sessionID, ok := startOut["session_id"].(string)
 	if !ok || sessionID == "" {
 		t.Fatalf("expected session_id, got %v", startOut)
@@ -179,7 +179,7 @@ func TestSessionLifecycle_StartGetSubmitReport(t *testing.T) {
 	// 2. Loop: get_next_step → submit_step until done
 	var steps []string
 	for i := 0; i < 10; i++ { // safety bound
-		out := callTool(t, ctx, session, "get_next_step", map[string]any{
+		out := callTool(ctx, t, session, "get_next_step", map[string]any{
 			"session_id": sessionID,
 		})
 
@@ -196,7 +196,7 @@ func TestSessionLifecycle_StartGetSubmitReport(t *testing.T) {
 		dispatchID := out["dispatch_id"].(float64)
 		steps = append(steps, step)
 
-		callTool(t, ctx, session, "submit_step", map[string]any{
+		callTool(ctx, t, session, "submit_step", map[string]any{
 			"session_id":  sessionID,
 			"dispatch_id": int64(dispatchID),
 			"step":        step,
@@ -216,7 +216,7 @@ func TestSessionLifecycle_StartGetSubmitReport(t *testing.T) {
 	}
 
 	// 4. Get report
-	report := callTool(t, ctx, session, "get_report", map[string]any{
+	report := callTool(ctx, t, session, "get_report", map[string]any{
 		"session_id": sessionID,
 	})
 	if report["status"] != "done" {
@@ -238,10 +238,10 @@ func TestSessionLifecycle_MultiCase(t *testing.T) {
 	const nCases = 3
 	cfg := lifecycleConfig(singleNodeCircuitYAML, nCases)
 	srv := newTestServer(t, &cfg)
-	session := connectInMemory(t, ctx, srv)
+	session := connectInMemory(ctx, t, srv)
 
 	// Start circuit
-	startOut := callTool(t, ctx, session, "start_circuit", nil)
+	startOut := callTool(ctx, t, session, "start_circuit", nil)
 	sessionID := startOut["session_id"].(string)
 	if int(startOut["total_cases"].(float64)) != nCases {
 		t.Fatalf("expected total_cases=%d, got %v", nCases, startOut["total_cases"])
@@ -250,7 +250,7 @@ func TestSessionLifecycle_MultiCase(t *testing.T) {
 	// Drain all steps
 	seen := map[string]bool{}
 	for i := 0; i < 20; i++ { // safety bound
-		out := callTool(t, ctx, session, "get_next_step", map[string]any{
+		out := callTool(ctx, t, session, "get_next_step", map[string]any{
 			"session_id": sessionID,
 		})
 
@@ -268,7 +268,7 @@ func TestSessionLifecycle_MultiCase(t *testing.T) {
 		dispatchID := out["dispatch_id"].(float64)
 		seen[caseID+":"+step] = true
 
-		callTool(t, ctx, session, "submit_step", map[string]any{
+		callTool(ctx, t, session, "submit_step", map[string]any{
 			"session_id":  sessionID,
 			"dispatch_id": int64(dispatchID),
 			"step":        step,
@@ -288,7 +288,7 @@ func TestSessionLifecycle_MultiCase(t *testing.T) {
 	}
 
 	// Get report
-	report := callTool(t, ctx, session, "get_report", map[string]any{
+	report := callTool(ctx, t, session, "get_report", map[string]any{
 		"session_id": sessionID,
 	})
 	if report["status"] != "done" {

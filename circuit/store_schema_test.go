@@ -174,9 +174,9 @@ func TestMergeStoreSchemas_RejectsColumnRedefinition(t *testing.T) {
 		},
 	}
 	overlay := &StoreSchema{
-		Version:    "1.1",
-		Import:     "base",
-		Extend:     true,
+		Version: "1.1",
+		Import:  "base",
+		Extend:  true,
 		Tables: map[string]StoreTableDef{
 			"users": {
 				Columns: []StoreColumnDef{

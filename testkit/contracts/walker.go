@@ -68,6 +68,6 @@ func (n *contractNode) Process(_ context.Context, _ circuit.NodeContext) (circui
 
 type contractArt struct{ typ string }
 
-func (a *contractArt) Type() string       { return a.typ }
+func (a *contractArt) Type() string        { return a.typ }
 func (a *contractArt) Confidence() float64 { return 1.0 }
-func (a *contractArt) Raw() any           { return nil }
+func (a *contractArt) Raw() any            { return nil }

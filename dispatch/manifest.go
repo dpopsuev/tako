@@ -59,12 +59,12 @@ func WriteManifest(path string, m *BatchManifest) error {
 		return fmt.Errorf("marshal manifest: %w", err)
 	}
 	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, data, 0o644); err != nil {
+	if err := os.WriteFile(tmp, data, 0o600); err != nil {
 		return fmt.Errorf("write manifest tmp: %w", err)
 	}
 	if err := os.Rename(tmp, path); err != nil {
 		defer os.Remove(tmp)
-		return os.WriteFile(path, data, 0o644)
+		return os.WriteFile(path, data, 0o600)
 	}
 	return nil
 }
@@ -100,12 +100,12 @@ func WriteBudgetStatus(path string, totalBudget, used int) error {
 		return fmt.Errorf("marshal budget status: %w", err)
 	}
 	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, data, 0o644); err != nil {
+	if err := os.WriteFile(tmp, data, 0o600); err != nil {
 		return fmt.Errorf("write budget tmp: %w", err)
 	}
 	if err := os.Rename(tmp, path); err != nil {
 		defer os.Remove(tmp)
-		return os.WriteFile(path, data, 0o644)
+		return os.WriteFile(path, data, 0o600)
 	}
 	return nil
 }

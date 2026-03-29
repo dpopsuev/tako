@@ -11,10 +11,10 @@ import (
 // store bindings at runtime. Consumers register engine factories,
 // then resolve named stores from StoreWiring configuration.
 type StoreRegistry struct {
-	mu       sync.RWMutex
-	engines  map[string]StoreEngineFactory
-	stores   map[string]StoreEngine
-	wiring   *StoreWiring
+	mu      sync.RWMutex
+	engines map[string]StoreEngineFactory
+	stores  map[string]StoreEngine
+	wiring  *StoreWiring
 }
 
 // StoreEngineFactory creates a new StoreEngine instance.
@@ -61,12 +61,12 @@ func (r *StoreRegistry) Resolve(storeName string) (StoreEngine, error) {
 
 	engineName := r.resolveEngineName(storeName)
 	if engineName == "" {
-		return nil, fmt.Errorf("no engine configured for store %q (check store_wiring in origami.yaml)", storeName)
+		return nil, fmt.Errorf("%w: %q (check store_wiring in origami.yaml)", ErrNoEngineConfiguredForStore, storeName)
 	}
 
 	factory, ok := r.engines[engineName]
 	if !ok {
-		return nil, fmt.Errorf("unknown engine %q for store %q (registered: %v)", engineName, storeName, r.engineNames())
+		return nil, fmt.Errorf("%w: %q for store %q (registered: %v)", ErrUnknownEngine, engineName, storeName, r.engineNames())
 	}
 
 	engine := factory()

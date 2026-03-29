@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/agentport"
+	"github.com/dpopsuev/origami/circuit"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/uri"
 )
@@ -83,7 +83,7 @@ func computeInlayHints(doc *document) []InlayHint {
 	return hints
 }
 
-func approachTraitHints(doc *document, lines []string) []InlayHint {
+func approachTraitHints(_ *document, lines []string) []InlayHint {
 	hints := make([]InlayHint, 0, len(lines))
 	for i, line := range lines {
 		trimmed := strings.TrimSpace(line)
@@ -101,7 +101,7 @@ func approachTraitHints(doc *document, lines []string) []InlayHint {
 		traits := agentport.ApproachTraits(a)
 		label := fmt.Sprintf("%s spd:%s ev:%d lp:%d", emoji, traits.Speed, traits.EvidenceDepth, traits.MaxLoops)
 		hints = append(hints, InlayHint{
-			Position:    Position{Line: uint32(i), Character: uint32(len(line))},
+			Position:    Position{Line: safeUint32(i), Character: safeUint32(len(line))},
 			Label:       label,
 			Kind:        1,
 			PaddingLeft: true,
@@ -111,7 +111,7 @@ func approachTraitHints(doc *document, lines []string) []InlayHint {
 	return hints
 }
 
-func personaHints(doc *document, lines []string) []InlayHint {
+func personaHints(_ *document, lines []string) []InlayHint {
 	hints := make([]InlayHint, 0, len(lines))
 	for i, line := range lines {
 		trimmed := strings.TrimSpace(line)
@@ -129,7 +129,7 @@ func personaHints(doc *document, lines []string) []InlayHint {
 			short = desc[:idx+1]
 		}
 		hints = append(hints, InlayHint{
-			Position:    Position{Line: uint32(i), Character: uint32(len(line))},
+			Position:    Position{Line: safeUint32(i), Character: safeUint32(len(line))},
 			Label:       short,
 			Kind:        1,
 			PaddingLeft: true,
@@ -183,7 +183,7 @@ func edgeConnectionHints(doc *document, lines []string) []InlayHint {
 		}
 
 		hints = append(hints, InlayHint{
-			Position:    Position{Line: uint32(line), Character: uint32(len(lines[line]))},
+			Position:    Position{Line: safeUint32(line), Character: safeUint32(len(lines[line]))},
 			Label:       label,
 			Kind:        1,
 			PaddingLeft: true,
@@ -252,7 +252,7 @@ func neighborHints(doc *document, lines []string) []InlayHint {
 		tooltip := neighborTooltip(nodeName, doc)
 
 		hints = append(hints, InlayHint{
-			Position:    Position{Line: uint32(i), Character: uint32(len(line))},
+			Position:    Position{Line: safeUint32(i), Character: safeUint32(len(line))},
 			Label:       label,
 			Kind:        1,
 			PaddingLeft: true,

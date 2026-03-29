@@ -10,9 +10,9 @@ import (
 // Consumers resolve modules from the DatasetManifest into concrete types.
 type PipelineOpts struct {
 	Source    Source
-	Matcher  Matcher
-	Dedup    DedupStore
-	Writer   CandidateWriter
+	Matcher   Matcher
+	Dedup     DedupStore
+	Writer    CandidateWriter
 	Verifiers []Verifier
 	Promoter  Promoter
 }
@@ -30,13 +30,13 @@ type PipelineResult struct {
 // discover → match → dedup → verify → promote.
 func RunPipeline(ctx context.Context, manifest *DatasetManifest, opts *PipelineOpts) (*PipelineResult, error) {
 	if opts.Source == nil {
-		return nil, fmt.Errorf("pipeline: Source is required")
+		return nil, ErrPipelineSourceIsRequired
 	}
 	if opts.Matcher == nil {
-		return nil, fmt.Errorf("pipeline: Matcher is required")
+		return nil, ErrPipelineMatcherIsRequired
 	}
 
-	logger := slog.Default().With("component", "dataset-pipeline", "scenario", manifest.Metadata.Scenario)
+	logger := slog.Default().With(slog.Any("component", "dataset-pipeline"), slog.Any("scenario", manifest.Metadata.Scenario))
 
 	// Step 1: Ingest — discover → match → dedup → write candidates.
 	cfg := Config{
@@ -67,10 +67,7 @@ func RunPipeline(ctx context.Context, manifest *DatasetManifest, opts *PipelineO
 		Duplicates: summary.Duplicates,
 	}
 
-	logger.InfoContext(ctx, "ingest complete",
-		"discovered", result.Discovered,
-		"matched", result.Matched,
-		"duplicates", result.Duplicates)
+	logger.InfoContext(ctx, "ingest complete", slog.Any("discovered", result.Discovered), slog.Any("matched", result.Matched), slog.Any("duplicates", result.Duplicates))
 
 	// Get candidates for verification.
 	var candidates []Candidate
@@ -89,12 +86,12 @@ func RunPipeline(ctx context.Context, manifest *DatasetManifest, opts *PipelineO
 		for _, v := range opts.Verifiers {
 			vr, verifyErr := v.Verify(ctx, cand.Record)
 			if verifyErr != nil {
-				logger.WarnContext(ctx, "verifier failed", "verifier", v.Name(), "candidate", cand.ID, "error", verifyErr)
+				logger.WarnContext(ctx, "verifier failed", slog.Any("verifier", v.Name()), slog.Any("candidate", cand.ID), slog.Any("error", verifyErr))
 				allPassed = false
 				break
 			}
 			if !vr.Verified {
-				logger.InfoContext(ctx, "candidate not verified", "verifier", v.Name(), "candidate", cand.ID, "reason", vr.Reason)
+				logger.InfoContext(ctx, "candidate not verified", slog.Any("verifier", v.Name()), slog.Any("candidate", cand.ID), slog.Any("reason", vr.Reason))
 				allPassed = false
 				break
 			}
@@ -105,7 +102,7 @@ func RunPipeline(ctx context.Context, manifest *DatasetManifest, opts *PipelineO
 	}
 	result.Verified = len(verified)
 
-	logger.InfoContext(ctx, "verification complete", "verified", result.Verified, "total", len(candidates))
+	logger.InfoContext(ctx, "verification complete", slog.Any("verified", result.Verified), slog.Any("total", len(candidates)))
 
 	// Step 3: Promote — append verified candidates to scenario YAML.
 	if opts.Promoter != nil && len(verified) > 0 && manifest.Output.Scenario != "" {
@@ -114,7 +111,7 @@ func RunPipeline(ctx context.Context, manifest *DatasetManifest, opts *PipelineO
 			return result, fmt.Errorf("pipeline promote: %w", promoteErr)
 		}
 		result.Promoted = promoted
-		logger.InfoContext(ctx, "promotion complete", "promoted", result.Promoted)
+		logger.InfoContext(ctx, "promotion complete", slog.Any("promoted", result.Promoted))
 	}
 
 	return result, nil

@@ -135,7 +135,7 @@ func wrapWithACPWorkers(inner RunFunc, params StartParams, disp *dispatch.MuxDis
 			},
 		})
 		if collErr != nil {
-			slog.WarnContext(ctx, "collective spawn failed, falling back to single-agent dispatch", "error", collErr)
+			slog.WarnContext(ctx, "collective spawn failed, falling back to single-agent dispatch", slog.Any("error", collErr))
 		} else {
 			acpOpts = append(acpOpts, dispatch.WithACPWorkerCollective(coll))
 		}
@@ -145,7 +145,7 @@ func wrapWithACPWorkers(inner RunFunc, params StartParams, disp *dispatch.MuxDis
 		)
 		go func() {
 			if err := acpDisp.Run(ctx); err != nil {
-				slog.ErrorContext(ctx, "ACP worker dispatch error", "error", err)
+				slog.ErrorContext(ctx, "ACP worker dispatch error", slog.Any("error", err))
 			}
 		}()
 

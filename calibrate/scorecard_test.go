@@ -86,10 +86,10 @@ func TestMetricDef_ToMetric(t *testing.T) {
 
 func TestCostModel_ROI(t *testing.T) {
 	cm := calibrate.CostModel{
-		CasesPerBatch:                    20,
-		CostPerBatchUSD:                  1.00,
-		LaborSavedPerBatchPersonDays:     100,
-		PersonDayCostUSD:                 500,
+		CasesPerBatch:                20,
+		CostPerBatchUSD:              1.00,
+		LaborSavedPerBatchPersonDays: 100,
+		PersonDayCostUSD:             500,
 	}
 	roi := cm.ROI()
 	// savings = 100 * 500 = 50000, cost = 1, ROI = (50000-1)/1 = 49999
@@ -424,14 +424,14 @@ func TestThreeLayerPattern(t *testing.T) {
 	}
 
 	vals := map[string]float64{
-		"token_usage":              150000,
-		"token_cost_usd":          2.50,
-		"latency_seconds":         120,
-		"path_efficiency":         0.75,
-		"loop_ratio":              0.10,
-		"confidence_calibration":  0.70,
-		"run_variance":            0.05,
-		"domain_accuracy":         0.90,
+		"token_usage":            150000,
+		"token_cost_usd":         2.50,
+		"latency_seconds":        120,
+		"path_efficiency":        0.75,
+		"loop_ratio":             0.10,
+		"confidence_calibration": 0.70,
+		"run_variance":           0.05,
+		"domain_accuracy":        0.90,
 	}
 	report, err := sc.Report("integration", "stub", 1, vals, nil)
 	if err != nil {

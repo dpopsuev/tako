@@ -28,7 +28,7 @@ type ReportDef struct {
 
 // SectionDef describes one section in the report.
 type SectionDef struct {
-	Type    string       `yaml:"type"`              // "table", "text", "header", "repeat"
+	Type    string       `yaml:"type"` // "table", "text", "header", "repeat"
 	Title   string       `yaml:"title,omitempty"`
 	Columns []string     `yaml:"columns,omitempty"` // for table
 	DataKey string       `yaml:"data,omitempty"`    // key into report data
@@ -58,10 +58,10 @@ func ParseReportDef(data []byte) (*ReportDef, error) {
 		def.Name = def.Metadata.Name
 	}
 	if def.Name == "" {
-		return nil, fmt.Errorf("report: missing name")
+		return nil, ErrReportMissingName
 	}
 	if len(def.Sections) == 0 {
-		return nil, fmt.Errorf("report: no sections defined")
+		return nil, ErrReportNoSectionsDefined
 	}
 	return &def, nil
 }
@@ -103,7 +103,7 @@ func renderSections(buf *strings.Builder, sections []SectionDef, data map[string
 				return fmt.Errorf("section %d (repeat): %w", i, err)
 			}
 		default:
-			return fmt.Errorf("section %d: unknown type %q", i, sections[i].Type)
+			return fmt.Errorf("%w: %d: unknown type %q", ErrSection, i, sections[i].Type)
 		}
 	}
 	return nil
@@ -111,7 +111,7 @@ func renderSections(buf *strings.Builder, sections []SectionDef, data map[string
 
 func renderRepeat(buf *strings.Builder, sec *SectionDef, data map[string]any, mode toolkit.Mode) error {
 	if sec.Items == "" {
-		return fmt.Errorf("repeat section requires 'items' field")
+		return ErrRepeatSectionRequiresItemsField
 	}
 	rawItems, ok := data[sec.Items]
 	if !ok {
@@ -120,7 +120,7 @@ func renderRepeat(buf *strings.Builder, sec *SectionDef, data map[string]any, mo
 
 	items, ok := rawItems.([]map[string]any)
 	if !ok {
-		return fmt.Errorf("data[%q] must be []map[string]any, got %T", sec.Items, rawItems)
+		return fmt.Errorf("%w: %q] must be []map[string]any, got %T", ErrData, sec.Items, rawItems)
 	}
 
 	for i, item := range items {
@@ -181,7 +181,7 @@ func renderTable(buf *strings.Builder, sec *SectionDef, data map[string]any, mod
 
 	rows, ok := rawRows.([]map[string]any)
 	if !ok {
-		return fmt.Errorf("data[%q] must be []map[string]any, got %T", sec.DataKey, rawRows)
+		return fmt.Errorf("%w: %q] must be []map[string]any, got %T", ErrData, sec.DataKey, rawRows)
 	}
 
 	tb := toolkit.NewTable(mode)
@@ -219,4 +219,3 @@ func renderText(buf *strings.Builder, sec *SectionDef, data map[string]any) erro
 	buf.WriteString("\n")
 	return nil
 }
-

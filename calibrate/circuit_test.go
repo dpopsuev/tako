@@ -65,9 +65,9 @@ func TestRunCircuit_EndToEnd(t *testing.T) {
 		Build()
 
 	input := &CalibrationInput{
-		Scenario: "test-scenario",
+		Scenario:    "test-scenario",
 		Transformer: "stub",
-		Runs:     1,
+		Runs:        1,
 		Cases: []CaseInput{
 			{ID: "case-1", Input: map[string]any{"data": "hello"}},
 			{ID: "case-2", Input: map[string]any{"data": "world"}},
@@ -149,13 +149,13 @@ func TestRunCircuit_ParallelExecution(t *testing.T) {
 	}
 
 	input := &CalibrationInput{
-		Scenario:  "parallel-test",
+		Scenario:    "parallel-test",
 		Transformer: "stub",
-		Runs:      1,
-		Cases:     cases,
+		Runs:        1,
+		Cases:       cases,
 		GroundTruth: gt,
-		ScoreCard: &sc,
-		Parallel:  4,
+		ScoreCard:   &sc,
+		Parallel:    4,
 		CaseRunner: CaseRunnerFunc(func(_ context.Context, caseID string, _ any) (any, error) {
 			return caseID, nil
 		}),
@@ -181,9 +181,9 @@ func TestRunCircuit_CaseRunnerError(t *testing.T) {
 		Build()
 
 	input := &CalibrationInput{
-		Scenario: "error-test",
+		Scenario:    "error-test",
 		Transformer: "stub",
-		Runs:     1,
+		Runs:        1,
 		Cases: []CaseInput{
 			{ID: "good-case", Input: nil},
 			{ID: "bad-case", Input: nil},

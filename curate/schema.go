@@ -11,9 +11,9 @@ const (
 // FieldSpec describes one field in a schema: its name, requirement level,
 // and an optional validation function.
 type FieldSpec struct {
-	Name        string          `json:"name"`
-	Requirement FieldRequirement `json:"requirement"`
-	Description string          `json:"description,omitempty"`
+	Name        string               `json:"name"`
+	Requirement FieldRequirement     `json:"requirement"`
+	Description string               `json:"description,omitempty"`
 	Validate    func(value any) bool `json:"-"`
 }
 

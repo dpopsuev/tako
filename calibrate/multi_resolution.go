@@ -24,7 +24,7 @@ func ParseResolution(s string) (Resolution, error) {
 	case ResolutionUnit, ResolutionPairwise, ResolutionIntegrated:
 		return Resolution(s), nil
 	default:
-		return "", fmt.Errorf("unknown resolution %q (valid: unit, pairwise, integrated)", s)
+		return "", fmt.Errorf("%w: %q (valid: unit, pairwise, integrated)", ErrUnknownResolution, s)
 	}
 }
 
@@ -37,7 +37,7 @@ type MultiResolutionConfig struct {
 // CircuitEntry names a circuit that participates in multi-resolution calibration.
 type CircuitEntry struct {
 	Name      string `yaml:"name"`
-	Circuit   string `yaml:"circuit"`             // circuit name or import reference
+	Circuit   string `yaml:"circuit"` // circuit name or import reference
 	Scorecard string `yaml:"scorecard,omitempty"`
 }
 
