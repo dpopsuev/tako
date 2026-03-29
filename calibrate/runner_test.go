@@ -201,6 +201,124 @@ func TestRun_MultiRun(t *testing.T) {
 	}
 }
 
+func TestNewHarnessConfig(t *testing.T) {
+	loader := &mockLoader{}
+	collector := &mockCollector{}
+	def := testCircuitDef()
+	sc := testScoreCard()
+	shared := &engine.GraphRegistries{}
+	contract := &CalibrationContract{}
+	stubs := PortStubs{"stub1": "data1"}
+
+	cfg := NewHarnessConfig(
+		WithLoader(loader),
+		WithCollector(collector),
+		WithCircuitDef(def),
+		WithScoreCard(sc),
+		WithShared(shared),
+		WithContract(contract),
+		WithResolution(ResolutionUnit, &ResolutionPlan{Name: "plan1"}),
+		WithPortStubs(stubs),
+		WithWalkerContext(map[string]any{"key": "val"}),
+		WithMaxErrorRate(0.15),
+		WithScenario("test-scenario"),
+		WithTransformerName("my-transformer"),
+		WithRuns(5),
+		WithParallel(3),
+	)
+
+	if cfg.Loader != loader {
+		t.Error("Loader not set")
+	}
+	if cfg.Collector != collector {
+		t.Error("Collector not set")
+	}
+	if cfg.CircuitDef != def {
+		t.Error("CircuitDef not set")
+	}
+	if cfg.ScoreCard != sc {
+		t.Error("ScoreCard not set")
+	}
+	if cfg.Shared != shared {
+		t.Error("Shared not set")
+	}
+	if cfg.Contract != contract {
+		t.Error("Contract not set")
+	}
+	if cfg.Resolution != ResolutionUnit {
+		t.Errorf("Resolution = %q, want %q", cfg.Resolution, ResolutionUnit)
+	}
+	if cfg.Plan == nil || cfg.Plan.Name != "plan1" {
+		t.Error("Plan not set correctly")
+	}
+	if cfg.PortStubs["stub1"] != "data1" {
+		t.Error("PortStubs not set")
+	}
+	if cfg.WalkerContext["key"] != "val" {
+		t.Error("WalkerContext not set")
+	}
+	if cfg.MaxErrorRate != 0.15 {
+		t.Errorf("MaxErrorRate = %f, want 0.15", cfg.MaxErrorRate)
+	}
+	if cfg.Scenario != "test-scenario" {
+		t.Errorf("Scenario = %q, want test-scenario", cfg.Scenario)
+	}
+	if cfg.Transformer != "my-transformer" {
+		t.Errorf("Transformer = %q, want my-transformer", cfg.Transformer)
+	}
+	if cfg.Runs != 5 {
+		t.Errorf("Runs = %d, want 5", cfg.Runs)
+	}
+	if cfg.Parallel != 3 {
+		t.Errorf("Parallel = %d, want 3", cfg.Parallel)
+	}
+}
+
+func TestNewHarnessConfig_Empty(t *testing.T) {
+	cfg := NewHarnessConfig()
+	if cfg == nil {
+		t.Fatal("NewHarnessConfig returned nil")
+	}
+	if cfg.Runs != 0 {
+		t.Errorf("Runs = %d, want 0", cfg.Runs)
+	}
+	if cfg.Scenario != "" {
+		t.Errorf("Scenario = %q, want empty", cfg.Scenario)
+	}
+}
+
+func TestNewHarnessConfig_CompatibleWithRun(t *testing.T) {
+	loader := &mockLoader{cases: []engine.BatchCase{
+		{ID: "C1", Context: map[string]any{}},
+	}}
+	collector := &mockCollector{
+		values:  map[string]float64{"M1": 0.90, "M2": 0.85},
+		details: map[string]string{"M1": "9/10", "M2": "17/20"},
+	}
+
+	cfg := NewHarnessConfig(
+		WithLoader(loader),
+		WithCollector(collector),
+		WithCircuitDef(testCircuitDef()),
+		WithScoreCard(testScoreCard()),
+		WithScenario("options-compat"),
+		WithTransformerName("stub"),
+		WithRuns(1),
+	)
+
+	report, err := Run(context.Background(), cfg)
+	if err != nil {
+		t.Fatalf("Run with NewHarnessConfig: %v", err)
+	}
+	if report.Scenario != "options-compat" {
+		t.Errorf("Scenario = %q, want options-compat", report.Scenario)
+	}
+	passed, total := report.Metrics.PassCount()
+	if passed != 2 || total != 2 {
+		t.Errorf("PassCount = %d/%d, want 2/2", passed, total)
+	}
+}
+
 func TestRun_DefaultRuns(t *testing.T) {
 	loader := &mockLoader{cases: []engine.BatchCase{
 		{ID: "C1", Context: map[string]any{}},
