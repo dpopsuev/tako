@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/lint"
 	originamilsp "github.com/dpopsuev/origami/lsp"
@@ -140,11 +141,11 @@ func runCmd(args []string) error {
 		opts = append(opts, engine.WithOverrides(map[string]any(sets)))
 	}
 
-	logger.InfoContext(ctx, "running circuit", slog.Any("path", circuitPath))
+	logger.InfoContext(ctx, circuit.LogRunningCircuit, slog.Any(circuit.LogKeyPath, circuitPath))
 	if err := engine.Run(ctx, circuitPath, nil, opts...); err != nil {
 		return err
 	}
-	logger.InfoContext(ctx, "circuit completed")
+	logger.InfoContext(ctx, circuit.LogCircuitDone)
 	return nil
 }
 
@@ -275,7 +276,7 @@ func lspCmd() error {
 	conn := originamilsp.ServeStream(ctx, srv, stream)
 	srv.SetConn(conn)
 
-	slog.InfoContext(ctx, "origami-lsp started", slog.Any("transport", "stdio"))
+	slog.InfoContext(ctx, circuit.LogLSPStarted, slog.Any(circuit.LogKeyTransport, "stdio"))
 	<-ctx.Done()
 	return nil
 }

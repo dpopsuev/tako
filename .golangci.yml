@@ -137,7 +137,7 @@ linters-settings:
   sloglint:
     context: "all"
     static-msg: false
-    no-raw-keys: false
+    no-raw-keys: true
     key-naming-case: snake
 
   thelper:
@@ -159,6 +159,7 @@ issues:
         - goconst
         - gosec
         - err113
+        - sloglint
     - path: testkit/
       linters:
         - errcheck

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // PipelineOpts carries resolved implementations for the pipeline.
@@ -36,7 +38,7 @@ func RunPipeline(ctx context.Context, manifest *DatasetManifest, opts *PipelineO
 		return nil, ErrPipelineMatcherIsRequired
 	}
 
-	logger := slog.Default().With(slog.Any("component", "dataset-pipeline"), slog.Any("scenario", manifest.Metadata.Scenario))
+	logger := slog.Default().With(slog.Any(circuit.LogKeyComponent, circuit.LogComponentDatasetPipeline), slog.Any(circuit.LogKeyScenario, manifest.Metadata.Scenario))
 
 	// Step 1: Ingest — discover → match → dedup → write candidates.
 	cfg := Config{
@@ -67,7 +69,7 @@ func RunPipeline(ctx context.Context, manifest *DatasetManifest, opts *PipelineO
 		Duplicates: summary.Duplicates,
 	}
 
-	logger.InfoContext(ctx, "ingest complete", slog.Any("discovered", result.Discovered), slog.Any("matched", result.Matched), slog.Any("duplicates", result.Duplicates))
+	logger.InfoContext(ctx, circuit.LogIngestComplete, slog.Any(circuit.LogKeyDiscovered, result.Discovered), slog.Any(circuit.LogKeyMatched, result.Matched), slog.Any(circuit.LogKeyDuplicates, result.Duplicates))
 
 	// Get candidates for verification.
 	var candidates []Candidate
@@ -86,12 +88,12 @@ func RunPipeline(ctx context.Context, manifest *DatasetManifest, opts *PipelineO
 		for _, v := range opts.Verifiers {
 			vr, verifyErr := v.Verify(ctx, cand.Record)
 			if verifyErr != nil {
-				logger.WarnContext(ctx, "verifier failed", slog.Any("verifier", v.Name()), slog.Any("candidate", cand.ID), slog.Any("error", verifyErr))
+				logger.WarnContext(ctx, circuit.LogVerifierFailed, slog.Any(circuit.LogKeyVerifier, v.Name()), slog.Any(circuit.LogKeyCandidate, cand.ID), slog.Any(circuit.LogKeyError, verifyErr))
 				allPassed = false
 				break
 			}
 			if !vr.Verified {
-				logger.InfoContext(ctx, "candidate not verified", slog.Any("verifier", v.Name()), slog.Any("candidate", cand.ID), slog.Any("reason", vr.Reason))
+				logger.InfoContext(ctx, circuit.LogCandidateNotVerified, slog.Any(circuit.LogKeyVerifier, v.Name()), slog.Any(circuit.LogKeyCandidate, cand.ID), slog.Any(circuit.LogKeyReason, vr.Reason))
 				allPassed = false
 				break
 			}
@@ -102,7 +104,7 @@ func RunPipeline(ctx context.Context, manifest *DatasetManifest, opts *PipelineO
 	}
 	result.Verified = len(verified)
 
-	logger.InfoContext(ctx, "verification complete", slog.Any("verified", result.Verified), slog.Any("total", len(candidates)))
+	logger.InfoContext(ctx, circuit.LogVerificationComplete, slog.Any(circuit.LogKeyVerified, result.Verified), slog.Any(circuit.LogKeyTotal, len(candidates)))
 
 	// Step 3: Promote — append verified candidates to scenario YAML.
 	if opts.Promoter != nil && len(verified) > 0 && manifest.Output.Scenario != "" {
@@ -111,7 +113,7 @@ func RunPipeline(ctx context.Context, manifest *DatasetManifest, opts *PipelineO
 			return result, fmt.Errorf("pipeline promote: %w", promoteErr)
 		}
 		result.Promoted = promoted
-		logger.InfoContext(ctx, "promotion complete", slog.Any("promoted", result.Promoted))
+		logger.InfoContext(ctx, circuit.LogPromotionComplete, slog.Any(circuit.LogKeyPromoted, result.Promoted))
 	}
 
 	return result, nil

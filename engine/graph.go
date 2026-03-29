@@ -187,7 +187,7 @@ func (g *DefaultGraph) Walk(ctx context.Context, walker circuit.Walker, startNod
 		}
 
 		emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: node.Name(), Walker: walkerName})
-		slog.DebugContext(ctx, circuit.LogNodeEnter, circuit.LogKeyComponent, circuit.LogComponentWalk, "node", node.Name(), "walker", walkerName)
+		slog.DebugContext(ctx, circuit.LogNodeEnter, circuit.LogKeyComponent, circuit.LogComponentWalk, circuit.LogKeyNode, node.Name(), circuit.LogKeyWalker, walkerName)
 		nodeStart := time.Now()
 
 		nc := circuit.NodeContext{
@@ -235,7 +235,7 @@ func (g *DefaultGraph) Walk(ctx context.Context, walker circuit.Walker, startNod
 			exitMeta["snr"] = evidenceSNR(ca.InputCount(), ca.OutputCount())
 		}
 		emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventNodeExit, Node: node.Name(), Walker: walkerName, Artifact: artifact, Elapsed: nodeElapsed, Metadata: exitMeta})
-		slog.DebugContext(ctx, circuit.LogNodeExit, circuit.LogKeyComponent, circuit.LogComponentWalk, "node", node.Name(), "elapsed_ms", nodeElapsed.Milliseconds())
+		slog.DebugContext(ctx, circuit.LogNodeExit, circuit.LogKeyComponent, circuit.LogComponentWalk, circuit.LogKeyNode, node.Name(), circuit.LogKeyElapsed, nodeElapsed.Milliseconds())
 
 		if artifact != nil && artifact.Confidence() > 0 {
 			state.RecordConfidence(artifact.Confidence())

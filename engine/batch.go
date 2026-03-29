@@ -85,7 +85,7 @@ func BatchWalk(ctx context.Context, cfg BatchWalkConfig) []BatchWalkResult {
 
 		walkErr := runner.Walk(ctx, walker, string(cfg.Def.Start))
 		if walkErr != nil {
-			slog.WarnContext(ctx, "case walk failed", slog.String("component", "batch_walk"), slog.String("case_id", bc.ID), slog.Any("error", walkErr))
+			slog.WarnContext(ctx, circuit.LogCaseWalkFailed, slog.String(circuit.LogKeyComponent, circuit.LogComponentBatch), slog.String(circuit.LogKeyCaseID, bc.ID), slog.Any(circuit.LogKeyError, walkErr))
 		}
 
 		results[i] = BatchWalkResult{

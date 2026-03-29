@@ -16,6 +16,7 @@ import (
 
 	"github.com/dpopsuev/bugle/resilience"
 	"github.com/dpopsuev/origami/agentport"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // NetworkServer wraps an agentport.ExternalDispatcher and exposes it over HTTP.
@@ -114,7 +115,7 @@ func (s *NetworkServer) Serve(ctx context.Context) error {
 	s.started = true
 	s.mu.Unlock()
 
-	s.log.InfoContext(ctx, "network server started", slog.Any("addr", s.addr))
+	s.log.InfoContext(ctx, circuit.LogNetworkServerStarted, slog.Any(circuit.LogKeyAddr, s.addr))
 
 	go func() {
 		<-ctx.Done()
@@ -170,7 +171,7 @@ func (s *NetworkServer) handleGetNext(w http.ResponseWriter, r *http.Request) {
 
 	dc, err := s.dispatcher.GetNextStepWithHints(r.Context(), hints)
 	if err != nil {
-		s.log.ErrorContext(r.Context(), "get next step failed", slog.Any("error", err))
+		s.log.ErrorContext(r.Context(), circuit.LogGetNextStepFailed, slog.Any(circuit.LogKeyError, err))
 		http.Error(w, "dispatch unavailable", http.StatusServiceUnavailable)
 		return
 	}
@@ -195,7 +196,7 @@ func (s *NetworkServer) handleSubmit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.dispatcher.SubmitArtifact(r.Context(), req.DispatchID, req.Data); err != nil {
-		s.log.ErrorContext(r.Context(), "submit artifact failed", slog.Any("dispatch_id", req.DispatchID), slog.Any("error", err))
+		s.log.ErrorContext(r.Context(), circuit.LogSubmitArtifactFailed, slog.Any(circuit.LogKeyDispatchID, req.DispatchID), slog.Any(circuit.LogKeyError, err))
 		http.Error(w, "submit failed", http.StatusInternalServerError)
 		return
 	}

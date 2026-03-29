@@ -95,7 +95,7 @@ func (w *CurationWalker) handleFetch(ctx context.Context) (circuit.Artifact, err
 		}
 		raw, err := src.Fetch(ctx, w.record.ID)
 		if err != nil {
-			slog.WarnContext(ctx, "source fetch failed", slog.Any("source", src.Type()), slog.Any("record", w.record.ID), slog.Any("error", err.Error()))
+			slog.WarnContext(ctx, circuit.LogSourceFetchFailed, slog.Any(circuit.LogKeySource, src.Type()), slog.Any(circuit.LogKeyRecord, w.record.ID), slog.Any(circuit.LogKeyError, err.Error()))
 			continue
 		}
 		lastRaw = raw
@@ -121,7 +121,7 @@ func (w *CurationWalker) handleExtract(ctx context.Context, nc circuit.NodeConte
 	for _, ext := range w.extractors {
 		fields, err := ext.Extract(ctx, raw)
 		if err != nil {
-			slog.WarnContext(ctx, "extractor failed", slog.Any("extractor", ext.Type()), slog.Any("error", err.Error()))
+			slog.WarnContext(ctx, circuit.LogExtractorFailed, slog.Any(circuit.LogKeyExtractor, ext.Type()), slog.Any(circuit.LogKeyError, err.Error()))
 			continue
 		}
 		for _, f := range fields {
@@ -167,7 +167,7 @@ func (w *CurationWalker) handleEnrich(_ context.Context) (circuit.Artifact, erro
 
 func (w *CurationWalker) handlePromote() (circuit.Artifact, error) {
 	w.promoted = true
-	slog.InfoContext(context.Background(), "record promoted", slog.Any("record_id", w.record.ID), slog.Any("fields", len(w.record.Fields)))
+	slog.InfoContext(context.Background(), circuit.LogRecordPromoted, slog.Any(circuit.LogKeyRecordID, w.record.ID), slog.Any(circuit.LogKeyFields, len(w.record.Fields)))
 	return &CurationArtifact{
 		ArtifactType: "promote",
 		Rec:          &w.record,

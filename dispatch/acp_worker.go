@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/dpopsuev/origami/agentport"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // Steps where dialectic collective debate improves quality.
@@ -97,7 +98,7 @@ func (d *ACPWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 		if prompt == "" && dc.PromptPath != "" {
 			data, readErr := readPromptFile(dc.PromptPath)
 			if readErr != nil {
-				d.log.ErrorContext(ctx, "read prompt file", slog.Any("worker", workerID), slog.Any("path", dc.PromptPath), slog.Any("error", readErr))
+				d.log.ErrorContext(ctx, circuit.LogReadPromptFile, slog.Any(circuit.LogKeyWorker, workerID), slog.Any(circuit.LogKeyPath, dc.PromptPath), slog.Any(circuit.LogKeyError, readErr))
 				continue
 			}
 			prompt = string(data)
@@ -106,12 +107,12 @@ func (d *ACPWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 		// Route hard steps through collective debate, others to single agent.
 		var response string
 		if d.collective != nil && collectiveSteps[dc.Step] {
-			d.log.InfoContext(ctx, "routing to collective", slog.Any("step", dc.Step), slog.Any("case", dc.CaseID))
+			d.log.InfoContext(ctx, circuit.LogRoutingToCollective, slog.Any(circuit.LogKeyStep, dc.Step), slog.Any(circuit.LogKeyCaseID, dc.CaseID))
 			response, err = d.collective.Ask(ctx, prompt)
 		} else {
 			workers := d.staff.FindByRole(d.role)
 			if len(workers) == 0 {
-				d.log.ErrorContext(ctx, "no workers available", slog.Any("role", d.role))
+				d.log.ErrorContext(ctx, circuit.LogNoWorkersAvailable, slog.Any(circuit.LogKeyRole, d.role))
 				continue
 			}
 			worker := workers[int(dc.DispatchID)%len(workers)]
@@ -122,7 +123,7 @@ func (d *ACPWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 				agentport.MetaKeyWorkerID: workerID,
 				agentport.MetaKeyError:    err.Error(),
 			})
-			d.log.ErrorContext(ctx, "ACP agent failed", slog.Any("worker", workerID), slog.Any("case", dc.CaseID), slog.Any("step", dc.Step), slog.Any("error", err))
+			d.log.ErrorContext(ctx, circuit.LogACPAgentFailed, slog.Any(circuit.LogKeyWorker, workerID), slog.Any(circuit.LogKeyCaseID, dc.CaseID), slog.Any(circuit.LogKeyStep, dc.Step), slog.Any(circuit.LogKeyError, err))
 			continue
 		}
 
@@ -139,7 +140,7 @@ func (d *ACPWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 			agentport.MetaKeyBytes:    fmt.Sprintf("%d", len(response)),
 		})
 
-		d.log.InfoContext(ctx, "step complete", slog.Any("worker", workerID), slog.Any("case", dc.CaseID), slog.Any("step", dc.Step), slog.Any("bytes", len(response)))
+		d.log.InfoContext(ctx, circuit.LogStepComplete, slog.Any(circuit.LogKeyWorker, workerID), slog.Any(circuit.LogKeyCaseID, dc.CaseID), slog.Any(circuit.LogKeyStep, dc.Step), slog.Any(circuit.LogKeyBytes, len(response)))
 	}
 }
 

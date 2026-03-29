@@ -164,13 +164,13 @@ func (gw *Mediator) Start(ctx context.Context) error {
 
 func (gw *Mediator) initTraceRecording() {
 	if err := os.MkdirAll(gw.stateDir, 0o755); err != nil {
-		slog.WarnContext(context.Background(), "failed to create mediator state dir, tracing disabled", slog.Any("state_dir", gw.stateDir), slog.Any("error", err))
+		slog.WarnContext(context.Background(), circuit.LogMediatorStateDirFailed, slog.Any(circuit.LogKeyStateDir, gw.stateDir), slog.Any(circuit.LogKeyError, err))
 		return
 	}
 	tracePath := filepath.Join(gw.stateDir, "mediator-trace.jsonl")
 	rec, err := engine.NewTraceRecorder(tracePath)
 	if err != nil {
-		slog.WarnContext(context.Background(), "failed to create mediator trace recorder", slog.Any("error", err))
+		slog.WarnContext(context.Background(), circuit.LogMediatorTraceFailed, slog.Any(circuit.LogKeyError, err))
 		return
 	}
 	gw.recorder = rec
@@ -298,7 +298,7 @@ func (gw *Mediator) routeStartCircuit(ctx context.Context, args map[string]any) 
 			},
 		})
 
-		slog.DebugContext(ctx, "session affinity registered", slog.Any("session_id", sessionID), slog.Any("backend", backendName), slog.Any("circuit_type", circuitType))
+		slog.DebugContext(ctx, circuit.LogSessionAffinityRegistered, slog.Any(circuit.LogKeySessionID, sessionID), slog.Any(circuit.LogKeyBackend, backendName), slog.Any(circuit.LogKeyCircuitType, circuitType))
 	}
 
 	return result, nil

@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/dpopsuev/origami/agentport"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/engine"
 )
@@ -135,7 +136,7 @@ func wrapWithACPWorkers(inner RunFunc, params StartParams, disp *dispatch.MuxDis
 			},
 		})
 		if collErr != nil {
-			slog.WarnContext(ctx, "collective spawn failed, falling back to single-agent dispatch", slog.Any("error", collErr))
+			slog.WarnContext(ctx, circuit.LogCollectiveSpawnFailed, slog.Any(circuit.LogKeyError, collErr))
 		} else {
 			acpOpts = append(acpOpts, dispatch.WithACPWorkerCollective(coll))
 		}
@@ -145,7 +146,7 @@ func wrapWithACPWorkers(inner RunFunc, params StartParams, disp *dispatch.MuxDis
 		)
 		go func() {
 			if err := acpDisp.Run(ctx); err != nil {
-				slog.ErrorContext(ctx, "ACP worker dispatch error", slog.Any("error", err))
+				slog.ErrorContext(ctx, circuit.LogACPDispatchError, slog.Any(circuit.LogKeyError, err))
 			}
 		}()
 

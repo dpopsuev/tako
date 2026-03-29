@@ -174,7 +174,7 @@ func (vw *validatingWalker) Handle(ctx context.Context, node circuit.Node, nc ci
 
 	if err := ValidateArtifact(schema, artifact); err != nil {
 		if vw.log != nil {
-			vw.log.WarnContext(ctx, "artifact schema validation failed", slog.Any("node", node.Name()), slog.Any("error", err.Error()))
+			vw.log.WarnContext(ctx, circuit.LogSchemaValidationFailed, slog.Any(circuit.LogKeyNode, node.Name()), slog.Any(circuit.LogKeyError, err.Error()))
 		}
 		return nil, fmt.Errorf("node %s: artifact schema violation: %w", node.Name(), err)
 	}
@@ -209,13 +209,13 @@ func (hw *hookingWalker) Handle(ctx context.Context, node circuit.Node, nc circu
 		hook, hErr := hw.hooks.Get(name)
 		if hErr != nil {
 			if hw.log != nil {
-				hw.log.WarnContext(ctx, "before-hook not found", slog.Any("hook", name), slog.Any("node", node.Name()))
+				hw.log.WarnContext(ctx, circuit.LogBeforeHookNotFound, slog.Any(circuit.LogKeyHook, name), slog.Any(circuit.LogKeyNode, node.Name()))
 			}
 			continue
 		}
 		if hErr = hook.Run(hookCtx, node.Name(), nil); hErr != nil {
 			if hw.log != nil {
-				hw.log.WarnContext(ctx, "before-hook error", slog.Any("hook", name), slog.Any("node", node.Name()), slog.Any("error", hErr.Error()))
+				hw.log.WarnContext(ctx, circuit.LogBeforeHookError, slog.Any(circuit.LogKeyHook, name), slog.Any(circuit.LogKeyNode, node.Name()), slog.Any(circuit.LogKeyError, hErr.Error()))
 			}
 		}
 		if hw.onHookEvent != nil {
@@ -232,7 +232,7 @@ func (hw *hookingWalker) Handle(ctx context.Context, node circuit.Node, nc circu
 		hook, hErr := hw.hooks.Get(name)
 		if hErr != nil {
 			if hw.log != nil {
-				hw.log.WarnContext(ctx, "hook not found", slog.Any("hook", name), slog.Any("node", node.Name()))
+				hw.log.WarnContext(ctx, circuit.LogHookNotFound, slog.Any(circuit.LogKeyHook, name), slog.Any(circuit.LogKeyNode, node.Name()))
 			}
 			continue
 		}
@@ -245,7 +245,7 @@ func (hw *hookingWalker) Handle(ctx context.Context, node circuit.Node, nc circu
 			continue
 		}
 		if hErr != nil && hw.log != nil {
-			hw.log.WarnContext(ctx, "hook error", slog.Any("hook", name), slog.Any("node", node.Name()), slog.Any("error", hErr.Error()))
+			hw.log.WarnContext(ctx, circuit.LogHookError, slog.Any(circuit.LogKeyHook, name), slog.Any(circuit.LogKeyNode, node.Name()), slog.Any(circuit.LogKeyError, hErr.Error()))
 		}
 		if hw.onHookEvent != nil {
 			hw.onHookEvent(name, "after", hErr)

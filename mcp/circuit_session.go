@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/agentport"
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/engine"
 )
@@ -88,7 +89,7 @@ func NewCircuitSession(
 ) *CircuitSession {
 	return &CircuitSession{
 		ID:              id,
-		log:             slog.Default().With(slog.Any("component", "circuit-session")),
+		log:             slog.Default().With(slog.Any(circuit.LogKeyComponent, circuit.LogComponentCircuitSession)),
 		state:           StateRunning,
 		TotalCases:      meta.TotalCases,
 		Scenario:        meta.Scenario,
@@ -310,7 +311,7 @@ func (s *CircuitSession) touchActivity() {
 	s.mu.Unlock()
 
 	if ttl > 0 && !prev.IsZero() {
-		s.log.DebugContext(context.Background(), "activity reset", slog.Any("gap", time.Since(prev)), slog.Any("ttl", ttl))
+		s.log.DebugContext(context.Background(), circuit.LogActivityReset, slog.Any(circuit.LogKeyGap, time.Since(prev)), slog.Any(circuit.LogKeyTTL, ttl))
 	}
 }
 
@@ -341,7 +342,7 @@ func (s *CircuitSession) watchdog() {
 			}
 
 			if stale > currentTTL {
-				s.log.WarnContext(context.Background(), "TTL watchdog triggered, aborting session", slog.Any("stale", stale), slog.Any("ttl", currentTTL), slog.Any("session_id", s.ID))
+				s.log.WarnContext(context.Background(), circuit.LogTTLWatchdog, slog.Any(circuit.LogKeyStale, stale), slog.Any(circuit.LogKeyTTL, currentTTL), slog.Any(circuit.LogKeySessionID, s.ID))
 				s.Bus.Emit(&agentport.Signal{
 					Event: EventSessionError,
 					Agent: agentport.AgentServer,
@@ -385,7 +386,7 @@ func (s *CircuitSession) run(ctx context.Context, runFn RunFunc) {
 		s.state = StateError
 		s.err = err
 		s.Bus.Emit(&agentport.Signal{Event: EventSessionError, Agent: agentport.AgentServer, Meta: map[string]string{agentport.MetaKeyError: err.Error()}})
-		s.log.ErrorContext(ctx, "circuit run failed", slog.Any("error", err))
+		s.log.ErrorContext(ctx, circuit.LogCircuitRunFailed, slog.Any(circuit.LogKeyError, err))
 		s.writeReport(result) // write partial report even on error
 		s.writeRunRecord()
 		return
@@ -393,7 +394,7 @@ func (s *CircuitSession) run(ctx context.Context, runFn RunFunc) {
 	s.state = StateDone
 	s.result = result
 	s.Bus.Emit(&agentport.Signal{Event: EventSessionDone, Agent: agentport.AgentServer})
-	s.log.InfoContext(ctx, "circuit run complete")
+	s.log.InfoContext(ctx, circuit.LogCircuitRunComplete)
 	s.writeReport(result)
 	s.writeRunRecord()
 }
@@ -405,14 +406,14 @@ func (s *CircuitSession) writeReport(result any) {
 	}
 	data, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
-		s.log.WarnContext(context.Background(), "failed to marshal report", slog.Any("error", err))
+		s.log.WarnContext(context.Background(), circuit.LogMarshalReportFailed, slog.Any(circuit.LogKeyError, err))
 		return
 	}
 	path := filepath.Join(s.runDir, "report.json")
 	if err := os.WriteFile(path, data, 0o600); err != nil {
-		s.log.WarnContext(context.Background(), "failed to write report.json", slog.Any("path", path), slog.Any("error", err))
+		s.log.WarnContext(context.Background(), circuit.LogWriteReportFailed, slog.Any(circuit.LogKeyPath, path), slog.Any(circuit.LogKeyError, err))
 	} else {
-		s.log.InfoContext(context.Background(), "report written", slog.Any("path", path))
+		s.log.InfoContext(context.Background(), circuit.LogReportWritten, slog.Any(circuit.LogKeyPath, path))
 	}
 }
 
@@ -447,9 +448,9 @@ func (s *CircuitSession) writeRunRecord() {
 	}
 
 	if err := engine.SaveRunRecord(s.runDir, &rec); err != nil {
-		s.log.WarnContext(context.Background(), "failed to write run.json", slog.Any("error", err))
+		s.log.WarnContext(context.Background(), circuit.LogWriteRunFailed, slog.Any(circuit.LogKeyError, err))
 	} else {
-		s.log.InfoContext(context.Background(), "run record written", slog.Any("path", s.runDir))
+		s.log.InfoContext(context.Background(), circuit.LogRunRecordWritten, slog.Any(circuit.LogKeyPath, s.runDir))
 	}
 }
 
@@ -504,12 +505,12 @@ func (s *CircuitSession) GetNextStepWithHints(ctx context.Context, timeout time.
 	case r := <-ch:
 		if r.err != nil {
 			if errors.Is(pullCtx.Err(), context.DeadlineExceeded) {
-				s.log.DebugContext(ctx, "get_next_step timed out", slog.Any("timeout", timeout))
+				s.log.DebugContext(ctx, circuit.LogGetNextStepTimeout, slog.Any(circuit.LogKeyTimeout, timeout))
 				return agentport.Context{}, false, false, nil
 			}
 			return agentport.Context{}, false, false, r.err
 		}
-		s.log.DebugContext(ctx, "step delivered", slog.Any("case_id", r.dc.CaseID), slog.Any("step", r.dc.Step), slog.Any("dispatch_id", r.dc.DispatchID), slog.Any("wait", time.Since(start)))
+		s.log.DebugContext(ctx, circuit.LogStepDelivered, slog.Any(circuit.LogKeyCaseID, r.dc.CaseID), slog.Any(circuit.LogKeyStep, r.dc.Step), slog.Any(circuit.LogKeyDispatchID, r.dc.DispatchID), slog.Any(circuit.LogKeyWait, time.Since(start)))
 		return r.dc, false, true, nil
 	}
 }

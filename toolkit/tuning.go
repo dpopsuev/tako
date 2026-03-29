@@ -6,6 +6,8 @@ import (
 	"log/slog"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/dpopsuev/origami/circuit"
 )
 
 const (
@@ -35,7 +37,7 @@ type quickWinsFile struct {
 func LoadQuickWins(data []byte) []QuickWin {
 	var f quickWinsFile
 	if err := yaml.Unmarshal(data, &f); err != nil {
-		slog.ErrorContext(context.Background(), "failed to parse tuning-quickwins YAML", slog.Any("error", err))
+		slog.ErrorContext(context.Background(), circuit.LogTuningParseFailed, slog.Any(circuit.LogKeyError, err))
 		return nil
 	}
 	return f.QuickWins
@@ -105,7 +107,7 @@ func (r *TuningRunner) Run(baselineVal float64) TuningReport {
 		}
 
 		if qw.Apply == nil {
-			slog.InfoContext(context.Background(), "tuning QW skipped (not yet implemented)", slog.Any("qw", qw.ID), slog.Any("name", qw.Name))
+			slog.InfoContext(context.Background(), circuit.LogTuningQWSkipped, slog.Any(circuit.LogKeyQW, qw.ID), slog.Any(circuit.LogKeyName, qw.Name))
 			result.Error = tuningNotImplemented
 			report.Results = append(report.Results, result)
 			noImproveStreak++
@@ -113,7 +115,7 @@ func (r *TuningRunner) Run(baselineVal float64) TuningReport {
 		}
 
 		if err := qw.Apply(); err != nil {
-			slog.ErrorContext(context.Background(), "tuning QW apply failed", slog.Any("qw", qw.ID), slog.Any("error", err.Error()))
+			slog.ErrorContext(context.Background(), circuit.LogTuningQWFailed, slog.Any(circuit.LogKeyQW, qw.ID), slog.Any(circuit.LogKeyError, err.Error()))
 			result.Error = err.Error()
 			report.Results = append(report.Results, result)
 			noImproveStreak++

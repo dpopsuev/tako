@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/agentport"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 var (
@@ -53,7 +54,7 @@ func WithMuxSignalBus(bus agentport.Bus) MuxOption {
 func NewMuxDispatcher(ctx context.Context, opts ...MuxOption) *MuxDispatcher {
 	d := &MuxDispatcher{
 		ctx:      ctx,
-		log:      slog.Default().With(slog.Any("component", "mux-dispatch")),
+		log:      slog.Default().With(slog.Any(circuit.LogKeyComponent, circuit.LogComponentMuxDispatch)),
 		pending:  make(map[int64]chan []byte),
 		closed:   make(map[int64]struct{}),
 		promptCh: make(chan agentport.Context),
@@ -81,22 +82,22 @@ func (d *MuxDispatcher) Dispatch(ctx context.Context, dc agentport.Context) ([]b
 
 	dc.DispatchID = id
 
-	d.log.DebugContext(ctx, "mux dispatch registered", slog.Any("dispatch_id", id), slog.Any("case_id", dc.CaseID), slog.Any("step", dc.Step), slog.Any("pending_count", pendingCount))
+	d.log.DebugContext(ctx, circuit.LogMuxRegistered, slog.Any(circuit.LogKeyDispatchID, id), slog.Any(circuit.LogKeyCaseID, dc.CaseID), slog.Any(circuit.LogKeyStep, dc.Step), slog.Any(circuit.LogKeyPendingCount, pendingCount))
 
 	// Send prompt to the agent side
 	select {
 	case d.promptCh <- dc:
 	case <-ctx.Done():
 		d.removePending(id)
-		d.log.WarnContext(ctx, "mux dispatch canceled while sending prompt", slog.Any("case_id", dc.CaseID), slog.Any("step", dc.Step), slog.Any("dispatch_id", id))
+		d.log.WarnContext(ctx, circuit.LogMuxCanceledSending, slog.Any(circuit.LogKeyCaseID, dc.CaseID), slog.Any(circuit.LogKeyStep, dc.Step), slog.Any(circuit.LogKeyDispatchID, id))
 		return nil, fmt.Errorf("mux dispatch canceled: %w", ctx.Err())
 	case <-d.ctx.Done():
 		d.removePending(id)
-		d.log.WarnContext(ctx, "mux dispatch canceled while sending prompt", slog.Any("case_id", dc.CaseID), slog.Any("step", dc.Step), slog.Any("dispatch_id", id))
+		d.log.WarnContext(ctx, circuit.LogMuxCanceledSending, slog.Any(circuit.LogKeyCaseID, dc.CaseID), slog.Any(circuit.LogKeyStep, dc.Step), slog.Any(circuit.LogKeyDispatchID, id))
 		return nil, fmt.Errorf("mux dispatch canceled: %w", d.ctx.Err())
 	case <-d.abortCh:
 		d.removePending(id)
-		d.log.WarnContext(ctx, "mux dispatch aborted while sending prompt", slog.Any("case_id", dc.CaseID), slog.Any("step", dc.Step), slog.Any("dispatch_id", id))
+		d.log.WarnContext(ctx, circuit.LogMuxAbortedSending, slog.Any(circuit.LogKeyCaseID, dc.CaseID), slog.Any(circuit.LogKeyStep, dc.Step), slog.Any(circuit.LogKeyDispatchID, id))
 		return nil, fmt.Errorf("mux dispatch aborted: %w", d.getAbortErr())
 	}
 
@@ -112,19 +113,19 @@ func (d *MuxDispatcher) Dispatch(ctx context.Context, dc agentport.Context) ([]b
 			return nil, fmt.Errorf("mux dispatch aborted: %w", d.getAbortErr())
 		}
 		latency := time.Since(dispatchStart)
-		d.log.InfoContext(ctx, "dispatch round-trip", slog.Any("dispatch_id", id), slog.Any("case_id", dc.CaseID), slog.Any("step", dc.Step), slog.Any("latency_ms", latency.Milliseconds()), slog.Any("artifact_bytes", len(data)))
+		d.log.InfoContext(ctx, circuit.LogDispatchRoundTrip, slog.Any(circuit.LogKeyDispatchID, id), slog.Any(circuit.LogKeyCaseID, dc.CaseID), slog.Any(circuit.LogKeyStep, dc.Step), slog.Any(circuit.LogKeyLatency, latency.Milliseconds()), slog.Any(circuit.LogKeyArtifactBytes, len(data)))
 		return data, nil
 	case <-timeoutCh:
 		d.removePending(id)
-		d.log.WarnContext(ctx, "dispatch timeout", slog.Any("dispatch_id", id), slog.Any("case_id", dc.CaseID), slog.Any("step", dc.Step), slog.Any("timeout", dc.Timeout))
+		d.log.WarnContext(ctx, circuit.LogDispatchTimeout, slog.Any(circuit.LogKeyDispatchID, id), slog.Any(circuit.LogKeyCaseID, dc.CaseID), slog.Any(circuit.LogKeyStep, dc.Step), slog.Any(circuit.LogKeyTimeout, dc.Timeout))
 		return nil, fmt.Errorf("%w: %v for %s/%s", ErrDispatchTimeoutAfter, dc.Timeout, dc.CaseID, dc.Step)
 	case <-ctx.Done():
 		d.removePending(id)
-		d.log.WarnContext(ctx, "mux dispatch canceled while waiting for artifact", slog.Any("case_id", dc.CaseID), slog.Any("step", dc.Step), slog.Any("dispatch_id", id))
+		d.log.WarnContext(ctx, circuit.LogMuxCanceledWaiting, slog.Any(circuit.LogKeyCaseID, dc.CaseID), slog.Any(circuit.LogKeyStep, dc.Step), slog.Any(circuit.LogKeyDispatchID, id))
 		return nil, fmt.Errorf("mux dispatch canceled: %w", ctx.Err())
 	case <-d.ctx.Done():
 		d.removePending(id)
-		d.log.WarnContext(ctx, "mux dispatch canceled while waiting for artifact", slog.Any("case_id", dc.CaseID), slog.Any("step", dc.Step), slog.Any("dispatch_id", id))
+		d.log.WarnContext(ctx, circuit.LogMuxCanceledWaiting, slog.Any(circuit.LogKeyCaseID, dc.CaseID), slog.Any(circuit.LogKeyStep, dc.Step), slog.Any(circuit.LogKeyDispatchID, id))
 		return nil, fmt.Errorf("mux dispatch canceled: %w", d.ctx.Err())
 	case <-d.abortCh:
 		d.removePending(id)
@@ -346,12 +347,12 @@ func (d *MuxDispatcher) SubmitArtifact(ctx context.Context, dispatchID int64, da
 	if !ok {
 		if _, wasClosed := d.closed[dispatchID]; wasClosed {
 			d.mu.Unlock()
-			d.log.ErrorContext(ctx, "double submit detected", slog.Any("dispatch_id", dispatchID))
+			d.log.ErrorContext(ctx, circuit.LogDoubleSubmit, slog.Any(circuit.LogKeyDispatchID, dispatchID))
 			return fmt.Errorf("%w: %d already submitted", ErrDispatchId, dispatchID)
 		}
 		pendingCount := len(d.pending)
 		d.mu.Unlock()
-		d.log.WarnContext(ctx, "submit for unknown dispatch ID", slog.Any("dispatch_id", dispatchID), slog.Any("active_dispatches", pendingCount))
+		d.log.WarnContext(ctx, circuit.LogSubmitUnknownDispatch, slog.Any(circuit.LogKeyDispatchID, dispatchID), slog.Any(circuit.LogKeyActiveDispatches, pendingCount))
 		return fmt.Errorf("%w: %d", ErrUnknownDispatchId, dispatchID)
 	}
 	delete(d.pending, dispatchID)
@@ -360,7 +361,7 @@ func (d *MuxDispatcher) SubmitArtifact(ctx context.Context, dispatchID int64, da
 
 	select {
 	case ch <- data:
-		d.log.DebugContext(ctx, "mux artifact routed", slog.Any("dispatch_id", dispatchID), slog.Any("bytes", len(data)))
+		d.log.DebugContext(ctx, circuit.LogMuxArtifactRouted, slog.Any(circuit.LogKeyDispatchID, dispatchID), slog.Any(circuit.LogKeyBytes, len(data)))
 		return nil
 	case <-ctx.Done():
 		return ctx.Err()
@@ -382,7 +383,7 @@ func (d *MuxDispatcher) Abort(err error) {
 
 	d.abortErr = err
 	close(d.abortCh)
-	d.log.WarnContext(context.Background(), "mux dispatcher abort", slog.Any("error", err.Error()))
+	d.log.WarnContext(context.Background(), circuit.LogMuxAbort, slog.Any(circuit.LogKeyError, err.Error()))
 
 	for id, ch := range d.pending {
 		close(ch)

@@ -156,11 +156,11 @@ func Run(ctx context.Context, cfg *HarnessConfig) (*CalibrationReport, error) {
 		cfg.Shared = merged
 	}
 
-	logger := slog.Default().With(slog.String("component", "calibrate"))
+	logger := slog.Default().With(slog.String(circuit.LogKeyComponent, circuit.LogComponentCalibrate))
 	var allRunMetrics []MetricSet
 
 	for run := 0; run < cfg.Runs; run++ {
-		logger.InfoContext(ctx, "starting run", slog.Any("run", run+1), slog.Any("total", cfg.Runs))
+		logger.InfoContext(ctx, circuit.LogStartingRun, slog.Any(circuit.LogKeyRun, run+1), slog.Any(circuit.LogKeyTotal, cfg.Runs))
 
 		cases, err := cfg.Loader.Load(ctx)
 		if err != nil {
@@ -221,7 +221,7 @@ func Run(ctx context.Context, cfg *HarnessConfig) (*CalibrationReport, error) {
 			return nil, fmt.Errorf("run %d: all %d cases failed (first: %w)", run+1, errCount, firstErr)
 		}
 		if errCount > 0 {
-			logger.WarnContext(ctx, "partial failures", slog.Any("failed", errCount), slog.Any("total", len(batchResults)), slog.Any("first_error", firstErr))
+			logger.WarnContext(ctx, circuit.LogPartialFailures, slog.Any(circuit.LogKeyFailed, errCount), slog.Any(circuit.LogKeyTotal, len(batchResults)), slog.Any(circuit.LogKeyFirstError, firstErr))
 		}
 
 		// Error rate gate: fail if the fraction of errored cases exceeds the threshold.

@@ -27,7 +27,7 @@ func diagUnreferencedHooks(def *circuit.CircuitDef, reg *GraphRegistries) {
 
 	for name := range reg.Hooks {
 		if !referenced[name] {
-			slog.WarnContext(context.Background(), "unreferenced hook", slog.Any("component", "build"), slog.Any("diagnostic", "D1"), slog.Any("hook", name), slog.Any("circuit", def.Circuit))
+			slog.WarnContext(context.Background(), circuit.LogUnreferencedHook, slog.Any(circuit.LogKeyComponent, circuit.LogComponentBuild), slog.Any(circuit.LogKeyDiagnostic, "D1"), slog.Any(circuit.LogKeyHook, name), slog.Any(circuit.LogKeyCircuit, def.Circuit))
 		}
 	}
 }
@@ -41,7 +41,7 @@ func diagMissingHookRefs(def *circuit.CircuitDef, reg *GraphRegistries) {
 	}
 }
 
-func checkHookList(nodeName, phase string, hooks []string, reg *GraphRegistries, circuit string) {
+func checkHookList(nodeName, phase string, hooks []string, reg *GraphRegistries, circuitName string) {
 	if len(hooks) == 0 {
 		return
 	}
@@ -62,7 +62,7 @@ func checkHookList(nodeName, phase string, hooks []string, reg *GraphRegistries,
 	}
 
 	available := registeredHookNames(reg)
-	slog.WarnContext(context.Background(), "missing hook references", slog.Any("component", "build"), slog.Any("diagnostic", "D2"), slog.Any("node", nodeName), slog.Any("phase", phase), slog.Any("missing", strings.Join(missing, ", ")), slog.Any("missing_count", len(missing)), slog.Any("declared_count", len(hooks)), slog.Any("available", strings.Join(available, ", ")), slog.Any("circuit", circuit))
+	slog.WarnContext(context.Background(), circuit.LogMissingHookRefs, slog.Any(circuit.LogKeyComponent, circuit.LogComponentBuild), slog.Any(circuit.LogKeyDiagnostic, "D2"), slog.Any(circuit.LogKeyNode, nodeName), slog.Any(circuit.LogKeyPhase, phase), slog.Any(circuit.LogKeyMissing, strings.Join(missing, ", ")), slog.Any(circuit.LogKeyMissingCount, len(missing)), slog.Any(circuit.LogKeyDeclaredCount, len(hooks)), slog.Any(circuit.LogKeyAvailable, strings.Join(available, ", ")), slog.Any(circuit.LogKeyCircuit, circuitName))
 }
 
 func collectReferencedHooks(def *circuit.CircuitDef) map[string]bool {

@@ -43,7 +43,7 @@ func (t *MCPCircuitTransformer) Name() string { return "mediator.circuit" }
 
 //nolint:gocyclo,funlen // MCP client loop with session lifecycle — complexity is inherent
 func (t *MCPCircuitTransformer) Transform(ctx context.Context, tc *TransformerContext) (any, error) {
-	slog.DebugContext(ctx, "mediator delegate start", slog.Any("circuit_type", t.CircuitType), slog.Any("endpoint", t.Endpoint), slog.Any("node", tc.NodeName))
+	slog.DebugContext(ctx, circuit.LogMediatorDelegateStart, slog.Any(circuit.LogKeyCircuitType, t.CircuitType), slog.Any(circuit.LogKeyEndpoint, t.Endpoint), slog.Any(circuit.LogKeyNode, tc.NodeName))
 
 	var relayer PromptRelayer
 	if tc.WalkerState != nil {
@@ -91,7 +91,7 @@ func (t *MCPCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 		return nil, fmt.Errorf("%w: (%s): no session_id in response", ErrMediatorCircuitStart, t.CircuitType)
 	}
 
-	slog.DebugContext(ctx, "mediator delegate session started", slog.Any("circuit_type", t.CircuitType), slog.Any("session_id", sessionID), slog.Any("has_relayer", relayer != nil))
+	slog.DebugContext(ctx, circuit.LogMediatorSessionStarted, slog.Any(circuit.LogKeyCircuitType, t.CircuitType), slog.Any(circuit.LogKeySessionID, sessionID), slog.Any(circuit.LogKeyHasRelayer, relayer != nil))
 
 	for {
 		stepResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
@@ -128,7 +128,7 @@ func (t *MCPCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 		childCaseID, _ := stepOut[circuit.ProtoKeyCaseID].(string)
 		childArtifactPath, _ := stepOut[circuit.ProtoKeyArtifactPath].(string)
 
-		slog.DebugContext(ctx, "mediator relay child prompt", slog.Any("circuit_type", t.CircuitType), slog.Any("child_step", childStep), slog.Any("child_case_id", childCaseID), slog.Any("child_dispatch_id", int64(childDispatchID)))
+		slog.DebugContext(ctx, circuit.LogMediatorRelayChild, slog.Any(circuit.LogKeyCircuitType, t.CircuitType), slog.Any(circuit.LogKeyChildStep, childStep), slog.Any(circuit.LogKeyChildCaseID, childCaseID), slog.Any(circuit.LogKeyChildDispatchID, int64(childDispatchID)))
 
 		var artifactData []byte
 		if relayer != nil {
@@ -181,7 +181,7 @@ func (t *MCPCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 		return nil, fmt.Errorf("%w: %q error: %s", ErrMediatorCircuit, t.CircuitType, errMsg)
 	}
 
-	slog.DebugContext(ctx, "mediator delegate complete", slog.Any("circuit_type", t.CircuitType), slog.Any("session_id", sessionID), slog.Any("status", reportOut[circuit.ProtoKeyStatus]))
+	slog.DebugContext(ctx, circuit.LogMediatorDelegateComplete, slog.Any(circuit.LogKeyCircuitType, t.CircuitType), slog.Any(circuit.LogKeySessionID, sessionID), slog.Any(circuit.LogKeyStatus, reportOut[circuit.ProtoKeyStatus]))
 
 	if structured, ok := reportOut[circuit.ProtoKeyStructured]; ok {
 		return structured, nil

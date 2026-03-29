@@ -32,7 +32,7 @@ func calibrateCmd(args []string) error {
 		return err
 	}
 
-	logger := slog.Default().With(slog.Any("component", "calibrate"))
+	logger := slog.Default().With(slog.Any(circuit.LogKeyComponent, circuit.LogComponentCalibrate))
 
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
@@ -48,7 +48,7 @@ func calibrateCmd(args []string) error {
 		return fmt.Errorf("connect to %s: %w", *endpoint, err)
 	}
 	defer session.Close()
-	logger.InfoContext(ctx, "connected", slog.Any("endpoint", *endpoint))
+	logger.InfoContext(ctx, circuit.LogConnected, slog.Any(circuit.LogKeyEndpoint, *endpoint))
 
 	// Start circuit.
 	extra := map[string]any{
@@ -78,7 +78,7 @@ func calibrateCmd(args []string) error {
 		return fmt.Errorf("parse start_circuit: %w", err)
 	}
 	sessionID := startOut.SessionID
-	logger.InfoContext(ctx, "circuit started", slog.Any("session_id", sessionID), slog.Any("total_cases", startOut.TotalCases), slog.Any("scenario", startOut.Scenario), slog.Any("parallel", *parallel))
+	logger.InfoContext(ctx, circuit.LogCircuitStarted, slog.Any(circuit.LogKeySessionID, sessionID), slog.Any(circuit.LogKeyTotalCases, startOut.TotalCases), slog.Any(circuit.LogKeyScenario, startOut.Scenario), slog.Any(circuit.LogKeyParallel, *parallel))
 
 	// Spawn parallel workers.
 	var cliArgList []string
@@ -110,10 +110,10 @@ func calibrateCmd(args []string) error {
 	wg.Wait()
 	close(errCh)
 	for err := range errCh {
-		logger.ErrorContext(ctx, "worker failed", slog.Any("error", err))
+		logger.ErrorContext(ctx, circuit.LogWorkerFailed, slog.Any(circuit.LogKeyError, err))
 	}
 
-	logger.InfoContext(ctx, "all workers done", slog.Any("steps_completed", stepsCompleted))
+	logger.InfoContext(ctx, circuit.LogAllWorkersDone, slog.Any(circuit.LogKeyStepsCompleted, stepsCompleted))
 
 	// Get report.
 	reportResult, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
@@ -141,7 +141,7 @@ func runCalibrateWorker(
 	logger *slog.Logger,
 	mu *sync.Mutex, stepsCompleted *int,
 ) error {
-	wlog := logger.With(slog.Any("worker_id", workerID))
+	wlog := logger.With(slog.Any(circuit.LogKeyWorkerID, workerID))
 
 	// Emit worker_started signal.
 	_, _ = session.CallTool(ctx, &sdkmcp.CallToolParams{
@@ -200,7 +200,7 @@ func runCalibrateWorker(
 
 		if step.Done {
 			if step.Error != "" {
-				wlog.WarnContext(ctx, "circuit done with error", slog.Any("error", step.Error))
+				wlog.WarnContext(ctx, circuit.LogCircuitDoneErr, slog.Any(circuit.LogKeyError, step.Error))
 			}
 			return nil
 		}
@@ -209,7 +209,7 @@ func runCalibrateWorker(
 			continue
 		}
 
-		wlog.InfoContext(ctx, "processing", slog.Any("case_id", step.CaseID), slog.Any("step", step.Step), slog.Any("dispatch_id", step.DispatchID))
+		wlog.InfoContext(ctx, circuit.LogProcessing, slog.Any(circuit.LogKeyCaseID, step.CaseID), slog.Any(circuit.LogKeyStep, step.Step), slog.Any(circuit.LogKeyDispatchID, step.DispatchID))
 
 		// Prepend worker preamble (step schemas + output format instructions)
 		// so the CLI knows what JSON fields to produce.
@@ -221,7 +221,7 @@ func runCalibrateWorker(
 		// Execute CLI with prompt.
 		artifact, err := execCLI(ctx, cliCommand, cliArgs, fullPrompt)
 		if err != nil {
-			wlog.ErrorContext(ctx, "CLI failed", slog.Any("case_id", step.CaseID), slog.Any("step", step.Step), slog.Any("error", err))
+			wlog.ErrorContext(ctx, circuit.LogCLIFailed, slog.Any(circuit.LogKeyCaseID, step.CaseID), slog.Any(circuit.LogKeyStep, step.Step), slog.Any(circuit.LogKeyError, err))
 			continue
 		}
 
@@ -247,14 +247,14 @@ func runCalibrateWorker(
 			return fmt.Errorf("circuit/submit %s/%s: %w", step.CaseID, step.Step, err)
 		}
 		if submitResult.IsError {
-			wlog.WarnContext(ctx, "submit_step rejected", slog.Any("case_id", step.CaseID), slog.Any("step", step.Step), slog.Any("error", calTextContent(submitResult)))
+			wlog.WarnContext(ctx, circuit.LogSubmitRejected, slog.Any(circuit.LogKeyCaseID, step.CaseID), slog.Any(circuit.LogKeyStep, step.Step), slog.Any(circuit.LogKeyError, calTextContent(submitResult)))
 			continue
 		}
 
 		mu.Lock()
 		*stepsCompleted++
 		mu.Unlock()
-		wlog.InfoContext(ctx, "submitted", slog.Any("case_id", step.CaseID), slog.Any("step", step.Step))
+		wlog.InfoContext(ctx, circuit.LogSubmitted, slog.Any(circuit.LogKeyCaseID, step.CaseID), slog.Any(circuit.LogKeyStep, step.Step))
 	}
 }
 

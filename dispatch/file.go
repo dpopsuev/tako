@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/agentport"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 const statusProcessing = "processing"
@@ -74,7 +75,7 @@ func NewFileDispatcher(cfg FileDispatcherConfig) *FileDispatcher {
 	}
 	l := cfg.Logger
 	if l == nil {
-		l = slog.Default().With(slog.Any("component", "file-dispatch"))
+		l = slog.Default().With(slog.Any(circuit.LogKeyComponent, circuit.LogComponentFileDispatch))
 	}
 	return &FileDispatcher{cfg: cfg, log: l}
 }
@@ -94,12 +95,12 @@ func (d *FileDispatcher) Dispatch(_ context.Context, ctx agentport.Context) ([]b
 	d.dispatchID++
 	did := d.dispatchID
 
-	dl := d.log.With(slog.Any("case", ctx.CaseID), slog.Any("step", ctx.Step), slog.Any("dispatch_id", did))
-	dl.DebugContext(context.Background(), "dispatch begin", slog.Any("artifact_path", ctx.ArtifactPath), slog.Any("signal_path", signalPath))
+	dl := d.log.With(slog.Any(circuit.LogKeyCaseID, ctx.CaseID), slog.Any(circuit.LogKeyStep, ctx.Step), slog.Any(circuit.LogKeyDispatchID, did))
+	dl.DebugContext(context.Background(), circuit.LogDispatchBegin, slog.Any(circuit.LogKeyArtifactPath, ctx.ArtifactPath), slog.Any(circuit.LogKeySignalPath, signalPath))
 
 	// Remove any existing artifact file before writing the signal.
 	if _, err := os.Stat(ctx.ArtifactPath); err == nil {
-		dl.DebugContext(context.Background(), "removing stale artifact before dispatch", slog.Any("path", ctx.ArtifactPath))
+		dl.DebugContext(context.Background(), circuit.LogRemoveStaleArtifact, slog.Any(circuit.LogKeyPath, ctx.ArtifactPath))
 		_ = os.Remove(ctx.ArtifactPath)
 	}
 
@@ -116,9 +117,9 @@ func (d *FileDispatcher) Dispatch(_ context.Context, ctx agentport.Context) ([]b
 	if err := WriteSignal(signalPath, &sig); err != nil {
 		return nil, fmt.Errorf("write signal: %w", err)
 	}
-	dl.DebugContext(context.Background(), "signal written", slog.Any("status", "waiting"))
+	dl.DebugContext(context.Background(), circuit.LogSignalWritten, slog.Any(circuit.LogKeyStatus, "waiting"))
 
-	dl.InfoContext(context.Background(), "signal.json written, waiting for artifact", slog.Any("artifact_path", ctx.ArtifactPath), slog.Any("timeout", d.cfg.Timeout))
+	dl.InfoContext(context.Background(), circuit.LogSignalWaiting, slog.Any(circuit.LogKeyArtifactPath, ctx.ArtifactPath), slog.Any(circuit.LogKeyTimeout, d.cfg.Timeout))
 
 	// Poll for artifact file with matching dispatch_id
 	deadline := time.Now().Add(d.cfg.Timeout)
@@ -126,7 +127,7 @@ func (d *FileDispatcher) Dispatch(_ context.Context, ctx agentport.Context) ([]b
 	staleCount := 0
 	for {
 		if time.Now().After(deadline) {
-			dl.DebugContext(context.Background(), "timeout reached", slog.Any("polls", pollCount))
+			dl.DebugContext(context.Background(), circuit.LogTimeoutReached, slog.Any(circuit.LogKeyPolls, pollCount))
 			sig.Status = statusError
 			sig.Error = "timeout waiting for artifact"
 			_ = WriteSignal(signalPath, &sig)
@@ -137,7 +138,7 @@ func (d *FileDispatcher) Dispatch(_ context.Context, ctx agentport.Context) ([]b
 		if sigData, readErr := os.ReadFile(signalPath); readErr == nil {
 			var liveSig SignalFile
 			if json.Unmarshal(sigData, &liveSig) == nil && liveSig.DispatchID == did && liveSig.Status == statusError {
-				dl.DebugContext(context.Background(), "responder reported error via signal", slog.Any("error", liveSig.Error))
+				dl.DebugContext(context.Background(), circuit.LogResponderError, slog.Any(circuit.LogKeyError, liveSig.Error))
 				return nil, fmt.Errorf("%w: %s", ErrResponderError, liveSig.Error)
 			}
 		}
@@ -146,14 +147,14 @@ func (d *FileDispatcher) Dispatch(_ context.Context, ctx agentport.Context) ([]b
 		data, err := os.ReadFile(ctx.ArtifactPath)
 		if err != nil {
 			if pollCount <= 3 || pollCount%20 == 0 {
-				dl.DebugContext(context.Background(), "poll: artifact not found", slog.Any("poll", pollCount), slog.Any("err", err))
+				dl.DebugContext(context.Background(), circuit.LogPollArtifactNotFound, slog.Any(circuit.LogKeyPoll, pollCount), slog.Any(circuit.LogKeyError, err))
 			}
 			staleCount = 0
 			time.Sleep(d.cfg.PollInterval)
 			continue
 		}
 
-		dl.DebugContext(context.Background(), "poll: artifact file found", slog.Any("poll", pollCount), slog.Any("bytes", len(data)))
+		dl.DebugContext(context.Background(), circuit.LogPollArtifactFound, slog.Any(circuit.LogKeyPoll, pollCount), slog.Any(circuit.LogKeyBytes, len(data)))
 
 		// Parse the wrapper to check dispatch_id.
 		// Invalid JSON is treated as transient (partial write from a concurrent
@@ -163,7 +164,7 @@ func (d *FileDispatcher) Dispatch(_ context.Context, ctx agentport.Context) ([]b
 		var wrapper ArtifactWrapper
 		if err := json.Unmarshal(data, &wrapper); err != nil {
 			staleCount++
-			dl.DebugContext(context.Background(), "poll: invalid JSON (possible partial write)", slog.Any("poll", pollCount), slog.Any("err", err), slog.Any("bad_read_streak", staleCount), slog.Any("max", d.cfg.MaxStaleRejects))
+			dl.DebugContext(context.Background(), circuit.LogPollInvalidJSON, slog.Any(circuit.LogKeyPoll, pollCount), slog.Any(circuit.LogKeyError, err), slog.Any(circuit.LogKeyBadReadStreak, staleCount), slog.Any(circuit.LogKeyMax, d.cfg.MaxStaleRejects))
 			if staleCount >= d.cfg.MaxStaleRejects {
 				sig.Status = statusError
 				sig.Error = fmt.Sprintf("stale artifact tolerance exceeded: %d consecutive unusable reads (last: invalid JSON: %v)",
@@ -179,7 +180,7 @@ func (d *FileDispatcher) Dispatch(_ context.Context, ctx agentport.Context) ([]b
 		// Reject stale artifacts deterministically by dispatch_id
 		if wrapper.DispatchID != did {
 			staleCount++
-			dl.DebugContext(context.Background(), "poll: stale artifact (dispatch_id mismatch)", slog.Any("poll", pollCount), slog.Any("want", did), slog.Any("got", wrapper.DispatchID), slog.Any("stale_streak", staleCount), slog.Any("max", d.cfg.MaxStaleRejects))
+			dl.DebugContext(context.Background(), circuit.LogPollStaleArtifact, slog.Any(circuit.LogKeyPoll, pollCount), slog.Any(circuit.LogKeyWant, did), slog.Any(circuit.LogKeyGot, wrapper.DispatchID), slog.Any(circuit.LogKeyStaleStreak, staleCount), slog.Any(circuit.LogKeyMax, d.cfg.MaxStaleRejects))
 			if staleCount >= d.cfg.MaxStaleRejects {
 				sig.Status = statusError
 				sig.Error = fmt.Sprintf("exceeded stale tolerance: %d consecutive artifacts with wrong dispatch_id (want %d, last got %d)",
@@ -199,14 +200,14 @@ func (d *FileDispatcher) Dispatch(_ context.Context, ctx agentport.Context) ([]b
 			return nil, fmt.Errorf("%w: %s has matching dispatch_id but empty 'data'", ErrArtifactAt, ctx.ArtifactPath)
 		}
 
-		dl.DebugContext(context.Background(), "artifact validated", slog.Any("poll", pollCount), slog.Any("bytes", len(wrapper.Data)))
+		dl.DebugContext(context.Background(), circuit.LogArtifactValidated, slog.Any(circuit.LogKeyPoll, pollCount), slog.Any(circuit.LogKeyBytes, len(wrapper.Data)))
 
 		// Update signal: status=processing
 		sig.Status = statusProcessing
 		sig.Error = ""
 		_ = WriteSignal(signalPath, &sig)
 
-		dl.InfoContext(context.Background(), "artifact validated and accepted", slog.Any("bytes", len(wrapper.Data)))
+		dl.InfoContext(context.Background(), circuit.LogArtifactAccepted, slog.Any(circuit.LogKeyBytes, len(wrapper.Data)))
 		return wrapper.Data, nil
 	}
 }
@@ -221,15 +222,15 @@ func (d *FileDispatcher) MarkDone(artifactPath string) {
 
 	data, err := os.ReadFile(signalPath)
 	if err != nil {
-		d.log.DebugContext(context.Background(), "mark-done: cannot read signal", slog.Any("path", signalPath), slog.Any("err", err))
+		d.log.DebugContext(context.Background(), circuit.LogMarkDoneReadFailed, slog.Any(circuit.LogKeyPath, signalPath), slog.Any(circuit.LogKeyError, err))
 		return
 	}
 	var sig SignalFile
 	if err := json.Unmarshal(data, &sig); err != nil {
-		d.log.DebugContext(context.Background(), "mark-done: cannot parse signal", slog.Any("path", signalPath), slog.Any("err", err))
+		d.log.DebugContext(context.Background(), circuit.LogMarkDoneParseFailed, slog.Any(circuit.LogKeyPath, signalPath), slog.Any(circuit.LogKeyError, err))
 		return
 	}
-	d.log.DebugContext(context.Background(), "mark-done", slog.Any("prev_status", sig.Status), slog.Any("case", sig.CaseID), slog.Any("step", sig.Step), slog.Any("dispatch_id", sig.DispatchID))
+	d.log.DebugContext(context.Background(), circuit.LogMarkDone, slog.Any(circuit.LogKeyStatus, sig.Status), slog.Any(circuit.LogKeyCaseID, sig.CaseID), slog.Any(circuit.LogKeyStep, sig.Step), slog.Any(circuit.LogKeyDispatchID, sig.DispatchID))
 	sig.Status = statusDone
 	_ = WriteSignal(signalPath, &sig)
 }

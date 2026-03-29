@@ -34,6 +34,8 @@ type runConfig struct {
 	resumeInput    any
 	thermalBudget  *thermalConfig
 	offsetPreamble string
+	safeOpts       []circuit.SafeHandlerOption
+	useSafe        bool
 }
 
 // WithTransformers registers transformers for the run.
@@ -91,6 +93,15 @@ func WithLogger(l *slog.Logger) RunOption {
 	return func(c *runConfig) { c.logger = l }
 }
 
+// WithSafeHandler wraps the run's logger with a SafeHandler for truncation
+// and sensitive data redaction. Applied after logger resolution.
+func WithSafeHandler(opts ...circuit.SafeHandlerOption) RunOption {
+	return func(c *runConfig) {
+		c.safeOpts = opts
+		c.useSafe = true
+	}
+}
+
 // WithMemory attaches a MemoryStore for cross-walk persistence.
 func WithMemory(store circuit.MemoryStore) RunOption {
 	return func(c *runConfig) { c.memory = store }
@@ -137,7 +148,7 @@ func WithOffsetCompensation(preamble string) RunOption {
 // Run loads a circuit YAML, builds a graph, and walks it.
 // This is the primary Go API for executing Origami circuits.
 //
-//nolint:gocyclo // top-level orchestrator applies all RunOption combinations
+//nolint:gocyclo,funlen // top-level orchestrator applies all RunOption combinations
 func Run(ctx context.Context, circuitPath string, input any, opts ...RunOption) error {
 	cfg := &runConfig{}
 	for _, opt := range opts {
@@ -171,9 +182,24 @@ func Run(ctx context.Context, circuitPath string, input any, opts ...RunOption) 
 	if err != nil {
 		return fmt.Errorf("build runner: %w", err)
 	}
+
+	// Default logger: never nil, never silent.
+	if cfg.logger == nil {
+		cfg.logger = slog.Default()
+	}
+	if cfg.useSafe {
+		cfg.logger = slog.New(circuit.NewSafeHandler(cfg.logger.Handler(), cfg.safeOpts...))
+	}
 	runner.Logger = cfg.logger
 
+	// Auto-attach LogObserver: free structured walk logs for consumers.
+	logObs := NewLogObserver(cfg.logger)
 	obs := cfg.observer
+	if obs != nil {
+		obs = circuit.MultiObserver{obs, logObs}
+	} else {
+		obs = logObs
+	}
 	if cfg.thermalBudget != nil {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithCancel(ctx)
@@ -249,7 +275,7 @@ func Run(ctx context.Context, circuitPath string, input any, opts ...RunOption) 
 	if err == nil && cfg.checkpointer != nil {
 		cpID := walker.State().ID
 		if rmErr := cfg.checkpointer.Remove(cpID); rmErr != nil {
-			slog.WarnContext(ctx, "failed to remove checkpoint after successful walk", slog.Any("walker_id", cpID), slog.Any("error", rmErr.Error()))
+			slog.WarnContext(ctx, circuit.LogCheckpointRemoveFailed, slog.Any(circuit.LogKeyWalkerID, cpID), slog.Any(circuit.LogKeyError, rmErr.Error()))
 		}
 	}
 	return err

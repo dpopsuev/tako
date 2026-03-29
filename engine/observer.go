@@ -28,26 +28,26 @@ func (o *logObserver) OnEvent(e *circuit.WalkEvent) {
 	}
 
 	attrs := []slog.Attr{
-		slog.String("event", string(e.Type)),
+		slog.String(circuit.LogKeyEvent, string(e.Type)),
 	}
 	if e.Node != "" {
-		attrs = append(attrs, slog.String("node", e.Node))
+		attrs = append(attrs, slog.String(circuit.LogKeyNode, e.Node))
 	}
 	if e.Walker != "" {
-		attrs = append(attrs, slog.String("walker", e.Walker))
+		attrs = append(attrs, slog.String(circuit.LogKeyWalker, e.Walker))
 	}
 	if e.Edge != "" {
-		attrs = append(attrs, slog.String("edge", e.Edge))
+		attrs = append(attrs, slog.String(circuit.LogKeyEdge, e.Edge))
 	}
 	if e.Elapsed > 0 {
-		attrs = append(attrs, slog.Duration("elapsed", e.Elapsed))
+		attrs = append(attrs, slog.Duration(circuit.LogKeyElapsedDur, e.Elapsed))
 	}
 	if e.Error != nil {
-		attrs = append(attrs, slog.String("error", e.Error.Error()))
+		attrs = append(attrs, slog.String(circuit.LogKeyError, e.Error.Error()))
 	}
 	if e.Metadata != nil {
 		for k, v := range e.Metadata {
-			attrs = append(attrs, slog.Any("meta."+k, v))
+			attrs = append(attrs, slog.Group(circuit.LogKeyMeta, slog.Any(k, v)))
 		}
 	}
 

@@ -59,9 +59,9 @@ func LoadSubCircuitsFromFS(fsys fs.FS, resolvers map[string]AssetResolver) map[s
 		// these via remote delegation instead.
 		if def.Import != "" {
 			if _, hasResolver := resolvers[name]; !hasResolver {
-				slog.DebugContext(context.Background(), "skipping sub-circuit with unresolved import",
+				slog.DebugContext(context.Background(), LogSubCircuitSkipped,
 					slog.String(LogKeyComponent, LogComponentDSL),
-					slog.String(LogKeyCircuit, name), slog.Any("import", def.Import),
+					slog.String(LogKeyCircuit, name), slog.Any(LogKeyImport, def.Import),
 				)
 				continue
 			}
@@ -70,7 +70,7 @@ func LoadSubCircuitsFromFS(fsys fs.FS, resolvers map[string]AssetResolver) map[s
 		circuits[name] = def
 		slog.DebugContext(context.Background(), LogSubCircuitLoaded,
 			slog.String(LogKeyComponent, LogComponentDSL),
-			slog.String(LogKeyCircuit, name), slog.Any("nodes", len(def.Nodes)))
+			slog.String(LogKeyCircuit, name), slog.Any(LogKeyNodes, len(def.Nodes)))
 	}
 
 	if len(circuits) == 0 {

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/agentport"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 // discardLogger returns a logger that discards all output.
@@ -142,7 +143,7 @@ func (d *CLIWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 				agentport.MetaKeyWorkerID: workerID,
 				agentport.MetaKeyError:    err.Error(),
 			})
-			d.log.ErrorContext(ctx, "CLI execution failed", slog.Any("worker_id", workerID), slog.Any("case_id", dc.CaseID), slog.Any("step", dc.Step), slog.Any("error", err.Error()))
+			d.log.ErrorContext(ctx, circuit.LogCLIExecFailed, slog.Any(circuit.LogKeyWorkerID, workerID), slog.Any(circuit.LogKeyCaseID, dc.CaseID), slog.Any(circuit.LogKeyStep, dc.Step), slog.Any(circuit.LogKeyError, err.Error()))
 			continue
 		}
 
@@ -159,7 +160,7 @@ func (d *CLIWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 			agentport.MetaKeyBytes:    fmt.Sprintf("%d", len(artifact)),
 		})
 
-		d.log.InfoContext(ctx, "step complete", slog.Any("worker_id", workerID), slog.Any("case_id", dc.CaseID), slog.Any("step", dc.Step), slog.Any("bytes", len(artifact)))
+		d.log.InfoContext(ctx, circuit.LogStepComplete, slog.Any(circuit.LogKeyWorkerID, workerID), slog.Any(circuit.LogKeyCaseID, dc.CaseID), slog.Any(circuit.LogKeyStep, dc.Step), slog.Any(circuit.LogKeyBytes, len(artifact)))
 	}
 }
 
@@ -196,7 +197,7 @@ func (d *CLIWorkerDispatcher) execCLI(ctx context.Context, dc agentport.Context)
 		return nil, fmt.Errorf("%w (stderr: %s)", ErrCommandNoOutput, stderr.String())
 	}
 
-	d.log.DebugContext(ctx, "CLI exec", slog.Any("case_id", dc.CaseID), slog.Any("step", dc.Step), slog.Any("bytes", len(output)), slog.Any("elapsed", time.Since(start)))
+	d.log.DebugContext(ctx, circuit.LogCLIExec, slog.Any(circuit.LogKeyCaseID, dc.CaseID), slog.Any(circuit.LogKeyStep, dc.Step), slog.Any(circuit.LogKeyBytes, len(output)), slog.Any(circuit.LogKeyElapsedDur, time.Since(start)))
 
 	return output, nil
 }

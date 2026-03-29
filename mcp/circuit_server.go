@@ -46,20 +46,20 @@ func NewCircuitServer(cfg *CircuitConfig) *CircuitServer {
 		panic("CircuitConfig.CreateSession is required; start_circuit will panic without it")
 	}
 	if cfg.Name == "" {
-		slog.WarnContext(context.Background(), "CircuitConfig.Name is empty; affects logging and state directory naming")
+		slog.WarnContext(context.Background(), circuit.LogConfigNameEmpty)
 	}
 	if len(cfg.StepSchemas) == 0 {
-		slog.WarnContext(context.Background(), "CircuitConfig.StepSchemas is empty; submit_step will reject all steps")
+		slog.WarnContext(context.Background(), circuit.LogConfigSchemasEmpty)
 	}
 	if cfg.StateDir == "" {
-		slog.WarnContext(context.Background(), "CircuitConfig.StateDir is empty; walker tracing disabled — set StateDir to enable trace recording")
+		slog.WarnContext(context.Background(), circuit.LogConfigStateDirEmpty)
 	}
 	if len(cfg.StepSchemas) > 0 {
 		names := make([]string, len(cfg.StepSchemas))
 		for i, s := range cfg.StepSchemas {
 			names[i] = s.Name
 		}
-		slog.InfoContext(context.Background(), "step schemas registered", slog.Any("names", names), slog.Any("count", len(names)))
+		slog.InfoContext(context.Background(), circuit.LogStepSchemasRegistered, slog.Any(circuit.LogKeyNames, names), slog.Any(circuit.LogKeyCount, len(names)))
 	}
 
 	// Auto-wire observer to lifecycle callbacks. Consumer-set callbacks compose.
@@ -129,13 +129,13 @@ func setupTraceRecorder(stateDir, sessID string, bus *agentport.MemBus, logger *
 	}
 	runDir = filepath.Join(stateDir, "runs", sessID)
 	if err := os.MkdirAll(runDir, 0o755); err != nil {
-		logger.WarnContext(context.Background(), "failed to create run dir, tracing disabled", slog.Any("run_dir", runDir), slog.Any("error", err))
+		logger.WarnContext(context.Background(), circuit.LogRunDirFailed, slog.Any(circuit.LogKeyRunDir, runDir), slog.Any(circuit.LogKeyError, err))
 		return nil, runDir
 	}
 	var recErr error
 	recorder, recErr = engine.NewTraceRecorder(filepath.Join(runDir, "trace.jsonl"))
 	if recErr != nil {
-		logger.WarnContext(context.Background(), "failed to create trace recorder", slog.Any("error", recErr))
+		logger.WarnContext(context.Background(), circuit.LogTraceRecorderFailed, slog.Any(circuit.LogKeyError, recErr))
 		return nil, runDir
 	}
 	bus.OnEmit(func(sig agentport.Signal) {
@@ -546,16 +546,16 @@ func (s *CircuitServer) buildCircuitTool() *sdkmcp.Tool {
 
 //nolint:funlen,unparam // session bootstrap with config validation + goroutine launch; handler pattern
 func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallToolRequest, input startCircuitInput) (*sdkmcp.CallToolResult, startCircuitOutput, error) {
-	logger := slog.Default().With(slog.Any("component", "circuit-session"))
+	logger := slog.Default().With(slog.Any(circuit.LogKeyComponent, circuit.LogComponentCircuitSession))
 	s.mu.Lock()
 	if s.session != nil {
 		select {
 		case <-s.session.Done():
-			logger.InfoContext(ctx, "replacing completed/aborted session", slog.Any("old_id", s.session.ID))
+			logger.InfoContext(ctx, circuit.LogReplacingSession, slog.Any(circuit.LogKeyOldID, s.session.ID))
 			s.session.Cancel()
 		default:
 			if input.Force {
-				logger.WarnContext(ctx, "force-replacing active session", slog.Any("old_id", s.session.ID))
+				logger.WarnContext(ctx, circuit.LogForceReplacingSession, slog.Any(circuit.LogKeyOldID, s.session.ID))
 				s.session.Cancel()
 			} else {
 				s.mu.Unlock()
@@ -628,7 +628,7 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 			extraJSON, _ := json.Marshal(input.Extra)
 			paramSummary += fmt.Sprintf(", extra=%s", extraJSON)
 		}
-		logger.ErrorContext(ctx, "circuit session failed", slog.Any("error", err.Error()), slog.Any("params", paramSummary), slog.Any("elapsed_ms", time.Since(startTime).Milliseconds()))
+		logger.ErrorContext(ctx, circuit.LogCircuitSessionFailed, slog.Any(circuit.LogKeyError, err.Error()), slog.Any(circuit.LogKeyParams, paramSummary), slog.Any(circuit.LogKeyElapsed, time.Since(startTime).Milliseconds()))
 		return nil, startCircuitOutput{}, fmt.Errorf("create session (%s): %w", paramSummary, err)
 	}
 
@@ -671,13 +671,13 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 		out.WorkerCount = sess.DesiredCapacity
 	}
 
-	logger.InfoContext(ctx, "circuit session started", slog.Any("session_id", sess.ID), slog.Any("scenario", sess.Scenario), slog.Any("total_cases", sess.TotalCases), slog.Any("parallel", parallel), slog.Any("elapsed_ms", time.Since(startTime).Milliseconds()))
+	logger.InfoContext(ctx, circuit.LogCircuitSessionStarted, slog.Any(circuit.LogKeySessionID, sess.ID), slog.Any(circuit.LogKeyScenario, sess.Scenario), slog.Any(circuit.LogKeyTotalCases, sess.TotalCases), slog.Any(circuit.LogKeyParallel, parallel), slog.Any(circuit.LogKeyElapsed, time.Since(startTime).Milliseconds()))
 
 	return nil, out, nil
 }
 
 func (s *CircuitServer) handleGetNextStep(ctx context.Context, _ *sdkmcp.CallToolRequest, input getNextStepInput) (*sdkmcp.CallToolResult, getNextStepOutput, error) { //nolint:unparam // handler pattern: result may be non-nil in future actions
-	logger := slog.Default().With(slog.Any("component", "circuit-session"))
+	logger := slog.Default().With(slog.Any(circuit.LogKeyComponent, circuit.LogComponentCircuitSession))
 	sess, err := s.getSession(input.SessionID)
 	if err != nil {
 		return nil, getNextStepOutput{}, err
@@ -702,7 +702,7 @@ func (s *CircuitServer) handleGetNextStep(ctx context.Context, _ *sdkmcp.CallToo
 	sess.PullerExit()
 
 	if err != nil {
-		logger.WarnContext(ctx, "get_next_step error", slog.Any("session_id", input.SessionID), slog.Any("error", err.Error()))
+		logger.WarnContext(ctx, circuit.LogGetNextStepError, slog.Any(circuit.LogKeySessionID, input.SessionID), slog.Any(circuit.LogKeyError, err.Error()))
 		return nil, getNextStepOutput{}, fmt.Errorf("get_next_step: %w", err)
 	}
 
@@ -712,7 +712,7 @@ func (s *CircuitServer) handleGetNextStep(ctx context.Context, _ *sdkmcp.CallToo
 		if sessErr := sess.Err(); sessErr != nil {
 			out.Error = sessErr.Error()
 		}
-		logger.InfoContext(ctx, "circuit complete", slog.Any("session_id", input.SessionID))
+		logger.InfoContext(ctx, circuit.LogCircuitComplete, slog.Any(circuit.LogKeySessionID, input.SessionID))
 		sess.Bus.Emit(&agentport.Signal{Event: EventCircuitDone, Agent: agentport.AgentServer})
 		if s.Config.OnCircuitDone != nil {
 			s.Config.OnCircuitDone()
@@ -725,7 +725,7 @@ func (s *CircuitServer) handleGetNextStep(ctx context.Context, _ *sdkmcp.CallToo
 		return nil, getNextStepOutput{Done: false, Available: false}, nil
 	}
 
-	logger.InfoContext(ctx, "step dispatched to worker", slog.Any("session_id", input.SessionID), slog.Any("case_id", dc.CaseID), slog.Any("step", dc.Step), slog.Any("dispatch_id", dc.DispatchID))
+	logger.InfoContext(ctx, circuit.LogStepDispatched, slog.Any(circuit.LogKeySessionID, input.SessionID), slog.Any(circuit.LogKeyCaseID, dc.CaseID), slog.Any(circuit.LogKeyStep, dc.Step), slog.Any(circuit.LogKeyDispatchID, dc.DispatchID))
 
 	sess.Bus.Emit(&agentport.Signal{
 		Event:  EventStepReady,
@@ -767,14 +767,14 @@ func (s *CircuitServer) handleGetNextStep(ctx context.Context, _ *sdkmcp.CallToo
 		out.CapacityWarning = fmt.Sprintf(
 			"system under capacity: %d/%d workers active",
 			inFlight, desired)
-		slog.DebugContext(ctx, "under capacity", slog.Any("component", "circuit-session"), slog.Any("in_flight", inFlight), slog.Any("desired", desired), slog.Any("deficit", desired-inFlight))
+		slog.DebugContext(ctx, circuit.LogUnderCapacity, slog.Any(circuit.LogKeyComponent, circuit.LogComponentCircuitSession), slog.Any(circuit.LogKeyInFlight, inFlight), slog.Any(circuit.LogKeyDesired, desired), slog.Any(circuit.LogKeyDeficit, desired-inFlight))
 	}
 
 	return nil, out, nil
 }
 
 func (s *CircuitServer) handleSubmitStep(ctx context.Context, _ *sdkmcp.CallToolRequest, input submitStepInput) (*sdkmcp.CallToolResult, submitStepOutput, error) { //nolint:unparam // handler pattern
-	logger := slog.Default().With(slog.Any("component", "circuit-session"))
+	logger := slog.Default().With(slog.Any(circuit.LogKeyComponent, circuit.LogComponentCircuitSession))
 	submitStart := time.Now()
 
 	sess, err := s.getSession(input.SessionID)
@@ -783,7 +783,7 @@ func (s *CircuitServer) handleSubmitStep(ctx context.Context, _ *sdkmcp.CallTool
 	}
 
 	if gateErr := sess.CheckCapacityGate(); gateErr != nil {
-		logger.WarnContext(ctx, "capacity gate advisory on submit_step", slog.Any("session_id", input.SessionID), slog.Any("dispatch_id", input.DispatchID), slog.Any("detail", gateErr.Error()))
+		logger.WarnContext(ctx, circuit.LogCapacityGateAdvisory, slog.Any(circuit.LogKeySessionID, input.SessionID), slog.Any(circuit.LogKeyDispatchID, input.DispatchID), slog.Any(circuit.LogKeyDetail, gateErr.Error()))
 	}
 
 	if input.DispatchID == 0 {
@@ -796,12 +796,12 @@ func (s *CircuitServer) handleSubmitStep(ctx context.Context, _ *sdkmcp.CallTool
 
 	schema, err := s.Config.FindSchema(input.Step)
 	if err != nil {
-		logger.WarnContext(ctx, "step schema validation failed", slog.Any("session_id", input.SessionID), slog.Any("step", input.Step), slog.Any("error", err.Error()))
+		logger.WarnContext(ctx, circuit.LogStepSchemaFailed, slog.Any(circuit.LogKeySessionID, input.SessionID), slog.Any(circuit.LogKeyStep, input.Step), slog.Any(circuit.LogKeyError, err.Error()))
 		return nil, submitStepOutput{}, err
 	}
 
 	if err := schema.ValidateFields(input.Fields); err != nil {
-		logger.WarnContext(ctx, "step schema validation failed", slog.Any("session_id", input.SessionID), slog.Any("step", input.Step), slog.Any("error", err.Error()))
+		logger.WarnContext(ctx, circuit.LogStepSchemaFailed, slog.Any(circuit.LogKeySessionID, input.SessionID), slog.Any(circuit.LogKeyStep, input.Step), slog.Any(circuit.LogKeyError, err.Error()))
 		return nil, submitStepOutput{}, err
 	}
 
@@ -830,13 +830,13 @@ func (s *CircuitServer) handleSubmitStep(ctx context.Context, _ *sdkmcp.CallTool
 		s.Config.OnStepCompleted("", input.Step, input.DispatchID)
 	}
 
-	logger.InfoContext(ctx, "step artifact accepted", slog.Any("session_id", input.SessionID), slog.Any("dispatch_id", input.DispatchID), slog.Any("step", input.Step), slog.Any("elapsed_ms", time.Since(submitStart).Milliseconds()))
+	logger.InfoContext(ctx, circuit.LogStepArtifactAccepted, slog.Any(circuit.LogKeySessionID, input.SessionID), slog.Any(circuit.LogKeyDispatchID, input.DispatchID), slog.Any(circuit.LogKeyStep, input.Step), slog.Any(circuit.LogKeyElapsed, time.Since(submitStart).Milliseconds()))
 
 	return nil, submitStepOutput{OK: "step accepted"}, nil
 }
 
 func (s *CircuitServer) handleGetReport(ctx context.Context, _ *sdkmcp.CallToolRequest, input getReportInput) (*sdkmcp.CallToolResult, getReportOutput, error) { //nolint:unparam // handler pattern
-	logger := slog.Default().With(slog.Any("component", "circuit-session"))
+	logger := slog.Default().With(slog.Any(circuit.LogKeyComponent, circuit.LogComponentCircuitSession))
 	sess, err := s.getSession(input.SessionID)
 	if err != nil {
 		return nil, getReportOutput{}, err
@@ -849,7 +849,7 @@ func (s *CircuitServer) handleGetReport(ctx context.Context, _ *sdkmcp.CallToolR
 	}
 
 	if sessErr := sess.Err(); sessErr != nil {
-		logger.WarnContext(ctx, "report generated with error", slog.Any("session_id", input.SessionID), slog.Any("status", string(StateError)))
+		logger.WarnContext(ctx, circuit.LogReportGeneratedError, slog.Any(circuit.LogKeySessionID, input.SessionID), slog.Any(circuit.LogKeyStatus, string(StateError)))
 		return nil, getReportOutput{
 			Status: string(StateError),
 			Error:  sessErr.Error(),
@@ -862,7 +862,7 @@ func (s *CircuitServer) handleGetReport(ctx context.Context, _ *sdkmcp.CallToolR
 	}
 
 	if s.Config.FormatReport == nil {
-		logger.InfoContext(ctx, "report generated", slog.Any("session_id", input.SessionID), slog.Any("status", string(StateDone)))
+		logger.InfoContext(ctx, circuit.LogReportGenerated, slog.Any(circuit.LogKeySessionID, input.SessionID), slog.Any(circuit.LogKeyStatus, string(StateDone)))
 		return nil, getReportOutput{
 			Status:     string(StateDone),
 			Structured: result,
@@ -877,7 +877,7 @@ func (s *CircuitServer) handleGetReport(ctx context.Context, _ *sdkmcp.CallToolR
 		}, nil
 	}
 
-	logger.InfoContext(ctx, "report generated", slog.Any("session_id", input.SessionID), slog.Any("status", string(StateDone)))
+	logger.InfoContext(ctx, circuit.LogReportGenerated, slog.Any(circuit.LogKeySessionID, input.SessionID), slog.Any(circuit.LogKeyStatus, string(StateDone)))
 
 	return nil, getReportOutput{
 		Status:     string(StateDone),
@@ -887,13 +887,13 @@ func (s *CircuitServer) handleGetReport(ctx context.Context, _ *sdkmcp.CallToolR
 }
 
 func (s *CircuitServer) handleEmitSignal(ctx context.Context, _ *sdkmcp.CallToolRequest, input *emitSignalInput) (*sdkmcp.CallToolResult, emitSignalOutput, error) { //nolint:unparam // handler pattern
-	logger := slog.Default().With(slog.Any("component", "signal-bus"))
+	logger := slog.Default().With(slog.Any(circuit.LogKeyComponent, circuit.LogComponentSignalBus))
 	if input.Event == "" {
-		logger.WarnContext(ctx, "emit_signal rejected: empty event field")
+		logger.WarnContext(ctx, circuit.LogEmitSignalNoEvent)
 		return nil, emitSignalOutput{}, ErrEventRequired
 	}
 	if input.Agent == "" {
-		logger.WarnContext(ctx, "emit_signal rejected: empty agent field")
+		logger.WarnContext(ctx, circuit.LogEmitSignalNoAgent)
 		return nil, emitSignalOutput{}, ErrAgentRequired
 	}
 
@@ -916,11 +916,11 @@ func (s *CircuitServer) handleEmitSignal(ctx context.Context, _ *sdkmcp.CallTool
 		mode := input.Meta[agentport.MetaKeyMode]
 		if workerID != "" {
 			sess.RegisterWorker(workerID, mode)
-			logger.DebugContext(ctx, "worker registered", slog.Any("worker_id", workerID), slog.Any("mode", mode))
+			logger.DebugContext(ctx, circuit.LogWorkerRegistered, slog.Any(circuit.LogKeyWorkerID, workerID), slog.Any(circuit.LogKeyMode, mode))
 		}
 	}
 
-	logger.DebugContext(ctx, "signal emitted", slog.Any("index", idx), slog.Any("event", input.Event), slog.Any("agent", input.Agent))
+	logger.DebugContext(ctx, circuit.LogSignalEmitted, slog.Any(circuit.LogKeyIndex, idx), slog.Any(circuit.LogKeyEvent, input.Event), slog.Any(circuit.LogKeyAgent, input.Agent))
 
 	return nil, emitSignalOutput{
 		OK:    "signal emitted",

@@ -109,13 +109,13 @@ func (n *transformerNode) Name() string                     { return n.name }
 func (n *transformerNode) ElementAffinity() circuit.Element { return n.element }
 
 func (n *transformerNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
-	logger := slog.Default().With(slog.Any("component", "transformer"))
+	logger := slog.Default().With(slog.Any(circuit.LogKeyComponent, circuit.LogComponentTransform))
 	var input any
 
 	if n.input != "" {
 		resolved, err := ResolveInput(n.input, nc.WalkerState.Outputs)
 		if err != nil {
-			logger.WarnContext(ctx, "input resolution failed", slog.Any("node", n.name), slog.Any("input_expr", n.input), slog.Any("error", err.Error()))
+			logger.WarnContext(ctx, circuit.LogInputResolutionFailed, slog.Any(circuit.LogKeyNode, n.name), slog.Any(circuit.LogKeyInputExpr, n.input), slog.Any(circuit.LogKeyError, err.Error()))
 			return nil, fmt.Errorf("node %s: resolve input: %w", n.name, err)
 		}
 		if resolved != nil {
@@ -161,18 +161,18 @@ func (n *transformerNode) Process(ctx context.Context, nc circuit.NodeContext) (
 		return nil, err
 	}
 
-	logger.DebugContext(ctx, "transformer executing", slog.Any("node", n.name), slog.Any("transformer", n.trans.Name()), slog.Any("has_input", input != nil), slog.Any("has_prompt", prompt != ""))
+	logger.DebugContext(ctx, circuit.LogTransformerExecuting, slog.Any(circuit.LogKeyNode, n.name), slog.Any(circuit.LogKeyTransformer, n.trans.Name()), slog.Any(circuit.LogKeyHasInput, input != nil), slog.Any(circuit.LogKeyHasPrompt, prompt != ""))
 
 	start := time.Now()
 	result, err := n.trans.Transform(ctx, tc)
 	elapsed := time.Since(start)
 
 	if err != nil {
-		logger.ErrorContext(ctx, "transformer failed", slog.Any("node", n.name), slog.Any("transformer", n.trans.Name()), slog.Any("error", err.Error()), slog.Any("elapsed_ms", elapsed.Milliseconds()))
+		logger.ErrorContext(ctx, circuit.LogTransformerFailed, slog.Any(circuit.LogKeyNode, n.name), slog.Any(circuit.LogKeyTransformer, n.trans.Name()), slog.Any(circuit.LogKeyError, err.Error()), slog.Any(circuit.LogKeyElapsed, elapsed.Milliseconds()))
 		return nil, fmt.Errorf("transformer %q (node %s): %w", n.trans.Name(), n.name, err)
 	}
 
-	logger.DebugContext(ctx, "transformer completed", slog.Any("node", n.name), slog.Any("transformer", n.trans.Name()), slog.Any("elapsed_ms", elapsed.Milliseconds()))
+	logger.DebugContext(ctx, circuit.LogTransformerCompleted, slog.Any(circuit.LogKeyNode, n.name), slog.Any(circuit.LogKeyTransformer, n.trans.Name()), slog.Any(circuit.LogKeyElapsed, elapsed.Milliseconds()))
 
 	return &transformerArtifact{
 		typeName:   n.trans.Name(),

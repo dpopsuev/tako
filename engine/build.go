@@ -174,7 +174,7 @@ func BuildGraph(def *circuit.CircuitDef, reg *GraphRegistries) (Graph, error) {
 func validateTopology(g *DefaultGraph, def *circuit.CircuitDef) error {
 	v := circuit.DefaultTopologyValidator
 	if v == nil {
-		slog.WarnContext(context.Background(), "topology validator not registered, skipping validation", slog.Any("component", "build"), slog.Any("topology", def.Topology), slog.Any("circuit", def.Circuit))
+		slog.WarnContext(context.Background(), circuit.LogTopologySkipped, slog.Any(circuit.LogKeyComponent, circuit.LogComponentBuild), slog.Any(circuit.LogKeyTopology, def.Topology), slog.Any(circuit.LogKeyCircuit, def.Circuit))
 		return nil
 	}
 	shape := buildGraphShape(g, def)
@@ -296,10 +296,10 @@ func resolveHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegi
 		}, nil
 
 	case HandlerTypeCircuit:
-		slog.DebugContext(context.Background(), "resolve circuit handler", slog.Any("component", "build"), slog.Any("node", name), slog.Any("handler", handler), slog.Any("circuits_nil", reg.Circuits == nil), slog.Any("circuits_count", len(reg.Circuits)), slog.Any("mediator_endpoint", reg.MediatorEndpoint))
+		slog.DebugContext(context.Background(), circuit.LogResolveCircuitHandler, slog.Any(circuit.LogKeyComponent, circuit.LogComponentBuild), slog.Any(circuit.LogKeyNode, name), slog.Any(circuit.LogKeyHandler, handler), slog.Any(circuit.LogKeyCircuitsNil, reg.Circuits == nil), slog.Any(circuit.LogKeyCircuitsCount, len(reg.Circuits)), slog.Any(circuit.LogKeyMediatorEndpoint, reg.MediatorEndpoint))
 		if reg.Circuits != nil {
 			if cd, ok := reg.Circuits[handler]; ok {
-				slog.DebugContext(context.Background(), "circuit handler resolved locally", slog.Any("component", "build"), slog.Any("node", name), slog.Any("handler", handler))
+				slog.DebugContext(context.Background(), circuit.LogCircuitHandlerLocal, slog.Any(circuit.LogKeyComponent, circuit.LogComponentBuild), slog.Any(circuit.LogKeyNode, name), slog.Any(circuit.LogKeyHandler, handler))
 				return &circuitRefNode{
 					name:       name,
 					element:    elem,
@@ -308,7 +308,7 @@ func resolveHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegi
 			}
 		}
 		if reg.MediatorEndpoint != "" {
-			slog.DebugContext(context.Background(), "circuit handler delegating to mediator", slog.Any("component", "build"), slog.Any("node", name), slog.Any("handler", handler), slog.Any("endpoint", reg.MediatorEndpoint))
+			slog.DebugContext(context.Background(), circuit.LogCircuitHandlerMediator, slog.Any(circuit.LogKeyComponent, circuit.LogComponentBuild), slog.Any(circuit.LogKeyNode, name), slog.Any(circuit.LogKeyHandler, handler), slog.Any(circuit.LogKeyEndpoint, reg.MediatorEndpoint))
 			return &transformerNode{
 				name:       name,
 				element:    elem,

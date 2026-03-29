@@ -40,7 +40,7 @@ func MergeComponents(base *GraphRegistries, components ...*Component) (*GraphReg
 		MediatorEndpoint: base.MediatorEndpoint,
 	}
 
-	slog.DebugContext(context.Background(), "merge components", slog.Any("component", "registry"), slog.Any("base_circuits", len(base.Circuits)), slog.Any("mediator_endpoint", base.MediatorEndpoint), slog.Any("components", len(components)))
+	slog.DebugContext(context.Background(), circuit.LogMergeComponents, slog.Any(circuit.LogKeyComponent, circuit.LogComponentRegistry), slog.Any(circuit.LogKeyBaseCircuits, len(base.Circuits)), slog.Any(circuit.LogKeyMediatorEndpoint, base.MediatorEndpoint), slog.Any(circuit.LogKeyComponents, len(components)))
 
 	for _, a := range components {
 		if err := mergeTransformers(merged.Transformers, a); err != nil {

@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/dpopsuev/origami/agentport"
+	"github.com/dpopsuev/origami/circuit"
 )
 
 const (
@@ -44,7 +45,7 @@ func NewBatchFileDispatcher(cfg *BatchFileDispatcherConfig) *BatchFileDispatcher
 	}
 	l := cfg.Logger
 	if l == nil {
-		l = slog.Default().With(slog.Any("component", "batch-dispatch"))
+		l = slog.Default().With(slog.Any(circuit.LogKeyComponent, circuit.LogComponentBatchDispatch))
 	}
 	return &BatchFileDispatcher{
 		cfg:         cfg.FileConfig,
@@ -73,7 +74,7 @@ func (d *BatchFileDispatcher) DispatchBatch(ctx context.Context, ctxs []agentpor
 	d.batchID++
 	bid := d.batchID
 
-	d.log.DebugContext(ctx, "batch dispatch begin", slog.Any("batch_id", bid), slog.Any("signals", n), slog.Any("phase", phase))
+	d.log.DebugContext(ctx, circuit.LogBatchDispatchBegin, slog.Any(circuit.LogKeyBatchID, bid), slog.Any(circuit.LogKeySignals, n), slog.Any(circuit.LogKeyPhase, phase))
 
 	signals := make([]BatchSignalEntry, n)
 	for i, dc := range ctxs {
@@ -102,7 +103,7 @@ func (d *BatchFileDispatcher) DispatchBatch(ctx context.Context, ctxs []agentpor
 		return make([][]byte, n), errs
 	}
 
-	d.log.DebugContext(ctx, "manifest written", slog.Any("batch_id", bid), slog.Any("path", manifestPath), slog.Any("signals", n))
+	d.log.DebugContext(ctx, circuit.LogManifestWritten, slog.Any(circuit.LogKeyBatchID, bid), slog.Any(circuit.LogKeyPath, manifestPath), slog.Any(circuit.LogKeySignals, n))
 
 	manifest.Status = "in_progress"
 	_ = WriteManifest(manifestPath, manifest)
@@ -150,11 +151,11 @@ func (d *BatchFileDispatcher) DispatchBatch(ctx context.Context, ctxs []agentpor
 	if d.tokenBudget > 0 {
 		budgetPath := filepath.Join(d.suiteDir, "budget-status.json")
 		if err := WriteBudgetStatus(budgetPath, d.tokenBudget, d.tokenUsed); err != nil {
-			d.log.WarnContext(ctx, "failed to write budget status", slog.Any("error", err))
+			d.log.WarnContext(ctx, circuit.LogBudgetStatusFailed, slog.Any(circuit.LogKeyError, err))
 		}
 	}
 
-	d.log.DebugContext(ctx, "batch dispatch complete", slog.Any("batch_id", bid), slog.Any("status", manifest.Status))
+	d.log.DebugContext(ctx, circuit.LogBatchDispatchComplete, slog.Any(circuit.LogKeyBatchID, bid), slog.Any(circuit.LogKeyStatus, manifest.Status))
 
 	data := make([][]byte, n)
 	errs := make([]error, n)
