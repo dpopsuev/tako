@@ -301,7 +301,7 @@ func renderFactoryServer(g *ResolvedGraph, productName string) string {
 	b.WriteString("\n")
 
 	// Create server.
-	b.WriteString("\tserver := fwmcp.NewCircuitServer(bridgedCfg)\n")
+	b.WriteString("\tserver := fwmcp.NewCircuitServer(&bridgedCfg)\n")
 	b.WriteString("\tdefer server.Shutdown()\n")
 
 	return b.String()
