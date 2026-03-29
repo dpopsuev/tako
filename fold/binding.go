@@ -63,8 +63,9 @@ type ResolvedSchematic struct {
 	Resolver string // circuit overlay resolver function (e.g. "SchematicResolver"), empty if none
 	Options  []ResolvedOption
 
-	// Hooks mode: when set, fold generates CircuitConfig inline instead of calling Factory.
-	Hooks    string              // Go symbol: "rca.Hooks()" or "Hooks()"
+	// SessionFactory mode: when set, fold generates CircuitConfig inline
+	// using the consumer's SessionFactory instead of calling Factory.
+	SessionFactory string              // Go symbol: "rca.Factory()" or "Factory()"
 	Params   []circuit.ParamDef  // extra start_circuit parameters
 	Schemas  []string            // step schema paths
 	Report   string              // report template path
@@ -126,8 +127,8 @@ func Resolve(m *Manifest, origamiRoot string, resolver ModuleResolver) (*Resolve
 		if err != nil {
 			return nil, fmt.Errorf("schematic %q: %w", name, err)
 		}
-		if cm.Factory == "" && cm.Hooks == "" {
-			return nil, fmt.Errorf("schematic %q: component.yaml must declare factory or hooks", name)
+		if cm.Factory == "" && cm.SessionFactory == "" {
+			return nil, fmt.Errorf("schematic %q: component.yaml must declare factory or session_factory", name)
 		}
 		schemManifests[name] = cm
 	}
@@ -242,7 +243,7 @@ func resolveSchematic(
 		Factory:  cm.Factory,
 		Resolver: cm.Resolver,
 		Options:  options,
-		Hooks:    cm.Hooks,
+		SessionFactory: cm.SessionFactory,
 		Params:   cm.Params,
 		Schemas:  cm.Schemas,
 		Report:   cm.Report,

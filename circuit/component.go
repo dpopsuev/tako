@@ -70,7 +70,7 @@ type ComponentManifest struct {
 	Schemas  []string    `yaml:"schemas,omitempty"`  // step schema paths (relative to domain FS)
 	Report   string      `yaml:"report,omitempty"`   // report template YAML path
 	Dispatch DispatchDef `yaml:"dispatch,omitempty"` // dispatch provider config
-	Hooks    string      `yaml:"hooks,omitempty"`    // Go symbol: "rca.Hooks()"
+	SessionFactory string `yaml:"session_factory,omitempty"` // Go symbol: "rca.Factory()"
 }
 
 // ParamDef declares an extra parameter for MCP start_circuit.
@@ -126,9 +126,10 @@ type componentManifestYAML struct {
 		Description string `yaml:"description,omitempty"`
 	} `yaml:"metadata"`
 	Spec struct {
-		Version   string `yaml:"version,omitempty"`
-		Hooks     string `yaml:"hooks,omitempty"`
-		Resolver  string `yaml:"resolver,omitempty"`
+		Version        string `yaml:"version,omitempty"`
+		SessionFactory string `yaml:"session_factory,omitempty"`
+		Hooks          string `yaml:"hooks,omitempty"` // deprecated: use session_factory
+		Resolver       string `yaml:"resolver,omitempty"`
 		Provides  struct {
 			Transformers []string `yaml:"transformers,omitempty"`
 			Extractors   []string `yaml:"extractors,omitempty"`
@@ -169,22 +170,28 @@ func LoadComponentManifest(path string) (*ComponentManifest, error) {
 		return nil, fmt.Errorf("component manifest %s: metadata.namespace is required", path)
 	}
 
+	// Prefer session_factory; fall back to deprecated hooks field.
+	sf := raw.Spec.SessionFactory
+	if sf == "" {
+		sf = raw.Spec.Hooks
+	}
+
 	m := &ComponentManifest{
-		Kind:        raw.Kind,
-		Component:   raw.Metadata.Name,
-		Module:      raw.Metadata.Module,
-		Namespace:   raw.Metadata.Namespace,
-		Version:     raw.Spec.Version,
-		Description: raw.Metadata.Description,
-		Resolver:    raw.Spec.Resolver,
-		Provides:    raw.Spec.Provides,
-		Needs:       raw.Spec.Needs,
-		Gives:       raw.Spec.Gives,
-		Params:      raw.Spec.Params,
-		Schemas:     raw.Spec.Schemas,
-		Report:      raw.Spec.Report,
-		Dispatch:    raw.Spec.Dispatch,
-		Hooks:       raw.Spec.Hooks,
+		Kind:           raw.Kind,
+		Component:      raw.Metadata.Name,
+		Module:         raw.Metadata.Module,
+		Namespace:      raw.Metadata.Namespace,
+		Version:        raw.Spec.Version,
+		Description:    raw.Metadata.Description,
+		Resolver:       raw.Spec.Resolver,
+		Provides:       raw.Spec.Provides,
+		Needs:          raw.Spec.Needs,
+		Gives:          raw.Spec.Gives,
+		Params:         raw.Spec.Params,
+		Schemas:        raw.Spec.Schemas,
+		Report:         raw.Spec.Report,
+		Dispatch:       raw.Spec.Dispatch,
+		SessionFactory: sf,
 	}
 
 	// S40-S42: enforce socket type constraints per needs section.

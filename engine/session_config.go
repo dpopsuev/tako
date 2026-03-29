@@ -53,24 +53,32 @@ type SessionMeta struct {
 	Scenario   string
 }
 
-// SessionHooks is the consumer's interface to the framework.
-// Fold-generated code calls these; the consumer implements them.
-//
-// Unlike the old SchematicHooks, CreateSession does NOT receive
-// dispatcher or signal bus — the framework wires those internally.
-type SessionHooks struct {
-	// CreateSession sets up domain-specific config for a circuit run.
-	// Returns domain config only. The framework handles infrastructure.
-	CreateSession func(ctx context.Context, params SessionParams) (*SessionConfig, error)
+// SessionFactory creates domain-specific session configurations.
+// This is the Layer 2 consumer's single entry point to the framework,
+// following the net/http Handler pattern (one interface, one method).
+type SessionFactory interface {
+	CreateSession(ctx context.Context, params *SessionParams) (*SessionConfig, error)
+}
 
-	// FormatReport converts domain-specific run result into
-	// human-readable text and optional structured data.
-	FormatReport func(result any) (formatted string, structured any, err error)
+// SessionFactoryFunc adapts a plain function as a SessionFactory,
+// just as http.HandlerFunc adapts a function as http.Handler.
+type SessionFactoryFunc func(ctx context.Context, params *SessionParams) (*SessionConfig, error)
 
-	// StepSchemas declares the artifact schema for each circuit step.
-	// Copied to CircuitConfig.StepSchemas by the bridge. Workers see
-	// these in the worker prompt so they know what fields to submit.
-	StepSchemas []StepSchema
+// CreateSession implements SessionFactory.
+func (f SessionFactoryFunc) CreateSession(ctx context.Context, params *SessionParams) (*SessionConfig, error) {
+	return f(ctx, params)
+}
+
+// ReportFormatter is optionally implemented by SessionFactory implementations
+// that can format domain-specific run results for human consumption.
+type ReportFormatter interface {
+	FormatReport(result any) (formatted string, structured any, err error)
+}
+
+// StepSchemaProvider is optionally implemented by SessionFactory implementations
+// that declare artifact schemas for circuit steps.
+type StepSchemaProvider interface {
+	StepSchemas() []StepSchema
 }
 
 // StepSchema is a type alias for toolkit.StepSchema, re-exported here

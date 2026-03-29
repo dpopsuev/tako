@@ -256,7 +256,7 @@ func TestGenerateWiredBinary(t *testing.T) {
 		"package main",
 		`"github.com/dpopsuev/origami-rca"`,
 		"origamirca.Hooks()",
-		"fwmcp.SessionHooksToConfig(hooks)",
+		"fwmcp.SessionFactoryToConfig(factory)",
 		"bridgedCfg.DomainFS = domainFS",
 		"domainserve.New(domainFS",
 		"NewStreamableHTTPHandler",

@@ -47,8 +47,8 @@ func TestResolve_AsteriskLike(t *testing.T) {
 	if g.Root.Name != "rca" {
 		t.Errorf("root = %q, want rca", g.Root.Name)
 	}
-	if g.Root.Hooks != "Hooks()" {
-		t.Errorf("root hooks = %q, want Hooks()", g.Root.Hooks)
+	if g.Root.SessionFactory != "Hooks()" {
+		t.Errorf("root session_factory = %q, want Hooks()", g.Root.SessionFactory)
 	}
 
 	if len(g.Schematics) != 0 {

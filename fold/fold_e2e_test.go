@@ -104,11 +104,11 @@ func TestE2E_WiredBinary_OrigamiImportWithResolvers(t *testing.T) {
 	}
 	code := string(src)
 
-	// In hooks mode, sub-circuit resolvers aren't rendered in the
-	// generated code — the consumer's Hooks().CreateSession handles
-	// resolver wiring internally. Verify the hooks pattern is present.
-	if !strings.Contains(code, "SessionHooksToConfig") {
-		t.Errorf("generated code should use SessionHooksToConfig (hooks mode)")
+	// In factory mode, sub-circuit resolvers aren't rendered in the
+	// generated code — the consumer's Factory().CreateSession handles
+	// resolver wiring internally. Verify the factory pattern is present.
+	if !strings.Contains(code, "SessionFactoryToConfig") {
+		t.Errorf("generated code should use SessionFactoryToConfig (factory mode)")
 	}
 }
 

@@ -121,7 +121,7 @@ func GenerateWiredBinary(m *Manifest, g *ResolvedGraph) ([]byte, error) {
 		}
 	}
 
-	needsHooks := g.Root.Hooks != ""
+	needsFactory := g.Root.SessionFactory != ""
 
 	ctx := wiredBinaryContext{
 		Name:          m.Name,
@@ -132,7 +132,7 @@ func GenerateWiredBinary(m *Manifest, g *ResolvedGraph) ([]byte, error) {
 		DomainConfig:  renderDomainConfig(m),
 		ServerBlock:   renderServerCreation(g, m.Name),
 		NeedsOrigami:  needsOrigami,
-		NeedsHooks:    needsHooks,
+		NeedsFactory:  needsFactory,
 	}
 
 	if ds.Assets != nil {
@@ -162,7 +162,7 @@ type wiredBinaryContext struct {
 	DomainConfig  string
 	ServerBlock   string
 	NeedsOrigami  bool
-	NeedsHooks    bool
+	NeedsFactory  bool
 }
 
 func renderImports(g *ResolvedGraph) string {
@@ -231,9 +231,9 @@ func renderAssetIndex(b *strings.Builder, a *AssetMap) {
 func renderServerCreation(g *ResolvedGraph, productName string) string {
 	root := g.Root
 
-	// Hooks mode: fold generates CircuitConfig inline, consumer provides only hooks.
-	if root.Hooks != "" {
-		return renderHooksServer(g, productName)
+	// Factory mode: fold generates CircuitConfig inline, consumer provides only a SessionFactory.
+	if root.SessionFactory != "" {
+		return renderFactoryServer(g, productName)
 	}
 
 	// Legacy factory mode: consumer's NewServer handles everything.
@@ -263,12 +263,12 @@ func renderServerCreation(g *ResolvedGraph, productName string) string {
 	return b.String()
 }
 
-func renderHooksServer(g *ResolvedGraph, productName string) string {
+func renderFactoryServer(g *ResolvedGraph, productName string) string {
 	var b strings.Builder
 	root := g.Root
 
-	// Get hooks from consumer.
-	fmt.Fprintf(&b, "\thooks := %s.%s\n\n", root.Alias, root.Hooks)
+	// Get SessionFactory from consumer.
+	fmt.Fprintf(&b, "\tfactory := %s.%s\n\n", root.Alias, root.SessionFactory)
 
 	// Build ExtraParamDefs from component.yaml params.
 	if len(root.Params) > 0 {
@@ -290,8 +290,8 @@ func renderHooksServer(g *ResolvedGraph, productName string) string {
 		b.WriteString("\t}\n\n")
 	}
 
-	// Bridge SessionHooks → CircuitConfig.
-	b.WriteString("\tbridgedCfg := fwmcp.SessionHooksToConfig(hooks)\n")
+	// Bridge SessionFactory → CircuitConfig.
+	b.WriteString("\tbridgedCfg := fwmcp.SessionFactoryToConfig(factory)\n")
 	fmt.Fprintf(&b, "\tbridgedCfg.Name = %q\n", productName)
 	fmt.Fprintf(&b, "\tbridgedCfg.Version = %q\n", "1.0")
 	b.WriteString("\tbridgedCfg.DomainFS = domainFS\n")
@@ -319,7 +319,7 @@ import (
 	"os"
 
 {{ if .NeedsOrigami }}	origami "github.com/dpopsuev/origami/circuit"
-{{ end }}{{ if .NeedsHooks }}	fwmcp "github.com/dpopsuev/origami/mcp"
+{{ end }}{{ if .NeedsFactory }}	fwmcp "github.com/dpopsuev/origami/mcp"
 {{ end }}	"github.com/dpopsuev/origami/domainserve"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 {{ .ImportBlock }})
@@ -354,7 +354,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle("/domain/", domainHandler)
 	mcpHandler := sdkmcp.NewStreamableHTTPHandler(
-		func(_ *http.Request) *sdkmcp.Server { return server.{{ if .NeedsHooks }}MCPServer{{ else }}CircuitServer.MCPServer{{ end }} },
+		func(_ *http.Request) *sdkmcp.Server { return server.{{ if .NeedsFactory }}MCPServer{{ else }}CircuitServer.MCPServer{{ end }} },
 		&sdkmcp.StreamableHTTPOptions{Stateless: false},
 	)
 	mux.Handle("/mcp", mcpHandler)

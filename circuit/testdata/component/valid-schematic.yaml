@@ -4,4 +4,4 @@ metadata:
   name: test
   namespace: test
 spec:
-  hooks: "Hooks()"
+  session_factory: "Factory()"

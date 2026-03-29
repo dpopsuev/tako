@@ -70,7 +70,7 @@ func TestE2E_BoardManifest_ResolvesAndGenerates(t *testing.T) {
 func TestE2E_BoardManifest_NegativeRejectsUnboundSocket(t *testing.T) {
 	// rh-rca's sockets are all optional: true, so missing bindings
 	// are accepted. This test verifies Resolve succeeds (not errors)
-	// when a hooks-mode schematic has no bindings.
+	// when a factory-mode schematic has no bindings.
 	root := origamiRoot(t)
 
 	m := &Manifest{

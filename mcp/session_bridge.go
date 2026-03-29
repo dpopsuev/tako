@@ -21,12 +21,16 @@ const (
 	defaultACPRole  = "worker"
 )
 
-// SessionHooksToConfig bridges engine.SessionHooks (new API) to
-// CircuitConfig.CreateSession (old API). The framework creates
+// SessionFactoryToConfig bridges engine.SessionFactory (interface API) to
+// CircuitConfig.CreateSession (callback API). The framework creates
 // dispatcher and bus internally, then builds a RunFunc from the
 // consumer's SessionConfig.
-func SessionHooksToConfig(hooks engine.SessionHooks) CircuitConfig {
-	return CircuitConfig{
+//
+// Optional capabilities (ReportFormatter, StepSchemaProvider) are detected
+// via type assertion on the factory, following the DeterministicTransformer
+// pattern in engine/transformer.go.
+func SessionFactoryToConfig(factory engine.SessionFactory) CircuitConfig {
+	cfg := CircuitConfig{
 		CreateSession: func(ctx context.Context, params StartParams, disp *dispatch.MuxDispatcher, bus agentport.Bus) (RunFunc, SessionMeta, error) {
 			engineParams := engine.SessionParams{
 				Parallel:   params.Parallel,
@@ -39,7 +43,7 @@ func SessionHooksToConfig(hooks engine.SessionHooks) CircuitConfig {
 				Relayer:    &dispatch.MuxRelayer{Disp: disp},
 			}
 
-			sessionCfg, err := hooks.CreateSession(ctx, engineParams)
+			sessionCfg, err := factory.CreateSession(ctx, &engineParams)
 			if err != nil {
 				return nil, SessionMeta{}, err
 			}
@@ -60,9 +64,16 @@ func SessionHooksToConfig(hooks engine.SessionHooks) CircuitConfig {
 			}
 			return runFn, meta, nil
 		},
-		FormatReport: hooks.FormatReport,
-		StepSchemas:  hooks.StepSchemas,
 	}
+
+	if rf, ok := factory.(engine.ReportFormatter); ok {
+		cfg.FormatReport = rf.FormatReport
+	}
+	if sp, ok := factory.(engine.StepSchemaProvider); ok {
+		cfg.StepSchemas = sp.StepSchemas()
+	}
+
+	return cfg
 }
 
 func buildRunFunc(cfg *engine.SessionConfig, params *engine.SessionParams) RunFunc {
