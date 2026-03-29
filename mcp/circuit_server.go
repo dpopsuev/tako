@@ -154,6 +154,8 @@ type circuitInput struct {
 	Parallel int            `json:"parallel,omitempty"`
 	Force    bool           `json:"force,omitempty"`
 	Extra    map[string]any `json:"extra,omitempty"`
+	Agent    string         `json:"agent,omitempty"`   // ACP agent name for auto-spawned workers (e.g., "cursor", "claude")
+	Workers  int            `json:"workers,omitempty"` // number of ACP workers to auto-spawn (defaults to parallel)
 	// step params
 	TimeoutMS         int    `json:"timeout_ms,omitempty"`
 	PreferredCaseID   string `json:"preferred_case_id,omitempty"`
@@ -190,6 +192,8 @@ type startCircuitInput struct {
 	Parallel int            `json:"parallel,omitempty" jsonschema:"number of parallel workers (default 1 = serial)"`
 	Force    bool           `json:"force,omitempty" jsonschema:"cancel any existing session and start fresh"`
 	Extra    map[string]any `json:"extra,omitempty" jsonschema:"domain-specific parameters"`
+	Agent    string         `json:"agent,omitempty" jsonschema:"ACP agent name for auto-spawned workers (e.g. cursor, claude)"`
+	Workers  int            `json:"workers,omitempty" jsonschema:"number of ACP workers to auto-spawn (defaults to parallel)"`
 }
 
 type startCircuitOutput struct {
@@ -326,6 +330,8 @@ func (s *CircuitServer) dispatchCircuitAction(ctx context.Context, req *sdkmcp.C
 			Parallel: input.Parallel,
 			Force:    input.Force,
 			Extra:    input.Extra,
+			Agent:    input.Agent,
+			Workers:  input.Workers,
 		}
 		res, out, err := s.handleStartCircuit(ctx, req, startInput)
 		if err != nil {
@@ -663,6 +669,11 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 	sess.SetTTL(s.defaultSessionTTL)
 	sess.Start() // launch run goroutine after all fields are set
 
+	// Auto-spawn ACP workers when agent is specified.
+	if input.Agent != "" {
+		s.spawnACPWorkers(ctx, runCtx, input, parallel, disp, bus, logger)
+	}
+
 	bus.Emit(&agentport.Signal{
 		Event: EventSessionStarted,
 		Agent: agentport.AgentServer,
@@ -691,6 +702,50 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 	logger.InfoContext(ctx, circuit.LogCircuitSessionStarted, slog.Any(circuit.LogKeySessionID, sess.ID), slog.Any(circuit.LogKeyScenario, sess.Scenario), slog.Any(circuit.LogKeyTotalCases, sess.TotalCases), slog.Any(circuit.LogKeyParallel, parallel), slog.Any(circuit.LogKeyElapsed, time.Since(startTime).Milliseconds()))
 
 	return nil, out, nil
+}
+
+// spawnACPWorkers creates a Staff, spawns ACP agents, and launches an
+// ACPWorkerDispatcher in a background goroutine.
+func (s *CircuitServer) spawnACPWorkers(
+	ctx, runCtx context.Context,
+	input startCircuitInput,
+	parallel int,
+	disp *dispatch.MuxDispatcher,
+	bus agentport.Bus,
+	logger *slog.Logger,
+) {
+	workerCount := input.Workers
+	if workerCount < 1 {
+		workerCount = parallel
+	}
+	if workerCount < 1 {
+		workerCount = 1
+	}
+	launcher := agentport.NewACPLauncher()
+	staff := agentport.NewStaff(launcher)
+	for range workerCount {
+		if _, spawnErr := staff.Spawn(runCtx, "worker", agentport.LaunchConfig{
+			Model: input.Agent,
+			Role:  "worker",
+		}); spawnErr != nil {
+			logger.WarnContext(ctx, circuit.LogWorkerSpawnFailed,
+				slog.Any(circuit.LogKeyAgent, input.Agent),
+				slog.Any(circuit.LogKeyError, spawnErr))
+		}
+	}
+	acpDisp := dispatch.NewACPWorkerDispatcher(
+		disp, staff, "worker", workerCount,
+		dispatch.WithACPWorkerLogger(logger),
+		dispatch.WithACPWorkerBus(bus),
+	)
+	go func() {
+		if acpErr := acpDisp.Run(runCtx); acpErr != nil {
+			logger.ErrorContext(runCtx, circuit.LogACPDispatchError, slog.Any(circuit.LogKeyError, acpErr))
+		}
+	}()
+	logger.InfoContext(ctx, circuit.LogWorkersSpawned,
+		slog.Any(circuit.LogKeyAgent, input.Agent),
+		slog.Any(circuit.LogKeyCount, workerCount))
 }
 
 func (s *CircuitServer) handleGetNextStep(ctx context.Context, _ *sdkmcp.CallToolRequest, input getNextStepInput) (*sdkmcp.CallToolResult, getNextStepOutput, error) { //nolint:unparam // handler pattern: result may be non-nil in future actions

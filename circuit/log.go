@@ -69,6 +69,10 @@ const (
 	LogInspectCheckpoint = "inspect checkpoint"
 	LogResumeWalk        = "resume walk"
 
+	// Worker lifecycle
+	LogWorkersSpawned    = "workers spawned"
+	LogWorkerSpawnFailed = "worker spawn failed"
+
 	// Runner / hooks
 	LogSchemaValidationFailed = "artifact schema validation failed"
 	LogBeforeHookNotFound     = "before-hook not found"
