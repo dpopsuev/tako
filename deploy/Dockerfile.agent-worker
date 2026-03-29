@@ -1,0 +1,21 @@
+# Agent Worker — MCP client that processes circuit steps via Bugle ACP agents.
+# Connects to the gateway and loops: step -> agent.Ask -> submit.
+#
+# Build: docker build -t origami-agent-worker -f deploy/Dockerfile.agent-worker .
+# Run:   docker run -e GATEWAY_ENDPOINT=http://gateway:9000/mcp -e ORIGAMI_SESSION=sess-1 origami-agent-worker
+
+FROM golang:1.25 AS builder
+WORKDIR /src
+COPY go.mod go.sum ./
+# Strip local-only modules — container builds use published modules.
+RUN go mod edit -dropreplace github.com/dpopsuev/origami-gnd \
+    -droprequire github.com/dpopsuev/origami-gnd \
+    -dropreplace github.com/dpopsuev/origami-rca \
+    -droprequire github.com/dpopsuev/origami-rca
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 go build -o /agent-worker ./cmd/agent-worker
+
+FROM gcr.io/distroless/static-debian12
+COPY --from=builder /agent-worker /agent-worker
+ENTRYPOINT ["/agent-worker"]

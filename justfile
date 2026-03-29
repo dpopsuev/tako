@@ -29,13 +29,13 @@ build-cli:
     @mkdir -p {{ bin_dir }}
     go build -o {{ bin_dir }}/origami ./cmd/origami
     go build -o {{ bin_dir }}/mediator ./cmd/mediator
-    go build -o {{ bin_dir }}/llm-worker ./cmd/llm-worker
+    go build -o {{ bin_dir }}/agent-worker ./cmd/agent-worker
 
 # Install origami to $GOPATH/bin
 install:
     go install ./cmd/origami
     go install ./cmd/mediator
-    go install ./cmd/llm-worker
+    go install ./cmd/agent-worker
 
 # ─── Lint ─────────────────────────────────────────────────
 
