@@ -344,12 +344,13 @@ type dslEdge struct {
 	def circuit.EdgeDef
 }
 
-func (e *dslEdge) ID() string       { return e.def.ID }
-func (e *dslEdge) From() string     { return string(e.def.From) }
-func (e *dslEdge) To() string       { return string(e.def.To) }
-func (e *dslEdge) IsShortcut() bool { return e.def.Shortcut }
-func (e *dslEdge) IsLoop() bool     { return e.def.Loop }
-func (e *dslEdge) IsParallel() bool { return e.def.Parallel }
+func (e *dslEdge) ID() string            { return e.def.ID }
+func (e *dslEdge) From() string          { return string(e.def.From) }
+func (e *dslEdge) To() string            { return string(e.def.To) }
+func (e *dslEdge) IsShortcut() bool      { return e.def.Shortcut }
+func (e *dslEdge) IsLoop() bool          { return e.def.Loop }
+func (e *dslEdge) IsParallel() bool      { return e.def.Parallel }
+func (e *dslEdge) MergeStrategy() string { return e.def.Merge }
 func (e *dslEdge) Evaluate(_ circuit.Artifact, _ *circuit.WalkerState) *circuit.Transition {
 	return &circuit.Transition{
 		NextNode:    string(e.def.To),

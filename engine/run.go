@@ -263,7 +263,19 @@ func Run(ctx context.Context, circuitPath string, input any, opts ...RunOption) 
 	}
 
 	if cfg.checkpointer != nil {
-		walker = &checkpointingWalker{inner: walker, cp: cfg.checkpointer}
+		walker = &checkpointingWalker{inner: walker, cp: cfg.checkpointer, observer: obs}
+	}
+
+	if cfg.nodeCache != nil {
+		ttls := buildCacheTTLs(def)
+		if len(ttls) > 0 {
+			walker = &cachingWalker{
+				inner:    walker,
+				cache:    cfg.nodeCache,
+				cacheTTL: ttls,
+				log:      cfg.logger,
+			}
+		}
 	}
 
 	err = runner.Walk(ctx, walker, startNode)

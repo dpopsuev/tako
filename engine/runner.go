@@ -258,15 +258,18 @@ func (hw *hookingWalker) Handle(ctx context.Context, node circuit.Node, nc circu
 // WrapWithCheckpointer wraps a Walker so that state is saved after each
 // successful node and on Interrupt. Use this when calling Runner.Walk()
 // directly (outside of framework.Run) and you need checkpoint support.
-func WrapWithCheckpointer(w circuit.Walker, cp circuit.Checkpointer) circuit.Walker {
-	return &checkpointingWalker{inner: w, cp: cp}
+// The optional observer receives EventCheckpointSaved events after each
+// successful save.
+func WrapWithCheckpointer(w circuit.Walker, cp circuit.Checkpointer, obs circuit.WalkObserver) circuit.Walker {
+	return &checkpointingWalker{inner: w, cp: cp, observer: obs}
 }
 
 // checkpointingWalker wraps a Walker to save state after each successful
 // node Handle. This is the outermost wrapper in the walker chain.
 type checkpointingWalker struct {
-	inner circuit.Walker
-	cp    circuit.Checkpointer
+	inner    circuit.Walker
+	cp       circuit.Checkpointer
+	observer circuit.WalkObserver
 }
 
 func (cw *checkpointingWalker) Identity() circuit.AgentIdentity       { return cw.inner.Identity() }
@@ -277,12 +280,23 @@ func (cw *checkpointingWalker) Handle(ctx context.Context, node circuit.Node, nc
 	artifact, err := cw.inner.Handle(ctx, node, nc)
 	if err != nil {
 		if IsInterrupt(err) {
-			_ = cw.cp.Save(cw.inner.State())
+			if saveErr := cw.cp.Save(cw.inner.State()); saveErr == nil {
+				emitEvent(cw.observer, &circuit.WalkEvent{
+					Type:   circuit.EventCheckpointSaved,
+					Node:   node.Name(),
+					Walker: cw.inner.Identity().PersonaName,
+				})
+			}
 		}
 		return nil, err
 	}
 	if cpErr := cw.cp.Save(cw.inner.State()); cpErr != nil {
 		return nil, fmt.Errorf("checkpoint after node %s: %w", node.Name(), cpErr)
 	}
+	emitEvent(cw.observer, &circuit.WalkEvent{
+		Type:   circuit.EventCheckpointSaved,
+		Node:   node.Name(),
+		Walker: cw.inner.Identity().PersonaName,
+	})
 	return artifact, nil
 }

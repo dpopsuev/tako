@@ -58,12 +58,13 @@ func CompileExpressionEdge(def *circuit.EdgeDef, config ...map[string]any) (circ
 // Program returns the compiled program for test inspection.
 func (e *expressionEdge) Program() *vm.Program { return e.program }
 
-func (e *expressionEdge) ID() string       { return e.def.ID }
-func (e *expressionEdge) From() string     { return string(e.def.From) }
-func (e *expressionEdge) To() string       { return string(e.def.To) }
-func (e *expressionEdge) IsShortcut() bool { return e.def.Shortcut }
-func (e *expressionEdge) IsLoop() bool     { return e.def.Loop }
-func (e *expressionEdge) IsParallel() bool { return e.def.Parallel }
+func (e *expressionEdge) ID() string            { return e.def.ID }
+func (e *expressionEdge) From() string          { return string(e.def.From) }
+func (e *expressionEdge) To() string            { return string(e.def.To) }
+func (e *expressionEdge) IsShortcut() bool      { return e.def.Shortcut }
+func (e *expressionEdge) IsLoop() bool          { return e.def.Loop }
+func (e *expressionEdge) IsParallel() bool      { return e.def.Parallel }
+func (e *expressionEdge) MergeStrategy() string { return e.def.Merge }
 
 func (e *expressionEdge) Evaluate(artifact circuit.Artifact, state *circuit.WalkerState) *circuit.Transition {
 	ctx := buildExprContext(artifact, state, e.config)

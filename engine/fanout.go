@@ -18,6 +18,13 @@ type parallelMatch struct {
 	transition *circuit.Transition
 }
 
+// MergeEdge is an optional interface for edges that expose a fan-in merge strategy.
+// When parallel edges carry a merge strategy, it is used to combine branch results
+// before passing the merged artifact to the merge node.
+type MergeEdge interface {
+	MergeStrategy() string
+}
+
 // isParallelEdge returns true if the edge implements ParallelEdge and is marked parallel.
 func isParallelEdge(e circuit.Edge) bool {
 	if pe, ok := e.(circuit.ParallelEdge); ok {
@@ -26,7 +33,18 @@ func isParallelEdge(e circuit.Edge) bool {
 	return false
 }
 
-// walkFanOut executes parallel branch nodes concurrently and returns the merge node.
+// edgeMergeStrategy extracts the merge strategy from an edge if it implements MergeEdge.
+// Returns empty string if the edge does not expose a merge strategy.
+func edgeMergeStrategy(e circuit.Edge) string {
+	if me, ok := e.(MergeEdge); ok {
+		return me.MergeStrategy()
+	}
+	return ""
+}
+
+// walkFanOut executes parallel branch nodes concurrently and returns the merge
+// node name together with a merged artifact produced by applying the fan-in
+// merge strategy declared on the parallel edges.
 func (g *DefaultGraph) walkFanOut(
 	ctx context.Context,
 	walker circuit.Walker,
@@ -34,7 +52,7 @@ func (g *DefaultGraph) walkFanOut(
 	sourceNode circuit.Node,
 	sourceArtifact circuit.Artifact,
 	matches []parallelMatch,
-) (string, error) {
+) (string, circuit.Artifact, error) {
 	state := walker.State()
 	walkerName := walker.Identity().PersonaName
 
@@ -57,7 +75,7 @@ func (g *DefaultGraph) walkFanOut(
 	for i, m := range matches {
 		targetNode, ok := g.nodeIndex[m.transition.NextNode]
 		if !ok {
-			return "", fmt.Errorf("%w: fan-out target %q from edge %s",
+			return "", nil, fmt.Errorf("%w: fan-out target %q from edge %s",
 				circuit.ErrNodeNotFound, m.transition.NextNode, m.edge.ID())
 		}
 
@@ -105,7 +123,7 @@ func (g *DefaultGraph) walkFanOut(
 	if err := eg.Wait(); err != nil {
 		state.Status = walkStatusError
 		emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkError, Node: sourceNode.Name(), Error: err})
-		return "", err
+		return "", nil, err
 	}
 
 	for _, m := range matches {
@@ -117,17 +135,35 @@ func (g *DefaultGraph) walkFanOut(
 	if err != nil {
 		state.Status = walkStatusError
 		emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkError, Node: sourceNode.Name(), Error: err})
-		return "", err
+		return "", nil, err
 	}
+
+	// Determine the merge strategy from the parallel edges. Use the first
+	// non-empty Merge value; default to "append" when none is specified.
+	strategy := determineMergeStrategy(matches)
+	merged := applyMergeStrategy(strategy, results)
 
 	emitEvent(obs, &circuit.WalkEvent{
 		Type:     circuit.EventFanOutEnd,
 		Node:     sourceNode.Name(),
 		Walker:   walkerName,
-		Metadata: map[string]any{"merge": mergeNodeName},
+		Artifact: merged,
+		Metadata: map[string]any{"merge": mergeNodeName, "strategy": strategy},
 	})
 
-	return mergeNodeName, nil
+	return mergeNodeName, merged, nil
+}
+
+// determineMergeStrategy inspects the parallel edges and returns the first
+// non-empty Merge value. Falls back to MergeAppend when no edge declares a
+// strategy.
+func determineMergeStrategy(matches []parallelMatch) string {
+	for _, m := range matches {
+		if s := edgeMergeStrategy(m.edge); s != "" {
+			return s
+		}
+	}
+	return MergeAppend
 }
 
 // findMergeTarget evaluates outgoing edges from each parallel branch and returns

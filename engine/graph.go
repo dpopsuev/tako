@@ -273,7 +273,7 @@ func (g *DefaultGraph) Walk(ctx context.Context, walker circuit.Walker, startNod
 		}
 
 		if len(parallelMatches) >= 2 {
-			mergeNodeName, err := g.walkFanOut(ctx, walker, obs, node, artifact, parallelMatches)
+			mergeNodeName, mergedArtifact, err := g.walkFanOut(ctx, walker, obs, node, artifact, parallelMatches)
 			if err != nil {
 				return err
 			}
@@ -289,7 +289,7 @@ func (g *DefaultGraph) Walk(ctx context.Context, walker circuit.Walker, startNod
 				emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkError, Error: err, Walker: walkerName})
 				return err
 			}
-			priorArtifact = artifact
+			priorArtifact = mergedArtifact
 			node = nextNode
 			state.CurrentNode = mergeNodeName
 			continue

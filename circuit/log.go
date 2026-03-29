@@ -61,6 +61,10 @@ const (
 	LogUnreferencedHook       = "unreferenced hook"
 	LogMissingHookRefs        = "missing hook references"
 
+	// Cache
+	LogCacheHit  = "cache hit"
+	LogCacheMiss = "cache miss"
+
 	// Runner / hooks
 	LogSchemaValidationFailed = "artifact schema validation failed"
 	LogBeforeHookNotFound     = "before-hook not found"
@@ -319,6 +323,9 @@ const (
 	LogKeyAgent = "agent"
 	LogKeyMode  = "mode"
 	LogKeyIndex = "index"
+
+	// --- Cache ---
+	LogKeyCacheKey = "cache_key"
 
 	// --- Observer / misc ---
 	LogKeyPath           = "path"
