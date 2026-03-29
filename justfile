@@ -43,6 +43,10 @@ install:
 lint:
     golangci-lint run ./...
 
+# Lint only changed files (fast, used by pre-commit hook)
+lint-new:
+    golangci-lint run --new-from-rev=HEAD ./...
+
 # Run go vet only (fast)
 vet:
     go vet ./...
@@ -98,6 +102,15 @@ down:
 
 # Rebuild images and restart stack
 deploy: build-images up
+
+# ─── Hooks ────────────────────────────────────────────────
+
+# Install git pre-commit hook (runs lint-new on changed files)
+install-hooks:
+    @echo '#!/bin/sh' > .git/hooks/pre-commit
+    @echo 'just lint-new' >> .git/hooks/pre-commit
+    @chmod +x .git/hooks/pre-commit
+    @echo "pre-commit hook installed (runs just lint-new)"
 
 # ─── Clean ────────────────────────────────────────────────
 
