@@ -46,7 +46,7 @@ func (n *curationNode) Process(_ context.Context, _ circuit.NodeContext) (circui
 //nolint:gocritic // hugeParam: signature required by engine.NodeRegistry
 func newCurationNode(def circuit.NodeDef) circuit.Node {
 	return &curationNode{
-		name:    def.Name,
+		name:    string(def.Name),
 		element: resolveApproachElement(def.Approach),
 		family:  def.EffectiveHandler(),
 	}
@@ -70,15 +70,15 @@ type curationEdge struct {
 }
 
 func (e *curationEdge) ID() string       { return e.def.ID }
-func (e *curationEdge) From() string     { return e.def.From }
-func (e *curationEdge) To() string       { return e.def.To }
+func (e *curationEdge) From() string     { return string(e.def.From) }
+func (e *curationEdge) To() string       { return string(e.def.To) }
 func (e *curationEdge) IsShortcut() bool { return e.def.Shortcut }
 func (e *curationEdge) IsLoop() bool     { return e.def.Loop }
 func (e *curationEdge) Evaluate(a circuit.Artifact, s *circuit.WalkerState) *circuit.Transition {
 	if e.evalFunc != nil {
 		return e.evalFunc(a, s)
 	}
-	return &circuit.Transition{NextNode: e.def.To, Explanation: e.def.Condition}
+	return &circuit.Transition{NextNode: string(e.def.To), Explanation: e.def.Condition}
 }
 
 // CurationArtifact is a generic artifact carrying a Record and evaluation metadata.
@@ -107,7 +107,7 @@ func DefaultEdgeFactory() engine.EdgeFactory {
 			return &curationEdge{
 				def: def,
 				evalFunc: func(_ circuit.Artifact, _ *circuit.WalkerState) *circuit.Transition {
-					return &circuit.Transition{NextNode: def.To, Explanation: "proceed to extraction"}
+					return &circuit.Transition{NextNode: string(def.To), Explanation: "proceed to extraction"}
 				},
 			}
 		},
@@ -115,7 +115,7 @@ func DefaultEdgeFactory() engine.EdgeFactory {
 			return &curationEdge{
 				def: def,
 				evalFunc: func(_ circuit.Artifact, _ *circuit.WalkerState) *circuit.Transition {
-					return &circuit.Transition{NextNode: def.To, Explanation: "proceed to validation"}
+					return &circuit.Transition{NextNode: string(def.To), Explanation: "proceed to validation"}
 				},
 			}
 		},
@@ -133,7 +133,7 @@ func DefaultEdgeFactory() engine.EdgeFactory {
 							return nil
 						}
 						return &circuit.Transition{
-							NextNode:    def.To,
+							NextNode:    string(def.To),
 							Explanation: "missing required fields, more sources available",
 						}
 					}
@@ -150,7 +150,7 @@ func DefaultEdgeFactory() engine.EdgeFactory {
 						return nil
 					}
 					if ca.Complete || (!ca.MoreSources && ca.Rec != nil) {
-						return &circuit.Transition{NextNode: def.To, Explanation: "completeness above threshold"}
+						return &circuit.Transition{NextNode: string(def.To), Explanation: "completeness above threshold"}
 					}
 					return nil
 				},
@@ -160,7 +160,7 @@ func DefaultEdgeFactory() engine.EdgeFactory {
 			return &curationEdge{
 				def: def,
 				evalFunc: func(_ circuit.Artifact, _ *circuit.WalkerState) *circuit.Transition {
-					return &circuit.Transition{NextNode: def.To, Explanation: "proceed to promotion"}
+					return &circuit.Transition{NextNode: string(def.To), Explanation: "proceed to promotion"}
 				},
 			}
 		},
@@ -168,7 +168,7 @@ func DefaultEdgeFactory() engine.EdgeFactory {
 			return &curationEdge{
 				def: def,
 				evalFunc: func(_ circuit.Artifact, _ *circuit.WalkerState) *circuit.Transition {
-					return &circuit.Transition{NextNode: def.To, Explanation: "always (terminal)"}
+					return &circuit.Transition{NextNode: string(def.To), Explanation: "always (terminal)"}
 				},
 			}
 		},

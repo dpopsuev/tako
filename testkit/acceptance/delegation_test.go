@@ -40,7 +40,7 @@ func TestDelegation_DelegateNodeWalksSubCircuit(t *testing.T) {
 		dg.SetObserver(tc)
 	}
 
-	err = g.Walk(context.Background(), walker, parentDef.Start)
+	err = g.Walk(context.Background(), walker, string(parentDef.Start))
 	if err != nil {
 		t.Fatalf("Walk: %v", err)
 	}
@@ -84,7 +84,7 @@ func TestDelegation_DelegateArtifactWrapsChildOutput(t *testing.T) {
 
 	walker := circuit.NewProcessWalker("test-artifact")
 
-	err = g.Walk(context.Background(), walker, parentDef.Start)
+	err = g.Walk(context.Background(), walker, string(parentDef.Start))
 	if err != nil {
 		t.Fatalf("Walk: %v", err)
 	}

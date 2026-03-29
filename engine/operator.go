@@ -174,7 +174,7 @@ func (c *InMemoryContainer) Walk(ctx context.Context, reg *GraphRegistries) (*Wa
 	}
 
 	walker := circuit.NewProcessWalker(c.id)
-	walkErr := graph.Walk(walkCtx, walker, c.def.Start)
+	walkErr := graph.Walk(walkCtx, walker, string(c.def.Start))
 
 	result := &WalkResult{
 		Artifacts: walker.State().Outputs,

@@ -72,8 +72,8 @@ func skillScaffold(args []string) error {
 		CircuitPath: circuitPath,
 		Nodes:        def.Nodes,
 		Edges:        def.Edges,
-		Start:        def.Start,
-		Done:         def.Done,
+		Start:        string(def.Start),
+		Done:         string(def.Done),
 	}
 
 	f, err := os.Create(outPath)

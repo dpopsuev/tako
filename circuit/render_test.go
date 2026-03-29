@@ -50,8 +50,8 @@ func TestRender_WithZones(t *testing.T) {
 			{ID: "H3", Name: "report-done", From: "report", To: "_done"},
 		},
 		Zones: map[string]ZoneDef{
-			"intake": {Nodes: []string{"recall", "triage"}},
-			"output": {Nodes: []string{"report"}},
+			"intake": {Nodes: []NodeName{"recall", "triage"}},
+			"output": {Nodes: []NodeName{"report"}},
 		},
 		Start: "a",
 		Done:  "_done",

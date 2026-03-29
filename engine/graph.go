@@ -616,7 +616,7 @@ func (g *DefaultGraph) walkDelegate(ctx context.Context, walker circuit.Walker, 
 	}
 
 	start := time.Now()
-	walkErr := runner.Walk(ctx, subWalker, circuitDef.Start)
+	walkErr := runner.Walk(ctx, subWalker, string(circuitDef.Start))
 	elapsed := time.Since(start)
 
 	da := &DelegateArtifact{

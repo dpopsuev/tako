@@ -14,8 +14,8 @@ func testCircuitDef() *circuit.CircuitDef {
 		Start:   "recall",
 		Done:    "report",
 		Zones: map[string]circuit.ZoneDef{
-			"analysis": {Nodes: []string{"recall", "triage"}, Approach: "rapid"},
-			"output":   {Nodes: []string{"investigate", "report"}, Approach: "analytical"},
+			"analysis": {Nodes: []circuit.NodeName{"recall", "triage"}, Approach: "rapid"},
+			"output":   {Nodes: []circuit.NodeName{"investigate", "report"}, Approach: "analytical"},
 		},
 		Nodes: []circuit.NodeDef{
 			{Name: "recall", Approach: "rapid"},

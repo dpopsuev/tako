@@ -64,7 +64,7 @@ func TestRunner_Walk_NoSchema(t *testing.T) {
 	art := &runnerTestArtifact{typ: "test", conf: 1.0, raw: map[string]any{"x": 1}}
 	nodeReg := NodeRegistry{
 		"stub": func(d circuit.NodeDef) circuit.Node {
-			return &runnerTestNode{name: d.Name, out: art}
+			return &runnerTestNode{name: string(d.Name), out: art}
 		},
 	}
 
@@ -106,7 +106,7 @@ func TestRunner_Walk_SchemaPass(t *testing.T) {
 	art := &runnerTestArtifact{typ: "test", conf: 1.0, raw: map[string]any{"id": "C1"}}
 	nodeReg := NodeRegistry{
 		"stub": func(d circuit.NodeDef) circuit.Node {
-			return &runnerTestNode{name: d.Name, out: art}
+			return &runnerTestNode{name: string(d.Name), out: art}
 		},
 	}
 
@@ -146,7 +146,7 @@ func TestRunner_Walk_SchemaFail(t *testing.T) {
 	art := &runnerTestArtifact{typ: "test", conf: 1.0, raw: map[string]any{"wrong": "data"}}
 	nodeReg := NodeRegistry{
 		"stub": func(d circuit.NodeDef) circuit.Node {
-			return &runnerTestNode{name: d.Name, out: art}
+			return &runnerTestNode{name: string(d.Name), out: art}
 		},
 	}
 
@@ -177,7 +177,7 @@ func TestRunner_Walk_NodeError(t *testing.T) {
 
 	nodeReg := NodeRegistry{
 		"failing": func(d circuit.NodeDef) circuit.Node {
-			return &runnerTestNode{name: d.Name, err: fmt.Errorf("node exploded")}
+			return &runnerTestNode{name: string(d.Name), err: fmt.Errorf("node exploded")}
 		},
 	}
 
@@ -235,7 +235,7 @@ func TestRunner_Walk_MultiNodeWithSchema(t *testing.T) {
 	}}
 	nodeReg := NodeRegistry{
 		"stub": func(d circuit.NodeDef) circuit.Node {
-			return &runnerTestNode{name: d.Name, out: art}
+			return &runnerTestNode{name: string(d.Name), out: art}
 		},
 	}
 
@@ -331,7 +331,7 @@ func TestRunner_SchemasExtracted(t *testing.T) {
 	art := &runnerTestArtifact{raw: map[string]any{"id": "x"}}
 	nodeReg := NodeRegistry{
 		"stub": func(d circuit.NodeDef) circuit.Node {
-			return &runnerTestNode{name: d.Name, out: art}
+			return &runnerTestNode{name: string(d.Name), out: art}
 		},
 	}
 

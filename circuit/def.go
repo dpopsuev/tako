@@ -7,6 +7,13 @@ import (
 	"time"
 )
 
+// NodeName is a typed identifier for circuit nodes.
+// Provides compile-time safety for node name usage in maps and function params.
+type NodeName string
+
+// String returns the node name as a plain string.
+func (n NodeName) String() string { return string(n) }
+
 const (
 	outputTypeString = "string"
 	outputTypeArray  = "array"
@@ -36,8 +43,8 @@ type CircuitDef struct {
 	Nodes       []NodeDef          `yaml:"nodes"`
 	Edges       []EdgeDef          `yaml:"edges"`
 	Walkers     []WalkerDef        `yaml:"walkers,omitempty"`
-	Start       string             `yaml:"start"`
-	Done        string             `yaml:"done"`
+	Start       NodeName           `yaml:"start"`
+	Done        NodeName           `yaml:"done"`
 	Scorecard   string             `yaml:"scorecard,omitempty"`
 	Calibration *CalibrationContractDef `yaml:"calibration,omitempty"`
 }
@@ -103,7 +110,7 @@ type ContextFilterDef struct {
 
 // ZoneDef declares a meta-phase zone (P7: optional, progressive disclosure).
 type ZoneDef struct {
-	Nodes         []string          `yaml:"nodes"`
+	Nodes         []NodeName        `yaml:"nodes"`
 	Approach      string            `yaml:"approach,omitempty"`
 	Stickiness    int               `yaml:"stickiness,omitempty"`
 	Domain        string            `yaml:"domain,omitempty"`
@@ -178,7 +185,7 @@ type NodeConfig struct {
 // Legacy fields (family, transformer, extractor, renderer, delegate+generator)
 // were removed in TSK-218; YAML files using them will fail to resolve.
 type NodeDef struct {
-	Name        string          `yaml:"name"`
+	Name        NodeName        `yaml:"name"`
 	Description string          `yaml:"description,omitempty"`
 	Approach    string          `yaml:"approach,omitempty"`
 	HandlerType string          `yaml:"handler_type,omitempty"`
@@ -227,7 +234,7 @@ func (nd *NodeDef) EffectiveHandler() string {
 	if nd.Handler != "" {
 		return nd.Handler
 	}
-	return nd.Name
+	return string(nd.Name)
 }
 
 // OutputFields returns the output field declarations, or nil if none declared.
@@ -244,10 +251,10 @@ func (nd *NodeDef) ValidateOutput(output map[string]any) error {
 	for _, f := range nd.Output {
 		val, exists := output[f.Name]
 		if !exists && f.Required {
-			return fmt.Errorf("node %q: required output field %q missing", nd.Name, f.Name)
+			return fmt.Errorf("node %q: required output field %q missing", string(nd.Name), f.Name)
 		}
 		if exists && !checkOutputType(val, f.Type) {
-			return fmt.Errorf("node %q: output field %q: expected type %s, got %T", nd.Name, f.Name, f.Type, val)
+			return fmt.Errorf("node %q: output field %q: expected type %s, got %T", string(nd.Name), f.Name, f.Type, val)
 		}
 	}
 	return nil
@@ -297,7 +304,7 @@ func (nd *NodeDef) EffectiveTimeout(circuitDefault string) (time.Duration, error
 	}
 	d, err := time.ParseDuration(raw)
 	if err != nil {
-		return 0, fmt.Errorf("node %q: invalid timeout %q: %w", nd.Name, raw, err)
+		return 0, fmt.Errorf("node %q: invalid timeout %q: %w", string(nd.Name), raw, err)
 	}
 	return d, nil
 }
@@ -312,17 +319,17 @@ type CacheDef struct {
 // When is an expression evaluated by expr-lang/expr against {output, state, config}.
 // Condition is a human-readable comment (not evaluated).
 type EdgeDef struct {
-	ID          string `yaml:"id"`
-	Name        string `yaml:"name"`
-	From        string `yaml:"from"`
-	To          string `yaml:"to"`
-	Shortcut    bool   `yaml:"shortcut,omitempty"`
-	Loop        bool   `yaml:"loop,omitempty"`
-	Parallel    bool   `yaml:"parallel,omitempty"`
-	Condition   string `yaml:"condition,omitempty"`
-	When        string `yaml:"when,omitempty"`
-	Merge       string `yaml:"merge,omitempty"`
-	DisplayName string `yaml:"display_name,omitempty"` // human name for edge conditions
+	ID          string   `yaml:"id"`
+	Name        string   `yaml:"name"`
+	From        NodeName `yaml:"from"`
+	To          NodeName `yaml:"to"`
+	Shortcut    bool     `yaml:"shortcut,omitempty"`
+	Loop        bool     `yaml:"loop,omitempty"`
+	Parallel    bool     `yaml:"parallel,omitempty"`
+	Condition   string   `yaml:"condition,omitempty"`
+	When        string   `yaml:"when,omitempty"`
+	Merge       string   `yaml:"merge,omitempty"`
+	DisplayName string   `yaml:"display_name,omitempty"` // human name for edge conditions
 }
 
 // Merge strategy constants for fan-in edges.
@@ -360,7 +367,7 @@ func (def *CircuitDef) Validate() error {
 		return fmt.Errorf("done node is required")
 	}
 
-	nodeSet := make(map[string]bool, len(def.Nodes))
+	nodeSet := make(map[NodeName]bool, len(def.Nodes))
 	for i := range def.Nodes {
 		if def.Nodes[i].Name == "" {
 			return fmt.Errorf("node name is required")
@@ -417,7 +424,7 @@ func (def *CircuitDef) RegisterVocabulary(v *RichMapVocabulary) {
 			v.RegisterEntry(alias, VocabEntry{Short: n.Code, Long: n.DisplayName})
 		}
 		if n.DisplayName != "" {
-			v.RegisterEntry(n.Name, VocabEntry{Long: n.DisplayName})
+			v.RegisterEntry(string(n.Name), VocabEntry{Long: n.DisplayName})
 		}
 	}
 	for i := range def.Edges {

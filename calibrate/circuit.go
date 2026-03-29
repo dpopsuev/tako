@@ -75,7 +75,7 @@ func RunCircuit(ctx context.Context, input *CalibrationInput, opts ...CircuitOpt
 	walker := circuit.NewProcessWalker("calibration")
 	walker.State().Context["input"] = input
 
-	if err := graph.Walk(ctx, walker, def.Start); err != nil {
+	if err := graph.Walk(ctx, walker, string(def.Start)); err != nil {
 		return nil, fmt.Errorf("walk circuit: %w", err)
 	}
 
@@ -124,11 +124,11 @@ type forwardEdge struct {
 }
 
 func (e *forwardEdge) ID() string         { return e.def.ID }
-func (e *forwardEdge) From() string       { return e.def.From }
-func (e *forwardEdge) To() string         { return e.def.To }
+func (e *forwardEdge) From() string       { return string(e.def.From) }
+func (e *forwardEdge) To() string         { return string(e.def.To) }
 func (e *forwardEdge) IsShortcut() bool   { return e.def.Shortcut }
 func (e *forwardEdge) IsLoop() bool       { return e.def.Loop }
 
 func (e *forwardEdge) Evaluate(_ circuit.Artifact, _ *circuit.WalkerState) *circuit.Transition {
-	return &circuit.Transition{NextNode: e.def.To}
+	return &circuit.Transition{NextNode: string(e.def.To)}
 }

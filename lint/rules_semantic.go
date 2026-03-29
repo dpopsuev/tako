@@ -27,13 +27,13 @@ func (r *OrphanNode) Check(ctx *LintContext) []Finding {
 	reachable := reachableNodes(ctx.Def)
 	var out []Finding
 	for i := range ctx.Def.Nodes {
-		if !reachable[ctx.Def.Nodes[i].Name] {
+		if !reachable[string(ctx.Def.Nodes[i].Name)] {
 			out = append(out, Finding{
 				RuleID:   r.ID(),
 				Severity: r.Severity(),
 				Message:  fmt.Sprintf("node %q is not reachable from start node %q", ctx.Def.Nodes[i].Name, ctx.Def.Start),
 				File:     ctx.File,
-				Line:     ctx.NodeLine(ctx.Def.Nodes[i].Name),
+				Line:     ctx.NodeLine(string(ctx.Def.Nodes[i].Name)),
 			})
 		}
 	}
@@ -54,8 +54,8 @@ func (r *UnreachableDone) Check(ctx *LintContext) []Finding {
 		return nil
 	}
 	adj := buildAdjacency(ctx.Def)
-	visited := bfs(ctx.Def.Start, adj)
-	if !visited[ctx.Def.Done] {
+	visited := bfs(string(ctx.Def.Start), adj)
+	if !visited[string(ctx.Def.Done)] {
 		return []Finding{{
 			RuleID:   r.ID(),
 			Severity: r.Severity(),
@@ -80,11 +80,11 @@ func (r *DeadEdge) Check(ctx *LintContext) []Finding {
 	reachable := reachableNodes(ctx.Def)
 	var out []Finding
 	for i := range ctx.Def.Edges {
-		if !reachable[ctx.Def.Edges[i].From] {
+		if !reachable[string(string(ctx.Def.Edges[i].From))] {
 			out = append(out, Finding{
 				RuleID:   r.ID(),
 				Severity: r.Severity(),
-				Message:  fmt.Sprintf("edge %q originates from unreachable node %q", ctx.Def.Edges[i].ID, ctx.Def.Edges[i].From),
+				Message:  fmt.Sprintf("edge %q originates from unreachable node %q", ctx.Def.Edges[i].ID, string(ctx.Def.Edges[i].From)),
 				File:     ctx.File,
 				Line:     ctx.EdgeLine(ctx.Def.Edges[i].ID),
 			})
@@ -106,7 +106,7 @@ func (r *ShortcutBypassesRequired) Check(ctx *LintContext) []Finding {
 	schemaNodes := make(map[string]bool)
 	for i := range ctx.Def.Nodes {
 		if ctx.Def.Nodes[i].Schema != nil {
-			schemaNodes[ctx.Def.Nodes[i].Name] = true
+			schemaNodes[string(ctx.Def.Nodes[i].Name)] = true
 		}
 	}
 	if len(schemaNodes) == 0 {
@@ -116,7 +116,7 @@ func (r *ShortcutBypassesRequired) Check(ctx *LintContext) []Finding {
 	normalAdj := make(map[string][]string)
 	for i := range ctx.Def.Edges {
 		if !ctx.Def.Edges[i].Shortcut {
-			normalAdj[ctx.Def.Edges[i].From] = append(normalAdj[ctx.Def.Edges[i].From], ctx.Def.Edges[i].To)
+			normalAdj[string(string(ctx.Def.Edges[i].From))] = append(normalAdj[string(string(ctx.Def.Edges[i].From))], string(ctx.Def.Edges[i].To))
 		}
 	}
 
@@ -126,7 +126,7 @@ func (r *ShortcutBypassesRequired) Check(ctx *LintContext) []Finding {
 		if !ed.Shortcut {
 			continue
 		}
-		skipped := nodesOnPath(ed.From, ed.To, normalAdj)
+		skipped := nodesOnPath(string(ed.From), string(ed.To), normalAdj)
 		for name := range skipped {
 			if schemaNodes[name] {
 				out = append(out, Finding{
@@ -155,7 +155,7 @@ func (r *ZoneApproachMismatch) Check(ctx *LintContext) []Finding {
 	nodeApproaches := make(map[string]string)
 	for i := range ctx.Def.Nodes {
 		if ctx.Def.Nodes[i].Approach != "" {
-			nodeApproaches[ctx.Def.Nodes[i].Name] = strings.ToLower(ctx.Def.Nodes[i].Approach)
+			nodeApproaches[string(ctx.Def.Nodes[i].Name)] = strings.ToLower(ctx.Def.Nodes[i].Approach)
 		}
 	}
 
@@ -168,7 +168,7 @@ func (r *ZoneApproachMismatch) Check(ctx *LintContext) []Finding {
 
 		anyMatch := false
 		for _, nodeName := range z.Nodes {
-			if na, ok := nodeApproaches[nodeName]; ok && na == zoneApproach {
+			if na, ok := nodeApproaches[string(nodeName)]; ok && na == zoneApproach {
 				anyMatch = true
 				break
 			}
@@ -231,19 +231,19 @@ func (r *FanInWithoutMerge) Check(ctx *LintContext) []Finding {
 	for i := range ctx.Def.Edges {
 		ed := &ctx.Def.Edges[i]
 		conditional := ed.When != "" || ed.Condition != "" || ed.Shortcut || ed.Parallel
-		inbound[ed.To] = append(inbound[ed.To], edgeInfo{id: ed.ID, conditional: conditional})
+		inbound[string(ed.To)] = append(inbound[string(ed.To)], edgeInfo{id: ed.ID, conditional: conditional})
 	}
 
 	hasMerge := make(map[string]bool)
 	for i := range ctx.Def.Edges {
 		if ctx.Def.Edges[i].Merge != "" {
-			hasMerge[ctx.Def.Edges[i].To] = true
+			hasMerge[string(string(ctx.Def.Edges[i].To))] = true
 		}
 	}
 
 	var out []Finding
 	for node, edges := range inbound {
-		if len(edges) <= 1 || hasMerge[node] || node == ctx.Def.Done {
+		if len(edges) <= 1 || hasMerge[node] || node == string(ctx.Def.Done) {
 			continue
 		}
 		// Only flag when at least two inbound edges could fire simultaneously
@@ -359,7 +359,7 @@ func inferEdgeTopology(def *circuit.CircuitDef) []circuit.EdgeDef {
 func buildAdjacency(def *circuit.CircuitDef) map[string][]string {
 	adj := make(map[string][]string)
 	for i := range def.Edges {
-		adj[def.Edges[i].From] = append(adj[def.Edges[i].From], def.Edges[i].To)
+		adj[string(def.Edges[i].From)] = append(adj[string(def.Edges[i].From)], string(def.Edges[i].To))
 	}
 	return adj
 }
@@ -384,7 +384,7 @@ func reachableNodes(def *circuit.CircuitDef) map[string]bool {
 	if def.Start == "" {
 		return nil
 	}
-	return bfs(def.Start, buildAdjacency(def))
+	return bfs(string(def.Start), buildAdjacency(def))
 }
 
 // nodesOnPath returns nodes between from and to (exclusive of both) reachable

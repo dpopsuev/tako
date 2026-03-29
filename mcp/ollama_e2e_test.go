@@ -514,7 +514,7 @@ func TestOllamaE2E_DelegatedCircuit(t *testing.T) {
 					dg.SetObserver(engine.NewLogObserver(nil))
 				}
 				walker := circuit.NewProcessWalker("e2e-delegate")
-				if err := g.Walk(ctx, walker, outerDef.Start); err != nil {
+				if err := g.Walk(ctx, walker, string(outerDef.Start)); err != nil {
 					return nil, err
 				}
 				return walker.State().Outputs, nil

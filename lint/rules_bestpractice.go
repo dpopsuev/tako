@@ -100,19 +100,19 @@ func (r *TerminalEdgeToDone) Tags() []string       { return []string{"best-pract
 func (r *TerminalEdgeToDone) Check(ctx *LintContext) []Finding {
 	hasOutgoing := make(map[string]bool)
 	for i := range ctx.Def.Edges {
-		hasOutgoing[ctx.Def.Edges[i].From] = true
+		hasOutgoing[string(ctx.Def.Edges[i].From)] = true
 	}
 
 	var out []Finding
 	for i := range ctx.Def.Nodes {
 		nd := &ctx.Def.Nodes[i]
-		if !hasOutgoing[nd.Name] {
+		if !hasOutgoing[string(nd.Name)] {
 			out = append(out, Finding{
 				RuleID:   r.ID(),
 				Severity: r.Severity(),
 				Message:  fmt.Sprintf("node %q has no outgoing edges; add an edge to %q", nd.Name, ctx.Def.Done),
 				File:     ctx.File,
-				Line:     ctx.NodeLine(nd.Name),
+				Line:     ctx.NodeLine(string(nd.Name)),
 			})
 		}
 	}
@@ -194,14 +194,14 @@ func (r *ApproachAffinityChain) Check(ctx *LintContext) []Finding {
 	nodeApproaches := make(map[string]string)
 	for i := range ctx.Def.Nodes {
 		if ctx.Def.Nodes[i].Approach != "" {
-			nodeApproaches[ctx.Def.Nodes[i].Name] = strings.ToLower(ctx.Def.Nodes[i].Approach)
+			nodeApproaches[string(ctx.Def.Nodes[i].Name)] = strings.ToLower(ctx.Def.Nodes[i].Approach)
 		}
 	}
 
 	adj := make(map[string][]string)
 	for i := range ctx.Def.Edges {
 		if !ctx.Def.Edges[i].Shortcut && !ctx.Def.Edges[i].Loop {
-			adj[ctx.Def.Edges[i].From] = append(adj[ctx.Def.Edges[i].From], ctx.Def.Edges[i].To)
+			adj[string(ctx.Def.Edges[i].From)] = append(adj[string(ctx.Def.Edges[i].From)], string(ctx.Def.Edges[i].To))
 		}
 	}
 
@@ -209,11 +209,11 @@ func (r *ApproachAffinityChain) Check(ctx *LintContext) []Finding {
 	reported := make(map[string]bool)
 	for i := range ctx.Def.Nodes {
 		nd := &ctx.Def.Nodes[i]
-		approach := nodeApproaches[nd.Name]
+		approach := nodeApproaches[string(nd.Name)]
 		if approach == "" {
 			continue
 		}
-		chain := findApproachChain(nd.Name, approach, nodeApproaches, adj)
+		chain := findApproachChain(string(nd.Name), approach, nodeApproaches, adj)
 		if len(chain) >= 3 && !reported[approach+":"+chain[0]] {
 			reported[approach+":"+chain[0]] = true
 			out = append(out, Finding{
@@ -286,7 +286,7 @@ func (r *StochasticTransformer) Check(ctx *LintContext) []Finding {
 					Severity: r.Severity(),
 					Message:  fmt.Sprintf("node %q uses stochastic transformer %q", nd.Name, name),
 					File:     ctx.File,
-					Line:     ctx.NodeLine(nd.Name),
+					Line:     ctx.NodeLine(string(nd.Name)),
 				})
 			}
 		}
@@ -330,7 +330,7 @@ func (r *StochasticSummary) Check(ctx *LintContext) []Finding {
 		}
 		totalWithTransformer++
 		if isStochastic(name, reg) {
-			stochasticNames = append(stochasticNames, nd.Name)
+			stochasticNames = append(stochasticNames, string(nd.Name))
 		}
 	}
 
@@ -362,7 +362,7 @@ func (r *MissingKind) Check(ctx *LintContext) []Finding {
 	for i := 0; i+1 < len(ctx.yamlRoot.Content); i += 2 {
 		if ctx.yamlRoot.Content[i].Kind == yaml.ScalarNode && ctx.yamlRoot.Content[i].Value == yamlFieldKind {
 			val := ctx.yamlRoot.Content[i+1].Value
-			if val != "" && !circuit.KnownKinds[val] {
+			if val != "" && !circuit.KnownKinds[circuit.Kind(val)] {
 				return []Finding{{
 					RuleID:   r.ID(),
 					Severity: SeverityInfo,

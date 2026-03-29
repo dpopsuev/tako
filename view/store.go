@@ -37,21 +37,22 @@ func NewCircuitStore(def *circuit.CircuitDef) *CircuitStore {
 
 	for zoneName, zd := range def.Zones {
 		for _, nodeName := range zd.Nodes {
-			nodeZone[nodeName] = zoneName
+			nodeZone[string(nodeName)] = zoneName
 		}
 	}
 
 	for i := range def.Nodes {
 		nd := &def.Nodes[i]
+		name := string(nd.Name)
 		elem, _ := agentport.ResolveApproach(strings.ToLower(nd.Approach))
 		elemStr := string(elem)
-		nodes[nd.Name] = NodeState{
-			Name:    nd.Name,
+		nodes[name] = NodeState{
+			Name:    name,
 			State:   NodeIdle,
-			Zone:    nodeZone[nd.Name],
+			Zone:    nodeZone[name],
 			Element: elemStr,
 		}
-		nodeElement[nd.Name] = elemStr
+		nodeElement[name] = elemStr
 	}
 
 	return &CircuitStore{
@@ -88,21 +89,22 @@ func (cs *CircuitStore) Reset(def *circuit.CircuitDef) {
 
 	for zoneName, zd := range def.Zones {
 		for _, nodeName := range zd.Nodes {
-			nodeZone[nodeName] = zoneName
+			nodeZone[string(nodeName)] = zoneName
 		}
 	}
 
 	for i := range def.Nodes {
 		nd := &def.Nodes[i]
+		name := string(nd.Name)
 		elem2, _ := agentport.ResolveApproach(strings.ToLower(nd.Approach))
 		elemStr2 := string(elem2)
-		nodes[nd.Name] = NodeState{
-			Name:    nd.Name,
+		nodes[name] = NodeState{
+			Name:    name,
 			State:   NodeIdle,
-			Zone:    nodeZone[nd.Name],
+			Zone:    nodeZone[name],
 			Element: elemStr2,
 		}
-		nodeElement[nd.Name] = elemStr2
+		nodeElement[name] = elemStr2
 	}
 
 	now := time.Now().UTC()

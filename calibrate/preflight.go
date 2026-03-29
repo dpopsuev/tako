@@ -110,7 +110,7 @@ func Preflight(ctx context.Context, cfg *HarnessConfig) (*PreflightReport, error
 		state:  circuit.NewWalkerState("preflight"),
 		cancel: probeCancel,
 	}
-	walkErr := runner.Walk(probeCtx, stub, cfg.CircuitDef.Start)
+	walkErr := runner.Walk(probeCtx, stub, string(cfg.CircuitDef.Start))
 
 	// The stub walker cancels the context after the first node, causing
 	// the walk loop to return context.Canceled on the next iteration.

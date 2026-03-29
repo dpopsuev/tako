@@ -59,8 +59,8 @@ func CompileExpressionEdge(def *circuit.EdgeDef, config ...map[string]any) (*exp
 func (e *expressionEdge) Program() *vm.Program { return e.program }
 
 func (e *expressionEdge) ID() string       { return e.def.ID }
-func (e *expressionEdge) From() string     { return e.def.From }
-func (e *expressionEdge) To() string       { return e.def.To }
+func (e *expressionEdge) From() string     { return string(e.def.From) }
+func (e *expressionEdge) To() string       { return string(e.def.To) }
 func (e *expressionEdge) IsShortcut() bool { return e.def.Shortcut }
 func (e *expressionEdge) IsLoop() bool     { return e.def.Loop }
 func (e *expressionEdge) IsParallel() bool { return e.def.Parallel }
@@ -79,7 +79,7 @@ func (e *expressionEdge) Evaluate(artifact circuit.Artifact, state *circuit.Walk
 	}
 
 	return &circuit.Transition{
-		NextNode:    e.def.To,
+		NextNode:    string(e.def.To),
 		Explanation: fmt.Sprintf("when: %s", e.def.When),
 	}
 }

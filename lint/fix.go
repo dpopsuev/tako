@@ -95,7 +95,7 @@ func (r *InvalidApproach) Fix(ctx *LintContext) []Fix {
 		if suggestion == "" {
 			continue
 		}
-		line := ctx.NodeLine(nd.Name)
+		line := ctx.NodeLine(string(nd.Name))
 		if line == 0 {
 			continue
 		}

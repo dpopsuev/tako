@@ -132,14 +132,14 @@ func RunWithEnforcer(
 	workDone := make(chan struct{})
 	go func() {
 		defer close(workDone)
-		workErr = workRunner.Walk(ctx, workWalker, workDef.Start)
+		workErr = workRunner.Walk(ctx, workWalker, string(workDef.Start))
 	}()
 
 	var enforcerErr error
 	enforcerDone := make(chan struct{})
 	go func() {
 		defer close(enforcerDone)
-		enforcerErr = enforcerRunner.Walk(enforcerCtx, enforcerWalker, enforcerCfg.EnforcerDef.Start)
+		enforcerErr = enforcerRunner.Walk(enforcerCtx, enforcerWalker, string(enforcerCfg.EnforcerDef.Start))
 	}()
 
 	<-workDone

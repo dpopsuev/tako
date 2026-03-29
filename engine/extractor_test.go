@@ -158,7 +158,7 @@ func TestBuildGraph_WithExtractorNode(t *testing.T) {
 
 	nodeReg := NodeRegistry{
 		"finish": func(d circuit.NodeDef) circuit.Node {
-			return &extTestNode{name: d.Name}
+			return &extTestNode{name: string(d.Name)}
 		},
 	}
 

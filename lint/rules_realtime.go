@@ -32,42 +32,42 @@ func (r *EdgeNodeReference) Check(ctx *LintContext) []Finding {
 	// Build set of valid node names.
 	validNodes := make(map[string]bool, len(ctx.Def.Nodes)+2)
 	for i := range ctx.Def.Nodes {
-		validNodes[ctx.Def.Nodes[i].Name] = true
+		validNodes[string(ctx.Def.Nodes[i].Name)] = true
 	}
 	// The done sentinel is always a valid edge target.
 	if ctx.Def.Done != "" {
-		validNodes[ctx.Def.Done] = true
+		validNodes[string(ctx.Def.Done)] = true
 	}
 	// The start node is always valid (usually declared, but be safe).
 	if ctx.Def.Start != "" {
-		validNodes[ctx.Def.Start] = true
+		validNodes[string(ctx.Def.Start)] = true
 	}
 
 	var out []Finding
 	for i := range ctx.Def.Edges {
 		ed := &ctx.Def.Edges[i]
-		if ed.From != "" && !validNodes[ed.From] {
+		if ed.From != "" && !validNodes[string(string(ed.From))] {
 			f := Finding{
 				RuleID:   r.ID(),
 				Severity: r.Severity(),
-				Message:  fmt.Sprintf("edge %q: from=%q does not match any declared node", ed.ID, ed.From),
+				Message:  fmt.Sprintf("edge %q: from=%q does not match any declared node", ed.ID, string(ed.From)),
 				File:     ctx.File,
 				Line:     ctx.EdgeLine(ed.ID),
 			}
-			if s := nodeSuggestion(ed.From, validNodes); s != "" {
+			if s := nodeSuggestion(string(ed.From), validNodes); s != "" {
 				f.Suggestion = s
 			}
 			out = append(out, f)
 		}
-		if ed.To != "" && !validNodes[ed.To] {
+		if ed.To != "" && !validNodes[string(string(ed.To))] {
 			f := Finding{
 				RuleID:   r.ID(),
 				Severity: r.Severity(),
-				Message:  fmt.Sprintf("edge %q: to=%q does not match any declared node or done sentinel", ed.ID, ed.To),
+				Message:  fmt.Sprintf("edge %q: to=%q does not match any declared node or done sentinel", ed.ID, string(ed.To)),
 				File:     ctx.File,
 				Line:     ctx.EdgeLine(ed.ID),
 			}
-			if s := nodeSuggestion(ed.To, validNodes); s != "" {
+			if s := nodeSuggestion(string(ed.To), validNodes); s != "" {
 				f.Suggestion = s
 			}
 			out = append(out, f)
@@ -125,8 +125,8 @@ func (r *HookReference) Check(ctx *LintContext) []Finding {
 	var out []Finding
 	for i := range ctx.Def.Nodes {
 		nd := &ctx.Def.Nodes[i]
-		out = append(out, checkHookRefs(ctx, nd.Name, "before", nd.Before, allHooks)...)
-		out = append(out, checkHookRefs(ctx, nd.Name, "after", nd.After, allHooks)...)
+		out = append(out, checkHookRefs(ctx, string(nd.Name), "before", nd.Before, allHooks)...)
+		out = append(out, checkHookRefs(ctx, string(nd.Name), "after", nd.After, allHooks)...)
 	}
 	return out
 }
@@ -236,7 +236,7 @@ func (r *InvalidHandlerType) Check(ctx *LintContext) []Finding {
 				Severity:   r.Severity(),
 				Message:    fmt.Sprintf("node %q: handler_type=%q is not a recognized type (valid: transformer, extractor, renderer, node, delegate, circuit)", nd.Name, nd.HandlerType),
 				File:       ctx.File,
-				Line:       ctx.NodeLine(nd.Name),
+				Line:       ctx.NodeLine(string(nd.Name)),
 				Suggestion: handlerTypeSuggestion(nd.HandlerType),
 			})
 		}

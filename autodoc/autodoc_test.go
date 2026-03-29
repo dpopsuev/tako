@@ -40,9 +40,9 @@ func zonedCircuit() *circuit.CircuitDef {
 		Circuit:     "zoned",
 		Description: "A circuit with zones",
 		Zones: map[string]circuit.ZoneDef{
-			"discovery": {Nodes: []string{"scan"}, Approach: "methodical"},
-			"analysis":  {Nodes: []string{"classify", "assess"}, Approach: "rapid"},
-			"output":    {Nodes: []string{"report"}, Approach: "holistic"},
+			"discovery": {Nodes: []circuit.NodeName{"scan"}, Approach: "methodical"},
+			"analysis":  {Nodes: []circuit.NodeName{"classify", "assess"}, Approach: "rapid"},
+			"output":    {Nodes: []circuit.NodeName{"report"}, Approach: "holistic"},
 		},
 		HandlerType: "node",
 		Nodes: []circuit.NodeDef{
@@ -90,13 +90,13 @@ func contextFilterCircuit() *circuit.CircuitDef {
 		Description: "Circuit with context filters",
 		Zones: map[string]circuit.ZoneDef{
 			"intake": {
-				Nodes: []string{"ingest"},
+				Nodes: []circuit.NodeName{"ingest"},
 				ContextFilter: &circuit.ContextFilterDef{
 					Pass: []string{"case_id", "launch_id"},
 				},
 			},
 			"analysis": {
-				Nodes: []string{"analyze"},
+				Nodes: []circuit.NodeName{"analyze"},
 				ContextFilter: &circuit.ContextFilterDef{
 					Block: []string{"raw_logs"},
 				},
@@ -250,8 +250,8 @@ func TestRenderDSBoundary_WithZones(t *testing.T) {
 	def := &circuit.CircuitDef{
 		Circuit: "zoned-ds",
 		Zones: map[string]circuit.ZoneDef{
-			"prep":    {Nodes: []string{"filter"}},
-			"analyze": {Nodes: []string{"llm-node"}},
+			"prep":    {Nodes: []circuit.NodeName{"filter"}},
+			"analyze": {Nodes: []circuit.NodeName{"llm-node"}},
 		},
 		HandlerType: "transformer",
 		Nodes: []circuit.NodeDef{

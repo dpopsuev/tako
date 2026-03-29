@@ -227,7 +227,7 @@ func TestDefaultNodeRegistry(t *testing.T) {
 			t.Errorf("missing node factory for %q", f)
 			continue
 		}
-		node := factory(circuit.NodeDef{Name: f, Approach: "analytical", Handler: f, HandlerType: "node"})
+		node := factory(circuit.NodeDef{Name: circuit.NodeName(f), Approach: "analytical", Handler: f, HandlerType: "node"})
 		if node.Name() != f {
 			t.Errorf("node.Name() = %q, want %q", node.Name(), f)
 		}

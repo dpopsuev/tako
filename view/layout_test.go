@@ -129,8 +129,8 @@ func assertMinRowSpan(t *testing.T, layout CircuitLayout, minSpan int) {
 func linearDef() *circuit.CircuitDef {
 	return &circuit.CircuitDef{
 		Circuit: "linear",
-		Start:   "A",
-		Done:    "_done",
+		Start:   circuit.NodeName("A"),
+		Done:    circuit.NodeName("_done"),
 		Nodes: []circuit.NodeDef{
 			{Name: "A"}, {Name: "B"}, {Name: "C"}, {Name: "D"},
 		},
@@ -138,7 +138,7 @@ func linearDef() *circuit.CircuitDef {
 			{ID: "e1", From: "A", To: "B"},
 			{ID: "e2", From: "B", To: "C"},
 			{ID: "e3", From: "C", To: "D"},
-			{ID: "e4", From: "D", To: "_done"},
+			{ID: "e4", From: "D", To: circuit.NodeName("_done")},
 		},
 	}
 }
@@ -146,8 +146,8 @@ func linearDef() *circuit.CircuitDef {
 func shortcutDef() *circuit.CircuitDef {
 	return &circuit.CircuitDef{
 		Circuit: "shortcut",
-		Start:   "A",
-		Done:    "_done",
+		Start:   circuit.NodeName("A"),
+		Done:    circuit.NodeName("_done"),
 		Nodes: []circuit.NodeDef{
 			{Name: "A"}, {Name: "B"}, {Name: "C"}, {Name: "D"},
 		},
@@ -155,7 +155,7 @@ func shortcutDef() *circuit.CircuitDef {
 			{ID: "e1", From: "A", To: "B"},
 			{ID: "e2", From: "B", To: "C"},
 			{ID: "e3", From: "C", To: "D"},
-			{ID: "e4", From: "D", To: "_done"},
+			{ID: "e4", From: "D", To: circuit.NodeName("_done")},
 			{ID: "e5", From: "A", To: "D", Shortcut: true},
 		},
 	}
@@ -164,15 +164,15 @@ func shortcutDef() *circuit.CircuitDef {
 func loopDef() *circuit.CircuitDef {
 	return &circuit.CircuitDef{
 		Circuit: "loop",
-		Start:   "A",
-		Done:    "_done",
+		Start:   circuit.NodeName("A"),
+		Done:    circuit.NodeName("_done"),
 		Nodes: []circuit.NodeDef{
 			{Name: "A"}, {Name: "B"}, {Name: "C"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "A", To: "B"},
 			{ID: "e2", From: "B", To: "C"},
-			{ID: "e3", From: "C", To: "_done"},
+			{ID: "e3", From: "C", To: circuit.NodeName("_done")},
 			{ID: "e4", From: "C", To: "A", Loop: true},
 		},
 	}
@@ -181,17 +181,17 @@ func loopDef() *circuit.CircuitDef {
 func diamondDef() *circuit.CircuitDef {
 	return &circuit.CircuitDef{
 		Circuit: "diamond",
-		Start:   "start",
-		Done:    "_done",
+		Start:   circuit.NodeName("start"),
+		Done:    circuit.NodeName("_done"),
 		Nodes: []circuit.NodeDef{
-			{Name: "start"}, {Name: "a"}, {Name: "b"}, {Name: "join"},
+			{Name: circuit.NodeName("start")}, {Name: "a"}, {Name: "b"}, {Name: "join"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "start", To: "a"},
 			{ID: "e2", From: "start", To: "b"},
 			{ID: "e3", From: "a", To: "join"},
 			{ID: "e4", From: "b", To: "join"},
-			{ID: "e5", From: "join", To: "_done"},
+			{ID: "e5", From: "join", To: circuit.NodeName("_done")},
 		},
 	}
 }
@@ -199,10 +199,10 @@ func diamondDef() *circuit.CircuitDef {
 func staircaseDef() *circuit.CircuitDef {
 	return &circuit.CircuitDef{
 		Circuit: "staircase",
-		Start:   "start",
-		Done:    "_done",
+		Start:   circuit.NodeName("start"),
+		Done:    circuit.NodeName("_done"),
 		Nodes: []circuit.NodeDef{
-			{Name: "start"},
+			{Name: circuit.NodeName("start")},
 			{Name: "a"}, {Name: "b"},
 			{Name: "c"}, {Name: "d"},
 			{Name: "end"},
@@ -215,7 +215,7 @@ func staircaseDef() *circuit.CircuitDef {
 			{ID: "e5", From: "b", To: "end"},
 			{ID: "e6", From: "c", To: "end"},
 			{ID: "e7", From: "d", To: "end"},
-			{ID: "e8", From: "end", To: "_done"},
+			{ID: "e8", From: "end", To: circuit.NodeName("_done")},
 		},
 	}
 }
@@ -224,7 +224,7 @@ func dialecticDef() *circuit.CircuitDef {
 	return &circuit.CircuitDef{
 		Circuit: "dialectic",
 		Start:   "indict",
-		Done:    "_done",
+		Done:    circuit.NodeName("_done"),
 		Nodes: []circuit.NodeDef{
 			{Name: "indict"}, {Name: "discover"}, {Name: "defend"},
 			{Name: "hearing"}, {Name: "cmrr"}, {Name: "verdict"},
@@ -238,7 +238,7 @@ func dialecticDef() *circuit.CircuitDef {
 			{ID: "e6", From: "hearing", To: "verdict"},
 			{ID: "e7", From: "hearing", To: "cmrr"},
 			{ID: "e8", From: "cmrr", To: "hearing", Loop: true},
-			{ID: "e9", From: "verdict", To: "_done"},
+			{ID: "e9", From: "verdict", To: circuit.NodeName("_done")},
 		},
 	}
 }
@@ -248,50 +248,50 @@ func megaFanoutDef() *circuit.CircuitDef {
 	edges := []circuit.EdgeDef{}
 	for i := 0; i < 8; i++ {
 		name := "t" + string(rune('1'+i))
-		nodes = append(nodes, circuit.NodeDef{Name: name})
+		nodes = append(nodes, circuit.NodeDef{Name: circuit.NodeName(name)})
 		edges = append(edges, circuit.EdgeDef{
-			ID: "fan-" + name, From: "hub", To: name,
+			ID: "fan-" + name, From: circuit.NodeName("hub"), To: circuit.NodeName(name),
 		})
 	}
-	nodes = append(nodes, circuit.NodeDef{Name: "merge"})
+	nodes = append(nodes, circuit.NodeDef{Name: circuit.NodeName("merge")})
 	for i := 0; i < 8; i++ {
 		name := "t" + string(rune('1'+i))
 		edges = append(edges, circuit.EdgeDef{
-			ID: "join-" + name, From: name, To: "merge",
+			ID: "join-" + name, From: circuit.NodeName(name), To: circuit.NodeName("merge"),
 		})
 	}
-	edges = append(edges, circuit.EdgeDef{ID: "fin", From: "merge", To: "_done"})
+	edges = append(edges, circuit.EdgeDef{ID: "fin", From: circuit.NodeName("merge"), To: circuit.NodeName("_done")})
 	return &circuit.CircuitDef{
 		Circuit: "mega-fanout",
-		Start:   "hub",
-		Done:    "_done",
+		Start:   circuit.NodeName("hub"),
+		Done:    circuit.NodeName("_done"),
 		Nodes:   nodes,
 		Edges:   edges,
 	}
 }
 
 func megaFaninDef() *circuit.CircuitDef {
-	nodes := []circuit.NodeDef{{Name: "start"}}
+	nodes := []circuit.NodeDef{{Name: circuit.NodeName("start")}}
 	edges := []circuit.EdgeDef{}
 	for i := 0; i < 8; i++ {
 		name := "s" + string(rune('1'+i))
-		nodes = append(nodes, circuit.NodeDef{Name: name})
+		nodes = append(nodes, circuit.NodeDef{Name: circuit.NodeName(name)})
 		edges = append(edges, circuit.EdgeDef{
-			ID: "fan-" + name, From: "start", To: name,
+			ID: "fan-" + name, From: "start", To: circuit.NodeName(name),
 		})
 	}
-	nodes = append(nodes, circuit.NodeDef{Name: "merge"})
+	nodes = append(nodes, circuit.NodeDef{Name: circuit.NodeName("merge")})
 	for i := 0; i < 8; i++ {
 		name := "s" + string(rune('1'+i))
 		edges = append(edges, circuit.EdgeDef{
-			ID: "join-" + name, From: name, To: "merge",
+			ID: "join-" + name, From: circuit.NodeName(name), To: circuit.NodeName("merge"),
 		})
 	}
-	edges = append(edges, circuit.EdgeDef{ID: "fin", From: "merge", To: "_done"})
+	edges = append(edges, circuit.EdgeDef{ID: "fin", From: circuit.NodeName("merge"), To: circuit.NodeName("_done")})
 	return &circuit.CircuitDef{
 		Circuit: "mega-fanin",
-		Start:   "start",
-		Done:    "_done",
+		Start:   circuit.NodeName("start"),
+		Done:    circuit.NodeName("_done"),
 		Nodes:   nodes,
 		Edges:   edges,
 	}
@@ -301,13 +301,13 @@ func deepCascadeDef() *circuit.CircuitDef {
 	return &circuit.CircuitDef{
 		Circuit: "deep-cascade",
 		Start:   "root",
-		Done:    "_done",
+		Done:    circuit.NodeName("_done"),
 		Nodes: []circuit.NodeDef{
 			{Name: "root"},
 			{Name: "a"}, {Name: "b"},
 			{Name: "c"}, {Name: "d"}, {Name: "e"}, {Name: "f"},
 			{Name: "g"}, {Name: "h"},
-			{Name: "merge"},
+			{Name: circuit.NodeName("merge")},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "root", To: "a"},
@@ -318,12 +318,12 @@ func deepCascadeDef() *circuit.CircuitDef {
 			{ID: "e6", From: "b", To: "f"},
 			{ID: "e7", From: "c", To: "g"},
 			{ID: "e8", From: "c", To: "h"},
-			{ID: "e9", From: "d", To: "merge"},
-			{ID: "e10", From: "e", To: "merge"},
-			{ID: "e11", From: "f", To: "merge"},
-			{ID: "e12", From: "g", To: "merge"},
-			{ID: "e13", From: "h", To: "merge"},
-			{ID: "e14", From: "merge", To: "_done"},
+			{ID: "e9", From: "d", To: circuit.NodeName("merge")},
+			{ID: "e10", From: "e", To: circuit.NodeName("merge")},
+			{ID: "e11", From: "f", To: circuit.NodeName("merge")},
+			{ID: "e12", From: "g", To: circuit.NodeName("merge")},
+			{ID: "e13", From: "h", To: circuit.NodeName("merge")},
+			{ID: "e14", From: circuit.NodeName("merge"), To: circuit.NodeName("_done")},
 		},
 	}
 }
@@ -331,14 +331,14 @@ func deepCascadeDef() *circuit.CircuitDef {
 func wideGridDef() *circuit.CircuitDef {
 	return &circuit.CircuitDef{
 		Circuit: "wide-grid",
-		Start:   "start",
-		Done:    "_done",
+		Start:   circuit.NodeName("start"),
+		Done:    circuit.NodeName("_done"),
 		Nodes: []circuit.NodeDef{
-			{Name: "start"},
+			{Name: circuit.NodeName("start")},
 			{Name: "a1"}, {Name: "a2"}, {Name: "a3"},
 			{Name: "b1"}, {Name: "b2"}, {Name: "b3"},
 			{Name: "c1"}, {Name: "c2"}, {Name: "c3"},
-			{Name: "merge"},
+			{Name: circuit.NodeName("merge")},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "start", To: "a1"},
@@ -350,10 +350,10 @@ func wideGridDef() *circuit.CircuitDef {
 			{ID: "e7", From: "b1", To: "c1"},
 			{ID: "e8", From: "b2", To: "c2"},
 			{ID: "e9", From: "b3", To: "c3"},
-			{ID: "e10", From: "c1", To: "merge"},
-			{ID: "e11", From: "c2", To: "merge"},
-			{ID: "e12", From: "c3", To: "merge"},
-			{ID: "e13", From: "merge", To: "_done"},
+			{ID: "e10", From: "c1", To: circuit.NodeName("merge")},
+			{ID: "e11", From: "c2", To: circuit.NodeName("merge")},
+			{ID: "e12", From: "c3", To: circuit.NodeName("merge")},
+			{ID: "e13", From: circuit.NodeName("merge"), To: circuit.NodeName("_done")},
 		},
 	}
 }
@@ -423,9 +423,9 @@ func TestGridLayout_EmptyCircuit(t *testing.T) {
 func TestGridLayout_ParallelNodes(t *testing.T) {
 	def := &circuit.CircuitDef{
 		Circuit: "parallel",
-		Start:   "start",
+		Start:   circuit.NodeName("start"),
 		Nodes: []circuit.NodeDef{
-			{Name: "start"},
+			{Name: circuit.NodeName("start")},
 			{Name: "a"},
 			{Name: "b"},
 			{Name: "join"},
@@ -719,9 +719,9 @@ func TestLogicalLayout_EmptyCircuit(t *testing.T) {
 func TestLogicalLayout_ParallelNodes(t *testing.T) {
 	def := &circuit.CircuitDef{
 		Circuit: "parallel",
-		Start:   "start",
+		Start:   circuit.NodeName("start"),
 		Nodes: []circuit.NodeDef{
-			{Name: "start"},
+			{Name: circuit.NodeName("start")},
 			{Name: "a"},
 			{Name: "b"},
 			{Name: "join"},

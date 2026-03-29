@@ -83,7 +83,7 @@ func BatchWalk(ctx context.Context, cfg BatchWalkConfig) []BatchWalkResult {
 			}
 		}
 
-		walkErr := runner.Walk(ctx, walker, cfg.Def.Start)
+		walkErr := runner.Walk(ctx, walker, string(cfg.Def.Start))
 		if walkErr != nil {
 			slog.WarnContext(ctx, "case walk failed", "component", "batch_walk", "case_id", bc.ID, "error", walkErr)
 		}

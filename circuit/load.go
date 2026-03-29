@@ -92,8 +92,8 @@ func (raw *rawCircuitDef) normalize() (*CircuitDef, error) {
 		Wiring:      raw.Wiring,
 		Zones:       raw.Zones,
 		Walkers:     raw.Walkers,
-		Start:       raw.Start,
-		Done:        raw.Done,
+		Start:       NodeName(raw.Start),
+		Done:        NodeName(raw.Done),
 		Calibration: raw.Calibration,
 	}
 
@@ -114,13 +114,13 @@ func (raw *rawCircuitDef) normalize() (*CircuitDef, error) {
 			if re.To == "" {
 				return nil, fmt.Errorf("node %q: inline edge missing 'to' field", nodeName)
 			}
-			id := generateEdgeID(nodeName, &re, edgeIDs)
+			id := generateEdgeID(string(nodeName), &re, edgeIDs)
 			def.Edges = append(def.Edges, EdgeDef{
 				ID:          id,
 				Name:        re.Name,
 				DisplayName: re.DisplayName,
 				From:        nodeName,
-				To:          re.To,
+				To:          NodeName(re.To),
 				Shortcut:    re.Shortcut,
 				Loop:        re.Loop,
 				Parallel:    re.Parallel,
@@ -275,7 +275,7 @@ func mergeCircuits(base, overlay *CircuitDef) (*CircuitDef, error) {
 
 	// Nodes: overlay appends new nodes by name
 	if len(overlay.Nodes) > 0 {
-		baseNodeSet := make(map[string]bool, len(merged.Nodes))
+		baseNodeSet := make(map[NodeName]bool, len(merged.Nodes))
 		for i := range merged.Nodes {
 			baseNodeSet[merged.Nodes[i].Name] = true
 		}

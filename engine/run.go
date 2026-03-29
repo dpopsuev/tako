@@ -202,7 +202,7 @@ func Run(ctx context.Context, circuitPath string, input any, opts ...RunOption) 
 				applyOffsetPreamble(w, cfg.offsetPreamble)
 			}
 		}
-		return runner.Graph.WalkTeam(ctx, cfg.team, def.Start)
+		return runner.Graph.WalkTeam(ctx, cfg.team, string(def.Start))
 	}
 
 	walker := cfg.walker
@@ -214,7 +214,7 @@ func Run(ctx context.Context, circuitPath string, input any, opts ...RunOption) 
 		applyOffsetPreamble(walker, cfg.offsetPreamble)
 	}
 
-	startNode := def.Start
+	startNode := string(def.Start)
 
 	if cfg.checkpointer != nil && cfg.resumeID != "" {
 		startNode, err = resumeFromCheckpoint(cfg, walker, startNode)

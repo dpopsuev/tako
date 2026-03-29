@@ -41,8 +41,8 @@ func diagUnreferencedHooks(def *circuit.CircuitDef, reg *GraphRegistries) {
 func diagMissingHookRefs(def *circuit.CircuitDef, reg *GraphRegistries) {
 	for i := range def.Nodes {
 		nd := &def.Nodes[i]
-		checkHookList(nd.Name, "before", nd.Before, reg, def.Circuit)
-		checkHookList(nd.Name, "after", nd.After, reg, def.Circuit)
+		checkHookList(string(nd.Name), "before", nd.Before, reg, def.Circuit)
+		checkHookList(string(nd.Name), "after", nd.After, reg, def.Circuit)
 	}
 }
 

@@ -473,11 +473,12 @@ func renderCircuitDot(def *circuit.CircuitDef) {
 	fmt.Println("  rankdir=LR;")
 	for i := range def.Nodes {
 		n := &def.Nodes[i]
-		label := n.Name
+		name := string(n.Name)
+		label := name
 		if n.Approach != "" {
 			label += fmt.Sprintf(" [%s]", n.Approach)
 		}
-		fmt.Printf("  %q [label=%q];\n", n.Name, label)
+		fmt.Printf("  %q [label=%q];\n", name, label)
 	}
 	for i := range def.Edges {
 		e := &def.Edges[i]
@@ -485,7 +486,7 @@ func renderCircuitDot(def *circuit.CircuitDef) {
 		if label == "" {
 			label = e.ID
 		}
-		fmt.Printf("  %q -> %q [label=%q];\n", e.From, e.To, label)
+		fmt.Printf("  %q -> %q [label=%q];\n", string(e.From), string(e.To), label)
 	}
 	fmt.Println("}")
 }

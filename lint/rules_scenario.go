@@ -32,14 +32,14 @@ func (r *ExpectedPathNodeNames) Check(ctx *LintContext) []Finding {
 	// Collect valid node names from the circuit definition.
 	nodeNames := make(map[string]bool, len(ctx.Def.Nodes))
 	for i := range ctx.Def.Nodes {
-		nodeNames[ctx.Def.Nodes[i].Name] = true
+		nodeNames[string(ctx.Def.Nodes[i].Name)] = true
 	}
 	// Include start and done as valid names.
 	if ctx.Def.Start != "" {
-		nodeNames[ctx.Def.Start] = true
+		nodeNames[string(ctx.Def.Start)] = true
 	}
 	if ctx.Def.Done != "" {
-		nodeNames[ctx.Def.Done] = true
+		nodeNames[string(ctx.Def.Done)] = true
 	}
 
 	if len(nodeNames) == 0 {
@@ -152,7 +152,7 @@ func (r *CircuitHandlerResolution) Check(ctx *LintContext) []Finding {
 			Severity: r.Severity(),
 			Message:  msg,
 			File:     ctx.File,
-			Line:     ctx.NodeLine(nd.Name),
+			Line:     ctx.NodeLine(string(nd.Name)),
 		})
 	}
 	return findings
@@ -177,8 +177,8 @@ func (r *DeadNodeDetection) Check(ctx *LintContext) []Finding {
 	// Collect all nodes referenced in edges (reachable graph nodes).
 	edgeNodes := make(map[string]bool)
 	for i := range ctx.Def.Edges {
-		edgeNodes[ctx.Def.Edges[i].From] = true
-		edgeNodes[ctx.Def.Edges[i].To] = true
+		edgeNodes[string(ctx.Def.Edges[i].From)] = true
+		edgeNodes[string(ctx.Def.Edges[i].To)] = true
 	}
 
 	// Collect all nodes from all scenario expected_path arrays.
@@ -199,21 +199,21 @@ func (r *DeadNodeDetection) Check(ctx *LintContext) []Finding {
 		"start": true,
 	}
 	if ctx.Def.Start != "" {
-		excluded[ctx.Def.Start] = true
+		excluded[string(ctx.Def.Start)] = true
 	}
 	if ctx.Def.Done != "" {
-		excluded[ctx.Def.Done] = true
+		excluded[string(ctx.Def.Done)] = true
 	}
 
 	findings := make([]Finding, 0, len(ctx.Def.Nodes))
 	for i := range ctx.Def.Nodes {
-		if excluded[ctx.Def.Nodes[i].Name] {
+		if excluded[string(ctx.Def.Nodes[i].Name)] {
 			continue
 		}
-		if !edgeNodes[ctx.Def.Nodes[i].Name] {
+		if !edgeNodes[string(ctx.Def.Nodes[i].Name)] {
 			continue // not reachable via edges — already caught by G1/orphan-node
 		}
-		if testedNodes[ctx.Def.Nodes[i].Name] {
+		if testedNodes[string(ctx.Def.Nodes[i].Name)] {
 			continue // covered by at least one scenario
 		}
 		findings = append(findings, Finding{
@@ -221,7 +221,7 @@ func (r *DeadNodeDetection) Check(ctx *LintContext) []Finding {
 			Severity: r.Severity(),
 			Message:  fmt.Sprintf("node %q is reachable via edges but never appears in any scenario expected_path", ctx.Def.Nodes[i].Name),
 			File:     ctx.File,
-			Line:     ctx.NodeLine(ctx.Def.Nodes[i].Name),
+			Line:     ctx.NodeLine(string(ctx.Def.Nodes[i].Name)),
 		})
 	}
 	return findings
@@ -292,7 +292,7 @@ func (r *MediatorBackendCoverage) Check(ctx *LintContext) []Finding {
 			Severity: r.Severity(),
 			Message:  msg,
 			File:     ctx.File,
-			Line:     ctx.NodeLine(nd.Name),
+			Line:     ctx.NodeLine(string(nd.Name)),
 		})
 	}
 	return findings

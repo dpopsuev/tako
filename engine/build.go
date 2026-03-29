@@ -118,9 +118,13 @@ func BuildGraph(def *circuit.CircuitDef, reg *GraphRegistries) (Graph, error) {
 	fwZones := make([]Zone, 0, len(def.Zones))
 	for name, zd := range def.Zones {
 		elem, _ := circuit.ResolveApproach(strings.ToLower(zd.Approach))
+		nodeNames := make([]string, len(zd.Nodes))
+		for j, nn := range zd.Nodes {
+			nodeNames[j] = string(nn)
+		}
 		fwZones = append(fwZones, Zone{
 			Name:            name,
-			NodeNames:       zd.Nodes,
+			NodeNames:       nodeNames,
 			ElementAffinity: elem,
 			Stickiness:      zd.Stickiness,
 			Domain:          strings.ToLower(zd.Domain),
@@ -138,11 +142,11 @@ func BuildGraph(def *circuit.CircuitDef, reg *GraphRegistries) (Graph, error) {
 			if timeouts == nil {
 				timeouts = make(map[string]time.Duration)
 			}
-			timeouts[def.Nodes[i].Name] = d
+			timeouts[string(def.Nodes[i].Name)] = d
 		}
 	}
 
-	opts := []GraphOption{WithDoneNode(def.Done)}
+	opts := []GraphOption{WithDoneNode(string(def.Done))}
 	if len(timeouts) > 0 {
 		opts = append(opts, WithNodeTimeouts(timeouts))
 	}
@@ -201,7 +205,7 @@ func buildGraphShape(g *DefaultGraph, def *circuit.CircuitDef) circuit.GraphShap
 		})
 	}
 	return circuit.GraphShape{
-		StartNode: def.Start,
+		StartNode: string(def.Start),
 		DoneNode:  g.doneNode,
 		Nodes:     nodes,
 	}
@@ -217,24 +221,25 @@ func resolveNode(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistr
 func resolveHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem circuit.Element) (circuit.Node, error) {
 	handler := nd.Handler
 	if handler == "" {
-		handler = nd.Name
+		handler = string(nd.Name)
 	}
 	ht := nd.HandlerType
 	if ht == "" {
 		ht = def.HandlerType
 	}
+	name := string(nd.Name)
 	if ht == "" {
-		return nil, fmt.Errorf("node %q: handler %q specified but no handler_type on node or circuit", nd.Name, handler)
+		return nil, fmt.Errorf("node %q: handler %q specified but no handler_type on node or circuit", name, handler)
 	}
 
 	switch ht {
 	case HandlerTypeTransformer:
-		t, err := resolveTransformerByName(def, handler, nd.Name, reg)
+		t, err := resolveTransformerByName(def, handler, name, reg)
 		if err != nil {
 			return nil, err
 		}
 		return &transformerNode{
-			name:       nd.Name,
+			name:       name,
 			element:    elem,
 			trans:      t,
 			prompt:     nd.Prompt,
@@ -250,7 +255,7 @@ func resolveHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegi
 			return nil, err
 		}
 		return &extractorNode{
-			name:    nd.Name,
+			name:    name,
 			element: elem,
 			ext:     ext,
 		}, nil
@@ -261,31 +266,31 @@ func resolveHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegi
 			return nil, err
 		}
 		return &rendererNode{
-			name:    nd.Name,
+			name:    name,
 			element: elem,
 			rnd:     rnd,
 		}, nil
 
 	case HandlerTypeNode:
 		if reg.Nodes == nil {
-			return nil, fmt.Errorf("node %q: handler %q not found (node registry is nil)", nd.Name, handler)
+			return nil, fmt.Errorf("node %q: handler %q not found (node registry is nil)", name, handler)
 		}
 		factory, ok := reg.Nodes[handler]
 		if !ok {
-			return nil, fmt.Errorf("node %q: handler %q not found in node registry", nd.Name, handler)
+			return nil, fmt.Errorf("node %q: handler %q not found in node registry", name, handler)
 		}
 		return factory(*nd), nil
 
 	case HandlerTypeDelegate:
 		if reg.Transformers == nil {
-			return nil, fmt.Errorf("node %q: delegate handler %q not found (transformer registry is nil)", nd.Name, handler)
+			return nil, fmt.Errorf("node %q: delegate handler %q not found (transformer registry is nil)", name, handler)
 		}
 		gen, err := reg.Transformers.Get(handler)
 		if err != nil {
-			return nil, fmt.Errorf("node %q: delegate handler: %w", nd.Name, err)
+			return nil, fmt.Errorf("node %q: delegate handler: %w", name, err)
 		}
 		return &dslDelegateNode{
-			name:       nd.Name,
+			name:       name,
 			element:    elem,
 			gen:        gen,
 			config:     def.Vars,
@@ -295,7 +300,7 @@ func resolveHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegi
 	case HandlerTypeCircuit:
 		slog.DebugContext(context.Background(), "resolve circuit handler",
 			"component", "build",
-			"node", nd.Name,
+			"node", name,
 			"handler", handler,
 			"circuits_nil", reg.Circuits == nil,
 			"circuits_count", len(reg.Circuits),
@@ -305,11 +310,11 @@ func resolveHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegi
 			if cd, ok := reg.Circuits[handler]; ok {
 				slog.DebugContext(context.Background(), "circuit handler resolved locally",
 					"component", "build",
-					"node", nd.Name,
+					"node", name,
 					"handler", handler,
 				)
 				return &circuitRefNode{
-					name:       nd.Name,
+					name:       name,
 					element:    elem,
 					circuitDef: cd,
 				}, nil
@@ -318,22 +323,22 @@ func resolveHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegi
 		if reg.MediatorEndpoint != "" {
 			slog.DebugContext(context.Background(), "circuit handler delegating to mediator",
 				"component", "build",
-				"node", nd.Name,
+				"node", name,
 				"handler", handler,
 				"endpoint", reg.MediatorEndpoint,
 			)
 			return &transformerNode{
-				name:       nd.Name,
+				name:       name,
 				element:    elem,
 				trans:      &MCPCircuitTransformer{CircuitType: handler, Endpoint: reg.MediatorEndpoint},
 				config:     def.Vars,
 				nodeConfig: nd.EffectiveConfig(),
 			}, nil
 		}
-		return nil, fmt.Errorf("node %q: circuit handler %q not found (no local circuit and no mediator endpoint)", nd.Name, handler)
+		return nil, fmt.Errorf("node %q: circuit handler %q not found (no local circuit and no mediator endpoint)", name, handler)
 
 	default:
-		return nil, fmt.Errorf("node %q: unknown handler_type %q", nd.Name, ht)
+		return nil, fmt.Errorf("node %q: unknown handler_type %q", name, ht)
 	}
 }
 
@@ -358,20 +363,21 @@ type dslEdge struct {
 }
 
 func (e *dslEdge) ID() string       { return e.def.ID }
-func (e *dslEdge) From() string     { return e.def.From }
-func (e *dslEdge) To() string       { return e.def.To }
+func (e *dslEdge) From() string     { return string(e.def.From) }
+func (e *dslEdge) To() string       { return string(e.def.To) }
 func (e *dslEdge) IsShortcut() bool { return e.def.Shortcut }
 func (e *dslEdge) IsLoop() bool     { return e.def.Loop }
 func (e *dslEdge) IsParallel() bool { return e.def.Parallel }
 func (e *dslEdge) Evaluate(_ circuit.Artifact, _ *circuit.WalkerState) *circuit.Transition {
 	return &circuit.Transition{
-		NextNode:    e.def.To,
+		NextNode:    string(e.def.To),
 		Explanation: e.def.Condition,
 	}
 }
 
 // resolveExtractor resolves an extractor by name.
 func resolveExtractor(def *circuit.CircuitDef, name string, nd *circuit.NodeDef, reg *GraphRegistries) (Extractor, error) {
+	nodeName := string(nd.Name)
 	switch name {
 	case BuiltinExtractorJSONSchema:
 		return &JSONSchemaExtractor{Schema: nd.Schema}, nil
@@ -379,9 +385,9 @@ func resolveExtractor(def *circuit.CircuitDef, name string, nd *circuit.NodeDef,
 		cfg := nd.EffectiveConfig()
 		pattern := cfg.Pattern
 		if pattern == "" {
-			return nil, fmt.Errorf("node %q: regex extractor requires meta.pattern", nd.Name)
+			return nil, fmt.Errorf("node %q: regex extractor requires meta.pattern", nodeName)
 		}
-		return NewRegexExtractor(nd.Name, pattern)
+		return NewRegexExtractor(nodeName, pattern)
 	}
 
 	for _, ed := range def.Extractors {
@@ -411,7 +417,7 @@ func resolveExtractor(def *circuit.CircuitDef, name string, nd *circuit.NodeDef,
 			return ext, nil
 		}
 	}
-	return nil, fmt.Errorf("node %q: extractor %q not found", nd.Name, name)
+	return nil, fmt.Errorf("node %q: extractor %q not found", string(nd.Name), name)
 }
 
 // resolveRenderer resolves a renderer by name.
@@ -425,5 +431,5 @@ func resolveRenderer(name string, nd *circuit.NodeDef, reg *GraphRegistries) (Re
 			return rnd, nil
 		}
 	}
-	return nil, fmt.Errorf("node %q: renderer %q not found", nd.Name, name)
+	return nil, fmt.Errorf("node %q: renderer %q not found", string(nd.Name), name)
 }

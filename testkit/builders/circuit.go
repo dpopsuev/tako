@@ -32,7 +32,7 @@ func (b *CircuitDefBuilder) HandlerType(ht string) *CircuitDefBuilder {
 // AddNode adds a node with the given name and handler.
 func (b *CircuitDefBuilder) AddNode(name, handler string) *CircuitDefBuilder {
 	b.def.Nodes = append(b.def.Nodes, circuit.NodeDef{
-		Name:    name,
+		Name:    circuit.NodeName(name),
 		Handler: handler,
 	})
 	return b
@@ -51,8 +51,8 @@ func (b *CircuitDefBuilder) AddEdge(from, to, when string) *CircuitDefBuilder {
 	id := fmt.Sprintf("e%d-%s-%s", b.edgeCount, from, to)
 	b.def.Edges = append(b.def.Edges, circuit.EdgeDef{
 		ID:   id,
-		From: from,
-		To:   to,
+		From: circuit.NodeName(from),
+		To:   circuit.NodeName(to),
 		When: when,
 	})
 	return b
@@ -66,13 +66,13 @@ func (b *CircuitDefBuilder) AddEdgeDef(ed *circuit.EdgeDef) *CircuitDefBuilder {
 
 // Start sets the start node.
 func (b *CircuitDefBuilder) Start(node string) *CircuitDefBuilder {
-	b.def.Start = node
+	b.def.Start = circuit.NodeName(node)
 	return b
 }
 
 // Done sets the done node.
 func (b *CircuitDefBuilder) Done(node string) *CircuitDefBuilder {
-	b.def.Done = node
+	b.def.Done = circuit.NodeName(node)
 	return b
 }
 

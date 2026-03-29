@@ -30,12 +30,12 @@ func renderWithZones(b *strings.Builder, def *CircuitDef) {
 	}
 	sort.Strings(zoneNames)
 
-	zonedNodes := make(map[string]bool)
+	zonedNodes := make(map[NodeName]bool)
 	for _, name := range zoneNames {
 		z := def.Zones[name]
 		fmt.Fprintf(b, "    subgraph %s [%s]\n", sanitizeID(name), capitalizeFirst(name))
 		for _, n := range z.Nodes {
-			fmt.Fprintf(b, "        %s\n", sanitizeID(n))
+			fmt.Fprintf(b, "        %s\n", sanitizeID(string(n)))
 			zonedNodes[n] = true
 		}
 		b.WriteString("    end\n")
@@ -43,7 +43,7 @@ func renderWithZones(b *strings.Builder, def *CircuitDef) {
 
 	for i := range def.Nodes {
 		if !zonedNodes[def.Nodes[i].Name] {
-			fmt.Fprintf(b, "    %s\n", sanitizeID(def.Nodes[i].Name))
+			fmt.Fprintf(b, "    %s\n", sanitizeID(string(def.Nodes[i].Name)))
 		}
 	}
 }
@@ -51,8 +51,8 @@ func renderWithZones(b *strings.Builder, def *CircuitDef) {
 func renderEdges(b *strings.Builder, def *CircuitDef) {
 	for i := range def.Edges {
 		e := &def.Edges[i]
-		from := sanitizeID(e.From)
-		to := sanitizeID(e.To)
+		from := sanitizeID(string(e.From))
+		to := sanitizeID(string(e.To))
 		label := e.Name
 		if label == "" {
 			label = e.ID

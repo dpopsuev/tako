@@ -158,7 +158,7 @@ func nodeNameCompletions(doc *document) []protocol.CompletionItem {
 	}
 	names := make([]string, 0, len(doc.Def.Nodes))
 	for i := range doc.Def.Nodes {
-		names = append(names, doc.Def.Nodes[i].Name)
+		names = append(names, string(doc.Def.Nodes[i].Name))
 	}
 	return valueCompletions(names, protocol.CompletionItemKindReference)
 }

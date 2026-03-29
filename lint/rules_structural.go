@@ -68,9 +68,9 @@ func (r *MissingNodeApproach) Check(ctx *LintContext) []Finding {
 			out = append(out, Finding{
 				RuleID:   r.ID(),
 				Severity: r.Severity(),
-				Message:  fmt.Sprintf("node %q has no approach", ctx.Def.Nodes[i].Name),
+				Message:  fmt.Sprintf("node %q has no approach", string(ctx.Def.Nodes[i].Name)),
 				File:     ctx.File,
-				Line:     ctx.NodeLine(ctx.Def.Nodes[i].Name),
+				Line:     ctx.NodeLine(string(ctx.Def.Nodes[i].Name)),
 			})
 		}
 	}
@@ -95,7 +95,7 @@ func (r *InvalidApproach) Check(ctx *LintContext) []Finding {
 				Severity: r.Severity(),
 				Message:  fmt.Sprintf("node %q: unknown approach %q (valid: rapid, aggressive, methodical, rigorous, analytical, holistic)", nd.Name, nd.Approach),
 				File:     ctx.File,
-				Line:     ctx.NodeLine(nd.Name),
+				Line:     ctx.NodeLine(string(nd.Name)),
 			}
 			if s := approachSuggestion(nd.Approach); s != "" {
 				f.Suggestion = s
@@ -202,7 +202,7 @@ func (r *DuplicateEdgeCondition) Check(ctx *LintContext) []Finding {
 		if ed.When == "" || ed.Parallel {
 			continue
 		}
-		k := key{ed.From, ed.When}
+		k := key{string(ed.From), ed.When}
 		if prev, ok := seen[k]; ok {
 			out = append(out, Finding{
 				RuleID:   r.ID(),
@@ -247,7 +247,7 @@ func (r *EmptyPrompt) Check(ctx *LintContext) []Finding {
 				Severity: r.Severity(),
 				Message:  fmt.Sprintf("node %q has no prompt, transformer, extractor, or renderer", nd.Name),
 				File:     ctx.File,
-				Line:     ctx.NodeLine(nd.Name),
+				Line:     ctx.NodeLine(string(nd.Name)),
 			})
 		}
 	}
@@ -273,7 +273,7 @@ func (r *InvalidCacheTTL) Check(ctx *LintContext) []Finding {
 					Severity: r.Severity(),
 					Message:  fmt.Sprintf("node %q: invalid cache TTL %q: %v", nd.Name, nd.Cache.TTL, err),
 					File:     ctx.File,
-					Line:     ctx.NodeLine(nd.Name),
+					Line:     ctx.NodeLine(string(nd.Name)),
 				})
 			}
 		}
@@ -403,16 +403,17 @@ func (r *SchemaInUnstructuredZone) Check(ctx *LintContext) []Finding {
 		}
 		nodeSet := make(map[string]bool, len(zd.Nodes))
 		for _, n := range zd.Nodes {
-			nodeSet[n] = true
+			nodeSet[string(n)] = true
 		}
 		for j := range ctx.Def.Nodes {
-			if nodeSet[ctx.Def.Nodes[j].Name] && ctx.Def.Nodes[j].Schema != nil {
+			name := string(ctx.Def.Nodes[j].Name)
+			if nodeSet[name] && ctx.Def.Nodes[j].Schema != nil {
 				out = append(out, Finding{
 					RuleID:   r.ID(),
 					Severity: r.Severity(),
-					Message:  fmt.Sprintf("node %q has schema but is in unstructured zone %q", ctx.Def.Nodes[j].Name, zoneName),
+					Message:  fmt.Sprintf("node %q has schema but is in unstructured zone %q", name, zoneName),
 					File:     ctx.File,
-					Line:     ctx.NodeLine(ctx.Def.Nodes[j].Name),
+					Line:     ctx.NodeLine(name),
 				})
 			}
 		}
@@ -542,7 +543,7 @@ func (r *DelegateWithoutGenerator) Check(ctx *LintContext) []Finding {
 				Severity: r.Severity(),
 				Message:  fmt.Sprintf("delegate node %q requires handler: <name> (generator transformer)", nd.Name),
 				File:     ctx.File,
-				Line:     ctx.NodeLine(nd.Name),
+				Line:     ctx.NodeLine(string(nd.Name)),
 			})
 		}
 	}
@@ -565,7 +566,7 @@ func (r *DeprecatedHandlerFields) Check(ctx *LintContext) []Finding {
 	var out []Finding
 	for i := range ctx.Def.Nodes {
 		nd := &ctx.Def.Nodes[i]
-		keys := ctx.NodeYAMLKeys(nd.Name)
+		keys := ctx.NodeYAMLKeys(string(nd.Name))
 		if keys == nil {
 			continue
 		}
@@ -581,7 +582,7 @@ func (r *DeprecatedHandlerFields) Check(ctx *LintContext) []Finding {
 				Severity: r.Severity(),
 				Message:  fmt.Sprintf("node %q uses removed field(s) %s; migrate to handler: + handler_type:", nd.Name, strings.Join(deprecated, ", ")),
 				File:     ctx.File,
-				Line:     ctx.NodeLine(nd.Name),
+				Line:     ctx.NodeLine(string(nd.Name)),
 			})
 		}
 	}

@@ -81,14 +81,15 @@ func NewRunnerWith(def *circuit.CircuitDef, reg *GraphRegistries) (*Runner, erro
 	needsFileWrite := false
 	for i := range def.Nodes {
 		nd := &def.Nodes[i]
+		name := string(nd.Name)
 		if nd.Schema != nil {
-			schemas[nd.Name] = nd.Schema
+			schemas[name] = nd.Schema
 		}
 		if len(nd.Before) > 0 {
-			nodeBefore[nd.Name] = nd.Before
+			nodeBefore[name] = nd.Before
 		}
 		if len(nd.After) > 0 {
-			nodeHooks[nd.Name] = nd.After
+			nodeHooks[name] = nd.After
 			for _, h := range nd.After {
 				if h == BuiltinHookFileWrite {
 					needsFileWrite = true
@@ -97,7 +98,7 @@ func NewRunnerWith(def *circuit.CircuitDef, reg *GraphRegistries) (*Runner, erro
 		}
 		cfg := nd.EffectiveConfig()
 		if cfg.OutputPath != "" || cfg.SQLiteQuery != "" {
-			nodeConfigs[nd.Name] = cfg
+			nodeConfigs[name] = cfg
 		}
 	}
 

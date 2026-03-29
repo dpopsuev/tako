@@ -18,11 +18,12 @@ func RenderNodeTable(def *circuit.CircuitDef, opts *MermaidOptions) string {
 
 	for i := range def.Nodes {
 		nd := &def.Nodes[i]
+		nodeName := string(nd.Name)
 		desc := nd.Description
 		if desc == "" {
 			desc = "-"
 		}
-		zone := zoneOf[nd.Name]
+		zone := zoneOf[nodeName]
 		if zone == "" {
 			zone = "-"
 		}
@@ -44,7 +45,7 @@ func RenderNodeTable(def *circuit.CircuitDef, opts *MermaidOptions) string {
 		}
 
 		ds := "-"
-		switch nodeDS[nd.Name] {
+		switch nodeDS[nodeName] {
 		case dsDeterministic:
 			ds = "D"
 		case dsStochastic:
@@ -52,7 +53,7 @@ func RenderNodeTable(def *circuit.CircuitDef, opts *MermaidOptions) string {
 		}
 
 		fmt.Fprintf(&b, "| %s | %s | %s | %s | %s | %s | %s | %s |\n",
-			nd.Name, desc, zone, handler, handlerType, element, hooks, ds)
+			nodeName, desc, zone, handler, handlerType, element, hooks, ds)
 	}
 
 	return b.String()
@@ -64,7 +65,7 @@ func RenderSummary(def *circuit.CircuitDef, opts *MermaidOptions) string {
 
 	detCount, stochCount, unknownCount := 0, 0, 0
 	for i := range def.Nodes {
-		switch nodeDS[def.Nodes[i].Name] {
+		switch nodeDS[string(def.Nodes[i].Name)] {
 		case dsDeterministic:
 			detCount++
 		case dsStochastic:

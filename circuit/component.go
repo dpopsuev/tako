@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	kindSchematic = "Schematic"
-	kindComponent = "Component"
+	kindSchematic = "Schematic" // K8s-style kind value (capitalized)
+	kindComponent = "Component" // K8s-style kind value (capitalized)
 	wireFactory   = "factory"
 )
 

@@ -31,7 +31,7 @@ func NodeNamesFromCircuit(cd *circuit.CircuitDef) []string {
 	}
 	names := make([]string, len(cd.Nodes))
 	for i := range cd.Nodes {
-		names[i] = cd.Nodes[i].Name
+		names[i] = string(cd.Nodes[i].Name)
 	}
 	return names
 }

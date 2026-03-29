@@ -156,7 +156,7 @@ func computeHover(doc *document, pos protocol.Position, vocab circuit.RichVocabu
 func buildNodeHover(def *circuit.CircuitDef, nodeName string, vocab circuit.RichVocabulary) *protocol.Hover {
 	for i := range def.Nodes {
 		n := &def.Nodes[i]
-		if n.Name != nodeName {
+		if string(n.Name) != nodeName {
 			continue
 		}
 		md := fmt.Sprintf("### Node: %s\n\n", n.Name)
@@ -164,7 +164,7 @@ func buildNodeHover(def *circuit.CircuitDef, nodeName string, vocab circuit.Rich
 			md += n.Description + "\n\n"
 		}
 		handler := n.EffectiveHandler()
-		if handler != "" && handler != n.Name {
+		if handler != "" && handler != string(n.Name) {
 			md += fmt.Sprintf("**Handler:** %s\n\n", handler)
 		}
 		if n.Approach != "" {
@@ -172,11 +172,11 @@ func buildNodeHover(def *circuit.CircuitDef, nodeName string, vocab circuit.Rich
 			md += fmt.Sprintf("**Approach:** %s %s\n\n", emoji, n.Approach)
 		}
 		if vocab != nil {
-			if d := vocab.Description(n.Name); d != "" {
+			if d := vocab.Description(string(n.Name)); d != "" {
 				md += fmt.Sprintf("---\n\n%s\n\n", d)
 			}
 		}
-		md += connectedEdges(def, n.Name)
+		md += connectedEdges(def, string(n.Name))
 		return &protocol.Hover{
 			Contents: protocol.MarkupContent{Kind: protocol.Markdown, Value: md},
 		}
@@ -189,10 +189,10 @@ func connectedEdges(def *circuit.CircuitDef, nodeName string) string {
 	for i := range def.Edges {
 		e := &def.Edges[i]
 		label := formatEdgeLabel(&def.Edges[i])
-		if e.To == nodeName {
+		if string(e.To) == nodeName {
 			inbound = append(inbound, fmt.Sprintf("- %s **%s** `%s`", e.From+" →", e.ID, label))
 		}
-		if e.From == nodeName {
+		if string(e.From) == nodeName {
 			outbound = append(outbound, fmt.Sprintf("- → %s **%s** `%s`", e.To, e.ID, label))
 		}
 	}

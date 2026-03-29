@@ -83,8 +83,8 @@ func RenderContextFlow(def *circuit.CircuitDef) string {
 	emitted := make(map[string]bool)
 	for i := range def.Edges {
 		e := &def.Edges[i]
-		fromZ := zoneOf[e.From]
-		toZ := zoneOf[e.To]
+		fromZ := zoneOf[string(e.From)]
+		toZ := zoneOf[string(e.To)]
 		if fromZ != "" && toZ != "" && fromZ != toZ {
 			key := fromZ + "->" + toZ
 			if !emitted[key] {
@@ -114,25 +114,26 @@ func classifyNodes(def *circuit.CircuitDef, opts *MermaidOptions) map[string]dsC
 	m := make(map[string]dsClass, len(def.Nodes))
 	for i := range def.Nodes {
 		nd := &def.Nodes[i]
+		nodeName := string(nd.Name)
 		ht := nd.EffectiveHandlerType(def.HandlerType)
 		name := nd.EffectiveHandler()
 		if ht != circuit.HandlerTypeTransformer || name == "" {
-			m[nd.Name] = dsUnknown
+			m[nodeName] = dsUnknown
 			continue
 		}
 		if opts != nil && opts.Registry != nil {
 			if t, err := opts.Registry.Get(name); err == nil {
-				m[nd.Name] = dsStochastic
+				m[nodeName] = dsStochastic
 				if engine.IsDeterministic(t) {
-					m[nd.Name] = dsDeterministic
+					m[nodeName] = dsDeterministic
 				}
 				continue
 			}
 		}
 		if knownStochastic[name] {
-			m[nd.Name] = dsStochastic
+			m[nodeName] = dsStochastic
 		} else {
-			m[nd.Name] = dsDeterministic
+			m[nodeName] = dsDeterministic
 		}
 	}
 	return m
@@ -146,30 +147,33 @@ func renderZonesEnhanced(b *strings.Builder, def *circuit.CircuitDef, nodeDS map
 		z := def.Zones[zn]
 		fmt.Fprintf(b, "    subgraph %s [\"%s\"]\n", sanitize(zn), capitalize(zn))
 		for _, n := range z.Nodes {
-			fmt.Fprintf(b, "        %s\n", nodeShape(n, nodeDS[n], false))
-			zonedNodes[n] = true
+			ns := string(n)
+			fmt.Fprintf(b, "        %s\n", nodeShape(ns, nodeDS[ns], false))
+			zonedNodes[ns] = true
 		}
 		b.WriteString("    end\n")
 	}
 
 	for i := range def.Nodes {
-		if !zonedNodes[def.Nodes[i].Name] {
-			fmt.Fprintf(b, "    %s\n", nodeShape(def.Nodes[i].Name, nodeDS[def.Nodes[i].Name], false))
+		name := string(def.Nodes[i].Name)
+		if !zonedNodes[name] {
+			fmt.Fprintf(b, "    %s\n", nodeShape(name, nodeDS[name], false))
 		}
 	}
 }
 
 func renderFlatNodes(b *strings.Builder, def *circuit.CircuitDef, nodeDS map[string]dsClass) {
 	for i := range def.Nodes {
-		fmt.Fprintf(b, "    %s\n", nodeShape(def.Nodes[i].Name, nodeDS[def.Nodes[i].Name], false))
+		name := string(def.Nodes[i].Name)
+		fmt.Fprintf(b, "    %s\n", nodeShape(name, nodeDS[name], false))
 	}
 }
 
 func renderEdgesEnhanced(b *strings.Builder, def *circuit.CircuitDef) {
 	for i := range def.Edges {
 		e := &def.Edges[i]
-		from := sanitize(e.From)
-		to := sanitize(e.To)
+		from := sanitize(string(e.From))
+		to := sanitize(string(e.To))
 		label := edgeLabel(&def.Edges[i])
 
 		switch {
@@ -189,7 +193,11 @@ func renderZonesDS(b *strings.Builder, def *circuit.CircuitDef, nodeDS map[strin
 
 	for _, zn := range zoneNames {
 		z := def.Zones[zn]
-		dCount, sCount := zoneDSCount(z.Nodes, nodeDS)
+		nodeStrs := make([]string, len(z.Nodes))
+		for j, nn := range z.Nodes {
+			nodeStrs[j] = string(nn)
+		}
+		dCount, sCount := zoneDSCount(nodeStrs, nodeDS)
 		majority := "mixed"
 		if sCount == 0 && dCount > 0 {
 			majority = "deterministic"
@@ -197,7 +205,7 @@ func renderZonesDS(b *strings.Builder, def *circuit.CircuitDef, nodeDS map[strin
 			majority = "stochastic"
 		}
 		fmt.Fprintf(b, "    subgraph %s [\"%s (%s)\"]\n", sanitize(zn), capitalize(zn), majority)
-		for _, n := range z.Nodes {
+		for _, n := range nodeStrs {
 			fmt.Fprintf(b, "        %s\n", nodeShape(n, nodeDS[n], true))
 			zonedNodes[n] = true
 		}
@@ -205,26 +213,28 @@ func renderZonesDS(b *strings.Builder, def *circuit.CircuitDef, nodeDS map[strin
 	}
 
 	for i := range def.Nodes {
-		if !zonedNodes[def.Nodes[i].Name] {
-			fmt.Fprintf(b, "    %s\n", nodeShape(def.Nodes[i].Name, nodeDS[def.Nodes[i].Name], true))
+		name := string(def.Nodes[i].Name)
+		if !zonedNodes[name] {
+			fmt.Fprintf(b, "    %s\n", nodeShape(name, nodeDS[name], true))
 		}
 	}
 }
 
 func renderFlatNodesDS(b *strings.Builder, def *circuit.CircuitDef, nodeDS map[string]dsClass) {
 	for i := range def.Nodes {
-		fmt.Fprintf(b, "    %s\n", nodeShape(def.Nodes[i].Name, nodeDS[def.Nodes[i].Name], true))
+		name := string(def.Nodes[i].Name)
+		fmt.Fprintf(b, "    %s\n", nodeShape(name, nodeDS[name], true))
 	}
 }
 
 func renderEdgesDS(b *strings.Builder, def *circuit.CircuitDef, nodeDS map[string]dsClass) {
 	for i := range def.Edges {
 		e := &def.Edges[i]
-		from := sanitize(e.From)
-		to := sanitize(e.To)
+		from := sanitize(string(e.From))
+		to := sanitize(string(e.To))
 		label := edgeLabel(&def.Edges[i])
 
-		isBoundary := nodeDS[e.From] == dsDeterministic && nodeDS[e.To] == dsStochastic
+		isBoundary := nodeDS[string(e.From)] == dsDeterministic && nodeDS[string(e.To)] == dsStochastic
 		if isBoundary {
 			label += " [D→S]"
 		}
@@ -296,7 +306,7 @@ func buildZoneMap(def *circuit.CircuitDef) map[string]string {
 	m := make(map[string]string)
 	for zn, z := range def.Zones {
 		for _, n := range z.Nodes {
-			m[n] = zn
+			m[string(n)] = zn
 		}
 	}
 	return m

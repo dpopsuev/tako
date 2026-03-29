@@ -111,7 +111,7 @@ func TestBuildGraphWith_MixedTransformerAndWalker(t *testing.T) {
 	}
 
 	nodeFactory := func(nd circuit.NodeDef) circuit.Node {
-		return &testNode{name: nd.Name}
+		return &testNode{name: string(nd.Name)}
 	}
 
 	reg := &GraphRegistries{

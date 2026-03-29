@@ -14,7 +14,7 @@ func InferTopology(def *CircuitDef) {
 		return
 	}
 
-	edgesByNode := make(map[string][]int)
+	edgesByNode := make(map[NodeName][]int)
 	for i := range def.Edges {
 		edgesByNode[def.Edges[i].From] = append(edgesByNode[def.Edges[i].From], i)
 	}
@@ -24,10 +24,10 @@ func InferTopology(def *CircuitDef) {
 		gray  = 1
 		black = 2
 	)
-	color := make(map[string]int)
+	color := make(map[NodeName]int)
 
-	var dfs func(node string)
-	dfs = func(node string) {
+	var dfs func(node NodeName)
+	dfs = func(node NodeName) {
 		color[node] = gray
 		for _, idx := range edgesByNode[node] {
 			e := &def.Edges[idx]
@@ -45,7 +45,7 @@ func InferTopology(def *CircuitDef) {
 	}
 	dfs(def.Start)
 
-	dagAdj := make(map[string][]string)
+	dagAdj := make(map[NodeName][]NodeName)
 	for i := range def.Edges {
 		if !def.Edges[i].Loop {
 			dagAdj[def.Edges[i].From] = append(dagAdj[def.Edges[i].From], def.Edges[i].To)
@@ -65,9 +65,9 @@ func InferTopology(def *CircuitDef) {
 
 // hasIndirectPath returns true if `to` is reachable from `from` via a path
 // of length >= 2 (through at least one intermediate node).
-func hasIndirectPath(from, to string, adj map[string][]string) bool {
-	visited := map[string]bool{from: true}
-	var queue []string
+func hasIndirectPath(from, to NodeName, adj map[NodeName][]NodeName) bool {
+	visited := map[NodeName]bool{from: true}
+	var queue []NodeName
 	for _, next := range adj[from] {
 		if next != to && !visited[next] {
 			visited[next] = true

@@ -542,7 +542,7 @@ func matchesTags(ruleTags []string, want map[string]bool) bool {
 // For non-circuit YAML (kind is set but not "circuit"), only envelope rules run.
 func Run(raw []byte, file string, opts ...Option) ([]Finding, error) {
 	env, _ := circuit.ParseEnvelope(raw)
-	isCircuit := env == nil || env.Kind == "" || env.Kind == kindCircuit
+	isCircuit := env == nil || env.Kind == "" || env.Kind == circuit.KindCircuit
 
 	if isCircuit {
 		ctx, err := NewLintContext(raw, file)

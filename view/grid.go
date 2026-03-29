@@ -28,11 +28,11 @@ func (GridLayout) Layout(def *circuit.CircuitDef) (CircuitLayout, error) {
 	nodeZone := buildNodeZoneMap(def)
 	rank := assignRanks(order, adj)
 
-	grid := assignGridCells(rank, nodeZone, def.Start)
+	grid := assignGridCells(rank, nodeZone, string(def.Start))
 
 	edges := make([]EdgeLayout, 0, len(def.Edges))
 	for i := range def.Edges {
-		edges = append(edges, EdgeLayout{From: def.Edges[i].From, To: def.Edges[i].To})
+		edges = append(edges, EdgeLayout{From: string(def.Edges[i].From), To: string(def.Edges[i].To)})
 	}
 
 	zones := make([]ZoneLayout, 0, len(def.Zones))
@@ -48,30 +48,35 @@ func buildAdjacency(def *circuit.CircuitDef) (adj map[string][]string, inDeg map
 	adj = make(map[string][]string, len(def.Nodes))
 	inDeg = make(map[string]int, len(def.Nodes))
 	for i := range def.Nodes {
-		adj[def.Nodes[i].Name] = nil
-		inDeg[def.Nodes[i].Name] = 0
+		name := string(def.Nodes[i].Name)
+		adj[name] = nil
+		inDeg[name] = 0
 	}
 	for i := range def.Edges {
 		if def.Edges[i].Loop {
 			continue
 		}
-		adj[def.Edges[i].From] = append(adj[def.Edges[i].From], def.Edges[i].To)
-		inDeg[def.Edges[i].To]++
+		from := string(def.Edges[i].From)
+		to := string(def.Edges[i].To)
+		adj[from] = append(adj[from], to)
+		inDeg[to]++
 	}
 	return adj, inDeg
 }
 
 func topoSort(def *circuit.CircuitDef, adj map[string][]string, inDeg map[string]int) ([]string, error) {
 	queue := make([]string, 0)
+	start := string(def.Start)
 
-	if def.Start != "" {
-		if inDeg[def.Start] == 0 {
-			queue = append(queue, def.Start)
+	if start != "" {
+		if inDeg[start] == 0 {
+			queue = append(queue, start)
 		}
 	}
 	for i := range def.Nodes {
-		if inDeg[def.Nodes[i].Name] == 0 && def.Nodes[i].Name != def.Start {
-			queue = append(queue, def.Nodes[i].Name)
+		name := string(def.Nodes[i].Name)
+		if inDeg[name] == 0 && name != start {
+			queue = append(queue, name)
 		}
 	}
 
@@ -97,8 +102,9 @@ func topoSort(def *circuit.CircuitDef, adj map[string][]string, inDeg map[string
 			sorted[n] = true
 		}
 		for i := range def.Nodes {
-			if !sorted[def.Nodes[i].Name] {
-				order = append(order, def.Nodes[i].Name)
+			name := string(def.Nodes[i].Name)
+			if !sorted[name] {
+				order = append(order, name)
 			}
 		}
 	}
@@ -109,7 +115,7 @@ func buildNodeZoneMap(def *circuit.CircuitDef) map[string]string {
 	nz := make(map[string]string)
 	for zoneName, zd := range def.Zones {
 		for _, nodeName := range zd.Nodes {
-			nz[nodeName] = zoneName
+			nz[string(nodeName)] = zoneName
 		}
 	}
 	return nz

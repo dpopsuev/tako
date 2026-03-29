@@ -154,7 +154,7 @@ func edgeConnectionHints(doc *document, lines []string) []InlayHint {
 			continue
 		}
 
-		label := edge.From + " \u2192 " + edge.To
+		label := string(edge.From) + " \u2192 " + string(edge.To)
 		var tags []string
 		if edge.Shortcut {
 			tags = append(tags, "shortcut")
@@ -215,8 +215,8 @@ func neighborHints(doc *document, lines []string) []InlayHint {
 	outbound := map[string][]edgeNeighbor{}
 	for i := range doc.Def.Edges {
 		e := &doc.Def.Edges[i]
-		outbound[e.From] = append(outbound[e.From], edgeNeighbor{e.To, e.Loop})
-		inbound[e.To] = append(inbound[e.To], edgeNeighbor{e.From, false})
+		outbound[string(e.From)] = append(outbound[string(e.From)], edgeNeighbor{string(e.To), e.Loop})
+		inbound[string(e.To)] = append(inbound[string(e.To)], edgeNeighbor{string(e.From), false})
 	}
 
 	hints := make([]InlayHint, 0, len(lines))
@@ -233,7 +233,7 @@ func neighborHints(doc *document, lines []string) []InlayHint {
 
 		found := false
 		for j := range doc.Def.Nodes {
-			if doc.Def.Nodes[j].Name == nodeName {
+			if string(doc.Def.Nodes[j].Name) == nodeName {
 				found = true
 				break
 			}
@@ -248,7 +248,7 @@ func neighborHints(doc *document, lines []string) []InlayHint {
 			continue
 		}
 
-		label := compactNeighbors(ins, outs, doc.Def.Start == nodeName)
+		label := compactNeighbors(ins, outs, string(doc.Def.Start) == nodeName)
 		tooltip := neighborTooltip(nodeName, doc)
 
 		hints = append(hints, InlayHint{
@@ -300,7 +300,7 @@ func neighborTooltip(nodeName string, doc *document) string {
 	md := fmt.Sprintf("### %s — connected edges\n\n", nodeName)
 	for i := range doc.Def.Edges {
 		e := &doc.Def.Edges[i]
-		if e.From != nodeName && e.To != nodeName {
+		if string(e.From) != nodeName && string(e.To) != nodeName {
 			continue
 		}
 		cond := e.When
