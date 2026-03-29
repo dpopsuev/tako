@@ -1,81 +1,167 @@
+# golangci-lint config — aligned with Lex rules + Locus reference
+# go-best-practices, code-smells, naming, hexagonal-architecture, solid-principles
+
 run:
   timeout: 5m
-  go: "1.24"
+  go: "1.25"
+  tests: true
 
 linters:
+  disable-all: true
   enable:
-    # Core (existing)
-    - errcheck
-    - govet
-    - staticcheck
-    - unused
-    - gosimple
-    - ineffassign
-    - typecheck
+    # --- Core / essential ---
+    - errcheck        # never swallow errors
+    - govet           # go vet checks (shadow, printf, etc.)
+    - staticcheck     # comprehensive static analysis
+    - unused          # dead code detection
+    - ineffassign     # useless assignments
+    - gosimple        # simplification suggestions
+    - typecheck       # type checking
 
-    # Lex: constants over literals
-    - goconst
+    # --- Lex: go-best-practices ---
+    - goconst         # constants over embedded literals
+    - errorlint       # wrap errors with %w, use errors.Is/As
+    - nestif          # max nesting depth
+    - gocritic        # switch over if-else, modern APIs, performance
+    - bodyclose       # resource cleanup (HTTP response bodies)
+    - prealloc        # pre-allocate slices when length known
+    - thelper         # t.Helper() in test helpers
 
-    # Lex: sentinel errors + %w wrapping
-    - errorlint
+    # --- Lex: code-smells ---
+    - gocyclo         # cyclomatic complexity
+    - funlen          # function length
+    - dupl            # code duplication
 
-    # Lex: guard clauses, max nesting
-    - nestif
+    # --- Lex: naming ---
+    - revive          # naming conventions, style
+    - misspell        # typos in comments and strings
 
-    # Lex: style, performance, diagnostics
-    - gocritic
+    # --- Lex: hexagonal-architecture + solid ---
+    - depguard        # dependency direction enforcement
+    - goimports       # import grouping and formatting
+    - unconvert       # unnecessary type conversions
+    - unparam         # unused function parameters
 
-    # Lex: pre-allocate slices
-    - prealloc
+    # --- Lex: error discipline ---
+    - err113          # sentinel errors, no inline errors.New in returns
+    - sloglint        # structured logging best practices
+    - nolintlint      # require justification for //nolint
 
-    # Lex: spelling in comments
-    - misspell
-
-    # Lex: require justification for //nolint
-    - nolintlint
-
-    # Lex: structured logging conventions
-    - sloglint
+    # --- Security ---
+    - gosec           # security issues
 
 linters-settings:
-  nestif:
-    min-complexity: 4  # Lex rule: max nesting depth 3
+  errcheck:
+    check-type-assertions: false
+    exclude-functions:
+      - (io.Closer).Close
+      - (net/http.ResponseWriter).Write
+      - fmt.Fprint
+      - fmt.Fprintf
+      - fmt.Fprintln
 
   goconst:
-    min-len: 3         # minimum string length to flag
-    min-occurrences: 2 # flag if repeated 2+ times
+    min-len: 2
+    min-occurrences: 3
 
   errorlint:
-    errorf: true       # flag fmt.Errorf without %w
-    asserts: true      # flag type assertions on errors
-    comparison: true   # flag == comparison on errors
+    errorf: true
+    asserts: true
+    comparison: true
+
+  nestif:
+    min-complexity: 5
 
   gocritic:
     enabled-tags:
       - diagnostic
       - style
       - performance
+      - opinionated
+    settings:
+      hugeParam:
+        sizeThreshold: 256
+
+  gocyclo:
+    min-complexity: 20
+
+  funlen:
+    lines: 120
+    statements: 70
+
+  dupl:
+    threshold: 100
+
+  misspell:
+    locale: US
+
+  revive:
+    rules:
+      - name: exported
+        disabled: true
+      - name: unexported-return
+        disabled: false
+      - name: blank-imports
+        disabled: false
+      - name: context-as-argument
+        disabled: false
+      - name: error-return
+        disabled: false
+      - name: error-naming
+        disabled: false
+      - name: increment-decrement
+        disabled: false
+      - name: var-declaration
+        disabled: false
+      - name: range
+        disabled: false
+      - name: receiver-naming
+        disabled: false
+
+  depguard:
+    rules:
+      main:
+        deny:
+          - pkg: "^log$"
+            desc: "use slog instead of stdlib log"
+
+  prealloc:
+    simple: true
+    range-loops: true
+    for-loops: false
 
   nolintlint:
     require-explanation: true
     require-specific: true
 
   sloglint:
-    no-mixed-args: true     # forbid slog.Info("msg", "key", val, badVal)
-    kv-only: true           # enforce key-value pairs, no positional args
-    attr-only: false         # don't require slog.Attr (too strict)
-    context: "all"          # require context in all slog calls
-    static-msg: false        # allow dynamic messages
-    no-raw-keys: false       # allow string keys (vs slog constants)
-    key-naming-case: snake   # enforce snake_case keys
+    context: "all"
+    static-msg: true
+    no-raw-keys: true
+    key-naming-case: snake
+
+  thelper:
+    test:
+      begin: true
 
 issues:
+  exclude-use-default: true
   max-issues-per-linter: 0
   max-same-issues: 0
   exclude-dirs:
-    - lsp/vscode/node_modules  # vendored JS/Go deps
+    - lsp/vscode/node_modules
   exclude-rules:
     - path: _test\.go
       linters:
         - errcheck
-        - goconst  # test strings repeat intentionally
+        - funlen
+        - dupl
+        - goconst
+        - gosec
+        - err113
+    - path: testkit/
+      linters:
+        - errcheck
+        - unused
+        - funlen
+        - err113
