@@ -82,9 +82,12 @@ type ParamDef struct {
 
 // DomainServeConfig controls generation of a domain data MCP server binary.
 type DomainServeConfig struct {
-	Port   int          `yaml:"port"`
-	Assets *AssetMap    `yaml:"assets,omitempty"`
-	Store  *StoreConfig `yaml:"store,omitempty"`
+	Port     int          `yaml:"port"`
+	Assets   *AssetMap    `yaml:"assets,omitempty"`
+	Store    *StoreConfig `yaml:"store,omitempty"`
+	StateDir string       `yaml:"state_dir,omitempty"` // persistent state directory
+	Dispatch string       `yaml:"dispatch,omitempty"`  // dispatch mode: mcp (default), acp
+	Workers  int          `yaml:"workers,omitempty"`   // parallel workers (default from parallel param)
 }
 
 // StoreConfig declares the storage backend.

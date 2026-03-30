@@ -123,10 +123,16 @@ func GenerateWiredBinary(m *Manifest, g *ResolvedGraph) ([]byte, error) {
 
 	needsFactory := g.Root.SessionFactory != ""
 
+	stateDir := ""
+	if ds.StateDir != "" {
+		stateDir = ds.StateDir
+	}
+
 	ctx := wiredBinaryContext{
 		Name:         m.Name,
 		Version:      m.Version,
 		Port:         port,
+		StateDir:     stateDir,
 		ImportBlock:  renderImports(g),
 		WiringBlock:  renderWiring(g),
 		DomainConfig: renderDomainConfig(m),
@@ -156,6 +162,7 @@ type wiredBinaryContext struct {
 	Name         string
 	Version      string
 	Port         int
+	StateDir     string
 	EmbedPaths   []string
 	ImportBlock  string
 	WiringBlock  string
@@ -332,10 +339,20 @@ var domainData embed.FS
 func main() {
 	dataDir := flag.String("data-dir", "", "serve domain data from this directory instead of embedded assets")
 	healthz := flag.Bool("healthz", false, "probe /healthz and exit")
+	versionFlag := flag.Bool("version", false, "print version and exit")
+	port := flag.Int("port", {{ .Port }}, "listen port")
+	stateDir := flag.String("state-dir", {{ printf "%q" .StateDir }}, "persistent state directory")
 	flag.Parse()
 
+	_ = stateDir // available for CircuitConfig.StateDir wiring
+
+	if *versionFlag {
+		fmt.Printf("%s %s (port %d)\n", {{ printf "%q" .Name }}, {{ printf "%q" .Version }}, *port)
+		os.Exit(0)
+	}
+
 	if *healthz {
-		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/healthz", {{ .Port }}))
+		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/healthz", *port))
 		if err != nil || resp.StatusCode != http.StatusOK {
 			os.Exit(1)
 		}
@@ -360,7 +377,7 @@ func main() {
 	mux.Handle("/mcp", mcpHandler)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(200) })
 
-	addr := fmt.Sprintf(":%d", {{ .Port }})
+	addr := fmt.Sprintf(":%d", *port)
 	fmt.Fprintf(os.Stderr, {{ printf "%q" .Name }}+" listening on %s (domain: /domain/, circuit: /mcp)\n", addr)
 	if err := http.ListenAndServe(addr, mux); err != nil {
 		fmt.Fprintf(os.Stderr, {{ printf "%q" .Name }}+": %v\n", err)

@@ -275,8 +275,13 @@ func buildWiredBinary(ctx context.Context, m *Manifest, opts *Options) error {
 func createWiredBuildModule(tmpDir, name string, resolver ModuleResolver, g *ResolvedGraph, local bool) error {
 	var buf strings.Builder
 	buf.WriteString(fmt.Sprintf("module %s-build\n\ngo 1.24\n\nrequire (\n", name))
-	origamiVersion := resolveModuleVersion(resolver, origamiModule)
-	mcpVersion := resolveModuleVersion(resolver, mcpSDKModule)
+
+	origamiVersion := fallbackVersion
+	mcpVersion := fallbackVersion
+	if local {
+		origamiVersion = resolveModuleVersion(resolver, origamiModule)
+		mcpVersion = resolveModuleVersion(resolver, mcpSDKModule)
+	}
 	buf.WriteString(fmt.Sprintf("\t%s %s\n", origamiModule, origamiVersion))
 	buf.WriteString(fmt.Sprintf("\t%s %s\n", mcpSDKModule, mcpVersion))
 
@@ -289,7 +294,10 @@ func createWiredBuildModule(tmpDir, name string, resolver ModuleResolver, g *Res
 			if mod != "" && !seen[mod] {
 				seen[mod] = true
 				externalModules = append(externalModules, mod)
-				v := resolveModuleVersion(resolver, mod)
+				v := fallbackVersion
+				if local {
+					v = resolveModuleVersion(resolver, mod)
+				}
 				buf.WriteString(fmt.Sprintf("\t%s %s\n", mod, v))
 			}
 		}
