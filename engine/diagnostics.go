@@ -14,6 +14,44 @@ import (
 func runBuildDiagnostics(def *circuit.CircuitDef, reg *GraphRegistries) {
 	diagUnreferencedHooks(def, reg)
 	diagMissingHookRefs(def, reg)
+	diagCircuitMediatorFallback(def, reg)
+}
+
+// diagCircuitMediatorFallback (D3): handler_type:circuit nodes that fall
+// back to MCPCircuitTransformer via mediator endpoint instead of resolving
+// to a local circuit definition. This is often unintentional and means
+// sub-circuit transformers run on a remote registry (which may be sparse).
+func diagCircuitMediatorFallback(def *circuit.CircuitDef, reg *GraphRegistries) {
+	if reg.MediatorEndpoint == "" {
+		return
+	}
+	for i := range def.Nodes {
+		nd := &def.Nodes[i]
+		ht := nd.EffectiveHandlerType(def.HandlerType)
+		if ht != circuit.HandlerTypeCircuit {
+			continue
+		}
+		handler := nd.Handler
+		if handler == "" {
+			continue
+		}
+		// Check if this would resolve locally or fall back to mediator.
+		locallyResolved := false
+		if reg.Circuits != nil {
+			if _, ok := reg.Circuits[handler]; ok {
+				locallyResolved = true
+			}
+		}
+		if !locallyResolved {
+			slog.WarnContext(context.Background(), circuit.LogCircuitMediatorFallback,
+				slog.Any(circuit.LogKeyComponent, circuit.LogComponentBuild),
+				slog.Any(circuit.LogKeyDiagnostic, "D3"),
+				slog.Any(circuit.LogKeyNode, string(nd.Name)),
+				slog.Any(circuit.LogKeyHandler, handler),
+				slog.Any(circuit.LogKeyEndpoint, reg.MediatorEndpoint),
+				slog.Any(circuit.LogKeyCircuit, def.Circuit))
+		}
+	}
 }
 
 // diagUnreferencedHooks (D1): hooks registered in HookRegistry but not

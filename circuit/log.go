@@ -53,13 +53,14 @@ const (
 	LogPartialFailures = "partial failures"
 
 	// Build / diagnostics
-	LogTopologySkipped        = "topology validator not registered, skipping validation"
-	LogResolveCircuitHandler  = "resolve circuit handler"
-	LogCircuitHandlerLocal    = "circuit handler resolved locally"
-	LogCircuitHandlerMediator = "circuit handler delegating to mediator"
-	LogMergeComponents        = "merge components"
-	LogUnreferencedHook       = "unreferenced hook"
-	LogMissingHookRefs        = "missing hook references"
+	LogTopologySkipped         = "topology validator not registered, skipping validation"
+	LogResolveCircuitHandler   = "resolve circuit handler"
+	LogCircuitHandlerLocal     = "circuit handler resolved locally"
+	LogCircuitHandlerMediator  = "circuit handler delegating to mediator"
+	LogMergeComponents         = "merge components"
+	LogUnreferencedHook        = "unreferenced hook"
+	LogMissingHookRefs         = "missing hook references"
+	LogCircuitMediatorFallback = "circuit node falling back to mediator delegation (no local circuit)"
 
 	// Cache
 	LogCacheHit  = "cache hit"
