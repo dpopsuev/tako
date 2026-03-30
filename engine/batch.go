@@ -120,5 +120,48 @@ func BatchWalk(ctx context.Context, cfg BatchWalkConfig) []BatchWalkResult {
 		}
 	}
 
+	DiagnoseNodeCoverage(cfg.Def, results)
+
 	return results
+}
+
+// DiagnoseNodeCoverage checks which declared nodes were never visited by
+// any case in the batch. Emits a warning for each unvisited node.
+// This catches overlay nodes that resolve but are never walked (e.g.,
+// gather-code skipped due to sparse registries or routing issues).
+func DiagnoseNodeCoverage(def *circuit.CircuitDef, results []BatchWalkResult) []string {
+	if def == nil || len(results) == 0 {
+		return nil
+	}
+
+	// Collect all visited nodes across all cases.
+	visited := make(map[string]bool)
+	for _, r := range results {
+		for _, node := range r.Path {
+			visited[node] = true
+		}
+	}
+
+	// Compare against declared nodes (skip "done" — it's a virtual terminal).
+	var unvisited []string
+	for i := range def.Nodes {
+		name := string(def.Nodes[i].Name)
+		if name == string(def.Done) {
+			continue
+		}
+		if !visited[name] {
+			unvisited = append(unvisited, name)
+		}
+	}
+
+	if len(unvisited) > 0 {
+		slog.WarnContext(context.Background(), circuit.LogUnvisitedNodes,
+			slog.Any(circuit.LogKeyComponent, circuit.LogComponentBatch),
+			slog.Any(circuit.LogKeyNodes, unvisited),
+			slog.Any(circuit.LogKeyCount, len(unvisited)),
+			slog.Any(circuit.LogKeyTotalCases, len(results)),
+			slog.Any(circuit.LogKeyCircuit, def.Circuit))
+	}
+
+	return unvisited
 }

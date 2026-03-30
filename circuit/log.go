@@ -51,6 +51,7 @@ const (
 	LogAllCasesFailed  = "all cases failed"
 	LogStartingRun     = "starting run"
 	LogPartialFailures = "partial failures"
+	LogUnvisitedNodes  = "declared nodes never visited by any case"
 
 	// Build / diagnostics
 	LogTopologySkipped         = "topology validator not registered, skipping validation"
