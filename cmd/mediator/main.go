@@ -79,6 +79,7 @@ func main() {
 
 func run(port int, configs []mediator.BackendConfig) error {
 	m := mediator.New(configs)
+	m.Workers = mediator.NewWorkerManager(fmt.Sprintf("http://localhost:%d/mcp", port))
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()

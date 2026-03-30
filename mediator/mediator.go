@@ -86,6 +86,9 @@ type Mediator struct {
 	Bus      *agentport.MemBus
 	stateDir string                // empty = tracing disabled
 	recorder *engine.TraceRecorder // nil when tracing disabled
+
+	// Workers manages agent-worker goroutines for the workers MCP tool.
+	Workers *WorkerManager
 }
 
 // New creates a Mediator that will connect to the given backends.
@@ -431,7 +434,70 @@ func (gw *Mediator) MCPServer() *sdkmcp.Server {
 		addHandler(rt.tool)
 	}
 
+	// Register local workers tool (not routed to backends).
+	if gw.Workers != nil {
+		server.AddTool(
+			&sdkmcp.Tool{
+				Name:        "workers",
+				Description: "Agent worker management. Actions: start (spawn N workers), stop (kill all), health (status).",
+			},
+			func(ctx context.Context, req *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error) {
+				return gw.handleWorkersTool(ctx, req)
+			},
+		)
+	}
+
 	return server
+}
+
+// handleWorkersTool dispatches the workers tool actions.
+func (gw *Mediator) handleWorkersTool(ctx context.Context, req *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error) {
+	var input workersInput
+	if req.Params.Arguments != nil {
+		if err := json.Unmarshal(req.Params.Arguments, &input); err != nil {
+			return toolErrorResult(fmt.Errorf("invalid workers arguments: %w", err)), nil
+		}
+	}
+
+	switch input.Action {
+	case "start":
+		if input.Session == "" {
+			return toolErrorResult(ErrSessionRequired), nil
+		}
+		if err := gw.Workers.Start(ctx, input.Session, input.Agent, input.Count); err != nil {
+			return toolErrorResult(err), nil
+		}
+		return toolJSONResult(gw.Workers.Health())
+
+	case "stop":
+		if err := gw.Workers.Stop(); err != nil {
+			return toolErrorResult(err), nil
+		}
+		return toolJSONResult(map[string]any{"status": "stopped"})
+
+	case "health":
+		return toolJSONResult(gw.Workers.Health())
+
+	default:
+		return toolErrorResult(fmt.Errorf("%w: %q; valid actions: start, stop, health", ErrUnknownWorkersAction, input.Action)), nil
+	}
+}
+
+func toolErrorResult(err error) *sdkmcp.CallToolResult {
+	return &sdkmcp.CallToolResult{
+		IsError: true,
+		Content: []sdkmcp.Content{&sdkmcp.TextContent{Text: err.Error()}},
+	}
+}
+
+func toolJSONResult(v any) (*sdkmcp.CallToolResult, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return toolErrorResult(fmt.Errorf("marshal: %w", err)), nil
+	}
+	return &sdkmcp.CallToolResult{
+		Content: []sdkmcp.Content{&sdkmcp.TextContent{Text: string(data)}},
+	}, nil
 }
 
 // Handler returns an http.Handler with MCP, health, and readiness endpoints.
