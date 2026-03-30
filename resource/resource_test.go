@@ -207,18 +207,89 @@ func TestLoad_NoKind(t *testing.T) {
 
 // --- DefaultRegistry tests ---
 
-func TestDefaultRegistry_FrameworkKinds(t *testing.T) {
+func TestDefaultRegistry_AllKinds(t *testing.T) {
 	reg := DefaultRegistry()
 	expected := []circuit.Kind{
+		// Typed handlers
 		circuit.KindSchematic,
 		circuit.KindStoreSchema,
 		circuit.KindScorecard,
 		circuit.KindReportTemplate,
+		circuit.KindBoard,
+		// Passthrough handlers
+		circuit.KindComponent,
+		circuit.KindScenario,
+		circuit.KindSourcePack,
+		circuit.KindVocabulary,
+		circuit.KindHeuristicRules,
+		circuit.KindTuning,
+		circuit.KindArtifactSchema,
+		circuit.KindDataset,
 	}
 	for _, k := range expected {
 		if !reg.Has(k) {
 			t.Errorf("DefaultRegistry missing kind %q", k)
 		}
+	}
+	// Should have all 13 kinds (14 minus prompt which has no YAML yet)
+	if got := len(reg.Kinds()); got != len(expected) {
+		t.Errorf("Kinds() = %d, want %d", got, len(expected))
+	}
+}
+
+func TestPassthroughHandler_Parse(t *testing.T) {
+	h := NewPassthroughHandler(circuit.KindScenario)
+	data := []byte("kind: scenario\nversion: v1\nmetadata:\n  name: ptp\ndescription: test scenario\n")
+	result, err := h.Parse(data)
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	raw, ok := result.(*RawResource)
+	if !ok {
+		t.Fatal("expected *RawResource")
+	}
+	if raw.Kind != circuit.KindScenario {
+		t.Errorf("Kind = %q", raw.Kind)
+	}
+	if raw.Name != "ptp" {
+		t.Errorf("Name = %q", raw.Name)
+	}
+	if raw.Data["description"] != "test scenario" {
+		t.Errorf("Data[description] = %v", raw.Data["description"])
+	}
+}
+
+func TestPassthroughHandler_NoMerge(t *testing.T) {
+	h := NewPassthroughHandler(circuit.KindTuning)
+	if h.SupportsMerge() {
+		t.Error("passthrough should not support merge")
+	}
+	_, err := h.Merge(nil, nil)
+	if !errors.Is(err, ErrMergeNotSupported) {
+		t.Errorf("expected ErrMergeNotSupported, got %v", err)
+	}
+}
+
+func TestLoad_Passthrough(t *testing.T) {
+	reg := DefaultRegistry()
+	data := []byte("kind: scenario\nversion: v1\nmetadata:\n  name: my-scenario\ncases:\n  - id: C1\n")
+	res, typed, err := Load(reg, data, "scenarios/test.yaml")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if res.Kind != circuit.KindScenario {
+		t.Errorf("Kind = %q", res.Kind)
+	}
+	if res.Metadata.Name != "my-scenario" {
+		t.Errorf("Name = %q", res.Metadata.Name)
+	}
+	raw, ok := typed.(*RawResource)
+	if !ok {
+		t.Fatal("expected *RawResource for passthrough kind")
+	}
+	cases, ok := raw.Data["cases"]
+	if !ok || cases == nil {
+		t.Error("expected cases in raw data")
 	}
 }
 

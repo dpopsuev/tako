@@ -2,19 +2,36 @@ package resource
 
 import (
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/fold"
 )
 
-// DefaultRegistry returns a KindRegistry pre-loaded with all framework
-// kinds that have parsers in the circuit/ package. Domain kinds (scenario,
-// source-pack, etc.) are registered by consumers.
+// DefaultRegistry returns a KindRegistry pre-loaded with all known
+// Origami kinds. Framework kinds use typed parsers from circuit/ and fold/.
+// Domain kinds use passthrough handlers; consumers can override with
+// typed handlers via Register().
 func DefaultRegistry() *KindRegistry {
 	reg := NewKindRegistry()
 
-	// Framework kinds with parsers in circuit/.
+	// Framework kinds — typed parsers in circuit/.
 	reg.Register(NewHandler(circuit.KindSchematic, circuit.LoadCircuit, nil, nil))
 	reg.Register(NewHandler(circuit.KindStoreSchema, circuit.LoadStoreSchema, nil, circuit.MergeStoreSchemas))
 	reg.Register(NewHandler(circuit.KindScorecard, circuit.LoadScorecardDef, nil, circuit.MergeScorecardDefs))
 	reg.Register(NewHandler(circuit.KindReportTemplate, circuit.LoadReportTemplate, nil, circuit.MergeReportTemplates))
+
+	// Board — typed parser in fold/.
+	reg.Register(NewHandler(circuit.KindBoard, fold.ParseManifest, nil, nil))
+
+	// Component — LoadComponentManifest takes path not bytes; use passthrough.
+	reg.Register(NewPassthroughHandler(circuit.KindComponent))
+
+	// Domain kinds — passthrough (consumers override with typed handlers).
+	reg.Register(NewPassthroughHandler(circuit.KindScenario))
+	reg.Register(NewPassthroughHandler(circuit.KindSourcePack))
+	reg.Register(NewPassthroughHandler(circuit.KindVocabulary))
+	reg.Register(NewPassthroughHandler(circuit.KindHeuristicRules))
+	reg.Register(NewPassthroughHandler(circuit.KindTuning))
+	reg.Register(NewPassthroughHandler(circuit.KindArtifactSchema))
+	reg.Register(NewPassthroughHandler(circuit.KindDataset))
 
 	return reg
 }
