@@ -12,8 +12,8 @@ github.com/cpuguy83/go-md2man/v2 v2.0.6/go.mod h1:oOW0eioCTA6cOiMLiUPZOpcVxMig6N
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/dpopsuev/bugle v0.14.0 h1:Zy3tIgTKjxi07t0y5DnL5ZaqNGDhAd9sWDriZFuenYU=
-github.com/dpopsuev/bugle v0.14.0/go.mod h1:AVY10j3YpgfMYmF4aumcBUyPp4ScfGUajqxreeCdKY8=
+github.com/dpopsuev/bugle v0.15.0 h1:Ez/LkEwDEZr2s9xEtLbiLIk8OWEWsUWDPF3Bh25L8Z8=
+github.com/dpopsuev/bugle v0.15.0/go.mod h1:AVY10j3YpgfMYmF4aumcBUyPp4ScfGUajqxreeCdKY8=
 github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
 github.com/expr-lang/expr v1.17.8 h1:W1loDTT+0PQf5YteHSTpju2qfUfNoBt4yw9+wOEU9VM=

@@ -18,6 +18,7 @@ type (
 	Hierarchy     = world.Hierarchy
 	Budget        = world.Budget
 	Progress      = world.Progress
+	Display       = world.Display
 
 	IdentityStrategy = world.IdentityStrategy
 )
@@ -44,6 +45,7 @@ const (
 	HierarchyType = world.HierarchyType
 	BudgetType    = world.BudgetType
 	ProgressType  = world.ProgressType
+	DisplayType   = world.DisplayType
 )
 
 // NewWorld creates an empty ECS world.
@@ -83,7 +85,6 @@ type (
 	ColorIdentity   = palette.ColorIdentity
 	Registry        = palette.Registry
 	Shade           = palette.Shade
-	Colour          = palette.Colour //nolint:misspell // upstream API name
 	DefaultStrategy = palette.DefaultStrategy
 )
 
@@ -98,5 +99,5 @@ var (
 	NewRegistry        = palette.NewRegistry
 	NewDefaultStrategy = palette.NewDefaultStrategy
 	LookupShade        = palette.LookupShade
-	LookupColour       = palette.LookupColour
+	LookupColor        = palette.LookupColor
 )
