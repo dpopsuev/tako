@@ -20,8 +20,9 @@ import (
 )
 
 var (
-	errSessionRequired = errors.New("--session is required (session ID or heraldic alias)")
-	errWorkersFailed   = errors.New("workers failed")
+	errSessionRequired   = errors.New("--session is required (session ID or heraldic alias)")
+	errWorkersFailed     = errors.New("workers failed")
+	errCircuitStepFailed = errors.New("circuit step failed")
 )
 
 func workersCmd(args []string) error {
@@ -120,6 +121,10 @@ func runWorker(ctx context.Context, gateway, agentName, sessionID, workerName st
 		})
 		if err != nil {
 			return fmt.Errorf("circuit/step: %w", err)
+		}
+
+		if nextResult.IsError {
+			return fmt.Errorf("%w: %s", errCircuitStepFailed, workerTextContent(nextResult))
 		}
 
 		nextText := workerTextContent(nextResult)

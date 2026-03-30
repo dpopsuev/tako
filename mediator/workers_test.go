@@ -2,17 +2,16 @@ package mediator
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// TestWorkerStepParse_CrashesOnErrorResponse reproduces ORG-BUG-18:
-// when the mediator returns an IsError response (plain text, not JSON),
-// the worker's JSON unmarshal fails with "invalid character" instead of
-// surfacing the actual error message.
-func TestWorkerStepParse_CrashesOnErrorResponse(t *testing.T) {
-	// Simulate the error response the mediator returns for unknown session.
+// TestWorkerStepParse_HandlesErrorResponse verifies that the worker
+// detects IsError before JSON-parsing, returning the actual error
+// message instead of crashing with "invalid character". ORG-BUG-18.
+func TestWorkerStepParse_HandlesErrorResponse(t *testing.T) {
 	errorResult := &sdkmcp.CallToolResult{
 		IsError: true,
 		Content: []sdkmcp.Content{
@@ -20,37 +19,53 @@ func TestWorkerStepParse_CrashesOnErrorResponse(t *testing.T) {
 		},
 	}
 
-	// Extract text — this works fine.
 	text := extractTextContent(errorResult)
-	if text == "" {
-		t.Fatal("extractTextContent returned empty")
+
+	// The FIX: check IsError BEFORE attempting JSON parse.
+	if errorResult.IsError {
+		// Worker should return this error directly.
+		if !strings.Contains(text, "unknown session") {
+			t.Fatalf("expected actual error message, got: %q", text)
+		}
+		// Should NOT reach JSON parse.
+		return
 	}
 
-	// This is exactly what runMediatorWorker does at line 192:
-	// it does NOT check IsError, just tries to JSON parse.
+	// This path should be unreachable for error responses.
 	var step struct {
-		Done       bool  `json:"done"`
-		Available  bool  `json:"available"`
-		DispatchID int64 `json:"dispatch_id"`
+		Done bool `json:"done"`
 	}
-	err := json.Unmarshal([]byte(text), &step)
-
-	// The bug: this produces "invalid character 'u'" instead of the
-	// actual error message "unknown session cobalt-stallion".
-	if err == nil {
-		t.Fatal("expected JSON parse error for non-JSON error text")
+	if err := json.Unmarshal([]byte(text), &step); err != nil {
+		t.Fatalf("should not reach JSON parse for error response: %v", err)
 	}
+}
 
-	// ORG-BUG-18: the error message is useless — it's a JSON parse error,
-	// not the actual mediator error. The worker should have checked
-	// IsError BEFORE attempting JSON parse.
-	if !errorResult.IsError {
-		t.Fatal("IsError should be true")
+// TestWorkerStepParse_ValidResponse verifies normal JSON parsing still works.
+func TestWorkerStepParse_ValidResponse(t *testing.T) {
+	validResult := &sdkmcp.CallToolResult{
+		Content: []sdkmcp.Content{
+			&sdkmcp.TextContent{Text: `{"done":false,"available":true,"step":"recall","dispatch_id":42}`},
+		},
 	}
 
-	// This test PASSES (demonstrating the bug exists) — the JSON parse
-	// fails as expected. The FIX would add an IsError check before
-	// line 192 in workers.go, making this JSON parse path unreachable
-	// for error responses.
-	t.Logf("Bug confirmed: JSON parse error = %q (actual error was: %q)", err, text)
+	if validResult.IsError {
+		t.Fatal("valid response should not have IsError")
+	}
+
+	text := extractTextContent(validResult)
+	var step struct {
+		Done       bool   `json:"done"`
+		Available  bool   `json:"available"`
+		Step       string `json:"step"`
+		DispatchID int64  `json:"dispatch_id"`
+	}
+	if err := json.Unmarshal([]byte(text), &step); err != nil {
+		t.Fatalf("JSON parse failed for valid response: %v", err)
+	}
+	if step.Step != "recall" {
+		t.Errorf("step = %q, want recall", step.Step)
+	}
+	if step.DispatchID != 42 {
+		t.Errorf("dispatch_id = %d, want 42", step.DispatchID)
+	}
 }

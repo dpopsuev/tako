@@ -285,10 +285,13 @@ func (gw *Mediator) routeStartCircuit(ctx context.Context, args map[string]any) 
 		return nil, err
 	}
 
-	// Parse session_id from response for affinity tracking.
+	// Parse session_id + alias from response for affinity tracking.
 	if sessionID := extractSessionID(result); sessionID != "" {
 		gw.mu.Lock()
 		gw.sessionAffinity[sessionID] = backendName
+		if alias := extractAlias(result); alias != "" {
+			gw.sessionAffinity[alias] = backendName
+		}
 		gw.mu.Unlock()
 
 		gw.Bus.Emit(&agentport.Signal{
@@ -336,6 +339,27 @@ func extractSessionID(result *sdkmcp.CallToolResult) string {
 		}
 		if sid, ok := out[circuit.ProtoKeySessionID].(string); ok {
 			return sid
+		}
+	}
+	return ""
+}
+
+// extractAlias parses alias from a CallToolResult (start response).
+func extractAlias(result *sdkmcp.CallToolResult) string {
+	if result == nil || result.IsError {
+		return ""
+	}
+	for _, c := range result.Content {
+		tc, ok := c.(*sdkmcp.TextContent)
+		if !ok {
+			continue
+		}
+		var out map[string]any
+		if err := json.Unmarshal([]byte(tc.Text), &out); err != nil {
+			continue
+		}
+		if alias, ok := out["alias"].(string); ok {
+			return alias
 		}
 	}
 	return ""

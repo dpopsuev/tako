@@ -21,6 +21,7 @@ var (
 	ErrNoWorkersRunning      = errors.New("no workers running")
 	ErrUnknownWorkersAction  = errors.New("unknown workers action")
 	ErrSessionRequired       = errors.New("session is required for workers start")
+	ErrCircuitStepFailed     = errors.New("circuit step failed")
 )
 
 // workersInput is the MCP tool input for the workers tool.
@@ -179,6 +180,10 @@ func runMediatorWorker(ctx context.Context, gateway, agentName, sessionID, worke
 		})
 		if err != nil {
 			return fmt.Errorf("circuit/step: %w", err)
+		}
+
+		if nextResult.IsError {
+			return fmt.Errorf("%w: %s", ErrCircuitStepFailed, extractTextContent(nextResult))
 		}
 
 		nextText := extractTextContent(nextResult)
