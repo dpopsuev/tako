@@ -88,6 +88,9 @@ func NewCircuitServer(cfg *CircuitConfig) *CircuitServer {
 	if cfg.StateDir != "" {
 		s.registerTraceTools()
 	}
+	if cfg.PromptStore != nil {
+		s.registerPromptTool()
+	}
 	return s
 }
 

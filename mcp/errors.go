@@ -65,4 +65,10 @@ var (
 
 	// ErrWalkerIDRequired is returned when inspect/resume is called without a walker_id.
 	ErrWalkerIDRequired = errors.New("walker_id is required")
+
+	// ErrPromptNameRequired is returned when a prompt action requires a name but none was given.
+	ErrPromptNameRequired = errors.New("prompt name is required")
+
+	// ErrUnknownPromptAction is returned for unrecognized prompt tool actions.
+	ErrUnknownPromptAction = errors.New("unknown prompt action")
 )

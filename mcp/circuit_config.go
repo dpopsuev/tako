@@ -8,6 +8,7 @@ import (
 	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
+	"github.com/dpopsuev/origami/prompt"
 	"github.com/dpopsuev/origami/toolkit"
 )
 
@@ -132,6 +133,12 @@ type CircuitConfig struct {
 	// the circuit tool gains "inspect" (view paused walker state)
 	// and "resume" (continue walk with human input) actions.
 	Checkpointer circuit.Checkpointer
+
+	// PromptStore provides CRUD access to prompts. When set, the
+	// "prompt" MCP tool is registered with actions: list, get, update,
+	// create, rollback. LivePromptStore enables in-memory editing for
+	// auto-tune loops; FilePromptStore provides read-only access.
+	PromptStore prompt.Store
 }
 
 // FindSchema returns the StepSchema for the given step name, or an error
