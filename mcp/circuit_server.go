@@ -644,11 +644,12 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 	recorder, runDir := setupTraceRecorder(s.Config.StateDir, sessID, bus, logger)
 
 	params := StartParams{
-		Parallel: parallel,
-		Force:    input.Force,
-		Extra:    input.Extra,
-		DomainFS: s.Config.DomainFS,
-		StateDir: s.Config.StateDir,
+		Parallel:    parallel,
+		Force:       input.Force,
+		Extra:       input.Extra,
+		DomainFS:    s.Config.DomainFS,
+		StateDir:    s.Config.StateDir,
+		PromptStore: s.Config.PromptStore,
 	}
 	if recorder != nil {
 		params.Observer = recorder

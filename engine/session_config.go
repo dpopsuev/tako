@@ -6,6 +6,7 @@ import (
 
 	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/prompt"
 	"github.com/dpopsuev/origami/toolkit"
 )
 
@@ -112,4 +113,9 @@ type SessionParams struct {
 	// Relayer wraps the Dispatcher as a PromptRelayer for sub-circuit
 	// delegation via MCPCircuitTransformer. Set by the bridge.
 	Relayer PromptRelayer
+
+	// PromptStore is the framework-injected prompt store. Consumers use
+	// this to load/edit prompts at runtime instead of fs.ReadFile.
+	// Nil when no PromptStore is configured.
+	PromptStore prompt.Store
 }

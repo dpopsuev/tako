@@ -188,6 +188,10 @@ type StartParams struct {
 	// HarnessConfig.Observer so walker-level debug events flow to the trace.
 	// Consumers never set this — the framework auto-wires it.
 	Observer circuit.WalkObserver
+
+	// PromptStore is the framework-injected prompt store from CircuitConfig.
+	// Consumers use this to load/edit prompts at runtime instead of fs.ReadFile.
+	PromptStore prompt.Store
 }
 
 // SchematicHooks groups the domain-specific callbacks that a schematic
