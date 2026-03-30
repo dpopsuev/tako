@@ -275,8 +275,10 @@ func buildWiredBinary(ctx context.Context, m *Manifest, opts *Options) error {
 func createWiredBuildModule(tmpDir, name string, resolver ModuleResolver, g *ResolvedGraph, local bool) error {
 	var buf strings.Builder
 	buf.WriteString(fmt.Sprintf("module %s-build\n\ngo 1.24\n\nrequire (\n", name))
-	buf.WriteString(fmt.Sprintf("\t%s v0.0.0\n", origamiModule))
-	buf.WriteString(fmt.Sprintf("\t%s v0.0.0\n", mcpSDKModule))
+	origamiVersion := resolveModuleVersion(resolver, origamiModule)
+	mcpVersion := resolveModuleVersion(resolver, mcpSDKModule)
+	buf.WriteString(fmt.Sprintf("\t%s %s\n", origamiModule, origamiVersion))
+	buf.WriteString(fmt.Sprintf("\t%s %s\n", mcpSDKModule, mcpVersion))
 
 	// Collect unique external module roots from resolved imports.
 	seen := map[string]bool{origamiModule: true, mcpSDKModule: true}
@@ -287,7 +289,8 @@ func createWiredBuildModule(tmpDir, name string, resolver ModuleResolver, g *Res
 			if mod != "" && !seen[mod] {
 				seen[mod] = true
 				externalModules = append(externalModules, mod)
-				buf.WriteString(fmt.Sprintf("\t%s v0.0.0\n", mod))
+				v := resolveModuleVersion(resolver, mod)
+				buf.WriteString(fmt.Sprintf("\t%s %s\n", mod, v))
 			}
 		}
 	}
@@ -308,6 +311,42 @@ func createWiredBuildModule(tmpDir, name string, resolver ModuleResolver, g *Res
 	}
 
 	return os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(buf.String()), 0o600)
+}
+
+const fallbackVersion = "v0.0.0"
+
+// resolveModuleVersion reads the version of a dependency from origami's own go.mod.
+// Falls back to fallbackVersion if not found (e.g., when origami IS the module).
+func resolveModuleVersion(resolver ModuleResolver, modPath string) string {
+	origamiRoot := resolver.FindLocalModule(origamiModule)
+	if origamiRoot == "" {
+		return fallbackVersion
+	}
+	goModPath := filepath.Join(origamiRoot, "go.mod")
+	data, err := os.ReadFile(goModPath)
+	if err != nil {
+		return fallbackVersion
+	}
+	// Parse "require modPath vX.Y.Z" from go.mod
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, modPath+" ") {
+			parts := strings.Fields(line)
+			if len(parts) >= 2 {
+				version := parts[1]
+				// Strip // indirect suffix
+				if i := strings.Index(version, " "); i > 0 {
+					version = version[:i]
+				}
+				return version
+			}
+		}
+	}
+	// If modPath IS origami, return the latest tag
+	if modPath == origamiModule {
+		return "v0.2.0"
+	}
+	return fallbackVersion
 }
 
 // moduleRoot extracts the module root from a Go import path.

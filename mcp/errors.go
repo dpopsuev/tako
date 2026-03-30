@@ -24,6 +24,9 @@ var (
 	// ErrUnknownSignalAction is returned for: unknown signal action
 	ErrUnknownSignalAction = errors.New("unknown signal action")
 
+	// ErrUnknownMetric is returned for: unknown confusion metric
+	ErrUnknownMetric = errors.New("unknown confusion metric")
+
 	// ErrACircuitSessionIsAlreadyRunningId is returned for: a circuit session is already running (id=
 	ErrACircuitSessionIsAlreadyRunningId = errors.New("a circuit session is already running (id=")
 

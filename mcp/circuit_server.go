@@ -173,6 +173,8 @@ type circuitInput struct {
 	// inspect/resume params
 	WalkerID    string         `json:"walker_id,omitempty"`
 	ResumeInput map[string]any `json:"resume_input,omitempty"`
+	// confusion params
+	Metric string `json:"metric,omitempty"` // field to analyze: component, category, defect_type, repos
 }
 
 // signalInput is the unified input for the consolidated "signal" tool.
@@ -441,6 +443,17 @@ func (s *CircuitServer) dispatchCircuitAction(ctx context.Context, req *sdkmcp.C
 		}
 		return marshalToolResult(out)
 
+	case "confusion":
+		sess, err := s.getSession(input.SessionID)
+		if err != nil {
+			return toolError(err), nil
+		}
+		out, err := s.handleConfusion(sess, input.Metric)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return marshalToolResult(out)
+
 	case "inspect":
 		out, err := s.handleInspectCircuit(ctx, input)
 		if err != nil {
@@ -456,7 +469,7 @@ func (s *CircuitServer) dispatchCircuitAction(ctx context.Context, req *sdkmcp.C
 		return marshalToolResult(out)
 
 	default:
-		return toolError(fmt.Errorf("%w: %q; valid actions: start, step, submit, report, summary, detail, failing, weak, inspect, resume", ErrUnknownCircuitAction, input.Action)), nil
+		return toolError(fmt.Errorf("%w: %q; valid actions: start, step, submit, report, summary, detail, failing, weak, confusion, inspect, resume", ErrUnknownCircuitAction, input.Action)), nil
 	}
 }
 
@@ -538,11 +551,11 @@ func (s *CircuitServer) buildCircuitTool() *sdkmcp.Tool {
 	}
 
 	schema := json.RawMessage(fmt.Sprintf(
-		`{"type":"object","properties":{"action":{"type":"string","description":"Action to perform","enum":["start","step","submit","report","summary","detail","failing","weak"]},"session_id":{"type":"string","description":"session ID from circuit start"},"parallel":{"type":"integer","description":"number of parallel workers (start action)"},"force":{"type":"boolean","description":"cancel any existing session (start action)"},"extra":{%s},"timeout_ms":{"type":"integer","description":"max wait in milliseconds (step action)"},"preferred_case_id":{"type":"string","description":"prefer steps for this case ID (step action)"},"preferred_zone":{"type":"string","description":"prefer steps from this zone (step action)"},"stickiness":{"type":"integer","description":"zone stickiness level (step action)"},"consecutive_misses":{"type":"integer","description":"caller-tracked empty polls (step action)"},"dispatch_id":{"type":"integer","description":"dispatch ID from step (submit action)"},"step":{"type":"string","description":"circuit step name (submit action)"},"fields":{"type":"object","description":"artifact fields (submit action)"},"case_id":{"type":"string","description":"case ID (detail action)"},"threshold":{"type":"number","description":"convergence threshold (weak action, default 0.5)"}},"required":["action"]}`,
+		`{"type":"object","properties":{"action":{"type":"string","description":"Action to perform","enum":["start","step","submit","report","summary","detail","failing","weak","confusion"]},"session_id":{"type":"string","description":"session ID from circuit start"},"parallel":{"type":"integer","description":"number of parallel workers (start action)"},"force":{"type":"boolean","description":"cancel any existing session (start action)"},"extra":{%s},"timeout_ms":{"type":"integer","description":"max wait in milliseconds (step action)"},"preferred_case_id":{"type":"string","description":"prefer steps for this case ID (step action)"},"preferred_zone":{"type":"string","description":"prefer steps from this zone (step action)"},"stickiness":{"type":"integer","description":"zone stickiness level (step action)"},"consecutive_misses":{"type":"integer","description":"caller-tracked empty polls (step action)"},"dispatch_id":{"type":"integer","description":"dispatch ID from step (submit action)"},"step":{"type":"string","description":"circuit step name (submit action)"},"fields":{"type":"object","description":"artifact fields (submit action)"},"case_id":{"type":"string","description":"case ID (detail action)"},"threshold":{"type":"number","description":"convergence threshold (weak action, default 0.5)"},"metric":{"type":"string","description":"field to analyze (confusion action): component, category, defect_type"}},"required":["action"]}`,
 		extraSchema,
 	))
 
-	desc := "Circuit execution and analysis. Actions: start (begin run), step (get next prompt), submit (send artifact), report (full results), summary (compact metrics+cases), detail (single case drill-down), failing (failed metrics only), weak (low-convergence cases)."
+	desc := "Circuit execution and analysis. Actions: start (begin run), step (get next prompt), submit (send artifact), report (full results), summary (compact metrics+cases), detail (single case drill-down), failing (failed metrics only), weak (low-convergence cases), confusion (group failures by misclassification pattern)."
 	if len(s.Config.ExtraParamDefs) > 0 {
 		var parts []string
 		for _, p := range s.Config.ExtraParamDefs {
@@ -1296,6 +1309,107 @@ func (s *CircuitServer) handleWeakCases(sess *CircuitSession, threshold float64)
 		}
 	}
 	return map[string]any{"weak": weak, "threshold": threshold}, nil
+}
+
+// handleConfusion groups failing cases by (actual, expected) pairs for a given metric field.
+// Enables data-driven tuning: shows which misclassification patterns are most frequent.
+func (s *CircuitServer) handleConfusion(sess *CircuitSession, metric string) (any, error) {
+	if metric == "" {
+		metric = "component"
+	}
+
+	result := sess.Result()
+	if result == nil {
+		return nil, ErrNoResultAvailable
+	}
+	data, err := json.Marshal(result)
+	if err != nil {
+		return nil, fmt.Errorf("marshal result: %w", err)
+	}
+	var full map[string]any
+	if err := json.Unmarshal(data, &full); err != nil {
+		return nil, fmt.Errorf("parse result: %w", err)
+	}
+
+	caseResults, ok := full["case_results"]
+	if !ok {
+		return map[string]any{"metric": metric, "confusion": []any{}, "total": 0, "correct": 0, "incorrect": 0}, nil
+	}
+	cases, ok := caseResults.([]any)
+	if !ok {
+		return map[string]any{"metric": metric, "confusion": []any{}, "total": 0, "correct": 0, "incorrect": 0}, nil
+	}
+
+	// Field name mapping: metric → (actual field, expected field, correct field)
+	type fieldSpec struct{ actual, expected, correct string }
+	fields := map[string]fieldSpec{
+		"component":   {"actual_component", "expected_component", "component_correct"},
+		"category":    {"actual_category", "expected_category", "category_correct"},
+		"defect_type": {"actual_defect_type", "expected_defect_type", "defect_type_correct"},
+	}
+	spec, ok := fields[metric]
+	if !ok {
+		return nil, fmt.Errorf("%w: %q; valid: component, category, defect_type", ErrUnknownMetric, metric)
+	}
+
+	// Group incorrect cases by (actual, expected) pair
+	type confusionKey struct{ actual, expected string }
+	groups := make(map[confusionKey][]string)
+	total, correct := 0, 0
+
+	for _, c := range cases {
+		cm, ok := c.(map[string]any)
+		if !ok {
+			continue
+		}
+		total++
+		isCorrect, _ := cm[spec.correct].(bool)
+		if isCorrect {
+			correct++
+			continue
+		}
+		actual, _ := cm[spec.actual].(string)
+		expected, _ := cm[spec.expected].(string)
+		caseID, _ := cm["case_id"].(string)
+		if actual == "" && expected == "" {
+			continue
+		}
+		key := confusionKey{actual, expected}
+		groups[key] = append(groups[key], caseID)
+	}
+
+	// Build sorted result (highest count first)
+	type confusionEntry struct {
+		Actual   string   `json:"actual"`
+		Expected string   `json:"expected"`
+		Cases    []string `json:"cases"`
+		Count    int      `json:"count"`
+	}
+	entries := make([]confusionEntry, 0, len(groups))
+	for key, caseIDs := range groups {
+		entries = append(entries, confusionEntry{
+			Actual:   key.actual,
+			Expected: key.expected,
+			Cases:    caseIDs,
+			Count:    len(caseIDs),
+		})
+	}
+	// Sort by count descending
+	for i := 0; i < len(entries); i++ {
+		for j := i + 1; j < len(entries); j++ {
+			if entries[j].Count > entries[i].Count {
+				entries[i], entries[j] = entries[j], entries[i]
+			}
+		}
+	}
+
+	return map[string]any{
+		"metric":    metric,
+		"total":     total,
+		"correct":   correct,
+		"incorrect": total - correct,
+		"confusion": entries,
+	}, nil
 }
 
 // --- Session management helpers ---
