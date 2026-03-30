@@ -52,5 +52,5 @@ func orchestrateCmd(args []string) error {
 		slog.String(logKeyOrchestrateEndpoint, *endpoint),
 		slog.String(logKeyOrchestrateMode, "stdio"))
 
-	return orchestrate.ServeStdio(ctx, mgr)
+	return orchestrate.ServeStdioProxy(ctx, *endpoint, mgr)
 }
