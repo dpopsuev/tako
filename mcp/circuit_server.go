@@ -91,6 +91,9 @@ func NewCircuitServer(cfg *CircuitConfig) *CircuitServer {
 	if cfg.PromptStore != nil {
 		s.registerPromptTool()
 	}
+	if cfg.ResourceRegistry != nil && cfg.DomainFS != nil {
+		s.registerResourceTool()
+	}
 	return s
 }
 

@@ -71,4 +71,19 @@ var (
 
 	// ErrUnknownPromptAction is returned for unrecognized prompt tool actions.
 	ErrUnknownPromptAction = errors.New("unknown prompt action")
+
+	// ErrUnknownResourceAction is returned for unrecognized resource tool actions.
+	ErrUnknownResourceAction = errors.New("unknown resource action")
+
+	// ErrResourceKindRequired is returned when a resource action requires a kind.
+	ErrResourceKindRequired = errors.New("kind is required")
+
+	// ErrResourceNameRequired is returned when a resource action requires a name.
+	ErrResourceNameRequired = errors.New("name is required")
+
+	// ErrResourceNotFound is returned when a resource cannot be found by kind+name.
+	ErrResourceNotFound = errors.New("resource not found")
+
+	// ErrResourceFilesRequired is returned when diff action is missing file paths.
+	ErrResourceFilesRequired = errors.New("file_a and file_b are required for diff")
 )

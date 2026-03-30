@@ -9,6 +9,7 @@ import (
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/prompt"
+	"github.com/dpopsuev/origami/resource"
 	"github.com/dpopsuev/origami/toolkit"
 )
 
@@ -139,6 +140,11 @@ type CircuitConfig struct {
 	// create, rollback. LivePromptStore enables in-memory editing for
 	// auto-tune loops; FilePromptStore provides read-only access.
 	PromptStore prompt.Store
+
+	// ResourceRegistry provides kind-based resource discovery and loading.
+	// When set (along with DomainFS), the "resource" MCP tool is registered
+	// with actions: kinds, list, get, validate, diff.
+	ResourceRegistry *resource.KindRegistry
 }
 
 // FindSchema returns the StepSchema for the given step name, or an error
