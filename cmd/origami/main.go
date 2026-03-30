@@ -64,6 +64,8 @@ func main() {
 		err = calibrateCmd(os.Args[2:])
 	case "workers":
 		err = workersCmd(os.Args[2:])
+	case "orchestrate":
+		err = orchestrateCmd(os.Args[2:])
 	case "version", "--version":
 		fmt.Printf("origami %s (%s, %s)\n", version, commit, date)
 	default:
