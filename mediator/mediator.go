@@ -436,68 +436,46 @@ func (gw *Mediator) MCPServer() *sdkmcp.Server {
 
 	// Register local workers tool (not routed to backends).
 	if gw.Workers != nil {
-		server.AddTool(
-			&sdkmcp.Tool{
-				Name:        "workers",
-				Description: "Agent worker management. Actions: start (spawn N workers), stop (kill all), health (status).",
-			},
-			func(ctx context.Context, req *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error) {
-				return gw.handleWorkersTool(ctx, req)
-			},
-		)
+		sdkmcp.AddTool(server, &sdkmcp.Tool{
+			Name:        "workers",
+			Description: "Agent worker management. Actions: start (spawn N workers), stop (kill all), health (status).",
+		}, noOutputSchema(gw.handleWorkersToolTyped))
 	}
 
 	return server
 }
 
-// handleWorkersTool dispatches the workers tool actions.
-func (gw *Mediator) handleWorkersTool(ctx context.Context, req *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error) {
-	var input workersInput
-	if req.Params.Arguments != nil {
-		if err := json.Unmarshal(req.Params.Arguments, &input); err != nil {
-			return toolErrorResult(fmt.Errorf("invalid workers arguments: %w", err)), nil
-		}
-	}
-
+// handleWorkersToolTyped dispatches the workers tool actions.
+func (gw *Mediator) handleWorkersToolTyped(ctx context.Context, _ *sdkmcp.CallToolRequest, input *workersInput) (*sdkmcp.CallToolResult, any, error) {
 	switch input.Action {
 	case "start":
 		if input.Session == "" {
-			return toolErrorResult(ErrSessionRequired), nil
+			return nil, nil, ErrSessionRequired
 		}
 		if err := gw.Workers.Start(ctx, input.Session, input.Agent, input.Count); err != nil {
-			return toolErrorResult(err), nil
+			return nil, nil, err
 		}
-		return toolJSONResult(gw.Workers.Health())
+		return nil, gw.Workers.Health(), nil
 
 	case "stop":
 		if err := gw.Workers.Stop(); err != nil {
-			return toolErrorResult(err), nil
+			return nil, nil, err
 		}
-		return toolJSONResult(map[string]any{"status": "stopped"})
+		return nil, map[string]any{"status": "stopped"}, nil
 
 	case "health":
-		return toolJSONResult(gw.Workers.Health())
+		return nil, gw.Workers.Health(), nil
 
 	default:
-		return toolErrorResult(fmt.Errorf("%w: %q; valid actions: start, stop, health", ErrUnknownWorkersAction, input.Action)), nil
+		return nil, nil, fmt.Errorf("%w: %q; valid actions: start, stop, health", ErrUnknownWorkersAction, input.Action)
 	}
 }
 
-func toolErrorResult(err error) *sdkmcp.CallToolResult {
-	return &sdkmcp.CallToolResult{
-		IsError: true,
-		Content: []sdkmcp.Content{&sdkmcp.TextContent{Text: err.Error()}},
+// noOutputSchema wraps a typed handler to suppress outputSchema generation.
+func noOutputSchema[In any](h func(context.Context, *sdkmcp.CallToolRequest, *In) (*sdkmcp.CallToolResult, any, error)) sdkmcp.ToolHandlerFor[*In, any] {
+	return func(ctx context.Context, req *sdkmcp.CallToolRequest, input *In) (*sdkmcp.CallToolResult, any, error) {
+		return h(ctx, req, input)
 	}
-}
-
-func toolJSONResult(v any) (*sdkmcp.CallToolResult, error) {
-	data, err := json.Marshal(v)
-	if err != nil {
-		return toolErrorResult(fmt.Errorf("marshal: %w", err)), nil
-	}
-	return &sdkmcp.CallToolResult{
-		Content: []sdkmcp.Content{&sdkmcp.TextContent{Text: string(data)}},
-	}, nil
 }
 
 // Handler returns an http.Handler with MCP, health, and readiness endpoints.
