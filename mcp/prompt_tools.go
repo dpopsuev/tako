@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/dpopsuev/origami/prompt"
+
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -88,7 +90,18 @@ func (s *CircuitServer) handlePromptDispatch(_ context.Context, _ *sdkmcp.CallTo
 		}
 		return nil, p, nil
 
+	case "export":
+		dir := input.Content
+		if dir == "" {
+			dir = "prompts-export"
+		}
+		count, err := prompt.Export(store, dir)
+		if err != nil {
+			return nil, nil, fmt.Errorf("prompt export: %w", err)
+		}
+		return nil, map[string]any{"exported": count, "directory": dir}, nil
+
 	default:
-		return nil, nil, fmt.Errorf("%w: %q; valid actions: list, get, update, create, rollback", ErrUnknownPromptAction, input.Action)
+		return nil, nil, fmt.Errorf("%w: %q; valid actions: list, get, update, create, rollback, export", ErrUnknownPromptAction, input.Action)
 	}
 }
