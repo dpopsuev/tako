@@ -302,6 +302,8 @@ func renderFactoryServer(g *ResolvedGraph, productName string) string {
 	fmt.Fprintf(&b, "\tbridgedCfg.Name = %q\n", productName)
 	fmt.Fprintf(&b, "\tbridgedCfg.Version = %q\n", "1.0")
 	b.WriteString("\tbridgedCfg.DomainFS = domainFS\n")
+	b.WriteString("\tbridgedCfg.StateDir = *stateDir\n")
+	b.WriteString("\tbridgedCfg.ResourceRegistry = fwresource.DefaultRegistry()\n")
 	if len(root.Params) > 0 {
 		b.WriteString("\tbridgedCfg.ExtraParamDefs = extraParams\n")
 	}
@@ -327,6 +329,7 @@ import (
 
 {{ if .NeedsOrigami }}	origami "github.com/dpopsuev/origami/circuit"
 {{ end }}{{ if .NeedsFactory }}	fwmcp "github.com/dpopsuev/origami/mcp"
+	fwresource "github.com/dpopsuev/origami/resource"
 {{ end }}	"github.com/dpopsuev/origami/domainserve"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 {{ .ImportBlock }})
