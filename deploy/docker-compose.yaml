@@ -70,3 +70,15 @@ services:
       interval: 5s
       timeout: 3s
       retries: 3
+
+  worker:
+    image: origami-agent-worker
+    environment:
+      - GATEWAY_ENDPOINT=http://mediator:9000/mcp
+      - ORIGAMI_SESSION=${ORIGAMI_SESSION:-}
+      - ORIGAMI_AGENT=${ORIGAMI_AGENT:-claude}
+    depends_on:
+      mediator:
+        condition: service_healthy
+    deploy:
+      replicas: ${WORKER_COUNT:-0}

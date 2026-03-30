@@ -62,6 +62,8 @@ func main() {
 		err = validateBundleCmd(os.Args[2:])
 	case "calibrate":
 		err = calibrateCmd(os.Args[2:])
+	case "workers":
+		err = workersCmd(os.Args[2:])
 	case "version", "--version":
 		fmt.Printf("origami %s (%s, %s)\n", version, commit, date)
 	default:
