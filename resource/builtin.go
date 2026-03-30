@@ -2,7 +2,6 @@ package resource
 
 import (
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/fold"
 )
 
 // DefaultRegistry returns a KindRegistry pre-loaded with all known
@@ -18,8 +17,8 @@ func DefaultRegistry() *KindRegistry {
 	reg.Register(NewHandler(circuit.KindScorecard, circuit.LoadScorecardDef, nil, circuit.MergeScorecardDefs))
 	reg.Register(NewHandler(circuit.KindReportTemplate, circuit.LoadReportTemplate, nil, circuit.MergeReportTemplates))
 
-	// Board — typed parser in fold/.
-	reg.Register(NewHandler(circuit.KindBoard, fold.ParseManifest, nil, nil))
+	// Board — passthrough (fold.ParseManifest is build-time, not runtime).
+	reg.Register(NewPassthroughHandler(circuit.KindBoard))
 
 	// Component — LoadComponentManifest takes path not bytes; use passthrough.
 	reg.Register(NewPassthroughHandler(circuit.KindComponent))
