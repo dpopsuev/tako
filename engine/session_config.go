@@ -7,6 +7,7 @@ import (
 	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/prompt"
+	"github.com/dpopsuev/origami/resource"
 	"github.com/dpopsuev/origami/toolkit"
 )
 
@@ -118,4 +119,9 @@ type SessionParams struct {
 	// this to load/edit prompts at runtime instead of fs.ReadFile.
 	// Nil when no PromptStore is configured.
 	PromptStore prompt.Store
+
+	// ResourceRegistry is the framework-injected kind registry. Consumers
+	// use this to load/validate/discover any registered resource kind.
+	// Nil when no ResourceRegistry is configured.
+	ResourceRegistry *resource.KindRegistry
 }

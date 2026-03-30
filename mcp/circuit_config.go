@@ -198,6 +198,10 @@ type StartParams struct {
 	// PromptStore is the framework-injected prompt store from CircuitConfig.
 	// Consumers use this to load/edit prompts at runtime instead of fs.ReadFile.
 	PromptStore prompt.Store
+
+	// ResourceRegistry is the framework-injected kind registry from CircuitConfig.
+	// Consumers use this to load/validate/discover any registered resource kind.
+	ResourceRegistry *resource.KindRegistry
 }
 
 // SchematicHooks groups the domain-specific callbacks that a schematic

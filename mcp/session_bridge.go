@@ -34,15 +34,16 @@ func SessionFactoryToConfig(factory engine.SessionFactory) CircuitConfig {
 	cfg := CircuitConfig{
 		CreateSession: func(ctx context.Context, params StartParams, disp *dispatch.MuxDispatcher, bus agentport.Bus) (RunFunc, SessionMeta, error) {
 			engineParams := engine.SessionParams{
-				Parallel:    params.Parallel,
-				Force:       params.Force,
-				Extra:       params.Extra,
-				DomainFS:    params.DomainFS,
-				StateDir:    params.StateDir,
-				Observer:    params.Observer,
-				Dispatcher:  disp,
-				Relayer:     &dispatch.MuxRelayer{Disp: disp},
-				PromptStore: params.PromptStore,
+				Parallel:         params.Parallel,
+				Force:            params.Force,
+				Extra:            params.Extra,
+				DomainFS:         params.DomainFS,
+				StateDir:         params.StateDir,
+				Observer:         params.Observer,
+				Dispatcher:       disp,
+				Relayer:          &dispatch.MuxRelayer{Disp: disp},
+				PromptStore:      params.PromptStore,
+				ResourceRegistry: params.ResourceRegistry,
 			}
 
 			sessionCfg, err := factory.CreateSession(ctx, &engineParams)
