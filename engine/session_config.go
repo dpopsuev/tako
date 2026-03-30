@@ -46,6 +46,15 @@ type SessionConfig struct {
 	// pipeline (load → walk → collect → score → report). When nil,
 	// the bridge builds a RunFunc from Cases/Transformers/CircuitDef.
 	RunFunc func(ctx context.Context) (any, error)
+
+	// Preflight validates session prerequisites before the run starts.
+	// Called after CreateSession but before the RunFunc goroutine launches.
+	// Return an error to fail-fast with a clear message (e.g., missing
+	// credentials, unreachable endpoints, invalid config).
+	//
+	// Consumers should always set this, even if just to return nil.
+	// The framework logs a warning when Preflight is nil.
+	Preflight func(ctx context.Context) error
 }
 
 // SessionMeta carries initial metadata from the domain session factory

@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"github.com/dpopsuev/origami/agentport"
@@ -49,6 +50,15 @@ func SessionFactoryToConfig(factory engine.SessionFactory) CircuitConfig {
 			sessionCfg, err := factory.CreateSession(ctx, &engineParams)
 			if err != nil {
 				return nil, SessionMeta{}, err
+			}
+
+			// Run consumer preflight before launching the run goroutine.
+			if sessionCfg.Preflight != nil {
+				if err := sessionCfg.Preflight(ctx); err != nil {
+					return nil, SessionMeta{}, fmt.Errorf("preflight: %w", err)
+				}
+			} else {
+				slog.WarnContext(ctx, "SessionConfig.Preflight is nil — consider adding fail-fast validation")
 			}
 
 			runFn := buildRunFunc(sessionCfg, &engineParams)
