@@ -175,6 +175,8 @@ type circuitInput struct {
 	ResumeInput map[string]any `json:"resume_input,omitempty"`
 	// confusion params
 	Metric string `json:"metric,omitempty"` // field to analyze: component, category, defect_type, repos
+	// diff params
+	Against string `json:"against,omitempty"` // session ID to compare against (diff action)
 }
 
 // signalInput is the unified input for the consolidated "signal" tool.
@@ -454,6 +456,13 @@ func (s *CircuitServer) dispatchCircuitAction(ctx context.Context, req *sdkmcp.C
 		}
 		return marshalToolResult(out)
 
+	case "diff":
+		out, err := s.handleDiff(input.SessionID, input.Against)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return marshalToolResult(out)
+
 	case "inspect":
 		out, err := s.handleInspectCircuit(ctx, input)
 		if err != nil {
@@ -551,11 +560,11 @@ func (s *CircuitServer) buildCircuitTool() *sdkmcp.Tool {
 	}
 
 	schema := json.RawMessage(fmt.Sprintf(
-		`{"type":"object","properties":{"action":{"type":"string","description":"Action to perform","enum":["start","step","submit","report","summary","detail","failing","weak","confusion"]},"session_id":{"type":"string","description":"session ID from circuit start"},"parallel":{"type":"integer","description":"number of parallel workers (start action)"},"force":{"type":"boolean","description":"cancel any existing session (start action)"},"extra":{%s},"timeout_ms":{"type":"integer","description":"max wait in milliseconds (step action)"},"preferred_case_id":{"type":"string","description":"prefer steps for this case ID (step action)"},"preferred_zone":{"type":"string","description":"prefer steps from this zone (step action)"},"stickiness":{"type":"integer","description":"zone stickiness level (step action)"},"consecutive_misses":{"type":"integer","description":"caller-tracked empty polls (step action)"},"dispatch_id":{"type":"integer","description":"dispatch ID from step (submit action)"},"step":{"type":"string","description":"circuit step name (submit action)"},"fields":{"type":"object","description":"artifact fields (submit action)"},"case_id":{"type":"string","description":"case ID (detail action)"},"threshold":{"type":"number","description":"convergence threshold (weak action, default 0.5)"},"metric":{"type":"string","description":"field to analyze (confusion action): component, category, defect_type"}},"required":["action"]}`,
+		`{"type":"object","properties":{"action":{"type":"string","description":"Action to perform","enum":["start","step","submit","report","summary","detail","failing","weak","confusion","diff"]},"session_id":{"type":"string","description":"session ID from circuit start"},"parallel":{"type":"integer","description":"number of parallel workers (start action)"},"force":{"type":"boolean","description":"cancel any existing session (start action)"},"extra":{%s},"timeout_ms":{"type":"integer","description":"max wait in milliseconds (step action)"},"preferred_case_id":{"type":"string","description":"prefer steps for this case ID (step action)"},"preferred_zone":{"type":"string","description":"prefer steps from this zone (step action)"},"stickiness":{"type":"integer","description":"zone stickiness level (step action)"},"consecutive_misses":{"type":"integer","description":"caller-tracked empty polls (step action)"},"dispatch_id":{"type":"integer","description":"dispatch ID from step (submit action)"},"step":{"type":"string","description":"circuit step name (submit action)"},"fields":{"type":"object","description":"artifact fields (submit action)"},"case_id":{"type":"string","description":"case ID (detail action)"},"threshold":{"type":"number","description":"convergence threshold (weak action, default 0.5)"},"metric":{"type":"string","description":"field to analyze (confusion action): component, category, defect_type"},"against":{"type":"string","description":"session ID to compare against (diff action)"}},"required":["action"]}`,
 		extraSchema,
 	))
 
-	desc := "Circuit execution and analysis. Actions: start (begin run), step (get next prompt), submit (send artifact), report (full results), summary (compact metrics+cases), detail (single case drill-down), failing (failed metrics only), weak (low-convergence cases), confusion (group failures by misclassification pattern)."
+	desc := "Circuit execution and analysis. Actions: start (begin run), step (get next prompt), submit (send artifact), report (full results), summary (compact metrics+cases), detail (single case drill-down), failing (failed metrics only), weak (low-convergence cases), confusion (group failures by misclassification pattern), diff (compare metrics between runs)."
 	if len(s.Config.ExtraParamDefs) > 0 {
 		var parts []string
 		for _, p := range s.Config.ExtraParamDefs {
@@ -1409,6 +1418,96 @@ func (s *CircuitServer) handleConfusion(sess *CircuitSession, metric string) (an
 		"correct":   correct,
 		"incorrect": total - correct,
 		"confusion": entries,
+	}, nil
+}
+
+// handleDiff compares metrics between two runs by loading their report.json files.
+func (s *CircuitServer) handleDiff(sessionA, sessionB string) (any, error) {
+	if sessionA == "" || sessionB == "" {
+		return nil, fmt.Errorf("%w: diff requires session_id (run A) and against (run B)", ErrSessionId)
+	}
+	stateDir := s.Config.StateDir
+	if stateDir == "" {
+		return nil, fmt.Errorf("%w: StateDir not configured", ErrNoResultAvailable)
+	}
+
+	loadReport := func(sessionID string) (map[string]any, error) {
+		path := filepath.Join(stateDir, "runs", sessionID, "report.json")
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("read report for %s: %w", sessionID, err)
+		}
+		var report map[string]any
+		if err := json.Unmarshal(data, &report); err != nil {
+			return nil, fmt.Errorf("parse report for %s: %w", sessionID, err)
+		}
+		return report, nil
+	}
+
+	reportA, err := loadReport(sessionA)
+	if err != nil {
+		return nil, err
+	}
+	reportB, err := loadReport(sessionB)
+	if err != nil {
+		return nil, err
+	}
+
+	// Extract metrics from both reports
+	extractMetrics := func(report map[string]any) map[string]map[string]any {
+		result := make(map[string]map[string]any)
+		metricsObj, _ := report["metrics"].(map[string]any)
+		metricsList, _ := metricsObj["metrics"].([]any)
+		for _, m := range metricsList {
+			mm, ok := m.(map[string]any)
+			if !ok {
+				continue
+			}
+			id, _ := mm["id"].(string)
+			if id != "" {
+				result[id] = mm
+			}
+		}
+		return result
+	}
+
+	metricsA := extractMetrics(reportA)
+	metricsB := extractMetrics(reportB)
+
+	// Compute metric deltas
+	type metricDelta struct {
+		ID           string  `json:"id"`
+		Name         string  `json:"name"`
+		Before       float64 `json:"before"`
+		After        float64 `json:"after"`
+		Delta        float64 `json:"delta"`
+		StatusChange string  `json:"status_change,omitempty"` // "fail→pass", "pass→fail", etc.
+	}
+
+	deltas := make([]metricDelta, 0, len(metricsA))
+	for id, ma := range metricsA {
+		valA, _ := ma["value"].(float64)
+		passA, _ := ma["pass"].(bool)
+		name, _ := ma["name"].(string)
+		d := metricDelta{ID: id, Name: name, Before: valA}
+		if mb, ok := metricsB[id]; ok {
+			valB, _ := mb["value"].(float64)
+			passB, _ := mb["pass"].(bool)
+			d.After = valB
+			d.Delta = valB - valA
+			if !passA && passB {
+				d.StatusChange = "fail→pass"
+			} else if passA && !passB {
+				d.StatusChange = "pass→fail"
+			}
+		}
+		deltas = append(deltas, d)
+	}
+
+	return map[string]any{
+		"session_a": sessionA,
+		"session_b": sessionB,
+		"metrics":   deltas,
 	}, nil
 }
 
