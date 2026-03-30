@@ -686,8 +686,10 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 	}
 
 	sess := NewCircuitSession(runCtx, sessID, meta, parallel, disp, bus, runFn, runCancel)
-	if alias, ok := input.Extra[ExtraKeySessionName].(string); ok {
+	if alias, ok := input.Extra[ExtraKeySessionName].(string); ok && alias != "" {
 		sess.Alias = alias
+	} else {
+		sess.Alias = GenerateHeraldicName()
 	}
 	sess.recorder = recorder
 	sess.runDir = runDir
@@ -1575,8 +1577,8 @@ func (s *CircuitServer) getSession(id string) (*CircuitSession, error) {
 	if s.session == nil {
 		return nil, ErrNoActiveSession
 	}
-	if s.session.ID != id {
-		return nil, fmt.Errorf("%w: %q does not match active session %q; the session may have been replaced or expired", ErrSessionId, id, s.session.ID)
+	if s.session.ID != id && s.session.Alias != id {
+		return nil, fmt.Errorf("%w: %q does not match active session %q (%s); the session may have been replaced or expired", ErrSessionId, id, s.session.ID, s.session.Alias)
 	}
 	return s.session, nil
 }
