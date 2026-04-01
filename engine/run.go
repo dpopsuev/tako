@@ -25,7 +25,6 @@ type runConfig struct {
 	components     ComponentLoader
 	overrides      map[string]any
 	walker         circuit.Walker
-	team           *Team
 	observer       circuit.WalkObserver
 	logger         *slog.Logger
 	memory         circuit.MemoryStore
@@ -79,9 +78,12 @@ func WithWalker(w circuit.Walker) RunOption {
 	return func(c *runConfig) { c.walker = w }
 }
 
-// WithTeam enables multi-walker team execution.
-func WithTeam(team *Team) RunOption {
-	return func(c *runConfig) { c.team = team }
+// WithCollective enables multi-walker execution via a CollectiveWalker.
+// The selector picks which walker handles each node.
+func WithCollective(walkers []circuit.Walker, selector WalkerSelector, opts ...CollectiveWalkerOption) RunOption {
+	return func(c *runConfig) {
+		c.walker = NewCollectiveWalker(walkers, selector, opts...)
+	}
 }
 
 // WithRunObserver attaches a walk observer for the run.
@@ -225,21 +227,6 @@ func Run(ctx context.Context, circuitPath string, input any, opts ...RunOption) 
 		if dg, ok := runner.Graph.(*DefaultGraph); ok {
 			dg.observer = obs
 		}
-	}
-
-	if cfg.team != nil {
-		for _, w := range cfg.team.Walkers {
-			if input != nil {
-				w.State().Context["input"] = input
-			}
-			if cfg.memory != nil {
-				w.State().Context["memory"] = cfg.memory
-			}
-			if cfg.offsetPreamble != "" {
-				applyOffsetPreamble(w, cfg.offsetPreamble)
-			}
-		}
-		return runner.Graph.WalkTeam(ctx, cfg.team, string(def.Start))
 	}
 
 	walker := cfg.walker

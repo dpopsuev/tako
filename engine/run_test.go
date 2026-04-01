@@ -276,15 +276,9 @@ done: _done
 		state: circuit.NewWalkerState("seeker-1"),
 	}
 
-	team := &Team{
-		Walkers:   []circuit.Walker{herald, seeker},
-		Scheduler: &AffinityScheduler{},
-		MaxSteps:  20,
-	}
-
 	err := Run(context.Background(), path, nil,
 		WithTransformers(TransformerRegistry{"echo": &echoTransformer{}}),
-		WithTeam(team),
+		WithCollective([]circuit.Walker{herald, seeker}, &AffinitySelector{}, WithMaxSteps(20)),
 	)
 	if err != nil {
 		t.Fatalf("Run with team: %v", err)
@@ -320,14 +314,9 @@ func TestRun_WithTeam_InputPropagated(t *testing.T) {
 		state:    circuit.NewWalkerState("solo-1"),
 	}
 
-	team := &Team{
-		Walkers:   []circuit.Walker{w},
-		Scheduler: &SingleScheduler{Walker: w},
-	}
-
 	err := Run(context.Background(), path, map[string]any{"hello": "world"},
 		WithTransformers(TransformerRegistry{"echo": &echoTransformer{}}),
-		WithTeam(team),
+		WithCollective([]circuit.Walker{w}, &AffinitySelector{}),
 	)
 	if err != nil {
 		t.Fatalf("Run with team + input: %v", err)

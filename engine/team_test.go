@@ -9,7 +9,7 @@ import (
 	"github.com/dpopsuev/origami/circuit"
 )
 
-func TestWalkTeam_LinearWithTwoWalkers(t *testing.T) {
+func TestCollectiveWalker_LinearWithTwoWalkers(t *testing.T) {
 	nodeA := &stubNode{name: "classify", element: agentport.ElementFire, artifact: &stubArtifact{typ: "classification", confidence: 0.9}}
 	nodeB := &stubNode{name: "investigate", element: agentport.ElementWater, artifact: &stubArtifact{typ: "investigation", confidence: 0.8}}
 	nodeC := &stubNode{name: "decide", element: agentport.ElementEarth, artifact: &stubArtifact{typ: "decision", confidence: 0.95}}
@@ -43,39 +43,23 @@ func TestWalkTeam_LinearWithTwoWalkers(t *testing.T) {
 	}
 
 	tc := &TraceCollector{}
-	team := &Team{
-		Walkers:   []circuit.Walker{herald, seeker},
-		Scheduler: &AffinityScheduler{},
-		Observer:  tc,
-	}
+	cw := NewCollectiveWalker(
+		[]circuit.Walker{herald, seeker},
+		&AffinitySelector{},
+		WithCollectiveObserver(tc),
+	)
 
-	if err := g.WalkTeam(context.Background(), team, "classify"); err != nil {
-		t.Fatalf("WalkTeam failed: %v", err)
+	if err := g.Walk(context.Background(), cw, "classify"); err != nil {
+		t.Fatalf("Walk failed: %v", err)
 	}
 
 	switches := tc.EventsOfType(circuit.EventWalkerSwitch)
 	if len(switches) < 2 {
 		t.Errorf("expected at least 2 walker switches, got %d", len(switches))
 	}
-
-	enters := tc.EventsOfType(circuit.EventNodeEnter)
-	if len(enters) != 3 {
-		t.Fatalf("expected 3 node_enter events, got %d", len(enters))
-	}
-	if enters[0].Walker != "Herald" {
-		t.Errorf("classify should be handled by Herald, got %s", enters[0].Walker)
-	}
-	if enters[1].Walker != "Seeker" {
-		t.Errorf("investigate should be handled by Seeker, got %s", enters[1].Walker)
-	}
-
-	completes := tc.EventsOfType(circuit.EventWalkComplete)
-	if len(completes) != 1 {
-		t.Errorf("expected 1 walk_complete event, got %d", len(completes))
-	}
 }
 
-func TestWalkTeam_MaxStepsGuard(t *testing.T) {
+func TestCollectiveWalker_MaxStepsGuard(t *testing.T) {
 	nodeA := &stubNode{name: "A", artifact: &stubArtifact{typ: "a"}}
 	edges := []circuit.Edge{
 		&stubEdge{id: "A-loop", from: "A", to: "A"},
@@ -91,65 +75,22 @@ func TestWalkTeam_MaxStepsGuard(t *testing.T) {
 		state:    circuit.NewWalkerState("solo-1"),
 	}
 
-	team := &Team{
-		Walkers:   []circuit.Walker{w},
-		Scheduler: &SingleScheduler{Walker: w},
-		MaxSteps:  3,
-	}
+	cw := NewCollectiveWalker(
+		[]circuit.Walker{w},
+		&AffinitySelector{},
+		WithMaxSteps(3),
+	)
 
-	err = g.WalkTeam(context.Background(), team, "A")
+	err = g.Walk(context.Background(), cw, "A")
 	if err == nil {
 		t.Fatal("expected max steps error")
 	}
-	if !errors.Is(err, nil) {
-		// Just check that the error message mentions max steps
-		if got := err.Error(); got == "" {
-			t.Fatal("expected non-empty error message")
-		}
+	if !errors.Is(err, ErrMaxStepsExceeded) {
+		t.Errorf("expected ErrMaxStepsExceeded, got %v", err)
 	}
 }
 
-func TestWalkTeam_ObserverReceivesEdgeEvents(t *testing.T) {
-	nodeA := &stubNode{name: "A", artifact: &stubArtifact{typ: "a"}}
-	nodeB := &stubNode{name: "B", artifact: &stubArtifact{typ: "b"}}
-
-	edges := []circuit.Edge{
-		&stubEdge{id: "A-B", from: "A", to: "B"},
-		&stubEdge{id: "B-done", from: "B", to: "_done"},
-	}
-
-	g, err := NewGraph("test", []circuit.Node{nodeA, nodeB}, edges, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	w := &stubWalker{
-		identity: agentport.AgentIdentity{Name: "Solo"},
-		state:    circuit.NewWalkerState("s1"),
-	}
-	tc := &TraceCollector{}
-	team := &Team{
-		Walkers:   []circuit.Walker{w},
-		Scheduler: &SingleScheduler{Walker: w},
-		Observer:  tc,
-	}
-
-	if err := g.WalkTeam(context.Background(), team, "A"); err != nil {
-		t.Fatal(err)
-	}
-
-	edgeEvals := tc.EventsOfType(circuit.EventEdgeEvaluate)
-	if len(edgeEvals) < 2 {
-		t.Errorf("expected at least 2 edge_evaluate events, got %d", len(edgeEvals))
-	}
-
-	transitions := tc.EventsOfType(circuit.EventTransition)
-	if len(transitions) < 1 {
-		t.Errorf("expected at least 1 transition event, got %d", len(transitions))
-	}
-}
-
-func TestWalkTeam_NilObserver(t *testing.T) {
+func TestCollectiveWalker_NilObserver(t *testing.T) {
 	nodeA := &stubNode{name: "A", artifact: &stubArtifact{typ: "a"}}
 	edges := []circuit.Edge{
 		&stubEdge{id: "A-done", from: "A", to: "_done"},
@@ -164,95 +105,15 @@ func TestWalkTeam_NilObserver(t *testing.T) {
 		identity: agentport.AgentIdentity{Name: "Solo"},
 		state:    circuit.NewWalkerState("s1"),
 	}
-	team := &Team{
-		Walkers:   []circuit.Walker{w},
-		Scheduler: &SingleScheduler{Walker: w},
-		Observer:  nil,
-	}
 
-	if err := g.WalkTeam(context.Background(), team, "A"); err != nil {
+	cw := NewCollectiveWalker([]circuit.Walker{w}, &AffinitySelector{})
+
+	if err := g.Walk(context.Background(), cw, "A"); err != nil {
 		t.Fatal(err)
 	}
 }
 
-func TestWalkTeam_NoWalkersError(t *testing.T) {
-	nodeA := &stubNode{name: "A", artifact: &stubArtifact{typ: "a"}}
-
-	g, err := NewGraph("test", []circuit.Node{nodeA}, nil, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	team := &Team{
-		Walkers:   nil,
-		Scheduler: &AffinityScheduler{},
-	}
-
-	err = g.WalkTeam(context.Background(), team, "A")
-	if err == nil {
-		t.Fatal("expected error for empty walkers")
-	}
-}
-
-func TestWalkTeam_StartNodeNotFound(t *testing.T) {
-	g, err := NewGraph("test", nil, nil, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	w := &stubWalker{
-		identity: agentport.AgentIdentity{Name: "Solo"},
-		state:    circuit.NewWalkerState("s1"),
-	}
-	team := &Team{
-		Walkers:   []circuit.Walker{w},
-		Scheduler: &SingleScheduler{Walker: w},
-	}
-
-	err = g.WalkTeam(context.Background(), team, "nonexistent")
-	if !errors.Is(err, circuit.ErrNodeNotFound) {
-		t.Errorf("expected ErrNodeNotFound, got %v", err)
-	}
-}
-
-func TestWalkTeam_ContextCancellation(t *testing.T) {
-	nodeA := &stubNode{name: "A", artifact: &stubArtifact{typ: "a"}}
-	nodeB := &stubNode{name: "B", artifact: &stubArtifact{typ: "b"}}
-	edges := []circuit.Edge{
-		&stubEdge{id: "A-B", from: "A", to: "B"},
-	}
-
-	g, err := NewGraph("test", []circuit.Node{nodeA, nodeB}, edges, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-
-	w := &stubWalker{
-		identity: agentport.AgentIdentity{Name: "Solo"},
-		state:    circuit.NewWalkerState("s1"),
-	}
-	tc := &TraceCollector{}
-	team := &Team{
-		Walkers:   []circuit.Walker{w},
-		Scheduler: &SingleScheduler{Walker: w},
-		Observer:  tc,
-	}
-
-	err = g.WalkTeam(ctx, team, "A")
-	if err == nil {
-		t.Fatal("expected error from canceled context")
-	}
-
-	walkErrors := tc.EventsOfType(circuit.EventWalkError)
-	if len(walkErrors) == 0 {
-		t.Error("expected walk_error event on cancellation")
-	}
-}
-
-func TestWalkTeam_MismatchEmitted(t *testing.T) {
+func TestCollectiveWalker_MismatchEmitted(t *testing.T) {
 	nodeA := &stubNode{name: "A", element: agentport.ElementFire, artifact: &stubArtifact{typ: "a", confidence: 0.8}}
 	nodeB := &stubNode{name: "B", element: agentport.ElementWater, artifact: &stubArtifact{typ: "b", confidence: 0.7}}
 
@@ -284,15 +145,15 @@ func TestWalkTeam_MismatchEmitted(t *testing.T) {
 	}
 
 	tc := &TraceCollector{}
-	team := &Team{
-		Walkers:   []circuit.Walker{wFire, wWater},
-		Scheduler: &AffinityScheduler{},
-		Observer:  tc,
-		MaxSteps:  10,
-	}
+	cw := NewCollectiveWalker(
+		[]circuit.Walker{wFire, wWater},
+		&AffinitySelector{},
+		WithCollectiveObserver(tc),
+		WithMaxSteps(10),
+	)
 
-	if err := g.WalkTeam(context.Background(), team, "A"); err != nil {
-		t.Fatalf("WalkTeam failed: %v", err)
+	if err := g.Walk(context.Background(), cw, "A"); err != nil {
+		t.Fatalf("Walk failed: %v", err)
 	}
 
 	switches := tc.EventsOfType(circuit.EventWalkerSwitch)

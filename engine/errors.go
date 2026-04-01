@@ -93,9 +93,6 @@ var (
 	// ErrUnknownRole is returned for: unknown role
 	ErrUnknownRole = errors.New("unknown role")
 
-	// ErrTeamNoWalkers is returned when a team has no walkers.
-	ErrTeamNoWalkers = errors.New("team has no walkers")
-
 	// ErrMaxStepsExceeded is returned when the maximum step count is reached.
 	ErrMaxStepsExceeded = errors.New("max steps exceeded")
 

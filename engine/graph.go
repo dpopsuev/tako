@@ -32,7 +32,6 @@ type Graph interface {
 	NodeByName(name string) (circuit.Node, bool)
 	EdgesFrom(nodeName string) []circuit.Edge
 	Walk(ctx context.Context, walker circuit.Walker, startNode string) error
-	WalkTeam(ctx context.Context, team *Team, startNode string) error
 }
 
 // Zone is a meta-phase grouping of Nodes with shared characteristics.
@@ -60,7 +59,7 @@ type DefaultGraph struct {
 	edgeIndex    map[string][]circuit.Edge // from-node -> edges in definition order
 	nodeTimeouts map[string]time.Duration  // per-node timeout (from DSL)
 	doneNode     string                    // terminal pseudo-node name (walk stops here)
-	observer     circuit.WalkObserver      // graph-level observer, used by Walk and composed with team observer in WalkTeam
+	observer     circuit.WalkObserver      // graph-level observer, used by Walk
 	registries   *GraphRegistries          // retained for DelegateNode sub-walk building
 }
 
@@ -76,7 +75,7 @@ func WithDoneNode(name string) GraphOption {
 }
 
 // WithObserver attaches a graph-level observer that receives walk events
-// from both Walk() and WalkTeam(). In WalkTeam(), this observer is composed
+// from Walk(). For multi-walker walks, the CollectiveWalker handles
 // with the team's observer via MultiObserver.
 func WithObserver(obs circuit.WalkObserver) GraphOption {
 	return func(g *DefaultGraph) {
@@ -162,7 +161,7 @@ func (g *DefaultGraph) EdgesFrom(nodeName string) []circuit.Edge {
 // error if no edge matches or a node is not found.
 //
 // If a graph-level observer is set via WithObserver, walk events are emitted
-// at the same points as WalkTeam (node enter/exit, transitions, completion, errors).
+// at node enter/exit, transitions, completion, and errors.
 //
 //nolint:gocyclo,funlen // core graph traversal state machine — complexity is inherent
 func (g *DefaultGraph) Walk(ctx context.Context, walker circuit.Walker, startNode string) error {
@@ -348,182 +347,6 @@ func (g *DefaultGraph) Walk(ctx context.Context, walker circuit.Walker, startNod
 	}
 }
 
-// WalkTeam traverses the graph with multiple walkers coordinated by a
-// scheduler. Before each node, the scheduler picks the walker. The
-// observer (if non-nil) receives events for the full walk lifecycle.
-// MaxSteps > 0 provides defense-in-depth against infinite loops.
-//
-// When both a graph-level observer (WithObserver) and team.Observer are set,
-// events are fanned out to both via MultiObserver.
-//
-//nolint:gocyclo,funlen // multi-walker graph traversal — complexity is inherent
-func (g *DefaultGraph) WalkTeam(ctx context.Context, team *Team, startNode string) error {
-	obs := composeObservers(g.observer, team.Observer)
-
-	node, ok := g.nodeIndex[startNode]
-	if !ok {
-		emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkError, Node: startNode, Error: fmt.Errorf("%w: start node %q", circuit.ErrNodeNotFound, startNode)})
-		return fmt.Errorf("%w: start node %q", circuit.ErrNodeNotFound, startNode)
-	}
-
-	if len(team.Walkers) == 0 {
-		return ErrTeamNoWalkers
-	}
-
-	var priorWalker circuit.Walker
-	var priorArtifact circuit.Artifact
-	steps := 0
-
-	for {
-		if err := ctx.Err(); err != nil {
-			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkError, Error: err})
-			return err
-		}
-
-		if team.MaxSteps > 0 && steps >= team.MaxSteps {
-			err := fmt.Errorf("%w (%d) at node %q", ErrMaxStepsExceeded, team.MaxSteps, node.Name())
-			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkError, Node: node.Name(), Error: err})
-			return err
-		}
-
-		zone := zoneForNode(node.Name(), g.zones)
-		walker := team.Scheduler.Select(SchedulerContext{
-			Node:        node,
-			Zone:        zone,
-			Walkers:     team.Walkers,
-			PriorWalker: priorWalker,
-		})
-
-		if priorWalker == nil || walker.Identity().Name != priorWalker.Identity().Name {
-			meta := map[string]any{}
-			if as, ok := team.Scheduler.(*AffinityScheduler); ok {
-				meta["mismatch"] = as.LastMismatch()
-			}
-			emitEvent(obs, &circuit.WalkEvent{
-				Type:     circuit.EventWalkerSwitch,
-				Node:     node.Name(),
-				Walker:   walker.Identity().Name,
-				Metadata: meta,
-			})
-		}
-
-		emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: node.Name(), Walker: walker.Identity().Name})
-		nodeStart := time.Now()
-
-		state := walker.State()
-		state.CurrentNode = node.Name()
-
-		nc := circuit.NodeContext{
-			WalkerState:   state,
-			PriorArtifact: priorArtifact,
-			Meta:          make(map[string]any),
-		}
-
-		nodeCtx, nodeCancel := g.nodeCtx(ctx, node.Name())
-
-		var artifact circuit.Artifact
-		var err error
-		if dn, isDel := node.(DelegateNode); isDel {
-			artifact, err = g.walkDelegate(nodeCtx, walker, obs, dn, nc)
-		} else {
-			artifact, err = walker.Handle(nodeCtx, node, nc)
-		}
-		nodeCancel()
-		nodeElapsed := time.Since(nodeStart)
-
-		if err != nil {
-			state.Status = walkStatusError
-			emitEvent(obs, &circuit.WalkEvent{
-				Type:    circuit.EventNodeExit,
-				Node:    node.Name(),
-				Walker:  walker.Identity().Name,
-				Elapsed: nodeElapsed,
-				Error:   err,
-			})
-			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkError, Node: node.Name(), Error: err})
-			return fmt.Errorf("node %s: %w", node.Name(), err)
-		}
-
-		teamExitMeta := map[string]any{}
-		if ca, ok := artifact.(circuit.CountableArtifact); ok {
-			teamExitMeta["snr"] = evidenceSNR(ca.InputCount(), ca.OutputCount())
-		}
-		emitEvent(obs, &circuit.WalkEvent{
-			Type:     circuit.EventNodeExit,
-			Node:     node.Name(),
-			Walker:   walker.Identity().Name,
-			Artifact: artifact,
-			Elapsed:  nodeElapsed,
-			Metadata: teamExitMeta,
-		})
-
-		if artifact != nil && artifact.Confidence() > 0 {
-			state.RecordConfidence(artifact.Confidence())
-		}
-
-		edges := g.EdgesFrom(node.Name())
-		if len(edges) == 0 {
-			state.Status = walkStatusDone
-			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkComplete, Node: node.Name(), Walker: walker.Identity().Name})
-			return nil
-		}
-
-		var matched *circuit.Transition
-		var matchedEdge circuit.Edge
-		for _, e := range edges {
-			wName := walker.Identity().Name
-			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventEdgeEvaluate, Node: node.Name(), Edge: e.ID(), Walker: wName})
-			t := e.Evaluate(artifact, state)
-			if t != nil {
-				matched = t
-				matchedEdge = e
-				break
-			}
-		}
-
-		if matched == nil {
-			state.Status = walkStatusError
-			err := fmt.Errorf("%w: node %q, artifact type %q", circuit.ErrNoEdge, node.Name(), artifact.Type())
-			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkError, Node: node.Name(), Error: err, Walker: walker.Identity().Name})
-			return err
-		}
-
-		emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventTransition, Node: node.Name(), Edge: matchedEdge.ID(), Walker: walker.Identity().Name})
-
-		if matchedEdge.IsLoop() {
-			state.IncrementLoop(node.Name())
-		}
-
-		state.RecordStep(node.Name(), matchedEdge.ID(), matchedEdge.ID(), time.Now().UTC().Format(time.RFC3339))
-		state.MergeContext(matched.ContextAdditions)
-
-		fromZone := zoneForNode(node.Name(), g.zones)
-		toZone := zoneForNode(matched.NextNode, g.zones)
-		if fromZone != nil && (toZone == nil || fromZone.Name != toZone.Name) {
-			applyContextFilter(state.Context, fromZone.ContextFilter)
-		}
-
-		if matched.NextNode == g.doneNode {
-			state.Status = walkStatusDone
-			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkComplete, Walker: walker.Identity().Name})
-			return nil
-		}
-
-		nextNode, ok := g.nodeIndex[matched.NextNode]
-		if !ok {
-			state.Status = walkStatusError
-			err := fmt.Errorf("%w: transition target %q from edge %s", circuit.ErrNodeNotFound, matched.NextNode, matchedEdge.ID())
-			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkError, Error: err})
-			return err
-		}
-
-		priorArtifact = artifact
-		priorWalker = walker
-		node = nextNode
-		steps++
-	}
-}
-
 // applyContextFilter strips or keeps context keys based on a zone's filter.
 // Block takes precedence: if both pass and block are set, blocked keys are
 // removed first, then only passed keys survive.
@@ -549,17 +372,6 @@ func applyContextFilter(ctx map[string]any, filter *circuit.ContextFilterDef) {
 	}
 }
 
-// composeObservers returns a single observer from two possibly-nil observers.
-func composeObservers(a, b circuit.WalkObserver) circuit.WalkObserver {
-	if a == nil {
-		return b
-	}
-	if b == nil {
-		return a
-	}
-	return circuit.MultiObserver{a, b}
-}
-
 // nodeCtx returns a derived context with the node's timeout applied.
 // If the node has no timeout, returns the parent context and a no-op cancel.
 func (g *DefaultGraph) nodeCtx(parent context.Context, nodeName string) (context.Context, context.CancelFunc) {
@@ -569,7 +381,19 @@ func (g *DefaultGraph) nodeCtx(parent context.Context, nodeName string) (context
 	return parent, func() {}
 }
 
-// walkDelegate handles a DelegateNode encounter during Walk or WalkTeam.
+// zoneForNode finds the zone containing a node, or nil.
+func zoneForNode(nodeName string, zones []Zone) *Zone {
+	for i := range zones {
+		for _, n := range zones[i].NodeNames {
+			if n == nodeName {
+				return &zones[i]
+			}
+		}
+	}
+	return nil
+}
+
+// walkDelegate handles a DelegateNode encounter during Walk.
 // It calls GenerateCircuit, builds the sub-graph via Runner (which provides
 // schema validation and hooks), walks it, and returns a DelegateArtifact
 // wrapping the inner walk's results.
