@@ -21,7 +21,10 @@ require (
 	modernc.org/sqlite v1.46.1
 )
 
-require github.com/dpopsuev/bugle v0.17.0
+require (
+	github.com/dpopsuev/bugle v0.17.0
+	github.com/dpopsuev/jericho v0.2.0
+)
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -62,3 +65,5 @@ require (
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
 )
+
+replace github.com/dpopsuev/jericho => ../jericho

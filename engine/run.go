@@ -323,7 +323,7 @@ func resumeFromCheckpoint(cfg *runConfig, walker circuit.Walker, startNode strin
 	*walker.State() = *loaded
 	startNode = loaded.CurrentNode
 	if cfg.observer != nil {
-		emitEvent(cfg.observer, &circuit.WalkEvent{Type: circuit.EventWalkResumed, Node: startNode, Walker: walker.Identity().PersonaName})
+		emitEvent(cfg.observer, &circuit.WalkEvent{Type: circuit.EventWalkResumed, Node: startNode, Walker: walker.Identity().Name})
 	}
 	return startNode, nil
 }

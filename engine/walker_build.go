@@ -60,7 +60,7 @@ func buildWalker(d *circuit.WalkerDef) (*circuit.ProcessWalker, error) {
 		if !ok {
 			return nil, fmt.Errorf("%w: %q", ErrUnknownPersona, d.Persona)
 		}
-		id = p.Identity
+		id = p
 	}
 
 	if d.Approach != "" {

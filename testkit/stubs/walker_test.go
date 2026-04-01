@@ -69,19 +69,19 @@ func TestStubWalker_Identity(t *testing.T) {
 	w := stubs.NewStubWalker("w1", nil)
 
 	id := w.Identity()
-	if id.PersonaName != "w1" {
-		t.Errorf("PersonaName = %q, want %q", id.PersonaName, "w1")
+	if id.Name != "w1" {
+		t.Errorf("Name = %q, want %q", id.Name, "w1")
 	}
 }
 
 func TestStubWalker_SetIdentity(t *testing.T) {
 	w := stubs.NewStubWalker("w1", nil)
-	newID := circuit.AgentIdentity{PersonaName: "w2"}
+	newID := circuit.AgentIdentity{Name: "w2"}
 	w.SetIdentity(&newID)
 
 	id := w.Identity()
-	if id.PersonaName != "w2" {
-		t.Errorf("PersonaName = %q, want %q", id.PersonaName, "w2")
+	if id.Name != "w2" {
+		t.Errorf("Name = %q, want %q", id.Name, "w2")
 	}
 }
 

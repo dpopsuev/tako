@@ -27,7 +27,7 @@ func NewStubWalker(id string, artifacts map[string]circuit.Artifact) *StubWalker
 	return &StubWalker{
 		id:        id,
 		artifacts: artifacts,
-		identity:  circuit.AgentIdentity{PersonaName: id},
+		identity:  circuit.AgentIdentity{Name: id},
 		state:     circuit.NewWalkerState(id),
 	}
 }

@@ -166,7 +166,7 @@ func (g *DefaultGraph) EdgesFrom(nodeName string) []circuit.Edge {
 //nolint:gocyclo,funlen // core graph traversal state machine — complexity is inherent
 func (g *DefaultGraph) Walk(ctx context.Context, walker circuit.Walker, startNode string) error {
 	obs := g.observer
-	walkerName := walker.Identity().PersonaName
+	walkerName := walker.Identity().Name
 
 	node, ok := g.nodeIndex[startNode]
 	if !ok {
@@ -393,7 +393,7 @@ func (g *DefaultGraph) WalkTeam(ctx context.Context, team *Team, startNode strin
 			PriorWalker: priorWalker,
 		})
 
-		if priorWalker == nil || walker.Identity().PersonaName != priorWalker.Identity().PersonaName {
+		if priorWalker == nil || walker.Identity().Name != priorWalker.Identity().Name {
 			meta := map[string]any{}
 			if as, ok := team.Scheduler.(*AffinityScheduler); ok {
 				meta["mismatch"] = as.LastMismatch()
@@ -401,12 +401,12 @@ func (g *DefaultGraph) WalkTeam(ctx context.Context, team *Team, startNode strin
 			emitEvent(obs, &circuit.WalkEvent{
 				Type:     circuit.EventWalkerSwitch,
 				Node:     node.Name(),
-				Walker:   walker.Identity().PersonaName,
+				Walker:   walker.Identity().Name,
 				Metadata: meta,
 			})
 		}
 
-		emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: node.Name(), Walker: walker.Identity().PersonaName})
+		emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: node.Name(), Walker: walker.Identity().Name})
 		nodeStart := time.Now()
 
 		state := walker.State()
@@ -435,7 +435,7 @@ func (g *DefaultGraph) WalkTeam(ctx context.Context, team *Team, startNode strin
 			emitEvent(obs, &circuit.WalkEvent{
 				Type:    circuit.EventNodeExit,
 				Node:    node.Name(),
-				Walker:  walker.Identity().PersonaName,
+				Walker:  walker.Identity().Name,
 				Elapsed: nodeElapsed,
 				Error:   err,
 			})
@@ -450,7 +450,7 @@ func (g *DefaultGraph) WalkTeam(ctx context.Context, team *Team, startNode strin
 		emitEvent(obs, &circuit.WalkEvent{
 			Type:     circuit.EventNodeExit,
 			Node:     node.Name(),
-			Walker:   walker.Identity().PersonaName,
+			Walker:   walker.Identity().Name,
 			Artifact: artifact,
 			Elapsed:  nodeElapsed,
 			Metadata: teamExitMeta,
@@ -463,14 +463,14 @@ func (g *DefaultGraph) WalkTeam(ctx context.Context, team *Team, startNode strin
 		edges := g.EdgesFrom(node.Name())
 		if len(edges) == 0 {
 			state.Status = walkStatusDone
-			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkComplete, Node: node.Name(), Walker: walker.Identity().PersonaName})
+			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkComplete, Node: node.Name(), Walker: walker.Identity().Name})
 			return nil
 		}
 
 		var matched *circuit.Transition
 		var matchedEdge circuit.Edge
 		for _, e := range edges {
-			wName := walker.Identity().PersonaName
+			wName := walker.Identity().Name
 			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventEdgeEvaluate, Node: node.Name(), Edge: e.ID(), Walker: wName})
 			t := e.Evaluate(artifact, state)
 			if t != nil {
@@ -483,11 +483,11 @@ func (g *DefaultGraph) WalkTeam(ctx context.Context, team *Team, startNode strin
 		if matched == nil {
 			state.Status = walkStatusError
 			err := fmt.Errorf("%w: node %q, artifact type %q", circuit.ErrNoEdge, node.Name(), artifact.Type())
-			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkError, Node: node.Name(), Error: err, Walker: walker.Identity().PersonaName})
+			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkError, Node: node.Name(), Error: err, Walker: walker.Identity().Name})
 			return err
 		}
 
-		emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventTransition, Node: node.Name(), Edge: matchedEdge.ID(), Walker: walker.Identity().PersonaName})
+		emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventTransition, Node: node.Name(), Edge: matchedEdge.ID(), Walker: walker.Identity().Name})
 
 		if matchedEdge.IsLoop() {
 			state.IncrementLoop(node.Name())
@@ -504,7 +504,7 @@ func (g *DefaultGraph) WalkTeam(ctx context.Context, team *Team, startNode strin
 
 		if matched.NextNode == g.doneNode {
 			state.Status = walkStatusDone
-			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkComplete, Walker: walker.Identity().PersonaName})
+			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventWalkComplete, Walker: walker.Identity().Name})
 			return nil
 		}
 
@@ -578,7 +578,7 @@ func (g *DefaultGraph) walkDelegate(ctx context.Context, walker circuit.Walker, 
 	emitEvent(obs, &circuit.WalkEvent{
 		Type:   circuit.EventDelegateStart,
 		Node:   dn.Name(),
-		Walker: walker.Identity().PersonaName,
+		Walker: walker.Identity().Name,
 		Metadata: map[string]any{
 			circuit.ExtraKeyCircuitType: circuitType,
 		},
@@ -641,7 +641,7 @@ func (g *DefaultGraph) walkDelegate(ctx context.Context, walker circuit.Walker, 
 	emitEvent(obs, &circuit.WalkEvent{
 		Type:     circuit.EventDelegateEnd,
 		Node:     dn.Name(),
-		Walker:   walker.Identity().PersonaName,
+		Walker:   walker.Identity().Name,
 		Elapsed:  elapsed,
 		Artifact: da,
 		Error:    walkErr,

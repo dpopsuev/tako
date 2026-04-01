@@ -1,6 +1,6 @@
 package agentport
 
-import "github.com/dpopsuev/bugle/persona"
+import "github.com/dpopsuev/jericho/persona"
 
 // Persona lookup and listing functions.
 var (

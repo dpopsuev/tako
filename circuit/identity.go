@@ -2,7 +2,7 @@ package circuit
 
 // Category: Processing & Support
 //
-// Identity types are defined in github.com/dpopsuev/bugle/identity.
+// Identity types are defined in github.com/dpopsuev/jericho/identity.
 // This file re-exports them via agentport as the circuit package's published API.
 
 import "github.com/dpopsuev/origami/agentport"
@@ -19,6 +19,7 @@ type (
 	CostProfile     = agentport.CostProfile
 	AgentIdentity   = agentport.AgentIdentity
 	ModelIdentity   = agentport.ModelIdentity
+	Reservation     = agentport.Reservation
 )
 
 // Alignment constants.

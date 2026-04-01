@@ -1,6 +1,6 @@
 package agentport
 
-import "github.com/dpopsuev/bugle/signal"
+import "github.com/dpopsuev/jericho/signal"
 
 // Type aliases — definitions live in bugle/signal.
 type (

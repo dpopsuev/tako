@@ -292,8 +292,8 @@ func TestRunner_Walk_NilWalker(t *testing.T) {
 
 func TestProcessWalker(t *testing.T) {
 	pw := circuit.NewProcessWalker("test-id")
-	if pw.Identity().PersonaName != "test-id" {
-		t.Errorf("PersonaName = %q, want test-id", pw.Identity().PersonaName)
+	if pw.Identity().Name != "test-id" {
+		t.Errorf("Name = %q, want test-id", pw.Identity().Name)
 	}
 	if pw.State().ID != "test-id" {
 		t.Errorf("State.ID = %q, want test-id", pw.State().ID)

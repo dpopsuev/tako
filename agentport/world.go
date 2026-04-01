@@ -1,11 +1,11 @@
 package agentport
 
 import (
-	"github.com/dpopsuev/bugle/palette"
-	"github.com/dpopsuev/bugle/world"
+	"github.com/dpopsuev/jericho/symbol"
+	"github.com/dpopsuev/jericho/world"
 )
 
-// Type aliases — definitions live in bugle/world.
+// Type aliases — definitions live in jericho/world.
 type (
 	World         = world.World
 	EntityID      = world.EntityID
@@ -13,14 +13,22 @@ type (
 	ComponentType = world.ComponentType
 	DiffKind      = world.DiffKind
 	DiffHook      = world.DiffHook
-	AgentState    = world.AgentState
-	Health        = world.Health
+	Alive         = world.Alive
+	AliveState    = world.AliveState
+	Ready         = world.Ready
+	ReadyReason   = world.ReadyReason
 	Hierarchy     = world.Hierarchy
 	Budget        = world.Budget
 	Progress      = world.Progress
 	Display       = world.Display
 
 	IdentityStrategy = world.IdentityStrategy
+)
+
+// Backward-compat aliases for pre-v0.2.0 code.
+type (
+	Health     = world.Alive      // renamed in v0.2.0
+	AgentState = world.AliveState // renamed in v0.2.0
 )
 
 // DiffKind constants.
@@ -30,23 +38,39 @@ const (
 	DiffUpdated  = world.DiffUpdated
 )
 
-// AgentState constants.
+// AliveState constants.
 const (
-	Active  = world.Active
-	Idle    = world.Idle
-	Stale   = world.Stale
-	Errored = world.Errored
-	Done    = world.Done
+	AliveRunning    = world.AliveRunning
+	AliveTerminated = world.AliveTerminated
+)
+
+// Backward-compat: old AgentState constants.
+const (
+	Active = world.AliveRunning
+	Done   = world.AliveTerminated
+)
+
+// ReadyReason constants.
+const (
+	ReasonIdle        = world.ReasonIdle
+	ReasonStale       = world.ReasonStale
+	ReasonErrored     = world.ReasonErrored
+	ReasonTerminating = world.ReasonTerminating
+	ReasonTerminated  = world.ReasonTerminated
 )
 
 // Component type constants.
 const (
-	HealthType    = world.HealthType
+	AliveType     = world.AliveType
+	ReadyType     = world.ReadyType
 	HierarchyType = world.HierarchyType
 	BudgetType    = world.BudgetType
 	ProgressType  = world.ProgressType
 	DisplayType   = world.DisplayType
 )
+
+// Backward-compat.
+const HealthType = world.AliveType // renamed in v0.2.0
 
 // NewWorld creates an empty ECS world.
 var NewWorld = world.NewWorld
@@ -56,6 +80,11 @@ var NewWorld = world.NewWorld
 // Attach adds a component to an entity. Replaces if already present.
 func Attach[T world.Component](w *world.World, id world.EntityID, c T) {
 	world.Attach(w, id, c)
+}
+
+// TryAttach adds a component if the entity exists. Returns false if dead.
+func TryAttach[T world.Component](w *world.World, id world.EntityID, c T) bool {
+	return world.TryAttach(w, id, c)
 }
 
 // Get retrieves a component. Panics if the entity or component is not present.
@@ -78,26 +107,31 @@ func Query[T world.Component](w *world.World) []world.EntityID {
 	return world.Query[T](w)
 }
 
-// --- Palette re-exports (bugle/palette) ---
+// --- Symbol re-exports (was palette) ---
 
-// Type aliases — definitions live in bugle/palette.
+// Type aliases — definitions live in jericho/symbol.
 type (
-	ColorIdentity   = palette.ColorIdentity
-	Registry        = palette.Registry
-	Shade           = palette.Shade
-	DefaultStrategy = palette.DefaultStrategy
+	ColorIdentity   = symbol.Color // renamed in v0.2.0
+	SymbolColor     = symbol.Color
+	Registry        = symbol.Registry
+	Shade           = symbol.Shade
+	PaletteColor    = symbol.PaletteColor
+	DefaultStrategy = symbol.DefaultStrategy
 )
 
-// ColorIdentityType is the ComponentType for ColorIdentity.
-const ColorIdentityType = palette.ColorIdentityType
+// ColorType is the ComponentType for Color (was ColorIdentityType).
+const ColorType = symbol.ColorType
 
-// Palette is the full 7x8 color palette.
-var Palette = palette.Palette
+// Backward-compat.
+const ColorIdentityType = symbol.ColorType // renamed in v0.2.0
+
+// Palette is the full 12x8 color palette.
+var Palette = symbol.Palette
 
 // Constructors and lookups.
 var (
-	NewRegistry        = palette.NewRegistry
-	NewDefaultStrategy = palette.NewDefaultStrategy
-	LookupShade        = palette.LookupShade
-	LookupColor        = palette.LookupColor
+	NewRegistry        = symbol.NewRegistry
+	NewDefaultStrategy = symbol.NewDefaultStrategy
+	LookupShade        = symbol.LookupShade
+	LookupColor        = symbol.LookupColor
 )

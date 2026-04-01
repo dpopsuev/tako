@@ -1,65 +1,65 @@
 package agentport
 
-import "github.com/dpopsuev/bugle/element"
+import "github.com/dpopsuev/jericho/symbol"
 
-// Type aliases — definitions live in bugle/element.
+// Type aliases — definitions live in jericho/symbol.
 type (
-	Element       = element.Element
-	Approach      = element.Approach
-	SpeedClass    = element.SpeedClass
-	ElementTraits = element.ElementTraits
+	Element       = symbol.Element
+	Approach      = symbol.Approach
+	SpeedClass    = symbol.SpeedClass
+	ElementTraits = symbol.ElementTraits
 )
 
 // Element constants.
 const (
-	ElementFire      = element.ElementFire
-	ElementLightning = element.ElementLightning
-	ElementEarth     = element.ElementEarth
-	ElementDiamond   = element.ElementDiamond
-	ElementWater     = element.ElementWater
-	ElementAir       = element.ElementAir
+	ElementFire      = symbol.ElementFire
+	ElementLightning = symbol.ElementLightning
+	ElementEarth     = symbol.ElementEarth
+	ElementDiamond   = symbol.ElementDiamond
+	ElementWater     = symbol.ElementWater
+	ElementAir       = symbol.ElementAir
 )
 
 // Approach constants.
 const (
-	ApproachRapid      = element.ApproachRapid
-	ApproachAggressive = element.ApproachAggressive
-	ApproachMethodical = element.ApproachMethodical
-	ApproachRigorous   = element.ApproachRigorous
-	ApproachAnalytical = element.ApproachAnalytical
-	ApproachHolistic   = element.ApproachHolistic
+	ApproachRapid      = symbol.ApproachRapid
+	ApproachAggressive = symbol.ApproachAggressive
+	ApproachMethodical = symbol.ApproachMethodical
+	ApproachRigorous   = symbol.ApproachRigorous
+	ApproachAnalytical = symbol.ApproachAnalytical
+	ApproachHolistic   = symbol.ApproachHolistic
 )
 
 // SpeedClass constants.
 const (
-	SpeedFastest  = element.SpeedFastest
-	SpeedFast     = element.SpeedFast
-	SpeedSteady   = element.SpeedSteady
-	SpeedPrecise  = element.SpeedPrecise
-	SpeedDeep     = element.SpeedDeep
-	SpeedHolistic = element.SpeedHolistic
+	SpeedFastest  = symbol.SpeedFastest
+	SpeedFast     = symbol.SpeedFast
+	SpeedSteady   = symbol.SpeedSteady
+	SpeedPrecise  = symbol.SpeedPrecise
+	SpeedDeep     = symbol.SpeedDeep
+	SpeedHolistic = symbol.SpeedHolistic
 )
 
 // DefaultTraits returns the canonical trait set for a given element.
-var DefaultTraits = element.DefaultTraits
+var DefaultTraits = symbol.DefaultTraits
 
 // AllElements returns the six core elements.
-var AllElements = element.AllElements
+var AllElements = symbol.AllElements
 
 // ResolveApproach maps a user-facing approach name to an internal Element.
-var ResolveApproach = element.ResolveApproach
+var ResolveApproach = symbol.ResolveApproach
 
 // ApproachForElement returns the user-facing approach name for an element.
-var ApproachForElement = element.ApproachForElement
+var ApproachForElement = symbol.ApproachForElement
 
 // ApproachEmoji returns the emoji for an approach.
-var ApproachEmoji = element.ApproachEmoji
+var ApproachEmoji = symbol.ApproachEmoji
 
 // ApproachTraits returns the ElementTraits for an approach.
-var ApproachTraits = element.ApproachTraits
+var ApproachTraits = symbol.ApproachTraits
 
 // ApproachTraitsSummary returns a formatted multi-line summary for LSP hover.
-var ApproachTraitsSummary = element.ApproachTraitsSummary
+var ApproachTraitsSummary = symbol.ApproachTraitsSummary
 
 // AllApproaches returns the six core approaches.
-var AllApproaches = element.AllApproaches
+var AllApproaches = symbol.AllApproaches

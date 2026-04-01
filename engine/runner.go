@@ -284,7 +284,7 @@ func (cw *checkpointingWalker) Handle(ctx context.Context, node circuit.Node, nc
 				emitEvent(cw.observer, &circuit.WalkEvent{
 					Type:   circuit.EventCheckpointSaved,
 					Node:   node.Name(),
-					Walker: cw.inner.Identity().PersonaName,
+					Walker: cw.inner.Identity().Name,
 				})
 			}
 		}
@@ -296,7 +296,7 @@ func (cw *checkpointingWalker) Handle(ctx context.Context, node circuit.Node, nc
 	emitEvent(cw.observer, &circuit.WalkEvent{
 		Type:   circuit.EventCheckpointSaved,
 		Node:   node.Name(),
-		Walker: cw.inner.Identity().PersonaName,
+		Walker: cw.inner.Identity().Name,
 	})
 	return artifact, nil
 }

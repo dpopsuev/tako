@@ -1,6 +1,6 @@
 package agentport
 
-import "github.com/dpopsuev/bugle/acp"
+import "github.com/dpopsuev/jericho/acp"
 
 // ACP type aliases — definitions live in bugle/acp.
 type (

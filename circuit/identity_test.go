@@ -21,7 +21,7 @@ func TestHomeZoneFor(t *testing.T) {
 }
 
 func TestAgentIdentity_Tag(t *testing.T) {
-	id := AgentIdentity{PersonaName: "Herald", Color: Color{Name: "Crimson"}}
+	id := AgentIdentity{Name: "Herald", ColorPref: Reservation{Color: "Crimson"}}
 	tag := id.Tag()
 	if tag != "[crimson/herald]" {
 		t.Errorf("Tag() = %q, want %q", tag, "[crimson/herald]")
@@ -47,33 +47,23 @@ func TestRole_Constants(t *testing.T) {
 	}
 }
 
-func TestAgentIdentity_IsRole(t *testing.T) {
-	id := AgentIdentity{PersonaName: "Herald", Role: RoleWorker}
-	if !id.IsRole(RoleWorker) {
-		t.Error("IsRole(RoleWorker) = false, want true")
+func TestAgentIdentity_Role(t *testing.T) {
+	id := AgentIdentity{Name: "Herald", Role: RoleWorker}
+	if id.Role != RoleWorker {
+		t.Error("Role should be RoleWorker")
 	}
-	if id.IsRole(RoleManager) {
-		t.Error("IsRole(RoleManager) = true, want false")
+	if id.Role == RoleManager {
+		t.Error("Role should not be RoleManager")
 	}
 }
 
 func TestAgentIdentity_HasRole(t *testing.T) {
 	var id AgentIdentity
-	if id.HasRole() {
-		t.Error("HasRole() = true on zero-value, want false")
+	if id.Role != "" {
+		t.Error("zero-value Role should be empty")
 	}
 	id.Role = RoleEnforcer
-	if !id.HasRole() {
-		t.Error("HasRole() = false after setting role, want true")
-	}
-}
-
-func TestRole_BackwardCompat_ZeroValue(t *testing.T) {
-	id := AgentIdentity{PersonaName: "Herald"}
-	if id.Role != "" {
-		t.Errorf("zero-value Role = %q, want empty", id.Role)
-	}
-	if id.HasRole() {
-		t.Error("HasRole() = true on zero-value, want false")
+	if id.Role == "" {
+		t.Error("Role should be set after assignment")
 	}
 }

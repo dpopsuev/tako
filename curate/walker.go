@@ -47,8 +47,8 @@ func NewCurationWalker(cfg *CurationWalkerConfig) *CurationWalker {
 
 	return &CurationWalker{
 		identity: circuit.AgentIdentity{
-			PersonaName: "curator",
-			Alignment:   circuit.AlignmentThesis,
+			Name:      "curator",
+			Alignment: circuit.AlignmentThesis,
 		},
 		state:      circuit.NewWalkerState(cfg.RecordID),
 		schema:     cfg.Schema,

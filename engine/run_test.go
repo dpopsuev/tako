@@ -260,7 +260,7 @@ done: _done
 
 	herald := &stubWalker{
 		identity: circuit.AgentIdentity{
-			PersonaName:  "Herald",
+			Name:         "Herald",
 			Element:      circuit.ElementFire,
 			StepAffinity: map[string]float64{"classify": 0.9, "investigate": 0.1},
 		},
@@ -268,7 +268,7 @@ done: _done
 	}
 	seeker := &stubWalker{
 		identity: circuit.AgentIdentity{
-			PersonaName:  "Seeker",
+			Name:         "Seeker",
 			Element:      circuit.ElementWater,
 			StepAffinity: map[string]float64{"classify": 0.1, "investigate": 0.9},
 		},
@@ -315,7 +315,7 @@ func TestRun_WithTeam_InputPropagated(t *testing.T) {
 	path := writeTempCircuit(t, testCircuitYAML)
 
 	w := &stubWalker{
-		identity: circuit.AgentIdentity{PersonaName: "Solo"},
+		identity: circuit.AgentIdentity{Name: "Solo"},
 		state:    circuit.NewWalkerState("solo-1"),
 	}
 
@@ -514,7 +514,7 @@ func TestRun_ResumeWithInput_AfterInterrupt(t *testing.T) {
 
 	trace := &TraceCollector{}
 	w := &stubWalker{
-		identity: circuit.AgentIdentity{PersonaName: "tester"},
+		identity: circuit.AgentIdentity{Name: "tester"},
 		state:    circuit.NewWalkerState("resumable"),
 	}
 

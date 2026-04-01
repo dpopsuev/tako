@@ -54,7 +54,7 @@ func (g *DefaultGraph) walkFanOut(
 	matches []parallelMatch,
 ) (string, circuit.Artifact, error) {
 	state := walker.State()
-	walkerName := walker.Identity().PersonaName
+	walkerName := walker.Identity().Name
 
 	branchNames := make([]string, len(matches))
 	for i, m := range matches {

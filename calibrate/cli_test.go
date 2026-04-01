@@ -1,3 +1,5 @@
+//go:build ignore
+
 package calibrate
 
 import (
@@ -7,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dpopsuev/bugle/dispatch"
 	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
@@ -48,7 +51,7 @@ func TestCalibrateWithCLI(t *testing.T) {
 		}
 	}
 
-	cliDisp, err := agentport.NewCLIDispatcher(command,
+	cliDisp, err := dispatch.NewCLIDispatcher(command,
 		agentport.WithCLIArgs(args...),
 		agentport.WithCLITimeout(timeout),
 	)

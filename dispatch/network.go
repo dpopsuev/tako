@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/bugle/resilience"
+	"github.com/dpopsuev/jericho/resilience"
 	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 )

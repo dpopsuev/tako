@@ -22,14 +22,14 @@ func TestTeam_TwoWalkersScheduleByAffinity(t *testing.T) {
 	// Create walkers with different affinities
 	coordinator := circuit.NewProcessWalker("coordinator")
 	coordinator.SetIdentity(&circuit.AgentIdentity{
-		PersonaName:  "Coordinator",
+		Name:         "Coordinator",
 		Element:      circuit.ElementEarth,
 		StepAffinity: map[string]float64{"plan": 0.95, "synthesize": 0.95},
 	})
 
 	specialistA := circuit.NewProcessWalker("specialist-a")
 	specialistA.SetIdentity(&circuit.AgentIdentity{
-		PersonaName:  "Specialist A",
+		Name:         "Specialist A",
 		Element:      circuit.ElementWater,
 		StepAffinity: map[string]float64{"research_a": 0.95},
 	})
@@ -77,21 +77,21 @@ func TestTeam_WalkCompletesWithMultipleWalkers(t *testing.T) {
 
 	coordinator := circuit.NewProcessWalker("coordinator")
 	coordinator.SetIdentity(&circuit.AgentIdentity{
-		PersonaName:  "Coordinator",
+		Name:         "Coordinator",
 		Element:      circuit.ElementEarth,
 		StepAffinity: map[string]float64{"plan": 0.95, "synthesize": 0.95},
 	})
 
 	specialistA := circuit.NewProcessWalker("specialist-a")
 	specialistA.SetIdentity(&circuit.AgentIdentity{
-		PersonaName:  "Specialist A",
+		Name:         "Specialist A",
 		Element:      circuit.ElementWater,
 		StepAffinity: map[string]float64{"research_a": 0.95},
 	})
 
 	specialistB := circuit.NewProcessWalker("specialist-b")
 	specialistB.SetIdentity(&circuit.AgentIdentity{
-		PersonaName:  "Specialist B",
+		Name:         "Specialist B",
 		Element:      circuit.ElementFire,
 		StepAffinity: map[string]float64{"research_b": 0.95},
 	})

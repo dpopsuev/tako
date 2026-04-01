@@ -508,7 +508,7 @@ func TestWalk_SNRAutoEmitted(t *testing.T) {
 	}
 
 	w := &visitTrackingWalker{
-		identity: circuit.AgentIdentity{PersonaName: "Solo"},
+		identity: circuit.AgentIdentity{Name: "Solo"},
 		state:    circuit.NewWalkerState("s1"),
 	}
 	if err := g.Walk(context.Background(), w, "filter"); err != nil {
@@ -541,7 +541,7 @@ func TestWalk_SNRNotEmittedForNonCountable(t *testing.T) {
 	}
 
 	w := &visitTrackingWalker{
-		identity: circuit.AgentIdentity{PersonaName: "Solo"},
+		identity: circuit.AgentIdentity{Name: "Solo"},
 		state:    circuit.NewWalkerState("s1"),
 	}
 	if err := g.Walk(context.Background(), w, "A"); err != nil {

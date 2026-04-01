@@ -24,7 +24,7 @@ services:
       - ASTERISK_RP_BASE_URL=${ASTERISK_RP_BASE_URL:-}
       - ASTERISK_RP_PROJECT=${ASTERISK_RP_PROJECT:-}
       - ASTERISK_RP_API_KEY_PATH=/run/secrets/rp-api-key
-      - ORIGAMI_MEDIATOR_ENDPOINT=http://mediator:9000/mcp
+      - ORIGAMI_MEDIATOR_ENDPOINT=${ORIGAMI_MEDIATOR_ENDPOINT:-http://mediator:9000/mcp}
     healthcheck:
       test: ["CMD", "/rca-serve", "--healthz"]
       interval: 5s

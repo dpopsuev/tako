@@ -223,8 +223,8 @@ func TestCurationWalker_InterfaceCompliance(t *testing.T) {
 	})
 
 	id := walker.Identity()
-	if id.PersonaName != "curator" {
-		t.Errorf("PersonaName = %q, want curator", id.PersonaName)
+	if id.Name != "curator" {
+		t.Errorf("Name = %q, want curator", id.Name)
 	}
 
 	state := walker.State()

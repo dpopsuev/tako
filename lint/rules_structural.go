@@ -33,7 +33,7 @@ func knownPersonas() map[string]bool {
 	all := agentport.PersonaAll()
 	m := make(map[string]bool)
 	for i := range all {
-		m[strings.ToLower(all[i].Identity.PersonaName)] = true
+		m[strings.ToLower(all[i].Name)] = true
 	}
 	return m
 }

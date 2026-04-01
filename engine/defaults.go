@@ -28,7 +28,7 @@ func defaultWalkerWith(element circuit.Element) *circuit.ProcessWalker {
 	resolver := agentport.GetDefaultPersonaResolver()
 	if resolver != nil {
 		if p, ok := resolver("Sentinel"); ok {
-			id = p.Identity
+			id = p
 		}
 	}
 	id.Element = element

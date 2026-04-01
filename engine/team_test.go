@@ -26,7 +26,7 @@ func TestWalkTeam_LinearWithTwoWalkers(t *testing.T) {
 
 	herald := &stubWalker{
 		identity: circuit.AgentIdentity{
-			PersonaName:  "Herald",
+			Name:         "Herald",
 			Element:      circuit.ElementFire,
 			StepAffinity: map[string]float64{"classify": 0.9, "investigate": 0.1, "decide": 0.5},
 		},
@@ -34,7 +34,7 @@ func TestWalkTeam_LinearWithTwoWalkers(t *testing.T) {
 	}
 	seeker := &stubWalker{
 		identity: circuit.AgentIdentity{
-			PersonaName:  "Seeker",
+			Name:         "Seeker",
 			Element:      circuit.ElementWater,
 			StepAffinity: map[string]float64{"classify": 0.1, "investigate": 0.9, "decide": 0.3},
 		},
@@ -86,7 +86,7 @@ func TestWalkTeam_MaxStepsGuard(t *testing.T) {
 	}
 
 	w := &stubWalker{
-		identity: circuit.AgentIdentity{PersonaName: "Solo"},
+		identity: circuit.AgentIdentity{Name: "Solo"},
 		state:    circuit.NewWalkerState("solo-1"),
 	}
 
@@ -123,7 +123,7 @@ func TestWalkTeam_ObserverReceivesEdgeEvents(t *testing.T) {
 	}
 
 	w := &stubWalker{
-		identity: circuit.AgentIdentity{PersonaName: "Solo"},
+		identity: circuit.AgentIdentity{Name: "Solo"},
 		state:    circuit.NewWalkerState("s1"),
 	}
 	tc := &TraceCollector{}
@@ -160,7 +160,7 @@ func TestWalkTeam_NilObserver(t *testing.T) {
 	}
 
 	w := &stubWalker{
-		identity: circuit.AgentIdentity{PersonaName: "Solo"},
+		identity: circuit.AgentIdentity{Name: "Solo"},
 		state:    circuit.NewWalkerState("s1"),
 	}
 	team := &Team{
@@ -200,7 +200,7 @@ func TestWalkTeam_StartNodeNotFound(t *testing.T) {
 	}
 
 	w := &stubWalker{
-		identity: circuit.AgentIdentity{PersonaName: "Solo"},
+		identity: circuit.AgentIdentity{Name: "Solo"},
 		state:    circuit.NewWalkerState("s1"),
 	}
 	team := &Team{
@@ -230,7 +230,7 @@ func TestWalkTeam_ContextCancellation(t *testing.T) {
 	cancel()
 
 	w := &stubWalker{
-		identity: circuit.AgentIdentity{PersonaName: "Solo"},
+		identity: circuit.AgentIdentity{Name: "Solo"},
 		state:    circuit.NewWalkerState("s1"),
 	}
 	tc := &TraceCollector{}
@@ -267,7 +267,7 @@ func TestWalkTeam_MismatchEmitted(t *testing.T) {
 
 	wFire := &stubWalker{
 		identity: circuit.AgentIdentity{
-			PersonaName:  "FireWalker",
+			Name:         "FireWalker",
 			Element:      circuit.ElementFire,
 			StepAffinity: map[string]float64{"A": 0.9, "B": 0.1},
 		},
@@ -275,7 +275,7 @@ func TestWalkTeam_MismatchEmitted(t *testing.T) {
 	}
 	wWater := &stubWalker{
 		identity: circuit.AgentIdentity{
-			PersonaName:  "WaterWalker",
+			Name:         "WaterWalker",
 			Element:      circuit.ElementWater,
 			StepAffinity: map[string]float64{"A": 0.1, "B": 0.9},
 		},

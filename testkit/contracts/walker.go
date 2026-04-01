@@ -16,8 +16,8 @@ func RunWalkerContract(t *testing.T, factory func() circuit.Walker) {
 	t.Run("Identity_NonEmpty", func(t *testing.T) {
 		w := factory()
 		id := w.Identity()
-		if id.PersonaName == "" {
-			t.Error("Identity().PersonaName must be non-empty")
+		if id.Name == "" {
+			t.Error("Identity().Name must be non-empty")
 		}
 	})
 

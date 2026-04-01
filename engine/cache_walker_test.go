@@ -125,7 +125,7 @@ func TestCachingWalker_InnerError_NotCached(t *testing.T) {
 
 func TestCachingWalker_DelegatesIdentityAndState(t *testing.T) {
 	inner := &runnerTestWalker{
-		identity: circuit.AgentIdentity{PersonaName: "test-persona"},
+		identity: circuit.AgentIdentity{Name: "test-persona"},
 		state:    circuit.NewWalkerState("test-id"),
 	}
 	cw := &cachingWalker{
@@ -135,17 +135,17 @@ func TestCachingWalker_DelegatesIdentityAndState(t *testing.T) {
 		circuitHash: "testhash",
 	}
 
-	if cw.Identity().PersonaName != "test-persona" {
-		t.Errorf("Identity().PersonaName = %q, want test-persona", cw.Identity().PersonaName)
+	if cw.Identity().Name != "test-persona" {
+		t.Errorf("Identity().Name = %q, want test-persona", cw.Identity().Name)
 	}
 	if cw.State().ID != "test-id" {
 		t.Errorf("State().ID = %q, want test-id", cw.State().ID)
 	}
 
-	newID := circuit.AgentIdentity{PersonaName: "updated"}
+	newID := circuit.AgentIdentity{Name: "updated"}
 	cw.SetIdentity(&newID)
-	if inner.identity.PersonaName != "updated" {
-		t.Errorf("SetIdentity not delegated: inner PersonaName = %q", inner.identity.PersonaName)
+	if inner.identity.Name != "updated" {
+		t.Errorf("SetIdentity not delegated: inner Name = %q", inner.identity.Name)
 	}
 }
 

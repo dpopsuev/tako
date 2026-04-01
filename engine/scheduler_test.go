@@ -20,20 +20,20 @@ func (w *affinityWalker) Handle(_ context.Context, node circuit.Node, nc circuit
 }
 
 func TestSingleScheduler(t *testing.T) {
-	w := &affinityWalker{identity: circuit.AgentIdentity{PersonaName: "solo"}, state: circuit.NewWalkerState("s1")}
+	w := &affinityWalker{identity: circuit.AgentIdentity{Name: "solo"}, state: circuit.NewWalkerState("s1")}
 	sched := &SingleScheduler{Walker: w}
 
 	node := &stubNode{name: "classify", element: circuit.ElementFire}
 	got := sched.Select(SchedulerContext{Node: node, Walkers: []circuit.Walker{w}})
-	if got.Identity().PersonaName != "solo" {
-		t.Errorf("expected solo, got %s", got.Identity().PersonaName)
+	if got.Identity().Name != "solo" {
+		t.Errorf("expected solo, got %s", got.Identity().Name)
 	}
 }
 
 func TestAffinityScheduler_PicksHighestAffinity(t *testing.T) {
 	herald := &affinityWalker{
 		identity: circuit.AgentIdentity{
-			PersonaName:  "Herald",
+			Name:         "Herald",
 			Element:      circuit.ElementFire,
 			StepAffinity: map[string]float64{"classify": 0.9, "investigate": 0.2},
 		},
@@ -41,7 +41,7 @@ func TestAffinityScheduler_PicksHighestAffinity(t *testing.T) {
 	}
 	seeker := &affinityWalker{
 		identity: circuit.AgentIdentity{
-			PersonaName:  "Seeker",
+			Name:         "Seeker",
 			Element:      circuit.ElementWater,
 			StepAffinity: map[string]float64{"classify": 0.2, "investigate": 0.9},
 		},
@@ -53,21 +53,21 @@ func TestAffinityScheduler_PicksHighestAffinity(t *testing.T) {
 
 	classifyNode := &stubNode{name: "classify", element: circuit.ElementFire}
 	got := sched.Select(SchedulerContext{Node: classifyNode, Walkers: walkers})
-	if got.Identity().PersonaName != "Herald" {
-		t.Errorf("classify: expected Herald, got %s", got.Identity().PersonaName)
+	if got.Identity().Name != "Herald" {
+		t.Errorf("classify: expected Herald, got %s", got.Identity().Name)
 	}
 
 	investigateNode := &stubNode{name: "investigate", element: circuit.ElementWater}
 	got = sched.Select(SchedulerContext{Node: investigateNode, Walkers: walkers})
-	if got.Identity().PersonaName != "Seeker" {
-		t.Errorf("investigate: expected Seeker, got %s", got.Identity().PersonaName)
+	if got.Identity().Name != "Seeker" {
+		t.Errorf("investigate: expected Seeker, got %s", got.Identity().Name)
 	}
 }
 
 func TestAffinityScheduler_TieBreakByElement(t *testing.T) {
 	fire := &affinityWalker{
 		identity: circuit.AgentIdentity{
-			PersonaName:  "Fire",
+			Name:         "Fire",
 			Element:      circuit.ElementFire,
 			StepAffinity: map[string]float64{"node": 0.5},
 		},
@@ -75,7 +75,7 @@ func TestAffinityScheduler_TieBreakByElement(t *testing.T) {
 	}
 	water := &affinityWalker{
 		identity: circuit.AgentIdentity{
-			PersonaName:  "Water",
+			Name:         "Water",
 			Element:      circuit.ElementWater,
 			StepAffinity: map[string]float64{"node": 0.5},
 		},
@@ -86,18 +86,18 @@ func TestAffinityScheduler_TieBreakByElement(t *testing.T) {
 	fireNode := &stubNode{name: "node", element: circuit.ElementFire}
 
 	got := sched.Select(SchedulerContext{Node: fireNode, Walkers: []circuit.Walker{water, fire}})
-	if got.Identity().PersonaName != "Fire" {
-		t.Errorf("expected Fire (element tiebreak), got %s", got.Identity().PersonaName)
+	if got.Identity().Name != "Fire" {
+		t.Errorf("expected Fire (element tiebreak), got %s", got.Identity().Name)
 	}
 }
 
 func TestAffinityScheduler_FallbackToFirst(t *testing.T) {
 	w1 := &affinityWalker{
-		identity: circuit.AgentIdentity{PersonaName: "First"},
+		identity: circuit.AgentIdentity{Name: "First"},
 		state:    circuit.NewWalkerState("1"),
 	}
 	w2 := &affinityWalker{
-		identity: circuit.AgentIdentity{PersonaName: "Second"},
+		identity: circuit.AgentIdentity{Name: "Second"},
 		state:    circuit.NewWalkerState("2"),
 	}
 
@@ -105,21 +105,21 @@ func TestAffinityScheduler_FallbackToFirst(t *testing.T) {
 	node := &stubNode{name: "unknown"}
 
 	got := sched.Select(SchedulerContext{Node: node, Walkers: []circuit.Walker{w1, w2}})
-	if got.Identity().PersonaName != "First" {
-		t.Errorf("expected First (fallback), got %s", got.Identity().PersonaName)
+	if got.Identity().Name != "First" {
+		t.Errorf("expected First (fallback), got %s", got.Identity().Name)
 	}
 }
 
 func TestAffinityScheduler_SingleWalker(t *testing.T) {
 	w := &affinityWalker{
-		identity: circuit.AgentIdentity{PersonaName: "Only"},
+		identity: circuit.AgentIdentity{Name: "Only"},
 		state:    circuit.NewWalkerState("o1"),
 	}
 
 	sched := &AffinityScheduler{}
 	got := sched.Select(SchedulerContext{Node: &stubNode{name: "x"}, Walkers: []circuit.Walker{w}})
-	if got.Identity().PersonaName != "Only" {
-		t.Errorf("expected Only, got %s", got.Identity().PersonaName)
+	if got.Identity().Name != "Only" {
+		t.Errorf("expected Only, got %s", got.Identity().Name)
 	}
 }
 
@@ -134,7 +134,7 @@ func TestAffinityScheduler_EmptyWalkers(t *testing.T) {
 func TestAffinityScheduler_Mismatch_PerfectMatch(t *testing.T) {
 	w := &affinityWalker{
 		identity: circuit.AgentIdentity{
-			PersonaName:  "Perfect",
+			Name:         "Perfect",
 			Element:      circuit.ElementFire,
 			StepAffinity: map[string]float64{"node": 1.0},
 		},
@@ -151,7 +151,7 @@ func TestAffinityScheduler_Mismatch_PerfectMatch(t *testing.T) {
 
 func TestAffinityScheduler_Mismatch_WorstCase(t *testing.T) {
 	w := &affinityWalker{
-		identity: circuit.AgentIdentity{PersonaName: "Worst"},
+		identity: circuit.AgentIdentity{Name: "Worst"},
 		state:    circuit.NewWalkerState("w1"),
 	}
 	sched := &AffinityScheduler{}

@@ -129,7 +129,7 @@ func TestWalk_DelegateNode_SubWalk(t *testing.T) {
 	})
 
 	walker := &stubWalker{
-		identity: circuit.AgentIdentity{PersonaName: "test"},
+		identity: circuit.AgentIdentity{Name: "test"},
 		state:    circuit.NewWalkerState("w1"),
 	}
 
@@ -210,7 +210,7 @@ func TestWalk_DelegateNode_ContextCancellation(t *testing.T) {
 	}
 
 	walker := &stubWalker{
-		identity: circuit.AgentIdentity{PersonaName: "test"},
+		identity: circuit.AgentIdentity{Name: "test"},
 		state:    circuit.NewWalkerState("w1"),
 	}
 
@@ -238,7 +238,7 @@ func TestWalk_DelegateNode_GenerateError(t *testing.T) {
 	}
 
 	walker := &stubWalker{
-		identity: circuit.AgentIdentity{PersonaName: "test"},
+		identity: circuit.AgentIdentity{Name: "test"},
 		state:    circuit.NewWalkerState("w1"),
 	}
 

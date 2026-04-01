@@ -1,28 +1,37 @@
 package agentport
 
 import (
-	"github.com/dpopsuev/bugle/collective"
-	"github.com/dpopsuev/bugle/facade"
-	"github.com/dpopsuev/bugle/pool"
+	"github.com/dpopsuev/jericho/agent"
+	"github.com/dpopsuev/jericho/collective"
+	"github.com/dpopsuev/jericho/pool"
 )
 
-// Facade type aliases — definitions live in bugle/facade.
+// Facade type aliases — definitions live in jericho/agent.
 type (
-	Staff        = facade.Staff
-	AgentHandle  = facade.AgentHandle
-	LaunchConfig = pool.LaunchConfig
+	Staff  = agent.Staff
+	Solo   = agent.Solo
+	Config = pool.AgentConfig
 )
 
-// Collective type aliases — definitions live in bugle/collective.
+// Backward-compat aliases for pre-v0.2.0 consumer code.
 type (
-	AgentCollective    = collective.AgentCollective
+	AgentHandle  = agent.Solo       // renamed in v0.2.0
+	LaunchConfig = pool.AgentConfig // renamed in v0.2.0
+)
+
+// Collective type aliases — definitions live in jericho/collective.
+type (
+	Collective         = collective.Collective
 	CollectiveConfig   = collective.CollectiveConfig
 	CollectiveStrategy = collective.CollectiveStrategy
 	Dialectic          = collective.Dialectic
 )
 
+// Backward-compat alias.
+type AgentCollective = collective.Collective // renamed in v0.2.0
+
 // Facade constructors.
 var (
-	NewStaff        = facade.NewStaff
+	NewStaff        = agent.NewStaff
 	SpawnCollective = collective.SpawnCollective
 )
