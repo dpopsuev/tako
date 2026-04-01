@@ -250,7 +250,8 @@ func buildWiredBinary(ctx context.Context, m *Manifest, opts *Options) error {
 		return fmt.Errorf("create output dir: %w", err)
 	}
 
-	args := []string{"build", "-o", output}
+	ldflags := buildLDFlags(opts.ManifestPath)
+	args := []string{"build", "-ldflags", ldflags, "-o", output}
 	args = append(args, opts.GoFlags...)
 	args = append(args, ".")
 
@@ -432,7 +433,8 @@ func buildDomainServe(ctx context.Context, m *Manifest, opts *Options) error {
 		return fmt.Errorf("create output dir: %w", err)
 	}
 
-	args := []string{"build", "-o", output}
+	ldflags := buildLDFlags(opts.ManifestPath)
+	args := []string{"build", "-ldflags", ldflags, "-o", output}
 	args = append(args, opts.GoFlags...)
 	args = append(args, ".")
 

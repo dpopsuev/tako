@@ -14,6 +14,7 @@ type GenericCase struct {
 	ID       string         `yaml:"id"`
 	Input    map[string]any `yaml:"input"`
 	Expected map[string]any `yaml:"expected"`
+	Canary   bool           `yaml:"canary,omitempty"` // sentinel case — must always pass
 }
 
 // GenericScenario holds a set of test cases for generic calibration.

@@ -156,6 +156,10 @@ var (
 	// ErrDuplicateCaseID is returned for: duplicate case ID
 	ErrDuplicateCaseID = errors.New("duplicate case ID")
 
+	// ErrCanaryCaseFailed is returned when a canary sentinel case fails.
+	// Canary failures indicate the calibration environment is broken.
+	ErrCanaryCaseFailed = errors.New("canary case failed — calibration environment suspect")
+
 	// ErrCompositeScenarioHasNoCases is returned for: composite scenario has no cases
 	ErrCompositeScenarioHasNoCases = errors.New("composite scenario has no cases")
 
