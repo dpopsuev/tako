@@ -1,5 +1,3 @@
-//go:build ignore
-
 package calibrate
 
 import (
@@ -9,9 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/bugle/dispatch"
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/transformers"
 )
@@ -52,8 +49,8 @@ func TestCalibrateWithCLI(t *testing.T) {
 	}
 
 	cliDisp, err := dispatch.NewCLIDispatcher(command,
-		agentport.WithCLIArgs(args...),
-		agentport.WithCLITimeout(timeout),
+		dispatch.WithCLIArgs(args...),
+		dispatch.WithCLITimeout(timeout),
 	)
 	if err != nil {
 		t.Skipf("CLI dispatcher unavailable: %v", err)
