@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 )
 
@@ -27,9 +28,9 @@ type cachingWalker struct {
 	log         *slog.Logger
 }
 
-func (cw *cachingWalker) Identity() circuit.AgentIdentity       { return cw.inner.Identity() }
-func (cw *cachingWalker) SetIdentity(id *circuit.AgentIdentity) { cw.inner.SetIdentity(id) }
-func (cw *cachingWalker) State() *circuit.WalkerState           { return cw.inner.State() }
+func (cw *cachingWalker) Identity() agentport.AgentIdentity       { return cw.inner.Identity() }
+func (cw *cachingWalker) SetIdentity(id *agentport.AgentIdentity) { cw.inner.SetIdentity(id) }
+func (cw *cachingWalker) State() *circuit.WalkerState             { return cw.inner.State() }
 
 func (cw *cachingWalker) Handle(ctx context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
 	ttl, cacheable := cw.cacheTTL[node.Name()]

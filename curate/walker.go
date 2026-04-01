@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 )
 
@@ -19,7 +20,7 @@ const (
 // It uses configured EvidenceSources and Extractors to fetch raw data, extract
 // fields, validate against a Schema, and promote complete records.
 type CurationWalker struct {
-	identity   circuit.AgentIdentity
+	identity   agentport.AgentIdentity
 	state      *circuit.WalkerState
 	schema     Schema
 	sources    []EvidenceSource
@@ -46,9 +47,9 @@ func NewCurationWalker(cfg *CurationWalkerConfig) *CurationWalker {
 	}
 
 	return &CurationWalker{
-		identity: circuit.AgentIdentity{
+		identity: agentport.AgentIdentity{
 			Name:      "curator",
-			Alignment: circuit.AlignmentThesis,
+			Alignment: agentport.AlignmentThesis,
 		},
 		state:      circuit.NewWalkerState(cfg.RecordID),
 		schema:     cfg.Schema,
@@ -58,9 +59,9 @@ func NewCurationWalker(cfg *CurationWalkerConfig) *CurationWalker {
 	}
 }
 
-func (w *CurationWalker) Identity() circuit.AgentIdentity       { return w.identity }
-func (w *CurationWalker) SetIdentity(id *circuit.AgentIdentity) { w.identity = *id }
-func (w *CurationWalker) State() *circuit.WalkerState           { return w.state }
+func (w *CurationWalker) Identity() agentport.AgentIdentity       { return w.identity }
+func (w *CurationWalker) SetIdentity(id *agentport.AgentIdentity) { w.identity = *id }
+func (w *CurationWalker) State() *circuit.WalkerState             { return w.state }
 
 // Record returns the curated record after walking.
 func (w *CurationWalker) Record() Record { return w.record }

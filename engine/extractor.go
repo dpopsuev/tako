@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 )
 
@@ -55,12 +56,12 @@ func (r ExtractorRegistry) Register(ext Extractor) {
 // extractorNode is a Node that delegates processing to an Extractor.
 type extractorNode struct {
 	name    string
-	element circuit.Element
+	element agentport.Element
 	ext     Extractor
 }
 
-func (n *extractorNode) Name() string                     { return n.name }
-func (n *extractorNode) ElementAffinity() circuit.Element { return n.element }
+func (n *extractorNode) Name() string                       { return n.name }
+func (n *extractorNode) ElementAffinity() agentport.Element { return n.element }
 
 func (n *extractorNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	var input any

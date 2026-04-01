@@ -1,4 +1,4 @@
-package circuit
+package def
 
 // Category: DSL & Build — circuit YAML loading and overlay merge.
 
@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 // rawCircuitDef is the intermediate representation that supports both
@@ -56,15 +58,15 @@ type rawEdgeDef struct {
 // and mapping sequences (edges: [{name: ..., to: ..., when: ...}]).
 type rawEdgeList []rawEdgeDef
 
-func (l *rawEdgeList) UnmarshalYAML(value *yamlNode) error {
-	if value.Kind != yamlSequenceNode {
+func (l *rawEdgeList) UnmarshalYAML(value *yaml.Node) error {
+	if value.Kind != yaml.SequenceNode {
 		return ErrEdgesMustBeASequence
 	}
 	for _, item := range value.Content {
 		switch item.Kind {
-		case yamlScalarNode:
+		case yaml.ScalarNode:
 			*l = append(*l, rawEdgeDef{To: item.Value})
-		case yamlMappingNode:
+		case yaml.MappingNode:
 			var ed rawEdgeDef
 			if err := item.Decode(&ed); err != nil {
 				return err
@@ -154,7 +156,7 @@ type AssetResolver func(schematicName string) ([]byte, error)
 // Supports both verbose (top-level edges) and compact (node-scoped edges) forms.
 func LoadCircuit(data []byte) (*CircuitDef, error) {
 	var raw rawCircuitDef
-	if err := yamlUnmarshal(data, &raw); err != nil {
+	if err := yaml.Unmarshal(data, &raw); err != nil {
 		return nil, fmt.Errorf("parse circuit YAML: %w", err)
 	}
 	return raw.normalize()

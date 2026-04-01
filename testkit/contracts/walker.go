@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 )
 
@@ -60,8 +61,8 @@ type contractNode struct {
 	name string
 }
 
-func (n *contractNode) Name() string                     { return n.name }
-func (n *contractNode) ElementAffinity() circuit.Element { return "" }
+func (n *contractNode) Name() string                       { return n.name }
+func (n *contractNode) ElementAffinity() agentport.Element { return "" }
 func (n *contractNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return &contractArt{typ: n.name}, nil
 }

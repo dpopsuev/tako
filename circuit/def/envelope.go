@@ -1,4 +1,6 @@
-package circuit
+package def
+
+import "gopkg.in/yaml.v3"
 
 // Category: DSL & Build — YAML envelope (self-identification header).
 
@@ -47,7 +49,7 @@ type Metadata struct {
 // zero-value fields for anything not present.
 func ParseEnvelope(data []byte) (*Envelope, error) {
 	var env Envelope
-	if err := yamlUnmarshal(data, &env); err != nil {
+	if err := yaml.Unmarshal(data, &env); err != nil {
 		return nil, err
 	}
 	return &env, nil

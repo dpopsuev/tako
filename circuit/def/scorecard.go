@@ -1,8 +1,12 @@
-package circuit
+package def
 
 // Category: DSL & Build — scorecard overlay definitions.
 
-import "fmt"
+import (
+	"fmt"
+
+	"gopkg.in/yaml.v3"
+)
 
 // ScorecardDef is the YAML structure for a scorecard definition.
 // Schematics provide default metrics. Consumers overlay to tune
@@ -37,7 +41,7 @@ type CostModelDef struct {
 // LoadScorecardDef parses YAML bytes into a ScorecardDef.
 func LoadScorecardDef(data []byte) (*ScorecardDef, error) {
 	var sd ScorecardDef
-	if err := yamlUnmarshal(data, &sd); err != nil {
+	if err := yaml.Unmarshal(data, &sd); err != nil {
 		return nil, fmt.Errorf("parse scorecard: %w", err)
 	}
 	return &sd, nil

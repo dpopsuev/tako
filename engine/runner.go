@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 )
 
@@ -157,9 +158,9 @@ type validatingWalker struct {
 	log     *slog.Logger
 }
 
-func (vw *validatingWalker) Identity() circuit.AgentIdentity       { return vw.inner.Identity() }
-func (vw *validatingWalker) SetIdentity(id *circuit.AgentIdentity) { vw.inner.SetIdentity(id) }
-func (vw *validatingWalker) State() *circuit.WalkerState           { return vw.inner.State() }
+func (vw *validatingWalker) Identity() agentport.AgentIdentity       { return vw.inner.Identity() }
+func (vw *validatingWalker) SetIdentity(id *agentport.AgentIdentity) { vw.inner.SetIdentity(id) }
+func (vw *validatingWalker) State() *circuit.WalkerState             { return vw.inner.State() }
 
 func (vw *validatingWalker) Handle(ctx context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
 	artifact, err := vw.inner.Handle(ctx, node, nc)
@@ -199,9 +200,9 @@ type hookingWalker struct {
 	onHookEvent func(name, phase string, err error)
 }
 
-func (hw *hookingWalker) Identity() circuit.AgentIdentity       { return hw.inner.Identity() }
-func (hw *hookingWalker) SetIdentity(id *circuit.AgentIdentity) { hw.inner.SetIdentity(id) }
-func (hw *hookingWalker) State() *circuit.WalkerState           { return hw.inner.State() }
+func (hw *hookingWalker) Identity() agentport.AgentIdentity       { return hw.inner.Identity() }
+func (hw *hookingWalker) SetIdentity(id *agentport.AgentIdentity) { hw.inner.SetIdentity(id) }
+func (hw *hookingWalker) State() *circuit.WalkerState             { return hw.inner.State() }
 
 func (hw *hookingWalker) Handle(ctx context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
 	hookCtx := WithWalkerState(ctx, hw.State())
@@ -272,9 +273,9 @@ type checkpointingWalker struct {
 	observer circuit.WalkObserver
 }
 
-func (cw *checkpointingWalker) Identity() circuit.AgentIdentity       { return cw.inner.Identity() }
-func (cw *checkpointingWalker) SetIdentity(id *circuit.AgentIdentity) { cw.inner.SetIdentity(id) }
-func (cw *checkpointingWalker) State() *circuit.WalkerState           { return cw.inner.State() }
+func (cw *checkpointingWalker) Identity() agentport.AgentIdentity       { return cw.inner.Identity() }
+func (cw *checkpointingWalker) SetIdentity(id *agentport.AgentIdentity) { cw.inner.SetIdentity(id) }
+func (cw *checkpointingWalker) State() *circuit.WalkerState             { return cw.inner.State() }
 
 func (cw *checkpointingWalker) Handle(ctx context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
 	artifact, err := cw.inner.Handle(ctx, node, nc)

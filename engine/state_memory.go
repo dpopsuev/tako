@@ -70,16 +70,32 @@ func (s *InMemoryStore) GetNS(namespace, walkerID, key string) (any, bool) {
 	defer s.mu.RUnlock()
 	ns := s.Data[namespace]
 	if ns == nil {
+		slog.DebugContext(context.Background(), "memory get miss",
+			slog.String(circuit.LogKeyNamespace, namespace),
+			slog.String(circuit.LogKeyWalkerID, walkerID),
+			slog.String(circuit.LogKeyName, key))
 		return nil, false
 	}
 	wk := ns[walkerID]
 	if wk == nil {
+		slog.DebugContext(context.Background(), "memory get miss",
+			slog.String(circuit.LogKeyNamespace, namespace),
+			slog.String(circuit.LogKeyWalkerID, walkerID),
+			slog.String(circuit.LogKeyName, key))
 		return nil, false
 	}
 	item, ok := wk[key]
 	if !ok {
+		slog.DebugContext(context.Background(), "memory get miss",
+			slog.String(circuit.LogKeyNamespace, namespace),
+			slog.String(circuit.LogKeyWalkerID, walkerID),
+			slog.String(circuit.LogKeyName, key))
 		return nil, false
 	}
+	slog.DebugContext(context.Background(), "memory get hit",
+		slog.String(circuit.LogKeyNamespace, namespace),
+		slog.String(circuit.LogKeyWalkerID, walkerID),
+		slog.String(circuit.LogKeyName, key))
 	return item.Value, true
 }
 
@@ -99,6 +115,10 @@ func (s *InMemoryStore) SetNS(namespace, walkerID, key string, value any) {
 		Value:     value,
 		CreatedAt: time.Now(),
 	}
+	slog.DebugContext(context.Background(), "memory set",
+		slog.String(circuit.LogKeyNamespace, namespace),
+		slog.String(circuit.LogKeyWalkerID, walkerID),
+		slog.String(circuit.LogKeyName, key))
 	if s.embedder != nil {
 		s.storeEmbedding(namespace, walkerID, key, value)
 	}

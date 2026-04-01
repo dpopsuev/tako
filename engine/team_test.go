@@ -5,13 +5,14 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 )
 
 func TestWalkTeam_LinearWithTwoWalkers(t *testing.T) {
-	nodeA := &stubNode{name: "classify", element: circuit.ElementFire, artifact: &stubArtifact{typ: "classification", confidence: 0.9}}
-	nodeB := &stubNode{name: "investigate", element: circuit.ElementWater, artifact: &stubArtifact{typ: "investigation", confidence: 0.8}}
-	nodeC := &stubNode{name: "decide", element: circuit.ElementEarth, artifact: &stubArtifact{typ: "decision", confidence: 0.95}}
+	nodeA := &stubNode{name: "classify", element: agentport.ElementFire, artifact: &stubArtifact{typ: "classification", confidence: 0.9}}
+	nodeB := &stubNode{name: "investigate", element: agentport.ElementWater, artifact: &stubArtifact{typ: "investigation", confidence: 0.8}}
+	nodeC := &stubNode{name: "decide", element: agentport.ElementEarth, artifact: &stubArtifact{typ: "decision", confidence: 0.95}}
 
 	edges := []circuit.Edge{
 		&stubEdge{id: "E1", from: "classify", to: "investigate"},
@@ -25,17 +26,17 @@ func TestWalkTeam_LinearWithTwoWalkers(t *testing.T) {
 	}
 
 	herald := &stubWalker{
-		identity: circuit.AgentIdentity{
+		identity: agentport.AgentIdentity{
 			Name:         "Herald",
-			Element:      circuit.ElementFire,
+			Element:      agentport.ElementFire,
 			StepAffinity: map[string]float64{"classify": 0.9, "investigate": 0.1, "decide": 0.5},
 		},
 		state: circuit.NewWalkerState("herald-1"),
 	}
 	seeker := &stubWalker{
-		identity: circuit.AgentIdentity{
+		identity: agentport.AgentIdentity{
 			Name:         "Seeker",
-			Element:      circuit.ElementWater,
+			Element:      agentport.ElementWater,
 			StepAffinity: map[string]float64{"classify": 0.1, "investigate": 0.9, "decide": 0.3},
 		},
 		state: circuit.NewWalkerState("seeker-1"),
@@ -86,7 +87,7 @@ func TestWalkTeam_MaxStepsGuard(t *testing.T) {
 	}
 
 	w := &stubWalker{
-		identity: circuit.AgentIdentity{Name: "Solo"},
+		identity: agentport.AgentIdentity{Name: "Solo"},
 		state:    circuit.NewWalkerState("solo-1"),
 	}
 
@@ -123,7 +124,7 @@ func TestWalkTeam_ObserverReceivesEdgeEvents(t *testing.T) {
 	}
 
 	w := &stubWalker{
-		identity: circuit.AgentIdentity{Name: "Solo"},
+		identity: agentport.AgentIdentity{Name: "Solo"},
 		state:    circuit.NewWalkerState("s1"),
 	}
 	tc := &TraceCollector{}
@@ -160,7 +161,7 @@ func TestWalkTeam_NilObserver(t *testing.T) {
 	}
 
 	w := &stubWalker{
-		identity: circuit.AgentIdentity{Name: "Solo"},
+		identity: agentport.AgentIdentity{Name: "Solo"},
 		state:    circuit.NewWalkerState("s1"),
 	}
 	team := &Team{
@@ -200,7 +201,7 @@ func TestWalkTeam_StartNodeNotFound(t *testing.T) {
 	}
 
 	w := &stubWalker{
-		identity: circuit.AgentIdentity{Name: "Solo"},
+		identity: agentport.AgentIdentity{Name: "Solo"},
 		state:    circuit.NewWalkerState("s1"),
 	}
 	team := &Team{
@@ -230,7 +231,7 @@ func TestWalkTeam_ContextCancellation(t *testing.T) {
 	cancel()
 
 	w := &stubWalker{
-		identity: circuit.AgentIdentity{Name: "Solo"},
+		identity: agentport.AgentIdentity{Name: "Solo"},
 		state:    circuit.NewWalkerState("s1"),
 	}
 	tc := &TraceCollector{}
@@ -252,8 +253,8 @@ func TestWalkTeam_ContextCancellation(t *testing.T) {
 }
 
 func TestWalkTeam_MismatchEmitted(t *testing.T) {
-	nodeA := &stubNode{name: "A", element: circuit.ElementFire, artifact: &stubArtifact{typ: "a", confidence: 0.8}}
-	nodeB := &stubNode{name: "B", element: circuit.ElementWater, artifact: &stubArtifact{typ: "b", confidence: 0.7}}
+	nodeA := &stubNode{name: "A", element: agentport.ElementFire, artifact: &stubArtifact{typ: "a", confidence: 0.8}}
+	nodeB := &stubNode{name: "B", element: agentport.ElementWater, artifact: &stubArtifact{typ: "b", confidence: 0.7}}
 
 	edges := []circuit.Edge{
 		&stubEdge{id: "A-B", from: "A", to: "B"},
@@ -266,17 +267,17 @@ func TestWalkTeam_MismatchEmitted(t *testing.T) {
 	}
 
 	wFire := &stubWalker{
-		identity: circuit.AgentIdentity{
+		identity: agentport.AgentIdentity{
 			Name:         "FireWalker",
-			Element:      circuit.ElementFire,
+			Element:      agentport.ElementFire,
 			StepAffinity: map[string]float64{"A": 0.9, "B": 0.1},
 		},
 		state: circuit.NewWalkerState("fire-1"),
 	}
 	wWater := &stubWalker{
-		identity: circuit.AgentIdentity{
+		identity: agentport.AgentIdentity{
 			Name:         "WaterWalker",
-			Element:      circuit.ElementWater,
+			Element:      agentport.ElementWater,
 			StepAffinity: map[string]float64{"A": 0.1, "B": 0.9},
 		},
 		state: circuit.NewWalkerState("water-1"),

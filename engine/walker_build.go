@@ -11,18 +11,18 @@ import (
 )
 
 // validElements is the set of recognized element names for validation.
-var validElements = map[circuit.Element]bool{
-	circuit.ElementFire:      true,
-	circuit.ElementLightning: true,
-	circuit.ElementEarth:     true,
-	circuit.ElementDiamond:   true,
-	circuit.ElementWater:     true,
-	circuit.ElementAir:       true,
+var validElements = map[agentport.Element]bool{
+	agentport.ElementFire:      true,
+	agentport.ElementLightning: true,
+	agentport.ElementEarth:     true,
+	agentport.ElementDiamond:   true,
+	agentport.ElementWater:     true,
+	agentport.ElementAir:       true,
 }
 
 // ValidateElement checks that name is a recognized element and returns it.
-func ValidateElement(name string) (circuit.Element, error) {
-	e := circuit.Element(strings.ToLower(name))
+func ValidateElement(name string) (agentport.Element, error) {
+	e := agentport.Element(strings.ToLower(name))
 	if !validElements[e] {
 		return "", fmt.Errorf("%w: %q (valid: fire, lightning, earth, diamond, water, air)", ErrUnknownElement, name)
 	}
@@ -49,7 +49,7 @@ func buildWalker(d *circuit.WalkerDef) (*circuit.ProcessWalker, error) {
 		return nil, ErrWalkerNameIsRequired
 	}
 
-	id := circuit.AgentIdentity{}
+	id := agentport.AgentIdentity{}
 
 	if d.Persona != "" {
 		resolver := agentport.GetDefaultPersonaResolver()
@@ -64,7 +64,7 @@ func buildWalker(d *circuit.WalkerDef) (*circuit.ProcessWalker, error) {
 	}
 
 	if d.Approach != "" {
-		elem, ok := circuit.ResolveApproach(strings.ToLower(d.Approach))
+		elem, ok := agentport.ResolveApproach(strings.ToLower(d.Approach))
 		if !ok {
 			return nil, fmt.Errorf("%w: %q", ErrUnknownApproach, d.Approach)
 		}
@@ -88,8 +88,8 @@ func buildWalker(d *circuit.WalkerDef) (*circuit.ProcessWalker, error) {
 	}
 
 	if d.Role != "" {
-		r := circuit.Role(strings.ToLower(d.Role))
-		if !circuit.ValidRoles[r] {
+		r := agentport.Role(strings.ToLower(d.Role))
+		if !agentport.ValidRoles[r] {
 			return nil, fmt.Errorf("%w: %q (valid: worker, manager, enforcer, broker)", ErrUnknownRole, d.Role)
 		}
 		id.Role = r

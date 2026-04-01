@@ -4,26 +4,27 @@ import (
 	"context"
 	"testing"
 
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 )
 
 type affinityWalker struct {
-	identity circuit.AgentIdentity
+	identity agentport.AgentIdentity
 	state    *circuit.WalkerState
 }
 
-func (w *affinityWalker) Identity() circuit.AgentIdentity       { return w.identity }
-func (w *affinityWalker) SetIdentity(id *circuit.AgentIdentity) { w.identity = *id }
-func (w *affinityWalker) State() *circuit.WalkerState           { return w.state }
+func (w *affinityWalker) Identity() agentport.AgentIdentity       { return w.identity }
+func (w *affinityWalker) SetIdentity(id *agentport.AgentIdentity) { w.identity = *id }
+func (w *affinityWalker) State() *circuit.WalkerState             { return w.state }
 func (w *affinityWalker) Handle(_ context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
 	return node.Process(context.Background(), nc)
 }
 
 func TestSingleScheduler(t *testing.T) {
-	w := &affinityWalker{identity: circuit.AgentIdentity{Name: "solo"}, state: circuit.NewWalkerState("s1")}
+	w := &affinityWalker{identity: agentport.AgentIdentity{Name: "solo"}, state: circuit.NewWalkerState("s1")}
 	sched := &SingleScheduler{Walker: w}
 
-	node := &stubNode{name: "classify", element: circuit.ElementFire}
+	node := &stubNode{name: "classify", element: agentport.ElementFire}
 	got := sched.Select(SchedulerContext{Node: node, Walkers: []circuit.Walker{w}})
 	if got.Identity().Name != "solo" {
 		t.Errorf("expected solo, got %s", got.Identity().Name)
@@ -32,17 +33,17 @@ func TestSingleScheduler(t *testing.T) {
 
 func TestAffinityScheduler_PicksHighestAffinity(t *testing.T) {
 	herald := &affinityWalker{
-		identity: circuit.AgentIdentity{
+		identity: agentport.AgentIdentity{
 			Name:         "Herald",
-			Element:      circuit.ElementFire,
+			Element:      agentport.ElementFire,
 			StepAffinity: map[string]float64{"classify": 0.9, "investigate": 0.2},
 		},
 		state: circuit.NewWalkerState("h1"),
 	}
 	seeker := &affinityWalker{
-		identity: circuit.AgentIdentity{
+		identity: agentport.AgentIdentity{
 			Name:         "Seeker",
-			Element:      circuit.ElementWater,
+			Element:      agentport.ElementWater,
 			StepAffinity: map[string]float64{"classify": 0.2, "investigate": 0.9},
 		},
 		state: circuit.NewWalkerState("s1"),
@@ -51,13 +52,13 @@ func TestAffinityScheduler_PicksHighestAffinity(t *testing.T) {
 	sched := &AffinityScheduler{}
 	walkers := []circuit.Walker{herald, seeker}
 
-	classifyNode := &stubNode{name: "classify", element: circuit.ElementFire}
+	classifyNode := &stubNode{name: "classify", element: agentport.ElementFire}
 	got := sched.Select(SchedulerContext{Node: classifyNode, Walkers: walkers})
 	if got.Identity().Name != "Herald" {
 		t.Errorf("classify: expected Herald, got %s", got.Identity().Name)
 	}
 
-	investigateNode := &stubNode{name: "investigate", element: circuit.ElementWater}
+	investigateNode := &stubNode{name: "investigate", element: agentport.ElementWater}
 	got = sched.Select(SchedulerContext{Node: investigateNode, Walkers: walkers})
 	if got.Identity().Name != "Seeker" {
 		t.Errorf("investigate: expected Seeker, got %s", got.Identity().Name)
@@ -66,24 +67,24 @@ func TestAffinityScheduler_PicksHighestAffinity(t *testing.T) {
 
 func TestAffinityScheduler_TieBreakByElement(t *testing.T) {
 	fire := &affinityWalker{
-		identity: circuit.AgentIdentity{
+		identity: agentport.AgentIdentity{
 			Name:         "Fire",
-			Element:      circuit.ElementFire,
+			Element:      agentport.ElementFire,
 			StepAffinity: map[string]float64{"node": 0.5},
 		},
 		state: circuit.NewWalkerState("f1"),
 	}
 	water := &affinityWalker{
-		identity: circuit.AgentIdentity{
+		identity: agentport.AgentIdentity{
 			Name:         "Water",
-			Element:      circuit.ElementWater,
+			Element:      agentport.ElementWater,
 			StepAffinity: map[string]float64{"node": 0.5},
 		},
 		state: circuit.NewWalkerState("w1"),
 	}
 
 	sched := &AffinityScheduler{}
-	fireNode := &stubNode{name: "node", element: circuit.ElementFire}
+	fireNode := &stubNode{name: "node", element: agentport.ElementFire}
 
 	got := sched.Select(SchedulerContext{Node: fireNode, Walkers: []circuit.Walker{water, fire}})
 	if got.Identity().Name != "Fire" {
@@ -93,11 +94,11 @@ func TestAffinityScheduler_TieBreakByElement(t *testing.T) {
 
 func TestAffinityScheduler_FallbackToFirst(t *testing.T) {
 	w1 := &affinityWalker{
-		identity: circuit.AgentIdentity{Name: "First"},
+		identity: agentport.AgentIdentity{Name: "First"},
 		state:    circuit.NewWalkerState("1"),
 	}
 	w2 := &affinityWalker{
-		identity: circuit.AgentIdentity{Name: "Second"},
+		identity: agentport.AgentIdentity{Name: "Second"},
 		state:    circuit.NewWalkerState("2"),
 	}
 
@@ -112,7 +113,7 @@ func TestAffinityScheduler_FallbackToFirst(t *testing.T) {
 
 func TestAffinityScheduler_SingleWalker(t *testing.T) {
 	w := &affinityWalker{
-		identity: circuit.AgentIdentity{Name: "Only"},
+		identity: agentport.AgentIdentity{Name: "Only"},
 		state:    circuit.NewWalkerState("o1"),
 	}
 
@@ -133,15 +134,15 @@ func TestAffinityScheduler_EmptyWalkers(t *testing.T) {
 
 func TestAffinityScheduler_Mismatch_PerfectMatch(t *testing.T) {
 	w := &affinityWalker{
-		identity: circuit.AgentIdentity{
+		identity: agentport.AgentIdentity{
 			Name:         "Perfect",
-			Element:      circuit.ElementFire,
+			Element:      agentport.ElementFire,
 			StepAffinity: map[string]float64{"node": 1.0},
 		},
 		state: circuit.NewWalkerState("p1"),
 	}
 	sched := &AffinityScheduler{}
-	node := &stubNode{name: "node", element: circuit.ElementFire}
+	node := &stubNode{name: "node", element: agentport.ElementFire}
 	sched.Select(SchedulerContext{Node: node, Walkers: []circuit.Walker{w}})
 
 	if sched.LastMismatch() != 0.0 {
@@ -151,11 +152,11 @@ func TestAffinityScheduler_Mismatch_PerfectMatch(t *testing.T) {
 
 func TestAffinityScheduler_Mismatch_WorstCase(t *testing.T) {
 	w := &affinityWalker{
-		identity: circuit.AgentIdentity{Name: "Worst"},
+		identity: agentport.AgentIdentity{Name: "Worst"},
 		state:    circuit.NewWalkerState("w1"),
 	}
 	sched := &AffinityScheduler{}
-	node := &stubNode{name: "node", element: circuit.ElementFire}
+	node := &stubNode{name: "node", element: agentport.ElementFire}
 	sched.Select(SchedulerContext{Node: node, Walkers: []circuit.Walker{w}})
 
 	if sched.LastMismatch() < 0.5 {

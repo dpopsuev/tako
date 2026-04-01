@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/testkit/stubs"
 )
@@ -76,7 +77,7 @@ func TestStubWalker_Identity(t *testing.T) {
 
 func TestStubWalker_SetIdentity(t *testing.T) {
 	w := stubs.NewStubWalker("w1", nil)
-	newID := circuit.AgentIdentity{Name: "w2"}
+	newID := agentport.AgentIdentity{Name: "w2"}
 	w.SetIdentity(&newID)
 
 	id := w.Identity()
@@ -120,8 +121,8 @@ type stubNode struct {
 	name string
 }
 
-func (n *stubNode) Name() string                     { return n.name }
-func (n *stubNode) ElementAffinity() circuit.Element { return "" }
+func (n *stubNode) Name() string                       { return n.name }
+func (n *stubNode) ElementAffinity() agentport.Element { return "" }
 func (n *stubNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return nil, nil
 }

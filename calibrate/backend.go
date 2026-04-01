@@ -3,7 +3,7 @@ package calibrate
 import (
 	"encoding/json"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/agentport"
 )
 
 // ModelBackend is the interface for sending prompts and receiving responses
@@ -18,5 +18,5 @@ type ModelBackend interface {
 // Identifiable is an optional interface for backends that can report
 // which LLM model ("ghost") is behind the backend ("shell").
 type Identifiable interface {
-	Identify() (circuit.ModelIdentity, error)
+	Identify() (agentport.ModelIdentity, error)
 }

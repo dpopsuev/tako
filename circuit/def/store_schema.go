@@ -1,8 +1,12 @@
-package circuit
+package def
 
 // Category: DSL & Build — store schema definitions.
 
-import "fmt"
+import (
+	"fmt"
+
+	"gopkg.in/yaml.v3"
+)
 
 // StoreWiring declares how store engines are wired to schematics.
 // Consumers declare this in origami.yaml to assign engines per schematic
@@ -83,7 +87,7 @@ type SchemaProvider interface {
 // LoadStoreSchema parses YAML bytes into a StoreSchema.
 func LoadStoreSchema(data []byte) (*StoreSchema, error) {
 	var s StoreSchema
-	if err := yamlUnmarshal(data, &s); err != nil {
+	if err := yaml.Unmarshal(data, &s); err != nil {
 		return nil, fmt.Errorf("parse store schema: %w", err)
 	}
 	if s.Tables == nil {

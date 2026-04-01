@@ -87,8 +87,6 @@ type Mediator struct {
 	stateDir string                // empty = tracing disabled
 	recorder *engine.TraceRecorder // nil when tracing disabled
 
-	// Workers manages agent-worker goroutines for the workers MCP tool.
-	Workers *WorkerManager
 }
 
 // New creates a Mediator that will connect to the given backends.
@@ -458,48 +456,7 @@ func (gw *Mediator) MCPServer() *sdkmcp.Server {
 		addHandler(rt.tool)
 	}
 
-	// Register local workers tool (not routed to backends).
-	if gw.Workers != nil {
-		sdkmcp.AddTool(server, &sdkmcp.Tool{
-			Name:        "workers",
-			Description: "Agent worker management. Actions: start (spawn N workers), stop (kill all), health (status).",
-		}, noOutputSchema(gw.handleWorkersToolTyped))
-	}
-
 	return server
-}
-
-// handleWorkersToolTyped dispatches the workers tool actions.
-func (gw *Mediator) handleWorkersToolTyped(ctx context.Context, _ *sdkmcp.CallToolRequest, input *workersInput) (*sdkmcp.CallToolResult, any, error) {
-	switch input.Action {
-	case "start":
-		if input.Session == "" {
-			return nil, nil, ErrSessionRequired
-		}
-		if err := gw.Workers.Start(ctx, input.Session, input.Agent, input.Count); err != nil {
-			return nil, nil, err
-		}
-		return nil, gw.Workers.Health(), nil
-
-	case "stop":
-		if err := gw.Workers.Stop(); err != nil {
-			return nil, nil, err
-		}
-		return nil, map[string]any{"status": "stopped"}, nil
-
-	case "health":
-		return nil, gw.Workers.Health(), nil
-
-	default:
-		return nil, nil, fmt.Errorf("%w: %q; valid actions: start, stop, health", ErrUnknownWorkersAction, input.Action)
-	}
-}
-
-// noOutputSchema wraps a typed handler to suppress outputSchema generation.
-func noOutputSchema[In any](h func(context.Context, *sdkmcp.CallToolRequest, *In) (*sdkmcp.CallToolResult, any, error)) sdkmcp.ToolHandlerFor[*In, any] {
-	return func(ctx context.Context, req *sdkmcp.CallToolRequest, input *In) (*sdkmcp.CallToolResult, any, error) {
-		return h(ctx, req, input)
-	}
 }
 
 // Handler returns an http.Handler with MCP, health, and readiness endpoints.

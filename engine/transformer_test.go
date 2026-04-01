@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 )
 
@@ -15,7 +16,7 @@ func TestTransformerNode_Process(t *testing.T) {
 	trans := &echoTransformer{}
 	node := &transformerNode{
 		name:    "test-node",
-		element: circuit.ElementFire,
+		element: agentport.ElementFire,
 		trans:   trans,
 		config:  map[string]any{"key": "val"},
 	}
@@ -23,7 +24,7 @@ func TestTransformerNode_Process(t *testing.T) {
 	if node.Name() != "test-node" {
 		t.Errorf("Name() = %q", node.Name())
 	}
-	if node.ElementAffinity() != circuit.ElementFire {
+	if node.ElementAffinity() != agentport.ElementFire {
 		t.Errorf("Element = %q", node.ElementAffinity())
 	}
 
@@ -140,8 +141,8 @@ type testNode struct {
 	name string
 }
 
-func (n *testNode) Name() string                     { return n.name }
-func (n *testNode) ElementAffinity() circuit.Element { return circuit.ElementFire }
+func (n *testNode) Name() string                       { return n.name }
+func (n *testNode) ElementAffinity() agentport.Element { return agentport.ElementFire }
 func (n *testNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	return &stubArtifact{raw: map[string]any{"processed": true}}, nil
 }
@@ -150,7 +151,7 @@ func TestTransformerNode_ResolveInput(t *testing.T) {
 	trans := &echoTransformer{}
 	node := &transformerNode{
 		name:    "triage",
-		element: circuit.ElementFire,
+		element: agentport.ElementFire,
 		trans:   trans,
 		input:   "${recall.output}",
 		config:  map[string]any{"key": "val"},
@@ -186,7 +187,7 @@ func TestTransformerNode_ResolveInput(t *testing.T) {
 func TestTransformerNode_RenderPrompt(t *testing.T) {
 	captureNode := &transformerNode{
 		name:    "triage",
-		element: circuit.ElementFire,
+		element: agentport.ElementFire,
 		trans: TransformerFunc("capture", func(_ context.Context, tc *TransformerContext) (any, error) {
 			return map[string]any{"prompt": tc.Prompt}, nil
 		}),
@@ -247,7 +248,7 @@ func TestTransformerNode_NodeConfigReachesTransformer(t *testing.T) {
 	})
 	node := &transformerNode{
 		name:       "test-node",
-		element:    circuit.ElementFire,
+		element:    agentport.ElementFire,
 		trans:      captureConfig,
 		nodeConfig: &circuit.NodeConfig{OutputPath: "recall.json", MaxRetries: 3},
 	}

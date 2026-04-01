@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 )
 
@@ -38,7 +39,7 @@ type Graph interface {
 type Zone struct {
 	Name            string
 	NodeNames       []string
-	ElementAffinity circuit.Element
+	ElementAffinity agentport.Element
 	Stickiness      int // 0-3 stickiness value for agents in this zone
 	Domain          string
 	ContextFilter   *circuit.ContextFilterDef

@@ -1,10 +1,12 @@
-package circuit
+package def
 
 // Category: DSL & Build — definition types for circuit YAML.
 
 import (
 	"fmt"
 	"time"
+
+	"gopkg.in/yaml.v3"
 )
 
 // NodeName is a typed identifier for circuit nodes.
@@ -341,7 +343,7 @@ const (
 
 // MarshalYAML serializes a CircuitDef back to YAML (P8: round-trip fidelity).
 func (def *CircuitDef) MarshalYAML() ([]byte, error) {
-	return yamlMarshal(def)
+	return yaml.Marshal(def)
 }
 
 // Validate checks referential integrity of the circuit definition:

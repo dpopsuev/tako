@@ -1,4 +1,4 @@
-package circuit
+package def
 
 // Category: DSL & Build — component manifest (YAML-level types only).
 // The live Component struct with runtime registries stays in the root package.
@@ -6,6 +6,8 @@ package circuit
 import (
 	"fmt"
 	"os"
+
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -156,7 +158,7 @@ func LoadComponentManifest(path string) (*ComponentManifest, error) {
 		return nil, fmt.Errorf("read component manifest %s: %w", path, err)
 	}
 	var raw componentManifestYAML
-	if err := yamlUnmarshal(data, &raw); err != nil {
+	if err := yaml.Unmarshal(data, &raw); err != nil {
 		return nil, fmt.Errorf("parse component manifest %s: %w", path, err)
 	}
 	if raw.APIVersion != "origami/v1" {

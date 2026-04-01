@@ -1,8 +1,12 @@
-package circuit
+package def
 
 // Category: DSL & Build — vocabulary (code-to-name translation).
 
-import "sync"
+import (
+	"sync"
+
+	"gopkg.in/yaml.v3"
+)
 
 // Vocabulary translates machine codes to human-readable names.
 // Implementations must be safe for concurrent use.
@@ -101,8 +105,8 @@ type VocabEntry struct {
 
 // UnmarshalYAML supports both map form ({short: X, long: Y}) and shorthand
 // string form ("Y") which sets Long only.
-func (e *VocabEntry) UnmarshalYAML(value *yamlNode) error {
-	if value.Kind == yamlScalarNode {
+func (e *VocabEntry) UnmarshalYAML(value *yaml.Node) error {
+	if value.Kind == yaml.ScalarNode {
 		e.Long = value.Value
 		return nil
 	}

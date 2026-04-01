@@ -1,0 +1,6 @@
+apiVersion: origami/v1
+kind: Board
+metadata:
+  name: test
+  namespace: test
+spec: {}

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 )
 
@@ -119,7 +120,7 @@ func BuildGraph(def *circuit.CircuitDef, reg *GraphRegistries) (Graph, error) {
 
 	fwZones := make([]Zone, 0, len(def.Zones))
 	for name, zd := range def.Zones {
-		elem, _ := circuit.ResolveApproach(strings.ToLower(zd.Approach))
+		elem, _ := agentport.ResolveApproach(strings.ToLower(zd.Approach))
 		nodeNames := make([]string, len(zd.Nodes))
 		for j, nn := range zd.Nodes {
 			nodeNames[j] = string(nn)
@@ -211,12 +212,12 @@ func buildGraphShape(g *DefaultGraph, def *circuit.CircuitDef) circuit.GraphShap
 
 // resolveNode creates a Node from a circuit.NodeDef using handler + handler_type.
 func resolveNode(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries) (circuit.Node, error) {
-	elem, _ := circuit.ResolveApproach(strings.ToLower(nd.Approach))
+	elem, _ := agentport.ResolveApproach(strings.ToLower(nd.Approach))
 	return resolveHandler(def, nd, reg, elem)
 }
 
 // resolveHandler resolves a node using the explicit handler + handler_type path.
-func resolveHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem circuit.Element) (circuit.Node, error) {
+func resolveHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem agentport.Element) (circuit.Node, error) {
 	handler := nd.Handler
 	if handler == "" {
 		handler = string(nd.Name)

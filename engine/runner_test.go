@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"testing"
 
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 )
 
@@ -21,26 +22,26 @@ func (a *runnerTestArtifact) Raw() any            { return a.raw }
 
 type runnerTestNode struct {
 	name    string
-	element circuit.Element
+	element agentport.Element
 	out     circuit.Artifact
 	err     error
 }
 
-func (n *runnerTestNode) Name() string                     { return n.name }
-func (n *runnerTestNode) ElementAffinity() circuit.Element { return n.element }
+func (n *runnerTestNode) Name() string                       { return n.name }
+func (n *runnerTestNode) ElementAffinity() agentport.Element { return n.element }
 func (n *runnerTestNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return n.out, n.err
 }
 
 type runnerTestWalker struct {
-	identity circuit.AgentIdentity
+	identity agentport.AgentIdentity
 	state    *circuit.WalkerState
 	visited  []string
 }
 
-func (w *runnerTestWalker) Identity() circuit.AgentIdentity       { return w.identity }
-func (w *runnerTestWalker) SetIdentity(id *circuit.AgentIdentity) { w.identity = *id }
-func (w *runnerTestWalker) State() *circuit.WalkerState           { return w.state }
+func (w *runnerTestWalker) Identity() agentport.AgentIdentity       { return w.identity }
+func (w *runnerTestWalker) SetIdentity(id *agentport.AgentIdentity) { w.identity = *id }
+func (w *runnerTestWalker) State() *circuit.WalkerState             { return w.state }
 func (w *runnerTestWalker) Handle(ctx context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
 	w.visited = append(w.visited, node.Name())
 	return node.Process(ctx, nc)

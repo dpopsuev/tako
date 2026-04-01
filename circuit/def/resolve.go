@@ -1,4 +1,4 @@
-package circuit
+package def
 
 // Category: DSL & Build — circuit path resolution.
 

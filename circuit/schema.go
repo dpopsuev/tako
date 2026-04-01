@@ -1,30 +1,20 @@
 package circuit
 
-// Category: DSL & Build — artifact schema declaration and validation.
+// Category: DSL & Build — artifact schema validation.
 
 import (
 	"encoding/json"
 	"fmt"
 	"strings"
+
+	"github.com/dpopsuev/origami/circuit/def"
 )
 
-// ArtifactSchema declares the expected shape of a node's output artifact.
-// It is optional (P7: progressive disclosure) and validated by Runner after
-// each node completes. Domain tools declare schemas in YAML; the framework
-// enforces them so malformed artifacts fail fast with clear diagnostics.
-type ArtifactSchema struct {
-	Type     string                 `yaml:"type" json:"type"`
-	Required []string               `yaml:"required,omitempty" json:"required,omitempty"`
-	Fields   map[string]FieldSchema `yaml:"fields,omitempty" json:"fields,omitempty"`
-}
+// ArtifactSchema is a type alias for def.ArtifactSchema.
+type ArtifactSchema = def.ArtifactSchema
 
-// FieldSchema describes a single field in an artifact object.
-type FieldSchema struct {
-	Type     string                 `yaml:"type" json:"type"`
-	Required []string               `yaml:"required,omitempty" json:"required,omitempty"`
-	Fields   map[string]FieldSchema `yaml:"fields,omitempty" json:"fields,omitempty"`
-	Items    *FieldSchema           `yaml:"items,omitempty" json:"items,omitempty"`
-}
+// FieldSchema is a type alias for def.FieldSchema.
+type FieldSchema = def.FieldSchema
 
 // ValidateArtifact checks that an artifact's Raw() value conforms to the schema.
 // Returns nil if the schema is nil (no validation) or if the artifact matches.

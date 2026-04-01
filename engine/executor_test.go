@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 )
 
@@ -12,8 +13,8 @@ type execTestNode struct {
 	artifact circuit.Artifact
 }
 
-func (n execTestNode) Name() string                     { return n.name }
-func (n execTestNode) ElementAffinity() circuit.Element { return "" }
+func (n execTestNode) Name() string                       { return n.name }
+func (n execTestNode) ElementAffinity() agentport.Element { return "" }
 func (n execTestNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return n.artifact, nil
 }

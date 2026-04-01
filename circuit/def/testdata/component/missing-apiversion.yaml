@@ -1,0 +1,5 @@
+kind: Component
+metadata:
+  name: test
+  namespace: test
+spec: {}

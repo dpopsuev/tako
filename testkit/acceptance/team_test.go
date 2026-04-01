@@ -8,6 +8,7 @@ package acceptance
 import (
 	"testing"
 
+	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
 )
@@ -21,16 +22,16 @@ func TestTeam_TwoWalkersScheduleByAffinity(t *testing.T) {
 
 	// Create walkers with different affinities
 	coordinator := circuit.NewProcessWalker("coordinator")
-	coordinator.SetIdentity(&circuit.AgentIdentity{
+	coordinator.SetIdentity(&agentport.AgentIdentity{
 		Name:         "Coordinator",
-		Element:      circuit.ElementEarth,
+		Element:      agentport.ElementEarth,
 		StepAffinity: map[string]float64{"plan": 0.95, "synthesize": 0.95},
 	})
 
 	specialistA := circuit.NewProcessWalker("specialist-a")
-	specialistA.SetIdentity(&circuit.AgentIdentity{
+	specialistA.SetIdentity(&agentport.AgentIdentity{
 		Name:         "Specialist A",
-		Element:      circuit.ElementWater,
+		Element:      agentport.ElementWater,
 		StepAffinity: map[string]float64{"research_a": 0.95},
 	})
 
@@ -76,23 +77,23 @@ func TestTeam_WalkCompletesWithMultipleWalkers(t *testing.T) {
 	//   And all nodes are visited
 
 	coordinator := circuit.NewProcessWalker("coordinator")
-	coordinator.SetIdentity(&circuit.AgentIdentity{
+	coordinator.SetIdentity(&agentport.AgentIdentity{
 		Name:         "Coordinator",
-		Element:      circuit.ElementEarth,
+		Element:      agentport.ElementEarth,
 		StepAffinity: map[string]float64{"plan": 0.95, "synthesize": 0.95},
 	})
 
 	specialistA := circuit.NewProcessWalker("specialist-a")
-	specialistA.SetIdentity(&circuit.AgentIdentity{
+	specialistA.SetIdentity(&agentport.AgentIdentity{
 		Name:         "Specialist A",
-		Element:      circuit.ElementWater,
+		Element:      agentport.ElementWater,
 		StepAffinity: map[string]float64{"research_a": 0.95},
 	})
 
 	specialistB := circuit.NewProcessWalker("specialist-b")
-	specialistB.SetIdentity(&circuit.AgentIdentity{
+	specialistB.SetIdentity(&agentport.AgentIdentity{
 		Name:         "Specialist B",
-		Element:      circuit.ElementFire,
+		Element:      agentport.ElementFire,
 		StepAffinity: map[string]float64{"research_b": 0.95},
 	})
 
