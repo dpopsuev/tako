@@ -30,6 +30,15 @@ type (
 // Backward-compat alias.
 type AgentCollective = collective.Collective // renamed in v0.2.0
 
+// New v0.2.0 collective strategies.
+type (
+	RoundRobin    = collective.RoundRobin
+	Race          = collective.Race
+	Scatter       = collective.Scatter
+	DialecticPair = collective.DialecticPair
+	Gatekeeper    = collective.Gatekeeper
+)
+
 // Facade constructors.
 var (
 	NewStaff        = agent.NewStaff
