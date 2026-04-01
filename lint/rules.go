@@ -67,6 +67,7 @@ func bestPracticeRules() []Rule {
 		&MissingKind{},
 		&DeprecatedArrow{},
 		&MissingKindDomainPath{},
+		&ManifestMetadata{},
 	}
 }
 

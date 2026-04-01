@@ -482,3 +482,62 @@ func (r *MissingKindDomainPath) Check(ctx *LintContext) []Finding {
 		Line:     1,
 	}}
 }
+
+// --- B12: manifest-missing-metadata ---
+
+// manifestKinds are K8s-style manifest kinds that require metadata.name.
+var manifestKinds = map[string]bool{
+	"board":     true,
+	"schematic": true,
+	"component": true,
+}
+
+// ManifestMetadata checks that K8s-style manifests (board, schematic, component)
+// have a metadata section with a name field.
+type ManifestMetadata struct{}
+
+func (r *ManifestMetadata) ID() string          { return "B12/manifest-missing-metadata" }
+func (r *ManifestMetadata) Description() string { return "K8s-style manifest must have metadata.name" }
+func (r *ManifestMetadata) Severity() Severity  { return SeverityWarning }
+func (r *ManifestMetadata) Tags() []string      { return []string{"best-practice", "manifest", "k8s"} }
+
+func (r *ManifestMetadata) Check(ctx *LintContext) []Finding {
+	if ctx.yamlRoot == nil {
+		return nil
+	}
+
+	var kind string
+	var hasMetadata, hasMetadataName bool
+
+	for i := 0; i+1 < len(ctx.yamlRoot.Content); i += 2 {
+		key := ctx.yamlRoot.Content[i]
+		val := ctx.yamlRoot.Content[i+1]
+
+		if key.Value == "kind" {
+			kind = val.Value
+		}
+		if key.Value == "metadata" && val.Kind == yaml.MappingNode {
+			hasMetadata = true
+			for j := 0; j+1 < len(val.Content); j += 2 {
+				if val.Content[j].Value == "name" && val.Content[j+1].Value != "" {
+					hasMetadataName = true
+				}
+			}
+		}
+	}
+
+	if !manifestKinds[kind] {
+		return nil // not a manifest kind, skip
+	}
+
+	if !hasMetadata || !hasMetadataName {
+		return []Finding{{
+			RuleID:   r.ID(),
+			Severity: r.Severity(),
+			Message:  fmt.Sprintf("%s manifest requires metadata.name", kind),
+			File:     ctx.File,
+			Line:     1,
+		}}
+	}
+	return nil
+}
