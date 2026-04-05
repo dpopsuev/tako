@@ -7,7 +7,7 @@ import (
 
 	bd "github.com/dpopsuev/origami/agentport"
 
-	"github.com/dpopsuev/jericho/billing"
+	"github.com/dpopsuev/troupe/billing"
 )
 
 // Hook is called after each dispatch with timing and error info.

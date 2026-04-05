@@ -1,36 +1,35 @@
 package agentport
 
 import (
-	"github.com/dpopsuev/jericho/agent"
-	"github.com/dpopsuev/jericho/collective"
-	"github.com/dpopsuev/jericho/pool"
+	"github.com/dpopsuev/troupe"
+	"github.com/dpopsuev/troupe/collective"
 )
 
-// Facade type aliases — definitions live in jericho/agent.
+// Core Troupe types — definitions live in troupe root.
 type (
-	Staff  = agent.Staff
-	Solo   = agent.Solo
-	Config = pool.AgentConfig
+	Broker      = troupe.Broker
+	Actor       = troupe.Actor
+	ActorConfig = troupe.ActorConfig
+	BrokerPrefs = troupe.Preferences // renamed to avoid collision with arsenal.Preferences
 )
 
-// Backward-compat aliases for pre-v0.2.0 consumer code.
+// Backward-compat aliases for pre-Troupe consumer code.
 type (
-	AgentHandle  = agent.Solo       // renamed in v0.2.0
-	LaunchConfig = pool.AgentConfig // renamed in v0.2.0
+	Staff        = troupe.Broker      // deprecated: use Broker
+	LaunchConfig = troupe.ActorConfig // deprecated: use ActorConfig
 )
 
-// Collective type aliases — definitions live in jericho/collective.
+// Collective type aliases — definitions live in troupe/collective.
 type (
 	Collective         = collective.Collective
-	CollectiveConfig   = collective.CollectiveConfig
 	CollectiveStrategy = collective.CollectiveStrategy
 	Dialectic          = collective.Dialectic
 )
 
 // Backward-compat alias.
-type AgentCollective = collective.Collective // renamed in v0.2.0
+type AgentCollective = collective.Collective // deprecated: use Collective
 
-// New v0.2.0 collective strategies.
+// Collective strategies.
 type (
 	RoundRobin    = collective.RoundRobin
 	Race          = collective.Race
@@ -41,6 +40,6 @@ type (
 
 // Facade constructors.
 var (
-	NewStaff        = agent.NewStaff
+	NewBroker       = troupe.NewBroker
 	SpawnCollective = collective.SpawnCollective
 )

@@ -1,6 +1,6 @@
 package agentport
 
-import "github.com/dpopsuev/jericho/arsenal"
+import "github.com/dpopsuev/troupe/arsenal"
 
 // Arsenal type aliases — model selection catalog.
 type (

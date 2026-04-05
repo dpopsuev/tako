@@ -14,9 +14,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/jericho/resilience"
 	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/troupe/resilience"
 )
 
 // NetworkServer wraps an agentport.ExternalDispatcher and exposes it over HTTP.

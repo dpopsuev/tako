@@ -87,16 +87,16 @@ func workersCmd(args []string) error {
 }
 
 func runWorker(ctx context.Context, gateway, agentName, sessionID, workerName string) error {
-	launcher := agentport.NewACPLauncher()
-	staff := agentport.NewStaff(launcher)
-	handle, err := staff.Spawn(ctx, "worker", agentport.LaunchConfig{
+	// ACP launcher absorbed into Broker
+	broker := agentport.NewBroker("")
+	actor, err := broker.Spawn(ctx, agentport.ActorConfig{
 		Model: agentName,
 		Role:  "worker",
 	})
 	if err != nil {
 		return fmt.Errorf("spawn agent %q: %w", agentName, err)
 	}
-	defer staff.KillAll(ctx)
+	defer actor.Kill(ctx) //nolint:errcheck // best-effort cleanup
 
 	slog.InfoContext(ctx, "agent spawned",
 		slog.Any(circuit.LogKeyWorker, workerName),
@@ -149,7 +149,7 @@ func runWorker(ctx context.Context, gateway, agentName, sessionID, workerName st
 			continue
 		}
 
-		response, err := handle.Ask(ctx, step.Prompt)
+		response, err := actor.Perform(ctx, step.Prompt)
 		if err != nil {
 			slog.ErrorContext(ctx, "agent ask failed",
 				slog.Any(circuit.LogKeyWorker, workerName),

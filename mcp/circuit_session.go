@@ -59,7 +59,7 @@ type CircuitSession struct {
 
 	registeredWorkers map[string]string
 
-	Supervisor *agentport.Supervisor
+	// Supervisor removed — health monitoring via Troupe Hooks in Phase 3.
 
 	recorder  *engine.TraceRecorder // nil when tracing disabled
 	runDir    string                // {StateDir}/runs/{sessID}
@@ -98,7 +98,7 @@ func NewCircuitSession(
 		dispatcher:      disp,
 		doneCh:          make(chan struct{}),
 		cancel:          cancel,
-		Supervisor:      agentport.NewSupervisor(bus),
+		// Supervisor removed — health monitoring via Troupe Hooks.
 		startedAt:       time.Now(),
 		runCtx:          ctx,
 		runFn:           runFn,

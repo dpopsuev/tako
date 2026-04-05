@@ -1,63 +1,68 @@
 package agentport
 
-import "github.com/dpopsuev/jericho/symbol"
+import "github.com/dpopsuev/troupe/identity"
 
-// Type aliases — definitions live in jericho/symbol.
+// Type aliases — definitions live in jericho/identity.
 type (
-	Persona         = symbol.Persona
-	PersonaResolver = symbol.PersonaResolver
-	Alignment       = symbol.Alignment
-	Position        = symbol.Position
-	MetaPhase       = symbol.MetaPhase
-	Role            = symbol.Role
-	ModelIdentity   = symbol.ModelIdentity
-	CostProfile     = symbol.CostProfile
-	Reservation     = symbol.Reservation
+	Persona         = identity.Archetype
+	PersonaResolver = identity.ArchetypeResolver
+	Alignment       = identity.Alignment
+	Position        = identity.Position
+	MetaPhase       = identity.MetaPhase
+	Role            = identity.Role
+	ModelIdentity   = identity.ModelIdentity
+	CostProfile     = identity.CostProfile
+	Reservation     = identity.Reservation
 )
 
 // Backward-compat: AgentIdentity was deleted in v0.2.0.
 // Persona is now flat — use Persona directly instead of Persona.Identity.
-type AgentIdentity = symbol.Persona // flattened in v0.2.0
+type AgentIdentity = identity.Archetype // flattened in v0.2.0
 
-// Color is now jericho/symbol.Color (was identity.Color + palette.ColorIdentity).
-type Color = symbol.Color
+// Color is now jericho/identity.Color (was identity.Color + palette.ColorIdentity).
+type Color = identity.Color
 
 // Alignment constants.
 const (
-	AlignmentThesis     = symbol.AlignmentThesis
-	AlignmentAntithesis = symbol.AlignmentAntithesis
+	AlignmentThesis     = identity.AlignmentThesis
+	AlignmentAntithesis = identity.AlignmentAntithesis
 )
 
 // Position constants.
 const (
-	PositionPG = symbol.PositionPG
-	PositionSG = symbol.PositionSG
-	PositionPF = symbol.PositionPF
-	PositionC  = symbol.PositionC
+	PositionPG = identity.PositionPG
+	PositionSG = identity.PositionSG
+	PositionPF = identity.PositionPF
+	PositionC  = identity.PositionC
 )
 
 // MetaPhase constants.
 const (
-	MetaPhaseBk = symbol.MetaPhaseBk
-	MetaPhaseFc = symbol.MetaPhaseFc
-	MetaPhasePt = symbol.MetaPhasePt
+	MetaPhaseBk = identity.MetaPhaseBk
+	MetaPhaseFc = identity.MetaPhaseFc
+	MetaPhasePt = identity.MetaPhasePt
 )
 
 // Role constants.
 const (
-	RoleWorker   = symbol.RoleWorker
-	RoleManager  = symbol.RoleManager
-	RoleEnforcer = symbol.RoleEnforcer
-	RoleBroker   = symbol.RoleBroker
+	RoleWorker   = identity.RoleWorker
+	RoleManager  = identity.RoleManager
+	RoleEnforcer = identity.RoleEnforcer
+	RoleBroker   = identity.RoleBroker
 )
 
 // ValidRoles contains all recognized role values for validation.
-var ValidRoles = symbol.ValidRoles
+var ValidRoles = identity.ValidRoles
 
 // HomeZoneFor returns the MetaPhase for a given Position.
-var HomeZoneFor = symbol.HomeZoneFor
+var HomeZoneFor = identity.HomeZoneFor
 
 // GetDefaultPersonaResolver returns the currently registered persona resolver.
 func GetDefaultPersonaResolver() PersonaResolver {
-	return symbol.DefaultPersonaResolver
+	return identity.DefaultArchetypeResolver
+}
+
+// PersonaAll returns all known archetypes (backward compat for persona name).
+func PersonaAll() []Persona {
+	return identity.All()
 }

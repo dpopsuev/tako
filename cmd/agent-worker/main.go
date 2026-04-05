@@ -45,9 +45,9 @@ func run(gateway, agentName, sessionID string) error {
 	defer stop()
 
 	// Spawn ACP agent via Bugle.
-	launcher := agentport.NewACPLauncher()
-	staff := agentport.NewStaff(launcher)
-	handle, err := staff.Spawn(ctx, "worker", agentport.LaunchConfig{
+	// ACP launcher absorbed into Broker
+	broker := agentport.NewBroker("")
+	actor, err := broker.Spawn(ctx, agentport.ActorConfig{
 		Model: agentName,
 		Role:  "worker",
 	})
@@ -105,7 +105,7 @@ func run(gateway, agentName, sessionID string) error {
 			slog.Any(circuit.LogKeyStep, step.Step))
 
 		// Pipe prompt to ACP agent.
-		response, err := handle.Ask(ctx, step.Prompt)
+		response, err := actor.Perform(ctx, step.Prompt)
 		if err != nil {
 			slog.ErrorContext(ctx, "agent failed",
 				slog.Any(circuit.LogKeyStep, step.Step),

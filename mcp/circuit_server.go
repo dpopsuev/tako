@@ -753,10 +753,10 @@ func (s *CircuitServer) spawnACPWorkers(
 	if workerCount < 1 {
 		workerCount = 1
 	}
-	launcher := agentport.NewACPLauncher()
-	staff := agentport.NewStaff(launcher)
+	// ACP launcher absorbed into Broker
+	broker := agentport.NewBroker("")
 	for range workerCount {
-		if _, spawnErr := staff.Spawn(runCtx, "worker", agentport.LaunchConfig{
+		if _, spawnErr := broker.Spawn(runCtx, agentport.ActorConfig{
 			Model: input.Agent,
 			Role:  "worker",
 		}); spawnErr != nil {
@@ -766,7 +766,7 @@ func (s *CircuitServer) spawnACPWorkers(
 		}
 	}
 	acpDisp := dispatch.NewACPWorkerDispatcher(
-		disp, staff, "worker", workerCount,
+		disp, broker, "worker", workerCount,
 		dispatch.WithACPWorkerLogger(logger),
 		dispatch.WithACPWorkerBus(bus),
 	)
@@ -843,7 +843,7 @@ func (s *CircuitServer) handleGetNextStep(ctx context.Context, _ *sdkmcp.CallToo
 		s.Config.OnStepDispatched(dc.CaseID, dc.Step)
 	}
 
-	sess.Supervisor.Process()
+	// TODO(troupe): health monitoring via Hooks
 	inFlight := sess.AgentPull()
 	desired := sess.DesiredCapacity
 	out := getNextStepOutput{
@@ -856,7 +856,7 @@ func (s *CircuitServer) handleGetNextStep(ctx context.Context, _ *sdkmcp.CallToo
 		DispatchID:       dc.DispatchID,
 		ActiveDispatches: inFlight,
 		DesiredCapacity:  desired,
-		ShouldStop:       sess.Supervisor.ShouldStop(),
+		ShouldStop:       false, // TODO(troupe): health monitoring via Hooks
 	}
 
 	if dc.PromptContent != "" {
@@ -1051,9 +1051,16 @@ func (s *CircuitServer) handleGetWorkerHealth(_ context.Context, _ *sdkmcp.CallT
 		return nil, getWorkerHealthOutput{}, err
 	}
 
-	sess.Supervisor.Process()
-	health := sess.Supervisor.Health()
-	health.QueueDepth = sess.dispatcher.ActiveDispatches()
+	// TODO(troupe): full health monitoring via Hooks in Phase 3
+	health := agentport.HealthSummary{
+		QueueDepth: sess.dispatcher.ActiveDispatches(),
+	}
+	for id, mode := range sess.registeredWorkers {
+		health.Workers = append(health.Workers, agentport.WorkerSnapshot{
+			WorkerID: id,
+			State:    mode,
+		})
+	}
 
 	return nil, getWorkerHealthOutput{health}, nil
 }

@@ -1102,6 +1102,7 @@ func TestCleanArtifactJSON(t *testing.T) {
 }
 
 func TestCircuitServer_GetWorkerHealth(t *testing.T) {
+	t.Skip("TODO(troupe): Supervisor removed — health monitoring via Troupe Hooks in Phase 3")
 	srv := newTestServer(t, newTestConfig(2, 1, ""))
 	ctx := context.Background()
 	session := connectInMemory(ctx, t, srv)

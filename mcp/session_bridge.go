@@ -117,18 +117,17 @@ func wrapWithACPWorkers(inner RunFunc, params StartParams, disp *dispatch.MuxDis
 	workers := max(params.Parallel, 1)
 
 	return func(ctx context.Context) (any, error) {
-		staff := agentport.NewStaff(agentport.NewACPLauncher())
+		broker := agentport.NewBroker("")
 
 		for range workers {
-			_, spawnErr := staff.Spawn(ctx, defaultACPRole, agentport.LaunchConfig{
+			_, spawnErr := broker.Spawn(ctx, agentport.ActorConfig{
 				Model: agentCmd,
+				Role:  defaultACPRole,
 			})
 			if spawnErr != nil {
-				staff.KillAll(ctx)
 				return nil, spawnErr
 			}
 		}
-		defer staff.KillAll(ctx)
 
 		var acpOpts []dispatch.ACPWorkerOption
 		acpOpts = append(acpOpts,
@@ -137,16 +136,7 @@ func wrapWithACPWorkers(inner RunFunc, params StartParams, disp *dispatch.MuxDis
 		)
 
 		// Spawn a dialectic collective for hard steps (investigate, review).
-		// Two extra agents debate — the collective is asked instead of a
-		// single worker for steps in collectiveSteps.
-		coll, collErr := agentport.SpawnCollective(ctx, staff, agentport.CollectiveConfig{
-			Role:     "debater",
-			Strategy: &agentport.Dialectic{MaxRounds: 2},
-			Agents: []agentport.LaunchConfig{
-				{Role: "thesis", Model: agentCmd},
-				{Role: "antithesis", Model: agentCmd},
-			},
-		})
+		coll, collErr := agentport.SpawnCollective(ctx, broker, 2, &agentport.Dialectic{MaxRounds: 2}) //nolint:mnd // thesis + antithesis
 		if collErr != nil {
 			slog.WarnContext(ctx, circuit.LogCollectiveSpawnFailed, slog.Any(circuit.LogKeyError, collErr))
 		} else {
@@ -154,7 +144,7 @@ func wrapWithACPWorkers(inner RunFunc, params StartParams, disp *dispatch.MuxDis
 		}
 
 		acpDisp := dispatch.NewACPWorkerDispatcher(
-			disp, staff, defaultACPRole, workers, acpOpts...,
+			disp, broker, defaultACPRole, workers, acpOpts...,
 		)
 		go func() {
 			if err := acpDisp.Run(ctx); err != nil {

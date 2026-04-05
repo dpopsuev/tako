@@ -1,8 +1,8 @@
 package agentport
 
 import (
-	"github.com/dpopsuev/jericho/symbol"
-	"github.com/dpopsuev/jericho/world"
+	"github.com/dpopsuev/troupe/identity"
+	"github.com/dpopsuev/troupe/world"
 )
 
 // Type aliases — definitions live in jericho/world.
@@ -109,29 +109,29 @@ func Query[T world.Component](w *world.World) []world.EntityID {
 
 // --- Symbol re-exports (was palette) ---
 
-// Type aliases — definitions live in jericho/symbol.
+// Type aliases — definitions live in jericho/identity.
 type (
-	ColorIdentity   = symbol.Color // renamed in v0.2.0
-	SymbolColor     = symbol.Color
-	Registry        = symbol.Registry
-	Shade           = symbol.Shade
-	PaletteColor    = symbol.PaletteColor
-	DefaultStrategy = symbol.DefaultStrategy
+	ColorIdentity   = identity.Color // renamed in v0.2.0
+	SymbolColor     = identity.Color
+	Registry        = identity.Registry
+	Shade           = identity.Shade
+	PaletteColor    = identity.PaletteColor
+	DefaultStrategy = identity.DefaultStrategy
 )
 
 // ColorType is the ComponentType for Color (was ColorIdentityType).
-const ColorType = symbol.ColorType
+const ColorType = identity.ColorType
 
 // Backward-compat.
-const ColorIdentityType = symbol.ColorType // renamed in v0.2.0
+const ColorIdentityType = identity.ColorType // renamed in v0.2.0
 
 // Palette is the full 12x8 color palette.
-var Palette = symbol.Palette
+var Palette = identity.Palette
 
 // Constructors and lookups.
 var (
-	NewRegistry        = symbol.NewRegistry
-	NewDefaultStrategy = symbol.NewDefaultStrategy
-	LookupShade        = symbol.LookupShade
-	LookupColor        = symbol.LookupColor
+	NewRegistry        = identity.NewRegistry
+	NewDefaultStrategy = identity.NewDefaultStrategy
+	LookupShade        = identity.LookupShade
+	LookupColor        = identity.LookupColor
 )

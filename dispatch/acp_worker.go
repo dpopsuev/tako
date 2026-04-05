@@ -26,11 +26,11 @@ var collectiveSteps = map[string]bool{
 // are routed through a dialectic debate instead of a single agent.
 type ACPWorkerDispatcher struct {
 	mux        *MuxDispatcher
-	staff      *agentport.Staff
+	broker     agentport.Broker
 	bus        agentport.Bus
 	role       string
 	workers    int
-	collective *agentport.AgentCollective
+	collective agentport.Actor
 	log        *slog.Logger
 }
 
@@ -49,20 +49,20 @@ func WithACPWorkerBus(bus agentport.Bus) ACPWorkerOption {
 
 // WithACPWorkerCollective routes hard steps (investigate, review) through
 // a dialectic collective instead of a single agent.
-func WithACPWorkerCollective(c *agentport.AgentCollective) ACPWorkerOption {
+func WithACPWorkerCollective(c agentport.Actor) ACPWorkerOption {
 	return func(d *ACPWorkerDispatcher) { d.collective = c }
 }
 
 // NewACPWorkerDispatcher creates a dispatcher that runs N ACP agent workers.
 // Each worker pulls prompts from the MuxDispatcher, asks the agent via
 // Staff.AskRole, and submits the response back.
-func NewACPWorkerDispatcher(mux *MuxDispatcher, staff *agentport.Staff, role string, workers int, opts ...ACPWorkerOption) *ACPWorkerDispatcher {
+func NewACPWorkerDispatcher(mux *MuxDispatcher, broker agentport.Broker, role string, workers int, opts ...ACPWorkerOption) *ACPWorkerDispatcher {
 	if workers < 1 {
 		workers = 1
 	}
 	d := &ACPWorkerDispatcher{
 		mux:     mux,
-		staff:   staff,
+		broker:  broker,
 		role:    role,
 		workers: workers,
 		log:     discardLogger(),
@@ -108,15 +108,19 @@ func (d *ACPWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 		var response string
 		if d.collective != nil && collectiveSteps[dc.Step] {
 			d.log.InfoContext(ctx, circuit.LogRoutingToCollective, slog.Any(circuit.LogKeyStep, dc.Step), slog.Any(circuit.LogKeyCaseID, dc.CaseID))
-			response, err = d.collective.Ask(ctx, prompt)
+			response, err = d.collective.Perform(ctx, prompt)
 		} else {
-			workers := d.staff.FindByRole(d.role)
-			if len(workers) == 0 {
+			configs, pickErr := d.broker.Pick(ctx, agentport.BrokerPrefs{Role: d.role, Count: 1})
+			if pickErr != nil || len(configs) == 0 {
 				d.log.ErrorContext(ctx, circuit.LogNoWorkersAvailable, slog.Any(circuit.LogKeyRole, d.role))
 				continue
 			}
-			worker := workers[int(dc.DispatchID)%len(workers)]
-			response, err = worker.Ask(ctx, prompt)
+			actor, spawnErr := d.broker.Spawn(ctx, configs[0])
+			if spawnErr != nil {
+				d.log.ErrorContext(ctx, circuit.LogNoWorkersAvailable, slog.Any(circuit.LogKeyRole, d.role), slog.Any(circuit.LogKeyError, spawnErr))
+				continue
+			}
+			response, err = actor.Perform(ctx, prompt)
 		}
 		if err != nil {
 			d.emit(agentport.EventWorkerError, dc.CaseID, dc.Step, map[string]string{

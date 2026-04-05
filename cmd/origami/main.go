@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -24,6 +25,8 @@ var (
 	version = "dev"
 	commit  = "unknown"
 	date    = "unknown"
+
+	errOrchestrateRemoved = errors.New("orchestrate command removed: use Troupe Director interface")
 )
 
 func main() {
@@ -65,7 +68,7 @@ func main() {
 	case "workers":
 		err = workersCmd(os.Args[2:])
 	case "orchestrate":
-		err = orchestrateCmd(os.Args[2:])
+		err = errOrchestrateRemoved
 	case "version", "--version":
 		fmt.Printf("origami %s (%s, %s)\n", version, commit, date)
 	default:

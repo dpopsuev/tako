@@ -1,6 +1,6 @@
 package agentport
 
-import "github.com/dpopsuev/jericho/billing"
+import "github.com/dpopsuev/troupe/billing"
 
 // Type aliases — definitions live in bugle/billing.
 type (

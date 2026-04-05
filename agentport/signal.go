@@ -1,19 +1,14 @@
 package agentport
 
-import "github.com/dpopsuev/jericho/signal"
+import "github.com/dpopsuev/troupe/signal"
 
-// Type aliases — definitions live in bugle/signal.
+// Type aliases — definitions live in troupe/signal.
 type (
-	Signal        = signal.Signal
-	Performative  = signal.Performative
-	Bus           = signal.Bus
-	MemBus        = signal.MemBus
-	DurableBus    = signal.DurableBus
-	Supervisor    = signal.Supervisor
-	WorkerState   = signal.WorkerState
-	HealthSummary = signal.HealthSummary
-
-	SupervisorOption = signal.SupervisorOption
+	Signal       = signal.Signal
+	Performative = signal.Performative
+	Bus          = signal.Bus
+	MemBus       = signal.MemBus
+	DurableBus   = signal.DurableBus
 )
 
 // Performative constants.
@@ -71,12 +66,19 @@ const (
 var (
 	NewMemBus     = signal.NewMemBus
 	NewDurableBus = signal.NewDurableBus
-	NewSupervisor = signal.NewSupervisor
 )
 
-// Supervisor option constructors.
-var (
-	WithSilenceThreshold = signal.WithSilenceThreshold
-	WithErrorThreshold   = signal.WithErrorThreshold
-	WithBudgetTotal      = signal.WithBudgetTotal
-)
+// HealthSummary is a stub for removed Supervisor health monitoring.
+// TODO(troupe): replace with Troupe Hook-based health in Phase 3.
+type HealthSummary struct {
+	QueueDepth int              `json:"queue_depth"`
+	Workers    []WorkerSnapshot `json:"workers"`
+}
+
+// WorkerSnapshot captures a point-in-time worker state.
+type WorkerSnapshot struct {
+	WorkerID   string `json:"worker_id"`
+	State      string `json:"state"`
+	ErrorCount int    `json:"error_count"`
+	LastError  string `json:"last_error,omitempty"`
+}
