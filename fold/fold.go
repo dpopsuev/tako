@@ -103,7 +103,10 @@ func validateManifest(m *Manifest, manifestDir string, verbose bool) error {
 	if err := validateCircuitRefs(m, manifestDir); err != nil {
 		return err
 	}
-	return validatePortWiring(m, manifestDir)
+	if err := validatePortWiring(m, manifestDir); err != nil {
+		return err
+	}
+	return ValidateDomainKinds(m, manifestDir)
 }
 
 func validateNoDuplicateDomains(m *Manifest) error {

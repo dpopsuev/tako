@@ -62,4 +62,7 @@ var (
 
 	// ErrBind is returned for: bind
 	ErrBind = errors.New("bind")
+
+	// ErrDomainKindMismatch is returned when a domain file's kind header doesn't match expected.
+	ErrDomainKindMismatch = errors.New("domain kind mismatch")
 )

@@ -10,6 +10,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/circuit/def"
 	"gopkg.in/yaml.v3"
 )
 
@@ -248,6 +250,20 @@ var domainSubdirs = []struct {
 var domainRecursiveDirs = []string{"offline"}
 var domainFiles = []string{"heuristics.yaml"}
 
+// domainKindMap maps domain subdirectory names and filenames to expected Kind values.
+// Used by validateDomainKinds to verify kind: headers on discovered domain files.
+var domainKindMap = map[string]circuit.Kind{
+	"scenarios": circuit.KindScenario,
+	"sources":   circuit.KindSourcePack,
+	"datasets":  circuit.KindDataset,
+	"tuning":    circuit.KindTuning,
+}
+
+// domainFileKindMap maps individual domain filenames to expected Kind values.
+var domainFileKindMap = map[string]circuit.Kind{
+	"heuristics.yaml": circuit.KindHeuristicRules,
+}
+
 // MergeDiscoveredAssets scans each domain directory and merges discovered files.
 //
 //nolint:gocyclo // walks multiple directory types per domain — inherently branchy
@@ -377,4 +393,66 @@ func (m *Manifest) domainPathMappings(manifestDir string) map[string]string {
 		}
 	}
 	return mappings
+}
+
+// ValidateDomainKinds checks that every discovered domain file has the
+// expected kind: header for its directory. Uses ParseEnvelope from
+// circuit/def to read kind without full YAML parsing.
+func ValidateDomainKinds(m *Manifest, manifestDir string) error {
+	if len(m.Domains) == 0 {
+		return nil
+	}
+
+	for _, domain := range m.Domains {
+		domainDir := filepath.Join(manifestDir, "domains", domain)
+
+		// Validate subdirectory files (scenarios/, sources/, datasets/, tuning/).
+		for dirName, expectedKind := range domainKindMap {
+			subDir := filepath.Join(domainDir, dirName)
+			entries, err := os.ReadDir(subDir)
+			if err != nil {
+				continue // directory may not exist — optional
+			}
+			for _, e := range entries {
+				if e.IsDir() || !strings.HasSuffix(e.Name(), ".yaml") {
+					continue
+				}
+				filePath := filepath.Join(subDir, e.Name())
+				if err := validateFileKind(filePath, expectedKind); err != nil {
+					return fmt.Errorf("domain %s/%s/%s: %w", domain, dirName, e.Name(), err)
+				}
+			}
+		}
+
+		// Validate individual domain files (heuristics.yaml).
+		for fileName, expectedKind := range domainFileKindMap {
+			filePath := filepath.Join(domainDir, fileName)
+			if _, err := os.Stat(filePath); err != nil {
+				continue // file may not exist — optional
+			}
+			if err := validateFileKind(filePath, expectedKind); err != nil {
+				return fmt.Errorf("domain %s/%s: %w", domain, fileName, err)
+			}
+		}
+	}
+	return nil
+}
+
+// validateFileKind reads a YAML file and checks its kind: header matches expected.
+func validateFileKind(path string, expected circuit.Kind) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("read: %w", err)
+	}
+	env, err := def.ParseEnvelope(data)
+	if err != nil {
+		return fmt.Errorf("parse envelope: %w", err)
+	}
+	if env.Kind == "" {
+		return nil // graceful: no kind header yet (migration)
+	}
+	if env.Kind != expected {
+		return fmt.Errorf("%w: expected kind %q, got %q", ErrDomainKindMismatch, expected, env.Kind)
+	}
+	return nil
 }
