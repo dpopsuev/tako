@@ -117,7 +117,10 @@ func wrapWithACPWorkers(inner RunFunc, params StartParams, disp *dispatch.MuxDis
 	workers := max(params.Parallel, 1)
 
 	return func(ctx context.Context) (any, error) {
-		broker := agentport.NewBroker("")
+		meter := agentport.NewInMemoryMeter()
+		broker := agentport.NewBroker("",
+			agentport.WithMeter(meter),
+		)
 
 		for range workers {
 			_, spawnErr := broker.Spawn(ctx, agentport.ActorConfig{

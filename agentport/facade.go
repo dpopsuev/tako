@@ -13,6 +13,22 @@ type (
 	BrokerPrefs = troupe.Preferences // renamed to avoid collision with arsenal.Preferences
 )
 
+// Event types — definitions live in troupe root.
+type (
+	Event       = troupe.Event
+	EventKind   = troupe.EventKind
+	EventDetail = troupe.EventDetail
+)
+
+// Event kind constants.
+const (
+	EventStarted    = troupe.Started
+	EventCompleted  = troupe.Completed
+	EventFailed     = troupe.Failed
+	EventTransition = troupe.Transition
+	EventDone       = troupe.Done
+)
+
 // Backward-compat aliases for pre-Troupe consumer code.
 type (
 	Staff        = troupe.Broker      // deprecated: use Broker
@@ -38,8 +54,27 @@ type (
 	Gatekeeper    = collective.Gatekeeper
 )
 
+// Hook types — definitions live in troupe root.
+type (
+	Hook        = troupe.Hook
+	SpawnHook   = troupe.SpawnHook
+	PerformHook = troupe.PerformHook
+	Meter       = troupe.Meter
+	Usage       = troupe.Usage
+	UsageDetail = troupe.UsageDetail
+)
+
+// Broker options.
+type BrokerOption = troupe.BrokerOption
+
+var (
+	WithHook  = troupe.WithHook
+	WithMeter = troupe.WithMeter
+)
+
 // Facade constructors.
 var (
 	NewBroker       = troupe.NewBroker
+	NewInMemoryMeter = troupe.NewInMemoryMeter
 	SpawnCollective = collective.SpawnCollective
 )
