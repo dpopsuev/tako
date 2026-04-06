@@ -55,30 +55,10 @@ func TestResolve_AsteriskLike(t *testing.T) {
 		t.Fatalf("sub-schematics = %d, want 0 (gnd is a separate service)", len(g.Schematics))
 	}
 
-	// Root should have options for source (writer/discoverer/store are optional)
-	optNames := make([]string, 0, len(g.Root.Options))
-	for _, o := range g.Root.Options {
-		optNames = append(optNames, o.OptionFunc)
-	}
-	if !contains(optNames, "WithSourceReader") {
-		t.Errorf("root options %v missing WithSourceReader", optNames)
-	}
-
-	// Source binding should be factory-mode (RP)
-	for _, o := range g.Root.Options {
-		if o.OptionFunc == "WithSourceReader" {
-			if o.Wire != "factory" {
-				t.Errorf("WithSourceReader wire = %q, want factory", o.Wire)
-			}
-			if !strings.Contains(o.Provider, "NewSourceReader") {
-				t.Errorf("WithSourceReader provider = %q, want *NewSourceReader*", o.Provider)
-			}
-		}
-	}
-
-	// Imports should include rca + rp connector modules
-	if len(g.Imports) < 2 {
-		t.Errorf("imports = %d, want >= 2", len(g.Imports))
+	// RCA sockets have no option: fields (removed — functions don't exist yet).
+	// No resolved options expected from socket binding.
+	if len(g.Root.Options) != 0 {
+		t.Errorf("root options = %v, want none (sockets have no option: field)", g.Root.Options)
 	}
 }
 

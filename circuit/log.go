@@ -194,6 +194,13 @@ const (
 	LogCollectiveSpawnFailed = "collective spawn failed, falling back to single-agent dispatch"
 	LogACPDispatchError      = "ACP worker dispatch error"
 
+	// Fold — contract validation
+	LogComponentFold              = "fold"
+	LogSocketContractNotSatisfied = "socket contract not satisfied"
+	LogSymbolNotExported          = "declared symbol not exported"
+	LogSocketContractsValidated   = "socket contracts validated"
+	LogExportValidationComplete   = "export validation complete"
+
 	// CLI commands
 	LogRunningCircuit = "running circuit"
 	LogCircuitDone    = "circuit completed"

@@ -1,7 +1,6 @@
 package fold
 
 import (
-	"strings"
 	"testing"
 )
 
@@ -38,19 +37,8 @@ func TestResolve_BoardUsesAndBind(t *testing.T) {
 		t.Errorf("root = %q, want rca", g.Root.Name)
 	}
 
-	optNames := make([]string, 0, len(g.Root.Options))
-	for _, o := range g.Root.Options {
-		optNames = append(optNames, o.OptionFunc)
-	}
-	if !contains(optNames, "WithSourceReader") {
-		t.Errorf("root options %v missing WithSourceReader", optNames)
-	}
-
-	for _, o := range g.Root.Options {
-		if o.OptionFunc == "WithSourceReader" {
-			if !strings.Contains(o.Provider, "NewSourceReader") {
-				t.Errorf("WithSourceReader provider = %q, want *NewSourceReader*", o.Provider)
-			}
-		}
+	// RCA sockets have no option: fields — no resolved options expected.
+	if len(g.Root.Options) != 0 {
+		t.Errorf("root options = %v, want none (sockets have no option: field)", g.Root.Options)
 	}
 }

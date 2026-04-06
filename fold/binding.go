@@ -130,6 +130,11 @@ func Resolve(m *Manifest, origamiRoot string, resolver ModuleResolver) (*Resolve
 		if cm.Factory == "" && cm.SessionFactory == "" && cm.Resolver == "" {
 			return nil, fmt.Errorf("%w: %q: component.yaml must declare factory, session_factory, or resolver", ErrSchematic, name)
 		}
+		// Validate that declared symbols exist as exported Go functions.
+		moduleDir := filepath.Dir(cmPath)
+		if err := ValidateExports(cm, moduleDir); err != nil {
+			return nil, fmt.Errorf("schematic %q: %w", name, err)
+		}
 		schemManifests[name] = cm
 	}
 
