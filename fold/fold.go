@@ -10,6 +10,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/circuit/def"
 	"gopkg.in/yaml.v3"
 )
 
@@ -59,12 +61,80 @@ type Options struct {
 }
 
 // Run loads the manifest, generates the appropriate binary, and compiles it.
+// Supports two manifest formats:
+//   - Flat board (kind: board) — new format, read directly
+//   - K8s-style (kind: Board with apiVersion/metadata/spec) — legacy
+//
 // When schematics are declared, it produces a unified wired binary with
 // connector binding. Otherwise it produces a domain-serve-only binary.
-// The context controls cancellation and deadlines for all subprocess calls
-// (go mod tidy, go build, docker build).
 func Run(ctx context.Context, opts *Options) error {
-	m, err := LoadManifest(opts.ManifestPath)
+	data, err := os.ReadFile(opts.ManifestPath)
+	if err != nil {
+		return fmt.Errorf("read manifest: %w", err)
+	}
+
+	// Detect format: flat board (lowercase "board") vs K8s (capitalized "Board").
+	env, err := def.ParseEnvelope(data)
+	if err != nil {
+		return fmt.Errorf("parse manifest envelope: %w", err)
+	}
+
+	if env.Kind == circuit.KindBoard {
+		return runBoard(ctx, data, opts)
+	}
+
+	// Legacy K8s-style manifest.
+	return runLegacy(ctx, data, opts)
+}
+
+// runBoard handles the new flat board manifest format.
+func runBoard(ctx context.Context, data []byte, opts *Options) error {
+	bm, err := ParseBoardManifest(data)
+	if err != nil {
+		return err
+	}
+
+	boardDir := filepath.Dir(opts.ManifestPath)
+
+	// Resolve composition if compose: is set.
+	bm, err = ResolveBoardComposition(bm, boardDir)
+	if err != nil {
+		return err
+	}
+
+	// Validate kind at referenced paths.
+	if err := ValidateBoardPaths(bm, boardDir); err != nil {
+		return err
+	}
+
+	// Bridge to legacy Manifest for codegen compatibility.
+	m := boardToManifest(bm)
+
+	// Domain file discovery + validation.
+	if err := m.MergeDiscoveredAssets(boardDir); err != nil {
+		return err
+	}
+	if err := ValidateDomainKinds(m, boardDir); err != nil {
+		return err
+	}
+
+	if err := validateManifest(m, boardDir, opts.Verbose); err != nil {
+		return err
+	}
+
+	if opts.ExportDataDir != "" {
+		return exportDataDir(m, boardDir, opts)
+	}
+
+	if m.HasBindings() && !opts.DomainOnly {
+		return buildWiredBinary(ctx, m, opts)
+	}
+	return buildDomainServe(ctx, m, opts)
+}
+
+// runLegacy handles the K8s-style origami.yaml manifest format.
+func runLegacy(ctx context.Context, data []byte, opts *Options) error {
+	m, err := ParseManifest(data)
 	if err != nil {
 		return err
 	}
@@ -86,6 +156,73 @@ func Run(ctx context.Context, opts *Options) error {
 		return buildWiredBinary(ctx, m, opts)
 	}
 	return buildDomainServe(ctx, m, opts)
+}
+
+// boardToManifest bridges BoardManifest to the legacy Manifest type
+// so existing codegen (buildWiredBinary, buildDomainServe) works unchanged.
+func boardToManifest(bm *BoardManifest) *Manifest {
+	m := &Manifest{
+		APIVersion:  "origami/v1",
+		Kind:        "Board",
+		Name:        bm.Name,
+		Description: bm.Description,
+		Domains:     []string{},
+	}
+
+	// Map domain path to domains list.
+	if bm.Domain != "" {
+		m.Domains = append(m.Domains, bm.Domain)
+	}
+
+	// Map uses to legacy format.
+	if len(bm.Uses) > 0 {
+		m.Uses = make(map[string]UsesRef)
+		for name, module := range bm.Uses {
+			m.Uses[name] = UsesRef{Kind: "schematic", Module: module}
+		}
+	}
+
+	// Map bind to legacy format.
+	if len(bm.Bind) > 0 {
+		m.Bind = make(map[string]map[string]string)
+		for key, module := range bm.Bind {
+			// key is "schematic.socket" (e.g., "rca.source")
+			parts := splitBindKey(key)
+			if len(parts) == 2 {
+				if m.Bind[parts[0]] == nil {
+					m.Bind[parts[0]] = make(map[string]string)
+				}
+				m.Bind[parts[0]][parts[1]] = module
+			}
+		}
+	}
+
+	// Map serve to DomainServe.
+	if bm.Serve != nil {
+		m.DomainServe = &DomainServeConfig{
+			Port:   bm.Serve.Port,
+			Assets: &AssetMap{},
+		}
+	}
+
+	// Map prompts to assets.
+	if m.DomainServe != nil && m.DomainServe.Assets != nil && len(bm.Prompts) > 0 {
+		m.DomainServe.Assets.Prompts = bm.Prompts
+	}
+
+	// Map params.
+	m.Params = bm.Params
+
+	return m
+}
+
+// splitBindKey splits "rca.source" into ["rca", "source"].
+func splitBindKey(key string) []string {
+	idx := strings.Index(key, ".")
+	if idx < 0 {
+		return []string{key}
+	}
+	return []string{key[:idx], key[idx+1:]}
 }
 
 // validateManifest runs manifest-level checks: domain directories, duplicate domains,
