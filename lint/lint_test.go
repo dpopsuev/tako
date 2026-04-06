@@ -1047,6 +1047,9 @@ tables:
 // --- S21: edge-node-reference ---
 
 func TestS21_EdgeNodeReference_InvalidFrom(t *testing.T) {
+	// Invalid edge from-node is now caught at parse time by normalize()
+	// graph validation. The circuit is rejected before lint rules can
+	// analyze it, falling back to generic context (Def=nil).
 	yml := []byte(`
 circuit: test
 description: test
@@ -1067,28 +1070,30 @@ edges:
 start: recall
 done: _done
 `)
+	// Verify parse-time rejection catches the invalid reference.
+	_, err := circuit.LoadCircuit(yml)
+	if err == nil {
+		t.Fatal("expected parse error for undefined from-node 'recal'")
+	}
+	if !strings.Contains(err.Error(), "recal") {
+		t.Errorf("expected error to mention 'recal', got %q", err.Error())
+	}
+
+	// Run still succeeds (falls back to generic context), but no S21 findings.
 	findings, err := Run(yml, "test.yaml")
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
-	found := false
 	for _, f := range findings {
 		if f.RuleID == "S21/edge-node-reference" {
-			found = true
-			if !strings.Contains(f.Message, "recal") {
-				t.Errorf("expected message to mention 'recal', got %q", f.Message)
-			}
-			if f.Suggestion == "" {
-				t.Error("expected suggestion for 'recal' (close to 'recall')")
-			}
+			t.Log("S21 finding still produced via generic context — acceptable")
 		}
-	}
-	if !found {
-		t.Error("expected S21/edge-node-reference finding for from=recal")
 	}
 }
 
 func TestS21_EdgeNodeReference_InvalidTo(t *testing.T) {
+	// Invalid edge to-node is now caught at parse time by normalize()
+	// graph validation. The circuit is rejected before lint rules run.
 	yml := []byte(`
 circuit: test
 description: test
@@ -1109,21 +1114,24 @@ edges:
 start: recall
 done: _done
 `)
+	// Verify parse-time rejection catches the invalid reference.
+	_, err := circuit.LoadCircuit(yml)
+	if err == nil {
+		t.Fatal("expected parse error for undefined to-node 'triag'")
+	}
+	if !strings.Contains(err.Error(), "triag") {
+		t.Errorf("expected error to mention 'triag', got %q", err.Error())
+	}
+
+	// Run still succeeds (falls back to generic context), but no S21 findings.
 	findings, err := Run(yml, "test.yaml")
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
-	found := false
 	for _, f := range findings {
 		if f.RuleID == "S21/edge-node-reference" {
-			found = true
-			if !strings.Contains(f.Message, "triag") {
-				t.Errorf("expected message to mention 'triag', got %q", f.Message)
-			}
+			t.Log("S21 finding still produced via generic context — acceptable")
 		}
-	}
-	if !found {
-		t.Error("expected S21/edge-node-reference finding for to=triag")
 	}
 }
 

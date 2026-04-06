@@ -152,3 +152,45 @@ func TestAssetMap_ScalarFiles_Empty(t *testing.T) {
 		t.Errorf("expected nil, got %v", files)
 	}
 }
+
+func TestValidateFileKind_MissingKindHeader(t *testing.T) {
+	// Create a temp file with no kind: header.
+	tmpDir := t.TempDir()
+	noKindFile := tmpDir + "/no-kind.yaml"
+	if err := os.WriteFile(noKindFile, []byte("name: test\nversion: v1\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	err := validateFileKind(noKindFile, "scenario")
+	if err == nil {
+		t.Fatal("expected error for missing kind header")
+	}
+	if !strings.Contains(err.Error(), "no kind: header") {
+		t.Errorf("error = %q, want mention of missing kind header", err.Error())
+	}
+}
+
+func TestValidateFileKind_CorrectKind(t *testing.T) {
+	tmpDir := t.TempDir()
+	goodFile := tmpDir + "/good.yaml"
+	if err := os.WriteFile(goodFile, []byte("kind: scenario\nname: test\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := validateFileKind(goodFile, "scenario"); err != nil {
+		t.Errorf("unexpected error for correct kind: %v", err)
+	}
+}
+
+func TestValidateFileKind_WrongKind(t *testing.T) {
+	tmpDir := t.TempDir()
+	wrongFile := tmpDir + "/wrong.yaml"
+	if err := os.WriteFile(wrongFile, []byte("kind: tuning\nname: test\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	err := validateFileKind(wrongFile, "scenario")
+	if err == nil {
+		t.Fatal("expected error for wrong kind")
+	}
+	if !strings.Contains(err.Error(), "domain kind mismatch") {
+		t.Errorf("error = %q, want mention of domain kind mismatch", err.Error())
+	}
+}

@@ -15,4 +15,7 @@ var (
 
 	// ErrNoKindField is returned when YAML data has no kind: field.
 	ErrNoKindField = errors.New("YAML data has no kind field")
+
+	// ErrKindNameCollision is returned when a custom kind name collides with a built-in kind.
+	ErrKindNameCollision = errors.New("kind name collision")
 )

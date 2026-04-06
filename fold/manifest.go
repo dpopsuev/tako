@@ -281,6 +281,8 @@ func (m *Manifest) MergeDiscoveredAssets(manifestDir string) error {
 			return fmt.Errorf("%w: %q: directory domains/%s/ not found", ErrDomain, domain, domain)
 		}
 
+		contentFound := false
+
 		for _, sub := range domainSubdirs {
 			subDir := filepath.Join(domainDir, sub.Dir)
 			entries, err := os.ReadDir(subDir)
@@ -291,6 +293,7 @@ func (m *Manifest) MergeDiscoveredAssets(manifestDir string) error {
 				if e.IsDir() || !strings.HasSuffix(e.Name(), ".yaml") {
 					continue
 				}
+				contentFound = true
 				key := strings.TrimSuffix(e.Name(), ".yaml")
 				flatPath := sub.Dir + "/" + e.Name()
 				switch sub.Section {
@@ -316,6 +319,7 @@ func (m *Manifest) MergeDiscoveredAssets(manifestDir string) error {
 		for _, f := range domainFiles {
 			fPath := filepath.Join(domainDir, f)
 			if _, err := os.Stat(fPath); err == nil {
+				contentFound = true
 				key := strings.TrimSuffix(f, ".yaml")
 				if a.Files == nil {
 					a.Files = make(map[string]string)
@@ -333,6 +337,7 @@ func (m *Manifest) MergeDiscoveredAssets(manifestDir string) error {
 				if err != nil || info.IsDir() {
 					return nil
 				}
+				contentFound = true
 				rel, _ := filepath.Rel(domainDir, path)
 				flatPath := filepath.ToSlash(rel)
 				if a.Files == nil {
@@ -341,6 +346,10 @@ func (m *Manifest) MergeDiscoveredAssets(manifestDir string) error {
 				a.Files[flatPath] = flatPath
 				return nil
 			})
+		}
+
+		if !contentFound {
+			return fmt.Errorf("%w: domain %q directory exists but has no content", ErrDomain, domain)
 		}
 	}
 	return nil
@@ -450,7 +459,7 @@ func validateFileKind(path string, expected circuit.Kind) error {
 		return fmt.Errorf("parse envelope: %w", err)
 	}
 	if env.Kind == "" {
-		return nil // graceful: no kind header yet (migration)
+		return fmt.Errorf("%w: file has no kind: header", ErrDomainKindMismatch)
 	}
 	if env.Kind != expected {
 		return fmt.Errorf("%w: expected kind %q, got %q", ErrDomainKindMismatch, expected, env.Kind)

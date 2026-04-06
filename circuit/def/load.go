@@ -132,6 +132,42 @@ func (raw *rawCircuitDef) normalize() (*CircuitDef, error) {
 		}
 	}
 
+	// --- Graph validation: ensure all references point to declared nodes ---
+	// Skip when import is set — overlays reference base nodes that aren't
+	// available until merge. Full validation happens in CircuitDef.Validate().
+	if def.Import == "" && len(def.Nodes) > 0 {
+		nodeSet := make(map[NodeName]bool, len(def.Nodes))
+		for i := range def.Nodes {
+			nodeSet[def.Nodes[i].Name] = true
+		}
+
+		// Validate start references a declared node.
+		if def.Start != "" && !nodeSet[def.Start] {
+			return nil, fmt.Errorf("%w: start node %q is not declared", ErrCircuit, def.Start)
+		}
+
+		// Validate edges reference declared nodes.
+		// Done is a virtual sentinel node (typically "_done"), so edges targeting
+		// the done node are valid even though done is not in the nodes list.
+		for i := range def.Edges {
+			if !nodeSet[def.Edges[i].From] {
+				return nil, fmt.Errorf("%w: edge %q references undefined from-node %q", ErrCircuit, def.Edges[i].ID, def.Edges[i].From)
+			}
+			if def.Edges[i].To != def.Done && !nodeSet[def.Edges[i].To] {
+				return nil, fmt.Errorf("%w: edge %q references undefined to-node %q", ErrCircuit, def.Edges[i].ID, def.Edges[i].To)
+			}
+		}
+
+		// Validate zone node references.
+		for zoneName, z := range def.Zones {
+			for _, nodeName := range z.Nodes {
+				if !nodeSet[nodeName] {
+					return nil, fmt.Errorf("%w: zone %q references undefined node %q", ErrCircuit, zoneName, nodeName)
+				}
+			}
+		}
+	}
+
 	return def, nil
 }
 

@@ -293,6 +293,30 @@ func TestLoad_Passthrough(t *testing.T) {
 	}
 }
 
+// --- ValidateKindName tests ---
+
+func TestKindRegistry_ValidateKindName_BuiltIn(t *testing.T) {
+	reg := NewKindRegistry()
+	builtIns := []string{"circuit", "board", "schematic", "scenario", "scorecard", "component"}
+	for _, name := range builtIns {
+		if err := reg.ValidateKindName(name); err == nil {
+			t.Errorf("expected collision error for built-in kind %q", name)
+		} else if !errors.Is(err, ErrKindNameCollision) {
+			t.Errorf("expected ErrKindNameCollision for %q, got %v", name, err)
+		}
+	}
+}
+
+func TestKindRegistry_ValidateKindName_Custom(t *testing.T) {
+	reg := NewKindRegistry()
+	customNames := []string{"my-workflow", "custom-resource", "domain-specific"}
+	for _, name := range customNames {
+		if err := reg.ValidateKindName(name); err != nil {
+			t.Errorf("unexpected error for custom kind %q: %v", name, err)
+		}
+	}
+}
+
 // --- Diff tests ---
 
 func TestDiff_DetectsChanges(t *testing.T) {

@@ -201,6 +201,12 @@ const (
 	LogSocketContractsValidated   = "socket contracts validated"
 	LogExportValidationComplete   = "export validation complete"
 
+	// DSL — graph validation
+	LogUndefinedNodeRef      = "edge references undefined node"
+	LogUndefinedStartNode    = "start references undefined node"
+	LogUndefinedDoneNode     = "done references undefined node"
+	LogCircuitGraphValidated = "circuit graph validated"
+
 	// CLI commands
 	LogRunningCircuit = "running circuit"
 	LogCircuitDone    = "circuit completed"

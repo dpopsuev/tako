@@ -43,6 +43,14 @@ func (s Severity) String() string {
 	}
 }
 
+// Span identifies a secondary source location related to a finding.
+type Span struct {
+	File   string `json:"file,omitempty"`
+	Line   int    `json:"line,omitempty"`
+	Column int    `json:"column,omitempty"`
+	Label  string `json:"label,omitempty"`
+}
+
 // Finding represents a single lint diagnostic.
 type Finding struct {
 	RuleID       string   `json:"rule_id"`
@@ -53,6 +61,14 @@ type Finding struct {
 	Column       int      `json:"column,omitempty"`
 	Suggestion   string   `json:"suggestion,omitempty"`
 	FixAvailable bool     `json:"fix_available,omitempty"`
+
+	// Enhanced diagnostic fields (Layer 3).
+	Expected string `json:"expected,omitempty"`
+	Found    string `json:"found,omitempty"`
+	Reason   string `json:"reason,omitempty"`
+	HelpText string `json:"help_text,omitempty"`
+	Related  []Span `json:"related,omitempty"`
+	Fixable  bool   `json:"fixable,omitempty"`
 }
 
 func (f Finding) String() string {

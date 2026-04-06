@@ -45,6 +45,16 @@ func (r *KindRegistry) Has(k circuit.Kind) bool {
 	return ok
 }
 
+// ValidateKindName checks that a custom kind name does not collide with
+// any built-in kind. Returns an error if the name matches a known kind.
+func (r *KindRegistry) ValidateKindName(name string) error {
+	k := circuit.Kind(name)
+	if circuit.KnownKinds[k] {
+		return fmt.Errorf("%w: %q collides with built-in kind", ErrKindNameCollision, name)
+	}
+	return nil
+}
+
 // Kinds returns a sorted list of all registered kind values.
 func (r *KindRegistry) Kinds() []circuit.Kind {
 	r.mu.RLock()

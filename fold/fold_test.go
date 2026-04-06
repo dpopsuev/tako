@@ -358,9 +358,9 @@ func TestRun_IntegrationBuild_WithDomains(t *testing.T) {
 
 	writeFile("circuits/rca.yaml", "topology: cascade\n")
 	writeFile("vocabulary.yaml", "defects:\n  pb001: product bug\n")
-	writeFile("domains/ocp/ptp/heuristics.yaml", "heuristics: []\n")
-	writeFile("domains/ocp/ptp/scenarios/ptp-mock.yaml", "scenario: ptp-mock\n")
-	writeFile("domains/ocp/ptp/sources/ptp.yaml", "source: ptp\n")
+	writeFile("domains/ocp/ptp/heuristics.yaml", "kind: heuristic-rules\nheuristics: []\n")
+	writeFile("domains/ocp/ptp/scenarios/ptp-mock.yaml", "kind: scenario\nscenario: ptp-mock\n")
+	writeFile("domains/ocp/ptp/sources/ptp.yaml", "kind: source-pack\nsource: ptp\n")
 
 	manifest := filepath.Join(tmpDir, "origami.yaml")
 	os.WriteFile(manifest, []byte(`
@@ -412,7 +412,7 @@ func TestExportDataDir_MatchesEmbedLayout(t *testing.T) {
 	writeFile("circuits/rca.yaml", "circuit: rca\n")
 	writeFile("prompts/recall/judge.md", "prompt: recall\n")
 	writeFile("vocabulary.yaml", "metrics:\n  M1: accuracy\n")
-	writeFile("domains/ocp/ptp/scenarios/ptp.yaml", "scenario: ptp\ncases: []\n")
+	writeFile("domains/ocp/ptp/scenarios/ptp.yaml", "kind: scenario\nscenario: ptp\ncases: []\n")
 	writeFile("domains/ocp/ptp/offline/rp/12345.json", `{"id": 12345}`)
 
 	manifest := filepath.Join(tmpDir, "origami.yaml")
@@ -449,7 +449,7 @@ spec:
 		"circuits/rca.yaml":       "circuit: rca\n",
 		"prompts/recall/judge.md": "prompt: recall\n",
 		"vocabulary.yaml":         "metrics:\n  M1: accuracy\n",
-		"scenarios/ptp.yaml":      "scenario: ptp\ncases: []\n",
+		"scenarios/ptp.yaml":      "kind: scenario\nscenario: ptp\ncases: []\n",
 		"offline/rp/12345.json":   `{"id": 12345}`,
 	}
 

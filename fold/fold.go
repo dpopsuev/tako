@@ -131,6 +131,10 @@ func runBoard(ctx context.Context, data []byte, opts *Options) error {
 		return err
 	}
 
+	if err := validatePortWiring(m, baseDir); err != nil {
+		return err
+	}
+
 	if opts.ExportDataDir != "" {
 		return exportDataDir(m, boardDir, opts)
 	}
