@@ -123,31 +123,84 @@ func NewRunnerWith(def *circuit.CircuitDef, reg *GraphRegistries) (*Runner, erro
 	}, nil
 }
 
-// Walk traverses the graph with the given walker, validating artifacts
-// against declared schemas and firing after-hooks.
+// WalkerMiddleware wraps a Walker with additional behavior.
+// Composable: chain multiple middleware to build a walker pipeline.
+type WalkerMiddleware interface {
+	Wrap(w circuit.Walker) circuit.Walker
+}
+
+// WalkerMiddlewareFunc adapts a function to the WalkerMiddleware interface.
+type WalkerMiddlewareFunc func(w circuit.Walker) circuit.Walker
+
+func (f WalkerMiddlewareFunc) Wrap(w circuit.Walker) circuit.Walker { return f(w) }
+
+// Walk traverses the graph with the given walker, applying middleware
+// (schema validation, hooks) as a composable chain.
 // If walker is nil, a ProcessWalker is used (delegates to node.Process()).
-// Chain: hookingWalker -> validatingWalker -> inner walker.
 func (r *Runner) Walk(ctx context.Context, walker circuit.Walker, startNode string) error {
 	if walker == nil {
 		walker = circuit.NewProcessWalker("default")
 	}
-	vw := &validatingWalker{
-		inner:   walker,
-		schemas: r.Schemas,
-		log:     r.Logger,
+
+	// Build middleware chain.
+	var middlewares []WalkerMiddleware
+
+	// Schema validation middleware.
+	if len(r.Schemas) > 0 {
+		middlewares = append(middlewares, &schemaMiddleware{
+			schemas: r.Schemas,
+			log:     r.Logger,
+		})
 	}
-	var w circuit.Walker = vw
+
+	// Hook middleware.
 	hasHooks := (len(r.NodeBefore) > 0 || len(r.NodeHooks) > 0) && r.Hooks != nil
 	if hasHooks {
-		w = &hookingWalker{
-			inner:      vw,
+		middlewares = append(middlewares, &hookMiddleware{
 			nodeBefore: r.NodeBefore,
 			nodeHooks:  r.NodeHooks,
 			hooks:      r.Hooks,
 			log:        r.Logger,
-		}
+		})
 	}
+
+	// Apply chain: innermost first (schema), outermost last (hooks).
+	w := walker
+	for _, mw := range middlewares {
+		w = mw.Wrap(w)
+	}
+
 	return r.Graph.Walk(ctx, w, startNode)
+}
+
+// schemaMiddleware wraps a Walker with schema validation.
+type schemaMiddleware struct {
+	schemas map[string]*circuit.ArtifactSchema
+	log     *slog.Logger
+}
+
+func (sm *schemaMiddleware) Wrap(w circuit.Walker) circuit.Walker {
+	return &validatingWalker{inner: w, schemas: sm.schemas, log: sm.log}
+}
+
+// hookMiddleware wraps a Walker with before/after hook execution.
+type hookMiddleware struct {
+	nodeBefore  map[string][]string
+	nodeHooks   map[string][]string
+	hooks       HookRegistry
+	log         *slog.Logger
+	onHookEvent func(name, phase string, err error)
+}
+
+func (hm *hookMiddleware) Wrap(w circuit.Walker) circuit.Walker {
+	return &hookingWalker{
+		inner:       w,
+		nodeBefore:  hm.nodeBefore,
+		nodeHooks:   hm.nodeHooks,
+		hooks:       hm.hooks,
+		log:         hm.log,
+		onHookEvent: hm.onHookEvent,
+	}
 }
 
 // validatingWalker wraps a domain Walker to add schema validation

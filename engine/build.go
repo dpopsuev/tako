@@ -217,6 +217,24 @@ func resolveNode(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistr
 }
 
 // resolveHandler resolves a node using the explicit handler + handler_type path.
+// HandlerTypeResolver resolves a node definition into a concrete circuit.Node
+// based on its handler_type. Registered in the HandlerTypeRegistry.
+type HandlerTypeResolver func(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem agentport.Element) (circuit.Node, error)
+
+// HandlerTypeRegistry maps handler_type strings to their resolvers.
+// Extensible: consumers can register custom handler types.
+type HandlerTypeRegistry map[string]HandlerTypeResolver
+
+// builtinHandlerTypes is the default set of handler type resolvers.
+var builtinHandlerTypes = HandlerTypeRegistry{
+	HandlerTypeTransformer: resolveTransformerHandler,
+	HandlerTypeExtractor:   resolveExtractorHandler,
+	HandlerTypeRenderer:    resolveRendererHandler,
+	HandlerTypeNode:        resolveNodeHandler,
+	HandlerTypeDelegate:    resolveDelegateHandler,
+	HandlerTypeCircuit:     resolveCircuitHandler,
+}
+
 func resolveHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem agentport.Element) (circuit.Node, error) {
 	handler := nd.Handler
 	if handler == "" {
@@ -231,97 +249,133 @@ func resolveHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegi
 		return nil, fmt.Errorf("%w: %q: handler %q specified but no handler_type on node or circuit", ErrNode, name, handler)
 	}
 
-	switch ht {
-	case HandlerTypeTransformer:
-		t, err := resolveTransformerByName(def, handler, name, reg)
-		if err != nil {
-			return nil, err
-		}
+	resolver, ok := builtinHandlerTypes[ht]
+	if !ok {
+		return nil, fmt.Errorf("%w: %q: unknown handler_type %q", ErrNode, name, ht)
+	}
+	return resolver(def, nd, reg, elem)
+}
+
+func resolveTransformerHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem agentport.Element) (circuit.Node, error) {
+	name := string(nd.Name)
+	handler := nd.Handler
+	if handler == "" {
+		handler = name
+	}
+	t, err := resolveTransformerByName(def, handler, name, reg)
+	if err != nil {
+		return nil, err
+	}
+	return &transformerNode{
+		name:       name,
+		element:    elem,
+		trans:      t,
+		prompt:     nd.Prompt,
+		input:      nd.Input,
+		provider:   nd.Provider,
+		config:     def.Vars,
+		nodeConfig: nd.EffectiveConfig(),
+	}, nil
+}
+
+func resolveExtractorHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem agentport.Element) (circuit.Node, error) {
+	name := string(nd.Name)
+	handler := nd.Handler
+	if handler == "" {
+		handler = name
+	}
+	ext, err := resolveExtractor(def, handler, nd, reg)
+	if err != nil {
+		return nil, err
+	}
+	return &extractorNode{
+		name:    name,
+		element: elem,
+		ext:     ext,
+	}, nil
+}
+
+func resolveRendererHandler(_ *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem agentport.Element) (circuit.Node, error) {
+	name := string(nd.Name)
+	handler := nd.Handler
+	if handler == "" {
+		handler = name
+	}
+	rnd, err := resolveRenderer(handler, nd, reg)
+	if err != nil {
+		return nil, err
+	}
+	return &rendererNode{
+		name:    name,
+		element: elem,
+		rnd:     rnd,
+	}, nil
+}
+
+func resolveNodeHandler(_ *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem agentport.Element) (circuit.Node, error) {
+	name := string(nd.Name)
+	handler := nd.Handler
+	if handler == "" {
+		handler = name
+	}
+	if reg.Nodes == nil {
+		return nil, fmt.Errorf("%w: %q: handler %q not found (node registry is nil)", ErrNode, name, handler)
+	}
+	factory, ok := reg.Nodes[handler]
+	if !ok {
+		return nil, fmt.Errorf("%w: %q: handler %q not found in node registry", ErrNode, name, handler)
+	}
+	return factory(*nd), nil
+}
+
+func resolveDelegateHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem agentport.Element) (circuit.Node, error) {
+	name := string(nd.Name)
+	handler := nd.Handler
+	if handler == "" {
+		handler = name
+	}
+	if reg.Transformers == nil {
+		return nil, fmt.Errorf("%w: %q: delegate handler %q not found (transformer registry is nil)", ErrNode, name, handler)
+	}
+	gen, err := reg.Transformers.Get(handler)
+	if err != nil {
+		return nil, fmt.Errorf("node %q: delegate handler: %w", name, err)
+	}
+	return &dslDelegateNode{
+		name:       name,
+		element:    elem,
+		gen:        gen,
+		config:     def.Vars,
+		nodeConfig: nd.EffectiveConfig(),
+	}, nil
+}
+
+func resolveCircuitHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem agentport.Element) (circuit.Node, error) {
+	name := string(nd.Name)
+	handler := nd.Handler
+	if handler == "" {
+		handler = name
+	}
+	switch {
+	case reg.Circuits != nil && reg.Circuits[handler] != nil:
+		cd := reg.Circuits[handler]
+		slog.DebugContext(context.Background(), circuit.LogCircuitHandlerLocal, slog.Any(circuit.LogKeyComponent, circuit.LogComponentBuild), slog.Any(circuit.LogKeyNode, name), slog.Any(circuit.LogKeyHandler, handler))
+		return &circuitRefNode{
+			name:       name,
+			element:    elem,
+			circuitDef: cd,
+		}, nil
+	case reg.MediatorEndpoint != "":
+		slog.DebugContext(context.Background(), circuit.LogCircuitHandlerMediator, slog.Any(circuit.LogKeyComponent, circuit.LogComponentBuild), slog.Any(circuit.LogKeyNode, name), slog.Any(circuit.LogKeyHandler, handler), slog.Any(circuit.LogKeyEndpoint, reg.MediatorEndpoint))
 		return &transformerNode{
 			name:       name,
 			element:    elem,
-			trans:      t,
-			prompt:     nd.Prompt,
-			input:      nd.Input,
-			provider:   nd.Provider,
+			trans:      &MCPCircuitTransformer{CircuitType: handler, Endpoint: reg.MediatorEndpoint},
 			config:     def.Vars,
 			nodeConfig: nd.EffectiveConfig(),
 		}, nil
-
-	case HandlerTypeExtractor:
-		ext, err := resolveExtractor(def, handler, nd, reg)
-		if err != nil {
-			return nil, err
-		}
-		return &extractorNode{
-			name:    name,
-			element: elem,
-			ext:     ext,
-		}, nil
-
-	case HandlerTypeRenderer:
-		rnd, err := resolveRenderer(handler, nd, reg)
-		if err != nil {
-			return nil, err
-		}
-		return &rendererNode{
-			name:    name,
-			element: elem,
-			rnd:     rnd,
-		}, nil
-
-	case HandlerTypeNode:
-		if reg.Nodes == nil {
-			return nil, fmt.Errorf("%w: %q: handler %q not found (node registry is nil)", ErrNode, name, handler)
-		}
-		factory, ok := reg.Nodes[handler]
-		if !ok {
-			return nil, fmt.Errorf("%w: %q: handler %q not found in node registry", ErrNode, name, handler)
-		}
-		return factory(*nd), nil
-
-	case HandlerTypeDelegate:
-		if reg.Transformers == nil {
-			return nil, fmt.Errorf("%w: %q: delegate handler %q not found (transformer registry is nil)", ErrNode, name, handler)
-		}
-		gen, err := reg.Transformers.Get(handler)
-		if err != nil {
-			return nil, fmt.Errorf("node %q: delegate handler: %w", name, err)
-		}
-		return &dslDelegateNode{
-			name:       name,
-			element:    elem,
-			gen:        gen,
-			config:     def.Vars,
-			nodeConfig: nd.EffectiveConfig(),
-		}, nil
-
-	case HandlerTypeCircuit:
-		slog.DebugContext(context.Background(), circuit.LogResolveCircuitHandler, slog.Any(circuit.LogKeyComponent, circuit.LogComponentBuild), slog.Any(circuit.LogKeyNode, name), slog.Any(circuit.LogKeyHandler, handler), slog.Any(circuit.LogKeyCircuitsNil, reg.Circuits == nil), slog.Any(circuit.LogKeyCircuitsCount, len(reg.Circuits)), slog.Any(circuit.LogKeyMediatorEndpoint, reg.MediatorEndpoint))
-		if reg.Circuits != nil {
-			if cd, ok := reg.Circuits[handler]; ok {
-				slog.DebugContext(context.Background(), circuit.LogCircuitHandlerLocal, slog.Any(circuit.LogKeyComponent, circuit.LogComponentBuild), slog.Any(circuit.LogKeyNode, name), slog.Any(circuit.LogKeyHandler, handler))
-				return &circuitRefNode{
-					name:       name,
-					element:    elem,
-					circuitDef: cd,
-				}, nil
-			}
-		}
-		if reg.MediatorEndpoint != "" {
-			slog.DebugContext(context.Background(), circuit.LogCircuitHandlerMediator, slog.Any(circuit.LogKeyComponent, circuit.LogComponentBuild), slog.Any(circuit.LogKeyNode, name), slog.Any(circuit.LogKeyHandler, handler), slog.Any(circuit.LogKeyEndpoint, reg.MediatorEndpoint))
-			return &transformerNode{
-				name:       name,
-				element:    elem,
-				trans:      &MCPCircuitTransformer{CircuitType: handler, Endpoint: reg.MediatorEndpoint},
-				config:     def.Vars,
-				nodeConfig: nd.EffectiveConfig(),
-			}, nil
-		}
-		return nil, fmt.Errorf("%w: %q: circuit handler %q not found (no local circuit and no mediator endpoint)", ErrNode, name, handler)
-
 	default:
-		return nil, fmt.Errorf("%w: %q: unknown handler_type %q", ErrNode, name, ht)
+		return nil, fmt.Errorf("%w: %q: circuit handler %q not found (no local circuit and no mediator endpoint)", ErrNode, name, handler)
 	}
 }
 
