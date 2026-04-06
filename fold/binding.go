@@ -127,8 +127,8 @@ func Resolve(m *Manifest, origamiRoot string, resolver ModuleResolver) (*Resolve
 		if err != nil {
 			return nil, fmt.Errorf("schematic %q: %w", name, err)
 		}
-		if cm.Factory == "" && cm.SessionFactory == "" {
-			return nil, fmt.Errorf("%w: %q: component.yaml must declare factory or session_factory", ErrSchematic, name)
+		if cm.Factory == "" && cm.SessionFactory == "" && cm.Resolver == "" {
+			return nil, fmt.Errorf("%w: %q: component.yaml must declare factory, session_factory, or resolver", ErrSchematic, name)
 		}
 		schemManifests[name] = cm
 	}

@@ -196,6 +196,9 @@ func renderWiring(g *ResolvedGraph) string {
 
 	for i := range g.Schematics {
 		sch := &g.Schematics[i]
+		if sch.Factory == "" {
+			continue // resolver-only sub-schematic — no instance needed
+		}
 		fmt.Fprintf(&b, "\t%sInstance := %s.%s(\n", sch.Alias, sch.Alias, sch.Factory)
 		for _, opt := range sch.Options {
 			fmt.Fprintf(&b, "\t\t%s.%s(%s),\n", sch.Alias, opt.OptionFunc, opt.Provider)
