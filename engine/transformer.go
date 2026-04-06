@@ -14,84 +14,8 @@ import (
 	"github.com/dpopsuev/origami/circuit"
 )
 
-// Transformer processes input data and produces structured output.
-// Primary processing primitive in the Origami DSL. Built-in transformers
-// (llm, http, jq, file) cover common cases; domain tools register custom
-// transformers for specialized needs.
-type Transformer interface {
-	Name() string
-	Transform(ctx context.Context, tc *TransformerContext) (any, error)
-}
-
-// DeterministicTransformer is an optional marker interface for transformers
-// that declare their determinism. Deterministic transformers produce identical
-// output for identical input (e.g., core.jq, core.file). Stochastic
-// transformers vary per invocation (e.g., core.llm). Transformers that do not
-// implement this interface are assumed stochastic (safe default).
-type DeterministicTransformer interface {
-	Deterministic() bool
-}
-
-// IsDeterministic returns true if t implements DeterministicTransformer and
-// reports itself as deterministic. Unknown transformers default to stochastic.
-func IsDeterministic(t Transformer) bool {
-	if dt, ok := t.(DeterministicTransformer); ok {
-		return dt.Deterministic()
-	}
-	return false
-}
-
-// TypedTransformer is optionally implemented by transformers that declare
-// their expected input type. When set, the framework validates input types
-// before calling Transform(), producing clear errors instead of nil panics.
-type TypedTransformer interface {
-	Transformer
-	InputType() reflect.Type // expected input type; nil = accept any
-}
-
-// TransformerContext carries all inputs needed by a transformer.
-type TransformerContext struct {
-	Input       any                  // prior node's output (or circuit input)
-	Config      map[string]any       // circuit vars
-	Prompt      string               // prompt template path or content
-	NodeName    string               // current node name
-	NodeConfig  *circuit.NodeConfig  // typed node configuration
-	Provider    string               // from NodeDef.Provider (e.g. "cursor", "codex")
-	WalkerState *circuit.WalkerState // walker state including context, outputs, and loop counts
-}
-
-// TransformerRegistry maps transformer names to implementations.
-type TransformerRegistry map[string]Transformer
-
-// Get returns the transformer registered under name, or an error if not found.
-// Supports FQCN resolution: a dot-qualified name (e.g. "core.llm") does a
-// direct lookup; an unqualified name tries direct first, then scans for a
-// matching ".name" suffix among registered FQCNs.
-func (r TransformerRegistry) Get(name string) (Transformer, error) {
-	if r == nil {
-		return nil, ErrTransformerRegistryIsNil
-	}
-	if t, ok := r[name]; ok {
-		return t, nil
-	}
-	if !strings.Contains(name, ".") {
-		suffix := "." + name
-		for k, t := range r {
-			if strings.HasSuffix(k, suffix) {
-				return t, nil
-			}
-		}
-	}
-	return nil, fmt.Errorf("%w: %q not registered", ErrTransformer, name)
-}
-
-// Register adds a transformer. Panics on duplicate.
-func (r TransformerRegistry) Register(t Transformer) {
-	if _, exists := r[t.Name()]; exists {
-		panic(fmt.Sprintf("duplicate transformer registration: %q", t.Name()))
-	}
-	r[t.Name()] = t
-}
+// Transformer, TransformerContext, TransformerRegistry are defined in engine/handler.
+// This file contains the engine-internal implementation: transformerNode, builtins.
 
 // transformerNode is a Node that delegates to a Transformer.
 // Created by BuildGraph when handler_type is "transformer".
@@ -212,20 +136,7 @@ func (a *transformerArtifact) Type() string        { return a.typeName }
 func (a *transformerArtifact) Confidence() float64 { return a.confidence }
 func (a *transformerArtifact) Raw() any            { return a.raw }
 
-// TransformerFunc adapts a plain function into a Transformer.
-func TransformerFunc(name string, fn func(context.Context, *TransformerContext) (any, error)) Transformer {
-	return &transformerFuncImpl{name: name, fn: fn}
-}
-
-type transformerFuncImpl struct {
-	name string
-	fn   func(context.Context, *TransformerContext) (any, error)
-}
-
-func (t *transformerFuncImpl) Name() string { return t.name }
-func (t *transformerFuncImpl) Transform(ctx context.Context, tc *TransformerContext) (any, error) {
-	return t.fn(ctx, tc)
-}
+// TransformerFunc is re-exported from handler/ via handler_reexport.go.
 
 // Built-in transformer names recognized by resolveNode.
 const (

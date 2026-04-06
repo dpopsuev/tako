@@ -13,45 +13,7 @@ import (
 	"github.com/dpopsuev/origami/circuit"
 )
 
-// Extractor converts unstructured input into structured output.
-type Extractor interface {
-	// Name returns the registered identifier for this extractor.
-	Name() string
-
-	// Extract converts input to structured output.
-	Extract(ctx context.Context, input any) (any, error)
-}
-
-// ExtractorRegistry maps extractor names to Extractor implementations.
-type ExtractorRegistry map[string]Extractor
-
-// Get returns the extractor registered under name, or an error if not found.
-// Supports FQCN resolution.
-func (r ExtractorRegistry) Get(name string) (Extractor, error) {
-	if r == nil {
-		return nil, ErrExtractorRegistryIsNil
-	}
-	if ext, ok := r[name]; ok {
-		return ext, nil
-	}
-	if !strings.Contains(name, ".") {
-		suffix := "." + name
-		for k, ext := range r {
-			if strings.HasSuffix(k, suffix) {
-				return ext, nil
-			}
-		}
-	}
-	return nil, fmt.Errorf("%w: %q not registered", ErrExtractor, name)
-}
-
-// Register adds an extractor to the registry. Panics on duplicate name.
-func (r ExtractorRegistry) Register(ext Extractor) {
-	if _, exists := r[ext.Name()]; exists {
-		panic(fmt.Sprintf("duplicate extractor registration: %q", ext.Name()))
-	}
-	r[ext.Name()] = ext
-}
+// Extractor, ExtractorRegistry are defined in engine/handler.
 
 // extractorNode is a Node that delegates processing to an Extractor.
 type extractorNode struct {

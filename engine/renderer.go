@@ -5,50 +5,13 @@ package engine
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 )
 
 // Renderer converts structured data into human-readable output.
-// Symmetric counterpart to Extractor (ADC/DAC duality):
-// Extractor: unstructured -> structured, Renderer: structured -> unstructured.
-type Renderer interface {
-	Name() string
-	Render(ctx context.Context, data any) (string, error)
-}
-
-// RendererRegistry maps renderer names to Renderer implementations.
-type RendererRegistry map[string]Renderer
-
-// Get returns the renderer registered under name, or an error if not found.
-// Supports FQCN resolution identical to ExtractorRegistry.
-func (r RendererRegistry) Get(name string) (Renderer, error) {
-	if r == nil {
-		return nil, ErrRendererRegistryIsNil
-	}
-	if rnd, ok := r[name]; ok {
-		return rnd, nil
-	}
-	if !strings.Contains(name, ".") {
-		suffix := "." + name
-		for k, rnd := range r {
-			if strings.HasSuffix(k, suffix) {
-				return rnd, nil
-			}
-		}
-	}
-	return nil, fmt.Errorf("%w: %q not registered", ErrRenderer, name)
-}
-
-// Register adds a renderer to the registry. Panics on duplicate name.
-func (r RendererRegistry) Register(rnd Renderer) {
-	if _, exists := r[rnd.Name()]; exists {
-		panic(fmt.Sprintf("duplicate renderer registration: %q", rnd.Name()))
-	}
-	r[rnd.Name()] = rnd
-}
+// Renderer, RendererRegistry are defined in engine/handler.
 
 // BuiltinRendererTemplate is the built-in renderer recognized by resolveNode.
 const BuiltinRendererTemplate = "template"
