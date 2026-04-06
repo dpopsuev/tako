@@ -436,12 +436,8 @@ func createWiredBuildModule(tmpDir, name string, resolver ModuleResolver, g *Res
 	var buf strings.Builder
 	buf.WriteString(fmt.Sprintf("module %s-build\n\ngo 1.24\n\nrequire (\n", name))
 
-	origamiVersion := fallbackVersion
-	mcpVersion := fallbackVersion
-	if local {
-		origamiVersion = resolveModuleVersion(resolver, origamiModule)
-		mcpVersion = resolveModuleVersion(resolver, mcpSDKModule)
-	}
+	origamiVersion := resolveModuleVersion(resolver, origamiModule)
+	mcpVersion := resolveModuleVersion(resolver, mcpSDKModule)
 	buf.WriteString(fmt.Sprintf("\t%s %s\n", origamiModule, origamiVersion))
 	buf.WriteString(fmt.Sprintf("\t%s %s\n", mcpSDKModule, mcpVersion))
 
@@ -454,10 +450,7 @@ func createWiredBuildModule(tmpDir, name string, resolver ModuleResolver, g *Res
 			if mod != "" && !seen[mod] {
 				seen[mod] = true
 				externalModules = append(externalModules, mod)
-				v := fallbackVersion
-				if local {
-					v = resolveModuleVersion(resolver, mod)
-				}
+				v := resolveModuleVersion(resolver, mod)
 				buf.WriteString(fmt.Sprintf("\t%s %s\n", mod, v))
 			}
 		}
@@ -510,11 +503,26 @@ func resolveModuleVersion(resolver ModuleResolver, modPath string) string {
 			}
 		}
 	}
-	// If modPath IS origami, return the latest tag
-	if modPath == origamiModule {
-		return "v0.2.0"
+	// If the module wasn't found in origami's go.mod, try reading the
+	// latest git tag from the local module checkout.
+	localPath := resolver.FindLocalModule(modPath)
+	if localPath != "" {
+		if v := readGitTag(localPath); v != "" {
+			return v
+		}
 	}
 	return fallbackVersion
+}
+
+// readGitTag reads the latest semver tag from a git repository.
+func readGitTag(repoDir string) string {
+	cmd := exec.Command("git", "describe", "--tags", "--abbrev=0", "--match", "v*")
+	cmd.Dir = repoDir
+	out, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
 }
 
 // moduleRoot extracts the module root from a Go import path.

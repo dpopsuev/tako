@@ -80,8 +80,8 @@ func TestCreateWiredBuildModule_LocalEnablesReplace(t *testing.T) {
 	}
 }
 
-func TestCreateWiredBuildModule_ResolverNotCalledWithoutLocal(t *testing.T) {
-	// RED: When local=false, FindLocalModule must NOT be called.
+func TestCreateWiredBuildModule_NoReplaceWithoutLocal(t *testing.T) {
+	// Resolver is called for version resolution, but no replace directives added.
 	tmpDir := t.TempDir()
 	resolver := &mockResolver{
 		paths: map[string]string{origamiModule: "/somewhere"},
@@ -92,9 +92,12 @@ func TestCreateWiredBuildModule_ResolverNotCalledWithoutLocal(t *testing.T) {
 		t.Fatalf("createWiredBuildModule: %v", err)
 	}
 
-	if len(resolver.calls) > 0 {
-		t.Errorf("FindLocalModule should not be called when local=false, got %d calls: %v",
-			len(resolver.calls), resolver.calls)
+	data, err := os.ReadFile(filepath.Join(tmpDir, "go.mod"))
+	if err != nil {
+		t.Fatalf("read go.mod: %v", err)
+	}
+	if strings.Contains(string(data), "replace") {
+		t.Errorf("go.mod should not contain replace directives when local=false:\n%s", data)
 	}
 }
 
