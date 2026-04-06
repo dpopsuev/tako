@@ -137,7 +137,7 @@ func Resolve(m *Manifest, origamiRoot string, resolver ModuleResolver) (*Resolve
 		return nil, err
 	}
 
-	root, depOrder, err := topoSort(m, schemManifests)
+	root, depOrder, err := topoSort(m)
 	if err != nil {
 		return nil, err
 	}
@@ -296,7 +296,7 @@ func findSatisfy(cm *circuit.ComponentManifest, socketName string) *circuit.Give
 
 // topoSort finds the root schematic (not depended on by others) and
 // returns the dependency order for the remaining sub-schematics.
-func topoSort(m *Manifest, schemManifests map[string]*circuit.ComponentManifest) (root string, order []string, err error) {
+func topoSort(m *Manifest) (root string, order []string, err error) {
 	depended := make(map[string]bool)
 	deps := make(map[string][]string)
 
@@ -319,12 +319,11 @@ func topoSort(m *Manifest, schemManifests map[string]*circuit.ComponentManifest)
 		return "", nil, ErrNoRootSchematicFoundAllSchematicsAreDependenciesOfOt
 	}
 	if len(roots) > 1 {
-		// Disambiguate: the schematic with session_factory is root,
-		// others are sub-schematics (they provide circuit resolvers).
-		root = pickRootBySessionFactory(roots, schemManifests)
+		// Board declares entry point via entry: true on a uses entry.
+		root = pickEntrySchematic(roots, m.Uses)
 		if root == "" {
 			sort.Strings(roots)
-			return "", nil, fmt.Errorf("%w: %s (expected exactly one with session_factory)", ErrMultipleRootSchematics, strings.Join(roots, ", "))
+			return "", nil, fmt.Errorf("%w: %s (set entry: true on one schematic in uses)", ErrMultipleRootSchematics, strings.Join(roots, ", "))
 		}
 	} else {
 		root = roots[0]
@@ -360,23 +359,19 @@ func topoSort(m *Manifest, schemManifests map[string]*circuit.ComponentManifest)
 	return root, sorted, nil
 }
 
-// pickRootBySessionFactory returns the single schematic that has session_factory
-// set in its component.yaml. Returns "" if zero or multiple have it.
-func pickRootBySessionFactory(roots []string, cms map[string]*circuit.ComponentManifest) string {
-	var root string
+// pickEntrySchematic returns the single schematic with entry: true in the
+// board's uses section. Returns "" if zero or multiple have it.
+func pickEntrySchematic(roots []string, uses map[string]UsesRef) string {
+	var entry string
 	for _, name := range roots {
-		cm, ok := cms[name]
-		if !ok {
-			continue
-		}
-		if cm.SessionFactory != "" {
-			if root != "" {
-				return "" // multiple session_factory — ambiguous
+		if u, ok := uses[name]; ok && u.Entry {
+			if entry != "" {
+				return "" // multiple entry: true — ambiguous
 			}
-			root = name
+			entry = name
 		}
 	}
-	return root
+	return entry
 }
 
 // detectCycles checks for circular schematic dependencies.

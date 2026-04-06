@@ -132,7 +132,7 @@ func TestTopoSort_SingleRoot(t *testing.T) {
 		},
 	}
 
-	root, order, err := topoSort(m, nil)
+	root, order, err := topoSort(m)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -144,21 +144,74 @@ func TestTopoSort_SingleRoot(t *testing.T) {
 	}
 }
 
-func TestTopoSort_MultipleRoots(t *testing.T) {
+func TestTopoSort_MultipleRoots_NoEntry(t *testing.T) {
 	m := &Manifest{
 		Name: "test",
+		Uses: map[string]UsesRef{
+			"a": {Kind: "schematic", Module: "github.com/dpopsuev/origami-rca"},
+			"b": {Kind: "schematic", Module: "github.com/dpopsuev/origami-gnd"},
+		},
 		Schematics: map[string]SchematicRef{
 			"a": {Path: "github.com/dpopsuev/origami-rca"},
 			"b": {Path: "github.com/dpopsuev/origami-gnd"},
 		},
 	}
 
-	_, _, err := topoSort(m, nil)
+	_, _, err := topoSort(m)
 	if err == nil {
-		t.Fatal("expected error for multiple roots")
+		t.Fatal("expected error for multiple roots without entry: true")
 	}
-	if !strings.Contains(err.Error(), "multiple root") {
-		t.Errorf("error = %q, want multiple root", err.Error())
+	if !strings.Contains(err.Error(), "entry: true") {
+		t.Errorf("error = %q, want mention of entry: true", err.Error())
+	}
+}
+
+func TestTopoSort_MultipleRoots_WithEntry(t *testing.T) {
+	m := &Manifest{
+		Name: "test",
+		Uses: map[string]UsesRef{
+			"rca": {Kind: "schematic", Module: "github.com/dpopsuev/origami-rca", Entry: true},
+			"gnd": {Kind: "schematic", Module: "github.com/dpopsuev/origami-gnd"},
+		},
+		Schematics: map[string]SchematicRef{
+			"rca": {Path: "github.com/dpopsuev/origami-rca"},
+			"gnd": {Path: "github.com/dpopsuev/origami-gnd"},
+		},
+	}
+
+	root, order, err := topoSort(m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if root != "rca" {
+		t.Errorf("root = %q, want rca", root)
+	}
+	if len(order) != 1 || order[0] != "gnd" {
+		t.Errorf("order = %v, want [gnd]", order)
+	}
+}
+
+// Trap test (poka-yoke): both schematics have session_factory in their
+// component.yaml, but neither has entry: true in the board. topoSort MUST
+// reject. This makes it structurally impossible to reintroduce a heuristic
+// that reads component.yaml internals to pick the root — both look identical.
+func TestTopoSort_MultipleRoots_BothWithSessionFactory_RequiresEntryFlag(t *testing.T) {
+	m := &Manifest{
+		Name: "test",
+		Uses: map[string]UsesRef{
+			"rca": {Kind: "schematic", Module: "github.com/dpopsuev/origami-rca"},
+			"gnd": {Kind: "schematic", Module: "github.com/dpopsuev/origami-gnd"},
+		},
+		Schematics: map[string]SchematicRef{
+			"rca": {Path: "github.com/dpopsuev/origami-rca"},
+			"gnd": {Path: "github.com/dpopsuev/origami-gnd"},
+		},
+	}
+	// Both have session_factory — topoSort cannot use it to disambiguate.
+	// The ONLY valid resolution is entry: true on the board.
+	_, _, err := topoSort(m)
+	if err == nil {
+		t.Fatal("topoSort must reject multiple roots — board must declare entry: true")
 	}
 }
 

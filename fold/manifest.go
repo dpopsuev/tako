@@ -61,6 +61,7 @@ type manifestYAML struct {
 type UsesRef struct {
 	Kind   string `yaml:"kind"`
 	Module string `yaml:"module"`
+	Entry  bool   `yaml:"entry,omitempty"` // board declares which schematic's SessionFactory drives the MCP server
 }
 
 // SchematicRef is a resolved schematic with socket bindings.
