@@ -133,4 +133,9 @@ type SessionParams struct {
 	// use this to load/validate/discover any registered resource kind.
 	// Nil when no ResourceRegistry is configured.
 	ResourceRegistry *resource.KindRegistry
+
+	// SubCircuitResolvers maps schematic names to their embedded circuit YAML.
+	// Consumers with custom RunFunc use this to load sub-circuit definitions
+	// (e.g., GND within RCA) via circuit.LoadSubCircuitsFromFS(domainFS, resolvers).
+	SubCircuitResolvers map[string]circuit.AssetResolver
 }
