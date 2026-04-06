@@ -1,0 +1,22 @@
+kind: board
+name: test-board
+description: "Test board for unit tests"
+
+uses:
+  rca: github.com/dpopsuev/origami-rca
+  gnd: github.com/dpopsuev/origami-gnd
+
+bind:
+  rca.source: github.com/dpopsuev/origami-components/rp
+
+domain: ../domains/ocp/ptp
+
+prompts:
+  recall: ../prompts/ci-analysis/recall.md
+  triage: ../prompts/ci-analysis/triage.md
+
+circuit:
+  import: [rca, gnd]
+
+serve:
+  port: 9300

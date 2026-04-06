@@ -1,0 +1,12 @@
+kind: board
+name: child-board
+description: "Child board composing base"
+
+compose:
+  base: ./board-compose-base.yaml
+
+uses:
+  tuner: github.com/dpopsuev/origami-auto-tuning
+
+serve:
+  port: 9400

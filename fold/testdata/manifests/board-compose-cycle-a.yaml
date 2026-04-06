@@ -1,0 +1,4 @@
+kind: board
+name: cycle-a
+compose:
+  base: ./board-compose-cycle-b.yaml

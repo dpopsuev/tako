@@ -65,4 +65,13 @@ var (
 
 	// ErrDomainKindMismatch is returned when a domain file's kind header doesn't match expected.
 	ErrDomainKindMismatch = errors.New("domain kind mismatch")
+
+	// ErrBoardKindMismatch is returned when a board file has wrong kind.
+	ErrBoardKindMismatch = errors.New("board: kind mismatch")
+
+	// ErrBoardNameRequired is returned when a board file has no name.
+	ErrBoardNameRequired = errors.New("board: name is required")
+
+	// ErrCompositionCycle is returned when board composition has a cycle.
+	ErrCompositionCycle = errors.New("board composition: cycle detected")
 )

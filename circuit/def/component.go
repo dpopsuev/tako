@@ -72,7 +72,15 @@ type ComponentManifest struct {
 	Schemas        []string    `yaml:"schemas,omitempty"`         // step schema paths (relative to domain FS)
 	Report         string      `yaml:"report,omitempty"`          // report template YAML path
 	Dispatch       DispatchDef `yaml:"dispatch,omitempty"`        // dispatch provider config
-	SessionFactory string      `yaml:"session_factory,omitempty"` // Go symbol: "rca.Factory()"
+	SessionFactory string          `yaml:"session_factory,omitempty"` // Go symbol: "rca.Factory()"
+	CustomKinds    []CustomKindDef `yaml:"custom_kinds,omitempty"`    // CRDs registered by this schematic
+}
+
+// CustomKindDef declares a custom kind that this schematic registers.
+// The kind is scoped to the schematic's apiVersion namespace.
+type CustomKindDef struct {
+	Name        string `yaml:"name"`
+	Description string `yaml:"description,omitempty"`
 }
 
 // ParamDef declares an extra parameter for MCP start_circuit.
@@ -146,7 +154,8 @@ type componentManifestYAML struct {
 		Params   []ParamDef  `yaml:"params,omitempty"`
 		Schemas  []string    `yaml:"schemas,omitempty"`
 		Report   string      `yaml:"report,omitempty"`
-		Dispatch DispatchDef `yaml:"dispatch,omitempty"`
+		Dispatch    DispatchDef     `yaml:"dispatch,omitempty"`
+		CustomKinds []CustomKindDef `yaml:"custom_kinds,omitempty"`
 	} `yaml:"spec"`
 }
 
@@ -161,8 +170,8 @@ func LoadComponentManifest(path string) (*ComponentManifest, error) {
 	if err := yaml.Unmarshal(data, &raw); err != nil {
 		return nil, fmt.Errorf("parse component manifest %s: %w", path, err)
 	}
-	if raw.APIVersion != "origami/v1" {
-		return nil, fmt.Errorf("%w: %s: apiVersion must be 'origami/v1', got %q", ErrComponentManifest, path, raw.APIVersion)
+	if raw.APIVersion == "" {
+		return nil, fmt.Errorf("%w: %s: apiVersion is required", ErrComponentManifest, path)
 	}
 	if raw.Kind != kindSchematic && raw.Kind != kindComponent {
 		return nil, fmt.Errorf("%w: %s: kind must be 'Schematic' or 'Component', got %q", ErrComponentManifest, path, raw.Kind)
@@ -193,6 +202,7 @@ func LoadComponentManifest(path string) (*ComponentManifest, error) {
 		Report:         raw.Spec.Report,
 		Dispatch:       raw.Spec.Dispatch,
 		SessionFactory: sf,
+		CustomKinds:    raw.Spec.CustomKinds,
 	}
 
 	// S40-S42: enforce socket type constraints per needs section.
