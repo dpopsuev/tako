@@ -326,6 +326,7 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"path/filepath"
 
 {{ if .NeedsOrigami }}	origami "github.com/dpopsuev/origami/circuit"
 {{ end }}{{ if .NeedsFactory }}	fwmcp "github.com/dpopsuev/origami/mcp"
@@ -347,7 +348,16 @@ func main() {
 	stateDir := flag.String("state-dir", {{ printf "%q" .StateDir }}, "persistent state directory")
 	flag.Parse()
 
-	_ = stateDir // available for CircuitConfig.StateDir wiring
+	// Default state directory to XDG_STATE_HOME/<name> when not explicitly set.
+	if *stateDir == "" {
+		xdg := os.Getenv("XDG_STATE_HOME")
+		if xdg == "" {
+			home, _ := os.UserHomeDir()
+			xdg = filepath.Join(home, ".local", "state")
+		}
+		defaultDir := filepath.Join(xdg, {{ printf "%q" .Name }})
+		stateDir = &defaultDir
+	}
 
 	if *versionFlag {
 		fmt.Printf("%s %s (port %d)\n", {{ printf "%q" .Name }}, {{ printf "%q" .Version }}, *port)
@@ -399,6 +409,7 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/dpopsuev/origami/domainserve"
 )

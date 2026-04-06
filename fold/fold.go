@@ -94,31 +94,40 @@ func runBoard(ctx context.Context, data []byte, opts *Options) error {
 		return err
 	}
 
+	// All paths in board are relative to CWD (repo root), not board file.
+	// Override ManifestPath so downstream codegen (buildDomainServe, buildWiredBinary)
+	// resolves paths from CWD, not from the boards/ subdirectory.
+	baseDir, _ := os.Getwd()
 	boardDir := filepath.Dir(opts.ManifestPath)
+	opts.ManifestPath = filepath.Join(baseDir, filepath.Base(opts.ManifestPath))
 
-	// Resolve composition if compose: is set.
+	// Resolve composition — compose base paths are relative to board file.
 	bm, err = ResolveBoardComposition(bm, boardDir)
 	if err != nil {
 		return err
 	}
 
-	// Validate kind at referenced paths.
-	if err := ValidateBoardPaths(bm, boardDir); err != nil {
+	// Validate kind at referenced paths (relative to CWD).
+	if err := ValidateBoardPaths(bm, baseDir); err != nil {
 		return err
 	}
 
 	// Bridge to legacy Manifest for codegen compatibility.
 	m := boardToManifest(bm)
 
-	// Domain file discovery + validation.
-	if err := m.MergeDiscoveredAssets(boardDir); err != nil {
+	// Domain file discovery + validation (relative to CWD).
+	if err := m.MergeDiscoveredAssets(baseDir); err != nil {
 		return err
 	}
-	if err := ValidateDomainKinds(m, boardDir); err != nil {
+	if err := ValidateDomainKinds(m, baseDir); err != nil {
 		return err
 	}
 
-	if err := validateManifest(m, boardDir, opts.Verbose); err != nil {
+	// Board-specific validation (replaces legacy validateManifest).
+	// ValidateBoardPaths + ValidateDomainKinds already ran above.
+	// Only run duplicate domain check from legacy — other validations
+	// don't apply (asset paths are board-relative, not manifest-relative).
+	if err := validateNoDuplicateDomains(m); err != nil {
 		return err
 	}
 
@@ -170,8 +179,18 @@ func boardToManifest(bm *BoardManifest) *Manifest {
 	}
 
 	// Map domain path to domains list.
+	// Board uses relative path (../domains/ocp/ptp), legacy expects name (ocp/ptp).
+	// Strip the leading path to get just the domain name.
 	if bm.Domain != "" {
-		m.Domains = append(m.Domains, bm.Domain)
+		domain := bm.Domain
+		// Strip ../domains/ or domains/ prefix if present.
+		for _, prefix := range []string{"../domains/", "domains/", "./domains/"} {
+			if strings.HasPrefix(domain, prefix) {
+				domain = strings.TrimPrefix(domain, prefix)
+				break
+			}
+		}
+		m.Domains = append(m.Domains, domain)
 	}
 
 	// Map uses to legacy format.
