@@ -154,11 +154,11 @@ func BuildGraph(def *circuit.CircuitDef, reg *GraphRegistries) (Graph, error) {
 		opts = append(opts, WithNodeTimeouts(timeouts))
 	}
 
+	opts = append(opts, WithRegistries(reg))
 	g, err := NewGraph(def.Circuit, fwNodes, fwEdges, fwZones, opts...)
 	if err != nil {
 		return nil, err
 	}
-	g.registries = reg
 
 	if def.Topology != "" {
 		if err := validateTopology(g, def); err != nil {

@@ -61,6 +61,7 @@ type DefaultGraph struct {
 	doneNode     string                    // terminal pseudo-node name (walk stops here)
 	observer     circuit.WalkObserver      // graph-level observer, used by Walk
 	registries   *GraphRegistries          // retained for DelegateNode sub-walk building
+	graphFactory GraphFactory              // injected factory for delegate sub-graph construction
 }
 
 // GraphOption configures a DefaultGraph during construction.
@@ -89,6 +90,26 @@ func WithObserver(obs circuit.WalkObserver) GraphOption {
 func WithNodeTimeouts(m map[string]time.Duration) GraphOption {
 	return func(g *DefaultGraph) {
 		g.nodeTimeouts = m
+	}
+}
+
+// WithRegistries sets the graph registries at construction time.
+// Retained for delegate sub-walk building.
+func WithRegistries(reg *GraphRegistries) GraphOption {
+	return func(g *DefaultGraph) {
+		g.registries = reg
+	}
+}
+
+// GraphFactory constructs a Graph from a circuit definition and registries.
+// Injected into DefaultGraph to decouple graph execution from graph construction.
+// Used by walkDelegate for sub-circuit delegation.
+type GraphFactory func(def *circuit.CircuitDef, reg *GraphRegistries) (Graph, error)
+
+// WithGraphFactory sets the factory function used for delegate sub-graph construction.
+func WithGraphFactory(f GraphFactory) GraphOption {
+	return func(g *DefaultGraph) {
+		g.graphFactory = f
 	}
 }
 
@@ -425,10 +446,25 @@ func (g *DefaultGraph) walkDelegate(ctx context.Context, walker circuit.Walker, 
 		reg = &GraphRegistries{}
 	}
 
-	runner, err := NewRunnerWith(circuitDef, reg)
-	if err != nil {
-		return nil, fmt.Errorf("delegate %s: build runner: %w", dn.Name(), err)
+	// Use injected factory if available; fall back to NewRunnerWith.
+	factory := g.graphFactory
+	if factory == nil {
+		factory = func(d *circuit.CircuitDef, r *GraphRegistries) (Graph, error) {
+			runner, err := NewRunnerWith(d, r)
+			if err != nil {
+				return nil, err
+			}
+			return runner.Graph, nil
+		}
 	}
+
+	subGraph, err := factory(circuitDef, reg)
+	if err != nil {
+		return nil, fmt.Errorf("delegate %s: build sub-graph: %w", dn.Name(), err)
+	}
+
+	// Wrap in runner for hook/schema support.
+	runner := &Runner{Circuit: circuitDef, Graph: subGraph, Logger: slog.Default()}
 
 	subWalker := circuit.NewProcessWalker(walker.State().ID + ":delegate:" + dn.Name())
 	id := walker.Identity()
