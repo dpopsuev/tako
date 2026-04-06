@@ -309,6 +309,24 @@ func renderFactoryServer(g *ResolvedGraph, productName string) string {
 	}
 	b.WriteString("\n")
 
+	// Wire sub-circuit resolvers from sub-schematics.
+	if len(g.Schematics) > 0 {
+		var resolverEntries []string
+		for i := range g.Schematics {
+			if g.Schematics[i].Resolver != "" {
+				resolverEntries = append(resolverEntries,
+					fmt.Sprintf("\t\t%q: %s.%s(),", g.Schematics[i].Name, g.Schematics[i].Alias, g.Schematics[i].Resolver))
+			}
+		}
+		if len(resolverEntries) > 0 {
+			b.WriteString("\tbridgedCfg.SubCircuitResolvers = map[string]origami.AssetResolver{\n")
+			for _, entry := range resolverEntries {
+				fmt.Fprintf(&b, "%s\n", entry)
+			}
+			b.WriteString("\t}\n\n")
+		}
+	}
+
 	// Create server.
 	b.WriteString("\tserver := fwmcp.NewCircuitServer(&bridgedCfg)\n")
 	b.WriteString("\tdefer server.Shutdown()\n")

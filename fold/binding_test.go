@@ -132,7 +132,7 @@ func TestTopoSort_SingleRoot(t *testing.T) {
 		},
 	}
 
-	root, order, err := topoSort(m)
+	root, order, err := topoSort(m, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,7 +153,7 @@ func TestTopoSort_MultipleRoots(t *testing.T) {
 		},
 	}
 
-	_, _, err := topoSort(m)
+	_, _, err := topoSort(m, nil)
 	if err == nil {
 		t.Fatal("expected error for multiple roots")
 	}

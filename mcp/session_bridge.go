@@ -7,6 +7,7 @@ import (
 
 	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/circuit/def"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/engine"
 )
@@ -61,7 +62,7 @@ func SessionFactoryToConfig(factory engine.SessionFactory) CircuitConfig {
 				slog.WarnContext(ctx, "SessionConfig.Preflight is nil — consider adding fail-fast validation")
 			}
 
-			runFn := buildRunFunc(sessionCfg, &engineParams)
+			runFn := buildRunFunc(sessionCfg, &engineParams, params.SubCircuitResolvers)
 
 			// ACP dispatch mode: spawn in-process ACP agent workers that
 			// bridge MuxDispatcher <-> agent CLIs. No external workers needed.
@@ -89,18 +90,23 @@ func SessionFactoryToConfig(factory engine.SessionFactory) CircuitConfig {
 	return cfg
 }
 
-func buildRunFunc(cfg *engine.SessionConfig, params *engine.SessionParams) RunFunc {
+func buildRunFunc(cfg *engine.SessionConfig, params *engine.SessionParams, resolvers map[string]circuit.AssetResolver) RunFunc {
 	if cfg.RunFunc != nil {
 		return cfg.RunFunc
 	}
 	return func(ctx context.Context) (any, error) {
+		shared := &engine.GraphRegistries{
+			Transformers: cfg.Transformers,
+			Extractors:   cfg.Extractors,
+			Hooks:        cfg.Hooks,
+		}
+		// Load sub-circuit definitions from resolvers (e.g., GND within RCA).
+		if len(resolvers) > 0 && params.DomainFS != nil {
+			shared.Circuits = def.LoadSubCircuitsFromFS(params.DomainFS, resolvers)
+		}
 		bwCfg := engine.BatchWalkConfig{
-			Def: cfg.CircuitDef,
-			Shared: &engine.GraphRegistries{
-				Transformers: cfg.Transformers,
-				Extractors:   cfg.Extractors,
-				Hooks:        cfg.Hooks,
-			},
+			Def:      cfg.CircuitDef,
+			Shared:   shared,
 			Cases:    cfg.Cases,
 			Parallel: params.Parallel,
 			Observer: params.Observer,

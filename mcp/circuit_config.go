@@ -145,6 +145,12 @@ type CircuitConfig struct {
 	// When set (along with DomainFS), the "resource" MCP tool is registered
 	// with actions: kinds, list, get, validate, diff.
 	ResourceRegistry *resource.KindRegistry
+
+	// SubCircuitResolvers maps schematic names to their circuit YAML resolvers.
+	// Fold-generated code sets this for sub-schematics (e.g., GND within RCA).
+	// The session bridge loads sub-circuit definitions from these resolvers
+	// and passes them to the engine via GraphRegistries.Circuits.
+	SubCircuitResolvers map[string]circuit.AssetResolver
 }
 
 // FindSchema returns the StepSchema for the given step name, or an error
@@ -202,6 +208,11 @@ type StartParams struct {
 	// ResourceRegistry is the framework-injected kind registry from CircuitConfig.
 	// Consumers use this to load/validate/discover any registered resource kind.
 	ResourceRegistry *resource.KindRegistry
+
+	// SubCircuitResolvers maps schematic names to their circuit YAML resolvers.
+	// Copied from CircuitConfig. Used by the session bridge to load sub-circuit
+	// definitions into GraphRegistries.Circuits.
+	SubCircuitResolvers map[string]circuit.AssetResolver
 }
 
 // SchematicHooks groups the domain-specific callbacks that a schematic

@@ -137,7 +137,7 @@ func Resolve(m *Manifest, origamiRoot string, resolver ModuleResolver) (*Resolve
 		return nil, err
 	}
 
-	root, depOrder, err := topoSort(m)
+	root, depOrder, err := topoSort(m, schemManifests)
 	if err != nil {
 		return nil, err
 	}
@@ -296,7 +296,7 @@ func findSatisfy(cm *circuit.ComponentManifest, socketName string) *circuit.Give
 
 // topoSort finds the root schematic (not depended on by others) and
 // returns the dependency order for the remaining sub-schematics.
-func topoSort(m *Manifest) (root string, order []string, err error) {
+func topoSort(m *Manifest, schemManifests map[string]*circuit.ComponentManifest) (root string, order []string, err error) {
 	depended := make(map[string]bool)
 	deps := make(map[string][]string)
 
@@ -319,10 +319,16 @@ func topoSort(m *Manifest) (root string, order []string, err error) {
 		return "", nil, ErrNoRootSchematicFoundAllSchematicsAreDependenciesOfOt
 	}
 	if len(roots) > 1 {
-		sort.Strings(roots)
-		return "", nil, fmt.Errorf("%w: %s (expected exactly one)", ErrMultipleRootSchematics, strings.Join(roots, ", "))
+		// Disambiguate: the schematic with session_factory is root,
+		// others are sub-schematics (they provide circuit resolvers).
+		root = pickRootBySessionFactory(roots, schemManifests)
+		if root == "" {
+			sort.Strings(roots)
+			return "", nil, fmt.Errorf("%w: %s (expected exactly one with session_factory)", ErrMultipleRootSchematics, strings.Join(roots, ", "))
+		}
+	} else {
+		root = roots[0]
 	}
-	root = roots[0]
 
 	visited := make(map[string]bool)
 	var sorted []string
@@ -352,6 +358,25 @@ func topoSort(m *Manifest) (root string, order []string, err error) {
 		}
 	}
 	return root, sorted, nil
+}
+
+// pickRootBySessionFactory returns the single schematic that has session_factory
+// set in its component.yaml. Returns "" if zero or multiple have it.
+func pickRootBySessionFactory(roots []string, cms map[string]*circuit.ComponentManifest) string {
+	var root string
+	for _, name := range roots {
+		cm, ok := cms[name]
+		if !ok {
+			continue
+		}
+		if cm.SessionFactory != "" {
+			if root != "" {
+				return "" // multiple session_factory — ambiguous
+			}
+			root = name
+		}
+	}
+	return root
 }
 
 // detectCycles checks for circular schematic dependencies.
