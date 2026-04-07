@@ -54,13 +54,18 @@ func SessionFactoryToConfig(factory engine.SessionFactory) CircuitConfig {
 				return nil, SessionMeta{}, err
 			}
 
-			// Run consumer preflight before launching the run goroutine.
+			// Auto-check component health before consumer preflight.
+			if healthComps := collectHealthComponents(sessionCfg); len(healthComps) > 0 {
+				if err := engine.CheckComponentHealth(ctx, healthComps); err != nil {
+					return nil, SessionMeta{}, fmt.Errorf("health check: %w", err)
+				}
+			}
+
+			// Run consumer preflight after health checks pass.
 			if sessionCfg.Preflight != nil {
 				if err := sessionCfg.Preflight(ctx); err != nil {
 					return nil, SessionMeta{}, fmt.Errorf("preflight: %w", err)
 				}
-			} else {
-				slog.WarnContext(ctx, "SessionConfig.Preflight is nil — consider adding fail-fast validation")
 			}
 
 			runFn := buildRunFunc(sessionCfg, &engineParams, params.SubCircuitResolvers)
@@ -164,4 +169,20 @@ func wrapWithACPWorkers(inner RunFunc, params StartParams, disp *dispatch.MuxDis
 
 		return inner(ctx)
 	}
+}
+
+// collectHealthComponents gathers unique components with HealthChecker
+// from the SessionConfig's Cases. Deduplicates by component name.
+func collectHealthComponents(cfg *engine.SessionConfig) []*engine.Component {
+	seen := make(map[string]bool)
+	var result []*engine.Component
+	for i := range cfg.Cases {
+		for _, comp := range cfg.Cases[i].Components {
+			if comp.Health != nil && !seen[comp.Name] {
+				seen[comp.Name] = true
+				result = append(result, comp)
+			}
+		}
+	}
+	return result
 }
