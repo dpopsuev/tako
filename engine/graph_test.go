@@ -6,22 +6,22 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/roster"
 )
 
 // --- Local test helpers specific to graph_test.go ---
 
 // visitTrackingWalker wraps stubWalker to track visited nodes
 type visitTrackingWalker struct {
-	identity agentport.AgentIdentity
+	identity roster.AgentIdentity
 	state    *circuit.WalkerState
 	visited  []string
 }
 
-func (w *visitTrackingWalker) Identity() agentport.AgentIdentity       { return w.identity }
-func (w *visitTrackingWalker) SetIdentity(id *agentport.AgentIdentity) { w.identity = *id }
-func (w *visitTrackingWalker) State() *circuit.WalkerState             { return w.state }
+func (w *visitTrackingWalker) Identity() roster.AgentIdentity       { return w.identity }
+func (w *visitTrackingWalker) SetIdentity(id *roster.AgentIdentity) { w.identity = *id }
+func (w *visitTrackingWalker) State() *circuit.WalkerState          { return w.state }
 func (w *visitTrackingWalker) Handle(ctx context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
 	w.visited = append(w.visited, node.Name())
 	return node.Process(ctx, nc)
@@ -509,7 +509,7 @@ func TestWalk_SNRAutoEmitted(t *testing.T) {
 	}
 
 	w := &visitTrackingWalker{
-		identity: agentport.AgentIdentity{Name: "Solo"},
+		identity: roster.AgentIdentity{Name: "Solo"},
 		state:    circuit.NewWalkerState("s1"),
 	}
 	if err := g.Walk(context.Background(), w, "filter"); err != nil {
@@ -542,7 +542,7 @@ func TestWalk_SNRNotEmittedForNonCountable(t *testing.T) {
 	}
 
 	w := &visitTrackingWalker{
-		identity: agentport.AgentIdentity{Name: "Solo"},
+		identity: roster.AgentIdentity{Name: "Solo"},
 		state:    circuit.NewWalkerState("s1"),
 	}
 	if err := g.Walk(context.Background(), w, "A"); err != nil {

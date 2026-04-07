@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/agentport"
+	"github.com/dpopsuev/origami/roster"
 )
 
 func TestCLIWorkerDispatcher_ProcessesSteps(t *testing.T) {
@@ -17,7 +17,7 @@ func TestCLIWorkerDispatcher_ProcessesSteps(t *testing.T) {
 	defer cancel()
 
 	mux := NewMuxDispatcher(ctx)
-	bus := agentport.NewMemBus()
+	bus := roster.NewMemBus()
 
 	d, err := NewCLIWorkerDispatcher(mux, "cat", 2,
 		WithCLIWorkerBus(bus),
@@ -44,7 +44,7 @@ func TestCLIWorkerDispatcher_ProcessesSteps(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			data, dispErr := mux.Dispatch(context.Background(), agentport.Context{
+			data, dispErr := mux.Dispatch(context.Background(), Context{
 				CaseID:     fmt.Sprintf("C%d", i),
 				Step:       "F0",
 				PromptPath: filepath.Join(tmpDir, fmt.Sprintf("prompt_%d.json", i)),
@@ -136,7 +136,7 @@ func TestCLIWorkerDispatcher_SingleWorker(t *testing.T) {
 	var dispErr error
 	go func() {
 		defer close(done)
-		result, dispErr = mux.Dispatch(context.Background(), agentport.Context{
+		result, dispErr = mux.Dispatch(context.Background(), Context{
 			CaseID:     "C1",
 			Step:       "F0",
 			PromptPath: promptPath,

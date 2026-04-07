@@ -8,13 +8,14 @@ import (
 	"sort"
 	"time"
 
-	"github.com/dpopsuev/origami/agentport"
+	"github.com/dpopsuev/origami/budget"
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/circuit/def"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/dispatch/guard"
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/engine/trace"
+	"github.com/dpopsuev/origami/roster"
 )
 
 // Log event names specific to session bridge observability.
@@ -44,9 +45,9 @@ const (
 // pattern in engine/transformer.go.
 func SessionFactoryToConfig(factory engine.SessionFactory) CircuitConfig {
 	cfg := CircuitConfig{
-		CreateSession: func(ctx context.Context, params StartParams, disp *dispatch.MuxDispatcher, bus agentport.Bus) (RunFunc, SessionMeta, error) {
+		CreateSession: func(ctx context.Context, params StartParams, disp *dispatch.MuxDispatcher, bus roster.Bus) (RunFunc, SessionMeta, error) {
 			// TSK-515: Auto-wire token tracking — consumers get it for free.
-			tracker := agentport.NewTracker()
+			tracker := budget.NewTracker()
 			trackedDisp := guard.NewTokenTrackingDispatcher(disp, tracker)
 
 			engineParams := engine.SessionParams{
@@ -111,7 +112,7 @@ func SessionFactoryToConfig(factory engine.SessionFactory) CircuitConfig {
 	return cfg
 }
 
-func buildRunFunc(cfg *engine.SessionConfig, params *engine.SessionParams, resolvers map[string]circuit.AssetResolver, tracker agentport.Tracker) RunFunc {
+func buildRunFunc(cfg *engine.SessionConfig, params *engine.SessionParams, resolvers map[string]circuit.AssetResolver, tracker budget.Tracker) RunFunc {
 	if cfg.RunFunc != nil {
 		return cfg.RunFunc
 	}
@@ -151,7 +152,7 @@ func buildRunFunc(cfg *engine.SessionConfig, params *engine.SessionParams, resol
 		errorRates := computeErrorRates(results)
 
 		// TSK-515: Include token summary in the session report.
-		var tokenSummary *agentport.TokenSummary
+		var tokenSummary *budget.TokenSummary
 		if tracker != nil {
 			ts := tracker.Summary()
 			tokenSummary = &ts
@@ -179,7 +180,7 @@ type SessionRunResult struct {
 	BatchResults []engine.BatchWalkResult `json:"batch_results,omitempty"`
 	StepLatency  map[string]LatencyStats  `json:"step_latency,omitempty"`
 	ErrorRates   map[string]NodeErrorRate `json:"error_rates,omitempty"`
-	TokenSummary *agentport.TokenSummary  `json:"token_summary,omitempty"`
+	TokenSummary *budget.TokenSummary     `json:"token_summary,omitempty"`
 }
 
 // LatencyStats holds per-node latency percentiles computed from walk events.
@@ -300,7 +301,7 @@ func computeErrorRates(results []engine.BatchWalkResult) map[string]NodeErrorRat
 	return result
 }
 
-func wrapWithACPWorkers(inner RunFunc, params StartParams, disp *dispatch.MuxDispatcher, bus agentport.Bus) RunFunc {
+func wrapWithACPWorkers(inner RunFunc, params StartParams, disp *dispatch.MuxDispatcher, bus roster.Bus) RunFunc {
 	agentCmd, _ := params.Extra[ExtraKeyDispatchCommand].(string)
 	if agentCmd == "" {
 		agentCmd = defaultACPAgent
@@ -308,13 +309,13 @@ func wrapWithACPWorkers(inner RunFunc, params StartParams, disp *dispatch.MuxDis
 	workers := max(params.Parallel, 1)
 
 	return func(ctx context.Context) (any, error) {
-		meter := agentport.NewInMemoryMeter()
-		broker := agentport.NewBroker("",
-			agentport.WithMeter(meter),
+		meter := roster.NewInMemoryMeter()
+		broker := roster.NewBroker("",
+			roster.WithMeter(meter),
 		)
 
 		for range workers {
-			_, spawnErr := broker.Spawn(ctx, agentport.ActorConfig{
+			_, spawnErr := broker.Spawn(ctx, roster.ActorConfig{
 				Model: agentCmd,
 				Role:  defaultACPRole,
 			})
@@ -330,7 +331,7 @@ func wrapWithACPWorkers(inner RunFunc, params StartParams, disp *dispatch.MuxDis
 		)
 
 		// Spawn a dialectic collective for hard steps (investigate, review).
-		coll, collErr := agentport.SpawnCollective(ctx, broker, 2, &agentport.Dialectic{MaxRounds: 2}) //nolint:mnd // thesis + antithesis
+		coll, collErr := roster.SpawnCollective(ctx, broker, 2, &roster.Dialectic{MaxRounds: 2}) //nolint:mnd // thesis + antithesis
 		if collErr != nil {
 			slog.WarnContext(ctx, circuit.LogCollectiveSpawnFailed, slog.Any(circuit.LogKeyError, collErr))
 		} else {

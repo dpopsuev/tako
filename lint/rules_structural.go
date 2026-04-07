@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/circuit/def"
+	"github.com/dpopsuev/origami/roster"
 )
 
 const (
@@ -36,7 +36,7 @@ func isValidValue(registry def.FieldRegistry, field, value string) bool {
 }
 
 func knownPersonas() map[string]bool {
-	all := agentport.PersonaAll()
+	all := roster.PersonaAll()
 	m := make(map[string]bool)
 	for i := range all {
 		m[strings.ToLower(all[i].Name)] = true

@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	bd "github.com/dpopsuev/origami/agentport"
+	"github.com/dpopsuev/origami/dispatch"
 
 	"github.com/dpopsuev/troupe/billing"
 )
@@ -13,18 +13,18 @@ import (
 // Hook is called after each dispatch with timing and error info.
 type Hook func(provider, step string, duration time.Duration, err error)
 
-// TokenTrackingDispatcher wraps any bd.Dispatcher and records token usage
+// TokenTrackingDispatcher wraps any dispatch.Dispatcher and records token usage
 // for each dispatch call. Optional Hooks receive timing/error data
 // for bridging with metrics systems.
 type TokenTrackingDispatcher struct {
-	inner         bd.Dispatcher
+	inner         dispatch.Dispatcher
 	tracker       billing.Tracker
 	provider      string
 	dispatchHooks []Hook
 }
 
 // NewTokenTrackingDispatcher wraps a dispatcher with token tracking.
-func NewTokenTrackingDispatcher(inner bd.Dispatcher, tracker billing.Tracker) *TokenTrackingDispatcher {
+func NewTokenTrackingDispatcher(inner dispatch.Dispatcher, tracker billing.Tracker) *TokenTrackingDispatcher {
 	return &TokenTrackingDispatcher{inner: inner, tracker: tracker}
 }
 
@@ -39,7 +39,7 @@ func (d *TokenTrackingDispatcher) OnDispatch(hook Hook) {
 }
 
 // Dispatch delegates to the inner dispatcher while recording token metrics.
-func (d *TokenTrackingDispatcher) Dispatch(ctx context.Context, dc bd.Context) ([]byte, error) {
+func (d *TokenTrackingDispatcher) Dispatch(ctx context.Context, dc dispatch.Context) ([]byte, error) {
 	promptBytes := 0
 	if info, err := os.Stat(dc.PromptPath); err == nil {
 		promptBytes = int(info.Size())
@@ -79,6 +79,6 @@ func (d *TokenTrackingDispatcher) Dispatch(ctx context.Context, dc bd.Context) (
 }
 
 // Inner returns the wrapped dispatcher for type-specific operations.
-func (d *TokenTrackingDispatcher) Inner() bd.Dispatcher {
+func (d *TokenTrackingDispatcher) Inner() dispatch.Dispatcher {
 	return d.inner
 }

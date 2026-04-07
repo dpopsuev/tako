@@ -8,9 +8,9 @@ package acceptance
 import (
 	"testing"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/origami/roster"
 )
 
 func TestCollective_TwoWalkersScheduleByAffinity(t *testing.T) {
@@ -21,16 +21,16 @@ func TestCollective_TwoWalkersScheduleByAffinity(t *testing.T) {
 	//   Then walker_switch events fire as affinity changes
 
 	coordinator := circuit.NewProcessWalker("coordinator")
-	coordinator.SetIdentity(&agentport.AgentIdentity{
+	coordinator.SetIdentity(&roster.AgentIdentity{
 		Name:         "Coordinator",
-		Element:      agentport.ElementEarth,
+		Element:      roster.ElementEarth,
 		StepAffinity: map[string]float64{"plan": 0.95, "synthesize": 0.95},
 	})
 
 	specialistA := circuit.NewProcessWalker("specialist-a")
-	specialistA.SetIdentity(&agentport.AgentIdentity{
+	specialistA.SetIdentity(&roster.AgentIdentity{
 		Name:         "Specialist A",
-		Element:      agentport.ElementWater,
+		Element:      roster.ElementWater,
 		StepAffinity: map[string]float64{"research_a": 0.95},
 	})
 
@@ -71,23 +71,23 @@ func TestCollective_WalkCompletesWithMultipleWalkers(t *testing.T) {
 	//   And all nodes are visited
 
 	coordinator := circuit.NewProcessWalker("coordinator")
-	coordinator.SetIdentity(&agentport.AgentIdentity{
+	coordinator.SetIdentity(&roster.AgentIdentity{
 		Name:         "Coordinator",
-		Element:      agentport.ElementEarth,
+		Element:      roster.ElementEarth,
 		StepAffinity: map[string]float64{"plan": 0.95, "synthesize": 0.95},
 	})
 
 	specialistA := circuit.NewProcessWalker("specialist-a")
-	specialistA.SetIdentity(&agentport.AgentIdentity{
+	specialistA.SetIdentity(&roster.AgentIdentity{
 		Name:         "Specialist A",
-		Element:      agentport.ElementWater,
+		Element:      roster.ElementWater,
 		StepAffinity: map[string]float64{"research_a": 0.95},
 	})
 
 	specialistB := circuit.NewProcessWalker("specialist-b")
-	specialistB.SetIdentity(&agentport.AgentIdentity{
+	specialistB.SetIdentity(&roster.AgentIdentity{
 		Name:         "Specialist B",
-		Element:      agentport.ElementFire,
+		Element:      roster.ElementFire,
 		StepAffinity: map[string]float64{"research_b": 0.95},
 	})
 

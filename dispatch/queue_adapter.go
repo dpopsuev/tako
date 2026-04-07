@@ -5,7 +5,6 @@ import (
 	"math"
 	"time"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/troupe/execution"
 )
 
@@ -22,9 +21,9 @@ func NewQueueAdapter(mux *MuxDispatcher) *QueueAdapter {
 	return &QueueAdapter{mux: mux}
 }
 
-// muxWorkItem wraps agentport.Context as execution.WorkItem.
+// muxWorkItem wraps Context as execution.WorkItem.
 type muxWorkItem struct {
-	dc agentport.Context
+	dc Context
 }
 
 func (w *muxWorkItem) ID() uint64             { return uint64(max(w.dc.DispatchID, 0)) } //nolint:gosec // DispatchID is always positive
@@ -34,7 +33,7 @@ func (w *muxWorkItem) Timeout() time.Duration { return w.dc.Timeout }
 // Enqueue dispatches work through the MuxDispatcher. Blocks until
 // result is submitted via Submit.
 func (a *QueueAdapter) Enqueue(ctx context.Context, item execution.WorkItem) error {
-	dc := agentport.Context{
+	dc := Context{
 		DispatchID:    int64(min(item.ID(), uint64(math.MaxInt64))), //nolint:gosec // safe clamp
 		PromptContent: item.Input(),
 		Timeout:       item.Timeout(),
@@ -54,7 +53,7 @@ func (a *QueueAdapter) Pull(ctx context.Context) (execution.WorkItem, error) {
 
 // PullWithHints returns work matching the hints from the MuxDispatcher.
 func (a *QueueAdapter) PullWithHints(ctx context.Context, hints execution.WorkerHints) (execution.WorkItem, error) {
-	dc, err := a.mux.GetNextStepWithHints(ctx, agentport.PullHints{
+	dc, err := a.mux.GetNextStepWithHints(ctx, PullHints{
 		PreferredCaseID:   hints.PreferredTag,
 		Stickiness:        hints.Stickiness,
 		ConsecutiveMisses: hints.ConsecutiveMisses,

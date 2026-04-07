@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/roster"
 )
 
 func TestDelegateArtifact_Interface(t *testing.T) {
@@ -130,7 +130,7 @@ func TestWalk_DelegateNode_SubWalk(t *testing.T) {
 	})
 
 	walker := &stubWalker{
-		identity: agentport.AgentIdentity{Name: "test"},
+		identity: roster.AgentIdentity{Name: "test"},
 		state:    circuit.NewWalkerState("w1"),
 	}
 
@@ -211,7 +211,7 @@ func TestWalk_DelegateNode_ContextCancellation(t *testing.T) {
 	}
 
 	walker := &stubWalker{
-		identity: agentport.AgentIdentity{Name: "test"},
+		identity: roster.AgentIdentity{Name: "test"},
 		state:    circuit.NewWalkerState("w1"),
 	}
 
@@ -239,7 +239,7 @@ func TestWalk_DelegateNode_GenerateError(t *testing.T) {
 	}
 
 	walker := &stubWalker{
-		identity: agentport.AgentIdentity{Name: "test"},
+		identity: roster.AgentIdentity{Name: "test"},
 		state:    circuit.NewWalkerState("w1"),
 	}
 
@@ -354,8 +354,8 @@ type testDelegateNode struct {
 	err        error
 }
 
-func (n *testDelegateNode) Name() string                       { return n.name }
-func (n *testDelegateNode) ElementAffinity() agentport.Element { return "" }
+func (n *testDelegateNode) Name() string                    { return n.name }
+func (n *testDelegateNode) ElementAffinity() roster.Element { return "" }
 func (n *testDelegateNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return nil, nil
 }

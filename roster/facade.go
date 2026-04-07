@@ -1,4 +1,4 @@
-package agentport
+package roster
 
 import (
 	"github.com/dpopsuev/troupe"
@@ -74,7 +74,7 @@ var (
 
 // Facade constructors.
 var (
-	NewBroker       = troupe.NewBroker
+	NewBroker        = troupe.NewBroker
 	NewInMemoryMeter = troupe.NewInMemoryMeter
-	SpawnCollective = collective.SpawnCollective
+	SpawnCollective  = collective.SpawnCollective
 )

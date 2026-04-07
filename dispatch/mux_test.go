@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/dispatch"
+	"github.com/dpopsuev/origami/roster"
 )
 
 func TestMux_SingleRoundTrip(t *testing.T) {
@@ -19,7 +19,7 @@ func TestMux_SingleRoundTrip(t *testing.T) {
 	ctx := context.Background()
 	want := []byte(`{"defect_type":"pb001"}`)
 
-	dc := agentport.Context{
+	dc := dispatch.Context{
 		CaseID:       "C1",
 		Step:         "F0_RECALL",
 		PromptPath:   "/tmp/prompt.md",
@@ -68,7 +68,7 @@ func TestMux_ConcurrentDispatch_CorrectRouting(t *testing.T) {
 	for _, cid := range []string{"C1", "C2"} {
 		cid := cid
 		go func() {
-			data, err := d.Dispatch(context.Background(), agentport.Context{
+			data, err := d.Dispatch(context.Background(), dispatch.Context{
 				CaseID: cid,
 				Step:   "F0_RECALL",
 			})
@@ -124,7 +124,7 @@ func TestMux_HighParallelism(t *testing.T) {
 	for i := 0; i < n; i++ {
 		i := i
 		go func() {
-			data, err := d.Dispatch(context.Background(), agentport.Context{
+			data, err := d.Dispatch(context.Background(), dispatch.Context{
 				CaseID: fmt.Sprintf("C%d", i),
 				Step:   "F0_RECALL",
 			})
@@ -135,7 +135,7 @@ func TestMux_HighParallelism(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 
 	// Collect all steps
-	steps := make([]agentport.Context, n)
+	steps := make([]dispatch.Context, n)
 	for i := 0; i < n; i++ {
 		s, err := d.GetNextStep(ctx)
 		if err != nil {
@@ -180,7 +180,7 @@ func TestMux_DoubleSubmitSameID(t *testing.T) {
 	ctx := context.Background()
 
 	go func() {
-		d.Dispatch(context.Background(), agentport.Context{CaseID: "C1", Step: "F0_RECALL"})
+		d.Dispatch(context.Background(), dispatch.Context{CaseID: "C1", Step: "F0_RECALL"})
 	}()
 
 	time.Sleep(50 * time.Millisecond)
@@ -218,7 +218,7 @@ func TestMux_ContextCancel_OneOfMany(t *testing.T) {
 	for _, cid := range []string{"C1", "C2", "C3"} {
 		cid := cid
 		go func() {
-			data, err := d.Dispatch(context.Background(), agentport.Context{CaseID: cid, Step: "F0_RECALL"})
+			data, err := d.Dispatch(context.Background(), dispatch.Context{CaseID: cid, Step: "F0_RECALL"})
 			results <- result{caseID: cid, data: data, err: err}
 		}()
 	}
@@ -226,7 +226,7 @@ func TestMux_ContextCancel_OneOfMany(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 
 	// Collect all 3 steps
-	steps := make([]agentport.Context, 3)
+	steps := make([]dispatch.Context, 3)
 	for i := 0; i < 3; i++ {
 		s, err := d.GetNextStep(ctx)
 		if err != nil {
@@ -283,7 +283,7 @@ func TestMux_DispatcherContextCancel(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		i := i
 		go func() {
-			_, err := d.Dispatch(context.Background(), agentport.Context{
+			_, err := d.Dispatch(context.Background(), dispatch.Context{
 				CaseID: fmt.Sprintf("C%d", i),
 				Step:   "F0_RECALL",
 			})
@@ -317,7 +317,7 @@ func TestMux_Abort(t *testing.T) {
 		i := i
 		go func() {
 			defer wg.Done()
-			_, err := d.Dispatch(context.Background(), agentport.Context{
+			_, err := d.Dispatch(context.Background(), dispatch.Context{
 				CaseID: fmt.Sprintf("C%d", i),
 				Step:   "F0_RECALL",
 			})
@@ -340,7 +340,7 @@ func TestMux_Abort(t *testing.T) {
 func TestMux_GetNextStep_BlocksUntilDispatch(t *testing.T) {
 	d := dispatch.NewMuxDispatcher(context.Background())
 
-	got := make(chan agentport.Context, 1)
+	got := make(chan dispatch.Context, 1)
 	go func() {
 		dc, err := d.GetNextStep(context.Background())
 		if err != nil {
@@ -359,7 +359,7 @@ func TestMux_GetNextStep_BlocksUntilDispatch(t *testing.T) {
 
 	// Now dispatch
 	go func() {
-		d.Dispatch(context.Background(), agentport.Context{CaseID: "C1", Step: "F0_RECALL"})
+		d.Dispatch(context.Background(), dispatch.Context{CaseID: "C1", Step: "F0_RECALL"})
 	}()
 
 	select {
@@ -388,21 +388,21 @@ func TestMux_GetNextStepWithHints_ExactCaseMatch(t *testing.T) {
 	ctx := context.Background()
 
 	go func() {
-		d.Dispatch(context.Background(), agentport.Context{CaseID: "C1", Step: "F0", Provider: "zone-a"})
+		d.Dispatch(context.Background(), dispatch.Context{CaseID: "C1", Step: "F0", Provider: "zone-a"})
 	}()
 	go func() {
 		time.Sleep(10 * time.Millisecond)
-		d.Dispatch(context.Background(), agentport.Context{CaseID: "C2", Step: "F0", Provider: "zone-b"})
+		d.Dispatch(context.Background(), dispatch.Context{CaseID: "C2", Step: "F0", Provider: "zone-b"})
 	}()
 	go func() {
 		time.Sleep(20 * time.Millisecond)
-		d.Dispatch(context.Background(), agentport.Context{CaseID: "C3", Step: "F0", Provider: "zone-a"})
+		d.Dispatch(context.Background(), dispatch.Context{CaseID: "C3", Step: "F0", Provider: "zone-a"})
 	}()
 
 	time.Sleep(50 * time.Millisecond)
 
 	// Worker wants C3 specifically
-	dc, err := d.GetNextStepWithHints(ctx, agentport.PullHints{PreferredCaseID: "C3"})
+	dc, err := d.GetNextStepWithHints(ctx, dispatch.PullHints{PreferredCaseID: "C3"})
 	if err != nil {
 		t.Fatalf("GetNextStepWithHints error: %v", err)
 	}
@@ -423,17 +423,17 @@ func TestMux_GetNextStepWithHints_ZoneMatch(t *testing.T) {
 	ctx := context.Background()
 
 	go func() {
-		d.Dispatch(context.Background(), agentport.Context{CaseID: "C1", Step: "F0", Provider: "zone-a"})
+		d.Dispatch(context.Background(), dispatch.Context{CaseID: "C1", Step: "F0", Provider: "zone-a"})
 	}()
 	go func() {
 		time.Sleep(10 * time.Millisecond)
-		d.Dispatch(context.Background(), agentport.Context{CaseID: "C2", Step: "F0", Provider: "zone-b"})
+		d.Dispatch(context.Background(), dispatch.Context{CaseID: "C2", Step: "F0", Provider: "zone-b"})
 	}()
 
 	time.Sleep(50 * time.Millisecond)
 
 	// Worker prefers zone-b
-	dc, err := d.GetNextStepWithHints(ctx, agentport.PullHints{PreferredZone: "zone-b"})
+	dc, err := d.GetNextStepWithHints(ctx, dispatch.PullHints{PreferredZone: "zone-b"})
 	if err != nil {
 		t.Fatalf("GetNextStepWithHints error: %v", err)
 	}
@@ -452,13 +452,13 @@ func TestMux_GetNextStepWithHints_Stickiness0_FallbackImmediate(t *testing.T) {
 	ctx := context.Background()
 
 	go func() {
-		d.Dispatch(context.Background(), agentport.Context{CaseID: "C1", Step: "F0", Provider: "zone-a"})
+		d.Dispatch(context.Background(), dispatch.Context{CaseID: "C1", Step: "F0", Provider: "zone-a"})
 	}()
 
 	time.Sleep(50 * time.Millisecond)
 
 	// Worker wants zone-b but stickiness=0 means take anything
-	dc, err := d.GetNextStepWithHints(ctx, agentport.PullHints{
+	dc, err := d.GetNextStepWithHints(ctx, dispatch.PullHints{
 		PreferredZone: "zone-b",
 		Stickiness:    0,
 	})
@@ -476,7 +476,7 @@ func TestMux_GetNextStepWithHints_Stickiness3_WaitsForMatch(t *testing.T) {
 	d := dispatch.NewMuxDispatcher(context.Background())
 
 	go func() {
-		d.Dispatch(context.Background(), agentport.Context{CaseID: "C1", Step: "F0", Provider: "zone-a"})
+		d.Dispatch(context.Background(), dispatch.Context{CaseID: "C1", Step: "F0", Provider: "zone-a"})
 	}()
 
 	time.Sleep(50 * time.Millisecond)
@@ -485,7 +485,7 @@ func TestMux_GetNextStepWithHints_Stickiness3_WaitsForMatch(t *testing.T) {
 	defer cancel()
 
 	// Worker wants zone-b with stickiness=3 (exclusive) — should time out since only zone-a is available
-	_, err := d.GetNextStepWithHints(ctx, agentport.PullHints{
+	_, err := d.GetNextStepWithHints(ctx, dispatch.PullHints{
 		PreferredZone: "zone-b",
 		Stickiness:    3,
 	})
@@ -503,17 +503,17 @@ func TestMux_GetNextStepWithHints_Stickiness3_MatchArrives(t *testing.T) {
 
 	// First dispatch zone-a (non-matching)
 	go func() {
-		d.Dispatch(context.Background(), agentport.Context{CaseID: "C1", Step: "F0", Provider: "zone-a"})
+		d.Dispatch(context.Background(), dispatch.Context{CaseID: "C1", Step: "F0", Provider: "zone-a"})
 	}()
 
 	// After 100ms, dispatch zone-b (matching)
 	go func() {
 		time.Sleep(100 * time.Millisecond)
-		d.Dispatch(context.Background(), agentport.Context{CaseID: "C2", Step: "F0", Provider: "zone-b"})
+		d.Dispatch(context.Background(), dispatch.Context{CaseID: "C2", Step: "F0", Provider: "zone-b"})
 	}()
 
 	// Worker wants zone-b with stickiness=3 — should skip C1 and wait for C2
-	dc, err := d.GetNextStepWithHints(ctx, agentport.PullHints{
+	dc, err := d.GetNextStepWithHints(ctx, dispatch.PullHints{
 		PreferredZone: "zone-b",
 		Stickiness:    3,
 	})
@@ -535,7 +535,7 @@ func TestMux_GetNextStepWithHints_BackwardCompat(t *testing.T) {
 	ctx := context.Background()
 
 	go func() {
-		d.Dispatch(context.Background(), agentport.Context{CaseID: "C1", Step: "F0"})
+		d.Dispatch(context.Background(), dispatch.Context{CaseID: "C1", Step: "F0"})
 	}()
 
 	time.Sleep(50 * time.Millisecond)
@@ -560,7 +560,7 @@ func TestMux_GetNextStepWithHints_QueueDrain(t *testing.T) {
 	for _, cid := range []string{"C1", "C2", "C3"} {
 		cid := cid
 		go func() {
-			d.Dispatch(context.Background(), agentport.Context{CaseID: cid, Step: "F0", Provider: "zone-a"})
+			d.Dispatch(context.Background(), dispatch.Context{CaseID: cid, Step: "F0", Provider: "zone-a"})
 		}()
 	}
 	time.Sleep(100 * time.Millisecond)
@@ -568,7 +568,7 @@ func TestMux_GetNextStepWithHints_QueueDrain(t *testing.T) {
 	// Worker with stickiness=3 wants zone-b — will drain all 3 into queue without matching
 	timeoutCtx, cancel := context.WithTimeout(ctx, 200*time.Millisecond)
 	defer cancel()
-	_, err := d.GetNextStepWithHints(timeoutCtx, agentport.PullHints{
+	_, err := d.GetNextStepWithHints(timeoutCtx, dispatch.PullHints{
 		PreferredZone: "zone-b",
 		Stickiness:    3,
 	})
@@ -593,12 +593,12 @@ func TestMux_GetNextStepWithHints_QueueDrain(t *testing.T) {
 }
 
 func TestMux_WorkStealing_Stickiness1_StealsAfterOneMiss(t *testing.T) {
-	bus := agentport.NewMemBus()
+	bus := roster.NewMemBus()
 	d := dispatch.NewMuxDispatcher(context.Background(), dispatch.WithMuxSignalBus(bus))
 	ctx := context.Background()
 
 	go func() {
-		d.Dispatch(context.Background(), agentport.Context{CaseID: "C1", Step: "F0", Provider: "zone-a"})
+		d.Dispatch(context.Background(), dispatch.Context{CaseID: "C1", Step: "F0", Provider: "zone-a"})
 	}()
 
 	time.Sleep(50 * time.Millisecond)
@@ -606,7 +606,7 @@ func TestMux_WorkStealing_Stickiness1_StealsAfterOneMiss(t *testing.T) {
 	// stickiness=1, ConsecutiveMisses=0 → should NOT steal (need >= 1 miss)
 	timeoutCtx, cancel := context.WithTimeout(ctx, 150*time.Millisecond)
 	defer cancel()
-	_, err := d.GetNextStepWithHints(timeoutCtx, agentport.PullHints{
+	_, err := d.GetNextStepWithHints(timeoutCtx, dispatch.PullHints{
 		PreferredZone:     "zone-b",
 		Stickiness:        1,
 		ConsecutiveMisses: 0,
@@ -616,7 +616,7 @@ func TestMux_WorkStealing_Stickiness1_StealsAfterOneMiss(t *testing.T) {
 	}
 
 	// stickiness=1, ConsecutiveMisses=1 → should steal
-	dc, err := d.GetNextStepWithHints(ctx, agentport.PullHints{
+	dc, err := d.GetNextStepWithHints(ctx, dispatch.PullHints{
 		PreferredZone:     "zone-b",
 		Stickiness:        1,
 		ConsecutiveMisses: 1,
@@ -652,7 +652,7 @@ func TestMux_WorkStealing_Stickiness2_StealsAfterThreeMisses(t *testing.T) {
 	ctx := context.Background()
 
 	go func() {
-		d.Dispatch(context.Background(), agentport.Context{CaseID: "C1", Step: "F0", Provider: "zone-a"})
+		d.Dispatch(context.Background(), dispatch.Context{CaseID: "C1", Step: "F0", Provider: "zone-a"})
 	}()
 
 	time.Sleep(50 * time.Millisecond)
@@ -660,7 +660,7 @@ func TestMux_WorkStealing_Stickiness2_StealsAfterThreeMisses(t *testing.T) {
 	// stickiness=2, ConsecutiveMisses=2 → should NOT steal (need >= 3)
 	timeoutCtx, cancel := context.WithTimeout(ctx, 150*time.Millisecond)
 	defer cancel()
-	_, err := d.GetNextStepWithHints(timeoutCtx, agentport.PullHints{
+	_, err := d.GetNextStepWithHints(timeoutCtx, dispatch.PullHints{
 		PreferredZone:     "zone-b",
 		Stickiness:        2,
 		ConsecutiveMisses: 2,
@@ -670,7 +670,7 @@ func TestMux_WorkStealing_Stickiness2_StealsAfterThreeMisses(t *testing.T) {
 	}
 
 	// stickiness=2, ConsecutiveMisses=3 → should steal
-	dc, err := d.GetNextStepWithHints(ctx, agentport.PullHints{
+	dc, err := d.GetNextStepWithHints(ctx, dispatch.PullHints{
 		PreferredZone:     "zone-b",
 		Stickiness:        2,
 		ConsecutiveMisses: 3,
@@ -689,7 +689,7 @@ func TestMux_WorkStealing_Stickiness3_NeverSteals(t *testing.T) {
 	d := dispatch.NewMuxDispatcher(context.Background())
 
 	go func() {
-		d.Dispatch(context.Background(), agentport.Context{CaseID: "C1", Step: "F0", Provider: "zone-a"})
+		d.Dispatch(context.Background(), dispatch.Context{CaseID: "C1", Step: "F0", Provider: "zone-a"})
 	}()
 
 	time.Sleep(50 * time.Millisecond)
@@ -697,7 +697,7 @@ func TestMux_WorkStealing_Stickiness3_NeverSteals(t *testing.T) {
 	// stickiness=3 with high misses → should never steal
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
-	_, err := d.GetNextStepWithHints(timeoutCtx, agentport.PullHints{
+	_, err := d.GetNextStepWithHints(timeoutCtx, dispatch.PullHints{
 		PreferredZone:     "zone-b",
 		Stickiness:        3,
 		ConsecutiveMisses: 100,
@@ -710,18 +710,18 @@ func TestMux_WorkStealing_Stickiness3_NeverSteals(t *testing.T) {
 }
 
 func TestMux_WorkStealing_ZoneShiftSignal_NotEmittedOnMatch(t *testing.T) {
-	bus := agentport.NewMemBus()
+	bus := roster.NewMemBus()
 	d := dispatch.NewMuxDispatcher(context.Background(), dispatch.WithMuxSignalBus(bus))
 	ctx := context.Background()
 
 	go func() {
-		d.Dispatch(context.Background(), agentport.Context{CaseID: "C1", Step: "F0", Provider: "zone-a"})
+		d.Dispatch(context.Background(), dispatch.Context{CaseID: "C1", Step: "F0", Provider: "zone-a"})
 	}()
 
 	time.Sleep(50 * time.Millisecond)
 
 	// Worker matches zone-a → no steal, no zone_shift
-	dc, err := d.GetNextStepWithHints(ctx, agentport.PullHints{PreferredZone: "zone-a"})
+	dc, err := d.GetNextStepWithHints(ctx, dispatch.PullHints{PreferredZone: "zone-a"})
 	if err != nil {
 		t.Fatalf("GetNextStepWithHints error: %v", err)
 	}
@@ -753,7 +753,7 @@ func TestMux_PerDispatchTimeout(t *testing.T) {
 	}()
 
 	start := time.Now()
-	_, err := d.Dispatch(context.Background(), agentport.Context{
+	_, err := d.Dispatch(context.Background(), dispatch.Context{
 		CaseID:  "C1",
 		Step:    "F0_RECALL",
 		Timeout: 50 * time.Millisecond,
@@ -787,7 +787,7 @@ func TestMux_PerDispatchTimeout_ZeroIsNoLimit(t *testing.T) {
 
 	errCh := make(chan error, 1)
 	go func() {
-		_, err := d.Dispatch(context.Background(), agentport.Context{
+		_, err := d.Dispatch(context.Background(), dispatch.Context{
 			CaseID:  "C1",
 			Step:    "F0_RECALL",
 			Timeout: 0, // zero = no per-dispatch timeout
@@ -831,7 +831,7 @@ func TestMux_PerDispatchTimeout_SubmitBeforeDeadline(t *testing.T) {
 		}
 	}()
 
-	got, err := d.Dispatch(context.Background(), agentport.Context{
+	got, err := d.Dispatch(context.Background(), dispatch.Context{
 		CaseID:  "C1",
 		Step:    "F0_RECALL",
 		Timeout: 500 * time.Millisecond,
@@ -865,7 +865,7 @@ func TestMux_MultipleSequentialRoundTrips(t *testing.T) {
 
 	for i := 0; i < 3; i++ {
 		caseID := string(rune('0' + i))
-		got, err := d.Dispatch(context.Background(), agentport.Context{CaseID: caseID, Step: "F0_RECALL"})
+		got, err := d.Dispatch(context.Background(), dispatch.Context{CaseID: caseID, Step: "F0_RECALL"})
 		if err != nil {
 			t.Fatalf("round %d Dispatch error: %v", i, err)
 		}
@@ -887,7 +887,7 @@ func TestMux_LateConsumer_BlocksUntilReady(t *testing.T) {
 	resultCh := make(chan dispatchResult, 1)
 
 	go func() {
-		data, err := d.Dispatch(context.Background(), agentport.Context{
+		data, err := d.Dispatch(context.Background(), dispatch.Context{
 			CaseID: "C1", Step: "F0_RECALL",
 		})
 		resultCh <- dispatchResult{data, err}

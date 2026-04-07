@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/roster"
 )
 
 // CircuitDetail carries circuit-specific data in a troupe.Event.
@@ -39,8 +39,8 @@ type CircuitDirector struct {
 
 // Direct executes the circuit and returns a streaming event channel.
 // The channel is closed when the circuit completes (or fails).
-func (d *CircuitDirector) Direct(ctx context.Context, broker agentport.Broker) (<-chan agentport.Event, error) {
-	ch := make(chan agentport.Event, 64) //nolint:mnd // buffer for burst events
+func (d *CircuitDirector) Direct(ctx context.Context, broker roster.Broker) (<-chan roster.Event, error) {
+	ch := make(chan roster.Event, 64) //nolint:mnd // buffer for burst events
 
 	// Bridge WalkObserver → channel.
 	observer := &channelObserver{ch: ch}
@@ -55,15 +55,15 @@ func (d *CircuitDirector) Direct(ctx context.Context, broker agentport.Broker) (
 
 		err := Run(ctx, d.CircuitPath, d.Input, opts...)
 		if err != nil {
-			ch <- agentport.Event{
-				Kind:    agentport.EventFailed,
+			ch <- roster.Event{
+				Kind:    roster.EventFailed,
 				Step:    "circuit",
 				Error:   err,
 				Elapsed: time.Since(start),
 			}
 		}
-		ch <- agentport.Event{
-			Kind:    agentport.EventDone,
+		ch <- roster.Event{
+			Kind:    roster.EventDone,
 			Elapsed: time.Since(start),
 		}
 	}()
@@ -73,23 +73,23 @@ func (d *CircuitDirector) Direct(ctx context.Context, broker agentport.Broker) (
 
 // Event kind aliases from agentport (troupe).
 var (
-	eventStarted    = agentport.EventStarted
-	eventCompleted  = agentport.EventCompleted
-	eventFailed     = agentport.EventFailed
-	eventTransition = agentport.EventTransition
+	eventStarted    = roster.EventStarted
+	eventCompleted  = roster.EventCompleted
+	eventFailed     = roster.EventFailed
+	eventTransition = roster.EventTransition
 )
 
 // channelObserver bridges WalkObserver events to a troupe.Event channel.
 type channelObserver struct {
-	ch chan<- agentport.Event
+	ch chan<- roster.Event
 }
 
 func (o *channelObserver) OnEvent(e *circuit.WalkEvent) {
-	var ev agentport.Event
+	var ev roster.Event
 
 	switch e.Type {
 	case circuit.EventNodeEnter:
-		ev = agentport.Event{
+		ev = roster.Event{
 			Kind:  eventStarted,
 			Step:  e.Node,
 			Agent: e.Walker,
@@ -98,7 +98,7 @@ func (o *channelObserver) OnEvent(e *circuit.WalkEvent) {
 			},
 		}
 	case circuit.EventNodeExit:
-		ev = agentport.Event{
+		ev = roster.Event{
 			Kind:    eventCompleted,
 			Step:    e.Node,
 			Agent:   e.Walker,
@@ -112,7 +112,7 @@ func (o *channelObserver) OnEvent(e *circuit.WalkEvent) {
 			ev.Error = e.Error
 		}
 	case circuit.EventTransition:
-		ev = agentport.Event{
+		ev = roster.Event{
 			Kind:  eventTransition,
 			Step:  e.Node,
 			Agent: e.Walker,
@@ -133,4 +133,4 @@ func (o *channelObserver) OnEvent(e *circuit.WalkEvent) {
 }
 
 // Compile-time check: CircuitDirector satisfies the Director-like pattern.
-// Note: troupe.Director accepts troupe.Broker; agentport.Broker is a type alias.
+// Note: troupe.Director accepts troupe.Broker; roster.Broker is a type alias.

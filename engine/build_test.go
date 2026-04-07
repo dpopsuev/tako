@@ -5,16 +5,16 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/roster"
 )
 
 type buildTestNode struct {
 	name string
 }
 
-func (n *buildTestNode) Name() string                       { return n.name }
-func (n *buildTestNode) ElementAffinity() agentport.Element { return "" }
+func (n *buildTestNode) Name() string                    { return n.name }
+func (n *buildTestNode) ElementAffinity() roster.Element { return "" }
 func (n *buildTestNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return nil, nil
 }

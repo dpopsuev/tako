@@ -8,8 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/dpopsuev/origami/agentport"
 )
 
 var ErrNoArtifact = errors.New("static dispatcher: no artifact")
@@ -29,7 +27,7 @@ func (d *StaticDispatcher) Set(caseID, step string, data json.RawMessage) {
 	d.artifacts[staticKey(caseID, step)] = data
 }
 
-func (d *StaticDispatcher) Dispatch(_ context.Context, ctx agentport.Context) ([]byte, error) {
+func (d *StaticDispatcher) Dispatch(_ context.Context, ctx Context) ([]byte, error) {
 	key := staticKey(ctx.CaseID, ctx.Step)
 
 	if data, ok := d.artifacts[key]; ok {

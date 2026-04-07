@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 )
 
@@ -85,7 +84,7 @@ func NewFileDispatcher(cfg FileDispatcherConfig) *FileDispatcher {
 // returns the inner "data" bytes.
 //
 //nolint:funlen // sequential file-based dispatch protocol with polling loop
-func (d *FileDispatcher) Dispatch(_ context.Context, ctx agentport.Context) ([]byte, error) {
+func (d *FileDispatcher) Dispatch(_ context.Context, ctx Context) ([]byte, error) {
 	signalDir := d.cfg.SignalDir
 	if signalDir == "" {
 		signalDir = filepath.Dir(ctx.ArtifactPath)

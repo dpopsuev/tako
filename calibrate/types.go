@@ -4,7 +4,7 @@
 // shared types, aggregation, and report formatting.
 package calibrate
 
-import "github.com/dpopsuev/origami/agentport"
+import "github.com/dpopsuev/origami/budget"
 
 // CostTier classifies a metric by what it measures. Tiers are ordered by
 // importance: outcome metrics dominate; efficiency metrics are health checks.
@@ -89,12 +89,12 @@ func (ms *MetricSet) ByID() map[string]Metric {
 // Consumers embed this struct and add domain-specific fields
 // (e.g. CaseResults, DatasetHealth).
 type CalibrationReport struct {
-	Scenario    string                  `json:"scenario"`
-	Transformer string                  `json:"transformer"`
-	Resolution  string                  `json:"resolution,omitempty"`
-	Plan        string                  `json:"plan,omitempty"`
-	Runs        int                     `json:"runs"`
-	Metrics     MetricSet               `json:"metrics"`
-	RunMetrics  []MetricSet             `json:"run_metrics,omitempty"`
-	Tokens      *agentport.TokenSummary `json:"tokens,omitempty"`
+	Scenario    string               `json:"scenario"`
+	Transformer string               `json:"transformer"`
+	Resolution  string               `json:"resolution,omitempty"`
+	Plan        string               `json:"plan,omitempty"`
+	Runs        int                  `json:"runs"`
+	Metrics     MetricSet            `json:"metrics"`
+	RunMetrics  []MetricSet          `json:"run_metrics,omitempty"`
+	Tokens      *budget.TokenSummary `json:"tokens,omitempty"`
 }

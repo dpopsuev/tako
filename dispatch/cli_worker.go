@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/roster"
 )
 
 // discardLogger returns a logger that discards all output.
@@ -27,7 +27,7 @@ func discardLogger() *slog.Logger {
 // power without requiring the CLI tool to know about the protocol.
 type CLIWorkerDispatcher struct {
 	mux     *MuxDispatcher
-	bus     agentport.Bus
+	bus     roster.Bus
 	command string
 	args    []string
 	workers int
@@ -53,8 +53,8 @@ func WithCLIWorkerLogger(l *slog.Logger) CLIWorkerOption {
 	return func(d *CLIWorkerDispatcher) { d.log = l }
 }
 
-// WithCLIWorkerBus attaches a agentport.Bus for worker lifecycle signals.
-func WithCLIWorkerBus(bus agentport.Bus) CLIWorkerOption {
+// WithCLIWorkerBus attaches a roster.Bus for worker lifecycle signals.
+func WithCLIWorkerBus(bus roster.Bus) CLIWorkerOption {
 	return func(d *CLIWorkerDispatcher) { d.bus = bus }
 }
 
@@ -123,8 +123,8 @@ func runWorkers(ctx context.Context, n int, prefix string, loop func(ctx context
 }
 
 func (d *CLIWorkerDispatcher) workerLoop(ctx context.Context, workerID string) error {
-	d.emit(agentport.EventWorkerStarted, "", "", map[string]string{agentport.MetaKeyWorkerID: workerID})
-	defer d.emit(agentport.EventWorkerStopped, "", "", map[string]string{agentport.MetaKeyWorkerID: workerID})
+	d.emit(roster.EventWorkerStarted, "", "", map[string]string{roster.MetaKeyWorkerID: workerID})
+	defer d.emit(roster.EventWorkerStopped, "", "", map[string]string{roster.MetaKeyWorkerID: workerID})
 
 	for {
 		dc, err := d.mux.GetNextStep(ctx)
@@ -135,36 +135,36 @@ func (d *CLIWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 			return fmt.Errorf("get_next_step: %w", err)
 		}
 
-		d.emit(agentport.EventWorkerStart, dc.CaseID, dc.Step, map[string]string{agentport.MetaKeyWorkerID: workerID})
+		d.emit(roster.EventWorkerStart, dc.CaseID, dc.Step, map[string]string{roster.MetaKeyWorkerID: workerID})
 
 		artifact, err := d.execCLI(ctx, dc)
 		if err != nil {
-			d.emit(agentport.EventWorkerError, dc.CaseID, dc.Step, map[string]string{
-				agentport.MetaKeyWorkerID: workerID,
-				agentport.MetaKeyError:    err.Error(),
+			d.emit(roster.EventWorkerError, dc.CaseID, dc.Step, map[string]string{
+				roster.MetaKeyWorkerID: workerID,
+				roster.MetaKeyError:    err.Error(),
 			})
 			d.log.ErrorContext(ctx, circuit.LogCLIExecFailed, slog.Any(circuit.LogKeyWorkerID, workerID), slog.Any(circuit.LogKeyCaseID, dc.CaseID), slog.Any(circuit.LogKeyStep, dc.Step), slog.Any(circuit.LogKeyError, err.Error()))
 			continue
 		}
 
 		if err := d.mux.SubmitArtifact(ctx, dc.DispatchID, artifact); err != nil {
-			d.emit(agentport.EventWorkerError, dc.CaseID, dc.Step, map[string]string{
-				agentport.MetaKeyWorkerID: workerID,
-				agentport.MetaKeyError:    err.Error(),
+			d.emit(roster.EventWorkerError, dc.CaseID, dc.Step, map[string]string{
+				roster.MetaKeyWorkerID: workerID,
+				roster.MetaKeyError:    err.Error(),
 			})
 			return fmt.Errorf("submit_artifact dispatch_id=%d: %w", dc.DispatchID, err)
 		}
 
-		d.emit(agentport.EventWorkerDone, dc.CaseID, dc.Step, map[string]string{
-			agentport.MetaKeyWorkerID: workerID,
-			agentport.MetaKeyBytes:    fmt.Sprintf("%d", len(artifact)),
+		d.emit(roster.EventWorkerDone, dc.CaseID, dc.Step, map[string]string{
+			roster.MetaKeyWorkerID: workerID,
+			roster.MetaKeyBytes:    fmt.Sprintf("%d", len(artifact)),
 		})
 
 		d.log.InfoContext(ctx, circuit.LogStepComplete, slog.Any(circuit.LogKeyWorkerID, workerID), slog.Any(circuit.LogKeyCaseID, dc.CaseID), slog.Any(circuit.LogKeyStep, dc.Step), slog.Any(circuit.LogKeyBytes, len(artifact)))
 	}
 }
 
-func (d *CLIWorkerDispatcher) execCLI(ctx context.Context, dc agentport.Context) ([]byte, error) {
+func (d *CLIWorkerDispatcher) execCLI(ctx context.Context, dc Context) ([]byte, error) {
 	prompt, err := os.ReadFile(dc.PromptPath)
 	if err != nil {
 		return nil, fmt.Errorf("read prompt: %w", err)
@@ -204,9 +204,9 @@ func (d *CLIWorkerDispatcher) execCLI(ctx context.Context, dc agentport.Context)
 
 func (d *CLIWorkerDispatcher) emit(event, caseID, step string, meta map[string]string) {
 	if d.bus != nil {
-		d.bus.Emit(&agentport.Signal{
+		d.bus.Emit(&roster.Signal{
 			Event:  event,
-			Agent:  agentport.AgentWorker,
+			Agent:  roster.AgentWorker,
 			CaseID: caseID,
 			Step:   step,
 			Meta:   meta,

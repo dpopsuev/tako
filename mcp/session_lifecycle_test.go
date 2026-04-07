@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/mcp"
+	"github.com/dpopsuev/origami/roster"
 )
 
 // --- lifecycle dispatch transformer ---
@@ -20,13 +20,13 @@ import (
 // When a node runs, it sends the prompt via Dispatch() and blocks until the
 // agent submits an artifact back.
 type lifecycleTransformer struct {
-	disp agentport.Dispatcher
+	disp dispatch.Dispatcher
 }
 
 func (t *lifecycleTransformer) Name() string { return "dispatch-lifecycle" }
 func (t *lifecycleTransformer) Transform(ctx context.Context, tc *engine.TransformerContext) (any, error) {
 	prompt := fmt.Sprintf(`{"node":%q,"step":"test"}`, tc.NodeName)
-	data, err := t.disp.Dispatch(ctx, agentport.Context{
+	data, err := t.disp.Dispatch(ctx, dispatch.Context{
 		CaseID:        tc.WalkerState.ID,
 		Step:          tc.NodeName,
 		PromptContent: prompt,
@@ -107,7 +107,7 @@ func lifecycleConfig(circuitYAML string, nCases int) mcp.CircuitConfig {
 		StepSchemas:               lifecycleStepSchemas,
 		DefaultGetNextStepTimeout: 3000,
 		DefaultSessionTTL:         30000,
-		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus agentport.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
+		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus roster.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 			def, err := circuit.LoadCircuit([]byte(circuitYAML))
 			if err != nil {
 				return nil, mcp.SessionMeta{}, fmt.Errorf("load circuit: %w", err)

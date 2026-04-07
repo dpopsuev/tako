@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/roster"
 )
 
 // Type aliases — definitions live in circuit/ sub-package.
@@ -120,7 +120,7 @@ func BuildGraph(def *circuit.CircuitDef, reg *GraphRegistries) (Graph, error) {
 
 	fwZones := make([]Zone, 0, len(def.Zones))
 	for name, zd := range def.Zones {
-		elem, _ := agentport.ResolveApproach(strings.ToLower(zd.Approach))
+		elem, _ := roster.ResolveApproach(strings.ToLower(zd.Approach))
 		nodeNames := make([]string, len(zd.Nodes))
 		for j, nn := range zd.Nodes {
 			nodeNames[j] = string(nn)
@@ -212,14 +212,14 @@ func buildGraphShape(g *DefaultGraph, def *circuit.CircuitDef) circuit.GraphShap
 
 // resolveNode creates a Node from a circuit.NodeDef using handler + handler_type.
 func resolveNode(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries) (circuit.Node, error) {
-	elem, _ := agentport.ResolveApproach(strings.ToLower(nd.Approach))
+	elem, _ := roster.ResolveApproach(strings.ToLower(nd.Approach))
 	return resolveHandler(def, nd, reg, elem)
 }
 
 // resolveHandler resolves a node using the explicit handler + handler_type path.
 // HandlerTypeResolver resolves a node definition into a concrete circuit.Node
 // based on its handler_type. Registered in the HandlerTypeRegistry.
-type HandlerTypeResolver func(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem agentport.Element) (circuit.Node, error)
+type HandlerTypeResolver func(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem roster.Element) (circuit.Node, error)
 
 // HandlerTypeRegistry maps handler_type strings to their resolvers.
 // Extensible: consumers can register custom handler types.
@@ -235,7 +235,7 @@ var builtinHandlerTypes = HandlerTypeRegistry{
 	HandlerTypeCircuit:     resolveCircuitHandler,
 }
 
-func resolveHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem agentport.Element) (circuit.Node, error) {
+func resolveHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem roster.Element) (circuit.Node, error) {
 	handler := nd.Handler
 	if handler == "" {
 		handler = string(nd.Name)
@@ -256,7 +256,7 @@ func resolveHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegi
 	return resolver(def, nd, reg, elem)
 }
 
-func resolveTransformerHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem agentport.Element) (circuit.Node, error) {
+func resolveTransformerHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem roster.Element) (circuit.Node, error) {
 	name := string(nd.Name)
 	handler := nd.Handler
 	if handler == "" {
@@ -278,7 +278,7 @@ func resolveTransformerHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg
 	}, nil
 }
 
-func resolveExtractorHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem agentport.Element) (circuit.Node, error) {
+func resolveExtractorHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem roster.Element) (circuit.Node, error) {
 	name := string(nd.Name)
 	handler := nd.Handler
 	if handler == "" {
@@ -295,7 +295,7 @@ func resolveExtractorHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *
 	}, nil
 }
 
-func resolveRendererHandler(_ *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem agentport.Element) (circuit.Node, error) {
+func resolveRendererHandler(_ *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem roster.Element) (circuit.Node, error) {
 	name := string(nd.Name)
 	handler := nd.Handler
 	if handler == "" {
@@ -312,7 +312,7 @@ func resolveRendererHandler(_ *circuit.CircuitDef, nd *circuit.NodeDef, reg *Gra
 	}, nil
 }
 
-func resolveNodeHandler(_ *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem agentport.Element) (circuit.Node, error) {
+func resolveNodeHandler(_ *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem roster.Element) (circuit.Node, error) {
 	name := string(nd.Name)
 	handler := nd.Handler
 	if handler == "" {
@@ -328,7 +328,7 @@ func resolveNodeHandler(_ *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRe
 	return factory(*nd), nil
 }
 
-func resolveDelegateHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem agentport.Element) (circuit.Node, error) {
+func resolveDelegateHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem roster.Element) (circuit.Node, error) {
 	name := string(nd.Name)
 	handler := nd.Handler
 	if handler == "" {
@@ -350,7 +350,7 @@ func resolveDelegateHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *G
 	}, nil
 }
 
-func resolveCircuitHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem agentport.Element) (circuit.Node, error) {
+func resolveCircuitHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem roster.Element) (circuit.Node, error) {
 	name := string(nd.Name)
 	handler := nd.Handler
 	if handler == "" {

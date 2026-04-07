@@ -13,8 +13,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/roster"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -88,8 +88,8 @@ func workersCmd(args []string) error {
 
 func runWorker(ctx context.Context, gateway, agentName, sessionID, workerName string) error {
 	// ACP launcher absorbed into Broker
-	broker := agentport.NewBroker("")
-	actor, err := broker.Spawn(ctx, agentport.ActorConfig{
+	broker := roster.NewBroker("")
+	actor, err := broker.Spawn(ctx, roster.ActorConfig{
 		Model: agentName,
 		Role:  "worker",
 	})

@@ -11,8 +11,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-
-	"github.com/dpopsuev/origami/agentport"
 )
 
 const (
@@ -54,7 +52,7 @@ func NewHTTPDispatcher(baseURL string, opts ...HTTPOption) (*HTTPDispatcher, err
 		BaseURL:    strings.TrimRight(baseURL, "/"),
 		Model:      "gpt-4",
 		HTTPClient: http.DefaultClient,
-		Logger:     agentport.DiscardLogger(),
+		Logger:     DiscardLogger(),
 		apiKeyEnv:  "OPENAI_API_KEY",
 	}
 	for _, o := range opts {
@@ -78,7 +76,7 @@ type chatChoice struct {
 	Message chatMessage `json:"message"`
 }
 
-func (d *HTTPDispatcher) Dispatch(ctx context.Context, dctx agentport.Context) ([]byte, error) {
+func (d *HTTPDispatcher) Dispatch(ctx context.Context, dctx Context) ([]byte, error) {
 	prompt, err := os.ReadFile(dctx.PromptPath)
 	if err != nil {
 		return nil, fmt.Errorf("dispatch/http: read prompt: %w", err)

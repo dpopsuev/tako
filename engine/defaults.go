@@ -3,8 +3,8 @@ package engine
 // Category: Execution — default walker construction.
 
 import (
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/roster"
 )
 
 // DefaultWalker returns a zero-config Walker suitable for consumers that
@@ -14,18 +14,18 @@ import (
 // The identity is deterministic: calling DefaultWalker() twice produces
 // identical walkers, making circuit runs reproducible.
 func DefaultWalker() circuit.Walker {
-	return defaultWalkerWith(agentport.ElementEarth)
+	return defaultWalkerWith(roster.ElementEarth)
 }
 
 // DefaultWalkerWithElement returns a default Walker with a custom element.
 // The persona remains Sentinel; only the element changes.
-func DefaultWalkerWithElement(element agentport.Element) circuit.Walker {
+func DefaultWalkerWithElement(element roster.Element) circuit.Walker {
 	return defaultWalkerWith(element)
 }
 
-func defaultWalkerWith(element agentport.Element) *circuit.ProcessWalker {
-	var id agentport.AgentIdentity
-	resolver := agentport.GetDefaultPersonaResolver()
+func defaultWalkerWith(element roster.Element) *circuit.ProcessWalker {
+	var id roster.AgentIdentity
+	resolver := roster.GetDefaultPersonaResolver()
 	if resolver != nil {
 		if p, ok := resolver("Sentinel"); ok {
 			id = p

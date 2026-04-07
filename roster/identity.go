@@ -1,8 +1,8 @@
-package agentport
+package roster
 
 import "github.com/dpopsuev/troupe/identity"
 
-// Type aliases — definitions live in jericho/identity.
+// Type aliases — definitions live in troupe/identity.
 type (
 	Persona         = identity.Archetype
 	PersonaResolver = identity.ArchetypeResolver
@@ -19,7 +19,7 @@ type (
 // Persona is now flat — use Persona directly instead of Persona.Identity.
 type AgentIdentity = identity.Archetype // flattened in v0.2.0
 
-// Color is now jericho/identity.Color (was identity.Color + palette.ColorIdentity).
+// Color is now troupe/identity.Color.
 type Color = identity.Color
 
 // Alignment constants.

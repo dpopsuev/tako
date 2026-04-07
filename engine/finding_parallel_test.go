@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/roster"
 )
 
 func findingTestNode(name string, confidence float64, raw any) func(circuit.NodeDef) circuit.Node {
@@ -27,8 +27,8 @@ type findingEnforcerNodeImpl struct {
 	finding   *circuit.Finding
 }
 
-func (n *findingEnforcerNodeImpl) Name() string                       { return n.name }
-func (n *findingEnforcerNodeImpl) ElementAffinity() agentport.Element { return "" }
+func (n *findingEnforcerNodeImpl) Name() string                    { return n.name }
+func (n *findingEnforcerNodeImpl) ElementAffinity() roster.Element { return "" }
 func (n *findingEnforcerNodeImpl) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	if n.finding != nil {
 		if c, ok := nc.WalkerState.Context[circuit.FindingCollectorKey].(circuit.FindingCollector); ok {

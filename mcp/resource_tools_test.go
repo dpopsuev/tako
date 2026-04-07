@@ -6,10 +6,10 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/mcp"
 	"github.com/dpopsuev/origami/resource"
+	"github.com/dpopsuev/origami/roster"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -31,7 +31,7 @@ func newResourceServer() *mcp.CircuitServer {
 		Name:        "resource-test",
 		Version:     "dev",
 		StepSchemas: testStepSchemas,
-		CreateSession: func(_ context.Context, _ mcp.StartParams, _ *dispatch.MuxDispatcher, _ agentport.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
+		CreateSession: func(_ context.Context, _ mcp.StartParams, _ *dispatch.MuxDispatcher, _ roster.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 			return func(_ context.Context) (any, error) { return nil, nil }, mcp.SessionMeta{}, nil
 		},
 		DomainFS:         domainFS,
@@ -182,7 +182,7 @@ func TestResourceTool_NotRegisteredWithoutConfig(t *testing.T) {
 		Name:        "no-resource-test",
 		Version:     "dev",
 		StepSchemas: testStepSchemas,
-		CreateSession: func(_ context.Context, _ mcp.StartParams, _ *dispatch.MuxDispatcher, _ agentport.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
+		CreateSession: func(_ context.Context, _ mcp.StartParams, _ *dispatch.MuxDispatcher, _ roster.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 			return func(_ context.Context) (any, error) { return nil, nil }, mcp.SessionMeta{}, nil
 		},
 		// ResourceRegistry intentionally nil

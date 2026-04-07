@@ -8,8 +8,6 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
-
-	"github.com/dpopsuev/origami/agentport"
 )
 
 func TestBatchFileDispatcher_AllComplete(t *testing.T) {
@@ -28,13 +26,13 @@ func TestBatchFileDispatcher_AllComplete(t *testing.T) {
 	bfd := NewBatchFileDispatcher(&cfg)
 
 	// Create 2 cases with pre-written artifacts
-	cases := make([]agentport.Context, 2)
+	cases := make([]Context, 2)
 	for i := 0; i < 2; i++ {
 		caseDir := filepath.Join(dir, "cases", caseID(i))
 		os.MkdirAll(caseDir, 0o755)
 		artifactPath := filepath.Join(caseDir, "recall-result.json")
 
-		cases[i] = agentport.Context{
+		cases[i] = Context{
 			CaseID:       caseID(i),
 			Step:         "F0_RECALL",
 			PromptPath:   filepath.Join(caseDir, "prompt.md"),
@@ -123,11 +121,11 @@ func TestBatchFileDispatcher_PartialFailure(t *testing.T) {
 	bfd := NewBatchFileDispatcher(&cfg)
 
 	// Case 0: will succeed, Case 1: will timeout (no artifact written)
-	cases := make([]agentport.Context, 2)
+	cases := make([]Context, 2)
 	for i := 0; i < 2; i++ {
 		caseDir := filepath.Join(dir, "cases", caseID(i))
 		os.MkdirAll(caseDir, 0o755)
-		cases[i] = agentport.Context{
+		cases[i] = Context{
 			CaseID:       caseID(i),
 			Step:         "F0_RECALL",
 			PromptPath:   filepath.Join(caseDir, "prompt.md"),
@@ -197,7 +195,7 @@ func TestBatchFileDispatcher_ManifestLifecycle(t *testing.T) {
 	os.MkdirAll(caseDir, 0o755)
 	os.WriteFile(filepath.Join(caseDir, "prompt.md"), []byte("test"), 0o644)
 
-	ctx := agentport.Context{
+	ctx := Context{
 		CaseID:       "C1",
 		Step:         "F0_RECALL",
 		PromptPath:   filepath.Join(caseDir, "prompt.md"),
@@ -240,7 +238,7 @@ func TestBatchFileDispatcher_ManifestLifecycle(t *testing.T) {
 		}
 	}()
 
-	_, errs := bfd.DispatchBatch(context.Background(), []agentport.Context{ctx}, "triage", "")
+	_, errs := bfd.DispatchBatch(context.Background(), []Context{ctx}, "triage", "")
 	if errs[0] != nil {
 		t.Errorf("dispatch error: %v", errs[0])
 	}
@@ -281,7 +279,7 @@ func TestBatchFileDispatcher_SingleDispatchInterface(t *testing.T) {
 	os.MkdirAll(caseDir, 0o755)
 	os.WriteFile(filepath.Join(caseDir, "prompt.md"), []byte("test"), 0o644)
 
-	ctx := agentport.Context{
+	ctx := Context{
 		CaseID:       "C1",
 		Step:         "F0_RECALL",
 		PromptPath:   filepath.Join(caseDir, "prompt.md"),
@@ -311,7 +309,7 @@ func TestBatchFileDispatcher_SingleDispatchInterface(t *testing.T) {
 	}()
 
 	// Use the Dispatcher interface
-	var d agentport.Dispatcher = bfd
+	var d Dispatcher = bfd
 	data, err := d.Dispatch(context.Background(), ctx)
 	if err != nil {
 		t.Fatalf("Dispatch error: %v", err)

@@ -4,24 +4,24 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/roster"
 )
 
 type affinityStubNode struct {
 	name    string
-	element agentport.Element
+	element roster.Element
 }
 
-func (n *affinityStubNode) Name() string                       { return n.name }
-func (n *affinityStubNode) ElementAffinity() agentport.Element { return n.element }
+func (n *affinityStubNode) Name() string                    { return n.name }
+func (n *affinityStubNode) ElementAffinity() roster.Element { return n.element }
 func (n *affinityStubNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return nil, nil
 }
 
-func makeAffinityWalker(name string, element agentport.Element, stepAffinity map[string]float64) circuit.Walker {
+func makeAffinityWalker(name string, element roster.Element, stepAffinity map[string]float64) circuit.Walker {
 	w := circuit.NewProcessWalker(name)
-	id := agentport.AgentIdentity{
+	id := roster.AgentIdentity{
 		Name:         name,
 		Element:      element,
 		StepAffinity: stepAffinity,
@@ -32,8 +32,8 @@ func makeAffinityWalker(name string, element agentport.Element, stepAffinity map
 
 func TestAffinitySelector_SingleWalker(t *testing.T) {
 	sel := &AffinitySelector{}
-	w := makeAffinityWalker("solo", agentport.ElementEarth, nil)
-	node := &affinityStubNode{name: "triage", element: agentport.ElementEarth}
+	w := makeAffinityWalker("solo", roster.ElementEarth, nil)
+	node := &affinityStubNode{name: "triage", element: roster.ElementEarth}
 
 	result := sel.SelectWalker(node, []circuit.Walker{w}, nil)
 	if result == nil {
@@ -65,9 +65,9 @@ func TestAffinitySelector_PicksByStepAffinity(t *testing.T) {
 
 func TestAffinitySelector_ElementBreaksTie(t *testing.T) {
 	sel := &AffinitySelector{}
-	noMatch := makeAffinityWalker("no-match", agentport.ElementWater, map[string]float64{"triage": 0.5})
-	match := makeAffinityWalker("match", agentport.ElementFire, map[string]float64{"triage": 0.5})
-	node := &affinityStubNode{name: "triage", element: agentport.ElementFire}
+	noMatch := makeAffinityWalker("no-match", roster.ElementWater, map[string]float64{"triage": 0.5})
+	match := makeAffinityWalker("match", roster.ElementFire, map[string]float64{"triage": 0.5})
+	node := &affinityStubNode{name: "triage", element: roster.ElementFire}
 
 	result := sel.SelectWalker(node, []circuit.Walker{noMatch, match}, nil)
 	if result.Identity().Name != "match" {
@@ -77,8 +77,8 @@ func TestAffinitySelector_ElementBreaksTie(t *testing.T) {
 
 func TestAffinitySelector_LastMismatch(t *testing.T) {
 	sel := &AffinitySelector{}
-	w := makeAffinityWalker("perfect", agentport.ElementEarth, map[string]float64{"triage": 1.0})
-	node := &affinityStubNode{name: "triage", element: agentport.ElementEarth}
+	w := makeAffinityWalker("perfect", roster.ElementEarth, map[string]float64{"triage": 1.0})
+	node := &affinityStubNode{name: "triage", element: roster.ElementEarth}
 
 	sel.SelectWalker(node, []circuit.Walker{w}, nil)
 	if sel.LastMismatch() != 0.0 {

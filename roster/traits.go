@@ -1,8 +1,10 @@
-package agentport
+// Package roster re-exports agent identity and trait types from troupe sub-packages.
+// No other Origami package should import troupe/identity or troupe/world directly.
+package roster
 
 import "github.com/dpopsuev/troupe/identity"
 
-// Type aliases — definitions live in jericho/identity.
+// Type aliases — definitions live in troupe/identity.
 type (
 	Element       = identity.Element
 	Approach      = identity.Approach

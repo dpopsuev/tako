@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/mcp"
+	"github.com/dpopsuev/origami/roster"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -52,7 +52,7 @@ func TestFramework_E2E_InProcess(t *testing.T) {
 		StepSchemas:               stepSchemas,
 		DefaultGetNextStepTimeout: 5000,
 		DefaultSessionTTL:         30000,
-		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus agentport.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
+		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus roster.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 			runFn := echoRunFunc(disp, totalCases, totalSteps)
 			meta := mcp.SessionMeta{
 				TotalCases: totalCases,
@@ -232,7 +232,7 @@ func echoRunFunc(disp *dispatch.MuxDispatcher, nCases, nSteps int) mcp.RunFunc {
 				defer wg.Done()
 				caseID := fmt.Sprintf("echo-%02d", caseIdx+1)
 				for s := 0; s < nSteps; s++ {
-					dc := agentport.Context{
+					dc := dispatch.Context{
 						CaseID:        caseID,
 						Step:          "ECHO",
 						PromptContent: fmt.Sprintf("Echo step %d for case %s", s+1, caseID),

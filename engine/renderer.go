@@ -6,8 +6,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/roster"
 )
 
 // Renderer converts structured data into human-readable output.
@@ -34,12 +34,12 @@ func (t *TemplateRenderer) Render(_ context.Context, data any) (string, error) {
 // rendererNode is a Node that delegates processing to a Renderer.
 type rendererNode struct {
 	name    string
-	element agentport.Element
+	element roster.Element
 	rnd     Renderer
 }
 
-func (n *rendererNode) Name() string                       { return n.name }
-func (n *rendererNode) ElementAffinity() agentport.Element { return n.element }
+func (n *rendererNode) Name() string                    { return n.name }
+func (n *rendererNode) ElementAffinity() roster.Element { return n.element }
 
 func (n *rendererNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	var input any

@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/roster"
 )
 
 // StubWalker implements circuit.Walker with canned artifacts per node.
@@ -16,7 +16,7 @@ type StubWalker struct {
 	artifacts map[string]circuit.Artifact
 	err       error
 	visited   []string
-	identity  agentport.AgentIdentity
+	identity  roster.AgentIdentity
 	state     *circuit.WalkerState
 }
 
@@ -28,7 +28,7 @@ func NewStubWalker(id string, artifacts map[string]circuit.Artifact) *StubWalker
 	return &StubWalker{
 		id:        id,
 		artifacts: artifacts,
-		identity:  agentport.AgentIdentity{Name: id},
+		identity:  roster.AgentIdentity{Name: id},
 		state:     circuit.NewWalkerState(id),
 	}
 }
@@ -52,14 +52,14 @@ func (w *StubWalker) Handle(_ context.Context, node circuit.Node, _ circuit.Node
 }
 
 // Identity returns the walker's AgentIdentity.
-func (w *StubWalker) Identity() agentport.AgentIdentity {
+func (w *StubWalker) Identity() roster.AgentIdentity {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	return w.identity
 }
 
 // SetIdentity sets the walker's AgentIdentity.
-func (w *StubWalker) SetIdentity(id *agentport.AgentIdentity) {
+func (w *StubWalker) SetIdentity(id *roster.AgentIdentity) {
 	w.mu.Lock()
 	w.identity = *id
 	w.mu.Unlock()

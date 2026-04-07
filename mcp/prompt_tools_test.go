@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/mcp"
 	"github.com/dpopsuev/origami/prompt"
+	"github.com/dpopsuev/origami/roster"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -18,7 +18,7 @@ func newPromptServer(store prompt.Store) *mcp.CircuitServer {
 		Name:        "prompt-test",
 		Version:     "dev",
 		StepSchemas: testStepSchemas,
-		CreateSession: func(_ context.Context, _ mcp.StartParams, _ *dispatch.MuxDispatcher, _ agentport.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
+		CreateSession: func(_ context.Context, _ mcp.StartParams, _ *dispatch.MuxDispatcher, _ roster.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 			return func(_ context.Context) (any, error) { return nil, nil }, mcp.SessionMeta{}, nil
 		},
 		PromptStore: store,
@@ -150,7 +150,7 @@ func TestPromptTool_NotRegisteredWithoutStore(t *testing.T) {
 		Name:        "no-prompt-test",
 		Version:     "dev",
 		StepSchemas: testStepSchemas,
-		CreateSession: func(_ context.Context, _ mcp.StartParams, _ *dispatch.MuxDispatcher, _ agentport.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
+		CreateSession: func(_ context.Context, _ mcp.StartParams, _ *dispatch.MuxDispatcher, _ roster.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 			return func(_ context.Context) (any, error) { return nil, nil }, mcp.SessionMeta{}, nil
 		},
 		// PromptStore intentionally nil

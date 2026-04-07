@@ -6,7 +6,6 @@ import (
 
 	"github.com/dpopsuev/battery/tool"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/prompt"
 	"github.com/dpopsuev/origami/resource"
@@ -120,7 +119,8 @@ type SessionParams struct {
 	// Consumers that need to create domain-specific transformers (e.g.,
 	// prompt-filling transformers) use this to wire dispatch.
 	// Nil when no dispatch is needed (e.g., stub/heuristic backends).
-	Dispatcher agentport.Dispatcher
+	// Concrete type: dispatch.Dispatcher (passed as any to avoid import cycle).
+	Dispatcher any
 
 	// Relayer wraps the Dispatcher as a PromptRelayer for sub-circuit
 	// delegation via MCPCircuitTransformer. Set by the bridge.

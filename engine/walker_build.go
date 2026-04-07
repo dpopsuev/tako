@@ -6,23 +6,23 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/roster"
 )
 
 // validElements is the set of recognized element names for validation.
-var validElements = map[agentport.Element]bool{
-	agentport.ElementFire:      true,
-	agentport.ElementLightning: true,
-	agentport.ElementEarth:     true,
-	agentport.ElementDiamond:   true,
-	agentport.ElementWater:     true,
-	agentport.ElementAir:       true,
+var validElements = map[roster.Element]bool{
+	roster.ElementFire:      true,
+	roster.ElementLightning: true,
+	roster.ElementEarth:     true,
+	roster.ElementDiamond:   true,
+	roster.ElementWater:     true,
+	roster.ElementAir:       true,
 }
 
 // ValidateElement checks that name is a recognized element and returns it.
-func ValidateElement(name string) (agentport.Element, error) {
-	e := agentport.Element(strings.ToLower(name))
+func ValidateElement(name string) (roster.Element, error) {
+	e := roster.Element(strings.ToLower(name))
 	if !validElements[e] {
 		return "", fmt.Errorf("%w: %q (valid: fire, lightning, earth, diamond, water, air)", ErrUnknownElement, name)
 	}
@@ -49,10 +49,10 @@ func buildWalker(d *circuit.WalkerDef) (*circuit.ProcessWalker, error) {
 		return nil, ErrWalkerNameIsRequired
 	}
 
-	id := agentport.AgentIdentity{}
+	id := roster.AgentIdentity{}
 
 	if d.Persona != "" {
-		resolver := agentport.GetDefaultPersonaResolver()
+		resolver := roster.GetDefaultPersonaResolver()
 		if resolver == nil {
 			return nil, fmt.Errorf("%w: %q requested but no persona resolver registered (import _ \"github.com/dpopsuev/origami/persona\")", ErrPersona, d.Persona)
 		}
@@ -64,7 +64,7 @@ func buildWalker(d *circuit.WalkerDef) (*circuit.ProcessWalker, error) {
 	}
 
 	if d.Approach != "" {
-		elem, ok := agentport.ResolveApproach(strings.ToLower(d.Approach))
+		elem, ok := roster.ResolveApproach(strings.ToLower(d.Approach))
 		if !ok {
 			return nil, fmt.Errorf("%w: %q", ErrUnknownApproach, d.Approach)
 		}
@@ -88,8 +88,8 @@ func buildWalker(d *circuit.WalkerDef) (*circuit.ProcessWalker, error) {
 	}
 
 	if d.Role != "" {
-		r := agentport.Role(strings.ToLower(d.Role))
-		if !agentport.ValidRoles[r] {
+		r := roster.Role(strings.ToLower(d.Role))
+		if !roster.ValidRoles[r] {
 			return nil, fmt.Errorf("%w: %q (valid: worker, manager, enforcer, broker)", ErrUnknownRole, d.Role)
 		}
 		id.Role = r

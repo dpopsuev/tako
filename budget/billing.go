@@ -1,8 +1,9 @@
-package agentport
+// Package budget re-exports token billing types from troupe/billing.
+package budget
 
 import "github.com/dpopsuev/troupe/billing"
 
-// Type aliases — definitions live in bugle/billing.
+// Type aliases — definitions live in troupe/billing.
 type (
 	Tracker          = billing.Tracker
 	InMemoryTracker  = billing.InMemoryTracker

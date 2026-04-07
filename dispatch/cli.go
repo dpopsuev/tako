@@ -9,8 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"time"
-
-	"github.com/dpopsuev/origami/agentport"
 )
 
 const (
@@ -50,7 +48,7 @@ func NewCLIDispatcher(command string, opts ...CLIOption) (*CLIDispatcher, error)
 	d := &CLIDispatcher{
 		Command: resolved,
 		Timeout: 5 * time.Minute,
-		Logger:  agentport.DiscardLogger(),
+		Logger:  DiscardLogger(),
 	}
 	for _, o := range opts {
 		o(d)
@@ -59,7 +57,7 @@ func NewCLIDispatcher(command string, opts ...CLIOption) (*CLIDispatcher, error)
 }
 
 // Dispatch reads the prompt, pipes it to the CLI, captures stdout as artifact.
-func (d *CLIDispatcher) Dispatch(ctx context.Context, dctx agentport.Context) ([]byte, error) {
+func (d *CLIDispatcher) Dispatch(ctx context.Context, dctx Context) ([]byte, error) {
 	prompt, err := os.ReadFile(dctx.PromptPath)
 	if err != nil {
 		return nil, fmt.Errorf("dispatch/cli: read prompt: %w", err)

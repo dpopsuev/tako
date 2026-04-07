@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/roster"
 )
 
 const testCircuitYAML = `
@@ -260,17 +260,17 @@ done: _done
 	path := writeTempCircuit(t, yaml)
 
 	herald := &stubWalker{
-		identity: agentport.AgentIdentity{
+		identity: roster.AgentIdentity{
 			Name:         "Herald",
-			Element:      agentport.ElementFire,
+			Element:      roster.ElementFire,
 			StepAffinity: map[string]float64{"classify": 0.9, "investigate": 0.1},
 		},
 		state: circuit.NewWalkerState("herald-1"),
 	}
 	seeker := &stubWalker{
-		identity: agentport.AgentIdentity{
+		identity: roster.AgentIdentity{
 			Name:         "Seeker",
-			Element:      agentport.ElementWater,
+			Element:      roster.ElementWater,
 			StepAffinity: map[string]float64{"classify": 0.1, "investigate": 0.9},
 		},
 		state: circuit.NewWalkerState("seeker-1"),
@@ -310,7 +310,7 @@ func TestRun_WithTeam_InputPropagated(t *testing.T) {
 	path := writeTempCircuit(t, testCircuitYAML)
 
 	w := &stubWalker{
-		identity: agentport.AgentIdentity{Name: "Solo"},
+		identity: roster.AgentIdentity{Name: "Solo"},
 		state:    circuit.NewWalkerState("solo-1"),
 	}
 
@@ -504,7 +504,7 @@ func TestRun_ResumeWithInput_AfterInterrupt(t *testing.T) {
 
 	trace := &TraceCollector{}
 	w := &stubWalker{
-		identity: agentport.AgentIdentity{Name: "tester"},
+		identity: roster.AgentIdentity{Name: "tester"},
 		state:    circuit.NewWalkerState("resumable"),
 	}
 

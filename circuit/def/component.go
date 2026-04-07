@@ -68,10 +68,10 @@ type ComponentManifest struct {
 	Gives []GivesDef `yaml:"gives,omitempty"`
 
 	// MCP server configuration — fold reads these to generate CircuitConfig.
-	Params         []ParamDef  `yaml:"params,omitempty"`          // extra start_circuit parameters
-	Schemas        []string    `yaml:"schemas,omitempty"`         // step schema paths (relative to domain FS)
-	Report         string      `yaml:"report,omitempty"`          // report template YAML path
-	Dispatch       DispatchDef `yaml:"dispatch,omitempty"`        // dispatch provider config
+	Params         []ParamDef      `yaml:"params,omitempty"`          // extra start_circuit parameters
+	Schemas        []string        `yaml:"schemas,omitempty"`         // step schema paths (relative to domain FS)
+	Report         string          `yaml:"report,omitempty"`          // report template YAML path
+	Dispatch       DispatchDef     `yaml:"dispatch,omitempty"`        // dispatch provider config
 	SessionFactory string          `yaml:"session_factory,omitempty"` // Go symbol: "rca.Factory()"
 	CustomKinds    []CustomKindDef `yaml:"custom_kinds,omitempty"`    // CRDs registered by this schematic
 }
@@ -150,10 +150,10 @@ type componentManifestYAML struct {
 			Sources    []SocketDef `yaml:"sources,omitempty"`
 			Storage    []SocketDef `yaml:"storage,omitempty"`
 		} `yaml:"needs,omitempty"`
-		Gives    []GivesDef  `yaml:"gives,omitempty"`
-		Params   []ParamDef  `yaml:"params,omitempty"`
-		Schemas  []string    `yaml:"schemas,omitempty"`
-		Report   string      `yaml:"report,omitempty"`
+		Gives       []GivesDef      `yaml:"gives,omitempty"`
+		Params      []ParamDef      `yaml:"params,omitempty"`
+		Schemas     []string        `yaml:"schemas,omitempty"`
+		Report      string          `yaml:"report,omitempty"`
 		Dispatch    DispatchDef     `yaml:"dispatch,omitempty"`
 		CustomKinds []CustomKindDef `yaml:"custom_kinds,omitempty"`
 	} `yaml:"spec"`

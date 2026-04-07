@@ -3,15 +3,15 @@ package dispatch
 import (
 	"fmt"
 
-	"github.com/dpopsuev/origami/agentport"
+	"github.com/dpopsuev/origami/budget"
 	"github.com/dpopsuev/origami/report"
 )
 
 // FormatTokenSummary returns a human-readable token and cost section.
 // An optional CostConfig overrides the default pricing for per-line cost
 // breakdown. If omitted, DefaultCostConfig() is used.
-func FormatTokenSummary(s agentport.TokenSummary, opts ...agentport.CostConfig) string {
-	cc := agentport.DefaultCostConfig()
+func FormatTokenSummary(s budget.TokenSummary, opts ...budget.CostConfig) string {
+	cc := budget.DefaultCostConfig()
 	if len(opts) > 0 {
 		cc = opts[0]
 	}

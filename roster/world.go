@@ -1,11 +1,11 @@
-package agentport
+package roster
 
 import (
 	"github.com/dpopsuev/troupe/identity"
 	"github.com/dpopsuev/troupe/world"
 )
 
-// Type aliases — definitions live in jericho/world.
+// Type aliases — definitions live in troupe/world.
 type (
 	World         = world.World
 	EntityID      = world.EntityID
@@ -109,7 +109,7 @@ func Query[T world.Component](w *world.World) []world.EntityID {
 
 // --- Symbol re-exports (was palette) ---
 
-// Type aliases — definitions live in jericho/identity.
+// Type aliases — definitions live in troupe/identity.
 type (
 	ColorIdentity   = identity.Color // renamed in v0.2.0
 	SymbolColor     = identity.Color

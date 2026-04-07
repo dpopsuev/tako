@@ -2,12 +2,12 @@ package circuit
 
 // Category: Core Primitives
 
-import "github.com/dpopsuev/origami/agentport"
+import "github.com/dpopsuev/troupe/identity"
 
 // Minimal type aliases — only types required by circuit's own interfaces
 // (Node.ElementAffinity, Walker.Identity). All other identity/element types
-// live in agentport and should be imported from there.
+// live in roster and should be imported from there.
 type (
-	Element       = agentport.Element
-	AgentIdentity = agentport.AgentIdentity
+	Element       = identity.Element
+	AgentIdentity = identity.Archetype
 )

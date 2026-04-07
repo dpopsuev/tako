@@ -10,8 +10,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/roster"
 )
 
 // defaultCacheTTL is used when a node declares caching but specifies no TTL.
@@ -28,9 +28,9 @@ type cachingWalker struct {
 	log         *slog.Logger
 }
 
-func (cw *cachingWalker) Identity() agentport.AgentIdentity       { return cw.inner.Identity() }
-func (cw *cachingWalker) SetIdentity(id *agentport.AgentIdentity) { cw.inner.SetIdentity(id) }
-func (cw *cachingWalker) State() *circuit.WalkerState             { return cw.inner.State() }
+func (cw *cachingWalker) Identity() roster.AgentIdentity       { return cw.inner.Identity() }
+func (cw *cachingWalker) SetIdentity(id *roster.AgentIdentity) { cw.inner.SetIdentity(id) }
+func (cw *cachingWalker) State() *circuit.WalkerState          { return cw.inner.State() }
 
 func (cw *cachingWalker) Handle(ctx context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
 	ttl, cacheable := cw.cacheTTL[node.Name()]

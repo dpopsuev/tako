@@ -4,14 +4,14 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/engine"
 )
 
 type stubDispatcher struct{}
 
-func (stubDispatcher) Dispatch(_ context.Context, _ agentport.Context) ([]byte, error) {
+func (stubDispatcher) Dispatch(_ context.Context, _ dispatch.Context) ([]byte, error) {
 	return []byte(`{}`), nil
 }
 

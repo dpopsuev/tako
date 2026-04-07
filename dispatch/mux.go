@@ -8,13 +8,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/roster"
 )
 
 var (
-	_ agentport.Dispatcher         = (*MuxDispatcher)(nil)
-	_ agentport.ExternalDispatcher = (*MuxDispatcher)(nil)
+	_ Dispatcher         = (*MuxDispatcher)(nil)
+	_ ExternalDispatcher = (*MuxDispatcher)(nil)
 )
 
 // MuxDispatcher bridges the calibration runner (which calls Dispatch from
@@ -30,22 +30,22 @@ type MuxDispatcher struct {
 	pending map[int64]chan []byte
 	closed  map[int64]struct{}
 
-	promptCh chan agentport.Context
+	promptCh chan Context
 	abortCh  chan struct{}
 	abortErr error
 
-	bus agentport.Bus // optional; for zone_shift signals
+	bus roster.Bus // optional; for zone_shift signals
 
 	queueMu sync.Mutex
-	queue   []agentport.Context // buffered overflow for hint-based matching
+	queue   []Context // buffered overflow for hint-based matching
 }
 
 // MuxOption configures a MuxDispatcher.
 type MuxOption func(*MuxDispatcher)
 
-// WithMuxSignalBus attaches a agentport.Bus for emitting dispatch-level signals
+// WithMuxSignalBus attaches a roster.Bus for emitting dispatch-level signals
 // (e.g. zone_shift on work stealing).
-func WithMuxSignalBus(bus agentport.Bus) MuxOption {
+func WithMuxSignalBus(bus roster.Bus) MuxOption {
 	return func(d *MuxDispatcher) { d.bus = bus }
 }
 
@@ -57,7 +57,7 @@ func NewMuxDispatcher(ctx context.Context, opts ...MuxOption) *MuxDispatcher {
 		log:      slog.Default().With(slog.Any(circuit.LogKeyComponent, circuit.LogComponentMuxDispatch)),
 		pending:  make(map[int64]chan []byte),
 		closed:   make(map[int64]struct{}),
-		promptCh: make(chan agentport.Context),
+		promptCh: make(chan Context),
 		abortCh:  make(chan struct{}),
 	}
 	for _, opt := range opts {
@@ -69,7 +69,7 @@ func NewMuxDispatcher(ctx context.Context, opts ...MuxOption) *MuxDispatcher {
 // Dispatch assigns a unique dispatch ID, sends the prompt to the agent side,
 // and blocks until the matching SubmitArtifact delivers the response.
 // Satisfies the Dispatcher interface.
-func (d *MuxDispatcher) Dispatch(ctx context.Context, dc agentport.Context) ([]byte, error) {
+func (d *MuxDispatcher) Dispatch(ctx context.Context, dc Context) ([]byte, error) {
 	dispatchStart := time.Now()
 
 	d.mu.Lock()
@@ -135,8 +135,8 @@ func (d *MuxDispatcher) Dispatch(ctx context.Context, dc agentport.Context) ([]b
 
 // GetNextStep blocks until the runner produces the next prompt context.
 // Equivalent to GetNextStepWithHints with zero-value hints (FIFO, no preference).
-func (d *MuxDispatcher) GetNextStep(ctx context.Context) (agentport.Context, error) {
-	return d.GetNextStepWithHints(ctx, agentport.PullHints{})
+func (d *MuxDispatcher) GetNextStep(ctx context.Context) (Context, error) {
+	return d.GetNextStepWithHints(ctx, PullHints{})
 }
 
 // GetNextStepWithHints blocks until a prompt matching the given hints is
@@ -145,7 +145,7 @@ func (d *MuxDispatcher) GetNextStep(ctx context.Context) (agentport.Context, err
 // Matching priority: PreferredCaseID > PreferredZone > any.
 // Stickiness controls fallback: 0=immediate any, 1-2=steal after ConsecutiveMisses
 // threshold, 3=exclusive (never steal, wait for match only).
-func (d *MuxDispatcher) GetNextStepWithHints(ctx context.Context, hints agentport.PullHints) (agentport.Context, error) {
+func (d *MuxDispatcher) GetNextStepWithHints(ctx context.Context, hints PullHints) (Context, error) {
 	hasPreference := hints.PreferredCaseID != "" || hints.PreferredZone != ""
 
 	if !hasPreference {
@@ -174,7 +174,7 @@ func (d *MuxDispatcher) GetNextStepWithHints(ctx context.Context, hints agentpor
 	for {
 		dc, err := d.receiveOne(ctx)
 		if err != nil {
-			return agentport.Context{}, err
+			return Context{}, err
 		}
 		if d.matchesHints(dc, hints) {
 			d.emitDispatchRouted(dc, "channel")
@@ -184,7 +184,7 @@ func (d *MuxDispatcher) GetNextStepWithHints(ctx context.Context, hints agentpor
 	}
 }
 
-func (d *MuxDispatcher) stealNext(ctx context.Context, hints agentport.PullHints) (agentport.Context, error) {
+func (d *MuxDispatcher) stealNext(ctx context.Context, hints PullHints) (Context, error) {
 	if dc, ok := d.dequeueAny(); ok {
 		d.emitZoneShift(hints, dc)
 		d.emitDispatchRouted(dc, "steal")
@@ -193,7 +193,7 @@ func (d *MuxDispatcher) stealNext(ctx context.Context, hints agentport.PullHints
 	// Queue empty — block for the next item and return it regardless.
 	dc, err := d.receiveOne(ctx)
 	if err != nil {
-		return agentport.Context{}, err
+		return Context{}, err
 	}
 	if !d.matchesHints(dc, hints) {
 		d.emitZoneShift(hints, dc)
@@ -204,28 +204,28 @@ func (d *MuxDispatcher) stealNext(ctx context.Context, hints agentport.PullHints
 	return dc, nil
 }
 
-func (d *MuxDispatcher) getNextFIFO(ctx context.Context) (agentport.Context, error) {
+func (d *MuxDispatcher) getNextFIFO(ctx context.Context) (Context, error) {
 	if dc, ok := d.dequeueAny(); ok {
 		return dc, nil
 	}
 	return d.receiveOne(ctx)
 }
 
-func (d *MuxDispatcher) receiveOne(ctx context.Context) (agentport.Context, error) {
+func (d *MuxDispatcher) receiveOne(ctx context.Context) (Context, error) {
 	select {
 	case <-ctx.Done():
-		return agentport.Context{}, ctx.Err()
+		return Context{}, ctx.Err()
 	case <-d.ctx.Done():
-		return agentport.Context{}, fmt.Errorf("dispatcher shutdown: %w", d.ctx.Err())
+		return Context{}, fmt.Errorf("dispatcher shutdown: %w", d.ctx.Err())
 	case dc, ok := <-d.promptCh:
 		if !ok {
-			return agentport.Context{}, ErrDispatcherClosed
+			return Context{}, ErrDispatcherClosed
 		}
 		return dc, nil
 	}
 }
 
-func (d *MuxDispatcher) matchesHints(dc agentport.Context, hints agentport.PullHints) bool {
+func (d *MuxDispatcher) matchesHints(dc Context, hints PullHints) bool {
 	if hints.PreferredCaseID != "" && dc.CaseID == hints.PreferredCaseID {
 		return true
 	}
@@ -237,7 +237,7 @@ func (d *MuxDispatcher) matchesHints(dc agentport.Context, hints agentport.PullH
 
 // shouldSteal returns true if the worker's stickiness and miss count allow
 // taking a non-matching step (work stealing).
-func (d *MuxDispatcher) shouldSteal(hints agentport.PullHints) bool {
+func (d *MuxDispatcher) shouldSteal(hints PullHints) bool {
 	switch hints.Stickiness {
 	case 0:
 		return true
@@ -268,24 +268,24 @@ func (d *MuxDispatcher) drainAvailable() {
 	}
 }
 
-func (d *MuxDispatcher) enqueue(dc agentport.Context) {
+func (d *MuxDispatcher) enqueue(dc Context) {
 	d.queueMu.Lock()
 	d.queue = append(d.queue, dc)
 	d.queueMu.Unlock()
 }
 
-func (d *MuxDispatcher) dequeueAny() (agentport.Context, bool) {
+func (d *MuxDispatcher) dequeueAny() (Context, bool) {
 	d.queueMu.Lock()
 	defer d.queueMu.Unlock()
 	if len(d.queue) == 0 {
-		return agentport.Context{}, false
+		return Context{}, false
 	}
 	dc := d.queue[0]
 	d.queue = d.queue[1:]
 	return dc, true
 }
 
-func (d *MuxDispatcher) emitZoneShift(hints agentport.PullHints, dc agentport.Context) {
+func (d *MuxDispatcher) emitZoneShift(hints PullHints, dc Context) {
 	if d.bus == nil {
 		return
 	}
@@ -293,30 +293,30 @@ func (d *MuxDispatcher) emitZoneShift(hints agentport.PullHints, dc agentport.Co
 	if fromZone == "" {
 		fromZone = hints.PreferredCaseID
 	}
-	d.bus.Emit(&agentport.Signal{
-		Event:  agentport.EventZoneShift,
-		Agent:  agentport.AgentWorker,
+	d.bus.Emit(&roster.Signal{
+		Event:  roster.EventZoneShift,
+		Agent:  roster.AgentWorker,
 		CaseID: dc.CaseID,
 		Step:   dc.Step,
 		Meta: map[string]string{
-			agentport.MetaKeyFromZone: fromZone,
-			agentport.MetaKeyToZone:   dc.Provider,
+			roster.MetaKeyFromZone: fromZone,
+			roster.MetaKeyToZone:   dc.Provider,
 		},
 	})
 }
 
-func (d *MuxDispatcher) emitDispatchRouted(dc agentport.Context, reason string) {
+func (d *MuxDispatcher) emitDispatchRouted(dc Context, reason string) {
 	if d.bus == nil {
 		return
 	}
-	d.bus.Emit(&agentport.Signal{
-		Event:  agentport.EventDispatchRouted,
-		Agent:  agentport.AgentWorker,
+	d.bus.Emit(&roster.Signal{
+		Event:  roster.EventDispatchRouted,
+		Agent:  roster.AgentWorker,
 		CaseID: dc.CaseID,
 		Step:   dc.Step,
 		Meta: map[string]string{
-			agentport.MetaKeyDispatchReason: reason,
-			agentport.MetaKeyQueueDepth:     strconv.Itoa(d.queueLen()),
+			roster.MetaKeyDispatchReason: reason,
+			roster.MetaKeyQueueDepth:     strconv.Itoa(d.queueLen()),
 		},
 	})
 }
@@ -327,7 +327,7 @@ func (d *MuxDispatcher) queueLen() int {
 	return len(d.queue)
 }
 
-func (d *MuxDispatcher) tryMatchFromQueue(hints agentport.PullHints) (agentport.Context, bool) {
+func (d *MuxDispatcher) tryMatchFromQueue(hints PullHints) (Context, bool) {
 	d.queueMu.Lock()
 	defer d.queueMu.Unlock()
 	for i, dc := range d.queue {
@@ -336,7 +336,7 @@ func (d *MuxDispatcher) tryMatchFromQueue(hints agentport.PullHints) (agentport.
 			return dc, true
 		}
 	}
-	return agentport.Context{}, false
+	return Context{}, false
 }
 
 // SubmitArtifact routes the artifact to the Dispatch call with the given ID.
@@ -399,7 +399,7 @@ func (d *MuxDispatcher) ActiveDispatches() int {
 }
 
 // PromptCh returns the read-only prompt channel (for session integration).
-func (d *MuxDispatcher) PromptCh() <-chan agentport.Context {
+func (d *MuxDispatcher) PromptCh() <-chan Context {
 	return d.promptCh
 }
 

@@ -11,10 +11,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/origami/roster"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -129,7 +129,7 @@ func wireObserverCallbacks(cfg *CircuitConfig) {
 	}
 }
 
-func setupTraceRecorder(stateDir, sessID string, bus *agentport.MemBus, logger *slog.Logger) (recorder *engine.TraceRecorder, runDir string) {
+func setupTraceRecorder(stateDir, sessID string, bus *roster.MemBus, logger *slog.Logger) (recorder *engine.TraceRecorder, runDir string) {
 	if stateDir == "" {
 		return nil, ""
 	}
@@ -144,7 +144,7 @@ func setupTraceRecorder(stateDir, sessID string, bus *agentport.MemBus, logger *
 		logger.WarnContext(context.Background(), circuit.LogTraceRecorderFailed, slog.Any(circuit.LogKeyError, recErr))
 		return nil, runDir
 	}
-	bus.OnEmit(func(sig agentport.Signal) {
+	bus.OnEmit(func(sig roster.Signal) {
 		recorder.HandleSignal(sig.Timestamp, sig.Event, sig.Agent, sig.CaseID, sig.Step, sig.Meta)
 	})
 	return recorder, runDir
@@ -283,8 +283,8 @@ type getSignalsInput struct {
 }
 
 type getSignalsOutput struct {
-	Signals []agentport.Signal `json:"signals"`
-	Total   int                `json:"total"`
+	Signals []roster.Signal `json:"signals"`
+	Total   int             `json:"total"`
 }
 
 type getWorkerHealthInput struct {
@@ -292,7 +292,7 @@ type getWorkerHealthInput struct {
 }
 
 type getWorkerHealthOutput struct {
-	agentport.HealthSummary
+	roster.HealthSummary
 }
 
 // --- Tool registration ---
@@ -633,7 +633,7 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 	} else {
 		runCtx, runCancel = context.WithCancel(context.Background())
 	}
-	bus := agentport.NewMemBus()
+	bus := roster.NewMemBus()
 	disp := dispatch.NewMuxDispatcher(runCtx, dispatch.WithMuxSignalBus(bus))
 
 	// Generate session ID and set up trace recording BEFORE CreateSession
@@ -708,9 +708,9 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 		s.spawnACPWorkers(ctx, runCtx, input, parallel, disp, bus, logger)
 	}
 
-	bus.Emit(&agentport.Signal{
+	bus.Emit(&roster.Signal{
 		Event: EventSessionStarted,
-		Agent: agentport.AgentServer,
+		Agent: roster.AgentServer,
 		Meta: map[string]string{
 			MetaKeyScenario:   meta.Scenario,
 			MetaKeyTotalCases: fmt.Sprintf("%d", meta.TotalCases),
@@ -745,7 +745,7 @@ func (s *CircuitServer) spawnACPWorkers(
 	input startCircuitInput,
 	parallel int,
 	disp *dispatch.MuxDispatcher,
-	bus agentport.Bus,
+	bus roster.Bus,
 	logger *slog.Logger,
 ) {
 	workerCount := input.Workers
@@ -756,9 +756,9 @@ func (s *CircuitServer) spawnACPWorkers(
 		workerCount = 1
 	}
 	// ACP launcher absorbed into Broker
-	broker := agentport.NewBroker("")
+	broker := roster.NewBroker("")
 	for range workerCount {
-		if _, spawnErr := broker.Spawn(runCtx, agentport.ActorConfig{
+		if _, spawnErr := broker.Spawn(runCtx, roster.ActorConfig{
 			Model: input.Agent,
 			Role:  "worker",
 		}); spawnErr != nil {
@@ -796,7 +796,7 @@ func (s *CircuitServer) handleGetNextStep(ctx context.Context, _ *sdkmcp.CallToo
 		timeout = s.defaultGetNextStepTimeout
 	}
 
-	hints := agentport.PullHints{
+	hints := dispatch.PullHints{
 		PreferredCaseID:   input.PreferredCaseID,
 		PreferredZone:     input.PreferredZone,
 		Stickiness:        input.Stickiness,
@@ -819,7 +819,7 @@ func (s *CircuitServer) handleGetNextStep(ctx context.Context, _ *sdkmcp.CallToo
 			out.Error = sessErr.Error()
 		}
 		logger.InfoContext(ctx, circuit.LogCircuitComplete, slog.Any(circuit.LogKeySessionID, input.SessionID))
-		sess.Bus.Emit(&agentport.Signal{Event: EventCircuitDone, Agent: agentport.AgentServer})
+		sess.Bus.Emit(&roster.Signal{Event: EventCircuitDone, Agent: roster.AgentServer})
 		if s.Config.OnCircuitDone != nil {
 			s.Config.OnCircuitDone()
 		}
@@ -833,12 +833,12 @@ func (s *CircuitServer) handleGetNextStep(ctx context.Context, _ *sdkmcp.CallToo
 
 	logger.InfoContext(ctx, circuit.LogStepDispatched, slog.Any(circuit.LogKeySessionID, input.SessionID), slog.Any(circuit.LogKeyCaseID, dc.CaseID), slog.Any(circuit.LogKeyStep, dc.Step), slog.Any(circuit.LogKeyDispatchID, dc.DispatchID))
 
-	sess.Bus.Emit(&agentport.Signal{
+	sess.Bus.Emit(&roster.Signal{
 		Event:  EventStepReady,
-		Agent:  agentport.AgentServer,
+		Agent:  roster.AgentServer,
 		CaseID: dc.CaseID,
 		Step:   dc.Step,
-		Meta:   map[string]string{agentport.MetaKeyPromptPath: dc.PromptPath},
+		Meta:   map[string]string{roster.MetaKeyPromptPath: dc.PromptPath},
 	})
 
 	if s.Config.OnStepDispatched != nil {
@@ -921,14 +921,14 @@ func (s *CircuitServer) handleSubmitStep(ctx context.Context, _ *sdkmcp.CallTool
 	}
 
 	remaining := sess.AgentSubmit()
-	sess.Bus.Emit(&agentport.Signal{
+	sess.Bus.Emit(&roster.Signal{
 		Event: EventArtifactSubmitted,
-		Agent: agentport.AgentServer,
+		Agent: roster.AgentServer,
 		Step:  input.Step,
 		Meta: map[string]string{
-			agentport.MetaKeyBytes:    fmt.Sprintf("%d", len(data)),
-			agentport.MetaKeyInFlight: fmt.Sprintf("%d", remaining),
-			agentport.MetaKeyVia:      "submit_step",
+			roster.MetaKeyBytes:    fmt.Sprintf("%d", len(data)),
+			roster.MetaKeyInFlight: fmt.Sprintf("%d", remaining),
+			roster.MetaKeyVia:      "submit_step",
 		},
 	})
 
@@ -1008,7 +1008,7 @@ func (s *CircuitServer) handleEmitSignal(ctx context.Context, _ *sdkmcp.CallTool
 		return nil, emitSignalOutput{}, err
 	}
 
-	sess.Bus.Emit(&agentport.Signal{
+	sess.Bus.Emit(&roster.Signal{
 		Event:  input.Event,
 		Agent:  input.Agent,
 		CaseID: input.CaseID,
@@ -1017,9 +1017,9 @@ func (s *CircuitServer) handleEmitSignal(ctx context.Context, _ *sdkmcp.CallTool
 	})
 	idx := sess.Bus.Len()
 
-	if input.Event == agentport.EventWorkerStarted {
-		workerID := input.Meta[agentport.MetaKeyWorkerID]
-		mode := input.Meta[agentport.MetaKeyMode]
+	if input.Event == roster.EventWorkerStarted {
+		workerID := input.Meta[roster.MetaKeyWorkerID]
+		mode := input.Meta[roster.MetaKeyMode]
 		if workerID != "" {
 			sess.RegisterWorker(workerID, mode)
 			logger.DebugContext(ctx, circuit.LogWorkerRegistered, slog.Any(circuit.LogKeyWorkerID, workerID), slog.Any(circuit.LogKeyMode, mode))
@@ -1054,11 +1054,11 @@ func (s *CircuitServer) handleGetWorkerHealth(_ context.Context, _ *sdkmcp.CallT
 	}
 
 	// TODO(troupe): full health monitoring via Hooks in Phase 3
-	health := agentport.HealthSummary{
+	health := roster.HealthSummary{
 		QueueDepth: sess.dispatcher.ActiveDispatches(),
 	}
 	for id, mode := range sess.registeredWorkers {
-		health.Workers = append(health.Workers, agentport.WorkerSnapshot{
+		health.Workers = append(health.Workers, roster.WorkerSnapshot{
 			WorkerID: id,
 			State:    mode,
 		})

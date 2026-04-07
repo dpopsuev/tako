@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/roster"
 )
 
 // Transformer, TransformerContext, TransformerRegistry are defined in engine/handler.
@@ -21,7 +21,7 @@ import (
 // Created by BuildGraph when handler_type is "transformer".
 type transformerNode struct {
 	name       string
-	element    agentport.Element
+	element    roster.Element
 	trans      Transformer
 	prompt     string              // from circuit.NodeDef.Prompt
 	input      string              // from circuit.NodeDef.Input (e.g. "${recall.output}")
@@ -30,8 +30,8 @@ type transformerNode struct {
 	nodeConfig *circuit.NodeConfig // from NodeDef.EffectiveConfig()
 }
 
-func (n *transformerNode) Name() string                       { return n.name }
-func (n *transformerNode) ElementAffinity() agentport.Element { return n.element }
+func (n *transformerNode) Name() string                    { return n.name }
+func (n *transformerNode) ElementAffinity() roster.Element { return n.element }
 
 func (n *transformerNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	logger := slog.Default().With(slog.Any(circuit.LogKeyComponent, circuit.LogComponentTransform))

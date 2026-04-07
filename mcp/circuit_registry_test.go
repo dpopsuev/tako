@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/dispatch"
+	"github.com/dpopsuev/origami/roster"
 )
 
 func makeTestType(name string) *CircuitType {
@@ -13,7 +13,7 @@ func makeTestType(name string) *CircuitType {
 		Name:        name,
 		Description: name + " test type",
 		StepSchemas: []StepSchema{{Name: name + "-step"}},
-		CreateSession: func(_ context.Context, _ StartParams, _ *dispatch.MuxDispatcher, _ agentport.Bus) (RunFunc, SessionMeta, error) {
+		CreateSession: func(_ context.Context, _ StartParams, _ *dispatch.MuxDispatcher, _ roster.Bus) (RunFunc, SessionMeta, error) {
 			return func(_ context.Context) (any, error) { return name, nil },
 				SessionMeta{Scenario: name},
 				nil
