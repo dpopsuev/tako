@@ -282,7 +282,23 @@ func (g *DefaultGraph) Walk(ctx context.Context, walker circuit.Walker, startNod
 		for _, e := range edges {
 			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventEdgeEvaluate, Node: node.Name(), Edge: e.ID(), Walker: walkerName})
 			t := e.Evaluate(artifact, state)
-			if t == nil {
+			matched := t != nil
+
+			// Log every edge evaluation with expression and result.
+			var expression string
+			if ce, ok := e.(circuit.ConditionalEdge); ok {
+				expression = ce.Expression()
+			}
+			slog.DebugContext(ctx, circuit.LogEdgeEvaluated,
+				slog.Any(circuit.LogKeyComponent, circuit.LogComponentWalk),
+				slog.Any(circuit.LogKeyEdge, e.ID()),
+				slog.Any(circuit.LogKeyFrom, e.From()),
+				slog.Any(circuit.LogKeyTo, e.To()),
+				slog.Any(circuit.LogKeyExpression, expression),
+				slog.Any(circuit.LogKeyResult, matched),
+			)
+
+			if !matched {
 				continue
 			}
 			if isParallelEdge(e) {

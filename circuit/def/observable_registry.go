@@ -28,6 +28,7 @@ var ObservableEvents = EventRegistry{
 	"node enter":        {Category: "walk", Fields: []string{"node", "walker"}},
 	"node exit":         {Category: "walk", Fields: []string{"node", "walker", "elapsed_ms"}},
 	"edge taken":        {Category: "walk", Fields: []string{"edge", "from", "to"}},
+	"edge evaluated":    {Category: "walk", Fields: []string{"edge", "from", "to", "expression", "result"}},
 	"no matching edge":  {Category: "walk", Fields: []string{"node"}},
 	"loop incremented":  {Category: "walk", Fields: []string{"node", "loop"}},
 	"walk complete":     {Category: "walk", Fields: []string{"walker"}},

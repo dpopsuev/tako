@@ -14,7 +14,7 @@ import "testing"
 // that don't represent state transitions).
 var observableEventValues = []string{
 	// Walk
-	"node enter", "node exit", "edge taken", "no matching edge",
+	"node enter", "node exit", "edge taken", "edge evaluated", "no matching edge",
 	"loop incremented", "walk complete", "walk error",
 	"delegate start", "delegate complete",
 	// DSL

@@ -65,6 +65,7 @@ func (e *expressionEdge) IsShortcut() bool      { return e.def.Shortcut }
 func (e *expressionEdge) IsLoop() bool          { return e.def.Loop }
 func (e *expressionEdge) IsParallel() bool      { return e.def.Parallel }
 func (e *expressionEdge) MergeStrategy() string { return e.def.Merge }
+func (e *expressionEdge) Expression() string    { return e.def.When }
 
 func (e *expressionEdge) Evaluate(artifact circuit.Artifact, state *circuit.WalkerState) *circuit.Transition {
 	ctx := buildExprContext(artifact, state, e.config)

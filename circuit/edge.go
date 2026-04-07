@@ -14,6 +14,12 @@ type Edge interface {
 	Evaluate(artifact Artifact, state *WalkerState) *Transition
 }
 
+// ConditionalEdge is an optional interface for edges that have a when: expression.
+// Used for structured logging of edge evaluation decisions.
+type ConditionalEdge interface {
+	Expression() string
+}
+
 // ParallelEdge is an optional interface for edges that support fan-out.
 // Edges returning true are eligible for concurrent execution when
 // multiple parallel edges match from the same source node.

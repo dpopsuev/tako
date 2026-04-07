@@ -32,6 +32,7 @@ const (
 	LogNodeEnter        = "node enter"
 	LogNodeExit         = "node exit"
 	LogEdgeTaken        = "edge taken"
+	LogEdgeEvaluated    = "edge evaluated"
 	LogEdgeNoMatch      = "no matching edge"
 	LogLoopIncremented  = "loop incremented"
 	LogWalkComplete     = "walk complete"
@@ -260,9 +261,11 @@ const (
 	LogKeyLoop      = "loop"
 	LogKeyShortcut  = "shortcut"
 	LogKeyCount     = "count"
-	LogKeyError     = "error"
-	LogKeyCaseID    = "case_id"
-	LogKeyCircuit   = "circuit"
+	LogKeyError      = "error"
+	LogKeyCaseID     = "case_id"
+	LogKeyCircuit    = "circuit"
+	LogKeyExpression = "expression"
+	LogKeyResult     = "result"
 
 	// --- Dispatch ---
 	LogKeyDispatchID       = "dispatch_id"
