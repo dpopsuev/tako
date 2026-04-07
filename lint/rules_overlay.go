@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/circuit/def"
 )
 
 const (
@@ -14,10 +14,6 @@ const (
 	msgFieldRequired   = ": field is required"
 	msgScorerRequired  = ": scorer_name is required"
 )
-
-var validPortDirections = map[string]bool{
-	"in": true, "out": true, "loop": true,
-}
 
 // --- S18: import-overlay ---
 
@@ -91,13 +87,14 @@ func (r *PortValidation) Check(ctx *LintContext) []Finding {
 	var out []Finding
 	seen := make(map[string]int) // name -> first occurrence index
 
+	validDirs := strings.Join(def.ValidPortDirections, ", ")
 	for i, p := range ctx.Def.Ports {
 		// direction must be in, out, or loop
-		dir := strings.ToLower(strings.TrimSpace(p.Direction))
-		if dir == "" || !validPortDirections[dir] {
-			msg := fmt.Sprintf("port %q: direction must be one of in, out, loop", p.Name)
+		dir := strings.TrimSpace(p.Direction)
+		if dir == "" || !isValidValue(def.PortFields, "direction", dir) {
+			msg := fmt.Sprintf("port %q: direction must be one of %s", p.Name, validDirs)
 			if dir != "" {
-				msg = fmt.Sprintf("port %q: direction %q must be one of in, out, loop", p.Name, p.Direction)
+				msg = fmt.Sprintf("port %q: direction %q must be one of %s", p.Name, p.Direction, validDirs)
 			}
 			out = append(out, Finding{
 				RuleID:   r.ID(),
@@ -149,7 +146,7 @@ func (r *CalibrationContract) Check(ctx *LintContext) []Finding {
 	return out
 }
 
-func (r *CalibrationContract) checkCalibFields(ctx *LintContext, fields []circuit.CalibrationFieldDef, kind string, out []Finding) []Finding {
+func (r *CalibrationContract) checkCalibFields(ctx *LintContext, fields []def.CalibrationFieldDef, kind string, out []Finding) []Finding {
 	for i, f := range fields {
 		if strings.TrimSpace(f.Field) == "" || strings.TrimSpace(f.ScorerName) == "" {
 			msg := "calibration " + kind

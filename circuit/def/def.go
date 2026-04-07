@@ -341,6 +341,16 @@ const (
 	MergeCustom = "custom"
 )
 
+// Canonical enum values for DSL fields. Lint rules read from FieldRegistry
+// instead of maintaining duplicate maps. Add a value here → lint validates it.
+var (
+	ValidApproaches      = []string{"rapid", "aggressive", "methodical", "rigorous", "analytical", "holistic"}
+	ValidZoneDomains     = []string{"unstructured", "structured", "hybrid"}
+	ValidPortDirections  = []string{"in", "out", "loop"}
+	ValidHandlerTypes    = []string{HandlerTypeTransformer, HandlerTypeExtractor, HandlerTypeRenderer, HandlerTypeNode, HandlerTypeDelegate, HandlerTypeCircuit}
+	ValidMergeStrategies = []string{MergeAppend, MergeLatest, MergeCustom}
+)
+
 // MarshalYAML serializes a CircuitDef back to YAML (P8: round-trip fidelity).
 func (def *CircuitDef) MarshalYAML() ([]byte, error) {
 	return yaml.Marshal(def)

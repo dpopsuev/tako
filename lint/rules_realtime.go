@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/circuit/def"
 )
 
 const (
@@ -205,28 +205,20 @@ func (r *InvalidHandlerType) Description() string {
 func (r *InvalidHandlerType) Severity() Severity { return SeverityError }
 func (r *InvalidHandlerType) Tags() []string     { return []string{"structural"} }
 
-var validHandlerTypes = map[string]bool{
-	circuit.HandlerTypeTransformer: true,
-	circuit.HandlerTypeExtractor:   true,
-	circuit.HandlerTypeRenderer:    true,
-	circuit.HandlerTypeNode:        true,
-	circuit.HandlerTypeDelegate:    true,
-	circuit.HandlerTypeCircuit:     true,
-}
-
 func (r *InvalidHandlerType) Check(ctx *LintContext) []Finding {
 	if ctx.Def == nil {
 		return nil
 	}
 
+	validList := strings.Join(def.ValidHandlerTypes, ", ")
 	var out []Finding
 
 	// Check circuit-level handler_type.
-	if ctx.Def.HandlerType != "" && !validHandlerTypes[ctx.Def.HandlerType] {
+	if ctx.Def.HandlerType != "" && !isValidValue(def.CircuitFields, "handler_type", ctx.Def.HandlerType) {
 		out = append(out, Finding{
 			RuleID:     r.ID(),
 			Severity:   r.Severity(),
-			Message:    fmt.Sprintf("circuit-level handler_type=%q is not a recognized type (valid: transformer, extractor, renderer, node, delegate, circuit)", ctx.Def.HandlerType),
+			Message:    fmt.Sprintf("circuit-level handler_type=%q is not a recognized type (valid: %s)", ctx.Def.HandlerType, validList),
 			File:       ctx.File,
 			Line:       ctx.TopLevelLine("handler_type"),
 			Suggestion: handlerTypeSuggestion(ctx.Def.HandlerType),
@@ -236,11 +228,11 @@ func (r *InvalidHandlerType) Check(ctx *LintContext) []Finding {
 	// Check node-level handler_type.
 	for i := range ctx.Def.Nodes {
 		nd := &ctx.Def.Nodes[i]
-		if nd.HandlerType != "" && !validHandlerTypes[nd.HandlerType] {
+		if nd.HandlerType != "" && !isValidValue(def.NodeFields, "handler_type", nd.HandlerType) {
 			out = append(out, Finding{
 				RuleID:     r.ID(),
 				Severity:   r.Severity(),
-				Message:    fmt.Sprintf("node %q: handler_type=%q is not a recognized type (valid: transformer, extractor, renderer, node, delegate, circuit)", nd.Name, nd.HandlerType),
+				Message:    fmt.Sprintf("node %q: handler_type=%q is not a recognized type (valid: %s)", nd.Name, nd.HandlerType, validList),
 				File:       ctx.File,
 				Line:       ctx.NodeLine(string(nd.Name)),
 				Suggestion: handlerTypeSuggestion(nd.HandlerType),
@@ -252,7 +244,7 @@ func (r *InvalidHandlerType) Check(ctx *LintContext) []Finding {
 
 func handlerTypeSuggestion(val string) string {
 	best, bestDist := "", 100
-	for ht := range validHandlerTypes {
+	for _, ht := range def.ValidHandlerTypes {
 		d := levenshtein(strings.ToLower(val), ht)
 		if d < bestDist {
 			bestDist = d

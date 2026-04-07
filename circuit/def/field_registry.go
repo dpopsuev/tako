@@ -5,6 +5,9 @@ package def
 type FieldDef struct {
 	// Required means the field must be non-zero for valid circuits.
 	Required bool
+	// ValidValues enumerates the accepted enum values for this field.
+	// nil means any value is accepted (no enum constraint).
+	ValidValues []string
 }
 
 // FieldRegistry maps yaml tag names to their definitions.
@@ -36,7 +39,7 @@ var CircuitFields = FieldRegistry{
 	"description":  {},
 	"import":       {},
 	"topology":     {},
-	"handler_type": {},
+	"handler_type": {ValidValues: ValidHandlerTypes},
 	"timeout":      {},
 	"imports":      {},
 	"vars":         {},
@@ -57,8 +60,8 @@ var CircuitFields = FieldRegistry{
 var NodeFields = FieldRegistry{
 	"name":          {Required: true},
 	"description":   {},
-	"approach":      {},
-	"handler_type":  {},
+	"approach":      {ValidValues: ValidApproaches},
+	"handler_type":  {ValidValues: ValidHandlerTypes},
 	"handler":       {},
 	"timeout":       {},
 	"provider":      {},
@@ -86,26 +89,34 @@ var EdgeFields = FieldRegistry{
 	"parallel":     {},
 	"condition":    {},
 	"when":         {},
-	"merge":        {},
+	"merge":        {ValidValues: ValidMergeStrategies},
 	"display_name": {},
 }
 
 // ZoneFields registers every yaml field on ZoneDef.
 var ZoneFields = FieldRegistry{
 	"nodes":          {Required: true},
-	"approach":       {},
+	"approach":       {ValidValues: ValidApproaches},
 	"stickiness":     {},
-	"domain":         {},
+	"domain":         {ValidValues: ValidZoneDomains},
 	"context_filter": {},
 }
 
 // WalkerFields registers every yaml field on WalkerDef.
 var WalkerFields = FieldRegistry{
 	"name":            {Required: true},
-	"approach":        {},
+	"approach":        {ValidValues: ValidApproaches},
 	"persona":         {},
 	"preamble":        {},
 	"offset_preamble": {},
 	"step_affinity":   {},
 	"role":            {},
+}
+
+// PortFields registers every yaml field on PortDef.
+var PortFields = FieldRegistry{
+	"name":        {Required: true},
+	"direction":   {Required: true, ValidValues: ValidPortDirections},
+	"type":        {},
+	"description": {},
 }

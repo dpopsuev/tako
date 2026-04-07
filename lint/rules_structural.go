@@ -7,6 +7,7 @@ import (
 
 	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/circuit/def"
 )
 
 const (
@@ -18,15 +19,20 @@ const (
 	ruleInvalidPersona  = "S11/invalid-walker-persona"
 )
 
-var validApproaches = map[string]bool{
-	"rapid": true, "aggressive": true, "methodical": true,
-	"rigorous": true, "analytical": true, "holistic": true,
-}
-
-var validMergeStrategies = map[string]bool{
-	circuit.MergeAppend: true,
-	circuit.MergeLatest: true,
-	circuit.MergeCustom: true,
+// isValidValue checks whether value is among the ValidValues declared for field
+// in the given registry. Returns true when the field has no enum constraint
+// (ValidValues == nil) or when a case-insensitive match is found.
+func isValidValue(registry def.FieldRegistry, field, value string) bool {
+	fd, ok := registry[field]
+	if !ok || fd.ValidValues == nil {
+		return true // no validation defined
+	}
+	for _, v := range fd.ValidValues {
+		if strings.EqualFold(v, value) {
+			return true
+		}
+	}
+	return false
 }
 
 func knownPersonas() map[string]bool {
@@ -40,7 +46,7 @@ func knownPersonas() map[string]bool {
 
 func approachSuggestion(val string) string {
 	best, bestDist := "", 100
-	for a := range validApproaches {
+	for _, a := range def.ValidApproaches {
 		d := levenshtein(strings.ToLower(val), a)
 		if d < bestDist {
 			bestDist = d
@@ -89,11 +95,11 @@ func (r *InvalidApproach) Check(ctx *LintContext) []Finding {
 	var out []Finding
 	for i := range ctx.Def.Nodes {
 		nd := &ctx.Def.Nodes[i]
-		if nd.Approach != "" && !validApproaches[strings.ToLower(nd.Approach)] {
+		if nd.Approach != "" && !isValidValue(def.NodeFields, "approach", nd.Approach) {
 			f := Finding{
 				RuleID:   r.ID(),
 				Severity: r.Severity(),
-				Message:  fmt.Sprintf("node %q: unknown approach %q (valid: rapid, aggressive, methodical, rigorous, analytical, holistic)", nd.Name, nd.Approach),
+				Message:  fmt.Sprintf("node %q: unknown approach %q (valid: %s)", nd.Name, nd.Approach, strings.Join(def.ValidApproaches, ", ")),
 				File:     ctx.File,
 				Line:     ctx.NodeLine(string(nd.Name)),
 			}
@@ -149,11 +155,11 @@ func (r *InvalidMergeStrategy) Tags() []string     { return []string{"structural
 func (r *InvalidMergeStrategy) Check(ctx *LintContext) []Finding {
 	var out []Finding
 	for i := range ctx.Def.Edges {
-		if ctx.Def.Edges[i].Merge != "" && !validMergeStrategies[ctx.Def.Edges[i].Merge] {
+		if ctx.Def.Edges[i].Merge != "" && !isValidValue(def.EdgeFields, "merge", ctx.Def.Edges[i].Merge) {
 			out = append(out, Finding{
 				RuleID:   r.ID(),
 				Severity: r.Severity(),
-				Message:  fmt.Sprintf("edge %q: unknown merge strategy %q (valid: append, latest, custom)", ctx.Def.Edges[i].ID, ctx.Def.Edges[i].Merge),
+				Message:  fmt.Sprintf("edge %q: unknown merge strategy %q (valid: %s)", ctx.Def.Edges[i].ID, ctx.Def.Edges[i].Merge, strings.Join(def.ValidMergeStrategies, ", ")),
 				File:     ctx.File,
 				Line:     ctx.EdgeLine(ctx.Def.Edges[i].ID),
 			})
@@ -345,7 +351,7 @@ func (r *InvalidWalkerApproach) Tags() []string     { return []string{"structura
 func (r *InvalidWalkerApproach) Check(ctx *LintContext) []Finding {
 	var out []Finding
 	for _, w := range ctx.Def.Walkers {
-		if w.Approach != "" && !validApproaches[strings.ToLower(w.Approach)] {
+		if w.Approach != "" && !isValidValue(def.WalkerFields, "approach", w.Approach) {
 			f := Finding{
 				RuleID:   r.ID(),
 				Severity: r.Severity(),
@@ -386,13 +392,6 @@ func (r *InvalidWalkerPersona) Check(ctx *LintContext) []Finding {
 		}
 	}
 	return out
-}
-
-// Valid zone domain values.
-var validDomains = map[string]bool{
-	"unstructured": true,
-	"structured":   true,
-	"hybrid":       true,
 }
 
 // SchemaInUnstructuredZone checks for artifact schemas on nodes in zones without structured extractors.
@@ -470,11 +469,11 @@ func (r *InvalidZoneDomain) Tags() []string     { return []string{"structural"} 
 func (r *InvalidZoneDomain) Check(ctx *LintContext) []Finding {
 	var out []Finding
 	for zoneName, zd := range ctx.Def.Zones {
-		if zd.Domain != "" && !validDomains[strings.ToLower(zd.Domain)] {
+		if zd.Domain != "" && !isValidValue(def.ZoneFields, "domain", zd.Domain) {
 			out = append(out, Finding{
 				RuleID:   r.ID(),
 				Severity: r.Severity(),
-				Message:  fmt.Sprintf("zone %q: unknown domain %q (valid: unstructured, structured, hybrid)", zoneName, zd.Domain),
+				Message:  fmt.Sprintf("zone %q: unknown domain %q (valid: %s)", zoneName, zd.Domain, strings.Join(def.ValidZoneDomains, ", ")),
 				File:     ctx.File,
 				Line:     ctx.TopLevelLine("zones"),
 			})

@@ -3,6 +3,8 @@ package lint
 import (
 	"fmt"
 	"strings"
+
+	"github.com/dpopsuev/origami/circuit/def"
 )
 
 // ApplyFixes runs all fixable rules and returns both the modified YAML bytes
@@ -88,7 +90,7 @@ func (r *InvalidApproach) Fix(ctx *LintContext) []Fix {
 	fixes := make([]Fix, 0, len(ctx.Def.Nodes))
 	for i := range ctx.Def.Nodes {
 		nd := &ctx.Def.Nodes[i]
-		if nd.Approach == "" || validApproaches[strings.ToLower(nd.Approach)] {
+		if nd.Approach == "" || isValidValue(def.NodeFields, "approach", nd.Approach) {
 			continue
 		}
 		suggestion := closestApproach(nd.Approach)
@@ -223,7 +225,7 @@ func (r *MissingCircuitDescription) Fix(ctx *LintContext) []Fix {
 func closestApproach(val string) string {
 	best, bestDist := "", 100
 	lower := strings.ToLower(val)
-	for e := range validApproaches {
+	for _, e := range def.ValidApproaches {
 		d := levenshtein(lower, e)
 		if d < bestDist {
 			bestDist = d

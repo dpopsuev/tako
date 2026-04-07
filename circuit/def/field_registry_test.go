@@ -78,6 +78,10 @@ func TestFieldRegistry_WalkerDef_Complete(t *testing.T) {
 	assertRegistryComplete(t, "WalkerDef", reflect.TypeOf(WalkerDef{}), WalkerFields)
 }
 
+func TestFieldRegistry_PortDef_Complete(t *testing.T) {
+	assertRegistryComplete(t, "PortDef", reflect.TypeOf(PortDef{}), PortFields)
+}
+
 func TestFieldRegistry_RequiredFields(t *testing.T) {
 	required := CircuitFields.RequiredFields()
 	want := map[string]bool{"circuit": true, "nodes": true, "edges": true, "start": true, "done": true}
