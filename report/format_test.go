@@ -1,15 +1,15 @@
-package format_test
+package report_test
 
 import (
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/format"
+	"github.com/dpopsuev/origami/report"
 )
 
 func TestASCII_BasicTable(t *testing.T) {
-	tb := format.NewTable(format.ASCII)
+	tb := report.NewTable(report.ASCII)
 	tb.Header("ID", "Name", "Score")
 	tb.Row("M1", "Overall Accuracy", 0.95)
 	tb.Row("M2", "Precision", 0.88)
@@ -33,7 +33,7 @@ func TestASCII_BasicTable(t *testing.T) {
 }
 
 func TestMarkdown_BasicTable(t *testing.T) {
-	tb := format.NewTable(format.Markdown)
+	tb := report.NewTable(report.Markdown)
 	tb.Header("Step", "Calls", "Cost")
 	tb.Row("Recall (F0)", 30, "$0.075")
 	tb.Row("Triage (F1)", 30, "$0.120")
@@ -52,7 +52,7 @@ func TestMarkdown_BasicTable(t *testing.T) {
 }
 
 func TestMarkdown_WithFooter(t *testing.T) {
-	tb := format.NewTable(format.Markdown)
+	tb := report.NewTable(report.Markdown)
 	tb.Header("Step", "Total")
 	tb.Row("F0", 100)
 	tb.Row("F1", 200)
@@ -68,10 +68,10 @@ func TestMarkdown_WithFooter(t *testing.T) {
 }
 
 func TestColumns_RightAlign(t *testing.T) {
-	tb := format.NewTable(format.ASCII)
+	tb := report.NewTable(report.ASCII)
 	tb.Header("Name", "Value")
 	tb.Row("tokens", 12345)
-	tb.Columns(format.ColumnConfig{Number: 2, Align: format.AlignRight})
+	tb.Columns(report.ColumnConfig{Number: 2, Align: report.AlignRight})
 	out := tb.String()
 
 	if !strings.Contains(out, "12345") {
@@ -80,15 +80,15 @@ func TestColumns_RightAlign(t *testing.T) {
 }
 
 func TestSameData_DualFormat(t *testing.T) {
-	build := func(m format.Mode) string {
-		tb := format.NewTable(m)
+	build := func(m report.Mode) string {
+		tb := report.NewTable(m)
 		tb.Header("A", "B")
 		tb.Row("x", "y")
 		return tb.String()
 	}
 
-	ascii := build(format.ASCII)
-	md := build(format.Markdown)
+	ascii := build(report.ASCII)
+	md := build(report.Markdown)
 
 	if ascii == md {
 		t.Error("ASCII and Markdown output should differ")
@@ -118,7 +118,7 @@ func TestFmtTokens(t *testing.T) {
 		{2500000, "2.5M"},
 	}
 	for _, tc := range tests {
-		got := format.FmtTokens(tc.in)
+		got := report.FmtTokens(tc.in)
 		if got != tc.want {
 			t.Errorf("FmtTokens(%d) = %q, want %q", tc.in, got, tc.want)
 		}
@@ -138,7 +138,7 @@ func TestFmtDuration(t *testing.T) {
 		{5*time.Minute + 15*time.Second, "5m 15s"},
 	}
 	for _, tc := range tests {
-		got := format.FmtDuration(tc.in)
+		got := report.FmtDuration(tc.in)
 		if got != tc.want {
 			t.Errorf("FmtDuration(%v) = %q, want %q", tc.in, got, tc.want)
 		}
@@ -158,7 +158,7 @@ func TestTruncate(t *testing.T) {
 		{"abcdef", 3, "abc"},
 	}
 	for _, tc := range tests {
-		got := format.Truncate(tc.in, tc.maxLen)
+		got := report.Truncate(tc.in, tc.maxLen)
 		if got != tc.want {
 			t.Errorf("Truncate(%q, %d) = %q, want %q", tc.in, tc.maxLen, got, tc.want)
 		}
@@ -166,10 +166,10 @@ func TestTruncate(t *testing.T) {
 }
 
 func TestBoolMark(t *testing.T) {
-	if format.BoolMark(true) != "✓" {
+	if report.BoolMark(true) != "✓" {
 		t.Error("BoolMark(true) should be ✓")
 	}
-	if format.BoolMark(false) != "✗" {
+	if report.BoolMark(false) != "✗" {
 		t.Error("BoolMark(false) should be ✗")
 	}
 }

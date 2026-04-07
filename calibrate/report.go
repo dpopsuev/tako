@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/dpopsuev/origami/dispatch"
-	"github.com/dpopsuev/origami/format"
+	"github.com/dpopsuev/origami/report"
 )
 
 const (
@@ -63,7 +63,7 @@ func sectionsFromTier(ms MetricSet) []MetricSection {
 // FormatReport produces a human-readable calibration report with metric
 // tables, a pass/fail result line, and an optional token summary.
 // When cfg.Sections is empty, sections are auto-generated from Metric.Tier.
-func FormatReport(report *CalibrationReport, cfg FormatConfig) string {
+func FormatReport(rpt *CalibrationReport, cfg FormatConfig) string {
 	var b strings.Builder
 
 	title := cfg.Title
@@ -71,15 +71,15 @@ func FormatReport(report *CalibrationReport, cfg FormatConfig) string {
 		title = "Calibration Report"
 	}
 	b.WriteString(fmt.Sprintf("=== %s ===\n", title))
-	b.WriteString(fmt.Sprintf("Scenario: %s\n", report.Scenario))
-	b.WriteString(fmt.Sprintf("Transformer: %s\n", report.Transformer))
-	if report.Resolution != "" {
-		b.WriteString(fmt.Sprintf("Resolution: %s\n", report.Resolution))
+	b.WriteString(fmt.Sprintf("Scenario: %s\n", rpt.Scenario))
+	b.WriteString(fmt.Sprintf("Transformer: %s\n", rpt.Transformer))
+	if rpt.Resolution != "" {
+		b.WriteString(fmt.Sprintf("Resolution: %s\n", rpt.Resolution))
 	}
-	if report.Plan != "" {
-		b.WriteString(fmt.Sprintf("Plan: %s\n", report.Plan))
+	if rpt.Plan != "" {
+		b.WriteString(fmt.Sprintf("Plan: %s\n", rpt.Plan))
 	}
-	b.WriteString(fmt.Sprintf("Runs:     %d\n\n", report.Runs))
+	b.WriteString(fmt.Sprintf("Runs:     %d\n\n", rpt.Runs))
 
 	nameFunc := cfg.MetricNameFunc
 	if nameFunc == nil {
@@ -92,27 +92,27 @@ func FormatReport(report *CalibrationReport, cfg FormatConfig) string {
 
 	sections := cfg.Sections
 	if len(sections) == 0 {
-		sections = sectionsFromTier(report.Metrics)
+		sections = sectionsFromTier(rpt.Metrics)
 	}
 
 	for _, sec := range sections {
 		b.WriteString(fmt.Sprintf("--- %s ---\n", sec.Title))
-		tbl := format.NewTable(format.ASCII)
+		tbl := report.NewTable(report.ASCII)
 		tbl.Header("ID", "Metric", "Value", "Detail", "Pass", "Threshold")
 		tbl.Columns(
-			format.ColumnConfig{Number: 1, Align: format.AlignLeft},
-			format.ColumnConfig{Number: 2, Align: format.AlignLeft},
-			format.ColumnConfig{Number: 3, Align: format.AlignRight},
-			format.ColumnConfig{Number: 4, Align: format.AlignLeft},
-			format.ColumnConfig{Number: 5, Align: format.AlignCenter},
-			format.ColumnConfig{Number: 6, Align: format.AlignLeft},
+			report.ColumnConfig{Number: 1, Align: report.AlignLeft},
+			report.ColumnConfig{Number: 2, Align: report.AlignLeft},
+			report.ColumnConfig{Number: 3, Align: report.AlignRight},
+			report.ColumnConfig{Number: 4, Align: report.AlignLeft},
+			report.ColumnConfig{Number: 5, Align: report.AlignCenter},
+			report.ColumnConfig{Number: 6, Align: report.AlignLeft},
 		)
 		for _, m := range sec.Metrics {
 			displayName := nameFunc(m.ID)
 			if displayName == "" {
 				displayName = m.Name
 			}
-			passMark := format.BoolMark(m.Pass)
+			passMark := report.BoolMark(m.Pass)
 			if m.DryCapped {
 				passMark = "~"
 			}
@@ -129,15 +129,15 @@ func FormatReport(report *CalibrationReport, cfg FormatConfig) string {
 		b.WriteString("\n\n")
 	}
 
-	passed, total := report.Metrics.PassCount()
+	passed, total := rpt.Metrics.PassCount()
 	result := "PASS"
 	if passed < total {
 		result = "FAIL"
 	}
 	b.WriteString(fmt.Sprintf("RESULT: %s (%d/%d metrics within threshold)\n\n", result, passed, total))
 
-	if report.Tokens != nil {
-		b.WriteString(dispatch.FormatTokenSummary(*report.Tokens))
+	if rpt.Tokens != nil {
+		b.WriteString(dispatch.FormatTokenSummary(*rpt.Tokens))
 		b.WriteString("\n")
 	}
 
@@ -183,7 +183,7 @@ func FormatResolutionComparison(comps []ResolutionComparison, labelA, labelB str
 	var b strings.Builder
 	b.WriteString(fmt.Sprintf("\n=== Resolution Comparison: %s vs %s ===\n\n", labelA, labelB))
 
-	tbl := format.NewTable(format.ASCII)
+	tbl := report.NewTable(report.ASCII)
 	tbl.Header("ID", "NAME", labelA, "", labelB, "", "DELTA")
 
 	for _, c := range comps {

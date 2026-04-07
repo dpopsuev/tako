@@ -1,4 +1,4 @@
-package format
+package report
 
 import (
 	"github.com/jedib0t/go-pretty/v6/table"

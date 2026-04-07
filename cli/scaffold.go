@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine/telemetry"
 	"github.com/dpopsuev/origami/lint"
-	"github.com/dpopsuev/origami/observability"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
@@ -205,13 +205,13 @@ func (b *CLIBuilder) Build() (*CLI, error) {
 		c.observers = b.observers
 	} else {
 		reg := prometheus.NewRegistry()
-		c.observers = observability.DefaultObservabilityWithRegistry(reg)
+		c.observers = telemetry.DefaultObservabilityWithRegistry(reg)
 		b.promReg = reg
 	}
 
 	if b.promReg == nil {
 		for _, obs := range c.observers {
-			if pc, ok := obs.(*observability.PrometheusCollector); ok {
+			if pc, ok := obs.(*telemetry.PrometheusCollector); ok {
 				b.promReg = pc.Registry
 				break
 			}

@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/dpopsuev/origami/agentport"
-	"github.com/dpopsuev/origami/format"
+	"github.com/dpopsuev/origami/report"
 )
 
 // FormatTokenSummary returns a human-readable token and cost section.
@@ -32,11 +32,11 @@ func FormatTokenSummary(s agentport.TokenSummary, opts ...agentport.CostConfig) 
 	promptCost := float64(s.TotalPromptTokens) / 1_000_000 * cc.InputPricePerMToken
 	artifactCost := float64(s.TotalArtifactTokens) / 1_000_000 * cc.OutputPricePerMToken
 
-	tbl := format.NewTable(format.ASCII)
+	tbl := report.NewTable(report.ASCII)
 	tbl.Header("Metric", "Value")
 	tbl.Columns(
-		format.ColumnConfig{Number: 1, Align: format.AlignLeft},
-		format.ColumnConfig{Number: 2, Align: format.AlignRight},
+		report.ColumnConfig{Number: 1, Align: report.AlignLeft},
+		report.ColumnConfig{Number: 2, Align: report.AlignRight},
 	)
 	tbl.Row("Total prompts", fmt.Sprintf("%d tokens ($%.4f)", s.TotalPromptTokens, promptCost))
 	tbl.Row("Total artifacts", fmt.Sprintf("%d tokens ($%.4f)", s.TotalArtifactTokens, artifactCost))
