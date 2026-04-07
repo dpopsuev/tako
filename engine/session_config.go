@@ -4,6 +4,8 @@ import (
 	"context"
 	"io/fs"
 
+	"github.com/dpopsuev/battery/tool"
+
 	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/prompt"
@@ -138,4 +140,9 @@ type SessionParams struct {
 	// Consumers with custom RunFunc use this to load sub-circuit definitions
 	// (e.g., GND within RCA) via circuit.LoadSubCircuitsFromFS(domainFS, resolvers).
 	SubCircuitResolvers map[string]circuit.AssetResolver
+
+	// Tools is the typed tool registry from fold-generated code.
+	// Consumers read connector dependencies via Tools.Get(name)
+	// instead of type-asserting from Extra. Nil when no tools are wired.
+	Tools *tool.Registry
 }

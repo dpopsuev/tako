@@ -61,6 +61,7 @@ func SessionFactoryToConfig(factory engine.SessionFactory) CircuitConfig {
 				PromptStore:         params.PromptStore,
 				ResourceRegistry:    params.ResourceRegistry,
 				SubCircuitResolvers: params.SubCircuitResolvers,
+				Tools:               params.Tools,
 			}
 
 			sessionCfg, err := factory.CreateSession(ctx, &engineParams)

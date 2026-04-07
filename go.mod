@@ -22,6 +22,8 @@ require (
 	modernc.org/sqlite v1.46.1
 )
 
+require github.com/mozilla-ai/any-llm-go v0.9.0 // indirect
+
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect

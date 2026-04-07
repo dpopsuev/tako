@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/fs"
 
+	"github.com/dpopsuev/battery/tool"
+
 	"github.com/dpopsuev/origami/agentport"
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
@@ -151,6 +153,10 @@ type CircuitConfig struct {
 	// The session bridge loads sub-circuit definitions from these resolvers
 	// and passes them to the engine via GraphRegistries.Circuits.
 	SubCircuitResolvers map[string]circuit.AssetResolver
+
+	// Tools is the typed tool registry from fold-generated code.
+	// Passed to SessionParams.Tools for consumer access.
+	Tools *tool.Registry
 }
 
 // FindSchema returns the StepSchema for the given step name, or an error
@@ -213,6 +219,9 @@ type StartParams struct {
 	// Copied from CircuitConfig. Used by the session bridge to load sub-circuit
 	// definitions into GraphRegistries.Circuits.
 	SubCircuitResolvers map[string]circuit.AssetResolver
+
+	// Tools is the typed tool registry from CircuitConfig.
+	Tools *tool.Registry
 }
 
 // SchematicHooks groups the domain-specific callbacks that a schematic
