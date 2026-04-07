@@ -83,6 +83,9 @@ var ObservableEvents = EventRegistry{
 	// Fold events
 	"export validation complete": {Category: "fold", Fields: []string{"name", "count"}},
 
+	// Observability events
+	"observability metrics computed": {Category: "session", Fields: []string{"latency_nodes", "error_rate_nodes"}},
+
 	// Signal events
 	"signal emitted": {Category: "signal", Fields: []string{"event", "agent"}},
 

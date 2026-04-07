@@ -43,6 +43,8 @@ var observableEventValues = []string{
 	"signal emitted",
 	// HITL
 	"inspect checkpoint", "resume walk",
+	// Observability
+	"observability metrics computed",
 }
 
 // TestObservableEvents_AllRegistered ensures every observable event value
