@@ -194,6 +194,13 @@ const (
 	LogCollectiveSpawnFailed = "collective spawn failed, falling back to single-agent dispatch"
 	LogACPDispatchError      = "ACP worker dispatch error"
 
+	// Health — component health tracking
+	LogComponentHealthCheck   = "component health check"
+	LogComponentHealthy       = "component healthy"
+	LogComponentUnhealthy     = "component unhealthy"
+	LogComponentHealthSkipped = "component has no health checker"
+	LogAllComponentsHealthy   = "all components healthy"
+
 	// Fold — contract validation
 	LogComponentFold              = "fold"
 	LogSocketContractNotSatisfied = "socket contract not satisfied"

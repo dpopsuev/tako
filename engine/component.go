@@ -26,6 +26,7 @@ type Component struct {
 	Transformers TransformerRegistry
 	Extractors   ExtractorRegistry
 	Hooks        HookRegistry
+	Health       HealthChecker // optional: validates runtime prerequisites
 }
 
 // MergeComponents merges one or more components into a base GraphRegistries.
