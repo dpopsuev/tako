@@ -58,7 +58,8 @@ func TestBuildFixPrompt(t *testing.T) {
 		Message:  "fmt is imported but not used",
 		Severity: "error",
 	}
-	prompt := buildFixPrompt(finding, t.TempDir())
+	f := NewFixTransformer(nil, "test", t.TempDir(), WithDryRun())
+	prompt := f.buildFixPrompt(finding)
 	if prompt == "" {
 		t.Fatal("empty prompt")
 	}
@@ -67,6 +68,17 @@ func TestBuildFixPrompt(t *testing.T) {
 	}
 	if !contains(prompt, "engine/graph.go") {
 		t.Error("prompt missing file path")
+	}
+	// Guards must be present to prevent junk file creation.
+	for _, guard := range []string{
+		"ONLY modify the file",
+		"Do NOT create new files",
+		"Do NOT add new packages",
+		"COMPLETE file content",
+	} {
+		if !contains(prompt, guard) {
+			t.Errorf("prompt missing guard: %q", guard)
+		}
 	}
 }
 

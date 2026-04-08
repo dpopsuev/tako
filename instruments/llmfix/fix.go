@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	texttemplate "text/template"
 	"time"
 
 	anyllm "github.com/mozilla-ai/any-llm-go/providers"
@@ -34,10 +35,11 @@ var (
 
 // FixTransformer calls an LLM to generate code fixes for scan findings.
 type FixTransformer struct {
-	provider anyllm.Provider
-	model    string
-	repoPath string
-	dryRun   bool // when true, don't write files — just return what would change
+	provider       anyllm.Provider
+	model          string
+	repoPath       string
+	dryRun         bool   // when true, don't write files — just return what would change
+	promptTemplate string // Go text/template for the fix prompt
 
 	mu             sync.Mutex
 	lastStationLog trace.StationLogger
@@ -45,6 +47,12 @@ type FixTransformer struct {
 
 // FixOption configures the fix transformer.
 type FixOption func(*FixTransformer)
+
+// WithPromptTemplate sets a custom prompt template (Go text/template format).
+// When empty, uses the default embedded template.
+func WithPromptTemplate(tmpl string) FixOption {
+	return func(f *FixTransformer) { f.promptTemplate = tmpl }
+}
 
 // WithDryRun prevents actual file writes — useful for testing.
 func WithDryRun() FixOption {
@@ -86,8 +94,8 @@ func (f *FixTransformer) Transform(ctx context.Context, tc *engine.TransformerCo
 	// Pick the highest severity finding to fix first.
 	finding := pickHighestSeverity(findings)
 
-	// Build prompt.
-	prompt := buildFixPrompt(finding, f.repoPath)
+	// Build prompt from template.
+	prompt := f.buildFixPrompt(finding)
 
 	// Call LLM.
 	resp, err := f.provider.Completion(ctx, anyllm.CompletionParams{
@@ -370,37 +378,91 @@ func pickHighestSeverity(findings []sdlctype.Finding) sdlctype.Finding {
 	return findings[0]
 }
 
-// buildFixPrompt constructs a prompt asking the LLM to fix a specific finding.
-func buildFixPrompt(finding sdlctype.Finding, repoPath string) string {
-	var b strings.Builder
-	b.WriteString("You are a Go developer fixing a code issue.\n\n")
-	b.WriteString("## Finding\n\n")
-	fmt.Fprintf(&b, "- **Rule:** %s\n", finding.Rule)
-	fmt.Fprintf(&b, "- **File:** %s\n", finding.File)
-	if finding.Line > 0 {
-		fmt.Fprintf(&b, "- **Line:** %d\n", finding.Line)
-	}
-	fmt.Fprintf(&b, "- **Message:** %s\n", finding.Message)
-	fmt.Fprintf(&b, "- **Severity:** %s\n", finding.Severity)
+// promptContext is the data passed to the fix prompt template.
+type promptContext struct {
+	Rule        string
+	File        string
+	Line        int
+	Message     string
+	Severity    string
+	FileContent string
+	ModulePath  string
+}
 
-	// Read the file content if it exists.
+// defaultPromptTemplate is used when no custom template is provided.
+const defaultPromptTemplate = `You are a Go developer fixing a single code issue.
+
+## Finding
+- Rule: {{ .Rule }}
+- File: {{ .File }}
+{{- if .Line }}
+- Line: {{ .Line }}
+{{- end }}
+- Message: {{ .Message }}
+- Severity: {{ .Severity }}
+
+## Module
+{{ .ModulePath }}
+
+## Current File Content
+{{ .FileContent }}
+
+## Guards
+- ONLY modify the file: {{ .File }}
+- Do NOT create new files
+- Do NOT add new packages or directories
+- Do NOT change import paths or module structure
+- Return the COMPLETE file content, not a diff
+
+## Output
+Return JSON — no markdown, no explanation:
+[{"file": "{{ .File }}", "content": "... complete file content ..."}]
+`
+
+// buildFixPrompt renders the prompt template with finding context.
+func (f *FixTransformer) buildFixPrompt(finding sdlctype.Finding) string {
+	tmplStr := f.promptTemplate
+	if tmplStr == "" {
+		tmplStr = defaultPromptTemplate
+	}
+
+	tmpl, err := texttemplate.New("fix").Parse(tmplStr)
+	if err != nil {
+		// Fallback: return the raw finding info.
+		return fmt.Sprintf("Fix %s in %s: %s", finding.Rule, finding.File, finding.Message)
+	}
+
+	pctx := promptContext{
+		Rule:     finding.Rule,
+		File:     finding.File,
+		Line:     finding.Line,
+		Message:  finding.Message,
+		Severity: finding.Severity,
+	}
+
+	// Read current file content.
 	if finding.File != "" {
-		absPath := filepath.Join(repoPath, finding.File)
-		if content, err := os.ReadFile(absPath); err == nil {
-			b.WriteString("\n## Current File Content\n\n```go\n")
-			b.Write(content)
-			b.WriteString("\n```\n")
+		absPath := filepath.Join(f.repoPath, finding.File)
+		if content, readErr := os.ReadFile(absPath); readErr == nil {
+			pctx.FileContent = string(content)
 		}
 	}
 
-	b.WriteString("\n## Instructions\n\n")
-	b.WriteString("Fix this issue. Respond with a JSON array of file changes:\n\n")
-	b.WriteString("```json\n")
-	b.WriteString(`[{"file": "path/to/file.go", "content": "... full file content ..."}]`)
-	b.WriteString("\n```\n\n")
-	b.WriteString("Only include files that need to change. Return the complete file content, not diffs.\n")
+	// Read module path from go.mod.
+	if modData, readErr := os.ReadFile(filepath.Join(f.repoPath, "go.mod")); readErr == nil {
+		for _, line := range strings.Split(string(modData), "\n") {
+			if strings.HasPrefix(line, "module ") {
+				pctx.ModulePath = strings.TrimPrefix(line, "module ")
+				break
+			}
+		}
+	}
 
-	return b.String()
+	var buf strings.Builder
+	if execErr := tmpl.Execute(&buf, pctx); execErr != nil {
+		return fmt.Sprintf("Fix %s in %s: %s", finding.Rule, finding.File, finding.Message)
+	}
+	return buf.String()
 }
 
 // parseChanges extracts file changes from the LLM response.
