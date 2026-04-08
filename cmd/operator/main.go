@@ -38,7 +38,12 @@ func main() {
 	runtime := flag.String("runtime", "docker", "container runtime: docker or podman")
 	interval := flag.Duration("interval", 30*time.Second, "poll interval")
 	maxRuns := flag.Int("max-runs", 0, "max circuit runs (0 = unlimited)")
+	debug := flag.Bool("debug", false, "enable debug logging")
 	flag.Parse()
+
+	if *debug {
+		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	}
 
 	desired := operator.DesiredState{
 		Manifest: "origami-sdlc.yaml",

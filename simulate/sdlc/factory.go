@@ -29,7 +29,12 @@ const (
 	// EnvMode is the environment variable for the execution mode (stub/real).
 	EnvMode     = "SDLC_MODE"
 	envProvider = "SDLC_PROVIDER" // "vertex-ai", "anthropic-api", etc.
-	envModel    = "SDLC_MODEL"    // default: claude-sonnet-4-6
+	envModel    = "SDLC_MODEL"    // no default — fail fast
+
+	// sdlcMaxTokens is the output token limit for all LLM calls in the SDLC circuit.
+	// Set once here, propagated to all providers via ConfiguredProvider.
+	// 16384 is enough for any single Go file (64k available on Sonnet 4.6).
+	sdlcMaxTokens = 16384
 
 	logKeyProvider = "provider"
 	logKeyModel    = "model"
@@ -101,7 +106,9 @@ func realTransformers(repoPath string) (engine.TransformerRegistry, error) {
 				" (e.g. SDLC_MODEL=claude-sonnet-4-6 for Vertex, SDLC_MODEL=gpt-4o for OpenAI)",
 				errModelRequired, envProvider, providerName, envModel)
 		}
-		provider, err := execution.NewProviderByName(providerName)
+		provider, err := execution.NewProviderWithConfig(providerName, execution.ProviderConfig{
+			MaxTokens: sdlcMaxTokens,
+		})
 		if err != nil {
 			return nil, fmt.Errorf("%w: %q: %w", errProviderFailed, providerName, err)
 		}
