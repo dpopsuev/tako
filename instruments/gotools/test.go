@@ -5,8 +5,11 @@ import (
 	"context"
 	"os/exec"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/origami/engine/trace"
 	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
 )
 
@@ -14,6 +17,9 @@ import (
 type TestTransformer struct {
 	repoPath string
 	args     []string
+
+	mu             sync.Mutex
+	lastStationLog trace.StationLogger
 }
 
 // TestOption configures the test transformer.
@@ -44,6 +50,13 @@ func NewTestTransformer(repoPath string, opts ...TestOption) *TestTransformer {
 // Name implements engine.Transformer.
 func (t *TestTransformer) Name() string { return "go-test" }
 
+// LastStationLog implements engine.StationLoggable.
+func (t *TestTransformer) LastStationLog() trace.StationLogger {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.lastStationLog
+}
+
 // Transform implements engine.Transformer.
 func (t *TestTransformer) Transform(ctx context.Context, _ *engine.TransformerContext) (any, error) {
 	args := append([]string{"test", "-short", "-count=1"}, t.args...)
@@ -54,10 +67,27 @@ func (t *TestTransformer) Transform(ctx context.Context, _ *engine.TransformerCo
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
+	start := time.Now()
 	err := cmd.Run()
+	elapsed := time.Since(start)
 	output := strings.TrimSpace(stdout.String() + stderr.String())
 
 	total, failed := parseTestCounts(output)
+
+	snippet := output
+	if len(snippet) > outputSnippetMax {
+		snippet = snippet[:outputSnippetMax]
+	}
+
+	t.mu.Lock()
+	t.lastStationLog = &sdlctype.TestStationLog{
+		Pass:          err == nil,
+		Total:         total,
+		Failed:        failed,
+		OutputSnippet: snippet,
+		DurationMs:    elapsed.Milliseconds(),
+	}
+	t.mu.Unlock()
 
 	return &sdlctype.TestResult{
 		Pass:   err == nil,

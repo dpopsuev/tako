@@ -8,14 +8,20 @@ import (
 	"context"
 	"os/exec"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/origami/engine/trace"
 	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
 )
 
 // BuildTransformer runs `go build ./...` on the target repository.
 type BuildTransformer struct {
 	repoPath string
+
+	mu             sync.Mutex
+	lastStationLog trace.StationLogger
 }
 
 // NewBuildTransformer creates a build transformer for the given repository.
@@ -26,6 +32,16 @@ func NewBuildTransformer(repoPath string) *BuildTransformer {
 // Name implements engine.Transformer.
 func (b *BuildTransformer) Name() string { return "go-build" }
 
+// LastStationLog implements engine.StationLoggable.
+func (b *BuildTransformer) LastStationLog() trace.StationLogger {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.lastStationLog
+}
+
+// outputSnippetMax is the maximum length of the output snippet stored in station logs.
+const outputSnippetMax = 500
+
 // Transform implements engine.Transformer.
 func (b *BuildTransformer) Transform(ctx context.Context, _ *engine.TransformerContext) (any, error) {
 	cmd := exec.CommandContext(ctx, "go", "build", "./...")
@@ -35,8 +51,23 @@ func (b *BuildTransformer) Transform(ctx context.Context, _ *engine.TransformerC
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
+	start := time.Now()
 	err := cmd.Run()
+	elapsed := time.Since(start)
 	output := strings.TrimSpace(stderr.String() + stdout.String())
+
+	snippet := output
+	if len(snippet) > outputSnippetMax {
+		snippet = snippet[:outputSnippetMax]
+	}
+
+	b.mu.Lock()
+	b.lastStationLog = &sdlctype.BuildStationLog{
+		Pass:          err == nil,
+		OutputSnippet: snippet,
+		DurationMs:    elapsed.Milliseconds(),
+	}
+	b.mu.Unlock()
 
 	return &sdlctype.BuildResult{
 		Pass:   err == nil,

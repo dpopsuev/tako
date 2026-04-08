@@ -4,23 +4,32 @@
 package llmfix
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	anyllm "github.com/mozilla-ai/any-llm-go/providers"
 
 	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/origami/engine/trace"
 	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
 )
 
 var (
 	errNoChoices      = errors.New("llm fix: no choices returned")
 	errContentNotText = errors.New("llm fix: content is not a string")
+	errWorktreeAdd    = errors.New("llm fix: git worktree add failed")
+	errWorktreeBuild  = errors.New("llm fix: build failed in worktree")
+	errWorktreeCommit = errors.New("llm fix: commit failed in worktree")
 )
 
 // FixTransformer calls an LLM to generate code fixes for scan findings.
@@ -29,6 +38,9 @@ type FixTransformer struct {
 	model    string
 	repoPath string
 	dryRun   bool // when true, don't write files — just return what would change
+
+	mu             sync.Mutex
+	lastStationLog trace.StationLogger
 }
 
 // FixOption configures the fix transformer.
@@ -54,6 +66,13 @@ func NewFixTransformer(provider anyllm.Provider, model, repoPath string, opts ..
 
 // Name implements engine.Transformer.
 func (f *FixTransformer) Name() string { return "llm-fix" }
+
+// LastStationLog implements engine.StationLoggable.
+func (f *FixTransformer) LastStationLog() trace.StationLogger {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.lastStationLog
+}
 
 // Transform implements engine.Transformer. Reads scan findings from prior
 // artifact, asks the LLM for fixes, applies them, returns FixResult.
@@ -92,26 +111,135 @@ func (f *FixTransformer) Transform(ctx context.Context, tc *engine.TransformerCo
 	// Parse the LLM response as file changes.
 	changes := parseChanges(content)
 
-	// Apply changes to disk (unless dry run).
-	var fixed []string
+	// Collect modified file names.
+	fixed := make([]string, 0, len(changes))
+	for _, ch := range changes {
+		fixed = append(fixed, ch.File)
+	}
+
+	// Apply changes to an isolated worktree (or skip writes in dry-run mode).
+	var worktreePath, branch string
 	if !f.dryRun {
-		for _, ch := range changes {
-			absPath := filepath.Join(f.repoPath, ch.File)
-			if err := os.WriteFile(absPath, []byte(ch.Content), 0o600); err != nil {
-				return nil, fmt.Errorf("write fix %s: %w", ch.File, err)
-			}
-			fixed = append(fixed, ch.File)
-		}
-	} else {
-		for _, ch := range changes {
-			fixed = append(fixed, ch.File)
+		var applyErr error
+		worktreePath, branch, applyErr = f.applyToWorktree(ctx, changes, fixed, finding)
+		if applyErr != nil {
+			return nil, applyErr
 		}
 	}
 
+	f.mu.Lock()
+	f.lastStationLog = &sdlctype.FixStationLog{
+		PromptLen:     len(prompt),
+		ResponseLen:   len(content),
+		FilesModified: fixed,
+		ParsedChanges: len(changes),
+		DryRun:        f.dryRun,
+	}
+	f.mu.Unlock()
+
 	return &sdlctype.FixResult{
-		Fixed:   fixed,
-		Applied: fmt.Sprintf("fixed %s: %s", finding.Rule, finding.Message),
+		Fixed:        fixed,
+		Applied:      fmt.Sprintf("fixed %s: %s", finding.Rule, finding.Message),
+		WorktreePath: worktreePath,
+		Branch:       branch,
 	}, nil
+}
+
+// applyToWorktree creates a worktree, writes changes, builds, and commits.
+func (f *FixTransformer) applyToWorktree(ctx context.Context, changes []fileChange, files []string, finding sdlctype.Finding) (wtPath, branchName string, err error) {
+	wtDir, branch, err := f.createWorktree(ctx)
+	if err != nil {
+		return "", "", err
+	}
+
+	for _, ch := range changes {
+		absPath := filepath.Join(wtDir, ch.File)
+		if mkErr := os.MkdirAll(filepath.Dir(absPath), 0o750); mkErr != nil {
+			return "", "", fmt.Errorf("mkdir for fix %s: %w", ch.File, mkErr)
+		}
+		if wErr := os.WriteFile(absPath, []byte(ch.Content), 0o600); wErr != nil {
+			return "", "", fmt.Errorf("write fix %s: %w", ch.File, wErr)
+		}
+	}
+
+	if buildErr := f.buildInWorktree(ctx, wtDir); buildErr != nil {
+		return "", "", buildErr
+	}
+
+	if commitErr := f.commitInWorktree(ctx, wtDir, files, finding); commitErr != nil {
+		return "", "", commitErr
+	}
+
+	return wtDir, branch, nil
+}
+
+// createWorktree creates a git worktree at .sdlc-fix-<timestamp> on a new branch.
+func (f *FixTransformer) createWorktree(ctx context.Context) (wtDir, branch string, err error) {
+	ts := strconv.FormatInt(time.Now().UnixMilli(), 10)
+	branch = "sdlc-fix-" + ts
+	wtDir = filepath.Join(f.repoPath, ".sdlc-fix-"+ts)
+
+	cmd := exec.CommandContext(ctx, "git", "worktree", "add", wtDir, "-b", branch)
+	cmd.Dir = f.repoPath
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	if runErr := cmd.Run(); runErr != nil {
+		return "", "", fmt.Errorf("%w: %w: %s", errWorktreeAdd, runErr, stderr.String())
+	}
+	return wtDir, branch, nil
+}
+
+// buildInWorktree runs go build ./... inside the worktree to verify correctness.
+func (f *FixTransformer) buildInWorktree(ctx context.Context, wtDir string) error {
+	cmd := exec.CommandContext(ctx, "go", "build", "./...")
+	cmd.Dir = wtDir
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%w: %w: %s", errWorktreeBuild, err, stderr.String())
+	}
+	return nil
+}
+
+// commitInWorktree stages and commits the fixed files in the worktree.
+func (f *FixTransformer) commitInWorktree(ctx context.Context, wtDir string, files []string, finding sdlctype.Finding) error {
+	args := append([]string{"add", "--"}, files...)
+	addCmd := exec.CommandContext(ctx, "git", args...)
+	addCmd.Dir = wtDir
+	var addErr bytes.Buffer
+	addCmd.Stderr = &addErr
+	if err := addCmd.Run(); err != nil {
+		return fmt.Errorf("%w: git add: %w: %s", errWorktreeCommit, err, addErr.String())
+	}
+
+	msg := fmt.Sprintf("fix(%s): %s", finding.Rule, finding.Message)
+	commitCmd := exec.CommandContext(ctx, "git", "commit", "-m", msg)
+	commitCmd.Dir = wtDir
+	var commitErr bytes.Buffer
+	commitCmd.Stderr = &commitErr
+	if err := commitCmd.Run(); err != nil {
+		return fmt.Errorf("%w: git commit: %w: %s", errWorktreeCommit, err, commitErr.String())
+	}
+	return nil
+}
+
+// CleanupWorktrees removes all .sdlc-fix-* worktrees from the repository.
+// Call after circuit completion to reclaim disk space.
+func CleanupWorktrees(ctx context.Context, repoPath string) error {
+	entries, err := os.ReadDir(repoPath)
+	if err != nil {
+		return fmt.Errorf("read repo dir: %w", err)
+	}
+	for _, e := range entries {
+		if !e.IsDir() || !strings.HasPrefix(e.Name(), ".sdlc-fix-") {
+			continue
+		}
+		wtDir := filepath.Join(repoPath, e.Name())
+		cmd := exec.CommandContext(ctx, "git", "worktree", "remove", "--force", wtDir)
+		cmd.Dir = repoPath
+		_ = cmd.Run() // best-effort cleanup
+	}
+	return nil
 }
 
 // fileChange represents a single file modification from the LLM.

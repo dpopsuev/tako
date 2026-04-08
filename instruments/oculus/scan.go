@@ -7,11 +7,13 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 
 	oculusengine "github.com/dpopsuev/oculus/engine"
 	"github.com/dpopsuev/oculus/port"
 
 	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/origami/engine/trace"
 	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
 )
 
@@ -22,6 +24,9 @@ type ScanTransformer struct {
 	store    port.Store
 	intent   string
 	layers   []string
+
+	mu             sync.Mutex
+	lastStationLog trace.StationLogger
 }
 
 // ScanOption configures the scan transformer.
@@ -57,6 +62,13 @@ func NewScanTransformer(repoPath string, opts ...ScanOption) *ScanTransformer {
 
 // Name implements engine.Transformer.
 func (s *ScanTransformer) Name() string { return "oculus-scan" }
+
+// LastStationLog implements engine.StationLoggable.
+func (s *ScanTransformer) LastStationLog() trace.StationLogger {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.lastStationLog
+}
 
 // Transform implements engine.Transformer. Scans the repository and returns
 // a *sdlctype.ScanResult with findings mapped from Oculus analysis.
@@ -108,6 +120,17 @@ func (s *ScanTransformer) Transform(ctx context.Context, _ *engine.TransformerCo
 			})
 		}
 	}
+
+	categories := make(map[string]int, len(findings))
+	for _, f := range findings {
+		categories[f.Rule]++
+	}
+	s.mu.Lock()
+	s.lastStationLog = &sdlctype.ScanStationLog{
+		FindingsCount: len(findings),
+		Categories:    categories,
+	}
+	s.mu.Unlock()
 
 	return &sdlctype.ScanResult{
 		Findings: findings,

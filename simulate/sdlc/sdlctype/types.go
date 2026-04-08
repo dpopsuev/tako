@@ -19,8 +19,10 @@ type Finding struct {
 
 // FixResult is produced by the fix node (LLM code generation).
 type FixResult struct {
-	Fixed   []string `json:"fixed"`   // file paths modified
-	Applied string   `json:"applied"` // fix description
+	Fixed        []string `json:"fixed"`                   // file paths modified
+	Applied      string   `json:"applied"`                 // fix description
+	WorktreePath string   `json:"worktree_path,omitempty"` // worktree path (when isolation is active)
+	Branch       string   `json:"branch,omitempty"`        // branch name (when isolation is active)
 }
 
 // BuildResult is produced by the build node (go build).

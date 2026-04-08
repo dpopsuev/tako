@@ -12,13 +12,24 @@ import (
 	"github.com/dpopsuev/origami/circuit"
 )
 
+// StationLogger provides structured logging for instrument internals.
+type StationLogger interface {
+	StationLogType() string
+}
+
+// TextLog is a simple StationLogger adapter for callers that pass plain text.
+type TextLog struct{ Text string }
+
+// StationLogType implements StationLogger.
+func (t *TextLog) StationLogType() string { return "text" }
+
 // FlightEvent is a timestamped record of a station crossing.
 type FlightEvent struct {
 	Time    time.Time
-	Station string // e.g. "walker:enter", "edge:evaluate", "session:create"
-	Dir     string // "in" or "out"
-	Summary string // human-readable: "case=case-1 node=triage"
-	Data    any    // raw payload for deep inspection
+	Station string        // e.g. "walker:enter", "edge:evaluate", "session:create"
+	Dir     string        // "in" or "out"
+	Summary string        // human-readable: "case=case-1 node=triage"
+	Data    StationLogger // structured payload for deep inspection
 	Err     error
 }
 
@@ -47,7 +58,7 @@ func NewFlightRecorder(capacity int) *FlightRecorder {
 
 // Record appends a flight event. If the buffer is full, the oldest event
 // is overwritten (ring buffer semantics).
-func (r *FlightRecorder) Record(station, dir, summary string, data any, err error) {
+func (r *FlightRecorder) Record(station, dir, summary string, data StationLogger, err error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.events[r.pos] = FlightEvent{
@@ -64,12 +75,36 @@ func (r *FlightRecorder) Record(station, dir, summary string, data any, err erro
 	}
 }
 
+// WalkEventLog wraps a circuit.Artifact as a StationLogger for walk events.
+type WalkEventLog struct{ Artifact circuit.Artifact }
+
+// StationLogType implements StationLogger.
+func (w *WalkEventLog) StationLogType() string { return "walk" }
+
+// stationLogCarrier is implemented by artifacts that carry a station log
+// from a StationLoggable transformer.
+type stationLogCarrier interface {
+	StationLog() StationLogger
+}
+
 // OnEvent implements circuit.WalkObserver. Maps walk events to station
 // tags so the FlightRecorder captures engine-level events automatically.
 func (r *FlightRecorder) OnEvent(e *circuit.WalkEvent) {
 	station, dir := mapWalkEvent(e)
 	summary := formatEventSummary(e)
-	r.Record(station, dir, summary, e.Artifact, e.Error)
+	var data StationLogger
+	if e.Artifact != nil {
+		// Prefer the structured station log from StationLoggable transformers.
+		if carrier, ok := e.Artifact.(stationLogCarrier); ok {
+			if sl := carrier.StationLog(); sl != nil {
+				data = sl
+			}
+		}
+		if data == nil {
+			data = &WalkEventLog{Artifact: e.Artifact}
+		}
+	}
+	r.Record(station, dir, summary, data, e.Error)
 }
 
 // Events returns all recorded events in chronological order.
@@ -116,8 +151,12 @@ func (r *FlightRecorder) Dump(tb testing.TB) { //nolint:thelper // Dump is not a
 		if e.Err != nil {
 			errStr = " ERR " + e.Err.Error()
 		}
-		tb.Logf("%8.3fs [%-20s] %-3s %s%s",
-			elapsed.Seconds(), e.Station, e.Dir, e.Summary, errStr)
+		dataStr := ""
+		if e.Data != nil {
+			dataStr = " [" + e.Data.StationLogType() + "]"
+		}
+		tb.Logf("%8.3fs [%-20s] %-3s %s%s%s",
+			elapsed.Seconds(), e.Station, e.Dir, e.Summary, dataStr, errStr)
 	}
 }
 

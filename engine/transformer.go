@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine/trace"
 	"github.com/dpopsuev/origami/roster"
 )
 
@@ -99,10 +100,16 @@ func (n *transformerNode) Process(ctx context.Context, nc circuit.NodeContext) (
 
 	logger.DebugContext(ctx, circuit.LogTransformerCompleted, slog.Any(circuit.LogKeyNode, n.name), slog.Any(circuit.LogKeyTransformer, n.trans.Name()), slog.Any(circuit.LogKeyElapsed, elapsed.Milliseconds()))
 
+	var sl trace.StationLogger
+	if loggable, ok := n.trans.(StationLoggable); ok {
+		sl = loggable.LastStationLog()
+	}
+
 	return &transformerArtifact{
 		typeName:   n.trans.Name(),
 		confidence: 1.0,
 		raw:        result,
+		stationLog: sl,
 	}, nil
 }
 
@@ -130,11 +137,15 @@ type transformerArtifact struct {
 	typeName   string
 	confidence float64
 	raw        any
+	stationLog trace.StationLogger // populated when transformer is StationLoggable
 }
 
 func (a *transformerArtifact) Type() string        { return a.typeName }
 func (a *transformerArtifact) Confidence() float64 { return a.confidence }
 func (a *transformerArtifact) Raw() any            { return a.raw }
+
+// StationLog returns the station log if the producing transformer was StationLoggable.
+func (a *transformerArtifact) StationLog() trace.StationLogger { return a.stationLog }
 
 // TransformerFunc is re-exported from handler/ via handler_reexport.go.
 

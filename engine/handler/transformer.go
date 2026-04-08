@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine/trace"
 )
 
 // Transformer processes input data and produces structured output.
@@ -34,6 +35,14 @@ func IsDeterministic(t Transformer) bool {
 type TypedTransformer interface {
 	Transformer
 	InputType() reflect.Type
+}
+
+// StationLoggable is an optional interface for transformers that produce
+// structured StationLogger data. After Transform() returns, the engine
+// checks for this interface and records the log in the FlightRecorder.
+// Opt-in and backward compatible.
+type StationLoggable interface {
+	LastStationLog() trace.StationLogger
 }
 
 // TransformerContext carries all inputs needed by a transformer.

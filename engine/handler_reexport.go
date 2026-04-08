@@ -9,6 +9,7 @@ type (
 	Transformer              = handler.Transformer
 	DeterministicTransformer = handler.DeterministicTransformer
 	TypedTransformer         = handler.TypedTransformer
+	StationLoggable          = handler.StationLoggable
 	TransformerContext       = handler.TransformerContext
 	TransformerRegistry      = handler.TransformerRegistry
 	Extractor                = handler.Extractor

@@ -2,6 +2,7 @@ package operator
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -10,8 +11,20 @@ import (
 
 // Log keys.
 const (
-	logKeyError = "error"
+	logKeyError      = "error"
+	logKeyActResult  = "act_result"
+	logKeyDurationMs = "duration_ms"
 )
+
+// ActStationLog records the outcome of an Actor.Act call for FlightRecorder.
+type ActStationLog struct {
+	Success    bool
+	Error      string
+	DurationMs int64
+}
+
+// StationLogType implements trace.StationLogger.
+func (a *ActStationLog) StationLogType() string { return "act" }
 
 // Config controls the reconciliation loop.
 type Config struct {
@@ -62,11 +75,11 @@ func Loop(ctx context.Context, cfg Config) int {
 			sleep(ctx, interval)
 			continue
 		}
-		recorder.Record("operator:observe", "out", "state captured", current, nil)
+		recorder.Record("operator:observe", "out", "state captured", &trace.TextLog{Text: "head=" + current.HeadSHA}, nil)
 
 		// Diff.
 		drift := Diff(cfg.Desired, current)
-		recorder.Record("operator:diff", "out", driftSummary(drift), drift, nil)
+		recorder.Record("operator:diff", "out", driftSummary(drift), &trace.TextLog{Text: driftSummary(drift)}, nil)
 
 		if !drift.Drifted {
 			recorder.Record("operator:converged", "out", "no drift", nil, nil)
@@ -75,20 +88,39 @@ func Loop(ctx context.Context, cfg Config) int {
 		}
 
 		// Act.
-		recorder.Record("operator:act", "in", "running circuit", drift, nil)
+		recorder.Record("operator:act", "in", "running circuit", &trace.TextLog{Text: driftSummary(drift)}, nil)
+		actStart := time.Now()
 		result, err := cfg.Actor.Act(drift)
+		actDuration := time.Since(actStart)
 		runs++
-		if err != nil {
+		switch {
+		case err != nil:
 			slog.ErrorContext(ctx, "operator act failed", slog.Any(logKeyError, err))
-			recorder.Record("operator:act", "out", "error", nil, err)
-		} else {
-			recorder.Record("operator:act", "out", "circuit complete", result, nil)
+			recorder.Record("operator:act", "out", "error", &ActStationLog{
+				Success:    false,
+				Error:      err.Error(),
+				DurationMs: actDuration.Milliseconds(),
+			}, err)
+		case result.Error != "":
+			slog.ErrorContext(ctx, "operator act returned error",
+				slog.String(logKeyActResult, result.Error),
+				slog.Int64(logKeyDurationMs, actDuration.Milliseconds()))
+			recorder.Record("operator:act", "out", "circuit error", &ActStationLog{
+				Success:    result.Success,
+				Error:      result.Error,
+				DurationMs: actDuration.Milliseconds(),
+			}, nil)
+		default:
+			recorder.Record("operator:act", "out", "circuit complete", &ActStationLog{
+				Success:    result.Success,
+				DurationMs: actDuration.Milliseconds(),
+			}, nil)
 		}
 
 		sleep(ctx, interval)
 	}
 
-	recorder.Record("operator:stop", "out", "loop ended", runs, nil)
+	recorder.Record("operator:stop", "out", "loop ended", &trace.TextLog{Text: fmt.Sprintf("runs=%d", runs)}, nil)
 	return runs
 }
 
