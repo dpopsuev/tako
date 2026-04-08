@@ -28,16 +28,13 @@ import (
 
 var (
 	errNoChoices      = errors.New("llm fix: no choices returned")
-	errContentNotText = errors.New("llm fix: content is not a string")
 	errWorktreeAdd    = errors.New("llm fix: git worktree add failed")
 	errWorktreeBuild  = errors.New("llm fix: build failed in worktree")
 	errWorktreeCommit = errors.New("llm fix: commit failed in worktree")
 )
 
 const (
-	logKeyResponseLen  = "response_len"
-	logKeyResponseHead = "response_head"
-	logKeyParsedCount  = "parsed_count"
+	logKeyParsedCount = "parsed_count"
 )
 
 // FixTransformer calls an LLM to generate code fixes for scan findings.
@@ -107,11 +104,16 @@ func (f *FixTransformer) Transform(ctx context.Context, tc *engine.TransformerCo
 	// Build prompt from template.
 	prompt := f.buildFixPrompt(finding)
 
-	// Call LLM.
+	// Call LLM with tool use — structured output, no text parsing.
 	resp, err := f.provider.Completion(ctx, anyllm.CompletionParams{
 		Model: f.model,
 		Messages: []anyllm.Message{
 			{Role: "user", Content: prompt},
+		},
+		Tools: []anyllm.Tool{applyFixTool},
+		ToolChoice: anyllm.ToolChoice{
+			Type:     "function",
+			Function: &anyllm.ToolChoiceFunction{Name: applyFixToolName},
 		},
 	})
 	if err != nil {
@@ -121,23 +123,9 @@ func (f *FixTransformer) Transform(ctx context.Context, tc *engine.TransformerCo
 		return nil, errNoChoices
 	}
 
-	content, ok := resp.Choices[0].Message.Content.(string)
-	if !ok {
-		return nil, errContentNotText
-	}
-
-	// Log raw response for debugging.
-	head := content
-	if len(head) > 500 {
-		head = head[:500]
-	}
-	slog.DebugContext(ctx, "llm raw response",
-		slog.Int(logKeyResponseLen, len(content)),
-		slog.String(logKeyResponseHead, head))
-
-	// Parse the LLM response as file changes.
-	changes := parseChanges(content)
-	slog.DebugContext(ctx, "llm parsed changes",
+	// Extract file changes from tool_use response.
+	changes := extractToolUseChanges(resp.Choices[0].Message.ToolCalls)
+	slog.InfoContext(ctx, "llm tool use response",
 		slog.Int(logKeyParsedCount, len(changes)))
 
 	// Collect modified file names.
@@ -159,7 +147,7 @@ func (f *FixTransformer) Transform(ctx context.Context, tc *engine.TransformerCo
 	f.mu.Lock()
 	f.lastStationLog = &sdlctype.FixStationLog{
 		PromptLen:     len(prompt),
-		ResponseLen:   len(content),
+		ResponseLen:   len(resp.Choices[0].Message.ToolCalls),
 		FilesModified: fixed,
 		ParsedChanges: len(changes),
 		DryRun:        f.dryRun,
@@ -364,10 +352,48 @@ func CleanupWorktrees(ctx context.Context, repoPath string) error {
 	return nil
 }
 
+const applyFixToolName = "apply_fix"
+
+// applyFixTool is the tool definition sent to the LLM for structured output.
+var applyFixTool = anyllm.Tool{
+	Type: "function",
+	Function: anyllm.Function{
+		Name:        applyFixToolName,
+		Description: "Apply a code fix to a single Go file. Return the complete file content.",
+		Parameters: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"file":    map[string]any{"type": "string", "description": "relative file path (e.g. engine/graph.go)"},
+				"content": map[string]any{"type": "string", "description": "complete file content after fix"},
+			},
+			"required": []any{"file", "content"},
+		},
+	},
+}
+
 // fileChange represents a single file modification from the LLM.
 type fileChange struct {
 	File    string `json:"file"`
 	Content string `json:"content"`
+}
+
+// extractToolUseChanges extracts file changes from tool_use responses.
+// No text parsing, no JSON extraction — structured by the SDK.
+func extractToolUseChanges(toolCalls []anyllm.ToolCall) []fileChange {
+	var changes []fileChange
+	for _, tc := range toolCalls {
+		if tc.Function.Name != applyFixToolName {
+			continue
+		}
+		var fc fileChange
+		if err := json.Unmarshal([]byte(tc.Function.Arguments), &fc); err != nil {
+			continue
+		}
+		if fc.File != "" && fc.Content != "" {
+			changes = append(changes, fc)
+		}
+	}
+	return changes
 }
 
 // extractFindings pulls scan findings from the walker context or prior artifact.
@@ -519,19 +545,38 @@ func parseChanges(content string) []fileChange {
 	return changes
 }
 
-// extractJSON finds the first JSON array in the content, stripping markdown fences.
+// extractJSON finds the first JSON array of objects in the content.
+// Handles: markdown fences, reasoning text before JSON, nested brackets.
 func extractJSON(s string) string {
-	// Look for ```json ... ``` blocks.
+	// Look for ```json ... ``` blocks first.
 	if idx := strings.Index(s, "```json"); idx >= 0 {
 		start := idx + len("```json")
 		if end := strings.Index(s[start:], "```"); end >= 0 {
 			return strings.TrimSpace(s[start : start+end])
 		}
 	}
-	// Look for bare JSON array.
-	if idx := strings.Index(s, "["); idx >= 0 {
-		if end := strings.LastIndex(s, "]"); end > idx {
-			return s[idx : end+1]
+	// Look for ``` ... ``` blocks (without json tag).
+	if idx := strings.Index(s, "```\n["); idx >= 0 {
+		start := idx + len("```\n")
+		if end := strings.Index(s[start:], "```"); end >= 0 {
+			return strings.TrimSpace(s[start : start+end])
+		}
+	}
+	// Look for [{ — the start of a JSON array of objects.
+	// More specific than bare [ to avoid matching brackets in prose.
+	if idx := strings.Index(s, "[{"); idx >= 0 {
+		// Find the matching ] by counting bracket depth.
+		depth := 0
+		for i := idx; i < len(s); i++ {
+			switch s[i] {
+			case '[':
+				depth++
+			case ']':
+				depth--
+				if depth == 0 {
+					return s[idx : i+1]
+				}
+			}
 		}
 	}
 	return ""
