@@ -1,0 +1,18 @@
+# Circuit runner: fold-generated SDLC binary with Go toolchain + git.
+# The circuit needs Go (for build/test nodes) and git (for repo ops).
+FROM golang:1.25 AS builder
+
+WORKDIR /build
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 go build -o /origami-sdlc ./cmd/origami/
+
+FROM golang:1.25
+
+RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /origami-sdlc /usr/local/bin/origami-sdlc
+
+WORKDIR /workspace
+ENTRYPOINT ["origami-sdlc"]
