@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -31,6 +32,12 @@ var (
 	errWorktreeAdd    = errors.New("llm fix: git worktree add failed")
 	errWorktreeBuild  = errors.New("llm fix: build failed in worktree")
 	errWorktreeCommit = errors.New("llm fix: commit failed in worktree")
+)
+
+const (
+	logKeyResponseLen  = "response_len"
+	logKeyResponseHead = "response_head"
+	logKeyParsedCount  = "parsed_count"
 )
 
 // FixTransformer calls an LLM to generate code fixes for scan findings.
@@ -119,8 +126,19 @@ func (f *FixTransformer) Transform(ctx context.Context, tc *engine.TransformerCo
 		return nil, errContentNotText
 	}
 
+	// Log raw response for debugging.
+	head := content
+	if len(head) > 500 {
+		head = head[:500]
+	}
+	slog.DebugContext(ctx, "llm raw response",
+		slog.Int(logKeyResponseLen, len(content)),
+		slog.String(logKeyResponseHead, head))
+
 	// Parse the LLM response as file changes.
 	changes := parseChanges(content)
+	slog.DebugContext(ctx, "llm parsed changes",
+		slog.Int(logKeyParsedCount, len(changes)))
 
 	// Collect modified file names.
 	fixed := make([]string, 0, len(changes))
