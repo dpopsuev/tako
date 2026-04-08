@@ -4,8 +4,11 @@
 package oculus
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"os/exec"
 	"strings"
 	"sync"
 
@@ -121,6 +124,10 @@ func (s *ScanTransformer) Transform(ctx context.Context, _ *engine.TransformerCo
 		}
 	}
 
+	// Run golangci-lint for file:line level findings (fixable by LLM).
+	lintFindings := runLint(ctx, s.repoPath)
+	findings = append(findings, lintFindings...)
+
 	categories := make(map[string]int, len(findings))
 	for _, f := range findings {
 		categories[f.Rule]++
@@ -136,4 +143,51 @@ func (s *ScanTransformer) Transform(ctx context.Context, _ *engine.TransformerCo
 		Findings: findings,
 		Clean:    len(findings) == 0,
 	}, nil
+}
+
+// lintIssue matches golangci-lint JSON output format.
+type lintIssue struct {
+	FromLinter string `json:"FromLinter"`
+	Text       string `json:"Text"`
+	Pos        struct {
+		Filename string `json:"Filename"`
+		Line     int    `json:"Line"`
+		Column   int    `json:"Column"`
+	} `json:"Pos"`
+	Severity string `json:"Severity"`
+}
+
+type lintOutput struct {
+	Issues []lintIssue `json:"Issues"`
+}
+
+// runLint executes golangci-lint and returns file:line level findings.
+func runLint(ctx context.Context, repoPath string) []sdlctype.Finding {
+	cmd := exec.CommandContext(ctx, "golangci-lint", "run", "--out-format=json", "./...")
+	cmd.Dir = repoPath
+
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+	_ = cmd.Run() // lint exits non-zero when issues found — that's expected
+
+	var output lintOutput
+	if err := json.Unmarshal(stdout.Bytes(), &output); err != nil {
+		return nil // parse failure — lint might not be installed
+	}
+
+	findings := make([]sdlctype.Finding, 0, len(output.Issues))
+	for _, issue := range output.Issues {
+		severity := "warning"
+		if issue.Severity != "" {
+			severity = issue.Severity
+		}
+		findings = append(findings, sdlctype.Finding{
+			File:     issue.Pos.Filename,
+			Line:     issue.Pos.Line,
+			Rule:     issue.FromLinter,
+			Message:  issue.Text,
+			Severity: severity,
+		})
+	}
+	return findings
 }
