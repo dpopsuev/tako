@@ -7,9 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/instruments/oculus"
-	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
+	oculusengine "github.com/dpopsuev/oculus/engine"
+	oculusstore "github.com/dpopsuev/origami/instruments/oculus"
 )
 
 // GitObserver implements Observer by polling git HEAD and running an
@@ -44,19 +43,17 @@ func (g *GitObserver) Observe() (*CurrentState, error) {
 	}
 	g.lastSHA = sha
 
-	// Run Oculus scan.
-	scanner := oculus.NewScanTransformer(g.repoPath)
+	// Run Oculus scan directly — no dependency on sdlctype.
+	store := &oculusstore.NopStore{}
+	oc := oculusengine.New(store, []string{g.repoPath})
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	result, err := scanner.Transform(ctx, &engine.TransformerContext{})
+	scanResult, err := oc.ScanProject(ctx, g.repoPath, oculusengine.ScanOpts{})
 	if err != nil {
 		return state, nil
 	}
-
-	if sr, ok := result.(*sdlctype.ScanResult); ok {
-		state.ScanFindings = len(sr.Findings)
-	}
+	state.ScanFindings = len(scanResult.Report.HotSpots) + len(scanResult.Report.Cycles)
 
 	return state, nil
 }

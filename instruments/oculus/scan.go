@@ -56,7 +56,7 @@ func (s *ScanTransformer) Name() string { return "oculus-scan" }
 func (s *ScanTransformer) Transform(ctx context.Context, _ *engine.TransformerContext) (any, error) {
 	store := s.store
 	if store == nil {
-		store = &nopStore{}
+		store = &NopStore{}
 	}
 	oc := oculusengine.New(store, []string{s.repoPath})
 
