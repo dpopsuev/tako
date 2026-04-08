@@ -34,7 +34,8 @@ var (
 )
 
 const (
-	logKeyParsedCount = "parsed_count"
+	logKeyParsedCount  = "parsed_count"
+	logKeyResponseHead = "response_head"
 )
 
 // FixTransformer calls an LLM to generate code fixes for scan findings.
@@ -124,7 +125,12 @@ func (f *FixTransformer) Transform(ctx context.Context, tc *engine.TransformerCo
 	}
 
 	// Extract file changes from tool_use response.
-	changes := extractToolUseChanges(resp.Choices[0].Message.ToolCalls)
+	choice := resp.Choices[0]
+	if contentStr, ok := choice.Message.Content.(string); ok && len(choice.Message.ToolCalls) == 0 {
+		slog.InfoContext(ctx, "llm returned text instead of tool_use",
+			slog.String(logKeyResponseHead, truncate(contentStr, 300)))
+	}
+	changes := extractToolUseChanges(choice.Message.ToolCalls)
 	slog.InfoContext(ctx, "llm tool use response",
 		slog.Int(logKeyParsedCount, len(changes)))
 
@@ -375,6 +381,13 @@ var applyFixTool = anyllm.Tool{
 type fileChange struct {
 	File    string `json:"file"`
 	Content string `json:"content"`
+}
+
+func truncate(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	return s[:n]
 }
 
 // extractToolUseChanges extracts file changes from tool_use responses.
