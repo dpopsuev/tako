@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/simulate/sdlc"
+	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
 )
 
 // BuildTransformer runs `go build ./...` on the target repository.
@@ -38,7 +38,7 @@ func (b *BuildTransformer) Transform(ctx context.Context, _ *engine.TransformerC
 	err := cmd.Run()
 	output := strings.TrimSpace(stderr.String() + stdout.String())
 
-	return &sdlc.BuildResult{
+	return &sdlctype.BuildResult{
 		Pass:   err == nil,
 		Output: output,
 	}, nil // return nil error — the circuit uses output.pass for edge evaluation

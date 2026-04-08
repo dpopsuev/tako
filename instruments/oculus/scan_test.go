@@ -9,13 +9,12 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/simulate/sdlc"
+	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
 )
 
 func origamiRoot(t *testing.T) string {
 	t.Helper()
 	_, f, _, _ := runtime.Caller(0)
-	// instruments/oculus/scan_test.go → ../../
 	root := filepath.Join(filepath.Dir(f), "..", "..")
 	if _, err := os.Stat(filepath.Join(root, "go.mod")); err != nil {
 		t.Skipf("origami root not found at %s", root)
@@ -23,7 +22,7 @@ func origamiRoot(t *testing.T) string {
 	return root
 }
 
-// Contract test: Oculus scan returns typed *sdlc.ScanResult, same as stub.
+// Contract test: Oculus scan returns typed *sdlctype.ScanResult, same as stub.
 func TestOculusScan_ReturnsTypedScanResult(t *testing.T) {
 	root := origamiRoot(t)
 	tx := NewScanTransformer(root)
@@ -36,23 +35,27 @@ func TestOculusScan_ReturnsTypedScanResult(t *testing.T) {
 		t.Fatalf("Transform: %v", err)
 	}
 
-	sr, ok := result.(*sdlc.ScanResult)
+	sr, ok := result.(*sdlctype.ScanResult)
 	if !ok {
-		t.Fatalf("expected *sdlc.ScanResult, got %T", result)
+		t.Fatalf("expected *sdlctype.ScanResult, got %T", result)
 	}
 
-	// Clean == true only when no findings.
 	if sr.Clean != (len(sr.Findings) == 0) {
 		t.Errorf("Clean=%v but len(Findings)=%d", sr.Clean, len(sr.Findings))
 	}
 }
 
-// Contract test: same interface as stub — Liskov substitution.
+// Contract test: stub and real both return *sdlctype.ScanResult — Liskov.
 func TestScanContract_OculusMatchesStub(t *testing.T) {
 	root := origamiRoot(t)
 
+	// Inline stub — avoids importing simulate/sdlc (import cycle).
+	stubScan := engine.TransformerFunc("scan", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+		return &sdlctype.ScanResult{Clean: true}, nil
+	})
+
 	transformers := map[string]engine.Transformer{
-		"stub":   sdlc.StubTransformers(true)["scan"],
+		"stub":   stubScan,
 		"oculus": NewScanTransformer(root),
 	}
 
@@ -65,12 +68,11 @@ func TestScanContract_OculusMatchesStub(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Transform: %v", err)
 			}
-			sr, ok := result.(*sdlc.ScanResult)
+			sr, ok := result.(*sdlctype.ScanResult)
 			if !ok {
-				t.Fatalf("expected *sdlc.ScanResult, got %T", result)
+				t.Fatalf("expected *sdlctype.ScanResult, got %T", result)
 			}
 			if sr.Findings == nil {
-				// nil is acceptable for clean — but Clean must be true.
 				if !sr.Clean {
 					t.Error("nil Findings but Clean is false")
 				}
@@ -79,7 +81,7 @@ func TestScanContract_OculusMatchesStub(t *testing.T) {
 	}
 }
 
-// Integration test: scan Origami's own codebase — must find something.
+// Integration test: scan Origami's own codebase.
 func TestOculusScan_OrigamiRepo(t *testing.T) {
 	root := origamiRoot(t)
 	tx := NewScanTransformer(root, WithIntent("health"))
@@ -92,29 +94,9 @@ func TestOculusScan_OrigamiRepo(t *testing.T) {
 		t.Fatalf("Transform: %v", err)
 	}
 
-	sr := result.(*sdlc.ScanResult)
+	sr := result.(*sdlctype.ScanResult)
 	t.Logf("Oculus scan of origami: %d findings, clean=%v", len(sr.Findings), sr.Clean)
 	for _, f := range sr.Findings {
 		t.Logf("  [%s] %s: %s (%s)", f.Severity, f.Rule, f.Message, f.File)
-	}
-}
-
-// Integration test: use harness WithTransformer to swap in Oculus scan.
-// Real Oculus finds violations → stub fix doesn't actually fix → loop hits max_fix_loops → aborts.
-// This proves the real scan + fix loop + abort path works end-to-end.
-func TestOculusScan_ViaHarness(t *testing.T) {
-	root := origamiRoot(t)
-	result := sdlc.NewHarness(t).
-		WithStubs(false).
-		WithTransformer("scan", NewScanTransformer(root)).
-		WithTimeout(120 * time.Second).
-		RunExpectError()
-
-	// The circuit will either complete (if Origami is clean) or abort after max_fix_loops.
-	// Either way, it should not crash.
-	if result != nil {
-		t.Logf("SDLC circuit completed with real Oculus scan: %d walk results", len(result.WalkResults))
-	} else {
-		t.Log("SDLC circuit errored (expected — stub fix doesn't resolve real findings)")
 	}
 }

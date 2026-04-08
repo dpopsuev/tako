@@ -6,6 +6,7 @@ import (
 
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/engine/trace"
+	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
 )
 
 func TestHarness_CleanPath(t *testing.T) {
@@ -41,7 +42,7 @@ func TestHarness_WithTransformer_SwapsOne(t *testing.T) {
 	var customCalled bool
 	custom := engine.TransformerFunc("harden", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
 		customCalled = true
-		return &HardenResult{Vulnerabilities: 3, PinnedDeps: []string{"custom-dep"}}, nil
+		return &sdlctype.HardenResult{Vulnerabilities: 3, PinnedDeps: []string{"custom-dep"}}, nil
 	})
 
 	result := NewHarness(t).

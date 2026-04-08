@@ -7,6 +7,7 @@ import (
 
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/engine/trace"
+	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
 )
 
 func TestSDLCCircuit_Validates(t *testing.T) {
@@ -60,9 +61,9 @@ func TestSDLCTypes_AllOutputsTyped(t *testing.T) {
 			}
 			// Must be a pointer to a struct, not a map.
 			switch result.(type) {
-			case *ScanResult, *FixResult, *BuildResult, *TestResult,
-				*DeployResult, *ValidateResult, *HardenResult,
-				*ReleaseResult, *TeardownResult:
+			case *sdlctype.ScanResult, *sdlctype.FixResult, *sdlctype.BuildResult, *sdlctype.TestResult,
+				*sdlctype.DeployResult, *sdlctype.ValidateResult, *sdlctype.HardenResult,
+				*sdlctype.ReleaseResult, *sdlctype.TeardownResult:
 				// OK — typed struct
 			default:
 				t.Errorf("expected typed struct, got %T", result)

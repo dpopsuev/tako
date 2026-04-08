@@ -1,0 +1,10 @@
+apiVersion: origami/v1
+kind: Schematic
+metadata:
+  name: origami-sdlc
+  module: github.com/dpopsuev/origami/simulate/sdlc
+  namespace: sdlc
+  description: "SDLC self-reinforcing circuit — scans, fixes, builds, tests, hardens, releases"
+spec:
+  version: "0.1.0"
+  session_factory: "SessionFactory()"

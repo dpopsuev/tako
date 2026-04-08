@@ -1,6 +1,6 @@
 // Package llmfix provides the fix instrument backed by an LLM provider.
 // It reads findings from the prior scan artifact, asks the LLM to generate
-// fixes, and applies them to disk. Returns typed sdlc.FixResult.
+// fixes, and applies them to disk. Returns typed sdlctype.FixResult.
 package llmfix
 
 import (
@@ -15,7 +15,7 @@ import (
 	anyllm "github.com/mozilla-ai/any-llm-go/providers"
 
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/simulate/sdlc"
+	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
 )
 
 var (
@@ -61,7 +61,7 @@ func (f *FixTransformer) Transform(ctx context.Context, tc *engine.TransformerCo
 	// Extract findings from prior artifact (scan output).
 	findings := extractFindings(tc)
 	if len(findings) == 0 {
-		return &sdlc.FixResult{Applied: "no findings to fix"}, nil
+		return &sdlctype.FixResult{Applied: "no findings to fix"}, nil
 	}
 
 	// Pick the highest severity finding to fix first.
@@ -108,7 +108,7 @@ func (f *FixTransformer) Transform(ctx context.Context, tc *engine.TransformerCo
 		}
 	}
 
-	return &sdlc.FixResult{
+	return &sdlctype.FixResult{
 		Fixed:   fixed,
 		Applied: fmt.Sprintf("fixed %s: %s", finding.Rule, finding.Message),
 	}, nil
@@ -121,13 +121,13 @@ type fileChange struct {
 }
 
 // extractFindings pulls scan findings from the walker context or prior artifact.
-func extractFindings(tc *engine.TransformerContext) []sdlc.Finding {
+func extractFindings(tc *engine.TransformerContext) []sdlctype.Finding {
 	if tc.Input == nil {
 		return nil
 	}
 
 	// The prior artifact is the scan result. Try typed first.
-	if sr, ok := tc.Input.(*sdlc.ScanResult); ok {
+	if sr, ok := tc.Input.(*sdlctype.ScanResult); ok {
 		return sr.Findings
 	}
 
@@ -146,7 +146,7 @@ func extractFindings(tc *engine.TransformerContext) []sdlc.Finding {
 	if err != nil {
 		return nil
 	}
-	var findings []sdlc.Finding
+	var findings []sdlctype.Finding
 	if err := json.Unmarshal(data, &findings); err != nil {
 		return nil
 	}
@@ -154,7 +154,7 @@ func extractFindings(tc *engine.TransformerContext) []sdlc.Finding {
 }
 
 // pickHighestSeverity returns the first error-severity finding, or the first finding.
-func pickHighestSeverity(findings []sdlc.Finding) sdlc.Finding {
+func pickHighestSeverity(findings []sdlctype.Finding) sdlctype.Finding {
 	for _, f := range findings {
 		if f.Severity == "error" {
 			return f
@@ -164,7 +164,7 @@ func pickHighestSeverity(findings []sdlc.Finding) sdlc.Finding {
 }
 
 // buildFixPrompt constructs a prompt asking the LLM to fix a specific finding.
-func buildFixPrompt(finding sdlc.Finding, repoPath string) string {
+func buildFixPrompt(finding sdlctype.Finding, repoPath string) string {
 	var b strings.Builder
 	b.WriteString("You are a Go developer fixing a code issue.\n\n")
 	b.WriteString("## Finding\n\n")

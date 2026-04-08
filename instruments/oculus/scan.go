@@ -1,6 +1,6 @@
 // Package oculus provides the scan instrument backed by Oculus v1.0.0.
 // It wraps the Oculus engine as an engine.Transformer that returns typed
-// simulate/sdlc.ScanResult — same contract as the stub scan.
+// simulate/sdlctype.ScanResult — same contract as the stub scan.
 package oculus
 
 import (
@@ -12,7 +12,7 @@ import (
 	"github.com/dpopsuev/oculus/port"
 
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/simulate/sdlc"
+	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
 )
 
 // ScanTransformer wraps the Oculus analysis engine as an Origami transformer.
@@ -52,7 +52,7 @@ func NewScanTransformer(repoPath string, opts ...ScanOption) *ScanTransformer {
 func (s *ScanTransformer) Name() string { return "oculus-scan" }
 
 // Transform implements engine.Transformer. Scans the repository and returns
-// a *sdlc.ScanResult with findings mapped from Oculus analysis.
+// a *sdlctype.ScanResult with findings mapped from Oculus analysis.
 func (s *ScanTransformer) Transform(ctx context.Context, _ *engine.TransformerContext) (any, error) {
 	store := s.store
 	if store == nil {
@@ -68,11 +68,11 @@ func (s *ScanTransformer) Transform(ctx context.Context, _ *engine.TransformerCo
 	}
 
 	report := scanResult.Report
-	findings := make([]sdlc.Finding, 0, len(report.HotSpots)+len(report.Cycles))
+	findings := make([]sdlctype.Finding, 0, len(report.HotSpots)+len(report.Cycles))
 
 	// Map hot spots → findings.
 	for _, hs := range report.HotSpots {
-		findings = append(findings, sdlc.Finding{
+		findings = append(findings, sdlctype.Finding{
 			File:     hs.Component,
 			Rule:     "hot-spot",
 			Message:  fmt.Sprintf("high risk: fan-in=%d churn=%d", hs.FanIn, hs.Churn),
@@ -82,7 +82,7 @@ func (s *ScanTransformer) Transform(ctx context.Context, _ *engine.TransformerCo
 
 	// Map cycles → findings. Cycle is []string (component names in the cycle).
 	for _, cy := range report.Cycles {
-		findings = append(findings, sdlc.Finding{
+		findings = append(findings, sdlctype.Finding{
 			Rule:     "cycle",
 			Message:  fmt.Sprintf("circular dependency: %s", strings.Join(cy, " → ")),
 			Severity: "error",
@@ -93,7 +93,7 @@ func (s *ScanTransformer) Transform(ctx context.Context, _ *engine.TransformerCo
 	violations, err := oc.GetViolations(ctx, s.repoPath, nil)
 	if err == nil && violations != nil {
 		for _, v := range violations.Violations {
-			findings = append(findings, sdlc.Finding{
+			findings = append(findings, sdlctype.Finding{
 				File:     v.From,
 				Rule:     "layer-violation",
 				Message:  fmt.Sprintf("%s → %s violates layer order", v.From, v.To),
@@ -102,7 +102,7 @@ func (s *ScanTransformer) Transform(ctx context.Context, _ *engine.TransformerCo
 		}
 	}
 
-	return &sdlc.ScanResult{
+	return &sdlctype.ScanResult{
 		Findings: findings,
 		Clean:    len(findings) == 0,
 	}, nil

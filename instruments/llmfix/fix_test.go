@@ -6,14 +6,14 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/simulate/sdlc"
+	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
 )
 
 // Contract: extractFindings handles typed ScanResult.
 func TestExtractFindings_TypedInput(t *testing.T) {
 	tc := &engine.TransformerContext{
-		Input: &sdlc.ScanResult{
-			Findings: []sdlc.Finding{
+		Input: &sdlctype.ScanResult{
+			Findings: []sdlctype.Finding{
 				{File: "foo.go", Rule: "unused-import", Severity: "error"},
 			},
 		},
@@ -38,7 +38,7 @@ func TestExtractFindings_NilInput(t *testing.T) {
 
 // Contract: pickHighestSeverity prefers errors.
 func TestPickHighestSeverity(t *testing.T) {
-	findings := []sdlc.Finding{
+	findings := []sdlctype.Finding{
 		{Rule: "warning-rule", Severity: "warning"},
 		{Rule: "error-rule", Severity: "error"},
 		{Rule: "info-rule", Severity: "info"},
@@ -51,7 +51,7 @@ func TestPickHighestSeverity(t *testing.T) {
 
 // Contract: buildFixPrompt produces non-empty prompt.
 func TestBuildFixPrompt(t *testing.T) {
-	finding := sdlc.Finding{
+	finding := sdlctype.Finding{
 		File:     "engine/graph.go",
 		Line:     42,
 		Rule:     "unused-import",
@@ -106,14 +106,14 @@ func TestFixTransformer_NoFindings(t *testing.T) {
 	// Stub provider — won't be called since there are no findings.
 	tx := NewFixTransformer(nil, "test", t.TempDir(), WithDryRun())
 	result, err := tx.Transform(context.Background(), &engine.TransformerContext{
-		Input: &sdlc.ScanResult{Clean: true},
+		Input: &sdlctype.ScanResult{Clean: true},
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	fr, ok := result.(*sdlc.FixResult)
+	fr, ok := result.(*sdlctype.FixResult)
 	if !ok {
-		t.Fatalf("expected *sdlc.FixResult, got %T", result)
+		t.Fatalf("expected *sdlctype.FixResult, got %T", result)
 	}
 	if fr.Applied == "" {
 		t.Error("Applied should describe what happened")
@@ -122,14 +122,16 @@ func TestFixTransformer_NoFindings(t *testing.T) {
 
 // Contract: same return type as stub — Liskov.
 func TestFixContract_MatchesStub(t *testing.T) {
-	stubTx := sdlc.StubTransformers(true)["fix"]
+	stubTx := engine.TransformerFunc("fix", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+		return &sdlctype.FixResult{Applied: "stub"}, nil
+	})
 	result, err := stubTx.Transform(context.Background(), &engine.TransformerContext{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, ok := result.(*sdlc.FixResult)
+	_, ok := result.(*sdlctype.FixResult)
 	if !ok {
-		t.Fatalf("stub fix returned %T, want *sdlc.FixResult", result)
+		t.Fatalf("stub fix returned %T, want *sdlctype.FixResult", result)
 	}
 }
 

@@ -1,7 +1,6 @@
-// Package sdlc provides a self-reinforcing SDLC circuit that operates on
-// the Origami codebase. Every node produces a typed output struct — no
-// map[string]any bags. Stubs and real instruments return the same types.
-package sdlc
+// Package sdlctype defines typed output structs for SDLC circuit nodes.
+// Shared by instruments and the simulate/sdlc package. No import cycle.
+package sdlctype
 
 // ScanResult is produced by the scan node (Oculus + Ordo).
 type ScanResult struct {

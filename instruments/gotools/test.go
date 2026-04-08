@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/simulate/sdlc"
+	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
 )
 
 // TestTransformer runs `go test ./... -short -count=1` on the target repository.
@@ -59,7 +59,7 @@ func (t *TestTransformer) Transform(ctx context.Context, _ *engine.TransformerCo
 
 	total, failed := parseTestCounts(output)
 
-	return &sdlc.TestResult{
+	return &sdlctype.TestResult{
 		Pass:   err == nil,
 		Total:  total,
 		Failed: failed,

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/simulate/sdlc"
+	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
 )
 
 func origamiRoot(t *testing.T) string {
@@ -22,7 +22,7 @@ func origamiRoot(t *testing.T) string {
 	return root
 }
 
-// Contract: BuildTransformer returns typed *sdlc.BuildResult.
+// Contract: BuildTransformer returns typed *sdlctype.BuildResult.
 func TestBuild_ReturnsTypedResult(t *testing.T) {
 	root := origamiRoot(t)
 	tx := NewBuildTransformer(root)
@@ -35,9 +35,9 @@ func TestBuild_ReturnsTypedResult(t *testing.T) {
 		t.Fatalf("Transform: %v", err)
 	}
 
-	br, ok := result.(*sdlc.BuildResult)
+	br, ok := result.(*sdlctype.BuildResult)
 	if !ok {
-		t.Fatalf("expected *sdlc.BuildResult, got %T", result)
+		t.Fatalf("expected *sdlctype.BuildResult, got %T", result)
 	}
 
 	if !br.Pass {
@@ -46,7 +46,7 @@ func TestBuild_ReturnsTypedResult(t *testing.T) {
 	t.Logf("Build pass=%v output_len=%d", br.Pass, len(br.Output))
 }
 
-// Contract: TestTransformer returns typed *sdlc.TestResult.
+// Contract: TestTransformer returns typed *sdlctype.TestResult.
 // Runs only engine/trace/ (fast, ~0.01s) to validate the instrument.
 func TestTest_ReturnsTypedResult(t *testing.T) {
 	root := origamiRoot(t)
@@ -60,9 +60,9 @@ func TestTest_ReturnsTypedResult(t *testing.T) {
 		t.Fatalf("Transform: %v", err)
 	}
 
-	tr, ok := result.(*sdlc.TestResult)
+	tr, ok := result.(*sdlctype.TestResult)
 	if !ok {
-		t.Fatalf("expected *sdlc.TestResult, got %T", result)
+		t.Fatalf("expected *sdlctype.TestResult, got %T", result)
 	}
 
 	if !tr.Pass {
@@ -75,7 +75,9 @@ func TestTest_ReturnsTypedResult(t *testing.T) {
 func TestBuildContract_MatchesStub(t *testing.T) {
 	root := origamiRoot(t)
 	transformers := map[string]engine.Transformer{
-		"stub": sdlc.StubTransformers(true)["build"],
+		"stub": engine.TransformerFunc("build", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+			return &sdlctype.BuildResult{Pass: true}, nil
+		}),
 		"real": NewBuildTransformer(root),
 	}
 
@@ -88,9 +90,9 @@ func TestBuildContract_MatchesStub(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Transform: %v", err)
 			}
-			br, ok := result.(*sdlc.BuildResult)
+			br, ok := result.(*sdlctype.BuildResult)
 			if !ok {
-				t.Fatalf("expected *sdlc.BuildResult, got %T", result)
+				t.Fatalf("expected *sdlctype.BuildResult, got %T", result)
 			}
 			// Both must have the Pass field.
 			_ = br.Pass
@@ -102,7 +104,9 @@ func TestBuildContract_MatchesStub(t *testing.T) {
 func TestTestContract_MatchesStub(t *testing.T) {
 	root := origamiRoot(t)
 	transformers := map[string]engine.Transformer{
-		"stub": sdlc.StubTransformers(true)["test"],
+		"stub": engine.TransformerFunc("test", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+			return &sdlctype.TestResult{Pass: true}, nil
+		}),
 		"real": NewTestTransformer(root),
 	}
 
@@ -115,9 +119,9 @@ func TestTestContract_MatchesStub(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Transform: %v", err)
 			}
-			tr, ok := result.(*sdlc.TestResult)
+			tr, ok := result.(*sdlctype.TestResult)
 			if !ok {
-				t.Fatalf("expected *sdlc.TestResult, got %T", result)
+				t.Fatalf("expected *sdlctype.TestResult, got %T", result)
 			}
 			_ = tr.Pass
 			_ = tr.Total
@@ -137,7 +141,7 @@ func TestBuild_FailingBuild_ReturnsPassFalse(t *testing.T) {
 		t.Fatalf("Transform should not error: %v", err)
 	}
 
-	br := result.(*sdlc.BuildResult)
+	br := result.(*sdlctype.BuildResult)
 	if br.Pass {
 		t.Error("expected Pass=false for empty directory build")
 	}
