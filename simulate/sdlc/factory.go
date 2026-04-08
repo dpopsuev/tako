@@ -16,7 +16,11 @@ import (
 	oculusinst "github.com/dpopsuev/origami/instruments/oculus"
 )
 
-var errUnknownCircuit = errors.New("unknown circuit")
+var (
+	errUnknownCircuit = errors.New("unknown circuit")
+	errModelRequired  = errors.New("SDLC_MODEL is required when SDLC_PROVIDER is set")
+	errProviderFailed = errors.New("failed to create LLM provider")
+)
 
 // Environment variable names.
 const (
@@ -52,7 +56,10 @@ func (f *sdlcFactory) CreateSession(_ context.Context, params *engine.SessionPar
 		mode = m
 	}
 
-	transformers := buildTransformers(repoPath, mode)
+	transformers, err := buildTransformers(repoPath, mode)
+	if err != nil {
+		return nil, err
+	}
 
 	def, err := LoadCircuit()
 	if err != nil {
@@ -70,14 +77,14 @@ func (f *sdlcFactory) CreateSession(_ context.Context, params *engine.SessionPar
 	}, nil
 }
 
-func buildTransformers(repoPath, mode string) engine.TransformerRegistry {
+func buildTransformers(repoPath, mode string) (engine.TransformerRegistry, error) {
 	if mode == "real" {
 		return realTransformers(repoPath)
 	}
-	return StubTransformers(true)
+	return StubTransformers(true), nil
 }
 
-func realTransformers(repoPath string) engine.TransformerRegistry {
+func realTransformers(repoPath string) (engine.TransformerRegistry, error) {
 	reg := StubTransformers(true)
 
 	// Replace stubs with real instruments.
@@ -85,27 +92,26 @@ func realTransformers(repoPath string) engine.TransformerRegistry {
 	reg["build"] = gotools.NewBuildTransformer(repoPath)
 	reg["test"] = gotools.NewTestTransformer(repoPath)
 
-	// Wire LLM fix if provider is configured.
+	// Wire LLM fix — explicit only, no defaults, fail fast.
 	providerName := os.Getenv(envProvider)
 	model := os.Getenv(envModel)
-	if model == "" {
-		model = "claude-sonnet-4-6"
-	}
 	if providerName != "" {
+		if model == "" {
+			return nil, fmt.Errorf("%w: %s=%q but %s is empty"+
+				" (e.g. SDLC_MODEL=claude-sonnet-4-6 for Vertex, SDLC_MODEL=gpt-4o for OpenAI)",
+				errModelRequired, envProvider, providerName, envModel)
+		}
 		provider, err := execution.NewProviderByName(providerName)
 		if err != nil {
-			slog.ErrorContext(context.Background(), "failed to create LLM provider, using stub fix",
-				slog.Any(logKeyProvider, providerName),
-				slog.Any(logKeyError, err))
-		} else {
-			slog.InfoContext(context.Background(), "LLM fix instrument wired",
-				slog.String(logKeyProvider, providerName),
-				slog.String(logKeyModel, model))
-			reg["fix"] = llmfix.NewFixTransformer(provider, model, repoPath)
+			return nil, fmt.Errorf("%w: %q: %w", errProviderFailed, providerName, err)
 		}
+		slog.InfoContext(context.Background(), "LLM fix instrument wired",
+			slog.String(logKeyProvider, providerName),
+			slog.String(logKeyModel, model))
+		reg["fix"] = llmfix.NewFixTransformer(provider, model, repoPath)
 	}
 
-	return reg
+	return reg, nil
 }
 
 // SchematicResolver returns a circuit asset resolver for sub-circuit
