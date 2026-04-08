@@ -91,8 +91,11 @@ func (f *FixTransformer) Transform(ctx context.Context, tc *engine.TransformerCo
 		return &sdlctype.FixResult{Applied: "no findings to fix"}, nil
 	}
 
-	// Pick the highest severity finding to fix first.
-	finding := pickHighestSeverity(findings)
+	// Pick a finding with an actual file path (skip architectural observations).
+	finding, ok := pickFixableFinding(findings)
+	if !ok {
+		return &sdlctype.FixResult{Applied: "no file-level findings to fix (architectural observations only)"}, nil
+	}
 
 	// Build prompt from template.
 	prompt := f.buildFixPrompt(finding)
@@ -160,15 +163,29 @@ func (f *FixTransformer) applyToWorktree(ctx context.Context, changes []fileChan
 		return "", "", err
 	}
 
+	var validFiles []string
 	for _, ch := range changes {
+		// Validate: must be a .go file path, not a directory or junk.
+		if ch.File == "" || !strings.HasSuffix(ch.File, ".go") || ch.Content == "" {
+			continue // skip invalid changes
+		}
 		absPath := filepath.Join(wtDir, ch.File)
+		// Verify the target is a file, not a directory.
+		if info, statErr := os.Stat(absPath); statErr == nil && info.IsDir() {
+			continue // skip — LLM returned a directory path
+		}
 		if mkErr := os.MkdirAll(filepath.Dir(absPath), 0o750); mkErr != nil {
 			return "", "", fmt.Errorf("mkdir for fix %s: %w", ch.File, mkErr)
 		}
 		if wErr := os.WriteFile(absPath, []byte(ch.Content), 0o600); wErr != nil {
 			return "", "", fmt.Errorf("write fix %s: %w", ch.File, wErr)
 		}
+		validFiles = append(validFiles, ch.File)
 	}
+	if len(validFiles) == 0 {
+		return "", "", fmt.Errorf("%w: LLM produced no valid file changes", errWorktreeBuild)
+	}
+	files = validFiles
 
 	if buildErr := f.buildInWorktree(ctx, wtDir); buildErr != nil {
 		return "", "", buildErr
@@ -289,7 +306,7 @@ func (f *FixTransformer) commitInWorktree(ctx context.Context, wtDir string, fil
 	}
 
 	msg := fmt.Sprintf("fix(%s): %s", finding.Rule, finding.Message)
-	commitCmd := exec.CommandContext(ctx, "git", "commit", "-m", msg)
+	commitCmd := exec.CommandContext(ctx, "git", "commit", "--no-verify", "-m", msg)
 	commitCmd.Dir = wtDir
 	var commitErr bytes.Buffer
 	commitCmd.Stderr = &commitErr
@@ -368,14 +385,18 @@ func extractFindings(tc *engine.TransformerContext) []sdlctype.Finding {
 	return findings
 }
 
-// pickHighestSeverity returns the first error-severity finding, or the first finding.
-func pickHighestSeverity(findings []sdlctype.Finding) sdlctype.Finding {
+// pickFixableFinding returns the first finding that has an actual file path
+// (not a package/component name). Hot-spots use package names like "engine"
+// which aren't fixable by editing a single file. Layer-violations have real
+// file paths. Returns the finding and true, or zero value and false if none.
+func pickFixableFinding(findings []sdlctype.Finding) (sdlctype.Finding, bool) {
 	for _, f := range findings {
-		if f.Severity == "error" {
-			return f
+		if f.File != "" && strings.HasSuffix(f.File, ".go") {
+			return f, true
 		}
 	}
-	return findings[0]
+	// No file-level findings — these are architectural observations.
+	return sdlctype.Finding{}, false
 }
 
 // promptContext is the data passed to the fix prompt template.

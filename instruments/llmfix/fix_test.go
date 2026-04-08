@@ -36,16 +36,30 @@ func TestExtractFindings_NilInput(t *testing.T) {
 	}
 }
 
-// Contract: pickHighestSeverity prefers errors.
-func TestPickHighestSeverity(t *testing.T) {
+// Contract: pickFixableFinding skips non-file findings.
+func TestPickFixableFinding(t *testing.T) {
 	findings := []sdlctype.Finding{
-		{Rule: "warning-rule", Severity: "warning"},
-		{Rule: "error-rule", Severity: "error"},
-		{Rule: "info-rule", Severity: "info"},
+		{File: "engine", Rule: "hot-spot", Severity: "warning"},       // package name, not file
+		{File: "dispatch", Rule: "hot-spot", Severity: "warning"},     // package name
+		{File: "engine/graph.go", Rule: "layer-violation", Severity: "error"}, // real file
 	}
-	picked := pickHighestSeverity(findings)
-	if picked.Rule != "error-rule" {
-		t.Errorf("picked = %q, want error-rule", picked.Rule)
+	picked, ok := pickFixableFinding(findings)
+	if !ok {
+		t.Fatal("expected a fixable finding")
+	}
+	if picked.File != "engine/graph.go" {
+		t.Errorf("picked = %q, want engine/graph.go", picked.File)
+	}
+}
+
+func TestPickFixableFinding_NoneFixable(t *testing.T) {
+	findings := []sdlctype.Finding{
+		{File: "engine", Rule: "hot-spot"},
+		{File: "circuit", Rule: "hot-spot"},
+	}
+	_, ok := pickFixableFinding(findings)
+	if ok {
+		t.Error("expected no fixable finding for package-level observations")
 	}
 }
 
