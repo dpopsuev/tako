@@ -69,7 +69,7 @@ func realTransformers(repoPath string) engine.TransformerRegistry {
 	reg := StubTransformers(true)
 
 	// Replace stubs with real instruments where available.
-	reg["scan"] = oculusinst.NewScanTransformer(repoPath)
+	reg["scan"] = oculusinst.NewScanTransformer(repoPath, oculusinst.WithLayers(OrigamiLayers))
 	reg["build"] = gotools.NewBuildTransformer(repoPath)
 	reg["test"] = gotools.NewTestTransformer(repoPath)
 

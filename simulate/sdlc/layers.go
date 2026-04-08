@@ -1,0 +1,71 @@
+package sdlc
+
+// OrigamiLayers is the explicit layer ordering for the Origami codebase.
+// Set via Locus desired state. Bottom (foundation) to top (consumers).
+// Violations are imports from a lower layer to a higher layer.
+var OrigamiLayers = []string{
+	// Foundation
+	"circuit/def",
+	"circuit",
+	"circuit/topology",
+	// Shared
+	"toolkit",
+	"roster",
+	"budget",
+	"subprocess",
+	"subprocess/containertest",
+	"resource",
+	"prompt",
+	"internal/mathutil",
+	"report",
+	// Engine
+	"engine/handler",
+	"engine/trace",
+	"engine/telemetry",
+	"engine",
+	// Dispatch
+	"dispatch",
+	"dispatch/guard",
+	// Analysis
+	"lint",
+	"calibrate",
+	"fold",
+	"transformers",
+	// Adapters
+	"mediator",
+	"lsp",
+	"autodoc",
+	"domainfs",
+	"domainserve",
+	// Infrastructure
+	"mcp",
+	// Instruments
+	"instruments/cli",
+	"instruments/docs",
+	"instruments/github",
+	"instruments/mcp",
+	"instruments/sqlite",
+	"instruments/oculus",
+	"instruments/gotools",
+	"instruments/llmfix",
+	// Simulation
+	"simulate/sdlc/sdlctype",
+	"simulate/sdlc",
+	// Operator
+	"operator",
+	// Test
+	"testkit",
+	"testkit/stubs",
+	"testkit/builders",
+	"testkit/contracts",
+	"testkit/assertions",
+	"testkit/acceptance",
+	// View
+	"view",
+	"cli",
+	// Binaries
+	"cmd/origami",
+	"cmd/operator",
+	"cmd/agent-worker",
+	"cmd/mediator",
+}

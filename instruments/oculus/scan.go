@@ -21,6 +21,7 @@ type ScanTransformer struct {
 	repoPath string
 	store    port.Store
 	intent   string
+	layers   []string
 }
 
 // ScanOption configures the scan transformer.
@@ -34,6 +35,12 @@ func WithIntent(intent string) ScanOption {
 // WithStore sets the Oculus persistence store. When nil, scans are not cached.
 func WithStore(store port.Store) ScanOption {
 	return func(s *ScanTransformer) { s.store = store }
+}
+
+// WithLayers sets explicit layer ordering for violation detection.
+// When nil, GetViolations auto-infers layers (noisy for top-level packages).
+func WithLayers(layers []string) ScanOption {
+	return func(s *ScanTransformer) { s.layers = layers }
 }
 
 // NewScanTransformer creates a scan transformer for the given repository.
@@ -89,8 +96,8 @@ func (s *ScanTransformer) Transform(ctx context.Context, _ *engine.TransformerCo
 		})
 	}
 
-	// Map layer violations if layers are defined.
-	violations, err := oc.GetViolations(ctx, s.repoPath, nil)
+	// Map layer violations — use explicit layers if provided.
+	violations, err := oc.GetViolations(ctx, s.repoPath, s.layers)
 	if err == nil && violations != nil {
 		for _, v := range violations.Violations {
 			findings = append(findings, sdlctype.Finding{
