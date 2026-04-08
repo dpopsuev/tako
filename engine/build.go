@@ -150,6 +150,9 @@ func BuildGraph(def *circuit.CircuitDef, reg *GraphRegistries) (Graph, error) {
 	}
 
 	opts := []GraphOption{WithDoneNode(string(def.Done))}
+	if def.Finally != "" {
+		opts = append(opts, WithFinallyNode(string(def.Finally)))
+	}
 	if len(timeouts) > 0 {
 		opts = append(opts, WithNodeTimeouts(timeouts))
 	}

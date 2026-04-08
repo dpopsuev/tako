@@ -6,7 +6,7 @@ spec:
   uses:
     mcp:
       kind: component
-      module: github.com/dpopsuev/origami/connectors/mcp
+      module: github.com/dpopsuev/origami/instruments/mcp
   bind:
     nonexistent:
       transport: mcp

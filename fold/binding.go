@@ -168,7 +168,7 @@ func Resolve(m *Manifest, origamiRoot string, resolver ModuleResolver) (*Resolve
 	}
 
 	resolvedConns := buildResolvedConnectors(connIndex)
-	imports := collectImports(connManifests, resolvedSchematics, rootRS)
+	imports := collectImports(resolvedConns, resolvedSchematics, rootRS)
 
 	return &ResolvedGraph{
 		Connectors: resolvedConns,
@@ -457,7 +457,7 @@ func buildResolvedConnectors(connIdx map[string]connectorEntry) []ResolvedConnec
 }
 
 func collectImports(
-	connManifests map[string]*circuit.ComponentManifest,
+	connectors []ResolvedConnector,
 	schematics []ResolvedSchematic,
 	root *ResolvedSchematic,
 ) []ImportEntry {
@@ -471,8 +471,8 @@ func collectImports(
 		}
 	}
 
-	for _, cm := range connManifests {
-		add(cm.Module)
+	for i := range connectors {
+		add(connectors[i].Module)
 	}
 	for i := range schematics {
 		add(schematics[i].Module)

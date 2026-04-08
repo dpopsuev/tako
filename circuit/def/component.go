@@ -46,7 +46,7 @@ func (g GivesDef) WireMode() string {
 type ComponentManifest struct {
 	Kind        string `yaml:"kind"`
 	Component   string `yaml:"component"`
-	Module      string `yaml:"module"` // Go import path (e.g. github.com/dpopsuev/origami/connectors/rp)
+	Module      string `yaml:"module"` // Go import path (e.g. github.com/dpopsuev/origami/instruments/github)
 	Namespace   string `yaml:"namespace"`
 	Version     string `yaml:"version"`
 	Description string `yaml:"description,omitempty"`

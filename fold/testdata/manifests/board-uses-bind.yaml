@@ -12,7 +12,7 @@ spec:
       module: github.com/dpopsuev/origami-components/rp
     mcp:
       kind: component
-      module: github.com/dpopsuev/origami/connectors/mcp
+      module: github.com/dpopsuev/origami/instruments/mcp
   bind:
     rca:
       data: reportportal

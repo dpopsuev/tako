@@ -59,6 +59,7 @@ type DefaultGraph struct {
 	edgeIndex    map[string][]circuit.Edge // from-node -> edges in definition order
 	nodeTimeouts map[string]time.Duration  // per-node timeout (from DSL)
 	doneNode     string                    // terminal pseudo-node name (walk stops here)
+	finallyNode  string                    // cleanup node — runs on every exit (success, error, abort)
 	observer     circuit.WalkObserver      // graph-level observer, used by Walk
 	registries   *GraphRegistries          // retained for DelegateNode sub-walk building
 	graphFactory GraphFactory              // injected factory for delegate sub-graph construction
@@ -72,6 +73,14 @@ type GraphOption func(*DefaultGraph)
 func WithDoneNode(name string) GraphOption {
 	return func(g *DefaultGraph) {
 		g.doneNode = name
+	}
+}
+
+// WithFinallyNode sets the cleanup node that runs on every exit path
+// (success, error, abort). Like Go's defer — guaranteed to execute.
+func WithFinallyNode(name string) GraphOption {
+	return func(g *DefaultGraph) {
+		g.finallyNode = name
 	}
 }
 
@@ -186,6 +195,58 @@ func (g *DefaultGraph) EdgesFrom(nodeName string) []circuit.Edge {
 //
 //nolint:gocyclo,funlen // core graph traversal state machine — complexity is inherent
 func (g *DefaultGraph) Walk(ctx context.Context, walker circuit.Walker, startNode string) error {
+	walkErr := g.walkInner(ctx, walker, startNode)
+	if finalErr := g.runFinally(ctx, walker, walkErr); finalErr != nil && walkErr == nil {
+		return finalErr
+	}
+	return walkErr
+}
+
+// runFinally executes the finally node if configured. Runs on every exit
+// path — success, error, abort. Gets a fresh context with 30s timeout so
+// it can clean up even if the parent context was canceled.
+func (g *DefaultGraph) runFinally(_ context.Context, walker circuit.Walker, walkErr error) error {
+	if g.finallyNode == "" {
+		return nil
+	}
+	node, ok := g.nodeIndex[g.finallyNode]
+	if !ok {
+		return nil // misconfigured — Validate should catch this
+	}
+
+	obs := g.observer
+	emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: g.finallyNode, Walker: walker.Identity().Name, Metadata: map[string]any{"trigger": "finally"}})
+
+	// Fresh context — finally must run even if parent was canceled.
+	finallyCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Inject walk error into context so the finally node can inspect it.
+	state := walker.State()
+	if walkErr != nil {
+		state.Context["_walk_error"] = walkErr.Error()
+	}
+
+	nc := circuit.NodeContext{
+		WalkerState:   state,
+		PriorArtifact: nil,
+		Meta:          map[string]any{"finally": true},
+	}
+
+	artifact, err := walker.Handle(finallyCtx, node, nc)
+	if artifact != nil {
+		if state.Outputs == nil {
+			state.Outputs = make(map[string]circuit.Artifact)
+		}
+		state.Outputs[g.finallyNode] = artifact
+	}
+
+	emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventNodeExit, Node: g.finallyNode, Walker: walker.Identity().Name, Artifact: artifact, Error: err})
+	return err
+}
+
+//nolint:gocyclo,funlen // core graph traversal state machine — complexity is inherent
+func (g *DefaultGraph) walkInner(ctx context.Context, walker circuit.Walker, startNode string) error {
 	obs := g.observer
 	walkerName := walker.Identity().Name
 

@@ -47,6 +47,7 @@ type CircuitDef struct {
 	Walkers     []WalkerDef             `yaml:"walkers,omitempty"`
 	Start       NodeName                `yaml:"start"`
 	Done        NodeName                `yaml:"done"`
+	Finally     NodeName                `yaml:"finally,omitempty"`
 	Scorecard   string                  `yaml:"scorecard,omitempty"`
 	Calibration *CalibrationContractDef `yaml:"calibration,omitempty"`
 }
@@ -392,6 +393,9 @@ func (def *CircuitDef) Validate() error {
 
 	if !nodeSet[def.Start] {
 		return fmt.Errorf("%w: %q not found in node list", ErrStartNode, def.Start)
+	}
+	if def.Finally != "" && !nodeSet[def.Finally] {
+		return fmt.Errorf("%w: finally node %q not found in node list", ErrNode, def.Finally)
 	}
 
 	edgeIDs := make(map[string]bool, len(def.Edges))

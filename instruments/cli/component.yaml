@@ -1,6 +1,6 @@
 kind: component
 component: origami-cli
-module: github.com/dpopsuev/origami/connectors/cli
+module: github.com/dpopsuev/origami/instruments/cli
 namespace: cli
 version: "0.1.0"
 description: CLI connector for headless circuit execution

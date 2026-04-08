@@ -201,7 +201,7 @@ func TestImportAlias(t *testing.T) {
 		want string
 	}{
 		{"github.com/dpopsuev/origami-rca/connectors/rp", "rp"},
-		{"github.com/dpopsuev/origami/connectors/github", "github"},
+		{"github.com/dpopsuev/origami/instruments/github", "github"},
 		{"github.com/dpopsuev/origami-gnd", "origamignd"},
 		{"github.com/dpopsuev/origami-rca/mcpconfig", "mcpconfig"},
 	}

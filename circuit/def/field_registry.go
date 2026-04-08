@@ -52,6 +52,7 @@ var CircuitFields = FieldRegistry{
 	"walkers":      {},
 	"start":        {Required: true},
 	"done":         {Required: true},
+	"finally":      {},
 	"scorecard":    {},
 	"calibration":  {},
 }

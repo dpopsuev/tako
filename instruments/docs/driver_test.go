@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/connectors/docs"
+	"github.com/dpopsuev/origami/instruments/docs"
 	"github.com/dpopsuev/origami/toolkit"
 )
 

@@ -32,6 +32,7 @@ type rawCircuitDef struct {
 	Walkers     []WalkerDef             `yaml:"walkers,omitempty"`
 	Start       string                  `yaml:"start"`
 	Done        string                  `yaml:"done"`
+	Finally     string                  `yaml:"finally,omitempty"`
 	Calibration *CalibrationContractDef `yaml:"calibration,omitempty"`
 }
 
@@ -96,6 +97,7 @@ func (raw *rawCircuitDef) normalize() (*CircuitDef, error) {
 		Walkers:     raw.Walkers,
 		Start:       NodeName(raw.Start),
 		Done:        NodeName(raw.Done),
+		Finally:     NodeName(raw.Finally),
 		Calibration: raw.Calibration,
 	}
 
@@ -282,6 +284,9 @@ func mergeCircuits(base, overlay *CircuitDef) (*CircuitDef, error) {
 	}
 	if overlay.Done != "" {
 		merged.Done = overlay.Done
+	}
+	if overlay.Finally != "" {
+		merged.Finally = overlay.Finally
 	}
 	if overlay.Scorecard != "" {
 		merged.Scorecard = overlay.Scorecard

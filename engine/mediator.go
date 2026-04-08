@@ -13,22 +13,15 @@ import (
 	"github.com/dpopsuev/origami/subprocess"
 )
 
-// PromptRelayer dispatches a prompt and blocks until an artifact is returned.
-type PromptRelayer interface {
-	Dispatch(ctx context.Context, dc PromptRelayContext) ([]byte, error)
-}
+// PromptRelayer is a type alias for circuit.PromptRelayer.
+type PromptRelayer = circuit.PromptRelayer
 
-// PromptRelayContext carries the prompt data for relay dispatch.
-type PromptRelayContext struct {
-	CaseID        string
-	Step          string
-	PromptContent string
-	ArtifactPath  string
-}
+// PromptRelayContext is a type alias for circuit.PromptRelayContext.
+type PromptRelayContext = circuit.PromptRelayContext
 
 // ContextKeyPromptRelayer is the walker context key for the integrated circuit's
 // dispatcher.
-const ContextKeyPromptRelayer = "_prompt_relayer"
+const ContextKeyPromptRelayer = circuit.ContextKeyPromptRelayer
 
 // MCPCircuitTransformer implements Transformer by delegating to a remote
 // schematic via the Papercup protocol through the Origami Mediator.

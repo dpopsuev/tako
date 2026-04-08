@@ -1,0 +1,21 @@
+kind: schematic
+# Finally circuit: A → done, with finally: cleanup
+# Tests: finally node runs on success and error paths.
+circuit: finally-test
+start: step-a
+done: done
+finally: cleanup
+handler_type: transformer
+
+nodes:
+  - name: step-a
+    handler: passthrough
+    description: "Main step"
+  - name: cleanup
+    handler: passthrough
+    description: "Cleanup — runs on every exit path (success, error, abort)"
+
+edges:
+  - id: a-done
+    from: step-a
+    to: done

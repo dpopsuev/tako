@@ -1,0 +1,195 @@
+kind: schematic
+circuit: sdlc
+start: scan
+done: done
+finally: teardown
+handler_type: transformer
+
+vars:
+  max_fix_loops: 3
+
+nodes:
+  - name: scan
+    handler: scan
+    description: "Analyze codebase — find issues via Oculus + check rules via Ordo"
+    output:
+      - name: findings
+        type: array
+      - name: clean
+        type: bool
+        required: true
+
+  - name: fix
+    handler: fix
+    description: "Diagnose and fix the highest priority finding"
+    output:
+      - name: fixed
+        type: array
+      - name: applied
+        type: string
+        required: true
+
+  - name: build
+    handler: build
+    description: "Compile the codebase (go build ./...)"
+    output:
+      - name: pass
+        type: bool
+        required: true
+      - name: output
+        type: string
+
+  - name: test
+    handler: test
+    description: "Run test suite (go test ./... -short)"
+    output:
+      - name: pass
+        type: bool
+        required: true
+      - name: total
+        type: int
+      - name: failed
+        type: int
+
+  - name: deploy-canary
+    handler: deploy-canary
+    description: "Deploy new version as canary alongside known-good"
+    output:
+      - name: version
+        type: string
+        required: true
+      - name: canary
+        type: bool
+
+  - name: validate
+    handler: validate
+    description: "Check canary health — error rate, latency via Prometheus"
+    output:
+      - name: healthy
+        type: bool
+        required: true
+      - name: error_rate
+        type: float
+      - name: latency_ms
+        type: float
+
+  - name: harden
+    handler: harden
+    description: "Vulnerability scan + pin dependencies"
+    output:
+      - name: vulnerabilities
+        type: int
+      - name: pinned_deps
+        type: array
+
+  - name: release
+    handler: release
+    description: "Tag, generate changelog, push to remote"
+    output:
+      - name: tag
+        type: string
+        required: true
+      - name: changelog
+        type: string
+
+  - name: teardown
+    handler: teardown
+    description: "Cleanup all deployed resources — runs on every exit (finally)"
+    output:
+      - name: cleaned
+        type: array
+
+edges:
+  - id: scan-fix
+    name: findings detected
+    from: scan
+    to: fix
+    when: "output.clean != true"
+
+  - id: scan-harden
+    name: codebase is clean
+    from: scan
+    to: harden
+    shortcut: true
+    when: "output.clean == true"
+
+  - id: fix-build
+    name: fix applied
+    from: fix
+    to: build
+    when: "true"
+
+  - id: build-test
+    name: build passed
+    from: build
+    to: test
+    when: "output.pass == true"
+
+  - id: build-fix
+    name: build failed
+    from: build
+    to: fix
+    loop: true
+    when: "output.pass != true && state.loops.fix < config.max_fix_loops"
+
+  - id: build-abort
+    name: build failed — max retries
+    from: build
+    to: done
+    when: "output.pass != true && state.loops.fix >= config.max_fix_loops"
+
+  - id: test-deploy
+    name: tests passed
+    from: test
+    to: deploy-canary
+    when: "output.pass == true"
+
+  - id: test-fix
+    name: tests failed
+    from: test
+    to: fix
+    loop: true
+    when: "output.pass != true && state.loops.fix < config.max_fix_loops"
+
+  - id: test-abort
+    name: tests failed — max retries
+    from: test
+    to: done
+    when: "output.pass != true && state.loops.fix >= config.max_fix_loops"
+
+  - id: deploy-validate
+    name: canary deployed
+    from: deploy-canary
+    to: validate
+    when: "true"
+
+  - id: validate-scan
+    name: canary healthy
+    from: validate
+    to: scan
+    when: "output.healthy == true"
+
+  - id: validate-fix
+    name: canary unhealthy — rollback
+    from: validate
+    to: fix
+    loop: true
+    when: "output.healthy != true && state.loops.fix < config.max_fix_loops"
+
+  - id: validate-abort
+    name: canary unhealthy — max retries
+    from: validate
+    to: done
+    when: "output.healthy != true && state.loops.fix >= config.max_fix_loops"
+
+  - id: harden-release
+    name: hardened
+    from: harden
+    to: release
+    when: "true"
+
+  - id: release-done
+    name: released
+    from: release
+    to: done
+    when: "true"
