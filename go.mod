@@ -40,7 +40,7 @@ require (
 	github.com/google/s2a-go v0.1.8 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.4 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
-	github.com/mozilla-ai/any-llm-go v0.9.0 // indirect
+	github.com/mozilla-ai/any-llm-go v0.9.0
 	github.com/openai/openai-go v1.12.0 // indirect
 	github.com/smacker/go-tree-sitter v0.0.0-20240827094217-dd81d9e9be82 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
@@ -65,7 +65,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clipperhouse/stringish v0.1.1 // indirect
 	github.com/clipperhouse/uax29/v2 v2.5.0 // indirect
-	github.com/dpopsuev/troupe v0.4.0
+	github.com/dpopsuev/troupe v0.4.1
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
