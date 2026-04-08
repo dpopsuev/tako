@@ -18,6 +18,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/engine/trace"
 	"github.com/dpopsuev/origami/operator"
 	"github.com/dpopsuev/origami/simulate/sdlc"
@@ -52,12 +53,19 @@ func main() {
 	var actor operator.Actor
 	switch *mode {
 	case "in-process":
+		// Set env so the factory picks up repo path and mode.
+		os.Setenv(sdlc.EnvRepoPath, *repoPath)
+		os.Setenv(sdlc.EnvMode, "real")
+
+		factory := sdlc.SessionFactory()
 		actor = operator.NewInProcessActor(func(ctx context.Context, _ operator.DriftResult) (*operator.RunResult, error) {
 			start := time.Now()
-			os.Setenv("SDLC_REPO_PATH", *repoPath)
-			os.Setenv("SDLC_MODE", "real")
+			cfg, err := factory.CreateSession(ctx, &engine.SessionParams{})
+			if err != nil {
+				return &operator.RunResult{Success: false, Duration: time.Since(start), Error: err.Error()}, nil
+			}
 			result, err := sdlc.Run(ctx, sdlc.RunConfig{
-				Transformers: sdlc.StubTransformers(false),
+				Transformers: cfg.Transformers,
 			})
 			if err != nil {
 				return &operator.RunResult{Success: false, Duration: time.Since(start), Error: err.Error()}, nil

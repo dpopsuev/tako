@@ -4,11 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
+
+	"github.com/dpopsuev/troupe/execution"
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/instruments/gotools"
+	"github.com/dpopsuev/origami/instruments/llmfix"
 	oculusinst "github.com/dpopsuev/origami/instruments/oculus"
 )
 
@@ -16,8 +20,16 @@ var errUnknownCircuit = errors.New("unknown circuit")
 
 // Environment variable names.
 const (
-	envRepoPath = "SDLC_REPO_PATH"
-	envMode     = "SDLC_MODE" // "stub", "real", or "" (defaults to stub)
+	// EnvRepoPath is the environment variable for the repository path.
+	EnvRepoPath = "SDLC_REPO_PATH"
+	// EnvMode is the environment variable for the execution mode (stub/real).
+	EnvMode     = "SDLC_MODE"
+	envProvider = "SDLC_PROVIDER" // "vertex-ai", "anthropic-api", etc.
+	envModel    = "SDLC_MODEL"    // default: claude-sonnet-4-6
+
+	logKeyProvider = "provider"
+	logKeyModel    = "model"
+	logKeyError    = "error"
 )
 
 // SessionFactory returns a SessionFactory for the SDLC circuit.
@@ -30,13 +42,13 @@ func SessionFactory() engine.SessionFactory {
 type sdlcFactory struct{}
 
 func (f *sdlcFactory) CreateSession(_ context.Context, params *engine.SessionParams) (*engine.SessionConfig, error) {
-	repoPath := os.Getenv(envRepoPath)
+	repoPath := os.Getenv(EnvRepoPath)
 	if repoPath == "" {
 		repoPath = "."
 	}
 
-	mode := os.Getenv(envMode)
-	if m, ok := params.Extra[envMode].(string); ok && m != "" {
+	mode := os.Getenv(EnvMode)
+	if m, ok := params.Extra[EnvMode].(string); ok && m != "" {
 		mode = m
 	}
 
@@ -68,14 +80,30 @@ func buildTransformers(repoPath, mode string) engine.TransformerRegistry {
 func realTransformers(repoPath string) engine.TransformerRegistry {
 	reg := StubTransformers(true)
 
-	// Replace stubs with real instruments where available.
+	// Replace stubs with real instruments.
 	reg["scan"] = oculusinst.NewScanTransformer(repoPath, oculusinst.WithLayers(OrigamiLayers))
 	reg["build"] = gotools.NewBuildTransformer(repoPath)
 	reg["test"] = gotools.NewTestTransformer(repoPath)
 
-	// LLM fix stays as stub unless explicitly wired by the caller.
-	// The Vertex provider requires runtime configuration that can't
-	// be resolved from env alone — callers use WithTransformer().
+	// Wire LLM fix if provider is configured.
+	providerName := os.Getenv(envProvider)
+	model := os.Getenv(envModel)
+	if model == "" {
+		model = "claude-sonnet-4-6"
+	}
+	if providerName != "" {
+		provider, err := execution.NewProviderByName(providerName)
+		if err != nil {
+			slog.ErrorContext(context.Background(), "failed to create LLM provider, using stub fix",
+				slog.Any(logKeyProvider, providerName),
+				slog.Any(logKeyError, err))
+		} else {
+			slog.InfoContext(context.Background(), "LLM fix instrument wired",
+				slog.String(logKeyProvider, providerName),
+				slog.String(logKeyModel, model))
+			reg["fix"] = llmfix.NewFixTransformer(provider, model, repoPath)
+		}
+	}
 
 	return reg
 }

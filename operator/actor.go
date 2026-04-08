@@ -22,7 +22,7 @@ func NewInProcessActor(fn func(ctx context.Context, drift DriftResult) (*RunResu
 
 // Act implements Actor.
 func (a *InProcessActor) Act(drift DriftResult) (*RunResult, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 	return a.runFunc(ctx, drift)
 }
