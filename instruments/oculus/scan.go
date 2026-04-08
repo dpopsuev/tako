@@ -1,0 +1,109 @@
+// Package oculus provides the scan instrument backed by Oculus v1.0.0.
+// It wraps the Oculus engine as an engine.Transformer that returns typed
+// simulate/sdlc.ScanResult — same contract as the stub scan.
+package oculus
+
+import (
+	"context"
+	"fmt"
+	"strings"
+
+	oculusengine "github.com/dpopsuev/oculus/engine"
+	"github.com/dpopsuev/oculus/port"
+
+	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/origami/simulate/sdlc"
+)
+
+// ScanTransformer wraps the Oculus analysis engine as an Origami transformer.
+// Scans the target repository and returns a typed ScanResult.
+type ScanTransformer struct {
+	repoPath string
+	store    port.Store
+	intent   string
+}
+
+// ScanOption configures the scan transformer.
+type ScanOption func(*ScanTransformer)
+
+// WithIntent sets the scan depth. Default "health".
+func WithIntent(intent string) ScanOption {
+	return func(s *ScanTransformer) { s.intent = intent }
+}
+
+// WithStore sets the Oculus persistence store. When nil, scans are not cached.
+func WithStore(store port.Store) ScanOption {
+	return func(s *ScanTransformer) { s.store = store }
+}
+
+// NewScanTransformer creates a scan transformer for the given repository.
+func NewScanTransformer(repoPath string, opts ...ScanOption) *ScanTransformer {
+	s := &ScanTransformer{
+		repoPath: repoPath,
+		intent:   "health",
+	}
+	for _, o := range opts {
+		o(s)
+	}
+	return s
+}
+
+// Name implements engine.Transformer.
+func (s *ScanTransformer) Name() string { return "oculus-scan" }
+
+// Transform implements engine.Transformer. Scans the repository and returns
+// a *sdlc.ScanResult with findings mapped from Oculus analysis.
+func (s *ScanTransformer) Transform(ctx context.Context, _ *engine.TransformerContext) (any, error) {
+	store := s.store
+	if store == nil {
+		store = &nopStore{}
+	}
+	oc := oculusengine.New(store, []string{s.repoPath})
+
+	scanResult, err := oc.ScanProject(ctx, s.repoPath, oculusengine.ScanOpts{
+		Intent: s.intent,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("oculus scan %s: %w", s.repoPath, err)
+	}
+
+	report := scanResult.Report
+	findings := make([]sdlc.Finding, 0, len(report.HotSpots)+len(report.Cycles))
+
+	// Map hot spots → findings.
+	for _, hs := range report.HotSpots {
+		findings = append(findings, sdlc.Finding{
+			File:     hs.Component,
+			Rule:     "hot-spot",
+			Message:  fmt.Sprintf("high risk: fan-in=%d churn=%d", hs.FanIn, hs.Churn),
+			Severity: "warning",
+		})
+	}
+
+	// Map cycles → findings. Cycle is []string (component names in the cycle).
+	for _, cy := range report.Cycles {
+		findings = append(findings, sdlc.Finding{
+			Rule:     "cycle",
+			Message:  fmt.Sprintf("circular dependency: %s", strings.Join(cy, " → ")),
+			Severity: "error",
+		})
+	}
+
+	// Map layer violations if layers are defined.
+	violations, err := oc.GetViolations(ctx, s.repoPath, nil)
+	if err == nil && violations != nil {
+		for _, v := range violations.Violations {
+			findings = append(findings, sdlc.Finding{
+				File:     v.From,
+				Rule:     "layer-violation",
+				Message:  fmt.Sprintf("%s → %s violates layer order", v.From, v.To),
+				Severity: "error",
+			})
+		}
+	}
+
+	return &sdlc.ScanResult{
+		Findings: findings,
+		Clean:    len(findings) == 0,
+	}, nil
+}
