@@ -173,11 +173,28 @@ func (f *FixTransformer) applyToWorktree(ctx context.Context, changes []fileChan
 	return wtDir, branch, nil
 }
 
-// createWorktree creates a git worktree at .sdlc-fix-<timestamp> on a new branch.
+// worktreeStateDir returns the XDG state directory for SDLC worktrees.
+func worktreeStateDir() string {
+	xdg := os.Getenv("XDG_STATE_HOME")
+	if xdg == "" {
+		home, _ := os.UserHomeDir()
+		xdg = filepath.Join(home, ".local", "state")
+	}
+	return filepath.Join(xdg, "origami", "worktrees")
+}
+
+// createWorktree creates a git worktree in $XDG_STATE_HOME/origami/worktrees/
+// on a new branch. Strips replace directives from the worktree's go.mod so
+// it builds against published module versions.
 func (f *FixTransformer) createWorktree(ctx context.Context) (wtDir, branch string, err error) {
 	ts := strconv.FormatInt(time.Now().UnixMilli(), 10)
 	branch = "sdlc-fix-" + ts
-	wtDir = filepath.Join(f.repoPath, ".sdlc-fix-"+ts)
+
+	stateDir := worktreeStateDir()
+	if mkErr := os.MkdirAll(stateDir, 0o750); mkErr != nil {
+		return "", "", fmt.Errorf("create worktree state dir: %w", mkErr)
+	}
+	wtDir = filepath.Join(stateDir, "sdlc-fix-"+ts)
 
 	cmd := exec.CommandContext(ctx, "git", "worktree", "add", wtDir, "-b", branch)
 	cmd.Dir = f.repoPath
@@ -186,7 +203,58 @@ func (f *FixTransformer) createWorktree(ctx context.Context) (wtDir, branch stri
 	if runErr := cmd.Run(); runErr != nil {
 		return "", "", fmt.Errorf("%w: %w: %s", errWorktreeAdd, runErr, stderr.String())
 	}
+
+	// Strip replace directives — worktree builds against published versions.
+	if stripErr := stripGoModReplaces(wtDir); stripErr != nil {
+		return "", "", fmt.Errorf("strip go.mod replaces: %w", stripErr)
+	}
+
 	return wtDir, branch, nil
+}
+
+// stripGoModReplaces removes all replace directives from go.mod in the given
+// directory and runs go mod tidy. The worktree builds against published versions.
+func stripGoModReplaces(dir string) error {
+	modPath := filepath.Join(dir, "go.mod")
+	data, err := os.ReadFile(modPath)
+	if err != nil {
+		return err
+	}
+
+	var cleaned strings.Builder
+	inReplace := false
+	for _, line := range strings.Split(string(data), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "replace ") {
+			continue // single-line replace
+		}
+		if strings.HasPrefix(trimmed, "replace (") {
+			inReplace = true
+			continue
+		}
+		if inReplace {
+			if trimmed == ")" {
+				inReplace = false
+			}
+			continue
+		}
+		cleaned.WriteString(line)
+		cleaned.WriteString("\n")
+	}
+
+	if wErr := os.WriteFile(modPath, []byte(cleaned.String()), 0o600); wErr != nil {
+		return wErr
+	}
+
+	// Tidy to resolve dependencies from registry.
+	cmd := exec.Command("go", "mod", "tidy")
+	cmd.Dir = dir
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("go mod tidy: %w: %s", err, stderr.String())
+	}
+	return nil
 }
 
 // buildInWorktree runs go build ./... inside the worktree to verify correctness.
@@ -223,22 +291,33 @@ func (f *FixTransformer) commitInWorktree(ctx context.Context, wtDir string, fil
 	return nil
 }
 
-// CleanupWorktrees removes all .sdlc-fix-* worktrees from the repository.
-// Call after circuit completion to reclaim disk space.
+// CleanupWorktrees removes all sdlc-fix-* worktrees from the XDG state dir
+// and prunes stale git worktree entries. Call after circuit completion or
+// on operator startup to reclaim disk space.
 func CleanupWorktrees(ctx context.Context, repoPath string) error {
-	entries, err := os.ReadDir(repoPath)
+	stateDir := worktreeStateDir()
+	entries, err := os.ReadDir(stateDir)
 	if err != nil {
-		return fmt.Errorf("read repo dir: %w", err)
+		if os.IsNotExist(err) {
+			return nil // nothing to clean
+		}
+		return fmt.Errorf("read worktree state dir: %w", err)
 	}
 	for _, e := range entries {
-		if !e.IsDir() || !strings.HasPrefix(e.Name(), ".sdlc-fix-") {
+		if !e.IsDir() || !strings.HasPrefix(e.Name(), "sdlc-fix-") {
 			continue
 		}
-		wtDir := filepath.Join(repoPath, e.Name())
+		wtDir := filepath.Join(stateDir, e.Name())
 		cmd := exec.CommandContext(ctx, "git", "worktree", "remove", "--force", wtDir)
 		cmd.Dir = repoPath
-		_ = cmd.Run() // best-effort cleanup
+		_ = cmd.Run() // best-effort
+		// If git worktree remove fails (stale entry), force rm.
+		_ = os.RemoveAll(wtDir)
 	}
+	// Prune stale worktree references.
+	pruneCmd := exec.CommandContext(ctx, "git", "worktree", "prune")
+	pruneCmd.Dir = repoPath
+	_ = pruneCmd.Run()
 	return nil
 }
 
