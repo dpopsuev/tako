@@ -1,0 +1,16 @@
+apiVersion: origami/v1
+kind: Board
+metadata:
+  name: origami-sdlc
+  description: "Self-reinforcing SDLC circuit for the Origami framework"
+spec:
+  uses:
+    sdlc:
+      kind: schematic
+      module: github.com/dpopsuev/origami/simulate/sdlc
+      entry: true
+  domain_serve:
+    port: 9400
+    assets:
+      circuits:
+        sdlc: circuits/sdlc.yaml

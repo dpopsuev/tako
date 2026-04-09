@@ -40,11 +40,6 @@ var OrigamiLayers = []string{
 	// Infrastructure
 	"mcp",
 	// Instruments
-	"instruments/cli",
-	"instruments/docs",
-	"instruments/github",
-	"instruments/mcp",
-	"instruments/sqlite",
 	"instruments/oculus",
 	"instruments/gotools",
 	"instruments/llmfix",

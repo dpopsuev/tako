@@ -20,6 +20,7 @@ __debug_bin*
 
 # Frontend (LSP extension)
 lsp/vscode/node_modules/
+lsp/vscode/out/
 
 # Deploy runtime
 deploy/.origami/
