@@ -1,4 +1,4 @@
-kind: board
+kind: Board
 name: base-board
 description: "Base board for composition tests"
 

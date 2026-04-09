@@ -128,8 +128,8 @@ func TestTopoSort_MultipleRoots_NoEntry(t *testing.T) {
 	m := &Manifest{
 		Name: "test",
 		Uses: map[string]UsesRef{
-			"a": {Kind: "schematic", Module: "github.com/dpopsuev/origami-rca"},
-			"b": {Kind: "schematic", Module: "github.com/dpopsuev/origami-gnd"},
+			"a": {Kind: "Schematic", Module: "github.com/dpopsuev/origami-rca"},
+			"b": {Kind: "Schematic", Module: "github.com/dpopsuev/origami-gnd"},
 		},
 		Schematics: map[string]SchematicRef{
 			"a": {Path: "github.com/dpopsuev/origami-rca"},
@@ -150,8 +150,8 @@ func TestTopoSort_MultipleRoots_WithEntry(t *testing.T) {
 	m := &Manifest{
 		Name: "test",
 		Uses: map[string]UsesRef{
-			"rca": {Kind: "schematic", Module: "github.com/dpopsuev/origami-rca", Entry: true},
-			"gnd": {Kind: "schematic", Module: "github.com/dpopsuev/origami-gnd"},
+			"rca": {Kind: "Schematic", Module: "github.com/dpopsuev/origami-rca", Entry: true},
+			"gnd": {Kind: "Schematic", Module: "github.com/dpopsuev/origami-gnd"},
 		},
 		Schematics: map[string]SchematicRef{
 			"rca": {Path: "github.com/dpopsuev/origami-rca"},
@@ -179,8 +179,8 @@ func TestTopoSort_MultipleRoots_BothWithSessionFactory_RequiresEntryFlag(t *test
 	m := &Manifest{
 		Name: "test",
 		Uses: map[string]UsesRef{
-			"rca": {Kind: "schematic", Module: "github.com/dpopsuev/origami-rca"},
-			"gnd": {Kind: "schematic", Module: "github.com/dpopsuev/origami-gnd"},
+			"rca": {Kind: "Schematic", Module: "github.com/dpopsuev/origami-rca"},
+			"gnd": {Kind: "Schematic", Module: "github.com/dpopsuev/origami-gnd"},
 		},
 		Schematics: map[string]SchematicRef{
 			"rca": {Path: "github.com/dpopsuev/origami-rca"},

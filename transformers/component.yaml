@@ -1,4 +1,4 @@
-kind: component
+kind: Component
 component: origami-core
 namespace: core
 version: "1.0.0"

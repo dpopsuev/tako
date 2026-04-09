@@ -47,7 +47,7 @@ func TestParseBoardManifest_AllFields(t *testing.T) {
 }
 
 func TestParseBoardManifest_MissingName(t *testing.T) {
-	data := []byte("kind: board\n")
+	data := []byte("kind: Board\n")
 	_, err := ParseBoardManifest(data)
 	if err == nil {
 		t.Fatal("expected error for missing name")
@@ -58,7 +58,7 @@ func TestParseBoardManifest_MissingName(t *testing.T) {
 }
 
 func TestParseBoardManifest_WrongKind(t *testing.T) {
-	data := []byte("kind: scorecard\nname: test\n")
+	data := []byte("kind: Scorecard\nname: test\n")
 	_, err := ParseBoardManifest(data)
 	if err == nil {
 		t.Fatal("expected error for wrong kind")
@@ -69,7 +69,7 @@ func TestParseBoardManifest_WrongKind(t *testing.T) {
 }
 
 func TestParseBoardManifest_MinimalValid(t *testing.T) {
-	data := []byte("kind: board\nname: minimal\n")
+	data := []byte("kind: Board\nname: minimal\n")
 	bm, err := ParseBoardManifest(data)
 	if err != nil {
 		t.Fatalf("ParseBoardManifest: %v", err)
@@ -80,7 +80,7 @@ func TestParseBoardManifest_MinimalValid(t *testing.T) {
 }
 
 func TestParseBoardManifest_WithCompose(t *testing.T) {
-	data := []byte("kind: board\nname: child\ncompose:\n  base: ./parent.yaml\n")
+	data := []byte("kind: Board\nname: child\ncompose:\n  base: ./parent.yaml\n")
 	bm, err := ParseBoardManifest(data)
 	if err != nil {
 		t.Fatalf("ParseBoardManifest: %v", err)

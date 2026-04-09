@@ -198,12 +198,12 @@ func TestCrossRefEngine_NoProjectFiles(t *testing.T) {
 
 func TestLoadProjectFiles(t *testing.T) {
 	files := map[string][]byte{
-		"circuit.yaml": []byte(`kind: circuit
+		"circuit.yaml": []byte(`kind: Circuit
 circuit: rca
 calibration:
   outputs:
     - scorer_name: actual_defect_type`),
-		"scorecard.yaml": []byte(`kind: scorecard
+		"scorecard.yaml": []byte(`kind: Scorecard
 scorecard: rca
 metrics:
   - id: M1
@@ -213,10 +213,10 @@ metrics:
 	}
 
 	index := LoadProjectFiles(files)
-	if len(index["circuit"]) != 1 {
-		t.Errorf("expected 1 circuit, got %d", len(index["circuit"]))
+	if len(index["Circuit"]) != 1 {
+		t.Errorf("expected 1 circuit, got %d", len(index["Circuit"]))
 	}
-	if len(index["scorecard"]) != 1 {
-		t.Errorf("expected 1 scorecard, got %d", len(index["scorecard"]))
+	if len(index["Scorecard"]) != 1 {
+		t.Errorf("expected 1 scorecard, got %d", len(index["Scorecard"]))
 	}
 }

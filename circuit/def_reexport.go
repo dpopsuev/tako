@@ -74,6 +74,7 @@ const (
 	KindVocabulary     = def.KindVocabulary
 	KindHeuristicRules = def.KindHeuristicRules
 	KindSourcePack     = def.KindSourcePack
+	KindInstrument     = def.KindInstrument
 	KindTuning         = def.KindTuning
 	KindDataset        = def.KindDataset
 )
@@ -106,6 +107,7 @@ var ( //nolint:dupl // intentional re-exports for backward compatibility
 	NewStoreRegistry            = def.NewStoreRegistry
 	LoadStoreSchema             = def.LoadStoreSchema
 	MergeStoreSchemas           = def.MergeStoreSchemas
+	ParseKind                   = def.ParseKind
 	ParseEnvelope               = def.ParseEnvelope
 	LoadScorecardDef            = def.LoadScorecardDef
 	MergeScorecardDefs          = def.MergeScorecardDefs

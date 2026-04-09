@@ -23,7 +23,7 @@ func (t *testTransformer) Transform(_ context.Context, _ *engine.TransformerCont
 
 func minimalYAML() []byte {
 	return []byte(`
-kind: circuit
+kind: Circuit
 circuit: test
 description: a test circuit
 handler_type: transformer
@@ -946,7 +946,7 @@ description: no kind field
 
 func TestB9_MissingKind_WithKind(t *testing.T) {
 	yaml := []byte(`
-kind: scenario
+kind: Scenario
 version: v1
 metadata:
   name: test
@@ -988,7 +988,7 @@ version: v1
 
 func TestB9_CircuitWithKind(t *testing.T) {
 	yaml := []byte(`
-kind: circuit
+kind: Circuit
 version: v1
 metadata:
   name: test
@@ -1022,7 +1022,7 @@ edges:
 
 func TestB10_DeprecatedArrow(t *testing.T) {
 	yaml := []byte(`
-kind: store-schema
+kind: StoreSchema
 version: 1
 tables:
   - name: child
@@ -1428,7 +1428,7 @@ done: _done
 
 func TestB10_NoArrowWithReferences(t *testing.T) {
 	yaml := []byte(`
-kind: store-schema
+kind: StoreSchema
 version: 1
 tables:
   - name: child

@@ -1,4 +1,4 @@
-kind: board
+kind: Board
 name: child-board
 description: "Child board composing base"
 

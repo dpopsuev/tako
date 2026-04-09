@@ -5,7 +5,7 @@ metadata:
 spec:
   uses:
     rca:
-      kind: schematic
+      kind: Schematic
       module: github.com/dpopsuev/origami-rca
   domain_serve:
     port: 9300

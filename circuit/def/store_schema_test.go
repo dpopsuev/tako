@@ -8,7 +8,7 @@ import (
 
 func TestLoadStoreSchema_BasicParsing(t *testing.T) {
 	yaml := `
-kind: store-schema
+kind: StoreSchema
 version: "1.0"
 schema_version: 1
 tables:
@@ -30,8 +30,8 @@ tables:
 	if err != nil {
 		t.Fatalf("LoadStoreSchema: %v", err)
 	}
-	if s.Kind != "store-schema" {
-		t.Errorf("Kind = %q, want store-schema", s.Kind)
+	if s.Kind != KindStoreSchema {
+		t.Errorf("Kind = %q, want %q", s.Kind, KindStoreSchema)
 	}
 	if s.Version != "1.0" {
 		t.Errorf("Version = %q, want 1.0", s.Version)
@@ -303,7 +303,7 @@ func TestStoreDeclaration_LifecycleParsing(t *testing.T) {
 
 func TestStoreSchema_WithStoresField(t *testing.T) {
 	yaml := `
-kind: store-schema
+kind: StoreSchema
 version: "1.0"
 schema_version: 1
 tables:

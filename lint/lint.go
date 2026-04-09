@@ -554,7 +554,7 @@ func matchesTags(ruleTags []string, want map[string]bool) bool {
 
 // Run is the package-level entry point for embedding.
 // It parses raw YAML, runs all built-in rules, and returns findings.
-// For circuit files (kind: circuit or no kind), all rules run.
+// For circuit files (kind: Circuit or no kind), all rules run.
 // For non-circuit YAML (kind is set but not "circuit"), only envelope rules run.
 func Run(raw []byte, file string, opts ...Option) ([]Finding, error) {
 	env, _ := circuit.ParseEnvelope(raw)

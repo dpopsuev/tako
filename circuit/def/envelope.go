@@ -1,6 +1,10 @@
 package def
 
-import "gopkg.in/yaml.v3"
+import (
+	"fmt"
+
+	"gopkg.in/yaml.v3"
+)
 
 // Category: DSL & Build — YAML envelope (self-identification header).
 
@@ -10,20 +14,21 @@ type Kind string
 
 // Kind constants for all recognized Origami YAML document types.
 const (
-	KindSchematic      Kind = "schematic"
-	KindComponent      Kind = "component"
-	KindBoard          Kind = "board"
-	KindCircuit        Kind = "circuit" // legacy alias for schematic (migration)
-	KindStoreSchema    Kind = "store-schema"
-	KindScorecard      Kind = "scorecard"
-	KindScenario       Kind = "scenario"
-	KindArtifactSchema Kind = "artifact-schema"
-	KindReportTemplate Kind = "report-template"
-	KindVocabulary     Kind = "vocabulary"
-	KindHeuristicRules Kind = "heuristic-rules"
-	KindSourcePack     Kind = "source-pack"
-	KindTuning         Kind = "tuning"
-	KindDataset        Kind = "dataset"
+	KindSchematic      Kind = "Schematic"
+	KindComponent      Kind = "Component"
+	KindBoard          Kind = "Board"
+	KindCircuit        Kind = "Circuit" // legacy alias for schematic (migration)
+	KindStoreSchema    Kind = "StoreSchema"
+	KindScorecard      Kind = "Scorecard"
+	KindScenario       Kind = "Scenario"
+	KindArtifactSchema Kind = "ArtifactSchema"
+	KindReportTemplate Kind = "ReportTemplate"
+	KindVocabulary     Kind = "Vocabulary"
+	KindHeuristicRules Kind = "HeuristicRules"
+	KindSourcePack     Kind = "SourcePack"
+	KindInstrument     Kind = "Instrument"
+	KindTuning         Kind = "Tuning"
+	KindDataset        Kind = "Dataset"
 )
 
 // Envelope is the standard header for all Origami YAML files.
@@ -44,9 +49,32 @@ type Metadata struct {
 	Description string `yaml:"description,omitempty" json:"description,omitempty"`
 }
 
+// ParseKind extracts and validates the kind field from raw YAML bytes.
+// This is the single parsing gateway — all YAML loaders must call this
+// to obtain a Kind value. Returns ErrUnknownKind if the kind is not
+// registered in KnownKinds.
+//
+// An empty kind is returned as-is (zero value) without error — callers
+// decide whether an empty kind is acceptable for their context.
+func ParseKind(data []byte) (Kind, error) {
+	var probe struct {
+		Kind Kind `yaml:"kind"`
+	}
+	if err := yaml.Unmarshal(data, &probe); err != nil {
+		return "", fmt.Errorf("parse kind: %w", err)
+	}
+	if probe.Kind == "" {
+		return "", nil
+	}
+	if !KnownKinds[probe.Kind] {
+		return "", fmt.Errorf("%w: %q", ErrUnknownKind, probe.Kind)
+	}
+	return probe.Kind, nil
+}
+
 // ParseEnvelope extracts just the envelope fields from raw YAML bytes.
-// It never fails on missing fields — the returned Envelope simply has
-// zero-value fields for anything not present.
+// It never fails on missing or unrecognized kind — it is a reader, not
+// a validator. Use ParseKind when strict kind validation is needed.
 func ParseEnvelope(data []byte) (*Envelope, error) {
 	var env Envelope
 	if err := yaml.Unmarshal(data, &env); err != nil {
@@ -68,6 +96,9 @@ var KnownKinds = map[Kind]bool{
 	// Framework kinds — parsed by Origami
 	KindCircuit:     true, // legacy alias for schematic (migration)
 	KindStoreSchema: true,
+
+	// Instrument kind — runtime-dispatched tools (exec/MCP/Docker)
+	KindInstrument: true,
 
 	// Domain kinds — parsed by consumers
 	KindScorecard:      true,

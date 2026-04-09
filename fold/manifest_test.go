@@ -160,7 +160,7 @@ func TestValidateFileKind_MissingKindHeader(t *testing.T) {
 	if err := os.WriteFile(noKindFile, []byte("name: test\nversion: v1\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	err := validateFileKind(noKindFile, "scenario")
+	err := validateFileKind(noKindFile, "Scenario")
 	if err == nil {
 		t.Fatal("expected error for missing kind header")
 	}
@@ -172,10 +172,10 @@ func TestValidateFileKind_MissingKindHeader(t *testing.T) {
 func TestValidateFileKind_CorrectKind(t *testing.T) {
 	tmpDir := t.TempDir()
 	goodFile := tmpDir + "/good.yaml"
-	if err := os.WriteFile(goodFile, []byte("kind: scenario\nname: test\n"), 0o600); err != nil {
+	if err := os.WriteFile(goodFile, []byte("kind: Scenario\nname: test\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if err := validateFileKind(goodFile, "scenario"); err != nil {
+	if err := validateFileKind(goodFile, "Scenario"); err != nil {
 		t.Errorf("unexpected error for correct kind: %v", err)
 	}
 }
@@ -183,10 +183,10 @@ func TestValidateFileKind_CorrectKind(t *testing.T) {
 func TestValidateFileKind_WrongKind(t *testing.T) {
 	tmpDir := t.TempDir()
 	wrongFile := tmpDir + "/wrong.yaml"
-	if err := os.WriteFile(wrongFile, []byte("kind: tuning\nname: test\n"), 0o600); err != nil {
+	if err := os.WriteFile(wrongFile, []byte("kind: Tuning\nname: test\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	err := validateFileKind(wrongFile, "scenario")
+	err := validateFileKind(wrongFile, "Scenario")
 	if err == nil {
 		t.Fatal("expected error for wrong kind")
 	}

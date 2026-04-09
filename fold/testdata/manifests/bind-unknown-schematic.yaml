@@ -5,7 +5,7 @@ metadata:
 spec:
   uses:
     mcp:
-      kind: component
+      kind: Component
       module: github.com/dpopsuev/origami/instruments/mcp
   bind:
     nonexistent:

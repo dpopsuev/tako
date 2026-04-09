@@ -99,8 +99,8 @@
 
 | Killed | Replaced by |
 |--------|-------------|
-| `component` (as identity) | `kind: component` |
-| `circuit` (as identity) | `kind: board` or `kind: schematic` |
+| `component` (as identity) | `kind: Component` |
+| `circuit` (as identity) | `kind: Board` or `kind: Schematic` |
 | `namespace` | derived from name |
 | `metadata` | `name` + `version` at top level |
 | `factory` | absorbed into `gives: socket: Factory` |

@@ -1,4 +1,4 @@
-kind: schematic
+kind: Schematic
 # Finally circuit: A → done, with finally: cleanup
 # Tests: finally node runs on success and error paths.
 circuit: finally-test

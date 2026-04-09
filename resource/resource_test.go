@@ -171,7 +171,7 @@ func TestLoad_WithRegistry(t *testing.T) {
 	reg := NewKindRegistry()
 	reg.Register(NewHandler(circuit.KindScenario, parseTestResource, nil, nil))
 
-	res, typed, err := Load(reg, testYAML("scenario"), "test.yaml")
+	res, typed, err := Load(reg, testYAML("Scenario"), "test.yaml")
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
@@ -239,7 +239,7 @@ func TestDefaultRegistry_AllKinds(t *testing.T) {
 
 func TestPassthroughHandler_Parse(t *testing.T) {
 	h := NewPassthroughHandler(circuit.KindScenario)
-	data := []byte("kind: scenario\nversion: v1\nmetadata:\n  name: ptp\ndescription: test scenario\n")
+	data := []byte("kind: Scenario\nversion: v1\nmetadata:\n  name: ptp\ndescription: test scenario\n")
 	result, err := h.Parse(data)
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
@@ -272,7 +272,7 @@ func TestPassthroughHandler_NoMerge(t *testing.T) {
 
 func TestLoad_Passthrough(t *testing.T) {
 	reg := DefaultRegistry()
-	data := []byte("kind: scenario\nversion: v1\nmetadata:\n  name: my-scenario\ncases:\n  - id: C1\n")
+	data := []byte("kind: Scenario\nversion: v1\nmetadata:\n  name: my-scenario\ncases:\n  - id: C1\n")
 	res, typed, err := Load(reg, data, "scenarios/test.yaml")
 	if err != nil {
 		t.Fatalf("Load: %v", err)
@@ -297,7 +297,7 @@ func TestLoad_Passthrough(t *testing.T) {
 
 func TestKindRegistry_ValidateKindName_BuiltIn(t *testing.T) {
 	reg := NewKindRegistry()
-	builtIns := []string{"circuit", "board", "schematic", "scenario", "scorecard", "component"}
+	builtIns := []string{"Circuit", "Board", "Schematic", "Scenario", "Scorecard", "Component"}
 	for _, name := range builtIns {
 		if err := reg.ValidateKindName(name); err == nil {
 			t.Errorf("expected collision error for built-in kind %q", name)
@@ -358,7 +358,7 @@ func TestResource_Summary(t *testing.T) {
 		Source:   "scorecards/rca.yaml",
 	}
 	got := r.Summary()
-	if got != "scorecard/rca (v2) [scorecards/rca.yaml]" {
+	if got != "Scorecard/rca (v2) [scorecards/rca.yaml]" {
 		t.Errorf("Summary = %q", got)
 	}
 }

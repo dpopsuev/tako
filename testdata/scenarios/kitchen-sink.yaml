@@ -1,4 +1,4 @@
-kind: schematic
+kind: Schematic
 circuit: kitchen-sink
 description: "Exercises zones, when expressions, shortcuts, hooks, input resolution, prompt rendering, vars, schema"
 handler_type: transformer

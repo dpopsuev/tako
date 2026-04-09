@@ -1,4 +1,4 @@
-kind: schematic
+kind: Schematic
 # Base circuit for overlay testing.
 # Consumer overlays import this and add/replace nodes and edges.
 circuit: base

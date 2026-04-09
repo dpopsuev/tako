@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	useKindSchematic = "schematic"
+	useKindSchematic = "Schematic"
 	wireInstance     = "instance"
 )
 
@@ -33,7 +33,7 @@ func bridgeUsesToLegacy(m *Manifest) {
 				Path:     u.Module,
 				Bindings: bindings,
 			}
-		case "component", "":
+		case "Component", "":
 			m.Connectors[name] = ConnectorRef{Path: u.Module}
 		}
 	}

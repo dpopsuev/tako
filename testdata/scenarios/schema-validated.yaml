@@ -1,4 +1,4 @@
-kind: schematic
+kind: Schematic
 circuit: schema-validated
 description: "Circuit with artifact schema on every node for validation testing"
 handler_type: transformer

@@ -1,4 +1,4 @@
-kind: schematic
+kind: Schematic
 circuit: ref-hexagonal
 start: ingest
 done: done

@@ -10,11 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const (
-	kindSchematic = "Schematic" // K8s-style kind value (capitalized)
-	kindComponent = "Component" // K8s-style kind value (capitalized)
-	wireFactory   = "factory"
-)
+const wireFactory = "factory"
 
 // SocketDef declares a typed dependency slot that a schematic requires.
 // Connectors satisfy sockets by declaring a matching factory in their manifest.
@@ -44,7 +40,7 @@ func (g GivesDef) WireMode() string {
 
 // ComponentManifest is the YAML schema for component.yaml files.
 type ComponentManifest struct {
-	Kind        string `yaml:"kind"`
+	Kind        Kind   `yaml:"kind"`
 	Component   string `yaml:"component"`
 	Module      string `yaml:"module"` // Go import path (e.g. github.com/dpopsuev/origami-rca)
 	Namespace   string `yaml:"namespace"`
@@ -173,8 +169,12 @@ func LoadComponentManifest(path string) (*ComponentManifest, error) {
 	if raw.APIVersion == "" {
 		return nil, fmt.Errorf("%w: %s: apiVersion is required", ErrComponentManifest, path)
 	}
-	if raw.Kind != kindSchematic && raw.Kind != kindComponent {
-		return nil, fmt.Errorf("%w: %s: kind must be 'Schematic' or 'Component', got %q", ErrComponentManifest, path, raw.Kind)
+	kind, err := ParseKind(data)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s: %w", ErrComponentManifest, path, err)
+	}
+	if kind != KindSchematic && kind != KindComponent {
+		return nil, fmt.Errorf("%w: %s: kind must be %q or %q, got %q", ErrComponentManifest, path, KindSchematic, KindComponent, kind)
 	}
 	if raw.Metadata.Namespace == "" {
 		return nil, fmt.Errorf("%w: %s: metadata.namespace is required", ErrComponentManifest, path)
@@ -187,7 +187,7 @@ func LoadComponentManifest(path string) (*ComponentManifest, error) {
 	}
 
 	m := &ComponentManifest{
-		Kind:           raw.Kind,
+		Kind:           kind,
 		Component:      raw.Metadata.Name,
 		Module:         raw.Metadata.Module,
 		Namespace:      raw.Metadata.Namespace,

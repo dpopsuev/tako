@@ -5,7 +5,7 @@ metadata:
 spec:
   uses:
     rca:
-      kind: schematic
+      kind: Schematic
   domain_serve:
     port: 9300
     assets:

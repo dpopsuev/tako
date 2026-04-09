@@ -1,4 +1,4 @@
-kind: board
+kind: Board
 name: test-board
 description: "Test board for unit tests"
 

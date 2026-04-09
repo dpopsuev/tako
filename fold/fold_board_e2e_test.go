@@ -16,11 +16,11 @@ func TestE2E_BoardManifest_ResolvesAndGenerates(t *testing.T) {
 		Version: "1.0",
 		Uses: map[string]UsesRef{
 			"rca": {
-				Kind:   "schematic",
+				Kind:   "Schematic",
 				Module: "github.com/dpopsuev/origami-rca",
 			},
 			"reportportal": {
-				Kind:   "component",
+				Kind:   "Component",
 				Module: "github.com/dpopsuev/origami-rca/connectors/rp",
 			},
 		},
@@ -79,7 +79,7 @@ func TestE2E_BoardManifest_NegativeRejectsUnboundSocket(t *testing.T) {
 		Version: "1.0",
 		Uses: map[string]UsesRef{
 			"rca": {
-				Kind:   "schematic",
+				Kind:   "Schematic",
 				Module: "github.com/dpopsuev/origami-rca",
 			},
 		},

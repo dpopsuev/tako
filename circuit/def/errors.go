@@ -10,6 +10,9 @@ var (
 	// ErrComponentManifest is returned for: component manifest
 	ErrComponentManifest = errors.New("component manifest")
 
+	// ErrInstrumentManifest is returned for: instrument manifest
+	ErrInstrumentManifest = errors.New("instrument manifest")
+
 	// ErrCircuitNameIsRequired is returned for: circuit name is required
 	ErrCircuitNameIsRequired = errors.New("circuit name is required")
 
@@ -75,4 +78,7 @@ var (
 
 	// ErrCannotRedefineExistingColumn is returned for: cannot redefine existing column
 	ErrCannotRedefineExistingColumn = errors.New("cannot redefine existing column")
+
+	// ErrUnknownKind is returned when a YAML kind value is not registered in KnownKinds.
+	ErrUnknownKind = errors.New("unknown kind")
 )

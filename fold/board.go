@@ -14,7 +14,7 @@ import (
 // Flat structure — no K8s metadata/spec nesting. The board file IS the
 // entry point: `origami fold boards/ci-analysis.yaml`.
 type BoardManifest struct {
-	Kind        string            `yaml:"kind"`
+	Kind        circuit.Kind      `yaml:"kind"`
 	Name        string            `yaml:"name"`
 	Description string            `yaml:"description,omitempty"`
 	Uses        map[string]string `yaml:"uses,omitempty"`
@@ -65,7 +65,7 @@ func ParseBoardManifest(data []byte) (*BoardManifest, error) {
 	if err := yaml.Unmarshal(data, &bm); err != nil {
 		return nil, fmt.Errorf("parse board: %w", err)
 	}
-	if circuit.Kind(bm.Kind) != circuit.KindBoard {
+	if bm.Kind != circuit.KindBoard {
 		return nil, fmt.Errorf("%w: expected %q, got %q", ErrBoardKindMismatch, circuit.KindBoard, bm.Kind)
 	}
 	if bm.Name == "" {

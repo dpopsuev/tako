@@ -1,4 +1,4 @@
-kind: schematic
+kind: Schematic
 # Child circuit: used as a sub-circuit by subcircuit.yaml
 # Tests: standalone circuit that can be delegated to via handler_type: circuit.
 circuit: child

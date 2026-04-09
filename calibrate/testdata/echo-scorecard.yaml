@@ -1,4 +1,4 @@
-kind: scorecard
+kind: Scorecard
 name: echo-scorecard
 description: Simple scorecard for echo circuit calibration test
 version: 1

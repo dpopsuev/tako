@@ -8,11 +8,11 @@ import (
 )
 
 func scenarioYAML(name string) []byte {
-	return []byte("kind: scenario\nversion: v1\nmetadata:\n  name: " + name + "\ncases: []\n")
+	return []byte("kind: Scenario\nversion: v1\nmetadata:\n  name: " + name + "\ncases: []\n")
 }
 
 func scorecardYAML(name string) []byte {
-	return []byte("kind: scorecard\nversion: v1\nmetadata:\n  name: " + name + "\nmetrics:\n  - id: M1\n    name: accuracy\n    scorer: exact_match\n    threshold: 0.7\n")
+	return []byte("kind: Scorecard\nversion: v1\nmetadata:\n  name: " + name + "\nmetrics:\n  - id: M1\n    name: accuracy\n    scorer: exact_match\n    threshold: 0.7\n")
 }
 
 func TestLiveStore_CRUD(t *testing.T) {

@@ -128,6 +128,7 @@ const (
 	HandlerTypeNode        = "node"
 	HandlerTypeDelegate    = "delegate"
 	HandlerTypeCircuit     = "circuit"
+	HandlerTypeInstrument  = "instrument"
 )
 
 // OutputField holds the structured output declaration for a node.
@@ -348,7 +349,7 @@ var (
 	ValidApproaches      = []string{"rapid", "aggressive", "methodical", "rigorous", "analytical", "holistic"}
 	ValidZoneDomains     = []string{"unstructured", "structured", "hybrid"}
 	ValidPortDirections  = []string{"in", "out", "loop"}
-	ValidHandlerTypes    = []string{HandlerTypeTransformer, HandlerTypeExtractor, HandlerTypeRenderer, HandlerTypeNode, HandlerTypeDelegate, HandlerTypeCircuit}
+	ValidHandlerTypes    = []string{HandlerTypeTransformer, HandlerTypeExtractor, HandlerTypeRenderer, HandlerTypeNode, HandlerTypeDelegate, HandlerTypeCircuit, HandlerTypeInstrument}
 	ValidMergeStrategies = []string{MergeAppend, MergeLatest, MergeCustom}
 )
 

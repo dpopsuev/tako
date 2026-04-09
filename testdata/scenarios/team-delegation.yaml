@@ -1,4 +1,4 @@
-kind: schematic
+kind: Schematic
 circuit: team-delegation
 description: "Parallel fan-out from coordinator to specialists, merge at synthesis"
 handler_type: transformer

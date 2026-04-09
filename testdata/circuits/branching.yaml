@@ -1,4 +1,4 @@
-kind: schematic
+kind: Schematic
 # Branching circuit: A → B (high confidence) or C (low confidence) → done
 # Tests: edge conditions (when expressions), shortcut paths, CEL evaluation.
 circuit: branching

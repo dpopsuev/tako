@@ -15,7 +15,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const kindBoard = "Board"
 
 // Manifest is the top-level origami.yaml schema.
 // YAML format follows K8s pattern: apiVersion/kind/metadata/spec.
@@ -190,8 +189,12 @@ func ParseManifest(data []byte) (*Manifest, error) {
 	if raw.APIVersion != "origami/v1" {
 		return nil, fmt.Errorf("%w: %q", ErrManifestApiVersionMustBeOrigamiV1Got, raw.APIVersion)
 	}
-	if raw.Kind != kindBoard {
-		return nil, fmt.Errorf("%w: %q", ErrManifestKindMustBeBoardGot, raw.Kind)
+	kind, err := def.ParseKind(data)
+	if err != nil {
+		return nil, fmt.Errorf("manifest: %w", err)
+	}
+	if kind != circuit.KindBoard {
+		return nil, fmt.Errorf("%w: %q", ErrManifestKindMustBeBoardGot, kind)
 	}
 	if raw.Metadata.Name == "" {
 		return nil, ErrManifestMetadataNameIsRequired
@@ -199,7 +202,7 @@ func ParseManifest(data []byte) (*Manifest, error) {
 
 	m := &Manifest{
 		APIVersion:  raw.APIVersion,
-		Kind:        raw.Kind,
+		Kind:        string(kind),
 		Name:        raw.Metadata.Name,
 		Description: raw.Metadata.Description,
 		Domains:     raw.Spec.Domains,

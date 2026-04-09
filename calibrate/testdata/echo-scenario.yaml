@@ -1,4 +1,4 @@
-kind: scenario
+kind: Scenario
 name: echo-test
 cases:
   - id: C1

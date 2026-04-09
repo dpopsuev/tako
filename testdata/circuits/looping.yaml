@@ -1,4 +1,4 @@
-kind: schematic
+kind: Schematic
 # Looping circuit: analyze → refine (loop back if not converged) → done
 # Tests: loop counts, convergence thresholds, max iteration enforcement.
 circuit: looping

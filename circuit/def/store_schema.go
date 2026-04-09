@@ -46,9 +46,9 @@ type StoreEngine interface {
 	Migrate(schema *StoreSchema) error
 }
 
-// StoreSchema is parsed from kind: store-schema YAML files.
+// StoreSchema is parsed from kind: StoreSchema YAML files.
 type StoreSchema struct {
-	Kind          string                   `yaml:"kind,omitempty"`
+	Kind          Kind                     `yaml:"kind,omitempty"`
 	Version       string                   `yaml:"version"`
 	SchemaVersion int                      `yaml:"schema_version"`
 	Import        string                   `yaml:"import,omitempty"`

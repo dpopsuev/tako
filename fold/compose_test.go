@@ -98,7 +98,7 @@ func TestComposition_CycleDetection(t *testing.T) {
 }
 
 func TestComposition_NoCompose_PassThrough(t *testing.T) {
-	data := []byte("kind: board\nname: standalone\n")
+	data := []byte("kind: Board\nname: standalone\n")
 	bm, err := ParseBoardManifest(data)
 	if err != nil {
 		t.Fatalf("parse: %v", err)

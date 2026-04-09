@@ -5,13 +5,13 @@ metadata:
 spec:
   uses:
     rca:
-      kind: schematic
+      kind: Schematic
       module: github.com/dpopsuev/origami-rca
     gnd:
-      kind: schematic
+      kind: Schematic
       module: github.com/dpopsuev/origami-gnd
     reportportal:
-      kind: component
+      kind: Component
       module: github.com/dpopsuev/origami-rca/connectors/rp
   bind:
     rca:

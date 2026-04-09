@@ -8,16 +8,16 @@ func TestResolve_BoardUsesAndBind(t *testing.T) {
 	root := origamiRoot(t)
 
 	m := &Manifest{
-		Kind:    "board",
+		Kind:    "Board",
 		Name:    "test-board",
 		Version: "1.0",
 		Uses: map[string]UsesRef{
 			"rca": {
-				Kind:   "schematic",
+				Kind:   "Schematic",
 				Module: "github.com/dpopsuev/origami-rca",
 			},
 			"reportportal": {
-				Kind:   "component",
+				Kind:   "Component",
 				Module: "github.com/dpopsuev/origami-rca/connectors/rp",
 			},
 		},

@@ -6,7 +6,7 @@ metadata:
 spec:
   uses:
     sdlc:
-      kind: schematic
+      kind: Schematic
       module: github.com/dpopsuev/origami/simulate/sdlc
       entry: true
   domain_serve:

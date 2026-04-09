@@ -35,7 +35,7 @@ func TestRuntime_DomainServeBinary_Starts(t *testing.T) {
 		}
 	}
 
-	writeFile("circuits/test.yaml", "kind: schematic\ncircuit: test\nnodes:\n  - name: a\n    handler: transformer:passthrough\nedges: []\nstart: a\ndone: a\n")
+	writeFile("circuits/test.yaml", "kind: Schematic\ncircuit: test\nnodes:\n  - name: a\n    handler: transformer:passthrough\nedges: []\nstart: a\ndone: a\n")
 	writeFile("prompts/recall.md", "You are a test prompt.")
 
 	manifest := filepath.Join(tmpDir, "origami.yaml")

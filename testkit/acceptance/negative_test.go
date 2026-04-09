@@ -94,19 +94,19 @@ version: "1.0"
 }
 
 func TestNegative_ComponentWrongKind_ReturnsError(t *testing.T) {
-	path := writeTestComponent(t, `kind: schematic
+	path := writeTestComponent(t, `kind: Schematic
 component: test
 namespace: test
 version: "1.0"
 `)
 	_, err := circuit.LoadComponentManifest(path)
 	if err == nil {
-		t.Fatal("expected error for kind: schematic in component.yaml, got nil")
+		t.Fatal("expected error for kind: Schematic in component.yaml, got nil")
 	}
 }
 
 func TestNegative_TransportInSourcesSection_ReturnsError(t *testing.T) {
-	path := writeTestComponent(t, `kind: component
+	path := writeTestComponent(t, `kind: Component
 component: test
 namespace: test
 version: "1.0"
@@ -122,7 +122,7 @@ needs:
 }
 
 func TestNegative_SourceReaderInTransportsSection_ReturnsError(t *testing.T) {
-	path := writeTestComponent(t, `kind: component
+	path := writeTestComponent(t, `kind: Component
 component: test
 namespace: test
 version: "1.0"

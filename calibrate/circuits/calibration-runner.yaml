@@ -1,4 +1,4 @@
-kind: schematic
+kind: Schematic
 # Calibration Runner Circuit
 #
 # Generic calibration circuit that any Origami consumer can use.

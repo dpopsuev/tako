@@ -10,8 +10,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/circuit/def"
 	"gopkg.in/yaml.v3"
 )
 
@@ -62,7 +60,7 @@ type Options struct {
 
 // Run loads the manifest, generates the appropriate binary, and compiles it.
 // Supports two manifest formats:
-//   - Flat board (kind: board) — new format, read directly
+//   - Flat board (kind: Board) — new format, read directly
 //   - K8s-style (kind: Board with apiVersion/metadata/spec) — legacy
 //
 // When schematics are declared, it produces a unified wired binary with
@@ -73,18 +71,21 @@ func Run(ctx context.Context, opts *Options) error {
 		return fmt.Errorf("read manifest: %w", err)
 	}
 
-	// Detect format: flat board (lowercase "board") vs K8s (capitalized "Board").
-	env, err := def.ParseEnvelope(data)
-	if err != nil {
+	// Detect format: K8s-style (has apiVersion field) vs flat board.
+	var probe struct {
+		APIVersion string `yaml:"apiVersion"`
+	}
+	if err := yaml.Unmarshal(data, &probe); err != nil {
 		return fmt.Errorf("parse manifest envelope: %w", err)
 	}
 
-	if env.Kind == circuit.KindBoard {
-		return runBoard(ctx, data, opts)
+	if probe.APIVersion != "" {
+		// K8s-style manifest.
+		return runLegacy(ctx, data, opts)
 	}
 
-	// Legacy K8s-style manifest.
-	return runLegacy(ctx, data, opts)
+	// Flat board manifest.
+	return runBoard(ctx, data, opts)
 }
 
 // runBoard handles the new flat board manifest format.

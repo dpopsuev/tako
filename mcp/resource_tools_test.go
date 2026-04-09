@@ -17,13 +17,13 @@ import (
 func newResourceServer() *mcp.CircuitServer {
 	domainFS := fstest.MapFS{
 		"circuits/rca.yaml": &fstest.MapFile{
-			Data: []byte("kind: schematic\nversion: v1\nmetadata:\n  name: rca\ncircuit: rca\nnodes:\n  - name: recall\n    handler: transformer:recall\nedges: []\nstart: recall\ndone: recall\n"),
+			Data: []byte("kind: Schematic\nversion: v1\nmetadata:\n  name: rca\ncircuit: rca\nnodes:\n  - name: recall\n    handler: transformer:recall\nedges: []\nstart: recall\ndone: recall\n"),
 		},
 		"scorecards/rca.yaml": &fstest.MapFile{
-			Data: []byte("kind: scorecard\nversion: v1\nmetadata:\n  name: rca\nmetrics:\n  - id: M1\n    name: accuracy\n    scorer: exact_match\n    threshold: 0.7\n"),
+			Data: []byte("kind: Scorecard\nversion: v1\nmetadata:\n  name: rca\nmetrics:\n  - id: M1\n    name: accuracy\n    scorer: exact_match\n    threshold: 0.7\n"),
 		},
 		"scenarios/ptp.yaml": &fstest.MapFile{
-			Data: []byte("kind: scenario\nversion: v1\nmetadata:\n  name: ptp\ncases: []\n"),
+			Data: []byte("kind: Scenario\nversion: v1\nmetadata:\n  name: ptp\ncases: []\n"),
 		},
 	}
 
@@ -81,7 +81,7 @@ func TestResourceTool_Kinds(t *testing.T) {
 	// Check that schematic is present with merge=false
 	found := false
 	for _, k := range kinds {
-		if k["kind"] == "schematic" {
+		if k["kind"] == "Schematic" {
 			found = true
 		}
 	}
@@ -110,7 +110,7 @@ func TestResourceTool_ListFilterByKind(t *testing.T) {
 	srv := newResourceServer()
 	session := connectInMemory(ctx, t, srv)
 
-	raw := callResourceToolRaw(ctx, t, session, map[string]any{"action": "list", "kind": "scorecard"})
+	raw := callResourceToolRaw(ctx, t, session, map[string]any{"action": "list", "kind": "Scorecard"})
 	var list []map[string]any
 	json.Unmarshal(raw, &list)
 	if len(list) != 1 {
@@ -125,7 +125,7 @@ func TestResourceTool_Get(t *testing.T) {
 
 	raw := callResourceToolRaw(ctx, t, session, map[string]any{
 		"action": "get",
-		"kind":   "scenario",
+		"kind":   "Scenario",
 		"name":   "ptp",
 	})
 	var result map[string]any
@@ -136,7 +136,7 @@ func TestResourceTool_Get(t *testing.T) {
 	if !ok {
 		t.Fatal("expected resource in result")
 	}
-	if res["kind"] != "scenario" {
+	if res["kind"] != "Scenario" {
 		t.Errorf("kind = %v", res["kind"])
 	}
 }
@@ -148,7 +148,7 @@ func TestResourceTool_Validate(t *testing.T) {
 
 	raw := callResourceToolRaw(ctx, t, session, map[string]any{
 		"action": "validate",
-		"kind":   "scenario",
+		"kind":   "Scenario",
 		"name":   "ptp",
 	})
 	var result map[string]any

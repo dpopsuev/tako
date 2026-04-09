@@ -13,8 +13,8 @@ func TestParseManifest_Board_ValidUsesAndBind(t *testing.T) {
 	if len(m.Uses) != 3 {
 		t.Errorf("Uses = %d, want 3", len(m.Uses))
 	}
-	if m.Uses["rca"].Kind != "schematic" {
-		t.Errorf("Uses[rca].Kind = %q, want schematic", m.Uses["rca"].Kind)
+	if m.Uses["rca"].Kind != "Schematic" {
+		t.Errorf("Uses[rca].Kind = %q, want Schematic", m.Uses["rca"].Kind)
 	}
 	if m.Uses["reportportal"].Module != "github.com/dpopsuev/origami-components/rp" {
 		t.Errorf("Uses[reportportal].Module = %q", m.Uses["reportportal"].Module)
