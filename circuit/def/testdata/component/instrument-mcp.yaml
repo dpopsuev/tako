@@ -1,0 +1,11 @@
+apiVersion: origami/v1
+kind: Instrument
+metadata:
+  name: locus-scan
+  namespace: instruments
+  description: "Architecture analysis via Locus MCP"
+spec:
+  version: "2.0"
+  dispatch: mcp
+  tune: "curl -sf http://localhost:8080/health"
+  endpoint: "http://localhost:8080/mcp"

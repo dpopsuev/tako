@@ -1,0 +1,15 @@
+apiVersion: origami/v1
+kind: Instrument
+metadata:
+  name: oculus-scan
+  namespace: instruments
+  description: "Static analysis scan via Oculus"
+spec:
+  version: "1.0"
+  dispatch: exec
+  tune: "oculus --version"
+  command: "oculus scan --format=json"
+  input_schema: |
+    {"type": "object", "properties": {"repo_path": {"type": "string"}}, "required": ["repo_path"]}
+  output_schema: |
+    {"type": "object", "properties": {"findings": {"type": "array"}, "clean": {"type": "boolean"}}}

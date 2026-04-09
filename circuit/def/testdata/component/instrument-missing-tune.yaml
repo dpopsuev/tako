@@ -1,0 +1,8 @@
+apiVersion: origami/v1
+kind: Instrument
+metadata:
+  name: bad-instrument
+  namespace: instruments
+spec:
+  dispatch: exec
+  command: "some-tool run"

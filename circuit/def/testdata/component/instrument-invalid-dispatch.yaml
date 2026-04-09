@@ -1,0 +1,9 @@
+apiVersion: origami/v1
+kind: Instrument
+metadata:
+  name: bad-dispatch
+  namespace: instruments
+spec:
+  dispatch: grpc
+  tune: "some-tool --version"
+  command: "some-tool run"

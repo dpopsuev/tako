@@ -82,6 +82,10 @@ func TestFieldRegistry_PortDef_Complete(t *testing.T) {
 	assertRegistryComplete(t, "PortDef", reflect.TypeOf(PortDef{}), PortFields)
 }
 
+func TestFieldRegistry_InstrumentManifest_Complete(t *testing.T) {
+	assertRegistryComplete(t, "InstrumentManifest", reflect.TypeOf(InstrumentManifest{}), InstrumentFields)
+}
+
 func TestFieldRegistry_RequiredFields(t *testing.T) {
 	required := CircuitFields.RequiredFields()
 	want := map[string]bool{"circuit": true, "nodes": true, "edges": true, "start": true, "done": true}
