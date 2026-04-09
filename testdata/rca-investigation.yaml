@@ -1,4 +1,4 @@
-kind: schematic
+kind: Schematic
 # F0-F6 Root Cause Analysis circuit.
 # Source of truth for the RCA graph structure.
 # Edge evaluation logic is registered via EdgeFactory in Go.

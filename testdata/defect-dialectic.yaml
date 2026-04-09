@@ -1,4 +1,4 @@
-kind: schematic
+kind: Schematic
 # D0-D4 Adversarial Dialectic circuit.
 # Antithesis path activates when Thesis F5 confidence is in the uncertain range.
 # Edge evaluation logic is registered via BuildDialecticEdgeFactory in Go.
