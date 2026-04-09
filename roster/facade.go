@@ -2,10 +2,11 @@ package roster
 
 import (
 	"github.com/dpopsuev/troupe"
+	"github.com/dpopsuev/troupe/broker"
 	"github.com/dpopsuev/troupe/collective"
 )
 
-// Core Troupe types — definitions live in troupe root.
+// Core Troupe types — definitions live in troupe root (interfaces).
 type (
 	Broker      = troupe.Broker
 	Actor       = troupe.Actor
@@ -54,27 +55,27 @@ type (
 	Gatekeeper    = collective.Gatekeeper
 )
 
-// Hook types — definitions live in troupe root.
+// Hook types — definitions live in troupe/broker.
 type (
-	Hook        = troupe.Hook
-	SpawnHook   = troupe.SpawnHook
-	PerformHook = troupe.PerformHook
+	Hook        = broker.Hook
+	SpawnHook   = broker.SpawnHook
+	PerformHook = broker.PerformHook
 	Meter       = troupe.Meter
 	Usage       = troupe.Usage
 	UsageDetail = troupe.UsageDetail
 )
 
 // Broker options.
-type BrokerOption = troupe.BrokerOption
+type BrokerOption = broker.Option
 
 var (
-	WithHook  = troupe.WithHook
-	WithMeter = troupe.WithMeter
+	WithHook  = broker.WithHook
+	WithMeter = broker.WithMeter
 )
 
 // Facade constructors.
 var (
-	NewBroker        = troupe.NewBroker
-	NewInMemoryMeter = troupe.NewInMemoryMeter
+	NewBroker        = broker.New
+	NewInMemoryMeter = broker.NewInMemoryMeter
 	SpawnCollective  = collective.SpawnCollective
 )
