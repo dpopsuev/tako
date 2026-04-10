@@ -20,21 +20,23 @@ func TestInstrumentManifestBuilder_Defaults(t *testing.T) {
 	if m.Tune == "" {
 		t.Error("Tune should have default")
 	}
-	if m.Command == "" {
-		t.Error("Command should have default")
+	if len(m.Actions) == 0 {
+		t.Error("Actions should have default")
 	}
 }
 
 func TestInstrumentManifestBuilder_Fluent(t *testing.T) {
-	m := NewInstrumentManifest("oculus-scan").
+	m := NewInstrumentManifest("oculus").
 		WithNamespace("instruments").
 		WithDispatch(def.DispatchMCP).
 		WithEndpoint("http://localhost:8080/mcp").
 		WithTune("curl -sf http://localhost:8080/health").
 		WithVersion("2.0").
 		WithDescription("Oculus scan via MCP").
-		WithInputSchema(`{"type":"object"}`).
-		WithOutputSchema(`{"type":"object"}`).
+		WithAction("scan", def.ActionDef{
+			Command:     "scan",
+			InputSchema: `{"type":"object"}`,
+		}).
 		Build()
 
 	if m.Dispatch != def.DispatchMCP {
@@ -43,8 +45,8 @@ func TestInstrumentManifestBuilder_Fluent(t *testing.T) {
 	if m.Endpoint != "http://localhost:8080/mcp" {
 		t.Errorf("Endpoint = %q", m.Endpoint)
 	}
-	if m.Version != "2.0" {
-		t.Errorf("Version = %q", m.Version)
+	if _, ok := m.Actions["scan"]; !ok {
+		t.Error("missing scan action")
 	}
 }
 
@@ -53,6 +55,7 @@ func TestInstrumentManifestBuilder_Docker(t *testing.T) {
 		WithDispatch(def.DispatchDocker).
 		WithImage("osv-scanner:latest").
 		WithTune("docker inspect osv-scanner:latest").
+		WithAction("scan", def.ActionDef{Command: "osv-scanner scan"}).
 		Build()
 
 	if m.Dispatch != def.DispatchDocker {
@@ -60,5 +63,23 @@ func TestInstrumentManifestBuilder_Docker(t *testing.T) {
 	}
 	if m.Image != "osv-scanner:latest" {
 		t.Errorf("Image = %q", m.Image)
+	}
+}
+
+func TestInstrumentManifestBuilder_GoDispatch(t *testing.T) {
+	m := NewInstrumentManifest("core-transformers").
+		WithDispatch(def.DispatchGo).
+		WithAction("llm", def.ActionDef{GoFunc: "transformers.LLMTransformer"}).
+		WithAction("jq", def.ActionDef{GoFunc: "transformers.JQTransformer"}).
+		Build()
+
+	if m.Dispatch != def.DispatchGo {
+		t.Errorf("Dispatch = %q", m.Dispatch)
+	}
+	if len(m.Actions) < 2 {
+		t.Errorf("Actions count = %d, want >= 2", len(m.Actions))
+	}
+	if m.Actions["llm"].GoFunc != "transformers.LLMTransformer" {
+		t.Errorf("llm.GoFunc = %q", m.Actions["llm"].GoFunc)
 	}
 }

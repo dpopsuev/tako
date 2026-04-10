@@ -6,4 +6,6 @@ metadata:
 spec:
   dispatch: grpc
   tune: "some-tool --version"
-  command: "some-tool run"
+  actions:
+    run:
+      command: "some-tool run"

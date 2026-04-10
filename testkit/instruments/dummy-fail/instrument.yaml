@@ -7,8 +7,10 @@ metadata:
 spec:
   dispatch: exec
   tune: "bash --version"
-  command: "bash testkit/instruments/dummy-fail/fail.sh"
-  input_schema: |
-    {"type": "object"}
-  output_schema: |
-    {"type": "object"}
+  actions:
+    fail:
+      command: "bash testkit/instruments/dummy-fail/fail.sh"
+      input_schema: |
+        {"type": "object"}
+      output_schema: |
+        {"type": "object"}

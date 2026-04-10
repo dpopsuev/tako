@@ -1,8 +1,9 @@
 package def
 
 // Category: DSL & Build — instrument manifest (YAML-level types only).
-// Instruments are runtime-dispatched tools: exec (CLI), mcp (MCP server),
-// or docker (container). They never compile into the circuit binary.
+// Instruments are the universal node dispatch model. Every node in a circuit
+// references an instrument + action. Dispatch modes: exec (CLI), mcp (MCP
+// server), docker (container), go (in-process function call).
 
 import (
 	"fmt"
@@ -18,6 +19,7 @@ const (
 	DispatchExec   DispatchMode = "exec"   // CLI subprocess
 	DispatchMCP    DispatchMode = "mcp"    // MCP server
 	DispatchDocker DispatchMode = "docker" // Docker container
+	DispatchGo     DispatchMode = "go"     // In-process Go function call
 )
 
 // ValidDispatchModes enumerates the accepted dispatch mode values.
@@ -25,30 +27,35 @@ var ValidDispatchModes = []string{
 	string(DispatchExec),
 	string(DispatchMCP),
 	string(DispatchDocker),
+	string(DispatchGo),
+}
+
+// ActionDef declares a single action an instrument can perform.
+// Each action has its own command and I/O schema contract.
+type ActionDef struct {
+	Command      string `yaml:"command"`                // exec/docker: shell command
+	GoFunc       string `yaml:"go_func,omitempty"`      // go dispatch: qualified function name
+	InputSchema  string `yaml:"input_schema,omitempty"` // JSON Schema (draft 2020-12)
+	OutputSchema string `yaml:"output_schema,omitempty"`
 }
 
 // InstrumentManifest is the parsed representation of an instrument.yaml file.
-// Instruments are language-agnostic tools dispatched at runtime via exec, MCP,
-// or Docker. They satisfy battery.Tool and are registered in the circuit's
-// tool registry.
+// Instruments are the universal node dispatch model — every circuit node
+// references an instrument by name and an action from its actions table.
 type InstrumentManifest struct {
-	Kind         Kind         `yaml:"kind"`
-	Name         string       `yaml:"name"`
-	Namespace    string       `yaml:"namespace"`
-	Version      string       `yaml:"version"`
-	Description  string       `yaml:"description,omitempty"`
-	Dispatch     DispatchMode `yaml:"dispatch"`
-	Tune         string       `yaml:"tune"`                   // preflight command — must succeed before circuit starts
-	Command      string       `yaml:"command,omitempty"`      // exec dispatch: command to run
-	Endpoint     string       `yaml:"endpoint,omitempty"`     // mcp dispatch: server endpoint
-	Image        string       `yaml:"image,omitempty"`        // docker dispatch: container image
-	InputSchema  string       `yaml:"input_schema,omitempty"` // JSON Schema (draft 2020-12)
-	OutputSchema string       `yaml:"output_schema,omitempty"`
+	Kind        Kind                 `yaml:"kind"`
+	Name        string               `yaml:"name"`
+	Namespace   string               `yaml:"namespace"`
+	Version     string               `yaml:"version"`
+	Description string               `yaml:"description,omitempty"`
+	Dispatch    DispatchMode         `yaml:"dispatch"`
+	Tune        string               `yaml:"tune"`               // preflight command — must succeed before circuit starts
+	Endpoint    string               `yaml:"endpoint,omitempty"` // mcp dispatch: server endpoint
+	Image       string               `yaml:"image,omitempty"`    // docker dispatch: container image
+	Actions     map[string]ActionDef `yaml:"actions"`
 }
 
 // Validate checks that an instrument manifest is well-formed.
-// Enforces: tune required, dispatch required and valid, dispatch-specific
-// fields present.
 func (m *InstrumentManifest) Validate(path string) error {
 	if m.Name == "" {
 		return fmt.Errorf("%w: %s: metadata.name is required", ErrInstrumentManifest, path)
@@ -60,14 +67,13 @@ func (m *InstrumentManifest) Validate(path string) error {
 		return fmt.Errorf("%w: %s: spec.tune is required — instrument must declare a preflight check", ErrInstrumentManifest, path)
 	}
 	if !isValidDispatchMode(m.Dispatch) {
-		return fmt.Errorf("%w: %s: spec.dispatch %q is not valid — must be one of: exec, mcp, docker", ErrInstrumentManifest, path, m.Dispatch)
+		return fmt.Errorf("%w: %s: spec.dispatch %q is not valid — must be one of: exec, mcp, docker, go", ErrInstrumentManifest, path, m.Dispatch)
+	}
+	if len(m.Actions) == 0 {
+		return fmt.Errorf("%w: %s: spec.actions must declare at least one action", ErrInstrumentManifest, path)
 	}
 
 	switch m.Dispatch {
-	case DispatchExec:
-		if m.Command == "" {
-			return fmt.Errorf("%w: %s: spec.command is required for exec dispatch", ErrInstrumentManifest, path)
-		}
 	case DispatchMCP:
 		if m.Endpoint == "" {
 			return fmt.Errorf("%w: %s: spec.endpoint is required for mcp dispatch", ErrInstrumentManifest, path)
@@ -77,12 +83,41 @@ func (m *InstrumentManifest) Validate(path string) error {
 			return fmt.Errorf("%w: %s: spec.image is required for docker dispatch", ErrInstrumentManifest, path)
 		}
 	}
+
+	for name, action := range m.Actions {
+		switch m.Dispatch {
+		case DispatchExec, DispatchDocker:
+			if action.Command == "" {
+				return fmt.Errorf("%w: %s: action %q: command is required for %s dispatch", ErrInstrumentManifest, path, name, m.Dispatch)
+			}
+		case DispatchGo:
+			if action.GoFunc == "" {
+				return fmt.Errorf("%w: %s: action %q: go_func is required for go dispatch", ErrInstrumentManifest, path, name)
+			}
+		}
+	}
+
 	return nil
+}
+
+// HasAction returns true if the instrument has the named action.
+func (m *InstrumentManifest) HasAction(name string) bool {
+	_, ok := m.Actions[name]
+	return ok
+}
+
+// Action returns the named action definition or an error if not found.
+func (m *InstrumentManifest) Action(name string) (ActionDef, error) {
+	a, ok := m.Actions[name]
+	if !ok {
+		return ActionDef{}, fmt.Errorf("%w: instrument %q has no action %q", ErrInstrumentManifest, m.Name, name)
+	}
+	return a, nil
 }
 
 func isValidDispatchMode(mode DispatchMode) bool {
 	switch mode {
-	case DispatchExec, DispatchMCP, DispatchDocker:
+	case DispatchExec, DispatchMCP, DispatchDocker, DispatchGo:
 		return true
 	}
 	return false
@@ -98,19 +133,16 @@ type instrumentManifestYAML struct {
 		Description string `yaml:"description,omitempty"`
 	} `yaml:"metadata"`
 	Spec struct {
-		Version      string       `yaml:"version,omitempty"`
-		Dispatch     DispatchMode `yaml:"dispatch"`
-		Tune         string       `yaml:"tune"`
-		Command      string       `yaml:"command,omitempty"`
-		Endpoint     string       `yaml:"endpoint,omitempty"`
-		Image        string       `yaml:"image,omitempty"`
-		InputSchema  string       `yaml:"input_schema,omitempty"`
-		OutputSchema string       `yaml:"output_schema,omitempty"`
+		Version  string               `yaml:"version,omitempty"`
+		Dispatch DispatchMode         `yaml:"dispatch"`
+		Tune     string               `yaml:"tune"`
+		Endpoint string               `yaml:"endpoint,omitempty"`
+		Image    string               `yaml:"image,omitempty"`
+		Actions  map[string]ActionDef `yaml:"actions"`
 	} `yaml:"spec"`
 }
 
 // LoadInstrumentManifest reads and parses an instrument.yaml file.
-// Accepts K8s-style format: apiVersion/kind/metadata/spec.
 func LoadInstrumentManifest(path string) (*InstrumentManifest, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -120,7 +152,6 @@ func LoadInstrumentManifest(path string) (*InstrumentManifest, error) {
 }
 
 // ParseInstrumentManifest parses raw YAML bytes into an InstrumentManifest.
-// The path parameter is used only for error messages.
 func ParseInstrumentManifest(data []byte, path string) (*InstrumentManifest, error) {
 	var raw instrumentManifestYAML
 	if err := yaml.Unmarshal(data, &raw); err != nil {
@@ -138,18 +169,16 @@ func ParseInstrumentManifest(data []byte, path string) (*InstrumentManifest, err
 	}
 
 	m := &InstrumentManifest{
-		Kind:         kind,
-		Name:         raw.Metadata.Name,
-		Namespace:    raw.Metadata.Namespace,
-		Version:      raw.Spec.Version,
-		Description:  raw.Metadata.Description,
-		Dispatch:     raw.Spec.Dispatch,
-		Tune:         raw.Spec.Tune,
-		Command:      raw.Spec.Command,
-		Endpoint:     raw.Spec.Endpoint,
-		Image:        raw.Spec.Image,
-		InputSchema:  raw.Spec.InputSchema,
-		OutputSchema: raw.Spec.OutputSchema,
+		Kind:        kind,
+		Name:        raw.Metadata.Name,
+		Namespace:   raw.Metadata.Namespace,
+		Version:     raw.Spec.Version,
+		Description: raw.Metadata.Description,
+		Dispatch:    raw.Spec.Dispatch,
+		Tune:        raw.Spec.Tune,
+		Endpoint:    raw.Spec.Endpoint,
+		Image:       raw.Spec.Image,
+		Actions:     raw.Spec.Actions,
 	}
 
 	if err := m.Validate(path); err != nil {

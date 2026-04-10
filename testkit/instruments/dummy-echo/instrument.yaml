@@ -7,8 +7,10 @@ metadata:
 spec:
   dispatch: exec
   tune: "bash --version"
-  command: "bash testkit/instruments/dummy-echo/echo.sh"
-  input_schema: |
-    {"type": "object", "properties": {"message": {"type": "string"}}}
-  output_schema: |
-    {"type": "object", "properties": {"echo": {"type": "string"}}}
+  actions:
+    echo:
+      command: "bash testkit/instruments/dummy-echo/echo.sh"
+      input_schema: |
+        {"type": "object", "properties": {"message": {"type": "string"}}}
+      output_schema: |
+        {"type": "object", "properties": {"echo": {"type": "string"}}}

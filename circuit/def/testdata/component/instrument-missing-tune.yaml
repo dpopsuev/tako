@@ -5,4 +5,6 @@ metadata:
   namespace: instruments
 spec:
   dispatch: exec
-  command: "some-tool run"
+  actions:
+    run:
+      command: "some-tool run"

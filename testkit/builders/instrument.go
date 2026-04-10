@@ -18,7 +18,9 @@ func NewInstrumentManifest(name string) *InstrumentManifestBuilder {
 			Namespace: "test",
 			Dispatch:  def.DispatchExec,
 			Tune:      "true", // always succeeds
-			Command:   "echo",
+			Actions: map[string]def.ActionDef{
+				"default": {Command: "echo"},
+			},
 		},
 	}
 }
@@ -38,12 +40,6 @@ func (b *InstrumentManifestBuilder) WithDispatch(mode def.DispatchMode) *Instrum
 // WithTune sets the tune command.
 func (b *InstrumentManifestBuilder) WithTune(tune string) *InstrumentManifestBuilder {
 	b.m.Tune = tune
-	return b
-}
-
-// WithCommand sets the exec command.
-func (b *InstrumentManifestBuilder) WithCommand(cmd string) *InstrumentManifestBuilder {
-	b.m.Command = cmd
 	return b
 }
 
@@ -71,20 +67,24 @@ func (b *InstrumentManifestBuilder) WithDescription(desc string) *InstrumentMani
 	return b
 }
 
-// WithInputSchema sets the input JSON Schema.
-func (b *InstrumentManifestBuilder) WithInputSchema(schema string) *InstrumentManifestBuilder {
-	b.m.InputSchema = schema
-	return b
-}
-
-// WithOutputSchema sets the output JSON Schema.
-func (b *InstrumentManifestBuilder) WithOutputSchema(schema string) *InstrumentManifestBuilder {
-	b.m.OutputSchema = schema
+// WithAction adds an action to the instrument.
+func (b *InstrumentManifestBuilder) WithAction(name string, action def.ActionDef) *InstrumentManifestBuilder {
+	if b.m.Actions == nil {
+		b.m.Actions = make(map[string]def.ActionDef)
+	}
+	b.m.Actions[name] = action
 	return b
 }
 
 // Build returns the constructed InstrumentManifest.
 func (b *InstrumentManifestBuilder) Build() *def.InstrumentManifest {
 	m := b.m
+	// Deep copy actions map.
+	if b.m.Actions != nil {
+		m.Actions = make(map[string]def.ActionDef, len(b.m.Actions))
+		for k, v := range b.m.Actions {
+			m.Actions[k] = v
+		}
+	}
 	return &m
 }

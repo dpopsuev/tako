@@ -14,14 +14,11 @@ func TestLoadInstrumentManifest_ValidExec(t *testing.T) {
 	if m.Kind != KindInstrument {
 		t.Errorf("Kind = %q, want %q", m.Kind, KindInstrument)
 	}
-	if m.Name != "oculus-scan" {
+	if m.Name != "oculus" {
 		t.Errorf("Name = %q", m.Name)
 	}
 	if m.Namespace != "instruments" {
 		t.Errorf("Namespace = %q", m.Namespace)
-	}
-	if m.Version != "1.0" {
-		t.Errorf("Version = %q", m.Version)
 	}
 	if m.Dispatch != DispatchExec {
 		t.Errorf("Dispatch = %q, want exec", m.Dispatch)
@@ -29,17 +26,24 @@ func TestLoadInstrumentManifest_ValidExec(t *testing.T) {
 	if m.Tune != "oculus --version" {
 		t.Errorf("Tune = %q", m.Tune)
 	}
-	if m.Command != "oculus scan --format=json" {
-		t.Errorf("Command = %q", m.Command)
+	if len(m.Actions) != 2 {
+		t.Fatalf("Actions count = %d, want 2", len(m.Actions))
 	}
-	if m.Description != "Static analysis scan via Oculus" {
-		t.Errorf("Description = %q", m.Description)
+	scan, ok := m.Actions["scan"]
+	if !ok {
+		t.Fatal("missing scan action")
 	}
-	if m.InputSchema == "" {
-		t.Error("InputSchema is empty")
+	if scan.Command != "oculus scan --format=json" {
+		t.Errorf("scan.Command = %q", scan.Command)
 	}
-	if m.OutputSchema == "" {
-		t.Error("OutputSchema is empty")
+	if scan.InputSchema == "" {
+		t.Error("scan.InputSchema is empty")
+	}
+	if scan.OutputSchema == "" {
+		t.Error("scan.OutputSchema is empty")
+	}
+	if !m.HasAction("layers") {
+		t.Error("missing layers action")
 	}
 }
 
@@ -53,6 +57,9 @@ func TestLoadInstrumentManifest_ValidMCP(t *testing.T) {
 	}
 	if m.Endpoint != "http://localhost:8080/mcp" {
 		t.Errorf("Endpoint = %q", m.Endpoint)
+	}
+	if len(m.Actions) != 2 {
+		t.Errorf("Actions count = %d, want 2", len(m.Actions))
 	}
 }
 
@@ -99,10 +106,12 @@ metadata:
 spec:
   dispatch: exec
   tune: "test --version"
+  actions:
+    run: {}
 `)
 	_, err := ParseInstrumentManifest(data, "test.yaml")
 	if err == nil {
-		t.Fatal("expected error for exec dispatch without command")
+		t.Fatal("expected error for exec action without command")
 	}
 	if !errors.Is(err, ErrInstrumentManifest) {
 		t.Errorf("expected ErrInstrumentManifest, got %v", err)
@@ -118,6 +127,9 @@ metadata:
 spec:
   dispatch: mcp
   tune: "curl -sf http://localhost/health"
+  actions:
+    scan:
+      command: "scan"
 `)
 	_, err := ParseInstrumentManifest(data, "test.yaml")
 	if err == nil {
@@ -134,10 +146,47 @@ metadata:
 spec:
   dispatch: docker
   tune: "docker inspect test"
+  actions:
+    scan:
+      command: "scan --json"
 `)
 	_, err := ParseInstrumentManifest(data, "test.yaml")
 	if err == nil {
 		t.Fatal("expected error for docker dispatch without image")
+	}
+}
+
+func TestParseInstrumentManifest_GoMissingGoFunc(t *testing.T) {
+	data := []byte(`apiVersion: origami/v1
+kind: Instrument
+metadata:
+  name: test
+  namespace: instruments
+spec:
+  dispatch: go
+  tune: "true"
+  actions:
+    transform: {}
+`)
+	_, err := ParseInstrumentManifest(data, "test.yaml")
+	if err == nil {
+		t.Fatal("expected error for go action without go_func")
+	}
+}
+
+func TestParseInstrumentManifest_NoActions(t *testing.T) {
+	data := []byte(`apiVersion: origami/v1
+kind: Instrument
+metadata:
+  name: test
+  namespace: instruments
+spec:
+  dispatch: exec
+  tune: "test --version"
+`)
+	_, err := ParseInstrumentManifest(data, "test.yaml")
+	if err == nil {
+		t.Fatal("expected error for empty actions")
 	}
 }
 
@@ -149,7 +198,9 @@ metadata:
 spec:
   dispatch: exec
   tune: "test --version"
-  command: "test run"
+  actions:
+    run:
+      command: "test run"
 `)
 	_, err := ParseInstrumentManifest(data, "test.yaml")
 	if err == nil {
@@ -165,7 +216,9 @@ metadata:
 spec:
   dispatch: exec
   tune: "test --version"
-  command: "test run"
+  actions:
+    run:
+      command: "test run"
 `)
 	_, err := ParseInstrumentManifest(data, "test.yaml")
 	if err == nil {
@@ -182,11 +235,101 @@ metadata:
 spec:
   dispatch: exec
   tune: "test --version"
-  command: "test run"
+  actions:
+    run:
+      command: "test run"
 `)
 	_, err := ParseInstrumentManifest(data, "test.yaml")
 	if err == nil {
 		t.Fatal("expected error for unknown kind")
+	}
+}
+
+func TestParseInstrumentManifest_GoDispatch(t *testing.T) {
+	data := []byte(`apiVersion: origami/v1
+kind: Instrument
+metadata:
+  name: core-transformers
+  namespace: engine
+spec:
+  dispatch: go
+  tune: "true"
+  actions:
+    llm:
+      go_func: "transformers.LLMTransformer"
+    jq:
+      go_func: "transformers.JQTransformer"
+`)
+	m, err := ParseInstrumentManifest(data, "test.yaml")
+	if err != nil {
+		t.Fatalf("ParseInstrumentManifest: %v", err)
+	}
+	if m.Dispatch != DispatchGo {
+		t.Errorf("Dispatch = %q, want go", m.Dispatch)
+	}
+	if len(m.Actions) != 2 {
+		t.Errorf("Actions count = %d, want 2", len(m.Actions))
+	}
+	llm := m.Actions["llm"]
+	if llm.GoFunc != "transformers.LLMTransformer" {
+		t.Errorf("llm.GoFunc = %q", llm.GoFunc)
+	}
+}
+
+func TestInstrumentManifest_HasAction(t *testing.T) {
+	data := []byte(`apiVersion: origami/v1
+kind: Instrument
+metadata:
+  name: test
+  namespace: test
+spec:
+  dispatch: exec
+  tune: "true"
+  actions:
+    scan:
+      command: "scan"
+    build:
+      command: "build"
+`)
+	m, err := ParseInstrumentManifest(data, "test.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !m.HasAction("scan") {
+		t.Error("expected HasAction(scan) = true")
+	}
+	if m.HasAction("nonexistent") {
+		t.Error("expected HasAction(nonexistent) = false")
+	}
+}
+
+func TestInstrumentManifest_Action(t *testing.T) {
+	data := []byte(`apiVersion: origami/v1
+kind: Instrument
+metadata:
+  name: test
+  namespace: test
+spec:
+  dispatch: exec
+  tune: "true"
+  actions:
+    scan:
+      command: "scan --json"
+`)
+	m, err := ParseInstrumentManifest(data, "test.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	a, err := m.Action("scan")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a.Command != "scan --json" {
+		t.Errorf("Command = %q", a.Command)
+	}
+	_, err = m.Action("nonexistent")
+	if err == nil {
+		t.Error("expected error for nonexistent action")
 	}
 }
 
@@ -195,6 +338,7 @@ func TestValidDispatchModes_Complete(t *testing.T) {
 		string(DispatchExec):   false,
 		string(DispatchMCP):    false,
 		string(DispatchDocker): false,
+		string(DispatchGo):     false,
 	}
 	for _, v := range ValidDispatchModes {
 		if _, ok := modes[v]; !ok {

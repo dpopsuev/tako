@@ -116,18 +116,16 @@ var WalkerFields = FieldRegistry{
 
 // InstrumentFields registers every yaml field on InstrumentManifest.
 var InstrumentFields = FieldRegistry{
-	"kind":          {Required: true},
-	"name":          {Required: true},
-	"namespace":     {Required: true},
-	"version":       {},
-	"description":   {},
-	"dispatch":      {Required: true, ValidValues: ValidDispatchModes},
-	"tune":          {Required: true},
-	"command":       {},
-	"endpoint":      {},
-	"image":         {},
-	"input_schema":  {},
-	"output_schema": {},
+	"kind":        {Required: true},
+	"name":        {Required: true},
+	"namespace":   {Required: true},
+	"version":     {},
+	"description": {},
+	"dispatch":    {Required: true, ValidValues: ValidDispatchModes},
+	"tune":        {Required: true},
+	"endpoint":    {},
+	"image":       {},
+	"actions":     {Required: true},
 }
 
 // PortFields registers every yaml field on PortDef.
