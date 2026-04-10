@@ -1,0 +1,14 @@
+apiVersion: origami/v1
+kind: Instrument
+metadata:
+  name: dummy-fail
+  namespace: testkit
+  description: "Always exits 1 — proves error handling works"
+spec:
+  dispatch: exec
+  tune: "bash --version"
+  command: "bash testkit/instruments/dummy-fail/fail.sh"
+  input_schema: |
+    {"type": "object"}
+  output_schema: |
+    {"type": "object"}

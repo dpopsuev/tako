@@ -1,0 +1,14 @@
+apiVersion: origami/v1
+kind: Instrument
+metadata:
+  name: dummy-echo
+  namespace: testkit
+  description: "Echo stdin to stdout — proves exec dispatch works"
+spec:
+  dispatch: exec
+  tune: "bash --version"
+  command: "bash testkit/instruments/dummy-echo/echo.sh"
+  input_schema: |
+    {"type": "object", "properties": {"message": {"type": "string"}}}
+  output_schema: |
+    {"type": "object", "properties": {"echo": {"type": "string"}}}
