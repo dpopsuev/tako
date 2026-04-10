@@ -22,6 +22,7 @@ type runConfig struct {
 	extractors     ExtractorRegistry
 	nodes          NodeRegistry
 	edges          EdgeFactory
+	instruments    InstrumentRegistry
 	components     ComponentLoader
 	overrides      map[string]any
 	walker         circuit.Walker
@@ -61,6 +62,11 @@ func WithNodes(reg NodeRegistry) RunOption {
 // WithEdges registers edge factories for the run.
 func WithEdges(reg EdgeFactory) RunOption {
 	return func(c *runConfig) { c.edges = reg }
+}
+
+// WithInstruments registers instrument manifests for the run.
+func WithInstruments(reg InstrumentRegistry) RunOption {
+	return func(c *runConfig) { c.instruments = reg }
 }
 
 // WithComponents registers a component loader for the run.
@@ -186,6 +192,7 @@ func Run(ctx context.Context, circuitPath string, input any, opts ...RunOption) 
 		Extractors:   cfg.extractors,
 		Transformers: cfg.transformers,
 		Hooks:        cfg.hooks,
+		Instruments:  cfg.instruments,
 		Components:   cfg.components,
 	}
 
@@ -342,10 +349,11 @@ func Validate(circuitPath string, opts ...RunOption) error {
 		Extractors:   cfg.extractors,
 		Transformers: cfg.transformers,
 		Hooks:        cfg.hooks,
+		Instruments:  cfg.instruments,
 		Components:   cfg.components,
 	}
 
-	hasRegistries := reg.Nodes != nil || reg.Edges != nil || reg.Extractors != nil || reg.Transformers != nil || reg.Hooks != nil
+	hasRegistries := reg.Nodes != nil || reg.Edges != nil || reg.Extractors != nil || reg.Transformers != nil || reg.Hooks != nil || reg.Instruments != nil
 	if !hasRegistries {
 		return nil
 	}

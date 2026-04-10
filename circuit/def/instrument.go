@@ -16,18 +16,18 @@ import (
 type DispatchMode string
 
 const (
-	DispatchExec   DispatchMode = "exec"   // CLI subprocess
-	DispatchMCP    DispatchMode = "mcp"    // MCP server
-	DispatchDocker DispatchMode = "docker" // Docker container
-	DispatchGo     DispatchMode = "go"     // In-process Go function call
+	DispatchCLI       DispatchMode = "cli"       // CLI tool subprocess
+	DispatchMCP       DispatchMode = "mcp"       // MCP server
+	DispatchContainer DispatchMode = "container" // Container execution
+	DispatchInproc    DispatchMode = "inproc"    // In-process function call
 )
 
 // ValidDispatchModes enumerates the accepted dispatch mode values.
 var ValidDispatchModes = []string{
-	string(DispatchExec),
+	string(DispatchCLI),
 	string(DispatchMCP),
-	string(DispatchDocker),
-	string(DispatchGo),
+	string(DispatchContainer),
+	string(DispatchInproc),
 }
 
 // ActionDef declares a single action an instrument can perform.
@@ -67,7 +67,7 @@ func (m *InstrumentManifest) Validate(path string) error {
 		return fmt.Errorf("%w: %s: spec.tune is required — instrument must declare a preflight check", ErrInstrumentManifest, path)
 	}
 	if !isValidDispatchMode(m.Dispatch) {
-		return fmt.Errorf("%w: %s: spec.dispatch %q is not valid — must be one of: exec, mcp, docker, go", ErrInstrumentManifest, path, m.Dispatch)
+		return fmt.Errorf("%w: %s: spec.dispatch %q is not valid — must be one of: cli, mcp, container, inproc", ErrInstrumentManifest, path, m.Dispatch)
 	}
 	if len(m.Actions) == 0 {
 		return fmt.Errorf("%w: %s: spec.actions must declare at least one action", ErrInstrumentManifest, path)
@@ -78,21 +78,21 @@ func (m *InstrumentManifest) Validate(path string) error {
 		if m.Endpoint == "" {
 			return fmt.Errorf("%w: %s: spec.endpoint is required for mcp dispatch", ErrInstrumentManifest, path)
 		}
-	case DispatchDocker:
+	case DispatchContainer:
 		if m.Image == "" {
-			return fmt.Errorf("%w: %s: spec.image is required for docker dispatch", ErrInstrumentManifest, path)
+			return fmt.Errorf("%w: %s: spec.image is required for container dispatch", ErrInstrumentManifest, path)
 		}
 	}
 
 	for name, action := range m.Actions {
 		switch m.Dispatch {
-		case DispatchExec, DispatchDocker:
+		case DispatchCLI, DispatchContainer:
 			if action.Command == "" {
 				return fmt.Errorf("%w: %s: action %q: command is required for %s dispatch", ErrInstrumentManifest, path, name, m.Dispatch)
 			}
-		case DispatchGo:
+		case DispatchInproc:
 			if action.GoFunc == "" {
-				return fmt.Errorf("%w: %s: action %q: go_func is required for go dispatch", ErrInstrumentManifest, path, name)
+				return fmt.Errorf("%w: %s: action %q: go_func is required for inproc dispatch", ErrInstrumentManifest, path, name)
 			}
 		}
 	}
@@ -117,7 +117,7 @@ func (m *InstrumentManifest) Action(name string) (ActionDef, error) {
 
 func isValidDispatchMode(mode DispatchMode) bool {
 	switch mode {
-	case DispatchExec, DispatchMCP, DispatchDocker, DispatchGo:
+	case DispatchCLI, DispatchMCP, DispatchContainer, DispatchInproc:
 		return true
 	}
 	return false

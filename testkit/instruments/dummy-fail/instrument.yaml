@@ -5,7 +5,7 @@ metadata:
   namespace: testkit
   description: "Always exits 1 — proves error handling works"
 spec:
-  dispatch: exec
+  dispatch: cli
   tune: "bash --version"
   actions:
     fail:

@@ -14,7 +14,7 @@ func TestInstrumentManifestBuilder_Defaults(t *testing.T) {
 	if m.Kind != def.KindInstrument {
 		t.Errorf("Kind = %q, want %q", m.Kind, def.KindInstrument)
 	}
-	if m.Dispatch != def.DispatchExec {
+	if m.Dispatch != def.DispatchCLI {
 		t.Errorf("Dispatch = %q, want exec", m.Dispatch)
 	}
 	if m.Tune == "" {
@@ -52,13 +52,13 @@ func TestInstrumentManifestBuilder_Fluent(t *testing.T) {
 
 func TestInstrumentManifestBuilder_Docker(t *testing.T) {
 	m := NewInstrumentManifest("vulncheck").
-		WithDispatch(def.DispatchDocker).
+		WithDispatch(def.DispatchContainer).
 		WithImage("osv-scanner:latest").
 		WithTune("docker inspect osv-scanner:latest").
 		WithAction("scan", def.ActionDef{Command: "osv-scanner scan"}).
 		Build()
 
-	if m.Dispatch != def.DispatchDocker {
+	if m.Dispatch != def.DispatchContainer {
 		t.Errorf("Dispatch = %q", m.Dispatch)
 	}
 	if m.Image != "osv-scanner:latest" {
@@ -68,12 +68,12 @@ func TestInstrumentManifestBuilder_Docker(t *testing.T) {
 
 func TestInstrumentManifestBuilder_GoDispatch(t *testing.T) {
 	m := NewInstrumentManifest("core-transformers").
-		WithDispatch(def.DispatchGo).
+		WithDispatch(def.DispatchInproc).
 		WithAction("llm", def.ActionDef{GoFunc: "transformers.LLMTransformer"}).
 		WithAction("jq", def.ActionDef{GoFunc: "transformers.JQTransformer"}).
 		Build()
 
-	if m.Dispatch != def.DispatchGo {
+	if m.Dispatch != def.DispatchInproc {
 		t.Errorf("Dispatch = %q", m.Dispatch)
 	}
 	if len(m.Actions) < 2 {

@@ -4,7 +4,7 @@ metadata:
   name: bad-instrument
   namespace: instruments
 spec:
-  dispatch: exec
+  dispatch: cli
   actions:
     run:
       command: "some-tool run"

@@ -16,7 +16,7 @@ func NewInstrumentManifest(name string) *InstrumentManifestBuilder {
 			Kind:      def.KindInstrument,
 			Name:      name,
 			Namespace: "test",
-			Dispatch:  def.DispatchExec,
+			Dispatch:  def.DispatchCLI,
 			Tune:      "true", // always succeeds
 			Actions: map[string]def.ActionDef{
 				"default": {Command: "echo"},

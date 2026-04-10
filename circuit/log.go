@@ -23,6 +23,9 @@ const (
 
 	// Ingest / Curate
 	LogComponentDatasetPipeline = "dataset_pipeline"
+
+	// Instrument
+	LogComponentInstrument = "instrument"
 )
 
 // Log event names — used as slog msg values.
@@ -245,6 +248,11 @@ const (
 	LogTuningParseFailed = "failed to parse tuning-quickwins YAML"
 	LogTuningQWSkipped   = "tuning QW skipped (not yet implemented)"
 	LogTuningQWFailed    = "tuning QW apply failed"
+
+	// Instrument
+	LogInstrumentDispatching = "instrument dispatching"
+	LogInstrumentCompleted   = "instrument completed"
+	LogInstrumentFailed      = "instrument failed"
 )
 
 // Log field keys — used as slog attribute keys.
@@ -396,4 +404,10 @@ const (
 	LogKeyQuery      = "query"
 	LogKeySimilarity = "similarity"
 	LogKeyResults    = "results"
+
+	// --- Instrument ---
+	LogKeyInstrument   = "instrument"
+	LogKeyAction       = "action"
+	LogKeyDispatchMode = "dispatch_mode"
+	LogKeyCommand      = "command"
 )

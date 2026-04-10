@@ -6,7 +6,7 @@ metadata:
   description: "Static analysis via Oculus"
 spec:
   version: "1.0"
-  dispatch: exec
+  dispatch: cli
   tune: "oculus --version"
   actions:
     scan:

@@ -101,4 +101,10 @@ var (
 
 	// ErrWalkerNotInterrupted is returned when trying to resume a walker that is not in interrupted state.
 	ErrWalkerNotInterrupted = errors.New("walker is not in interrupted state")
+
+	// ErrInstrument is returned for instrument dispatch errors.
+	ErrInstrument = errors.New("instrument")
+
+	// ErrInstrumentDispatch is returned when an instrument dispatch fails at runtime.
+	ErrInstrumentDispatch = errors.New("instrument dispatch")
 )
