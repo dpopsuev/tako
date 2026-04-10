@@ -115,9 +115,12 @@ func classifyNodes(def *circuit.CircuitDef, opts *MermaidOptions) map[string]dsC
 	for i := range def.Nodes {
 		nd := &def.Nodes[i]
 		nodeName := string(nd.Name)
-		ht := nd.EffectiveHandlerType(def.HandlerType)
-		name := nd.EffectiveHandler()
-		if ht != circuit.HandlerTypeTransformer || name == "" {
+		ht := nd.Instrument
+		name := nd.Action
+		if name == "" {
+			name = string(nd.Name)
+		}
+		if ht != "transformer" || name == "" {
 			m[nodeName] = dsUnknown
 			continue
 		}

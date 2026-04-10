@@ -291,18 +291,21 @@ func (r *StochasticTransformer) Check(ctx *LintContext) []Finding {
 	var out []Finding
 	for i := range ctx.Def.Nodes {
 		nd := &ctx.Def.Nodes[i]
-		ht := nd.EffectiveHandlerType(ctx.Def.HandlerType)
-		name := nd.EffectiveHandler()
-		if ht == circuit.HandlerTypeTransformer && name != "" {
-			if isStochastic(name, reg) {
-				out = append(out, Finding{
-					RuleID:   r.ID(),
-					Severity: r.Severity(),
-					Message:  fmt.Sprintf("node %q uses stochastic transformer %q", nd.Name, name),
-					File:     ctx.File,
-					Line:     ctx.NodeLine(string(nd.Name)),
-				})
-			}
+		if nd.Instrument != "" && nd.Instrument != "transformer" {
+			continue
+		}
+		name := nd.Action
+		if name == "" {
+			name = string(nd.Name)
+		}
+		if name != "" && isStochastic(name, reg) {
+			out = append(out, Finding{
+				RuleID:   r.ID(),
+				Severity: r.Severity(),
+				Message:  fmt.Sprintf("node %q uses stochastic transformer %q", nd.Name, name),
+				File:     ctx.File,
+				Line:     ctx.NodeLine(string(nd.Name)),
+			})
 		}
 	}
 	return out
@@ -338,10 +341,14 @@ func (r *StochasticSummary) Check(ctx *LintContext) []Finding {
 	var stochasticNames []string
 	for i := range ctx.Def.Nodes {
 		nd := &ctx.Def.Nodes[i]
-		ht := nd.EffectiveHandlerType(ctx.Def.HandlerType)
-		name := nd.EffectiveHandler()
-		isTransformer := ht == circuit.HandlerTypeTransformer
-		if !isTransformer || name == "" {
+		if nd.Instrument != "" && nd.Instrument != "transformer" {
+			continue
+		}
+		name := nd.Action
+		if name == "" {
+			name = string(nd.Name)
+		}
+		if name == "" {
 			continue
 		}
 		totalWithTransformer++

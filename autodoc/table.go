@@ -27,11 +27,11 @@ func RenderNodeTable(def *circuit.CircuitDef, opts *MermaidOptions) string {
 		if zone == "" {
 			zone = "-"
 		}
-		handler := nd.EffectiveHandler()
+		handler := nd.Action
 		if handler == "" {
-			handler = "-"
+			handler = string(nd.Name)
 		}
-		handlerType := nd.EffectiveHandlerType(def.HandlerType)
+		handlerType := nd.Instrument
 		if handlerType == "" {
 			handlerType = "-"
 		}

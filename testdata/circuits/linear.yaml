@@ -4,14 +4,14 @@ kind: Schematic
 circuit: linear
 start: step-a
 done: done
-handler_type: transformer
-
 nodes:
   - name: step-a
-    handler: passthrough
+    instrument: transformer
+    action: passthrough
     description: "First step — receives circuit input, passes through"
   - name: step-b
-    handler: passthrough
+    instrument: transformer
+    action: passthrough
     description: "Second step — receives step-a output, passes through"
 
 edges:

@@ -19,7 +19,7 @@ import (
 // This file contains the engine-internal implementation: transformerNode, builtins.
 
 // transformerNode is a Node that delegates to a Transformer.
-// Created by BuildGraph when handler_type is "transformer".
+// Created by BuildGraph when instrument is "transformer".
 type transformerNode struct {
 	name       string
 	element    roster.Element

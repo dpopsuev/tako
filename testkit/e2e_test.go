@@ -51,9 +51,8 @@ func TestE2E_Calibration_AllStubs(t *testing.T) {
 
 	// Step 1: Build a 3-node circuit (A -> B -> done) using the CircuitDefBuilder.
 	def := builders.NewCircuitDef("e2e-test").
-		HandlerType("transformer").
-		AddNode("A", "stub").
-		AddNode("B", "stub").
+		AddNodeWithInstrument("A", "transformer", "stub").
+		AddNodeWithInstrument("B", "transformer", "stub").
 		AddEdge("A", "B", "true").
 		AddEdge("B", "done", "true").
 		Start("A").

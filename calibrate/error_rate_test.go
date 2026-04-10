@@ -26,7 +26,7 @@ func errorRateCircuitDef() *circuit.CircuitDef {
 		Circuit: "error-rate-test",
 		Start:   "start",
 		Done:    "done",
-		Nodes:   []circuit.NodeDef{{Name: "start", HandlerType: "transformer", Handler: "fail-on-id"}},
+		Nodes:   []circuit.NodeDef{{Name: "start", Instrument: "transformer", Action: "fail-on-id"}},
 		Edges:   []circuit.EdgeDef{{ID: "start-done", From: "start", To: "done"}},
 	}
 }

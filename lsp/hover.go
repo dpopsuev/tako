@@ -162,9 +162,9 @@ func buildNodeHover(def *circuit.CircuitDef, nodeName string, vocab circuit.Rich
 		if n.Description != "" {
 			md += n.Description + "\n\n"
 		}
-		handler := n.EffectiveHandler()
-		if handler != "" && handler != string(n.Name) {
-			md += fmt.Sprintf("**Handler:** %s\n\n", handler)
+		action := n.Action
+		if action != "" && action != string(n.Name) {
+			md += fmt.Sprintf("**Action:** %s\n\n", action)
 		}
 		if n.Approach != "" {
 			emoji := roster.ApproachEmoji(roster.Approach(n.Approach))

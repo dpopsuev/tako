@@ -12,7 +12,6 @@ kind: Schematic
 # or on aggregate to see the final metric evaluation.
 circuit: calibration-runner
 description: "Run domain calibration against ground truth scenarios"
-handler_type: node
 
 zones:
   setup:
@@ -35,31 +34,38 @@ zones:
 nodes:
   - name: load_scenario
     element: earth
-    handler: calibrate.load
+    instrument: node
+    action: calibrate.load
 
   - name: fan_out
     element: water
-    handler: calibrate.fan_out
+    instrument: node
+    action: calibrate.fan_out
 
   - name: walk_case
     element: fire
-    handler: calibrate.walk_case
+    instrument: node
+    action: calibrate.walk_case
 
   - name: score_case
     element: earth
-    handler: calibrate.score_case
+    instrument: node
+    action: calibrate.score_case
 
   - name: fan_in
     element: water
-    handler: calibrate.fan_in
+    instrument: node
+    action: calibrate.fan_in
 
   - name: aggregate
     element: earth
-    handler: calibrate.aggregate
+    instrument: node
+    action: calibrate.aggregate
 
   - name: report
     element: air
-    handler: calibrate.report
+    instrument: node
+    action: calibrate.report
 
 edges:
   - id: E1

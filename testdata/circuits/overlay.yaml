@@ -7,7 +7,8 @@ circuit: base
 
 nodes:
   - name: enrich
-    handler: passthrough
+    instrument: transformer
+    action: passthrough
     description: "Overlay-added enrichment step"
     edges:
       - name: enrich-done

@@ -36,12 +36,11 @@ func TestPreflight_ValidCircuit(t *testing.T) {
 
 func TestPreflight_MissingTransformer(t *testing.T) {
 	def := &circuit.CircuitDef{
-		Circuit:     "broken-circuit",
-		HandlerType: "transformer",
-		Start:       "start",
-		Done:        "done",
+		Circuit: "broken-circuit",
+		Start:   "start",
+		Done:    "done",
 		Nodes: []circuit.NodeDef{
-			{Name: "start", HandlerType: "transformer", Handler: "nonexistent-transformer"},
+			{Name: "start", Instrument: "transformer", Action: "nonexistent-transformer"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "start-done", From: "start", To: "done"},
@@ -69,7 +68,7 @@ func TestPreflight_InvalidStartNode(t *testing.T) {
 		Start:   "nonexistent",
 		Done:    "done",
 		Nodes: []circuit.NodeDef{
-			{Name: "start", HandlerType: "transformer", Handler: "passthrough"},
+			{Name: "start", Instrument: "transformer", Action: "passthrough"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "start-done", From: "start", To: "done"},
@@ -130,13 +129,12 @@ func TestPreflight_MultiNodeCircuit(t *testing.T) {
 	// Circuit with multiple nodes; preflight should still pass because
 	// it only validates graph construction and enters the start node.
 	def := &circuit.CircuitDef{
-		Circuit:     "multi-node",
-		HandlerType: "transformer",
-		Start:       "a",
-		Done:        "done",
+		Circuit: "multi-node",
+		Start:   "a",
+		Done:    "done",
 		Nodes: []circuit.NodeDef{
-			{Name: "a", HandlerType: "transformer", Handler: "passthrough"},
-			{Name: "b", HandlerType: "transformer", Handler: "passthrough"},
+			{Name: "a", Instrument: "transformer", Action: "passthrough"},
+			{Name: "b", Instrument: "transformer", Action: "passthrough"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "a-b", From: "a", To: "b"},
@@ -157,12 +155,11 @@ func TestPreflight_MultiNodeCircuit(t *testing.T) {
 
 func TestPreflight_BrokenEdgeExpression(t *testing.T) {
 	def := &circuit.CircuitDef{
-		Circuit:     "broken-edge",
-		HandlerType: "transformer",
-		Start:       "start",
-		Done:        "done",
+		Circuit: "broken-edge",
+		Start:   "start",
+		Done:    "done",
 		Nodes: []circuit.NodeDef{
-			{Name: "start", HandlerType: "transformer", Handler: "passthrough"},
+			{Name: "start", Instrument: "transformer", Action: "passthrough"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "start-done", From: "start", To: "done", When: "invalid_func(!!!"},
@@ -188,12 +185,11 @@ func TestPreflight_PartialReport_OnBuildError(t *testing.T) {
 	// A circuit that passes validation but fails on build should have
 	// "validate" and "components" in Passed, and "build" in Errors.
 	def := &circuit.CircuitDef{
-		Circuit:     "broken-build",
-		HandlerType: "transformer",
-		Start:       "start",
-		Done:        "done",
+		Circuit: "broken-build",
+		Start:   "start",
+		Done:    "done",
 		Nodes: []circuit.NodeDef{
-			{Name: "start", HandlerType: "transformer", Handler: "nonexistent-transformer"},
+			{Name: "start", Instrument: "transformer", Action: "nonexistent-transformer"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "start-done", From: "start", To: "done"},

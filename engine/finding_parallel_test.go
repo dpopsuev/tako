@@ -100,10 +100,9 @@ func TestArtifactCaptureObserver_FilteredNodes(t *testing.T) {
 func twoNodeCircuit() *circuit.CircuitDef {
 	return &circuit.CircuitDef{
 		Circuit:     "test-work",
-		HandlerType: "node",
 		Nodes: []circuit.NodeDef{
-			{Name: "step1"},
-			{Name: "step2"},
+			{Name: "step1", Instrument: "node"},
+			{Name: "step2", Instrument: "node"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "step1", To: "step2"},
@@ -116,10 +115,9 @@ func twoNodeCircuit() *circuit.CircuitDef {
 func twoNodeEnforcerCircuit() *circuit.CircuitDef {
 	return &circuit.CircuitDef{
 		Circuit:     "test-enforcer",
-		HandlerType: "node",
 		Nodes: []circuit.NodeDef{
-			{Name: "check"},
-			{Name: "report"},
+			{Name: "check", Instrument: "node"},
+			{Name: "report", Instrument: "node"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "e-check", From: "check", To: "report"},
@@ -181,10 +179,9 @@ func TestRunWithEnforcer_EnforcerCanceledOnWorkComplete(t *testing.T) {
 
 	enforcerDef := &circuit.CircuitDef{
 		Circuit:     "test-enforcer",
-		HandlerType: "node",
 		Nodes: []circuit.NodeDef{
-			{Name: "slow-check"},
-			{Name: "done"},
+			{Name: "slow-check", Instrument: "node"},
+			{Name: "done", Instrument: "node"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "e-slow", From: "slow-check", To: "done"},
@@ -263,10 +260,9 @@ func TestRunWithEnforcer_ErrorFinding(t *testing.T) {
 
 	enforcerDef := &circuit.CircuitDef{
 		Circuit:     "test-enforcer",
-		HandlerType: "node",
 		Nodes: []circuit.NodeDef{
-			{Name: "audit"},
-			{Name: "done"},
+			{Name: "audit", Instrument: "node"},
+			{Name: "done", Instrument: "node"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "e-audit", From: "audit", To: "done"},

@@ -36,7 +36,6 @@ func TestNegative_NoNodes_ReturnsError(t *testing.T) {
 	yaml := `circuit: broken
 start: a
 done: done
-handler_type: transformer
 `
 	def, err := circuit.LoadCircuit([]byte(yaml))
 	if err != nil {
@@ -52,10 +51,10 @@ func TestNegative_EdgeReferencesNonexistentNode_ReturnsError(t *testing.T) {
 	yaml := `circuit: broken
 start: a
 done: done
-handler_type: transformer
 nodes:
   - name: a
-    handler: echo
+    instrument: transformer
+    action: echo
 edges:
   - from: a
     to: nonexistent

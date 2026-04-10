@@ -23,17 +23,21 @@ func NewCircuitDef(name string) *CircuitDefBuilder {
 	}
 }
 
-// HandlerType sets the circuit-level handler_type.
-func (b *CircuitDefBuilder) HandlerType(ht string) *CircuitDefBuilder {
-	b.def.HandlerType = ht
+// AddNode adds a node with the given name and action.
+func (b *CircuitDefBuilder) AddNode(name, action string) *CircuitDefBuilder {
+	b.def.Nodes = append(b.def.Nodes, circuit.NodeDef{
+		Name:   circuit.NodeName(name),
+		Action: action,
+	})
 	return b
 }
 
-// AddNode adds a node with the given name and handler.
-func (b *CircuitDefBuilder) AddNode(name, handler string) *CircuitDefBuilder {
+// AddNodeWithInstrument adds a node with the given name, instrument, and action.
+func (b *CircuitDefBuilder) AddNodeWithInstrument(name, instrument, action string) *CircuitDefBuilder {
 	b.def.Nodes = append(b.def.Nodes, circuit.NodeDef{
-		Name:    circuit.NodeName(name),
-		Handler: handler,
+		Name:       circuit.NodeName(name),
+		Instrument: instrument,
+		Action:     action,
 	})
 	return b
 }

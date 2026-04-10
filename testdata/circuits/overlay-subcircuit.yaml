@@ -7,8 +7,8 @@ circuit: base
 
 nodes:
   - name: delegate
-    handler_type: circuit
-    handler: child
+    instrument: circuit
+    action: child
     description: "Overlay-added node that delegates to a sub-circuit"
     edges:
       - name: delegate-done

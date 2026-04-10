@@ -94,13 +94,13 @@ func extractExpectedPaths(doc map[string]any) []string {
 
 // --- S36: circuit-handler-resolution ---
 
-// CircuitHandlerResolution checks that nodes with handler_type=circuit reference
+// CircuitHandlerResolution checks that nodes with instrument=circuit reference
 // a resolvable circuit file.
 type CircuitHandlerResolution struct{}
 
 func (r *CircuitHandlerResolution) ID() string { return ruleHandlerResolve }
 func (r *CircuitHandlerResolution) Description() string {
-	return "handler_type=circuit handler must resolve to a known circuit file"
+	return "instrument=circuit action must resolve to a known circuit file"
 }
 func (r *CircuitHandlerResolution) Severity() Severity { return SeverityError }
 func (r *CircuitHandlerResolution) Tags() []string     { return []string{"structural", "cross-ref"} }
@@ -128,25 +128,27 @@ func (r *CircuitHandlerResolution) Check(ctx *LintContext) []Finding {
 	findings := make([]Finding, 0, len(ctx.Def.Nodes))
 	for i := range ctx.Def.Nodes {
 		nd := &ctx.Def.Nodes[i]
-		ht := nd.EffectiveHandlerType(ctx.Def.HandlerType)
-		if ht != kindCircuit {
+		if nd.Instrument != kindCircuit {
 			continue
 		}
-		handler := nd.Handler
-		if handler == "" {
+		action := nd.Action
+		if action == "" {
+			action = string(nd.Name)
+		}
+		if action == "" {
 			continue
 		}
-		if knownCircuits[handler] {
+		if knownCircuits[action] {
 			continue
 		}
 
-		msg := fmt.Sprintf("node %q: handler_type=circuit handler=%q does not resolve to any known circuit file", nd.Name, handler)
+		msg := fmt.Sprintf("node %q: instrument=circuit action=%q does not resolve to any known circuit file", nd.Name, action)
 
 		// Check if the referenced circuit uses import: which may need a resolver.
 		for _, pf := range ctx.ProjectFiles["circuit"] {
-			if cname, ok := pf.Data["circuit"].(string); ok && cname == handler {
+			if cname, ok := pf.Data["circuit"].(string); ok && cname == action {
 				if imp, ok := pf.Data["import"].(string); ok && imp != "" {
-					msg += fmt.Sprintf(" (circuit %q has import: %q, may need a resolver)", handler, imp)
+					msg += fmt.Sprintf(" (circuit %q has import: %q, may need a resolver)", action, imp)
 				}
 			}
 		}
@@ -235,14 +237,14 @@ func (r *DeadNodeDetection) Check(ctx *LintContext) []Finding {
 
 // --- S38: mediator-backend-coverage ---
 
-// MediatorBackendCoverage warns when handler_type=circuit nodes have neither
+// MediatorBackendCoverage warns when instrument=circuit nodes have neither
 // a local circuit definition nor a registered resolver, meaning they depend
 // on a mediator endpoint at runtime.
 type MediatorBackendCoverage struct{}
 
 func (r *MediatorBackendCoverage) ID() string { return ruleMediatorBackend }
 func (r *MediatorBackendCoverage) Description() string {
-	return "handler_type=circuit nodes should have a local circuit or registered resolver"
+	return "instrument=circuit nodes should have a local circuit or registered resolver"
 }
 func (r *MediatorBackendCoverage) Severity() Severity { return SeverityWarning }
 func (r *MediatorBackendCoverage) Tags() []string     { return []string{"structural"} }
@@ -276,19 +278,21 @@ func (r *MediatorBackendCoverage) Check(ctx *LintContext) []Finding {
 	findings := make([]Finding, 0, len(ctx.Def.Nodes))
 	for i := range ctx.Def.Nodes {
 		nd := &ctx.Def.Nodes[i]
-		ht := nd.EffectiveHandlerType(ctx.Def.HandlerType)
-		if ht != kindCircuit {
+		if nd.Instrument != kindCircuit {
 			continue
 		}
-		handler := nd.Handler
-		if handler == "" {
+		action := nd.Action
+		if action == "" {
+			action = string(nd.Name)
+		}
+		if action == "" {
 			continue
 		}
-		if localCircuits[handler] || hasResolver(handler) {
+		if localCircuits[action] || hasResolver(action) {
 			continue
 		}
 
-		msg := fmt.Sprintf("node %q: handler_type=circuit handler=%q has no local circuit definition and no registered resolver", nd.Name, handler)
+		msg := fmt.Sprintf("node %q: instrument=circuit action=%q has no local circuit definition and no registered resolver", nd.Name, action)
 		if hasMediatorEndpoint {
 			msg += fmt.Sprintf("; will fall back to mediator endpoint %s at runtime", ctx.Registries.MediatorEndpoint)
 		} else {

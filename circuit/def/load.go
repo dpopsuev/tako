@@ -19,7 +19,6 @@ type rawCircuitDef struct {
 	Description string                  `yaml:"description,omitempty"`
 	Import      string                  `yaml:"import,omitempty"`
 	Topology    string                  `yaml:"topology,omitempty"`
-	HandlerType string                  `yaml:"handler_type,omitempty"`
 	Timeout     string                  `yaml:"timeout,omitempty"`
 	Imports     []string                `yaml:"imports,omitempty"`
 	Vars        map[string]any          `yaml:"vars,omitempty"`
@@ -86,7 +85,6 @@ func (raw *rawCircuitDef) normalize() (*CircuitDef, error) {
 		Description: raw.Description,
 		Import:      raw.Import,
 		Topology:    raw.Topology,
-		HandlerType: raw.HandlerType,
 		Timeout:     raw.Timeout,
 		Imports:     raw.Imports,
 		Vars:        raw.Vars,
@@ -205,7 +203,7 @@ func LoadCircuit(data []byte) (*CircuitDef, error) {
 // overlay on top.
 //
 // Merge semantics:
-//   - circuit, topology, handler_type, timeout, start, done, scorecard —
+//   - circuit, topology, timeout, start, done, scorecard —
 //     inherited from base unless explicitly set in overlay
 //   - description — overlay wins if non-empty
 //   - vars — shallow merge; overlay keys win
@@ -272,9 +270,6 @@ func mergeCircuits(base, overlay *CircuitDef) (*CircuitDef, error) {
 	}
 	if overlay.Topology != "" {
 		merged.Topology = overlay.Topology
-	}
-	if overlay.HandlerType != "" {
-		merged.HandlerType = overlay.HandlerType
 	}
 	if overlay.Timeout != "" {
 		merged.Timeout = overlay.Timeout

@@ -103,12 +103,11 @@ func TestBatch_FailedCaseDoesNotBlockOthers(t *testing.T) {
 
 	// Bad circuit with missing start node
 	badDef := &circuit.CircuitDef{
-		Circuit:     "broken",
-		Start:       "nonexistent",
-		Done:        "done",
-		HandlerType: "transformer",
-		Nodes:       []circuit.NodeDef{{Name: "step-a", Handler: "echo"}},
-		Edges:       []circuit.EdgeDef{{ID: "a-done", From: "step-a", To: "done"}},
+		Circuit: "broken",
+		Start:   "nonexistent",
+		Done:    "done",
+		Nodes:   []circuit.NodeDef{{Name: "step-a", Instrument: "transformer", Action: "echo"}},
+		Edges:   []circuit.EdgeDef{{ID: "a-done", From: "step-a", To: "done"}},
 	}
 
 	cases := []engine.BatchCase{

@@ -26,7 +26,7 @@ const ContextKeyPromptRelayer = circuit.ContextKeyPromptRelayer
 // MCPCircuitTransformer implements Transformer by delegating to a remote
 // schematic via the Papercup protocol through the Origami Mediator.
 // Exported for test backward compatibility; canonical usage is through
-// BuildGraph with handler_type: circuit.
+// BuildGraph with instrument: circuit.
 type MCPCircuitTransformer struct {
 	CircuitType string // handler name from circuit.NodeDef (e.g., "gnd")
 	Endpoint    string // mediator MCP URL

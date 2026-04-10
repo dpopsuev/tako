@@ -1,19 +1,19 @@
 kind: Schematic
 circuit: schema-validated
 description: "Circuit with artifact schema on every node for validation testing"
-handler_type: transformer
-
 nodes:
   - name: classify
     approach: rapid
-    handler: echo
+    instrument: transformer
+    action: echo
     schema:
       required: [type]
       properties:
         type: {type: string}
   - name: report
     approach: holistic
-    handler: echo
+    instrument: transformer
+    action: echo
     schema:
       required: [type]
       properties:

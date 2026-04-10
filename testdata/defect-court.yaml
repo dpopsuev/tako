@@ -4,8 +4,6 @@ kind: Schematic
 # Edge evaluation logic is registered via BuildCourtEdgeFactory in Go.
 circuit: defect-court
 description: "D0-D4 adversarial review circuit"
-handler_type: node
-
 zones:
   prosecution:
     nodes: [indict]
@@ -23,22 +21,28 @@ zones:
 nodes:
   - name: indict
     approach: rapid
-    handler: indict
+    instrument: node
+    action: indict
   - name: discover
     approach: methodical
-    handler: discover
+    instrument: node
+    action: discover
   - name: defend
     approach: analytical
-    handler: defend
+    instrument: node
+    action: defend
   - name: hearing
     approach: holistic
-    handler: hearing
+    instrument: node
+    action: hearing
   - name: verdict
     approach: rigorous
-    handler: verdict
+    instrument: node
+    action: verdict
   - name: cmrr
     approach: methodical
-    handler: cmrr
+    instrument: node
+    action: cmrr
 
 edges:
   - id: HD0

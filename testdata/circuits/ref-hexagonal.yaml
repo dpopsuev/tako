@@ -2,17 +2,18 @@ kind: Schematic
 circuit: ref-hexagonal
 start: ingest
 done: done
-handler_type: transformer
-
 nodes:
   - name: ingest
-    handler: echo
+    instrument: transformer
+    action: echo
     description: "Receives input, passes through"
   - name: process
-    handler: echo
+    instrument: transformer
+    action: echo
     description: "Processes data, passes through"
   - name: output
-    handler: echo
+    instrument: transformer
+    action: echo
     description: "Produces final output"
 
 edges:

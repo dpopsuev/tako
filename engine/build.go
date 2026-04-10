@@ -24,14 +24,15 @@ var (
 	MergeVars        = circuit.MergeVars
 )
 
-// Handler type constants forwarded from circuit/.
+// Inproc instrument names — in-process Go handlers exposed as instruments.
+// Nodes declare these via instrument: field (e.g. instrument: transformer).
 const (
-	HandlerTypeTransformer = circuit.HandlerTypeTransformer
-	HandlerTypeExtractor   = circuit.HandlerTypeExtractor
-	HandlerTypeRenderer    = circuit.HandlerTypeRenderer
-	HandlerTypeNode        = circuit.HandlerTypeNode
-	HandlerTypeDelegate    = circuit.HandlerTypeDelegate
-	HandlerTypeCircuit     = circuit.HandlerTypeCircuit
+	InstrumentTransformer = "transformer"
+	InstrumentExtractor   = "extractor"
+	InstrumentRenderer    = "renderer"
+	InstrumentNode        = "node"
+	InstrumentDelegate    = "delegate"
+	InstrumentCircuit     = "circuit"
 )
 
 // Merge strategy constants forwarded from circuit/.
@@ -59,6 +60,8 @@ type GraphRegistries struct {
 	Hooks            HookRegistry
 	Components       ComponentLoader
 	Circuits         map[string]*circuit.CircuitDef
+	Instruments      InstrumentRegistry
+	InstrumentDir    string // working directory for instrument commands
 	MediatorEndpoint string
 }
 
@@ -213,59 +216,56 @@ func buildGraphShape(g *DefaultGraph, def *circuit.CircuitDef) circuit.GraphShap
 	}
 }
 
-// resolveNode creates a Node from a circuit.NodeDef using handler + handler_type.
+// resolveNode creates a Node from a circuit.NodeDef using instrument + action.
 func resolveNode(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries) (circuit.Node, error) {
 	elem, _ := roster.ResolveApproach(strings.ToLower(nd.Approach))
-	return resolveHandler(def, nd, reg, elem)
+	return resolveByInstrument(def, nd, reg, elem)
 }
 
-// resolveHandler resolves a node using the explicit handler + handler_type path.
-// HandlerTypeResolver resolves a node definition into a concrete circuit.Node
-// based on its handler_type. Registered in the HandlerTypeRegistry.
-type HandlerTypeResolver func(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem roster.Element) (circuit.Node, error)
+// InprocResolver resolves a node definition into a concrete circuit.Node
+// for dispatch: inproc instruments (in-process Go handlers).
+type InprocResolver func(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem roster.Element) (circuit.Node, error)
 
-// HandlerTypeRegistry maps handler_type strings to their resolvers.
-// Extensible: consumers can register custom handler types.
-type HandlerTypeRegistry map[string]HandlerTypeResolver
-
-// builtinHandlerTypes is the default set of handler type resolvers.
-var builtinHandlerTypes = HandlerTypeRegistry{
-	HandlerTypeTransformer: resolveTransformerHandler,
-	HandlerTypeExtractor:   resolveExtractorHandler,
-	HandlerTypeRenderer:    resolveRendererHandler,
-	HandlerTypeNode:        resolveNodeHandler,
-	HandlerTypeDelegate:    resolveDelegateHandler,
-	HandlerTypeCircuit:     resolveCircuitHandler,
+// inprocResolvers maps inproc instrument names to their Go handler resolvers.
+// These are the built-in in-process instruments: transformer, extractor, etc.
+var inprocResolvers = map[string]InprocResolver{
+	InstrumentTransformer: resolveTransformerHandler,
+	InstrumentExtractor:   resolveExtractorHandler,
+	InstrumentRenderer:    resolveRendererHandler,
+	InstrumentNode:        resolveNodeHandler,
+	InstrumentDelegate:    resolveDelegateHandler,
+	InstrumentCircuit:     resolveCircuitHandler,
 }
 
-func resolveHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem roster.Element) (circuit.Node, error) {
-	handler := nd.Handler
-	if handler == "" {
-		handler = string(nd.Name)
-	}
-	ht := nd.HandlerType
-	if ht == "" {
-		ht = def.HandlerType
-	}
+func resolveByInstrument(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem roster.Element) (circuit.Node, error) {
 	name := string(nd.Name)
-	if ht == "" {
-		return nil, fmt.Errorf("%w: %q: handler %q specified but no handler_type on node or circuit", ErrNode, name, handler)
+	instrument := nd.Instrument
+	if instrument == "" {
+		return nil, fmt.Errorf("%w: %q: instrument is required", ErrNode, name)
 	}
 
-	resolver, ok := builtinHandlerTypes[ht]
+	// Manifest-based dispatch — cli, mcp, container instruments.
+	if reg.Instruments != nil {
+		if manifest, ok := reg.Instruments[instrument]; ok {
+			return resolveInstrumentNode(def, nd, manifest, elem, reg.InstrumentDir)
+		}
+	}
+
+	// Inproc dispatch — built-in Go handlers (transformer, extractor, etc.).
+	resolver, ok := inprocResolvers[instrument]
 	if !ok {
-		return nil, fmt.Errorf("%w: %q: unknown handler_type %q", ErrNode, name, ht)
+		return nil, fmt.Errorf("%w: %q: unknown instrument %q", ErrNode, name, instrument)
 	}
 	return resolver(def, nd, reg, elem)
 }
 
 func resolveTransformerHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem roster.Element) (circuit.Node, error) {
 	name := string(nd.Name)
-	handler := nd.Handler
-	if handler == "" {
-		handler = name
+	action := nd.Action
+	if action == "" {
+		action = name
 	}
-	t, err := resolveTransformerByName(def, handler, name, reg)
+	t, err := resolveTransformerByName(def, action, name, reg)
 	if err != nil {
 		return nil, err
 	}
@@ -283,11 +283,11 @@ func resolveTransformerHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg
 
 func resolveExtractorHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem roster.Element) (circuit.Node, error) {
 	name := string(nd.Name)
-	handler := nd.Handler
-	if handler == "" {
-		handler = name
+	action := nd.Action
+	if action == "" {
+		action = name
 	}
-	ext, err := resolveExtractor(def, handler, nd, reg)
+	ext, err := resolveExtractor(def, action, nd, reg)
 	if err != nil {
 		return nil, err
 	}
@@ -300,11 +300,11 @@ func resolveExtractorHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *
 
 func resolveRendererHandler(_ *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem roster.Element) (circuit.Node, error) {
 	name := string(nd.Name)
-	handler := nd.Handler
-	if handler == "" {
-		handler = name
+	action := nd.Action
+	if action == "" {
+		action = name
 	}
-	rnd, err := resolveRenderer(handler, nd, reg)
+	rnd, err := resolveRenderer(action, nd, reg)
 	if err != nil {
 		return nil, err
 	}
@@ -317,32 +317,32 @@ func resolveRendererHandler(_ *circuit.CircuitDef, nd *circuit.NodeDef, reg *Gra
 
 func resolveNodeHandler(_ *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem roster.Element) (circuit.Node, error) {
 	name := string(nd.Name)
-	handler := nd.Handler
-	if handler == "" {
-		handler = name
+	action := nd.Action
+	if action == "" {
+		action = name
 	}
 	if reg.Nodes == nil {
-		return nil, fmt.Errorf("%w: %q: handler %q not found (node registry is nil)", ErrNode, name, handler)
+		return nil, fmt.Errorf("%w: %q: action %q not found (node registry is nil)", ErrNode, name, action)
 	}
-	factory, ok := reg.Nodes[handler]
+	factory, ok := reg.Nodes[action]
 	if !ok {
-		return nil, fmt.Errorf("%w: %q: handler %q not found in node registry", ErrNode, name, handler)
+		return nil, fmt.Errorf("%w: %q: action %q not found in node registry", ErrNode, name, action)
 	}
 	return factory(*nd), nil
 }
 
 func resolveDelegateHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem roster.Element) (circuit.Node, error) {
 	name := string(nd.Name)
-	handler := nd.Handler
-	if handler == "" {
-		handler = name
+	action := nd.Action
+	if action == "" {
+		action = name
 	}
 	if reg.Transformers == nil {
-		return nil, fmt.Errorf("%w: %q: delegate handler %q not found (transformer registry is nil)", ErrNode, name, handler)
+		return nil, fmt.Errorf("%w: %q: delegate action %q not found (transformer registry is nil)", ErrNode, name, action)
 	}
-	gen, err := reg.Transformers.Get(handler)
+	gen, err := reg.Transformers.Get(action)
 	if err != nil {
-		return nil, fmt.Errorf("node %q: delegate handler: %w", name, err)
+		return nil, fmt.Errorf("node %q: delegate action: %w", name, err)
 	}
 	return &dslDelegateNode{
 		name:       name,
@@ -355,30 +355,30 @@ func resolveDelegateHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *G
 
 func resolveCircuitHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem roster.Element) (circuit.Node, error) {
 	name := string(nd.Name)
-	handler := nd.Handler
-	if handler == "" {
-		handler = name
+	action := nd.Action
+	if action == "" {
+		action = name
 	}
 	switch {
-	case reg.Circuits != nil && reg.Circuits[handler] != nil:
-		cd := reg.Circuits[handler]
-		slog.DebugContext(context.Background(), circuit.LogCircuitHandlerLocal, slog.Any(circuit.LogKeyComponent, circuit.LogComponentBuild), slog.Any(circuit.LogKeyNode, name), slog.Any(circuit.LogKeyHandler, handler))
+	case reg.Circuits != nil && reg.Circuits[action] != nil:
+		cd := reg.Circuits[action]
+		slog.DebugContext(context.Background(), circuit.LogCircuitHandlerLocal, slog.Any(circuit.LogKeyComponent, circuit.LogComponentBuild), slog.Any(circuit.LogKeyNode, name), slog.Any(circuit.LogKeyHandler, action))
 		return &circuitRefNode{
 			name:       name,
 			element:    elem,
 			circuitDef: cd,
 		}, nil
 	case reg.MediatorEndpoint != "":
-		slog.DebugContext(context.Background(), circuit.LogCircuitHandlerMediator, slog.Any(circuit.LogKeyComponent, circuit.LogComponentBuild), slog.Any(circuit.LogKeyNode, name), slog.Any(circuit.LogKeyHandler, handler), slog.Any(circuit.LogKeyEndpoint, reg.MediatorEndpoint))
+		slog.DebugContext(context.Background(), circuit.LogCircuitHandlerMediator, slog.Any(circuit.LogKeyComponent, circuit.LogComponentBuild), slog.Any(circuit.LogKeyNode, name), slog.Any(circuit.LogKeyHandler, action), slog.Any(circuit.LogKeyEndpoint, reg.MediatorEndpoint))
 		return &transformerNode{
 			name:       name,
 			element:    elem,
-			trans:      &MCPCircuitTransformer{CircuitType: handler, Endpoint: reg.MediatorEndpoint},
+			trans:      &MCPCircuitTransformer{CircuitType: action, Endpoint: reg.MediatorEndpoint},
 			config:     def.Vars,
 			nodeConfig: nd.EffectiveConfig(),
 		}, nil
 	default:
-		return nil, fmt.Errorf("%w: %q: circuit handler %q not found (no local circuit and no mediator endpoint)", ErrNode, name, handler)
+		return nil, fmt.Errorf("%w: %q: circuit action %q not found (no local circuit and no mediator endpoint)", ErrNode, name, action)
 	}
 }
 

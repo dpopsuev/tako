@@ -9,7 +9,6 @@ import (
 
 func TestCircuitDefBuilder_Basic(t *testing.T) {
 	def := builders.NewCircuitDef("test").
-		HandlerType("transformer").
 		AddNode("A", "handler-a").
 		AddNode("B", "handler-b").
 		AddEdge("A", "B", "true").
@@ -19,17 +18,14 @@ func TestCircuitDefBuilder_Basic(t *testing.T) {
 	if def.Circuit != "test" {
 		t.Errorf("Circuit = %q, want %q", def.Circuit, "test")
 	}
-	if def.HandlerType != "transformer" {
-		t.Errorf("HandlerType = %q, want %q", def.HandlerType, "transformer")
-	}
 	if len(def.Nodes) != 2 {
 		t.Fatalf("got %d nodes, want 2", len(def.Nodes))
 	}
-	if def.Nodes[0].Name != "A" || def.Nodes[0].Handler != "handler-a" {
-		t.Errorf("Nodes[0] = {%q, %q}, want {A, handler-a}", def.Nodes[0].Name, def.Nodes[0].Handler)
+	if def.Nodes[0].Name != "A" || def.Nodes[0].Action != "handler-a" {
+		t.Errorf("Nodes[0] = {%q, %q}, want {A, handler-a}", def.Nodes[0].Name, def.Nodes[0].Action)
 	}
-	if def.Nodes[1].Name != "B" || def.Nodes[1].Handler != "handler-b" {
-		t.Errorf("Nodes[1] = {%q, %q}, want {B, handler-b}", def.Nodes[1].Name, def.Nodes[1].Handler)
+	if def.Nodes[1].Name != "B" || def.Nodes[1].Action != "handler-b" {
+		t.Errorf("Nodes[1] = {%q, %q}, want {B, handler-b}", def.Nodes[1].Name, def.Nodes[1].Action)
 	}
 	if len(def.Edges) != 1 {
 		t.Fatalf("got %d edges, want 1", len(def.Edges))
@@ -47,7 +43,6 @@ func TestCircuitDefBuilder_Basic(t *testing.T) {
 
 func TestCircuitDefBuilder_Validate(t *testing.T) {
 	def := builders.NewCircuitDef("test").
-		HandlerType("transformer").
 		AddNode("A", "handler-a").
 		AddNode("B", "handler-b").
 		AddEdge("A", "B", "true").
@@ -78,9 +73,9 @@ func TestCircuitDefBuilder_WithVar(t *testing.T) {
 
 func TestCircuitDefBuilder_AddNodeDef(t *testing.T) {
 	nd := circuit.NodeDef{
-		Name:    "custom",
-		Handler: "h",
-		Prompt:  "Do the thing",
+		Name:   "custom",
+		Action: "h",
+		Prompt: "Do the thing",
 	}
 	def := builders.NewCircuitDef("test").
 		AddNodeDef(&nd).

@@ -1,8 +1,6 @@
 kind: Schematic
 circuit: team-delegation
 description: "Parallel fan-out from coordinator to specialists, merge at synthesis"
-handler_type: transformer
-
 zones:
   coordination:
     nodes: [plan, synthesize]
@@ -34,16 +32,20 @@ walkers:
 nodes:
   - name: plan
     approach: methodical
-    handler: echo
+    instrument: transformer
+    action: echo
   - name: research_a
     approach: analytical
-    handler: echo
+    instrument: transformer
+    action: echo
   - name: research_b
     approach: rapid
-    handler: echo
+    instrument: transformer
+    action: echo
   - name: synthesize
     approach: methodical
-    handler: echo
+    instrument: transformer
+    action: echo
 
 edges:
   - id: fan-a

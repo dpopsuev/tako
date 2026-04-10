@@ -3,14 +3,11 @@ package lint
 import (
 	"fmt"
 	"strings"
-
-	"github.com/dpopsuev/origami/circuit/def"
 )
 
 const (
-	ruleEdgeNodeRef    = "S21/edge-node-reference"
-	ruleHookRef        = "S22/hook-reference"
-	ruleInvalidHandler = "S23/invalid-handler-type"
+	ruleEdgeNodeRef = "S21/edge-node-reference"
+	ruleHookRef     = "S22/hook-reference"
 )
 
 // --- S21: edge-node-reference ---
@@ -192,67 +189,3 @@ func checkHookRefs(ctx *LintContext, nodeName, phase string, hooks []string, all
 	return out
 }
 
-// --- S23: invalid-handler-type ---
-
-// InvalidHandlerType checks that node-level and circuit-level handler_type
-// values are recognized handler types.
-type InvalidHandlerType struct{}
-
-func (r *InvalidHandlerType) ID() string { return ruleInvalidHandler }
-func (r *InvalidHandlerType) Description() string {
-	return "handler_type must be a recognized type (transformer, extractor, renderer, node, delegate, circuit)"
-}
-func (r *InvalidHandlerType) Severity() Severity { return SeverityError }
-func (r *InvalidHandlerType) Tags() []string     { return []string{"structural"} }
-
-func (r *InvalidHandlerType) Check(ctx *LintContext) []Finding {
-	if ctx.Def == nil {
-		return nil
-	}
-
-	validList := strings.Join(def.ValidHandlerTypes, ", ")
-	var out []Finding
-
-	// Check circuit-level handler_type.
-	if ctx.Def.HandlerType != "" && !isValidValue(def.CircuitFields, "handler_type", ctx.Def.HandlerType) {
-		out = append(out, Finding{
-			RuleID:     r.ID(),
-			Severity:   r.Severity(),
-			Message:    fmt.Sprintf("circuit-level handler_type=%q is not a recognized type (valid: %s)", ctx.Def.HandlerType, validList),
-			File:       ctx.File,
-			Line:       ctx.TopLevelLine("handler_type"),
-			Suggestion: handlerTypeSuggestion(ctx.Def.HandlerType),
-		})
-	}
-
-	// Check node-level handler_type.
-	for i := range ctx.Def.Nodes {
-		nd := &ctx.Def.Nodes[i]
-		if nd.HandlerType != "" && !isValidValue(def.NodeFields, "handler_type", nd.HandlerType) {
-			out = append(out, Finding{
-				RuleID:     r.ID(),
-				Severity:   r.Severity(),
-				Message:    fmt.Sprintf("node %q: handler_type=%q is not a recognized type (valid: %s)", nd.Name, nd.HandlerType, validList),
-				File:       ctx.File,
-				Line:       ctx.NodeLine(string(nd.Name)),
-				Suggestion: handlerTypeSuggestion(nd.HandlerType),
-			})
-		}
-	}
-	return out
-}
-
-func handlerTypeSuggestion(val string) string {
-	best, bestDist := "", 100
-	for _, ht := range def.ValidHandlerTypes {
-		d := levenshtein(strings.ToLower(val), ht)
-		if d < bestDist {
-			bestDist = d
-			best = ht
-		}
-	}
-	if bestDist > 0 && bestDist <= 3 {
-		return fmt.Sprintf("did you mean %q?", best)
-	}
-	return ""
-}

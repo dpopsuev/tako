@@ -3,8 +3,6 @@ circuit: echo-test
 description: Minimal circuit for testing CLI dispatch calibration
 start: prompt
 done: done
-handler_type: transformer
-
 calibration:
   outputs:
     - field: "prompt.answer"
@@ -12,7 +10,8 @@ calibration:
 
 nodes:
   - name: prompt
-    handler: core.llm
+    instrument: transformer
+    action: core.llm
     prompt: echo-prompt.txt
 
 edges:

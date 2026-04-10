@@ -1,16 +1,15 @@
 kind: Schematic
 # Sub-circuit delegation: main delegates to child circuit → done
-# Tests: handler_type: circuit resolution, Circuits registry wiring,
+# Tests: instrument: circuit resolution, Circuits registry wiring,
 # sub-circuit walk produces artifacts visible to parent.
 circuit: parent-with-sub
 start: main
 done: done
-handler_type: transformer
 
 nodes:
   - name: main
-    handler_type: circuit
-    handler: child
+    instrument: circuit
+    action: child
     description: "Delegates to child circuit for processing"
 
 edges:

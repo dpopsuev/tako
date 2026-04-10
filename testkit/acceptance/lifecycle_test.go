@@ -57,12 +57,11 @@ func TestLifecycle_MissingTransformerReturnsBuildError(t *testing.T) {
 	//   Then BuildGraph returns an error
 
 	def := &circuit.CircuitDef{
-		Circuit:     "missing-handler",
-		Start:       "a",
-		Done:        "done",
-		HandlerType: "transformer",
-		Nodes:       []circuit.NodeDef{{Name: "a", Handler: "nonexistent"}},
-		Edges:       []circuit.EdgeDef{{ID: "a-done", From: "a", To: "done"}},
+		Circuit: "missing-handler",
+		Start:   "a",
+		Done:    "done",
+		Nodes:   []circuit.NodeDef{{Name: "a", Instrument: "transformer", Action: "nonexistent"}},
+		Edges:   []circuit.EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 	}
 
 	_, err := engine.BuildGraph(def, &engine.GraphRegistries{})

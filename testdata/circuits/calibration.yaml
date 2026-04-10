@@ -4,8 +4,6 @@ kind: Schematic
 circuit: calibration-test
 start: analyze
 done: done
-handler_type: transformer
-
 calibration:
   outputs:
     - field: analyze.result
@@ -17,7 +15,8 @@ calibration:
 
 nodes:
   - name: analyze
-    handler: passthrough
+    instrument: transformer
+    action: passthrough
     description: "Analysis node — output fields mapped by calibration contract"
 
 edges:

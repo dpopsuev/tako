@@ -9,33 +9,31 @@ import (
 )
 
 // TestComposition_OverlayWithCircuitHandler verifies that an overlay
-// circuit adding a handler_type:circuit node resolves correctly when
+// circuit adding an instrument:circuit node resolves correctly when
 // MediatorEndpoint is set. This is the E2E contract that would have
 // caught the gather-code silent skip bug.
 func TestComposition_OverlayWithCircuitHandler(t *testing.T) {
 	// Base circuit: a → done
 	baseDef := &circuit.CircuitDef{
-		Circuit:     "base",
-		Start:       "a",
-		Done:        "done",
-		HandlerType: "transformer",
+		Circuit: "base",
+		Start:   "a",
+		Done:    "done",
 		Nodes: []circuit.NodeDef{
-			{Name: "a", HandlerType: "transformer", Handler: "passthrough"},
+			{Name: "a", Instrument: "transformer", Action: "passthrough"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "a-done", From: "a", To: "done"},
 		},
 	}
 
-	// Overlay adds: a → sub → done (sub is handler_type:circuit)
+	// Overlay adds: a → sub → done (sub is instrument:circuit)
 	overlayDef := &circuit.CircuitDef{
-		Circuit:     "overlay",
-		Start:       "a",
-		Done:        "done",
-		HandlerType: "transformer",
+		Circuit: "overlay",
+		Start:   "a",
+		Done:    "done",
 		Nodes: []circuit.NodeDef{
-			{Name: "a", HandlerType: "transformer", Handler: "passthrough"},
-			{Name: "sub", HandlerType: "circuit", Handler: "inner"},
+			{Name: "a", Instrument: "transformer", Action: "passthrough"},
+			{Name: "sub", Instrument: "circuit", Action: "inner"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "a-sub", From: "a", To: "sub"},
@@ -45,12 +43,11 @@ func TestComposition_OverlayWithCircuitHandler(t *testing.T) {
 
 	// Inner circuit definition (resolved locally).
 	innerDef := &circuit.CircuitDef{
-		Circuit:     "inner",
-		Start:       "x",
-		Done:        "done",
-		HandlerType: "transformer",
+		Circuit: "inner",
+		Start:   "x",
+		Done:    "done",
 		Nodes: []circuit.NodeDef{
-			{Name: "x", HandlerType: "transformer", Handler: "passthrough"},
+			{Name: "x", Instrument: "transformer", Action: "passthrough"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "x-done", From: "x", To: "done"},

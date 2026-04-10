@@ -47,13 +47,14 @@ const linearCircuitYAML = `
 circuit: lifecycle-test
 start: step-a
 done: done
-handler_type: transformer
 
 nodes:
   - name: step-a
-    handler: dispatch-lifecycle
+    instrument: transformer
+    action: dispatch-lifecycle
   - name: step-b
-    handler: dispatch-lifecycle
+    instrument: transformer
+    action: dispatch-lifecycle
 
 edges:
   - id: a-b
@@ -68,11 +69,11 @@ const singleNodeCircuitYAML = `
 circuit: lifecycle-single
 start: step-x
 done: done
-handler_type: transformer
 
 nodes:
   - name: step-x
-    handler: dispatch-lifecycle
+    instrument: transformer
+    action: dispatch-lifecycle
 
 edges:
   - id: x-done

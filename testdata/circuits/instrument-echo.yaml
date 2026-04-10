@@ -1,0 +1,11 @@
+circuit: instrument-echo
+nodes:
+  - name: greet
+    instrument: dummy-echo
+    action: echo
+edges:
+  - id: greet-done
+    from: greet
+    to: _done
+start: greet
+done: _done

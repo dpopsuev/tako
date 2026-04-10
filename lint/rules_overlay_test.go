@@ -15,7 +15,7 @@ import:
 nodes:
   - name: recall
     approach: rapid
-    handler: core.jq
+    action: core.jq
     meta:
       expr: "input"
 edges:
@@ -55,7 +55,7 @@ done: _done
 nodes:
   - name: recall
     approach: rapid
-    handler: core.jq
+    action: core.jq
     meta:
       expr: "input"
 edges:
@@ -89,7 +89,7 @@ done: custom_done
 nodes:
   - name: recall
     approach: rapid
-    handler: core.jq
+    action: core.jq
     meta:
       expr: "input"
 edges:
@@ -138,16 +138,16 @@ func TestPortValidation_InvalidDirection(t *testing.T) {
 	yml := []byte(`
 circuit: port-test
 description: test
-handler_type: transformer
+instrument: transformer
 nodes:
   - name: recall
     approach: rapid
-    handler: core.jq
+    action: core.jq
     meta:
       expr: "input"
   - name: done
     approach: rapid
-    handler: core.jq
+    action: core.jq
     meta:
       expr: "input"
 edges:
@@ -181,16 +181,16 @@ func TestPortValidation_DuplicateNames(t *testing.T) {
 	yml := []byte(`
 circuit: port-test
 description: test
-handler_type: transformer
+instrument: transformer
 nodes:
   - name: recall
     approach: rapid
-    handler: core.jq
+    action: core.jq
     meta:
       expr: "input"
   - name: done
     approach: rapid
-    handler: core.jq
+    action: core.jq
     meta:
       expr: "input"
 edges:
@@ -226,16 +226,16 @@ func TestPortValidation_ValidPorts(t *testing.T) {
 	yml := []byte(`
 circuit: port-test
 description: test
-handler_type: transformer
+instrument: transformer
 nodes:
   - name: recall
     approach: rapid
-    handler: core.jq
+    action: core.jq
     meta:
       expr: "input"
   - name: done
     approach: rapid
-    handler: core.jq
+    action: core.jq
     meta:
       expr: "input"
 edges:
@@ -268,16 +268,16 @@ func TestCalibrationContract_MissingFieldOrScorer(t *testing.T) {
 	yml := []byte(`
 circuit: cal-test
 description: test
-handler_type: transformer
+instrument: transformer
 nodes:
   - name: recall
     approach: rapid
-    handler: core.jq
+    action: core.jq
     meta:
       expr: "input"
   - name: done
     approach: rapid
-    handler: core.jq
+    action: core.jq
     meta:
       expr: "input"
 edges:
@@ -324,16 +324,16 @@ func TestCalibrationContract_ValidCalibration(t *testing.T) {
 	yml := []byte(`
 circuit: cal-test
 description: test
-handler_type: transformer
+instrument: transformer
 nodes:
   - name: recall
     approach: rapid
-    handler: core.jq
+    action: core.jq
     meta:
       expr: "input"
   - name: done
     approach: rapid
-    handler: core.jq
+    action: core.jq
     meta:
       expr: "input"
 edges:
@@ -366,7 +366,7 @@ func TestCalibrationContract_NoCalibration(t *testing.T) {
 	def := &circuit.CircuitDef{
 		Circuit:     "test",
 		Description: "test",
-		Nodes:       []circuit.NodeDef{{Name: "a", Approach: "rapid", Handler: "core.jq"}},
+		Nodes:       []circuit.NodeDef{{Name: "a", Approach: "rapid", Action: "core.jq"}},
 		Edges:       []circuit.EdgeDef{{ID: "e1", From: "a", To: "_done"}},
 		Start:       "a",
 		Done:        "_done",

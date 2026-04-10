@@ -96,12 +96,11 @@ func TestWalk_DelegateNode_SubWalk(t *testing.T) {
 	// Delegate generates inner circuit: X → Y
 	innerDef := &circuit.CircuitDef{
 		Circuit:     "inner",
-		HandlerType: "transformer",
 		Start:       "X",
 		Done:        "_done",
 		Nodes: []circuit.NodeDef{
-			{Name: "X", Handler: "passthrough"},
-			{Name: "Y", Handler: "passthrough"},
+			{Name: "X", Instrument: "transformer", Action: "passthrough"},
+			{Name: "Y", Instrument: "transformer", Action: "passthrough"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "x-y", From: "X", To: "Y"},
@@ -192,8 +191,7 @@ func TestWalk_DelegateNode_ContextCancellation(t *testing.T) {
 		Circuit:     "inner",
 		Start:       "X",
 		Done:        "_done",
-		HandlerType: "transformer",
-		Nodes:       []circuit.NodeDef{{Name: "X", Handler: "passthrough"}},
+		Nodes:       []circuit.NodeDef{{Name: "X", Instrument: "transformer", Action: "passthrough"}},
 		Edges:       []circuit.EdgeDef{{ID: "x-done", From: "X", To: "_done"}},
 	}
 
@@ -258,9 +256,9 @@ func TestBuildGraph_DelegateNode_DSL(t *testing.T) {
 		Start:   "A",
 		Done:    "_done",
 		Nodes: []circuit.NodeDef{
-			{Name: "A", Handler: "passthrough", HandlerType: "transformer"},
-			{Name: "B", Handler: "plan", HandlerType: "delegate"},
-			{Name: "C", Handler: "passthrough", HandlerType: "transformer"},
+			{Name: "A", Action: "passthrough", Instrument: "transformer"},
+			{Name: "B", Action: "plan", Instrument: "delegate"},
+			{Name: "C", Action: "passthrough", Instrument: "transformer"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "a-b", From: "A", To: "B"},
@@ -272,11 +270,10 @@ func TestBuildGraph_DelegateNode_DSL(t *testing.T) {
 	planGen := TransformerFunc("plan", func(_ context.Context, _ *TransformerContext) (any, error) {
 		return &circuit.CircuitDef{
 			Circuit:     "generated",
-			HandlerType: "transformer",
 			Start:       "W1",
 			Done:        "_done",
 			Nodes: []circuit.NodeDef{
-				{Name: "W1", Handler: "passthrough"},
+				{Name: "W1", Instrument: "transformer", Action: "passthrough"},
 			},
 			Edges: []circuit.EdgeDef{
 				{ID: "w1-done", From: "W1", To: "_done"},
@@ -331,7 +328,7 @@ func TestBuildGraph_DelegateNode_MissingHandler(t *testing.T) {
 		Start:   "A",
 		Done:    "_done",
 		Nodes: []circuit.NodeDef{
-			{Name: "A", HandlerType: "delegate"},
+			{Name: "A", Instrument: "delegate"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "a-done", From: "A", To: "_done"},
@@ -392,7 +389,7 @@ func TestBuildGraph_CircuitRefNode(t *testing.T) {
 		Start:   "K1",
 		Done:    "_done",
 		Nodes: []circuit.NodeDef{
-			{Name: "K1", HandlerType: HandlerTypeTransformer, Handler: "passthrough"},
+			{Name: "K1", Instrument: InstrumentTransformer, Action: "passthrough"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "k1-done", From: "K1", To: "_done"},
@@ -403,11 +400,10 @@ func TestBuildGraph_CircuitRefNode(t *testing.T) {
 		Circuit:     "rca",
 		Start:       "A",
 		Done:        "_done",
-		HandlerType: HandlerTypeTransformer,
 		Nodes: []circuit.NodeDef{
-			{Name: "A", Handler: "passthrough"},
-			{Name: "B", HandlerType: HandlerTypeCircuit, Handler: "gnd"},
-			{Name: "C", Handler: "passthrough"},
+			{Name: "A", Instrument: "transformer", Action: "passthrough"},
+			{Name: "B", Instrument: InstrumentCircuit, Action: "gnd"},
+			{Name: "C", Instrument: "transformer", Action: "passthrough"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "a-b", From: "A", To: "B"},
@@ -445,7 +441,7 @@ func TestWalk_CircuitRefNode_SubWalk(t *testing.T) {
 		Start:   "K1",
 		Done:    "_done",
 		Nodes: []circuit.NodeDef{
-			{Name: "K1", HandlerType: HandlerTypeTransformer, Handler: "passthrough"},
+			{Name: "K1", Instrument: InstrumentTransformer, Action: "passthrough"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "k1-done", From: "K1", To: "_done"},
@@ -456,11 +452,10 @@ func TestWalk_CircuitRefNode_SubWalk(t *testing.T) {
 		Circuit:     "rca",
 		Start:       "A",
 		Done:        "_done",
-		HandlerType: HandlerTypeTransformer,
 		Nodes: []circuit.NodeDef{
-			{Name: "A", Handler: "passthrough"},
-			{Name: "B", HandlerType: HandlerTypeCircuit, Handler: "gnd"},
-			{Name: "C", Handler: "passthrough"},
+			{Name: "A", Instrument: "transformer", Action: "passthrough"},
+			{Name: "B", Instrument: InstrumentCircuit, Action: "gnd"},
+			{Name: "C", Instrument: "transformer", Action: "passthrough"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "a-b", From: "A", To: "B"},
@@ -524,7 +519,7 @@ func TestWalk_CircuitRefNode_ContextInheritance(t *testing.T) {
 		Start:   "R",
 		Done:    "_done",
 		Nodes: []circuit.NodeDef{
-			{Name: "R", HandlerType: HandlerTypeTransformer, Handler: "ctx-reader"},
+			{Name: "R", Instrument: InstrumentTransformer, Action: "ctx-reader"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "r-done", From: "R", To: "_done"},
@@ -535,10 +530,9 @@ func TestWalk_CircuitRefNode_ContextInheritance(t *testing.T) {
 		Circuit:     "outer",
 		Start:       "A",
 		Done:        "_done",
-		HandlerType: HandlerTypeTransformer,
 		Nodes: []circuit.NodeDef{
-			{Name: "A", Handler: "passthrough"},
-			{Name: "D", HandlerType: HandlerTypeCircuit, Handler: "inner"},
+			{Name: "A", Instrument: "transformer", Action: "passthrough"},
+			{Name: "D", Instrument: InstrumentCircuit, Action: "inner"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "a-d", From: "A", To: "D"},
@@ -588,7 +582,7 @@ func TestBuildGraph_CircuitRefNode_MissingCircuit(t *testing.T) {
 		Start:   "A",
 		Done:    "_done",
 		Nodes: []circuit.NodeDef{
-			{Name: "A", HandlerType: HandlerTypeCircuit, Handler: "nonexistent"},
+			{Name: "A", Instrument: InstrumentCircuit, Action: "nonexistent"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "a-done", From: "A", To: "_done"},
@@ -612,7 +606,7 @@ func TestDelegateEvents_CarryCircuitType_CircuitRef(t *testing.T) {
 		Start:   "K1",
 		Done:    "_done",
 		Nodes: []circuit.NodeDef{
-			{Name: "K1", HandlerType: HandlerTypeTransformer, Handler: "passthrough"},
+			{Name: "K1", Instrument: InstrumentTransformer, Action: "passthrough"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "k1-done", From: "K1", To: "_done"},
@@ -623,11 +617,10 @@ func TestDelegateEvents_CarryCircuitType_CircuitRef(t *testing.T) {
 		Circuit:     "rca",
 		Start:       "A",
 		Done:        "_done",
-		HandlerType: HandlerTypeTransformer,
 		Nodes: []circuit.NodeDef{
-			{Name: "A", Handler: "passthrough"},
-			{Name: "B", HandlerType: HandlerTypeCircuit, Handler: "gnd"},
-			{Name: "C", Handler: "passthrough"},
+			{Name: "A", Instrument: "transformer", Action: "passthrough"},
+			{Name: "B", Instrument: InstrumentCircuit, Action: "gnd"},
+			{Name: "C", Instrument: "transformer", Action: "passthrough"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "a-b", From: "A", To: "B"},
@@ -681,10 +674,9 @@ func TestDelegateEvents_CarryCircuitType_DSLDelegate(t *testing.T) {
 	planGen := TransformerFunc("plan", func(_ context.Context, _ *TransformerContext) (any, error) {
 		return &circuit.CircuitDef{
 			Circuit:     "generated",
-			HandlerType: "transformer",
 			Start:       "W1",
 			Done:        "_done",
-			Nodes:       []circuit.NodeDef{{Name: "W1", Handler: "passthrough"}},
+			Nodes:       []circuit.NodeDef{{Name: "W1", Instrument: "transformer", Action: "passthrough"}},
 			Edges:       []circuit.EdgeDef{{ID: "w1-done", From: "W1", To: "_done"}},
 		}, nil
 	})
@@ -694,9 +686,9 @@ func TestDelegateEvents_CarryCircuitType_DSLDelegate(t *testing.T) {
 		Start:   "A",
 		Done:    "_done",
 		Nodes: []circuit.NodeDef{
-			{Name: "A", Handler: "passthrough", HandlerType: "transformer"},
-			{Name: "B", Handler: "plan", HandlerType: "delegate"},
-			{Name: "C", Handler: "passthrough", HandlerType: "transformer"},
+			{Name: "A", Action: "passthrough", Instrument: "transformer"},
+			{Name: "B", Action: "plan", Instrument: "delegate"},
+			{Name: "C", Action: "passthrough", Instrument: "transformer"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "a-b", From: "A", To: "B"},
@@ -750,7 +742,7 @@ func TestBuildGraph_CircuitRefNode_NilRegistry(t *testing.T) {
 		Start:   "A",
 		Done:    "_done",
 		Nodes: []circuit.NodeDef{
-			{Name: "A", HandlerType: HandlerTypeCircuit, Handler: "something"},
+			{Name: "A", Instrument: InstrumentCircuit, Action: "something"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "a-done", From: "A", To: "_done"},

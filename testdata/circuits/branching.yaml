@@ -4,17 +4,18 @@ kind: Schematic
 circuit: branching
 start: classify
 done: done
-handler_type: transformer
-
 nodes:
   - name: classify
-    handler: context-echo
+    instrument: transformer
+    action: context-echo
     description: "Returns walker context as output — output.confidence determines the branch"
   - name: fast-path
-    handler: passthrough
+    instrument: transformer
+    action: passthrough
     description: "High-confidence shortcut — skips detailed analysis"
   - name: detailed
-    handler: passthrough
+    instrument: transformer
+    action: passthrough
     description: "Low-confidence path — full analysis"
 
 edges:

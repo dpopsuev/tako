@@ -17,7 +17,7 @@ func runBuildDiagnostics(def *circuit.CircuitDef, reg *GraphRegistries) {
 	diagCircuitMediatorFallback(def, reg)
 }
 
-// diagCircuitMediatorFallback (D3): handler_type:circuit nodes that fall
+// diagCircuitMediatorFallback (D3): instrument:circuit nodes that fall
 // back to MCPCircuitTransformer via mediator endpoint instead of resolving
 // to a local circuit definition. This is often unintentional and means
 // sub-circuit transformers run on a remote registry (which may be sparse).
@@ -27,13 +27,12 @@ func diagCircuitMediatorFallback(def *circuit.CircuitDef, reg *GraphRegistries) 
 	}
 	for i := range def.Nodes {
 		nd := &def.Nodes[i]
-		ht := nd.EffectiveHandlerType(def.HandlerType)
-		if ht != circuit.HandlerTypeCircuit {
+		if nd.Instrument != InstrumentCircuit {
 			continue
 		}
-		handler := nd.Handler
+		handler := nd.Action
 		if handler == "" {
-			continue
+			handler = string(nd.Name)
 		}
 		// Check if this would resolve locally or fall back to mediator.
 		locallyResolved := false

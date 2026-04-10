@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/circuit/def"
 	"github.com/dpopsuev/origami/roster"
 )
@@ -242,15 +241,14 @@ func (r *EmptyPrompt) Check(ctx *LintContext) []Finding {
 	var out []Finding
 	for i := range ctx.Def.Nodes {
 		nd := &ctx.Def.Nodes[i]
-		ht := nd.EffectiveHandlerType(ctx.Def.HandlerType)
-		// node/delegate/circuit/extractor/renderer handler types provide their own logic
-		if ht == circuit.HandlerTypeNode || ht == circuit.HandlerTypeDelegate ||
-			ht == circuit.HandlerTypeCircuit || ht == circuit.HandlerTypeExtractor ||
-			ht == circuit.HandlerTypeRenderer {
+		// Non-transformer instruments provide their own logic — skip.
+		inst := nd.Instrument
+		if inst == "node" || inst == "delegate" || inst == "circuit" ||
+			inst == "extractor" || inst == "renderer" {
 			continue
 		}
-		// handler: set means resolution is explicit — skip this check
-		if nd.Handler != "" {
+		// action: set means resolution is explicit — skip this check
+		if nd.Action != "" {
 			continue
 		}
 		if nd.Prompt == "" {
@@ -553,12 +551,11 @@ func (r *DelegateWithoutGenerator) Check(ctx *LintContext) []Finding {
 	var out []Finding
 	for i := range ctx.Def.Nodes {
 		nd := &ctx.Def.Nodes[i]
-		ht := nd.EffectiveHandlerType(ctx.Def.HandlerType)
-		if ht == circuit.HandlerTypeDelegate && nd.Handler == "" {
+		if nd.Instrument == "delegate" && nd.Action == "" {
 			out = append(out, Finding{
 				RuleID:   r.ID(),
 				Severity: r.Severity(),
-				Message:  fmt.Sprintf("delegate node %q requires handler: <name> (generator transformer)", nd.Name),
+				Message:  fmt.Sprintf("delegate node %q requires action: <name> (generator transformer)", nd.Name),
 				File:     ctx.File,
 				Line:     ctx.NodeLine(string(nd.Name)),
 			})
@@ -568,18 +565,18 @@ func (r *DelegateWithoutGenerator) Check(ctx *LintContext) []Finding {
 }
 
 // DeprecatedHandlerFields errors when nodes use removed legacy handler fields
-// (family, transformer, extractor, renderer, delegate, generator) in YAML.
-// These fields are no longer recognized; use handler: + handler_type: instead.
+// (family, transformer, extractor, renderer, delegate, generator, handler, handler_type)
+// in YAML. These fields are no longer recognized; use instrument: + action: instead.
 type DeprecatedHandlerFields struct{}
 
 func (r *DeprecatedHandlerFields) ID() string { return "S17/deprecated-handler-fields" }
 func (r *DeprecatedHandlerFields) Description() string {
-	return "use handler: + handler_type: instead of family/transformer/extractor/renderer/delegate+generator"
+	return "use instrument: + action: instead of legacy handler fields"
 }
 func (r *DeprecatedHandlerFields) Severity() Severity { return SeverityError }
 func (r *DeprecatedHandlerFields) Tags() []string     { return []string{"structural"} }
 
-var removedNodeFields = []string{"family", "transformer", "extractor", "renderer", "delegate", "generator"}
+var removedNodeFields = []string{"family", "transformer", "extractor", "renderer", "delegate", "generator", "handler", "handler_type"}
 
 func (r *DeprecatedHandlerFields) Check(ctx *LintContext) []Finding {
 	var out []Finding
@@ -599,7 +596,7 @@ func (r *DeprecatedHandlerFields) Check(ctx *LintContext) []Finding {
 			out = append(out, Finding{
 				RuleID:   r.ID(),
 				Severity: r.Severity(),
-				Message:  fmt.Sprintf("node %q uses removed field(s) %s; migrate to handler: + handler_type:", nd.Name, strings.Join(deprecated, ", ")),
+				Message:  fmt.Sprintf("node %q uses removed field(s) %s; migrate to instrument: + action:", nd.Name, strings.Join(deprecated, ", ")),
 				File:     ctx.File,
 				Line:     ctx.NodeLine(string(nd.Name)),
 			})

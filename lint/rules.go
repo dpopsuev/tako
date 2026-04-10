@@ -36,7 +36,6 @@ func structuralRules() []Rule {
 		&CalibrationContract{},
 		&EdgeNodeReference{},
 		&HookReference{},
-		&InvalidHandlerType{},
 	}
 }
 

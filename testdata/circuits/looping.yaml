@@ -4,18 +4,18 @@ kind: Schematic
 circuit: looping
 start: analyze
 done: done
-handler_type: transformer
-
 vars:
   max_refine_loops: 2
   convergence_threshold: 0.7
 
 nodes:
   - name: analyze
-    handler: context-echo
+    instrument: transformer
+    action: context-echo
     description: "Initial analysis — returns context as output (including convergence)"
   - name: refine
-    handler: context-echo
+    instrument: transformer
+    action: context-echo
     description: "Iterative refinement — returns context as output, loops until converged"
 
 edges:

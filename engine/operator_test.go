@@ -123,11 +123,10 @@ func (m *mockOperator) Evaluate(_ context.Context, _ Goal, _ WalkResult) (Evalua
 func testCircuitDef() *circuit.CircuitDef {
 	return &circuit.CircuitDef{
 		Circuit:     "test",
-		HandlerType: "transformer",
 		Start:       "A",
 		Done:        "_done",
 		Nodes: []circuit.NodeDef{
-			{Name: "A", Handler: "passthrough"},
+			{Name: "A", Instrument: "transformer", Action: "passthrough"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "a-done", From: "A", To: "_done"},

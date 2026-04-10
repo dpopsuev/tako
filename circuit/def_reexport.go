@@ -58,6 +58,9 @@ type (
 	ChainVocabulary        = def.ChainVocabulary
 	RichVocabulary         = def.RichVocabulary
 	RichChainVocabulary    = def.RichChainVocabulary
+	InstrumentManifest     = def.InstrumentManifest
+	ActionDef              = def.ActionDef
+	DispatchMode           = def.DispatchMode
 )
 
 // Kind constants.
@@ -79,14 +82,12 @@ const (
 	KindDataset        = def.KindDataset
 )
 
-// Handler type constants.
+// Dispatch mode constants.
 const (
-	HandlerTypeTransformer = def.HandlerTypeTransformer
-	HandlerTypeExtractor   = def.HandlerTypeExtractor
-	HandlerTypeRenderer    = def.HandlerTypeRenderer
-	HandlerTypeNode        = def.HandlerTypeNode
-	HandlerTypeDelegate    = def.HandlerTypeDelegate
-	HandlerTypeCircuit     = def.HandlerTypeCircuit
+	DispatchCLI       = def.DispatchCLI
+	DispatchMCP       = def.DispatchMCP
+	DispatchContainer = def.DispatchContainer
+	DispatchInproc    = def.DispatchInproc
 )
 
 // Merge strategy constants.
@@ -123,4 +124,6 @@ var ( //nolint:dupl // intentional re-exports for backward compatibility
 	NewRichMapVocabulary        = def.NewRichMapVocabulary
 	NameWithCode                = def.NameWithCode
 	RegisterScorecardVocabulary = def.RegisterScorecardVocabulary
+	LoadInstrumentManifest      = def.LoadInstrumentManifest
+	ParseInstrumentManifest     = def.ParseInstrumentManifest
 )

@@ -350,8 +350,8 @@ func TestE2E_CircuitRefs_ValidRefsPass(t *testing.T) {
 circuit: main
 nodes:
   - name: start
-    handler_type: circuit
-    handler: child
+    instrument: circuit
+    action: child
 edges:
   - id: e1
     from: start
@@ -394,8 +394,8 @@ func TestE2E_CircuitRefs_MissingRefRejects(t *testing.T) {
 circuit: main
 nodes:
   - name: start
-    handler_type: circuit
-    handler: missing
+    instrument: circuit
+    action: missing
 edges:
   - id: e1
     from: start

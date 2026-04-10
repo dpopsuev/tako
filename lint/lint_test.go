@@ -26,16 +26,17 @@ func minimalYAML() []byte {
 kind: Circuit
 circuit: test
 description: a test circuit
-handler_type: transformer
 nodes:
   - name: recall
     approach: rapid
-    handler: core.jq
+    instrument: transformer
+    action: core.jq
     meta:
       expr: "input"
   - name: triage
     approach: methodical
-    handler: core.jq
+    instrument: transformer
+    action: core.jq
     meta:
       expr: "input"
 edges:
@@ -69,10 +70,10 @@ func TestRun_InvalidApproach(t *testing.T) {
 	yml := []byte(`
 circuit: test
 description: test
-handler_type: node
 nodes:
   - name: recall
-    handler: recall
+    instrument: node
+    action: recall
     approach: rapd
 edges:
   - id: e1
@@ -497,9 +498,9 @@ func TestFinding_String(t *testing.T) {
 
 func TestAllRules_Count(t *testing.T) {
 	rules := AllRules()
-	// 24 structural + 9 semantic + 12 best-practice + 1 prompt + 1 crossref + 5 scenario = 51
-	if len(rules) != 52 {
-		t.Errorf("expected 52 rules, got %d", len(rules))
+	// 23 structural + 9 semantic + 12 best-practice + 1 prompt + 1 crossref + 5 scenario = 51
+	if len(rules) != 51 {
+		t.Errorf("expected 51 rules, got %d", len(rules))
 	}
 
 	ids := make(map[string]bool)
@@ -599,15 +600,16 @@ func TestRun_StochasticTransformer_Fallback(t *testing.T) {
 	yml := []byte(`
 circuit: test
 description: test
-handler_type: transformer
 nodes:
   - name: recall
     approach: rapid
-    handler: core.llm
+    instrument: transformer
+    action: core.llm
     prompt: "recall items"
   - name: triage
     approach: methodical
-    handler: core.jq
+    instrument: transformer
+    action: core.jq
     meta:
       expr: "input"
 edges:
@@ -647,14 +649,15 @@ func TestRun_StochasticTransformer_WithRegistry(t *testing.T) {
 	yml := []byte(`
 circuit: test
 description: test
-handler_type: transformer
 nodes:
   - name: a
     approach: rapid
-    handler: custom.stochastic
+    instrument: transformer
+    action: custom.stochastic
   - name: b
     approach: methodical
-    handler: custom.deterministic
+    instrument: transformer
+    action: custom.deterministic
 edges:
   - id: e1
     name: e1
@@ -697,11 +700,11 @@ func TestRun_StochasticTransformer_AllDeterministic(t *testing.T) {
 	yml := []byte(`
 circuit: test
 description: test
-handler_type: transformer
 nodes:
   - name: a
     approach: rapid
-    handler: core.jq
+    instrument: transformer
+    action: core.jq
     meta:
       expr: "input"
 edges:
@@ -727,20 +730,22 @@ func TestRun_StochasticSummary(t *testing.T) {
 	yml := []byte(`
 circuit: test
 description: test
-handler_type: transformer
 nodes:
   - name: recall
     approach: rapid
-    handler: core.llm
+    instrument: transformer
+    action: core.llm
     prompt: "recall items"
   - name: triage
     approach: methodical
-    handler: core.jq
+    instrument: transformer
+    action: core.jq
     meta:
       expr: "input"
   - name: assess
     approach: analytical
-    handler: llm
+    instrument: transformer
+    action: llm
     prompt: "assess"
 edges:
   - id: e1
@@ -786,11 +791,11 @@ func TestRun_StochasticSummary_NoneWhenAllDeterministic(t *testing.T) {
 	yml := []byte(`
 circuit: test
 description: test
-handler_type: transformer
 nodes:
   - name: a
     approach: rapid
-    handler: core.jq
+    instrument: transformer
+    action: core.jq
     meta:
       expr: "input"
 edges:
@@ -1167,11 +1172,11 @@ func TestS22_HookReference_WhitespaceHook(t *testing.T) {
 	yml := []byte(`
 circuit: test
 description: test
-handler_type: transformer
 nodes:
   - name: recall
     approach: rapid
-    handler: core.jq
+    instrument: transformer
+    action: core.jq
     meta:
       expr: "input"
     before: ["inject failure"]
@@ -1202,11 +1207,11 @@ func TestS22_HookReference_EmptySegment(t *testing.T) {
 	yml := []byte(`
 circuit: test
 description: test
-handler_type: transformer
 nodes:
   - name: recall
     approach: rapid
-    handler: core.jq
+    instrument: transformer
+    action: core.jq
     meta:
       expr: "input"
     before: ["inject."]
@@ -1237,17 +1242,18 @@ func TestS22_HookReference_SimilarNames(t *testing.T) {
 	yml := []byte(`
 circuit: test
 description: test
-handler_type: transformer
 nodes:
   - name: recall
     approach: rapid
-    handler: core.jq
+    instrument: transformer
+    action: core.jq
     meta:
       expr: "input"
     before: ["inject.failure"]
   - name: triage
     approach: methodical
-    handler: core.jq
+    instrument: transformer
+    action: core.jq
     meta:
       expr: "input"
     before: ["inject.failurre"]
@@ -1282,11 +1288,11 @@ func TestS22_HookReference_ValidHooks(t *testing.T) {
 	yml := []byte(`
 circuit: test
 description: test
-handler_type: transformer
 nodes:
   - name: recall
     approach: rapid
-    handler: core.jq
+    instrument: transformer
+    action: core.jq
     meta:
       expr: "input"
     before: ["inject.failure"]
@@ -1310,121 +1316,6 @@ done: _done
 	}
 }
 
-// --- S23: invalid-handler-type ---
-
-func TestS23_InvalidHandlerType_CircuitLevel(t *testing.T) {
-	yml := []byte(`
-circuit: test
-description: test
-handler_type: transformr
-nodes:
-  - name: recall
-    approach: rapid
-    handler: core.jq
-    meta:
-      expr: "input"
-edges:
-  - id: e1
-    name: e1
-    from: recall
-    to: _done
-start: recall
-done: _done
-`)
-	findings, err := Run(yml, "test.yaml")
-	if err != nil {
-		t.Fatalf("Run: %v", err)
-	}
-	found := false
-	for _, f := range findings {
-		if f.RuleID == "S23/invalid-handler-type" {
-			found = true
-			if !strings.Contains(f.Message, "transformr") {
-				t.Errorf("expected message to mention 'transformr', got %q", f.Message)
-			}
-			if f.Suggestion == "" {
-				t.Error("expected suggestion for 'transformr'")
-			}
-		}
-	}
-	if !found {
-		t.Error("expected S23/invalid-handler-type finding")
-	}
-}
-
-func TestS23_InvalidHandlerType_NodeLevel(t *testing.T) {
-	yml := []byte(`
-circuit: test
-description: test
-handler_type: transformer
-nodes:
-  - name: recall
-    approach: rapid
-    handler_type: circit
-    handler: sub-circuit
-edges:
-  - id: e1
-    name: e1
-    from: recall
-    to: _done
-start: recall
-done: _done
-`)
-	findings, err := Run(yml, "test.yaml")
-	if err != nil {
-		t.Fatalf("Run: %v", err)
-	}
-	found := false
-	for _, f := range findings {
-		if f.RuleID == "S23/invalid-handler-type" {
-			found = true
-			if !strings.Contains(f.Message, "circit") {
-				t.Errorf("expected message to mention 'circit', got %q", f.Message)
-			}
-		}
-	}
-	if !found {
-		t.Error("expected S23/invalid-handler-type finding for node-level handler_type")
-	}
-}
-
-func TestS23_InvalidHandlerType_ValidTypes(t *testing.T) {
-	yml := []byte(`
-circuit: test
-description: test
-handler_type: transformer
-nodes:
-  - name: recall
-    approach: rapid
-    handler: core.jq
-    meta:
-      expr: "input"
-  - name: sub
-    approach: analytical
-    handler_type: circuit
-    handler: sub-circuit
-edges:
-  - id: e1
-    name: e1
-    from: recall
-    to: sub
-  - id: e2
-    name: e2
-    from: sub
-    to: _done
-start: recall
-done: _done
-`)
-	findings, err := Run(yml, "test.yaml")
-	if err != nil {
-		t.Fatalf("Run: %v", err)
-	}
-	for _, f := range findings {
-		if f.RuleID == "S23/invalid-handler-type" {
-			t.Errorf("unexpected S23 finding for valid handler types: %s", f.Message)
-		}
-	}
-}
 
 func TestB10_NoArrowWithReferences(t *testing.T) {
 	yaml := []byte(`

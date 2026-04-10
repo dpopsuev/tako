@@ -106,7 +106,7 @@ func TestS36_CircuitHandlerResolution_Unresolvable(t *testing.T) {
 	def := &circuit.CircuitDef{
 		Circuit: "rca",
 		Nodes: []circuit.NodeDef{
-			{Name: "gather", HandlerType: "circuit", Handler: "gnd"},
+			{Name: "gather", Instrument: "circuit", Action: "gnd"},
 			{Name: "triage", Approach: "rapid"},
 		},
 		Edges: []circuit.EdgeDef{
@@ -146,7 +146,7 @@ func TestS36_CircuitHandlerResolution_Resolvable(t *testing.T) {
 	def := &circuit.CircuitDef{
 		Circuit: "rca",
 		Nodes: []circuit.NodeDef{
-			{Name: "gather", HandlerType: "circuit", Handler: "gnd"},
+			{Name: "gather", Instrument: "circuit", Action: "gnd"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "gather", To: "_done"},
@@ -267,7 +267,7 @@ func TestS38_MediatorBackendCoverage_NoCircuitNoResolver(t *testing.T) {
 	def := &circuit.CircuitDef{
 		Circuit: "rca",
 		Nodes: []circuit.NodeDef{
-			{Name: "gather", HandlerType: "circuit", Handler: "gnd"},
+			{Name: "gather", Instrument: "circuit", Action: "gnd"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "gather", To: "_done"},
@@ -302,7 +302,7 @@ func TestS38_MediatorBackendCoverage_WithLocalCircuit(t *testing.T) {
 	def := &circuit.CircuitDef{
 		Circuit: "rca",
 		Nodes: []circuit.NodeDef{
-			{Name: "gather", HandlerType: "circuit", Handler: "gnd"},
+			{Name: "gather", Instrument: "circuit", Action: "gnd"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "gather", To: "_done"},
@@ -329,7 +329,7 @@ func TestS38_MediatorBackendCoverage_WithMediatorEndpoint(t *testing.T) {
 	def := &circuit.CircuitDef{
 		Circuit: "rca",
 		Nodes: []circuit.NodeDef{
-			{Name: "gather", HandlerType: "circuit", Handler: "gnd"},
+			{Name: "gather", Instrument: "circuit", Action: "gnd"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "gather", To: "_done"},

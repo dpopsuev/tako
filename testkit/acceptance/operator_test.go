@@ -28,12 +28,11 @@ func (s *stubConvergingOperator) Observe(_ context.Context) (engine.SystemState,
 func (s *stubConvergingOperator) Reconcile(_ context.Context, _ engine.Goal, _ engine.SystemState) (*circuit.CircuitDef, error) {
 	// Return a minimal passthrough circuit
 	return &circuit.CircuitDef{
-		Circuit:     "convergence-test",
-		HandlerType: "transformer",
-		Start:       "step",
-		Done:        "_done",
+		Circuit: "convergence-test",
+		Start:   "step",
+		Done:    "_done",
 		Nodes: []circuit.NodeDef{
-			{Name: "step", Handler: "echo"},
+			{Name: "step", Instrument: "transformer", Action: "echo"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "step-done", From: "step", To: "_done", When: "true"},
@@ -124,12 +123,11 @@ func (s *stubEscalatingOperator) Observe(_ context.Context) (engine.SystemState,
 
 func (s *stubEscalatingOperator) Reconcile(_ context.Context, _ engine.Goal, _ engine.SystemState) (*circuit.CircuitDef, error) {
 	return &circuit.CircuitDef{
-		Circuit:     "escalate-test",
-		HandlerType: "transformer",
-		Start:       "step",
-		Done:        "_done",
+		Circuit: "escalate-test",
+		Start:   "step",
+		Done:    "_done",
 		Nodes: []circuit.NodeDef{
-			{Name: "step", Handler: "echo"},
+			{Name: "step", Instrument: "transformer", Action: "echo"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "step-done", From: "step", To: "_done", When: "true"},

@@ -20,7 +20,7 @@ func TestLoadInstrumentManifest_ValidExec(t *testing.T) {
 	if m.Namespace != "instruments" {
 		t.Errorf("Namespace = %q", m.Namespace)
 	}
-	if m.Dispatch != DispatchExec {
+	if m.Dispatch != DispatchCLI {
 		t.Errorf("Dispatch = %q, want exec", m.Dispatch)
 	}
 	if m.Tune != "oculus --version" {
@@ -104,7 +104,7 @@ metadata:
   name: test
   namespace: instruments
 spec:
-  dispatch: exec
+  dispatch: cli
   tune: "test --version"
   actions:
     run: {}
@@ -144,7 +144,7 @@ metadata:
   name: test
   namespace: instruments
 spec:
-  dispatch: docker
+  dispatch: container
   tune: "docker inspect test"
   actions:
     scan:
@@ -163,7 +163,7 @@ metadata:
   name: test
   namespace: instruments
 spec:
-  dispatch: go
+  dispatch: inproc
   tune: "true"
   actions:
     transform: {}
@@ -181,7 +181,7 @@ metadata:
   name: test
   namespace: instruments
 spec:
-  dispatch: exec
+  dispatch: cli
   tune: "test --version"
 `)
 	_, err := ParseInstrumentManifest(data, "test.yaml")
@@ -196,7 +196,7 @@ metadata:
   name: test
   namespace: instruments
 spec:
-  dispatch: exec
+  dispatch: cli
   tune: "test --version"
   actions:
     run:
@@ -214,7 +214,7 @@ kind: Instrument
 metadata:
   namespace: instruments
 spec:
-  dispatch: exec
+  dispatch: cli
   tune: "test --version"
   actions:
     run:
@@ -233,7 +233,7 @@ metadata:
   name: test
   namespace: instruments
 spec:
-  dispatch: exec
+  dispatch: cli
   tune: "test --version"
   actions:
     run:
@@ -252,7 +252,7 @@ metadata:
   name: core-transformers
   namespace: engine
 spec:
-  dispatch: go
+  dispatch: inproc
   tune: "true"
   actions:
     llm:
@@ -264,7 +264,7 @@ spec:
 	if err != nil {
 		t.Fatalf("ParseInstrumentManifest: %v", err)
 	}
-	if m.Dispatch != DispatchGo {
+	if m.Dispatch != DispatchInproc {
 		t.Errorf("Dispatch = %q, want go", m.Dispatch)
 	}
 	if len(m.Actions) != 2 {
@@ -283,7 +283,7 @@ metadata:
   name: test
   namespace: test
 spec:
-  dispatch: exec
+  dispatch: cli
   tune: "true"
   actions:
     scan:
@@ -310,7 +310,7 @@ metadata:
   name: test
   namespace: test
 spec:
-  dispatch: exec
+  dispatch: cli
   tune: "true"
   actions:
     scan:
@@ -335,10 +335,10 @@ spec:
 
 func TestValidDispatchModes_Complete(t *testing.T) {
 	modes := map[string]bool{
-		string(DispatchExec):   false,
-		string(DispatchMCP):    false,
-		string(DispatchDocker): false,
-		string(DispatchGo):     false,
+		string(DispatchCLI):       false,
+		string(DispatchMCP):       false,
+		string(DispatchContainer): false,
+		string(DispatchInproc):    false,
 	}
 	for _, v := range ValidDispatchModes {
 		if _, ok := modes[v]; !ok {

@@ -17,13 +17,12 @@ func TestWalk_Finally_RunsOnSuccess(t *testing.T) {
 
 	def := &circuit.CircuitDef{
 		Circuit:     "test",
-		HandlerType: "transformer",
 		Start:       "step-a",
 		Done:        "done",
 		Finally:     "teardown",
 		Nodes: []circuit.NodeDef{
-			{Name: "step-a", Handler: "passthrough"},
-			{Name: "teardown", Handler: "cleanup"},
+			{Name: "step-a", Instrument: "transformer", Action: "passthrough"},
+			{Name: "teardown", Instrument: "transformer", Action: "cleanup"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "a-done", From: "step-a", To: "done"},
@@ -68,13 +67,12 @@ func TestWalk_Finally_RunsOnError(t *testing.T) {
 
 	def := &circuit.CircuitDef{
 		Circuit:     "test",
-		HandlerType: "transformer",
 		Start:       "step-a",
 		Done:        "done",
 		Finally:     "teardown",
 		Nodes: []circuit.NodeDef{
-			{Name: "step-a", Handler: "fail"},
-			{Name: "teardown", Handler: "cleanup"},
+			{Name: "step-a", Instrument: "transformer", Action: "fail"},
+			{Name: "teardown", Instrument: "transformer", Action: "cleanup"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "a-done", From: "step-a", To: "done"},
@@ -113,13 +111,12 @@ func TestWalk_Finally_RunsOnCanceledContext(t *testing.T) {
 
 	def := &circuit.CircuitDef{
 		Circuit:     "test",
-		HandlerType: "transformer",
 		Start:       "step-a",
 		Done:        "done",
 		Finally:     "teardown",
 		Nodes: []circuit.NodeDef{
-			{Name: "step-a", Handler: "slow"},
-			{Name: "teardown", Handler: "cleanup"},
+			{Name: "step-a", Instrument: "transformer", Action: "slow"},
+			{Name: "teardown", Instrument: "transformer", Action: "cleanup"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "a-done", From: "step-a", To: "done"},
@@ -151,12 +148,11 @@ func TestWalk_NoFinally_SkipsCleanup(t *testing.T) {
 
 	def := &circuit.CircuitDef{
 		Circuit:     "test",
-		HandlerType: "transformer",
 		Start:       "step-a",
 		Done:        "done",
 		// No Finally set
 		Nodes: []circuit.NodeDef{
-			{Name: "step-a", Handler: "passthrough"},
+			{Name: "step-a", Instrument: "transformer", Action: "passthrough"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "a-done", From: "step-a", To: "done"},

@@ -178,8 +178,8 @@ func Run(ctx context.Context, cfg *HarnessConfig) (*CalibrationReport, error) {
 		// Fail-fast: detect circuit delegate nodes that need PromptRelayer.
 		if cfg.PromptRelayer == nil && cfg.Shared.MediatorEndpoint != "" && cfg.CircuitDef != nil {
 			for i := range cfg.CircuitDef.Nodes {
-				if cfg.CircuitDef.Nodes[i].EffectiveHandlerType(cfg.CircuitDef.HandlerType) == circuit.HandlerTypeCircuit {
-					return nil, fmt.Errorf("%w: %q but no PromptRelayer configured; set HarnessConfig.PromptRelayer for mediator delegation", ErrCircuitHasHandlerTypeCircuitNode, cfg.CircuitDef.Nodes[i].Name)
+				if cfg.CircuitDef.Nodes[i].Instrument == "circuit" {
+					return nil, fmt.Errorf("%w: %q but no PromptRelayer configured; set HarnessConfig.PromptRelayer for mediator delegation", ErrCircuitHasInstrumentCircuitNode, cfg.CircuitDef.Nodes[i].Name)
 				}
 			}
 		}

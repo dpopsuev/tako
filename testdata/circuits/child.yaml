@@ -1,14 +1,14 @@
 kind: Schematic
 # Child circuit: used as a sub-circuit by subcircuit.yaml
-# Tests: standalone circuit that can be delegated to via handler_type: circuit.
+# Tests: standalone circuit that can be delegated to via instrument: circuit.
 circuit: child
 start: process
 done: child-done
-handler_type: transformer
 
 nodes:
   - name: process
-    handler: passthrough
+    instrument: transformer
+    action: passthrough
     description: "Sub-circuit processing step"
 
 edges:

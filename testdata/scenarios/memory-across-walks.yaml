@@ -1,15 +1,15 @@
 kind: Schematic
 circuit: memory-test
 description: "Simple 2-node circuit for verifying cross-walk MemoryStore persistence"
-handler_type: transformer
-
 nodes:
   - name: process
     approach: rapid
-    handler: echo
+    instrument: transformer
+    action: echo
   - name: finish
     approach: analytical
-    handler: echo
+    instrument: transformer
+    action: echo
 
 edges:
   - id: E1

@@ -1,5 +1,5 @@
 kind: Schematic
-# Signal Domains test circuit — exercises handler_type: renderer, domain:, and context_filter:.
+# Signal Domains test circuit — exercises instrument: renderer, domain:, and context_filter:.
 circuit: signal-domains-test
 description: "Test circuit for Renderer interface, zone domain annotations, and context filtering"
 
@@ -22,13 +22,13 @@ zones:
 nodes:
   - name: ingest
     approach: rapid
-    handler: llm
-    handler_type: transformer
+    instrument: transformer
+    action: llm
     prompt: "Ingest raw data"
   - name: extract
     approach: rapid
-    handler: json-schema
-    handler_type: extractor
+    instrument: extractor
+    action: json-schema
     schema:
       type: object
       required: [category]
@@ -37,18 +37,18 @@ nodes:
           type: string
   - name: analyze
     approach: analytical
-    handler: llm
-    handler_type: transformer
+    instrument: transformer
+    action: llm
     prompt: "Analyze structured data"
   - name: render
     approach: analytical
-    handler: template
-    handler_type: renderer
+    instrument: renderer
+    action: template
     prompt: "Summary: {{.Output}}"
   - name: report
     approach: holistic
-    handler: llm
-    handler_type: transformer
+    instrument: transformer
+    action: llm
     prompt: "Final report"
 
 edges:

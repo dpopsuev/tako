@@ -34,7 +34,6 @@ type CircuitDef struct {
 	Description string                  `yaml:"description,omitempty"`
 	Import      string                  `yaml:"import,omitempty"`
 	Topology    string                  `yaml:"topology,omitempty"`
-	HandlerType string                  `yaml:"handler_type,omitempty"`
 	Timeout     string                  `yaml:"timeout,omitempty"`
 	Imports     []string                `yaml:"imports,omitempty"`
 	Vars        map[string]any          `yaml:"vars,omitempty"`
@@ -81,7 +80,6 @@ type WiringDef struct {
 }
 
 // ExtractorDef declares a reusable extractor at the circuit level.
-// Nodes reference extractors by name via handler: + handler_type: extractor.
 // Type must be a built-in extractor type (json-schema, regex).
 type ExtractorDef struct {
 	Name    string          `yaml:"name"`
@@ -119,17 +117,6 @@ type ZoneDef struct {
 	Domain        string            `yaml:"domain,omitempty"`
 	ContextFilter *ContextFilterDef `yaml:"context_filter,omitempty"`
 }
-
-// Legacy handler_type constants — kept temporarily for consumer migration.
-// New circuits use instrument + action instead.
-const (
-	HandlerTypeTransformer = "transformer"
-	HandlerTypeExtractor   = "extractor"
-	HandlerTypeRenderer    = "renderer"
-	HandlerTypeNode        = "node"
-	HandlerTypeDelegate    = "delegate"
-	HandlerTypeCircuit     = "circuit"
-)
 
 // OutputField holds the structured output declaration for a node.
 type OutputField struct {
@@ -186,21 +173,15 @@ type NodeConfig struct {
 // NodeDef declares a node in the circuit.
 //
 // Resolution: instrument + action (declarative) or instrument + command (imperative).
-// handler_type and handler are legacy fields kept for migration — new circuits
-// must use instrument/action/command.
 type NodeDef struct {
 	Name        NodeName `yaml:"name"`
 	Description string   `yaml:"description,omitempty"`
 	Approach    string   `yaml:"approach,omitempty"`
 
-	// Instrument dispatch (new — replaces handler_type + handler)
+	// Instrument dispatch — every node references an instrument + action or command.
 	Instrument string `yaml:"instrument,omitempty"` // instrument manifest name
 	Action     string `yaml:"action,omitempty"`     // declarative: action from manifest actions table
 	Command    string `yaml:"command,omitempty"`    // imperative: raw exec (escape hatch, mutually exclusive with action)
-
-	// Legacy handler fields — kept for migration, will be deleted
-	HandlerType string `yaml:"handler_type,omitempty"`
-	Handler     string `yaml:"handler,omitempty"`
 
 	Timeout      string          `yaml:"timeout,omitempty"`
 	Provider     string          `yaml:"provider,omitempty"`
@@ -225,27 +206,6 @@ func (nd *NodeDef) EffectiveConfig() *NodeConfig {
 		return nd.Config
 	}
 	return &NodeConfig{}
-}
-
-// EffectiveHandlerType returns the handler type for this node, resolving
-// the node-level override or circuit-level default.
-func (nd *NodeDef) EffectiveHandlerType(circuitDefault string) string {
-	if nd.HandlerType != "" {
-		return nd.HandlerType
-	}
-	if nd.Handler != "" && circuitDefault != "" {
-		return circuitDefault
-	}
-	return ""
-}
-
-// EffectiveHandler returns the handler name for this node.
-// Falls back to the node name when handler is not set.
-func (nd *NodeDef) EffectiveHandler() string {
-	if nd.Handler != "" {
-		return nd.Handler
-	}
-	return string(nd.Name)
 }
 
 // OutputFields returns the output field declarations, or nil if none declared.
@@ -356,7 +316,6 @@ var (
 	ValidApproaches      = []string{"rapid", "aggressive", "methodical", "rigorous", "analytical", "holistic"}
 	ValidZoneDomains     = []string{"unstructured", "structured", "hybrid"}
 	ValidPortDirections  = []string{"in", "out", "loop"}
-	ValidHandlerTypes    = []string{HandlerTypeTransformer, HandlerTypeExtractor, HandlerTypeRenderer, HandlerTypeNode, HandlerTypeDelegate, HandlerTypeCircuit}
 	ValidMergeStrategies = []string{MergeAppend, MergeLatest, MergeCustom}
 )
 

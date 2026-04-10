@@ -141,8 +141,8 @@ var (
 	// ErrScoreCardIsRequired is returned for: calibrate.Run: ScoreCard is required
 	ErrScoreCardIsRequired = errors.New("calibrate.Run: ScoreCard is required")
 
-	// ErrCircuitHasHandlerTypeCircuitNode is returned for: circuit has handler_type:circuit node
-	ErrCircuitHasHandlerTypeCircuitNode = errors.New("circuit has handler_type:circuit node")
+	// ErrCircuitHasInstrumentCircuitNode is returned when a circuit contains an instrument:circuit node.
+	ErrCircuitHasInstrumentCircuitNode = errors.New("circuit has instrument:circuit node")
 
 	// ErrCircuitErrorRate is returned for: circuit error rate
 	ErrCircuitErrorRate = errors.New("circuit error rate")

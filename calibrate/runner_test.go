@@ -49,7 +49,7 @@ func testCircuitDef() *circuit.CircuitDef {
 		Circuit: "test-circuit",
 		Start:   "start",
 		Done:    "done",
-		Nodes:   []circuit.NodeDef{{Name: "start", HandlerType: "transformer", Handler: "passthrough"}},
+		Nodes:   []circuit.NodeDef{{Name: "start", Instrument: "transformer", Action: "passthrough"}},
 		Edges:   []circuit.EdgeDef{{ID: "start-done", From: "start", To: "done"}},
 	}
 }

@@ -137,7 +137,7 @@ Run calibration against a ground-truth scenario using the MCP server.
 | # | Node | Approach | Handler |
 |---|------|---------|---------|
 {{ range $i, $n := .Nodes -}}
-| {{ inc $i }} | {{ $n.Name }} | {{ $n.Approach }} | {{ $n.Handler }} |
+| {{ inc $i }} | {{ $n.Name }} | {{ $n.Approach }} | {{ $n.Action }} |
 {{ end }}
 ## Execution Flow
 

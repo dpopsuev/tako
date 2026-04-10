@@ -4,14 +4,14 @@ kind: Schematic
 circuit: base
 start: intake
 done: done
-handler_type: transformer
-
 nodes:
   - name: intake
-    handler: passthrough
+    instrument: transformer
+    action: passthrough
     description: "Base intake node"
   - name: process
-    handler: passthrough
+    instrument: transformer
+    action: passthrough
     description: "Base processing node"
 
 edges:

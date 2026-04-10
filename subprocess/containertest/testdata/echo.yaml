@@ -2,9 +2,11 @@ start: begin
 done: finish
 nodes:
   - name: begin
-    handler: passthrough
+    instrument: transformer
+    action: passthrough
   - name: finish
-    handler: passthrough
+    instrument: transformer
+    action: passthrough
 edges:
   - from: begin
     to: finish

@@ -4,8 +4,6 @@ kind: Schematic
 # Edge evaluation logic is registered via EdgeFactory in Go.
 circuit: rca-investigation
 description: "F0-F6 root cause analysis circuit"
-handler_type: node
-
 zones:
   backcourt:
     nodes: [recall, triage]
@@ -23,25 +21,32 @@ zones:
 nodes:
   - name: recall
     approach: rapid
-    handler: recall
+    instrument: node
+    action: recall
   - name: triage
     approach: rapid
-    handler: triage
+    instrument: node
+    action: triage
   - name: resolve
     approach: methodical
-    handler: resolve
+    instrument: node
+    action: resolve
   - name: investigate
     approach: analytical
-    handler: investigate
+    instrument: node
+    action: investigate
   - name: correlate
     approach: holistic
-    handler: correlate
+    instrument: node
+    action: correlate
   - name: review
     approach: rigorous
-    handler: review
+    instrument: node
+    action: review
   - name: report
     approach: holistic
-    handler: report
+    instrument: node
+    action: report
 
 edges:
   - id: H1

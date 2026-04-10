@@ -129,7 +129,7 @@ func TestBuildResolutionPlans_ThreeCircuits(t *testing.T) {
 func TestWrapForResolution_SetsResolutionMetadata(t *testing.T) {
 	base := &circuit.CircuitDef{
 		Circuit: "test",
-		Nodes:   []circuit.NodeDef{{Name: "a", Handler: "a", HandlerType: "node"}},
+		Nodes:   []circuit.NodeDef{{Name: "a", Action: "a", Instrument: "node"}},
 		Edges:   []circuit.EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 		Start:   "a",
 		Done:    "done",

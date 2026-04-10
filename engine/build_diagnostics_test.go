@@ -23,9 +23,8 @@ func captureDiagLogs(fn func()) string {
 func TestDiag_D1_UnreferencedHook(t *testing.T) {
 	def := &circuit.CircuitDef{
 		Circuit: "test", Start: "a", Done: "done",
-		HandlerType: "transformer",
 		Nodes: []circuit.NodeDef{
-			{Name: "a", HandlerType: "transformer", Handler: "passthrough", After: []string{"hook-a"}},
+			{Name: "a", Instrument: "transformer", Action: "passthrough", After: []string{"hook-a"}},
 		},
 		Edges: []circuit.EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 	}
@@ -55,9 +54,8 @@ func TestDiag_D1_UnreferencedHook(t *testing.T) {
 func TestDiag_D2_MissingHookRef(t *testing.T) {
 	def := &circuit.CircuitDef{
 		Circuit: "test", Start: "a", Done: "done",
-		HandlerType: "transformer",
 		Nodes: []circuit.NodeDef{
-			{Name: "a", HandlerType: "transformer", Handler: "passthrough", Before: []string{"hook-exists", "hook-missing"}},
+			{Name: "a", Instrument: "transformer", Action: "passthrough", Before: []string{"hook-exists", "hook-missing"}},
 		},
 		Edges: []circuit.EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 	}
@@ -86,9 +84,8 @@ func TestDiag_D2_MissingHookRef(t *testing.T) {
 func TestDiag_D4_PartialHookWiring(t *testing.T) {
 	def := &circuit.CircuitDef{
 		Circuit: "test", Start: "a", Done: "done",
-		HandlerType: "transformer",
 		Nodes: []circuit.NodeDef{
-			{Name: "a", HandlerType: "transformer", Handler: "passthrough",
+			{Name: "a", Instrument: "transformer", Action: "passthrough",
 				Before: []string{"hook-a", "hook-b", "hook-c"}},
 		},
 		Edges: []circuit.EdgeDef{{ID: "a-done", From: "a", To: "done"}},
@@ -118,9 +115,8 @@ func TestDiag_D4_PartialHookWiring(t *testing.T) {
 func TestDiag_AllHooksReferenced_NoWarnings(t *testing.T) {
 	def := &circuit.CircuitDef{
 		Circuit: "test", Start: "a", Done: "done",
-		HandlerType: "transformer",
 		Nodes: []circuit.NodeDef{
-			{Name: "a", HandlerType: "transformer", Handler: "passthrough",
+			{Name: "a", Instrument: "transformer", Action: "passthrough",
 				Before: []string{"hook-a"}, After: []string{"hook-b"}},
 		},
 		Edges: []circuit.EdgeDef{{ID: "a-done", From: "a", To: "done"}},
@@ -148,9 +144,8 @@ func TestDiag_AllHooksReferenced_NoWarnings(t *testing.T) {
 func TestDiag_NoHooksRegistered_NoWarnings(t *testing.T) {
 	def := &circuit.CircuitDef{
 		Circuit: "test", Start: "a", Done: "done",
-		HandlerType: "transformer",
 		Nodes: []circuit.NodeDef{
-			{Name: "a", HandlerType: "transformer", Handler: "passthrough"},
+			{Name: "a", Instrument: "transformer", Action: "passthrough"},
 		},
 		Edges: []circuit.EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 	}
@@ -171,14 +166,13 @@ func TestDiag_NoHooksRegistered_NoWarnings(t *testing.T) {
 }
 
 func TestDiag_D3_CircuitMediatorFallback(t *testing.T) {
-	// A handler_type:circuit node that resolves via mediator (no local circuit)
+	// An instrument:circuit node that resolves via mediator (no local circuit)
 	// should emit a D3 warning.
 	def := &circuit.CircuitDef{
 		Circuit: "test", Start: "a", Done: "done",
-		HandlerType: "transformer",
 		Nodes: []circuit.NodeDef{
-			{Name: "a", HandlerType: "transformer", Handler: "passthrough"},
-			{Name: "sub", HandlerType: "circuit", Handler: "gnd"},
+			{Name: "a", Instrument: "transformer", Action: "passthrough"},
+			{Name: "sub", Instrument: "circuit", Action: "gnd"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "a-sub", From: "a", To: "sub"},
@@ -211,16 +205,15 @@ func TestDiag_D3_NoWarningForLocalCircuit(t *testing.T) {
 	innerDef := &circuit.CircuitDef{
 		Circuit: "gnd", Start: "x", Done: "done",
 		Nodes: []circuit.NodeDef{
-			{Name: "x", HandlerType: "transformer", Handler: "passthrough"},
+			{Name: "x", Instrument: "transformer", Action: "passthrough"},
 		},
 		Edges: []circuit.EdgeDef{{ID: "x-done", From: "x", To: "done"}},
 	}
 	def := &circuit.CircuitDef{
 		Circuit: "test", Start: "a", Done: "done",
-		HandlerType: "transformer",
 		Nodes: []circuit.NodeDef{
-			{Name: "a", HandlerType: "transformer", Handler: "passthrough"},
-			{Name: "sub", HandlerType: "circuit", Handler: "gnd"},
+			{Name: "a", Instrument: "transformer", Action: "passthrough"},
+			{Name: "sub", Instrument: "circuit", Action: "gnd"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "a-sub", From: "a", To: "sub"},

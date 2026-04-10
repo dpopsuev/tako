@@ -12,14 +12,15 @@ import (
 
 const testCircuitYAML = `
 circuit: test-run
-handler_type: transformer
 nodes:
   - name: start
     approach: fire
-    handler: echo
+    instrument: transformer
+    action: echo
   - name: finish
     approach: water
-    handler: echo
+    instrument: transformer
+    action: echo
 edges:
   - id: E1
     name: go
@@ -60,13 +61,13 @@ func TestRun_BasicCircuit(t *testing.T) {
 func TestRun_WithOverrides(t *testing.T) {
 	yaml := `
 circuit: test-vars
-handler_type: transformer
 vars:
   threshold: 0.5
 nodes:
   - name: a
     approach: fire
-    handler: echo
+    instrument: transformer
+    action: echo
 edges:
   - id: E1
     from: a
@@ -90,11 +91,11 @@ done: _done
 func TestRun_WithHooks(t *testing.T) {
 	yaml := `
 circuit: test-hooks
-handler_type: transformer
 nodes:
   - name: a
     approach: fire
-    handler: echo
+    instrument: transformer
+    action: echo
     after: [my-hook]
 edges:
   - id: E1
@@ -153,11 +154,11 @@ func TestValidate_ValidCircuit(t *testing.T) {
 func TestValidate_InvalidExpression(t *testing.T) {
 	yaml := `
 circuit: bad
-handler_type: transformer
 nodes:
   - name: a
     approach: fire
-    handler: echo
+    instrument: transformer
+    action: echo
 edges:
   - id: E1
     from: a
@@ -176,16 +177,17 @@ done: _done
 func TestRun_InputResolutionAndPromptRendering(t *testing.T) {
 	yaml := `
 circuit: test-input-resolve
-handler_type: transformer
 vars:
   threshold: 0.85
 nodes:
   - name: recall
     approach: fire
-    handler: echo
+    instrument: transformer
+    action: echo
   - name: triage
     approach: water
-    handler: capture
+    instrument: transformer
+    action: capture
     input: "${recall.output}"
     prompt: "Node {{.Node}} sees threshold {{.Config.threshold}}"
 edges:
@@ -237,14 +239,15 @@ done: _done
 func TestRun_WithTeam_TwoWalkers(t *testing.T) {
 	yaml := `
 circuit: test-team
-handler_type: transformer
 nodes:
   - name: classify
     approach: fire
-    handler: echo
+    instrument: transformer
+    action: echo
   - name: investigate
     approach: water
-    handler: echo
+    instrument: transformer
+    action: echo
 edges:
   - id: E1
     from: classify
@@ -375,17 +378,19 @@ func TestRun_WithCheckpointer_SavesAfterEachNode(t *testing.T) {
 func TestRun_WithCheckpointer_ResumeFromCheckpoint(t *testing.T) {
 	threeNodeYAML := `
 circuit: test-resume
-handler_type: transformer
 nodes:
   - name: a
     approach: fire
-    handler: echo
+    instrument: transformer
+    action: echo
   - name: b
     approach: water
-    handler: echo
+    instrument: transformer
+    action: echo
   - name: c
     approach: fire
-    handler: echo
+    instrument: transformer
+    action: echo
 edges:
   - id: E1
     from: a
@@ -430,17 +435,19 @@ done: _done
 func TestRun_Interrupt_PausesWalk(t *testing.T) {
 	yaml := `
 circuit: test-interrupt
-handler_type: transformer
 nodes:
   - name: a
     approach: fire
-    handler: echo
+    instrument: transformer
+    action: echo
   - name: b
     approach: water
-    handler: interrupt-here
+    instrument: transformer
+    action: interrupt-here
   - name: c
     approach: fire
-    handler: echo
+    instrument: transformer
+    action: echo
 edges:
   - id: E1
     from: a

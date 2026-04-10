@@ -781,7 +781,7 @@ func exportDataDir(m *Manifest, manifestDir string, opts *Options) error {
 	return nil
 }
 
-// validateCircuitRefs checks that every node with handler_type: circuit
+// validateCircuitRefs checks that every node with instrument: circuit
 // references a circuit name that exists in assets.circuits, and that the
 // circuit dependency graph is acyclic.
 func validateCircuitRefs(m *Manifest, manifestDir string) error {
@@ -815,9 +815,9 @@ func validateCircuitRefs(m *Manifest, manifestDir string) error {
 
 type circuitFileForValidation struct {
 	Nodes []struct {
-		Name        string `yaml:"name"`
-		HandlerType string `yaml:"handler_type"`
-		Handler     string `yaml:"handler"`
+		Name       string `yaml:"name"`
+		Instrument string `yaml:"instrument"`
+		Action     string `yaml:"action"`
 	} `yaml:"nodes"`
 }
 
@@ -832,8 +832,14 @@ func extractCircuitRefs(path string) ([]string, error) {
 	}
 	var refs []string
 	for _, n := range cf.Nodes {
-		if n.HandlerType == "circuit" && n.Handler != "" {
-			refs = append(refs, n.Handler)
+		if n.Instrument == "circuit" {
+			ref := n.Action
+			if ref == "" {
+				ref = n.Name
+			}
+			if ref != "" {
+				refs = append(refs, ref)
+			}
 		}
 	}
 	return refs, nil

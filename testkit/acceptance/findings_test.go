@@ -34,12 +34,11 @@ func TestFindings_VetoHookZeroesConfidence(t *testing.T) {
 
 	// Define a simple circuit inline
 	def := &circuit.CircuitDef{
-		Circuit:     "veto-test",
-		HandlerType: "transformer",
-		Start:       "analyze",
-		Done:        "_done",
+		Circuit: "veto-test",
+		Start:   "analyze",
+		Done:    "_done",
 		Nodes: []circuit.NodeDef{
-			{Name: "analyze", Handler: "echo", After: []string{"finding-veto"}},
+			{Name: "analyze", Instrument: "transformer", Action: "echo", After: []string{"finding-veto"}},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "analyze-done", From: "analyze", To: "_done", When: "true"},
@@ -98,13 +97,12 @@ func TestFindings_ExpressionEdgeFiringOnFindingCount(t *testing.T) {
 
 	// Define circuit with expression edge based on finding count
 	def := &circuit.CircuitDef{
-		Circuit:     "finding-count-test",
-		HandlerType: "transformer",
-		Start:       "validate",
-		Done:        "_done",
+		Circuit: "finding-count-test",
+		Start:   "validate",
+		Done:    "_done",
 		Nodes: []circuit.NodeDef{
-			{Name: "validate", Handler: "echo"},
-			{Name: "error-handler", Handler: "echo"},
+			{Name: "validate", Instrument: "transformer", Action: "echo"},
+			{Name: "error-handler", Instrument: "transformer", Action: "echo"},
 		},
 		Edges: []circuit.EdgeDef{
 			{

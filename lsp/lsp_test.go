@@ -1070,52 +1070,13 @@ done: DONE`
 	}
 }
 
-func TestComputeDiagnostics_InvalidHandlerType(t *testing.T) {
-	raw := `circuit: test
-description: "handler type test"
-handler_type: transformr
-nodes:
-  - name: recall
-    handler: core.jq
-    meta:
-      expr: "input"
-edges:
-  - id: E1
-    name: done
-    from: recall
-    to: DONE
-    when: "true"
-start: recall
-done: DONE`
-
-	doc := &document{
-		URI:     uri.URI("file:///test.yaml"),
-		Content: raw,
-	}
-
-	diags := computeDiagnostics(doc)
-	found := false
-	for _, d := range diags {
-		code, _ := d.Code.(string)
-		if code == "S23/invalid-handler-type" {
-			found = true
-			if !strings.Contains(d.Message, "transformr") {
-				t.Errorf("expected diagnostic to mention 'transformr', got %q", d.Message)
-			}
-		}
-	}
-	if !found {
-		t.Error("expected S23/invalid-handler-type diagnostic in LSP")
-	}
-}
-
 func TestComputeDiagnostics_HookReference(t *testing.T) {
 	raw := `circuit: test
 description: "hook reference test"
-handler_type: transformer
 nodes:
   - name: recall
-    handler: core.jq
+    instrument: transformer
+    action: core.jq
     meta:
       expr: "input"
     before: ["inject failure"]

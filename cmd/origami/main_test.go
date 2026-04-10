@@ -38,16 +38,17 @@ func getModuleRoot(t *testing.T) string {
 
 const integrationCircuit = `
 circuit: cli-integration
-handler_type: transformer
 vars:
   greeting: hello
 nodes:
   - name: start
     approach: rapid
-    handler: echo
+    instrument: transformer
+    action: echo
   - name: finish
     approach: analytical
-    handler: echo
+    instrument: transformer
+    action: echo
 edges:
   - id: E1
     name: go
@@ -128,17 +129,18 @@ func TestCLI_Run(t *testing.T) {
 
 	circuitYAML := `
 circuit: cli-run-integration
-handler_type: transformer
 vars:
   mode: fast
 nodes:
   - name: load
     approach: rapid
-    handler: file
+    instrument: transformer
+    action: file
     prompt: data.json
   - name: classify
     approach: analytical
-    handler: file
+    instrument: transformer
+    action: file
     input: "${load.output}"
     prompt: data.json
 edges:
@@ -173,15 +175,16 @@ func TestCLI_Skill_Scaffold(t *testing.T) {
 
 	circuitYAML := `
 circuit: test-scaffold
-handler_type: transformer
 nodes:
   - name: scan
     approach: rapid
-    handler: llm
+    instrument: transformer
+    action: llm
     prompt: "Scan for vulnerabilities"
   - name: classify
     approach: analytical
-    handler: http
+    instrument: transformer
+    action: http
 edges:
   - id: E1
     name: scan-to-classify
@@ -238,11 +241,11 @@ func TestCLI_Skill_Scaffold_DefaultOut(t *testing.T) {
 
 	circuitYAML := `
 circuit: myapp
-handler_type: transformer
 nodes:
   - name: start
     approach: rapid
-    handler: echo
+    instrument: transformer
+    action: echo
 edges:
   - id: E1
     name: done

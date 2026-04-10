@@ -462,9 +462,9 @@ func TestOllamaE2E_DelegatedCircuit(t *testing.T) {
 	innerDef := &circuit.CircuitDef{
 		Circuit: "analysis",
 		Nodes: []circuit.NodeDef{
-			{Name: "analyze", HandlerType: "transformer", Handler: "dispatch",
+			{Name: "analyze", Instrument: "transformer", Action: "dispatch",
 				Prompt: "Write one word that rhymes with 'cat'. Reply with only the word."},
-			{Name: "conclude", HandlerType: "transformer", Handler: "dispatch",
+			{Name: "conclude", Instrument: "transformer", Action: "dispatch",
 				Prompt: "Name one fruit. Reply with only the fruit name."},
 		},
 		Edges: []circuit.EdgeDef{
@@ -478,10 +478,10 @@ func TestOllamaE2E_DelegatedCircuit(t *testing.T) {
 	outerDef := &circuit.CircuitDef{
 		Circuit: "outer",
 		Nodes: []circuit.NodeDef{
-			{Name: "classify", HandlerType: "transformer", Handler: "dispatch",
+			{Name: "classify", Instrument: "transformer", Action: "dispatch",
 				Prompt: "Name one primary color. Reply with only the color name."},
-			{Name: "delegate_analysis", HandlerType: "circuit", Handler: "analysis"},
-			{Name: "summarize", HandlerType: "transformer", Handler: "dispatch",
+			{Name: "delegate_analysis", Instrument: "circuit", Action: "analysis"},
+			{Name: "summarize", Instrument: "transformer", Action: "dispatch",
 				Prompt: "Say 'done'. Reply with only the word."},
 		},
 		Edges: []circuit.EdgeDef{

@@ -3,14 +3,13 @@ circuit: sdlc
 start: scan
 done: done
 finally: teardown
-handler_type: transformer
-
 vars:
   max_fix_loops: 3
 
 nodes:
   - name: scan
-    handler: scan
+    instrument: transformer
+    action: scan
     description: "Analyze codebase — find issues via Oculus + check rules via Ordo"
     output:
       - name: findings
@@ -20,7 +19,8 @@ nodes:
         required: true
 
   - name: fix
-    handler: fix
+    instrument: transformer
+    action: fix
     description: "Diagnose and fix the highest priority finding"
     output:
       - name: fixed
@@ -30,7 +30,8 @@ nodes:
         required: true
 
   - name: build
-    handler: build
+    instrument: transformer
+    action: build
     description: "Compile the codebase (go build ./...)"
     output:
       - name: pass
@@ -40,7 +41,8 @@ nodes:
         type: string
 
   - name: test
-    handler: test
+    instrument: transformer
+    action: test
     description: "Run test suite (go test ./... -short)"
     output:
       - name: pass
@@ -52,7 +54,8 @@ nodes:
         type: int
 
   - name: deploy-canary
-    handler: deploy-canary
+    instrument: transformer
+    action: deploy-canary
     description: "Deploy new version as canary alongside known-good"
     output:
       - name: version
@@ -62,7 +65,8 @@ nodes:
         type: bool
 
   - name: validate
-    handler: validate
+    instrument: transformer
+    action: validate
     description: "Check canary health — error rate, latency via Prometheus"
     output:
       - name: healthy
@@ -74,7 +78,8 @@ nodes:
         type: float
 
   - name: harden
-    handler: harden
+    instrument: transformer
+    action: harden
     description: "Vulnerability scan + pin dependencies"
     output:
       - name: vulnerabilities
@@ -83,7 +88,8 @@ nodes:
         type: array
 
   - name: release
-    handler: release
+    instrument: transformer
+    action: release
     description: "Tag, generate changelog, push to remote"
     output:
       - name: tag
@@ -93,7 +99,8 @@ nodes:
         type: string
 
   - name: teardown
-    handler: teardown
+    instrument: transformer
+    action: teardown
     description: "Cleanup all deployed resources — runs on every exit (finally)"
     output:
       - name: cleaned

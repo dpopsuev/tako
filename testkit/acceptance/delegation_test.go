@@ -2,7 +2,7 @@ package acceptance
 
 // Feature: Sub-Circuit Delegation
 //   As a circuit designer
-//   I want to delegate work to sub-circuits via handler_type: circuit
+//   I want to delegate work to sub-circuits via instrument: circuit
 //   So that I can compose circuits hierarchically
 
 import (

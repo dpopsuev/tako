@@ -10,12 +10,14 @@ func IsCircuitDeterministic(def *circuit.CircuitDef, reg TransformerRegistry) bo
 	}
 	for i := range def.Nodes {
 		nd := &def.Nodes[i]
-		ht := nd.EffectiveHandlerType(def.HandlerType)
-		name := nd.EffectiveHandler()
-		if ht != HandlerTypeTransformer || name == "" {
+		if nd.Instrument != InstrumentTransformer {
 			continue
 		}
-		t, err := reg.Get(name)
+		action := nd.Action
+		if action == "" {
+			action = string(nd.Name)
+		}
+		t, err := reg.Get(action)
 		if err != nil {
 			return false
 		}

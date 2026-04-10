@@ -227,16 +227,16 @@ func TestValidateCircuitRefs_ValidRef(t *testing.T) {
 	writeFile("circuits/rca.yaml", `
 nodes:
   - name: gather-code
-    handler_type: circuit
-    handler: gnd
+    instrument: circuit
+    action: gnd
   - name: resolve
-    handler_type: transformer
-    handler: resolve
+    instrument: transformer
+    action: resolve
 `)
 	writeFile("circuits/gnd.yaml", `
 nodes:
   - name: tree
-    handler: gnd.tree
+    action: gnd.tree
 `)
 
 	m := &Manifest{
@@ -262,8 +262,8 @@ func TestValidateCircuitRefs_MissingRef(t *testing.T) {
 	os.WriteFile(filepath.Join(p, "rca.yaml"), []byte(`
 nodes:
   - name: gather-code
-    handler_type: circuit
-    handler: nonexistent
+    instrument: circuit
+    action: nonexistent
 `), 0o644)
 
 	m := &Manifest{
@@ -295,14 +295,14 @@ func TestValidateCircuitRefs_CycleDetected(t *testing.T) {
 	writeFile("circuits/a.yaml", `
 nodes:
   - name: call-b
-    handler_type: circuit
-    handler: b
+    instrument: circuit
+    action: b
 `)
 	writeFile("circuits/b.yaml", `
 nodes:
   - name: call-a
-    handler_type: circuit
-    handler: a
+    instrument: circuit
+    action: a
 `)
 
 	m := &Manifest{

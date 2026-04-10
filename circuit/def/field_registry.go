@@ -39,7 +39,6 @@ var CircuitFields = FieldRegistry{
 	"description":  {},
 	"import":       {},
 	"topology":     {},
-	"handler_type": {ValidValues: ValidHandlerTypes},
 	"timeout":      {},
 	"imports":      {},
 	"vars":         {},
@@ -65,8 +64,6 @@ var NodeFields = FieldRegistry{
 	"instrument":    {},
 	"action":        {},
 	"command":       {},
-	"handler_type":  {ValidValues: ValidHandlerTypes}, // legacy — migration
-	"handler":       {},                               // legacy — migration
 	"timeout":       {},
 	"provider":      {},
 	"prompt":        {},

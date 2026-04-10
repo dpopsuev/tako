@@ -1,8 +1,6 @@
 kind: Schematic
 circuit: kitchen-sink
 description: "Exercises zones, when expressions, shortcuts, hooks, input resolution, prompt rendering, vars, schema"
-handler_type: transformer
-
 vars:
   threshold: 0.85
 
@@ -23,7 +21,8 @@ zones:
 nodes:
   - name: classify
     approach: rapid
-    handler: echo
+    instrument: transformer
+    action: echo
     after: [track-node]
     schema:
       required: [type]
@@ -31,15 +30,18 @@ nodes:
         type: {type: string}
   - name: analyze
     approach: analytical
-    handler: echo
+    instrument: transformer
+    action: echo
     input: "${classify.output}"
     prompt: "Analyze with threshold {{.Config.threshold}}"
   - name: review
     approach: rigorous
-    handler: echo
+    instrument: transformer
+    action: echo
   - name: report
     approach: holistic
-    handler: echo
+    instrument: transformer
+    action: echo
 
 edges:
   - id: shortcut
