@@ -120,7 +120,8 @@ type ZoneDef struct {
 	ContextFilter *ContextFilterDef `yaml:"context_filter,omitempty"`
 }
 
-// HandlerType constants for the handler_type field.
+// Legacy handler_type constants — kept temporarily for consumer migration.
+// New circuits use instrument + action instead.
 const (
 	HandlerTypeTransformer = "transformer"
 	HandlerTypeExtractor   = "extractor"
@@ -128,7 +129,6 @@ const (
 	HandlerTypeNode        = "node"
 	HandlerTypeDelegate    = "delegate"
 	HandlerTypeCircuit     = "circuit"
-	HandlerTypeInstrument  = "instrument"
 )
 
 // OutputField holds the structured output declaration for a node.
@@ -185,15 +185,22 @@ type NodeConfig struct {
 
 // NodeDef declares a node in the circuit.
 //
-// Resolution uses handler_type + handler (explicit, no cascade).
-// Legacy fields (family, transformer, extractor, renderer, delegate+generator)
-// were removed in TSK-218; YAML files using them will fail to resolve.
+// Resolution: instrument + action (declarative) or instrument + command (imperative).
+// handler_type and handler are legacy fields kept for migration — new circuits
+// must use instrument/action/command.
 type NodeDef struct {
 	Name        NodeName `yaml:"name"`
 	Description string   `yaml:"description,omitempty"`
 	Approach    string   `yaml:"approach,omitempty"`
-	HandlerType string   `yaml:"handler_type,omitempty"`
-	Handler     string   `yaml:"handler,omitempty"`
+
+	// Instrument dispatch (new — replaces handler_type + handler)
+	Instrument string `yaml:"instrument,omitempty"` // instrument manifest name
+	Action     string `yaml:"action,omitempty"`     // declarative: action from manifest actions table
+	Command    string `yaml:"command,omitempty"`    // imperative: raw exec (escape hatch, mutually exclusive with action)
+
+	// Legacy handler fields — kept for migration, will be deleted
+	HandlerType string `yaml:"handler_type,omitempty"`
+	Handler     string `yaml:"handler,omitempty"`
 
 	Timeout      string          `yaml:"timeout,omitempty"`
 	Provider     string          `yaml:"provider,omitempty"`
@@ -349,7 +356,7 @@ var (
 	ValidApproaches      = []string{"rapid", "aggressive", "methodical", "rigorous", "analytical", "holistic"}
 	ValidZoneDomains     = []string{"unstructured", "structured", "hybrid"}
 	ValidPortDirections  = []string{"in", "out", "loop"}
-	ValidHandlerTypes    = []string{HandlerTypeTransformer, HandlerTypeExtractor, HandlerTypeRenderer, HandlerTypeNode, HandlerTypeDelegate, HandlerTypeCircuit, HandlerTypeInstrument}
+	ValidHandlerTypes    = []string{HandlerTypeTransformer, HandlerTypeExtractor, HandlerTypeRenderer, HandlerTypeNode, HandlerTypeDelegate, HandlerTypeCircuit}
 	ValidMergeStrategies = []string{MergeAppend, MergeLatest, MergeCustom}
 )
 

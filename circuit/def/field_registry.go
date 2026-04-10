@@ -62,8 +62,11 @@ var NodeFields = FieldRegistry{
 	"name":          {Required: true},
 	"description":   {},
 	"approach":      {ValidValues: ValidApproaches},
-	"handler_type":  {ValidValues: ValidHandlerTypes},
-	"handler":       {},
+	"instrument":    {},
+	"action":        {},
+	"command":       {},
+	"handler_type":  {ValidValues: ValidHandlerTypes}, // legacy — migration
+	"handler":       {},                               // legacy — migration
 	"timeout":       {},
 	"provider":      {},
 	"prompt":        {},
