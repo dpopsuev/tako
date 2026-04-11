@@ -32,36 +32,27 @@ func (s *FileStore) Get(name string) (*Prompt, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%w: %q: %w", ErrNotFound, name, err)
 	}
-	content := string(data)
 
-	// Parse front matter if present (kind: prompt).
-	meta, body, _ := ParseFrontMatter(content)
-	if meta != nil && meta["kind"] != "" && meta["kind"] != "prompt" {
-		return nil, fmt.Errorf("%w: %q: expected kind prompt, got %q", ErrNotFound, name, meta["kind"])
+	p, err := ParsePrompt(data)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %q: %w", ErrNotFound, name, err)
 	}
 
+	// Reject non-prompt kinds in front matter.
+	if p.Meta != nil && p.Meta["kind"] != "" && p.Meta["kind"] != "prompt" {
+		return nil, fmt.Errorf("%w: %q: expected kind prompt, got %q", ErrNotFound, name, p.Meta["kind"])
+	}
+
+	// Default name and step from file path.
+	if p.Name == "" {
+		p.Name = name
+	}
 	step := filepath.Dir(path)
 	if step == "." {
 		step = ""
 	}
-
-	p := &Prompt{
-		Name:     name,
-		Step:     step,
-		Version:  1,
-		Content:  body,
-		Sections: ParseSections(body),
-		Meta:     meta,
-	}
-
-	// Front matter overrides inferred values.
-	if meta != nil {
-		if v, ok := meta["name"]; ok && v != "" {
-			p.Name = v
-		}
-		if v, ok := meta["step"]; ok && v != "" {
-			p.Step = v
-		}
+	if p.Step == "" {
+		p.Step = step
 	}
 
 	return p, nil

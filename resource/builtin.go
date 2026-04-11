@@ -2,6 +2,7 @@ package resource
 
 import (
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/prompt"
 )
 
 // DefaultRegistry returns a KindRegistry pre-loaded with all known
@@ -22,6 +23,9 @@ func DefaultRegistry() *KindRegistry {
 
 	// Component — LoadComponentManifest takes path not bytes; use passthrough.
 	reg.Register(NewPassthroughHandler(circuit.KindComponent))
+
+	// Prompt — typed parser (markdown with YAML front matter).
+	reg.Register(NewHandler(circuit.KindPrompt, prompt.ParsePrompt, nil, nil))
 
 	// Domain kinds — passthrough (consumers override with typed handlers).
 	reg.Register(NewPassthroughHandler(circuit.KindScenario))

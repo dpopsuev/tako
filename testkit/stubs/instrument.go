@@ -131,3 +131,72 @@ type InstrumentArtifact struct {
 func (a *InstrumentArtifact) Type() string        { return "instrument:" + a.name }
 func (a *InstrumentArtifact) Confidence() float64 { return 1.0 }
 func (a *InstrumentArtifact) Raw() any            { return a.raw }
+
+// StubInstrumentDispatcher implements engine.InstrumentDispatcher with canned
+// responses. Thread-safe, supports error injection, tracks calls.
+type StubInstrumentDispatcher struct {
+	mu     sync.Mutex
+	result json.RawMessage
+	err    error
+	calls  []json.RawMessage
+}
+
+// NewStubInstrumentDispatcher creates a dispatcher that returns the given
+// canned result. Pass nil for a default empty-object response.
+func NewStubInstrumentDispatcher(result json.RawMessage) *StubInstrumentDispatcher {
+	if result == nil {
+		result = json.RawMessage(`{"ok":true}`)
+	}
+	return &StubInstrumentDispatcher{result: result}
+}
+
+func (d *StubInstrumentDispatcher) Dispatch(_ context.Context, input json.RawMessage) (json.RawMessage, error) {
+	d.mu.Lock()
+	d.calls = append(d.calls, input)
+	err := d.err
+	result := d.result
+	d.mu.Unlock()
+
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// SetError injects an error for all subsequent Dispatch calls.
+func (d *StubInstrumentDispatcher) SetError(err error) {
+	d.mu.Lock()
+	d.err = err
+	d.mu.Unlock()
+}
+
+// SetResult sets the canned result for all subsequent Dispatch calls.
+func (d *StubInstrumentDispatcher) SetResult(result json.RawMessage) {
+	d.mu.Lock()
+	d.result = result
+	d.mu.Unlock()
+}
+
+// Calls returns the ordered list of inputs that Dispatch was called with.
+func (d *StubInstrumentDispatcher) Calls() []json.RawMessage {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	out := make([]json.RawMessage, len(d.calls))
+	copy(out, d.calls)
+	return out
+}
+
+// CallCount returns how many times Dispatch was called.
+func (d *StubInstrumentDispatcher) CallCount() int {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return len(d.calls)
+}
+
+// Reset clears call tracking and injected errors.
+func (d *StubInstrumentDispatcher) Reset() {
+	d.mu.Lock()
+	d.calls = nil
+	d.err = nil
+	d.mu.Unlock()
+}

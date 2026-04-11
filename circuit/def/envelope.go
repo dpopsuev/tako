@@ -29,6 +29,7 @@ const (
 	KindInstrument     Kind = "Instrument"
 	KindTuning         Kind = "Tuning"
 	KindDataset        Kind = "Dataset"
+	KindPrompt         Kind = "Prompt"
 )
 
 // Envelope is the standard header for all Origami YAML files.
@@ -110,4 +111,5 @@ var KnownKinds = map[Kind]bool{
 	KindSourcePack:     true,
 	KindTuning:         true,
 	KindDataset:        true,
+	KindPrompt:         true,
 }

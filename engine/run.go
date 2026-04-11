@@ -37,6 +37,8 @@ type runConfig struct {
 	offsetPreamble string
 	safeOpts       []circuit.SafeHandlerOption
 	useSafe        bool
+	tune           bool
+	hub            Hub
 }
 
 // WithTransformers registers transformers for the run.
@@ -67,6 +69,19 @@ func WithEdges(reg EdgeFactory) RunOption {
 // WithInstruments registers instrument manifests for the run.
 func WithInstruments(reg InstrumentRegistry) RunOption {
 	return func(c *runConfig) { c.instruments = reg }
+}
+
+// WithTune enables preflight instrument tuning before the walk starts.
+// Each instrument's tune command is executed; the run fails fast if any
+// instrument is not available.
+func WithTune() RunOption {
+	return func(c *runConfig) { c.tune = true }
+}
+
+// WithRunHub attaches a pre-built Hub to the run. The hub is wired into
+// the graph so tools rotate on each node entry.
+func WithRunHub(hub Hub) RunOption {
+	return func(c *runConfig) { c.hub = hub }
 }
 
 // WithComponents registers a component loader for the run.
@@ -196,6 +211,12 @@ func Run(ctx context.Context, circuitPath string, input any, opts ...RunOption) 
 		Components:   cfg.components,
 	}
 
+	if cfg.tune && len(cfg.instruments) > 0 {
+		if err := TuneAll(ctx, cfg.instruments, reg.InstrumentDir); err != nil {
+			return fmt.Errorf("preflight tune: %w", err)
+		}
+	}
+
 	runner, err := NewRunnerWith(def, reg)
 	if err != nil {
 		return fmt.Errorf("build runner: %w", err)
@@ -233,6 +254,12 @@ func Run(ctx context.Context, circuitPath string, input any, opts ...RunOption) 
 	if obs != nil {
 		if dg, ok := runner.Graph.(*DefaultGraph); ok {
 			dg.observer = obs
+		}
+	}
+
+	if cfg.hub != nil {
+		if dg, ok := runner.Graph.(*DefaultGraph); ok {
+			dg.hub = cfg.hub
 		}
 	}
 

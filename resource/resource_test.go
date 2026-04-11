@@ -216,6 +216,7 @@ func TestDefaultRegistry_AllKinds(t *testing.T) {
 		circuit.KindScorecard,
 		circuit.KindReportTemplate,
 		circuit.KindBoard,
+		circuit.KindPrompt,
 		// Passthrough handlers
 		circuit.KindComponent,
 		circuit.KindScenario,
@@ -231,7 +232,6 @@ func TestDefaultRegistry_AllKinds(t *testing.T) {
 			t.Errorf("DefaultRegistry missing kind %q", k)
 		}
 	}
-	// Should have all 13 kinds (14 minus prompt which has no YAML yet)
 	if got := len(reg.Kinds()); got != len(expected) {
 		t.Errorf("Kinds() = %d, want %d", got, len(expected))
 	}

@@ -65,6 +65,31 @@ func ParseSections(content string) []Section {
 	return sections
 }
 
+// ParsePrompt parses raw prompt bytes (markdown with optional YAML front matter)
+// into a Prompt. This is the canonical parser for kind: Prompt resources.
+func ParsePrompt(data []byte) (*Prompt, error) {
+	content := string(data)
+	meta, body, _ := ParseFrontMatter(content)
+
+	p := &Prompt{
+		Version:  1,
+		Content:  body,
+		Sections: ParseSections(body),
+		Meta:     meta,
+	}
+
+	if meta != nil {
+		if v := meta["name"]; v != "" {
+			p.Name = v
+		}
+		if v := meta["step"]; v != "" {
+			p.Step = v
+		}
+	}
+
+	return p, nil
+}
+
 // headingLevel returns the ATX heading level (1–6) or 0 if not a heading.
 func headingLevel(line string) int {
 	if !strings.HasPrefix(line, "#") {

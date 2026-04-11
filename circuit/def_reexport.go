@@ -80,6 +80,7 @@ const (
 	KindInstrument     = def.KindInstrument
 	KindTuning         = def.KindTuning
 	KindDataset        = def.KindDataset
+	KindPrompt         = def.KindPrompt
 )
 
 // Dispatch mode constants.

@@ -63,6 +63,7 @@ type DefaultGraph struct {
 	observer     circuit.WalkObserver      // graph-level observer, used by Walk
 	registries   *GraphRegistries          // retained for DelegateNode sub-walk building
 	graphFactory GraphFactory              // injected factory for delegate sub-graph construction
+	hub          Hub                       // optional instrument hub — SetActiveNode on node entry
 }
 
 // GraphOption configures a DefaultGraph during construction.
@@ -107,6 +108,14 @@ func WithNodeTimeouts(m map[string]time.Duration) GraphOption {
 func WithRegistries(reg *GraphRegistries) GraphOption {
 	return func(g *DefaultGraph) {
 		g.registries = reg
+	}
+}
+
+// WithHub attaches an instrument hub to the graph. On each node entry,
+// the graph calls hub.SetActiveNode so tools rotate with the walk.
+func WithHub(hub Hub) GraphOption {
+	return func(g *DefaultGraph) {
+		g.hub = hub
 	}
 }
 
@@ -269,6 +278,9 @@ func (g *DefaultGraph) walkInner(ctx context.Context, walker circuit.Walker, sta
 		}
 
 		emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventNodeEnter, Node: node.Name(), Walker: walkerName})
+		if g.hub != nil {
+			g.hub.SetActiveNode(node.Name())
+		}
 		slog.DebugContext(ctx, circuit.LogNodeEnter, circuit.LogKeyComponent, circuit.LogComponentWalk, circuit.LogKeyNode, node.Name(), circuit.LogKeyWalker, walkerName)
 		nodeStart := time.Now()
 

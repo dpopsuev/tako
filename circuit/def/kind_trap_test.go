@@ -65,6 +65,7 @@ func TestKindTrap_AllConstantsRegistered(t *testing.T) {
 		{"KindTuning", KindTuning},
 		{"KindDataset", KindDataset},
 		{"KindInstrument", KindInstrument},
+		{"KindPrompt", KindPrompt},
 	}
 
 	for _, k := range allKinds {

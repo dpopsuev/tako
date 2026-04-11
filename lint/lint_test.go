@@ -498,9 +498,9 @@ func TestFinding_String(t *testing.T) {
 
 func TestAllRules_Count(t *testing.T) {
 	rules := AllRules()
-	// 23 structural + 9 semantic + 12 best-practice + 1 prompt + 1 crossref + 5 scenario = 51
-	if len(rules) != 51 {
-		t.Errorf("expected 51 rules, got %d", len(rules))
+	// 23 structural + 9 semantic + 12 best-practice + 1 prompt + 1 crossref + 5 instrument + 5 scenario = 56
+	if len(rules) != 56 {
+		t.Errorf("expected 56 rules, got %d", len(rules))
 	}
 
 	ids := make(map[string]bool)

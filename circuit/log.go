@@ -253,6 +253,13 @@ const (
 	LogInstrumentDispatching = "instrument dispatching"
 	LogInstrumentCompleted   = "instrument completed"
 	LogInstrumentFailed      = "instrument failed"
+
+	// Tune — preflight verification
+	LogTuneAllStarted   = "tune all started"
+	LogTuneAllCompleted = "tune all completed"
+	LogTuneStarted      = "tune started"
+	LogTuneCompleted    = "tune completed"
+	LogTuneFailed       = "tune failed"
 )
 
 // Log field keys — used as slog attribute keys.

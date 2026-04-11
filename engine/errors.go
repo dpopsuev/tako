@@ -107,4 +107,7 @@ var (
 
 	// ErrInstrumentDispatch is returned when an instrument dispatch fails at runtime.
 	ErrInstrumentDispatch = errors.New("instrument dispatch")
+
+	// ErrTuneFailed is returned when an instrument's preflight tune command fails.
+	ErrTuneFailed = errors.New("tune failed")
 )
