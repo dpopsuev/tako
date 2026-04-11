@@ -1,4 +1,4 @@
-// Package oculus provides the scan instrument backed by Oculus v1.0.0.
+// Package oculus provides the scan instrument backed by Oculus v3.10.0.
 // It wraps the Oculus engine as an engine.Transformer that returns typed
 // simulate/sdlctype.ScanResult — same contract as the stub scan.
 package oculus
@@ -11,7 +11,9 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+	"time"
 
+	oculus "github.com/dpopsuev/oculus"
 	oculusengine "github.com/dpopsuev/oculus/engine"
 	"github.com/dpopsuev/oculus/port"
 
@@ -124,6 +126,10 @@ func (s *ScanTransformer) Transform(ctx context.Context, _ *engine.TransformerCo
 		}
 	}
 
+	// Mesh intelligence: stability violations + choke points.
+	meshFindings := s.meshIntelligence(ctx, oc, scanResult)
+	findings = append(findings, meshFindings...)
+
 	// Run golangci-lint for file:line level findings (fixable by LLM).
 	lintFindings := runLint(ctx, s.repoPath)
 	findings = append(findings, lintFindings...)
@@ -189,5 +195,99 @@ func runLint(ctx context.Context, repoPath string) []sdlctype.Finding {
 			Severity: severity,
 		})
 	}
+	return findings
+}
+
+// intentToGranularity maps Locus scan intent to Oculus granularity level.
+func intentToGranularity(intent string) oculus.Granularity {
+	switch intent {
+	case "architecture":
+		return oculus.GranularityStructure
+	case "health":
+		return oculus.GranularityTypedCallGraph
+	case "full":
+		return oculus.GranularitySemantic
+	default:
+		return oculus.GranularityTypedCallGraph
+	}
+}
+
+// meshIntelligence runs mesh overlay analysis and extracts architectural findings:
+// - Unstable components (high instability with high fan-in = fragile)
+// - Choke points (high betweenness centrality = single point of failure)
+// - Circuits (bidirectional coupling = tight coupling risk)
+func (s *ScanTransformer) meshIntelligence(ctx context.Context, oc *oculusengine.Engine, scanReport *oculusengine.ScanResult) []sdlctype.Finding {
+	granularity := intentToGranularity(s.intent)
+
+	// Only run mesh intelligence for full intent (health is too slow for mesh).
+	if granularity < oculus.GranularitySemantic {
+		return nil
+	}
+
+	// Mesh intelligence has its own timeout — don't block the scan.
+	meshCtx, meshCancel := context.WithTimeout(ctx, 30*time.Second)
+	defer meshCancel()
+
+	sg, err := oc.GetSymbolGraph(meshCtx, s.repoPath)
+	if err != nil || sg == nil || len(sg.Edges) == 0 {
+		return nil
+	}
+
+	// Reuse component names from the already-completed scan.
+	componentNames := make([]string, 0, len(scanReport.Report.Architecture.Services))
+	for _, svc := range scanReport.Report.Architecture.Services {
+		componentNames = append(componentNames, svc.Name)
+	}
+
+	mesh := oculus.BuildMesh(sg, componentNames)
+
+	// Overlay HEXA roles.
+	hexaReport, _ := oc.GetHexaValidation(ctx, s.repoPath)
+	roles := make(map[string]string)
+	if hexaReport != nil {
+		for _, comp := range hexaReport.Classification {
+			roles[comp.Name] = string(comp.Role)
+		}
+	}
+	mesh.OverlayMesh(roles)
+
+	// Detect circuits.
+	circuits := mesh.Circuits(0.3)
+
+	findings := make([]sdlctype.Finding, 0, len(circuits))
+
+	// Flag unstable components with high fan-in (fragile dependencies).
+	for name := range mesh.Nodes {
+		node := mesh.Nodes[name]
+		if node.Level != oculus.MeshComponent {
+			continue
+		}
+		if node.Instability > 0.8 && node.FanIn >= 3 {
+			findings = append(findings, sdlctype.Finding{
+				File:     name,
+				Rule:     "unstable-component",
+				Message:  fmt.Sprintf("instability=%.2f with %d dependents — changes here break %d consumers", node.Instability, node.FanIn, node.FanIn),
+				Severity: "warning",
+			})
+		}
+		if node.ChokeScore > 0.5 {
+			findings = append(findings, sdlctype.Finding{
+				File:     name,
+				Rule:     "choke-point",
+				Message:  fmt.Sprintf("betweenness centrality=%.2f — many paths depend on this component", node.ChokeScore),
+				Severity: "info",
+			})
+		}
+	}
+
+	// Flag bidirectional coupling circuits.
+	for _, pair := range circuits {
+		findings = append(findings, sdlctype.Finding{
+			Rule:     "circuit",
+			Message:  fmt.Sprintf("bidirectional coupling: %s ↔ %s", pair[0], pair[1]),
+			Severity: "warning",
+		})
+	}
+
 	return findings
 }
