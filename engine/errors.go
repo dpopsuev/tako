@@ -110,4 +110,10 @@ var (
 
 	// ErrTuneFailed is returned when an instrument's preflight tune command fails.
 	ErrTuneFailed = errors.New("tune failed")
+
+	// ErrChecksumMismatch is returned when an instrument's tune output doesn't match the declared checksum.
+	ErrChecksumMismatch = errors.New("checksum mismatch")
+
+	// ErrOutputSchemaViolation is returned when instrument output doesn't match the declared schema.
+	ErrOutputSchemaViolation = errors.New("output schema violation")
 )

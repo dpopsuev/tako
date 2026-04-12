@@ -50,6 +50,7 @@ type InstrumentManifest struct {
 	Description string               `yaml:"description,omitempty"`
 	Dispatch    DispatchMode         `yaml:"dispatch"`
 	Tune        string               `yaml:"tune"`               // preflight command — must succeed before circuit starts
+	Checksum    string               `yaml:"checksum,omitempty"` // sha256:<hex> — verified against tune stdout
 	Endpoint    string               `yaml:"endpoint,omitempty"` // mcp dispatch: server endpoint
 	Image       string               `yaml:"image,omitempty"`    // docker dispatch: container image
 	Actions     map[string]ActionDef `yaml:"actions"`
@@ -136,6 +137,7 @@ type instrumentManifestYAML struct {
 		Version  string               `yaml:"version,omitempty"`
 		Dispatch DispatchMode         `yaml:"dispatch"`
 		Tune     string               `yaml:"tune"`
+		Checksum string               `yaml:"checksum,omitempty"`
 		Endpoint string               `yaml:"endpoint,omitempty"`
 		Image    string               `yaml:"image,omitempty"`
 		Actions  map[string]ActionDef `yaml:"actions"`
@@ -176,6 +178,7 @@ func ParseInstrumentManifest(data []byte, path string) (*InstrumentManifest, err
 		Description: raw.Metadata.Description,
 		Dispatch:    raw.Spec.Dispatch,
 		Tune:        raw.Spec.Tune,
+		Checksum:    raw.Spec.Checksum,
 		Endpoint:    raw.Spec.Endpoint,
 		Image:       raw.Spec.Image,
 		Actions:     raw.Spec.Actions,

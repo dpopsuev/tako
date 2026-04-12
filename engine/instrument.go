@@ -115,6 +115,13 @@ func (n *instrumentNode) Process(ctx context.Context, nc circuit.NodeContext) (c
 	// 5. Parse output and wrap as artifact.
 	raw := parseInstrumentOutput(output)
 
+	// 6. Validate output against declared schema (if present).
+	if n.action.OutputSchema != "" {
+		if err := validateInstrumentOutput(output, n.action.OutputSchema); err != nil {
+			return nil, fmt.Errorf("%w: %s/%s (node %s): output schema violation: %w", ErrInstrument, n.manifest.Name, n.actionName, n.name, err)
+		}
+	}
+
 	return &instrumentArtifact{
 		instrumentName: n.manifest.Name,
 		actionName:     n.actionName,
@@ -154,6 +161,52 @@ func parseInstrumentOutput(output json.RawMessage) any {
 		return m
 	}
 	return string(output)
+}
+
+// validateInstrumentOutput checks that instrument output JSON conforms to the
+// declared output_schema. Validates type match (object/array/string) and
+// required fields. This is the runtime counterpart to lint rule I4.
+func validateInstrumentOutput(output json.RawMessage, schema string) error {
+	if len(output) == 0 {
+		return nil
+	}
+
+	var schemaDef struct {
+		Type       string              `json:"type"`
+		Required   []string            `json:"required"`
+		Properties map[string]struct{} `json:"properties"`
+	}
+	if err := json.Unmarshal([]byte(schema), &schemaDef); err != nil {
+		return nil // malformed schema — skip validation (lint catches this at author time)
+	}
+
+	var parsed any
+	if err := json.Unmarshal(output, &parsed); err != nil {
+		return fmt.Errorf("%w: output is not valid JSON", ErrOutputSchemaViolation)
+	}
+
+	switch schemaDef.Type {
+	case "object":
+		obj, ok := parsed.(map[string]any)
+		if !ok {
+			return fmt.Errorf("%w: expected object, got %T", ErrOutputSchemaViolation, parsed)
+		}
+		for _, req := range schemaDef.Required {
+			if _, exists := obj[req]; !exists {
+				return fmt.Errorf("%w: missing required field %q", ErrOutputSchemaViolation, req)
+			}
+		}
+	case "array":
+		if _, ok := parsed.([]any); !ok {
+			return fmt.Errorf("%w: expected array, got %T", ErrOutputSchemaViolation, parsed)
+		}
+	case "string":
+		if _, ok := parsed.(string); !ok {
+			return fmt.Errorf("%w: expected string, got %T", ErrOutputSchemaViolation, parsed)
+		}
+	}
+
+	return nil
 }
 
 // instrumentArtifact wraps instrument output as a circuit.Artifact.

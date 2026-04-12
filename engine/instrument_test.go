@@ -331,3 +331,67 @@ func TestParseInstrumentOutput_Empty(t *testing.T) {
 		t.Errorf("expected nil, got %v", out)
 	}
 }
+
+func TestValidateInstrumentOutput_ObjectPass(t *testing.T) {
+	schema := `{"type":"object","properties":{"result":{}}}`
+	err := validateInstrumentOutput(json.RawMessage(`{"result":"ok"}`), schema)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestValidateInstrumentOutput_ObjectWrongType(t *testing.T) {
+	schema := `{"type":"object"}`
+	err := validateInstrumentOutput(json.RawMessage(`[1,2,3]`), schema)
+	if err == nil {
+		t.Error("expected error for array where object expected")
+	}
+}
+
+func TestValidateInstrumentOutput_RequiredFieldMissing(t *testing.T) {
+	schema := `{"type":"object","required":["status"]}`
+	err := validateInstrumentOutput(json.RawMessage(`{"other":"value"}`), schema)
+	if err == nil {
+		t.Error("expected error for missing required field")
+	}
+}
+
+func TestValidateInstrumentOutput_RequiredFieldPresent(t *testing.T) {
+	schema := `{"type":"object","required":["status"]}`
+	err := validateInstrumentOutput(json.RawMessage(`{"status":"ok"}`), schema)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestValidateInstrumentOutput_ArrayPass(t *testing.T) {
+	schema := `{"type":"array"}`
+	err := validateInstrumentOutput(json.RawMessage(`[1,2,3]`), schema)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestValidateInstrumentOutput_NoSchema_Skipped(t *testing.T) {
+	// Empty schema string — should not be called, but if it is, no error.
+	err := validateInstrumentOutput(json.RawMessage(`{"anything":"goes"}`), "")
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestValidateInstrumentOutput_MalformedSchema_Skipped(t *testing.T) {
+	// Malformed schema — skip validation (lint catches at author time).
+	err := validateInstrumentOutput(json.RawMessage(`{"ok":true}`), "not json {")
+	if err != nil {
+		t.Errorf("malformed schema should skip validation, got: %v", err)
+	}
+}
+
+func TestValidateInstrumentOutput_EmptyOutput(t *testing.T) {
+	schema := `{"type":"object"}`
+	err := validateInstrumentOutput(nil, schema)
+	if err != nil {
+		t.Errorf("empty output should pass, got: %v", err)
+	}
+}
