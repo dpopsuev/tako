@@ -152,12 +152,25 @@ func BuildGraph(def *circuit.CircuitDef, reg *GraphRegistries) (Graph, error) {
 		}
 	}
 
+	var gatedNodes map[string]string
+	for i := range def.Nodes {
+		if def.Nodes[i].Gate != "" {
+			if gatedNodes == nil {
+				gatedNodes = make(map[string]string)
+			}
+			gatedNodes[string(def.Nodes[i].Name)] = def.Nodes[i].Gate
+		}
+	}
+
 	opts := []GraphOption{WithDoneNode(string(def.Done))}
 	if def.Finally != "" {
 		opts = append(opts, WithFinallyNode(string(def.Finally)))
 	}
 	if len(timeouts) > 0 {
 		opts = append(opts, WithNodeTimeouts(timeouts))
+	}
+	if len(gatedNodes) > 0 {
+		opts = append(opts, WithGatedNodes(gatedNodes))
 	}
 
 	opts = append(opts, WithRegistries(reg))

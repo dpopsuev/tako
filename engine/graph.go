@@ -4,6 +4,7 @@ package engine
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"time"
@@ -51,19 +52,22 @@ type Zone struct {
 // edges in maps for O(1) lookup while preserving edge definition order
 // for deterministic first-match evaluation.
 type DefaultGraph struct {
-	name         string
-	nodes        []circuit.Node
-	edges        []circuit.Edge
-	zones        []Zone
-	nodeIndex    map[string]circuit.Node
-	edgeIndex    map[string][]circuit.Edge // from-node -> edges in definition order
-	nodeTimeouts map[string]time.Duration  // per-node timeout (from DSL)
-	doneNode     string                    // terminal pseudo-node name (walk stops here)
-	finallyNode  string                    // cleanup node — runs on every exit (success, error, abort)
-	observer     circuit.WalkObserver      // graph-level observer, used by Walk
-	registries   *GraphRegistries          // retained for DelegateNode sub-walk building
-	graphFactory GraphFactory              // injected factory for delegate sub-graph construction
-	hub          Hub                       // optional instrument hub — SetActiveNode on node entry
+	name             string
+	nodes            []circuit.Node
+	edges            []circuit.Edge
+	zones            []Zone
+	nodeIndex        map[string]circuit.Node
+	edgeIndex        map[string][]circuit.Edge // from-node -> edges in definition order
+	nodeTimeouts     map[string]time.Duration  // per-node timeout (from DSL)
+	doneNode         string                    // terminal pseudo-node name (walk stops here)
+	finallyNode      string                    // cleanup node — runs on every exit (success, error, abort)
+	observer         circuit.WalkObserver      // graph-level observer, used by Walk
+	registries       *GraphRegistries          // retained for DelegateNode sub-walk building
+	graphFactory     GraphFactory              // injected factory for delegate sub-graph construction
+	hub              Hub                       // optional instrument hub — SetActiveNode on node entry
+	approvalStore    ApprovalStore             // optional — parks output at gated nodes
+	approvalNotifier Notifier                  // optional — sends notifications when items are parked
+	gatedNodes       map[string]string         // node name → gate type (built from CircuitDef)
 }
 
 // GraphOption configures a DefaultGraph during construction.
@@ -108,6 +112,64 @@ func WithNodeTimeouts(m map[string]time.Duration) GraphOption {
 func WithRegistries(reg *GraphRegistries) GraphOption {
 	return func(g *DefaultGraph) {
 		g.registries = reg
+	}
+}
+
+// parkForApproval stores the node's output in the ApprovalStore and optionally
+// notifies via the Notifier. Notification errors are logged but don't block parking.
+func (g *DefaultGraph) parkForApproval(ctx context.Context, state *circuit.WalkerState, nodeName string, artifact circuit.Artifact) error {
+	var output json.RawMessage
+	if artifact != nil {
+		data, err := json.Marshal(artifact.Raw())
+		if err != nil {
+			return fmt.Errorf("marshal artifact: %w", err)
+		}
+		output = data
+	}
+
+	item := ApprovalItem{
+		ID:         state.ID + ":" + nodeName,
+		CircuitRun: state.ID,
+		NodeName:   nodeName,
+		Output:     output,
+		ParkedAt:   time.Now(),
+		Status:     ApprovalPending,
+	}
+
+	if err := g.approvalStore.Park(ctx, item); err != nil {
+		return fmt.Errorf("park approval: %w", err)
+	}
+
+	if g.approvalNotifier != nil {
+		if err := g.approvalNotifier.Notify(ctx, item); err != nil {
+			slog.WarnContext(ctx, "gate: notification failed",
+				slog.Any(circuit.LogKeyNode, nodeName),
+				slog.Any(circuit.LogKeyError, err))
+		}
+	}
+
+	return nil
+}
+
+// WithGatedNodes sets the approval gate map. Nodes in this map have their
+// output parked in the ApprovalStore before the walk continues.
+func WithGatedNodes(gates map[string]string) GraphOption {
+	return func(g *DefaultGraph) {
+		g.gatedNodes = gates
+	}
+}
+
+// WithApprovalStore attaches a durable approval store for gated nodes.
+func WithApprovalStore(store ApprovalStore) GraphOption {
+	return func(g *DefaultGraph) {
+		g.approvalStore = store
+	}
+}
+
+// WithApprovalNotifier attaches a notifier for gated node approvals.
+func WithApprovalNotifier(n Notifier) GraphOption {
+	return func(g *DefaultGraph) {
+		g.approvalNotifier = n
 	}
 }
 
@@ -339,6 +401,24 @@ func (g *DefaultGraph) walkInner(ctx context.Context, walker circuit.Walker, sta
 			state.Outputs = make(map[string]circuit.Artifact)
 		}
 		state.Outputs[node.Name()] = artifact
+
+		// Gate check: if this node has gate: approval, park the output and interrupt.
+		if g.gatedNodes != nil && g.gatedNodes[node.Name()] == GateApproval && g.approvalStore != nil {
+			if err := g.parkForApproval(ctx, state, node.Name(), artifact); err != nil {
+				slog.WarnContext(ctx, "gate: park failed", slog.Any(circuit.LogKeyNode, node.Name()), slog.Any(circuit.LogKeyError, err))
+			}
+			state.Status = walkStatusInterrupted
+			state.CurrentNode = node.Name()
+			emitEvent(obs, &circuit.WalkEvent{
+				Type:   circuit.EventWalkInterrupted,
+				Node:   node.Name(),
+				Walker: walkerName,
+				Metadata: map[string]any{
+					"reason": "gate:approval",
+				},
+			})
+			return errWalkInterrupted
+		}
 
 		edges := g.EdgesFrom(node.Name())
 		if len(edges) == 0 {
