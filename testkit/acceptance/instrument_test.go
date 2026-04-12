@@ -7,8 +7,6 @@ package acceptance
 
 import (
 	"context"
-	"os"
-	"os/exec"
 	"testing"
 
 	"github.com/dpopsuev/origami/circuit"
@@ -130,9 +128,6 @@ func TestInstrument_MultiInstrument_CorrectRouting(t *testing.T) {
 		t.Fatalf("load echo manifest: %v", err)
 	}
 
-	// Build the Go binary if it doesn't exist.
-	buildInstrumentBinary(t, "dummy-upper")
-
 	upperManifest, err := circuit.LoadInstrumentManifest(
 		instrumentPath(t, "dummy-upper/instrument.yaml"),
 	)
@@ -210,19 +205,3 @@ func instrumentPath(t *testing.T, rel string) string {
 	return repoRoot() + "/testkit/instruments/" + rel
 }
 
-// buildInstrumentBinary compiles a Go-based test instrument if the binary doesn't exist.
-func buildInstrumentBinary(t *testing.T, name string) {
-	t.Helper()
-	dir := repoRoot() + "/testkit/instruments/" + name
-	bin := dir + "/" + name
-	if _, err := os.Stat(bin); err == nil {
-		return // already built
-	}
-	pkg := "./testkit/instruments/" + name + "/"
-	cmd := exec.Command("go", "build", "-o", bin, pkg)
-	cmd.Dir = repoRoot()
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("build instrument %s: %v\n%s", name, err, out)
-	}
-}
