@@ -16,7 +16,7 @@ import (
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/mcp"
 	"github.com/dpopsuev/origami/mediator"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/signal"
 )
 
 func newTestBackend(t *testing.T, tools map[string]func(ctx context.Context, req *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error)) *httptest.Server {
@@ -441,7 +441,7 @@ func TestMediator_Signals_ReturnsBus(t *testing.T) {
 		t.Fatal("Signals() returned nil")
 	}
 	// Verify it's the same bus that receives emitted signals.
-	gw.Bus.Emit(&roster.Signal{Event: "test_event", Agent: "test_agent"})
+	gw.Bus.Emit(&signal.Signal{Event: "test_event", Agent: "test_agent"})
 	signals := bus.Since(0)
 	if len(signals) != 1 {
 		t.Fatalf("expected 1 signal via Signals(), got %d", len(signals))
@@ -638,7 +638,7 @@ func newNamedCircuitBackend(t *testing.T, label string) *httptest.Server {
 		},
 		DefaultGetNextStepTimeout: 5000,
 		DefaultSessionTTL:         300000,
-		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus roster.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
+		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 			return func(ctx context.Context) (any, error) {
 				if _, err := disp.Dispatch(ctx, dispatch.Context{
 					CaseID: "C01", Step: "STEP",
@@ -852,7 +852,7 @@ func newCircuitBackend(t *testing.T) *httptest.Server {
 		},
 		DefaultGetNextStepTimeout: 5000,
 		DefaultSessionTTL:         300000,
-		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus roster.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
+		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 			nCases := 2
 			return func(ctx context.Context) (any, error) {
 				for i := 0; i < nCases; i++ {

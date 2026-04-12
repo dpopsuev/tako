@@ -11,7 +11,7 @@ import (
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/mcp"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/signal"
 )
 
 // --- lifecycle dispatch transformer ---
@@ -108,7 +108,7 @@ func lifecycleConfig(circuitYAML string, nCases int) mcp.CircuitConfig {
 		StepSchemas:               lifecycleStepSchemas,
 		DefaultGetNextStepTimeout: 3000,
 		DefaultSessionTTL:         30000,
-		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus roster.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
+		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 			def, err := circuit.LoadCircuit([]byte(circuitYAML))
 			if err != nil {
 				return nil, mcp.SessionMeta{}, fmt.Errorf("load circuit: %w", err)

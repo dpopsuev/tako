@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/identity"
 	"gopkg.in/yaml.v3"
 )
 
@@ -69,14 +69,14 @@ func (a *DelegateArtifact) confidence() float64 {
 // has delegate: true and generator: set.
 type dslDelegateNode struct {
 	name       string
-	element    roster.Element
+	element    identity.Element
 	gen        Transformer
 	config     map[string]any
 	nodeConfig *circuit.NodeConfig
 }
 
-func (n *dslDelegateNode) Name() string                    { return n.name }
-func (n *dslDelegateNode) ElementAffinity() roster.Element { return n.element }
+func (n *dslDelegateNode) Name() string                      { return n.name }
+func (n *dslDelegateNode) ElementAffinity() identity.Element { return n.element }
 
 func (n *dslDelegateNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	da, err := n.GenerateCircuit(ctx, nc)
@@ -128,12 +128,12 @@ func (n *dslDelegateNode) GenerateCircuit(ctx context.Context, nc circuit.NodeCo
 // circuitRefNode is a DelegateNode that references a pre-loaded circuit.CircuitDef.
 type circuitRefNode struct {
 	name       string
-	element    roster.Element
+	element    identity.Element
 	circuitDef *circuit.CircuitDef
 }
 
-func (n *circuitRefNode) Name() string                    { return n.name }
-func (n *circuitRefNode) ElementAffinity() roster.Element { return n.element }
+func (n *circuitRefNode) Name() string                      { return n.name }
+func (n *circuitRefNode) ElementAffinity() identity.Element { return n.element }
 
 func (n *circuitRefNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	return &DelegateArtifact{GeneratedCircuit: n.circuitDef, NodeCount: len(n.circuitDef.Nodes)}, nil

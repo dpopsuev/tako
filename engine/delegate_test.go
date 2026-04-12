@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/identity"
 )
 
 func TestDelegateArtifact_Interface(t *testing.T) {
@@ -95,9 +95,9 @@ func TestWalk_DelegateNode_SubWalk(t *testing.T) {
 	// Outer circuit: A → Delegate → C
 	// Delegate generates inner circuit: X → Y
 	innerDef := &circuit.CircuitDef{
-		Circuit:     "inner",
-		Start:       "X",
-		Done:        "_done",
+		Circuit: "inner",
+		Start:   "X",
+		Done:    "_done",
 		Nodes: []circuit.NodeDef{
 			{Name: "X", Instrument: "transformer", Action: "passthrough"},
 			{Name: "Y", Instrument: "transformer", Action: "passthrough"},
@@ -129,7 +129,7 @@ func TestWalk_DelegateNode_SubWalk(t *testing.T) {
 	})
 
 	walker := &stubWalker{
-		identity: roster.AgentIdentity{Name: "test"},
+		identity: identity.Archetype{Name: "test"},
 		state:    circuit.NewWalkerState("w1"),
 	}
 
@@ -188,11 +188,11 @@ func TestWalk_DelegateNode_ContextCancellation(t *testing.T) {
 	cancel()
 
 	innerDef := &circuit.CircuitDef{
-		Circuit:     "inner",
-		Start:       "X",
-		Done:        "_done",
-		Nodes:       []circuit.NodeDef{{Name: "X", Instrument: "transformer", Action: "passthrough"}},
-		Edges:       []circuit.EdgeDef{{ID: "x-done", From: "X", To: "_done"}},
+		Circuit: "inner",
+		Start:   "X",
+		Done:    "_done",
+		Nodes:   []circuit.NodeDef{{Name: "X", Instrument: "transformer", Action: "passthrough"}},
+		Edges:   []circuit.EdgeDef{{ID: "x-done", From: "X", To: "_done"}},
 	}
 
 	nodeA := &stubNode{name: "A", artifact: &stubArtifact{typ: "a", confidence: 1.0}}
@@ -209,7 +209,7 @@ func TestWalk_DelegateNode_ContextCancellation(t *testing.T) {
 	}
 
 	walker := &stubWalker{
-		identity: roster.AgentIdentity{Name: "test"},
+		identity: identity.Archetype{Name: "test"},
 		state:    circuit.NewWalkerState("w1"),
 	}
 
@@ -237,7 +237,7 @@ func TestWalk_DelegateNode_GenerateError(t *testing.T) {
 	}
 
 	walker := &stubWalker{
-		identity: roster.AgentIdentity{Name: "test"},
+		identity: identity.Archetype{Name: "test"},
 		state:    circuit.NewWalkerState("w1"),
 	}
 
@@ -269,9 +269,9 @@ func TestBuildGraph_DelegateNode_DSL(t *testing.T) {
 
 	planGen := TransformerFunc("plan", func(_ context.Context, _ *TransformerContext) (any, error) {
 		return &circuit.CircuitDef{
-			Circuit:     "generated",
-			Start:       "W1",
-			Done:        "_done",
+			Circuit: "generated",
+			Start:   "W1",
+			Done:    "_done",
 			Nodes: []circuit.NodeDef{
 				{Name: "W1", Instrument: "transformer", Action: "passthrough"},
 			},
@@ -351,8 +351,8 @@ type testDelegateNode struct {
 	err        error
 }
 
-func (n *testDelegateNode) Name() string                    { return n.name }
-func (n *testDelegateNode) ElementAffinity() roster.Element { return "" }
+func (n *testDelegateNode) Name() string                      { return n.name }
+func (n *testDelegateNode) ElementAffinity() identity.Element { return "" }
 func (n *testDelegateNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return nil, nil
 }
@@ -397,9 +397,9 @@ func TestBuildGraph_CircuitRefNode(t *testing.T) {
 	}
 
 	outerDef := &circuit.CircuitDef{
-		Circuit:     "rca",
-		Start:       "A",
-		Done:        "_done",
+		Circuit: "rca",
+		Start:   "A",
+		Done:    "_done",
 		Nodes: []circuit.NodeDef{
 			{Name: "A", Instrument: "transformer", Action: "passthrough"},
 			{Name: "B", Instrument: InstrumentCircuit, Action: "gnd"},
@@ -449,9 +449,9 @@ func TestWalk_CircuitRefNode_SubWalk(t *testing.T) {
 	}
 
 	outerDef := &circuit.CircuitDef{
-		Circuit:     "rca",
-		Start:       "A",
-		Done:        "_done",
+		Circuit: "rca",
+		Start:   "A",
+		Done:    "_done",
 		Nodes: []circuit.NodeDef{
 			{Name: "A", Instrument: "transformer", Action: "passthrough"},
 			{Name: "B", Instrument: InstrumentCircuit, Action: "gnd"},
@@ -527,9 +527,9 @@ func TestWalk_CircuitRefNode_ContextInheritance(t *testing.T) {
 	}
 
 	outerDef := &circuit.CircuitDef{
-		Circuit:     "outer",
-		Start:       "A",
-		Done:        "_done",
+		Circuit: "outer",
+		Start:   "A",
+		Done:    "_done",
 		Nodes: []circuit.NodeDef{
 			{Name: "A", Instrument: "transformer", Action: "passthrough"},
 			{Name: "D", Instrument: InstrumentCircuit, Action: "inner"},
@@ -614,9 +614,9 @@ func TestDelegateEvents_CarryCircuitType_CircuitRef(t *testing.T) {
 	}
 
 	outerDef := &circuit.CircuitDef{
-		Circuit:     "rca",
-		Start:       "A",
-		Done:        "_done",
+		Circuit: "rca",
+		Start:   "A",
+		Done:    "_done",
 		Nodes: []circuit.NodeDef{
 			{Name: "A", Instrument: "transformer", Action: "passthrough"},
 			{Name: "B", Instrument: InstrumentCircuit, Action: "gnd"},
@@ -673,11 +673,11 @@ func TestDelegateEvents_CarryCircuitType_CircuitRef(t *testing.T) {
 func TestDelegateEvents_CarryCircuitType_DSLDelegate(t *testing.T) {
 	planGen := TransformerFunc("plan", func(_ context.Context, _ *TransformerContext) (any, error) {
 		return &circuit.CircuitDef{
-			Circuit:     "generated",
-			Start:       "W1",
-			Done:        "_done",
-			Nodes:       []circuit.NodeDef{{Name: "W1", Instrument: "transformer", Action: "passthrough"}},
-			Edges:       []circuit.EdgeDef{{ID: "w1-done", From: "W1", To: "_done"}},
+			Circuit: "generated",
+			Start:   "W1",
+			Done:    "_done",
+			Nodes:   []circuit.NodeDef{{Name: "W1", Instrument: "transformer", Action: "passthrough"}},
+			Edges:   []circuit.EdgeDef{{ID: "w1-done", From: "W1", To: "_done"}},
 		}, nil
 	})
 

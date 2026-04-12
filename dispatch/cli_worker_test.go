@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/signal"
 )
 
 func TestCLIWorkerDispatcher_ProcessesSteps(t *testing.T) {
@@ -17,7 +17,7 @@ func TestCLIWorkerDispatcher_ProcessesSteps(t *testing.T) {
 	defer cancel()
 
 	mux := NewMuxDispatcher(ctx)
-	bus := roster.NewMemBus()
+	bus := signal.NewMemBus()
 
 	d, err := NewCLIWorkerDispatcher(mux, "cat", 2,
 		WithCLIWorkerBus(bus),

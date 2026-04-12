@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/dispatch"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/signal"
 )
 
 func TestMux_SingleRoundTrip(t *testing.T) {
@@ -593,7 +593,7 @@ func TestMux_GetNextStepWithHints_QueueDrain(t *testing.T) {
 }
 
 func TestMux_WorkStealing_Stickiness1_StealsAfterOneMiss(t *testing.T) {
-	bus := roster.NewMemBus()
+	bus := signal.NewMemBus()
 	d := dispatch.NewMuxDispatcher(context.Background(), dispatch.WithMuxSignalBus(bus))
 	ctx := context.Background()
 
@@ -710,7 +710,7 @@ func TestMux_WorkStealing_Stickiness3_NeverSteals(t *testing.T) {
 }
 
 func TestMux_WorkStealing_ZoneShiftSignal_NotEmittedOnMatch(t *testing.T) {
-	bus := roster.NewMemBus()
+	bus := signal.NewMemBus()
 	d := dispatch.NewMuxDispatcher(context.Background(), dispatch.WithMuxSignalBus(bus))
 	ctx := context.Background()
 

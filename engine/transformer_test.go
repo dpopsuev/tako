@@ -9,14 +9,14 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/identity"
 )
 
 func TestTransformerNode_Process(t *testing.T) {
 	trans := &echoTransformer{}
 	node := &transformerNode{
 		name:    "test-node",
-		element: roster.ElementFire,
+		element: identity.ElementFire,
 		trans:   trans,
 		config:  map[string]any{"key": "val"},
 	}
@@ -24,7 +24,7 @@ func TestTransformerNode_Process(t *testing.T) {
 	if node.Name() != "test-node" {
 		t.Errorf("Name() = %q", node.Name())
 	}
-	if node.ElementAffinity() != roster.ElementFire {
+	if node.ElementAffinity() != identity.ElementFire {
 		t.Errorf("Element = %q", node.ElementAffinity())
 	}
 
@@ -140,8 +140,8 @@ type testNode struct {
 	name string
 }
 
-func (n *testNode) Name() string                    { return n.name }
-func (n *testNode) ElementAffinity() roster.Element { return roster.ElementFire }
+func (n *testNode) Name() string                      { return n.name }
+func (n *testNode) ElementAffinity() identity.Element { return identity.ElementFire }
 func (n *testNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	return &stubArtifact{raw: map[string]any{"processed": true}}, nil
 }
@@ -150,7 +150,7 @@ func TestTransformerNode_ResolveInput(t *testing.T) {
 	trans := &echoTransformer{}
 	node := &transformerNode{
 		name:    "triage",
-		element: roster.ElementFire,
+		element: identity.ElementFire,
 		trans:   trans,
 		input:   "${recall.output}",
 		config:  map[string]any{"key": "val"},
@@ -186,7 +186,7 @@ func TestTransformerNode_ResolveInput(t *testing.T) {
 func TestTransformerNode_RenderPrompt(t *testing.T) {
 	captureNode := &transformerNode{
 		name:    "triage",
-		element: roster.ElementFire,
+		element: identity.ElementFire,
 		trans: TransformerFunc("capture", func(_ context.Context, tc *TransformerContext) (any, error) {
 			return map[string]any{"prompt": tc.Prompt}, nil
 		}),
@@ -247,7 +247,7 @@ func TestTransformerNode_NodeConfigReachesTransformer(t *testing.T) {
 	})
 	node := &transformerNode{
 		name:       "test-node",
-		element:    roster.ElementFire,
+		element:    identity.ElementFire,
 		trans:      captureConfig,
 		nodeConfig: &circuit.NodeConfig{OutputPath: "recall.json", MaxRetries: 3},
 	}

@@ -16,7 +16,7 @@ import (
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/signal"
 )
 
 // SessionState tracks the lifecycle of a circuit session.
@@ -37,7 +37,7 @@ type CircuitSession struct {
 	TotalCases      int
 	Scenario        string
 	DesiredCapacity int
-	Bus             roster.Bus
+	Bus             signal.Bus
 
 	log        *slog.Logger
 	state      SessionState
@@ -83,7 +83,7 @@ func NewCircuitSession(
 	meta SessionMeta,
 	parallel int,
 	disp *dispatch.MuxDispatcher,
-	bus roster.Bus,
+	bus signal.Bus,
 	runFn RunFunc,
 	cancel context.CancelFunc,
 ) *CircuitSession {
@@ -377,10 +377,10 @@ func (s *CircuitSession) watchdog() {
 
 			if stale > currentTTL {
 				s.log.WarnContext(context.Background(), circuit.LogTTLWatchdog, slog.Any(circuit.LogKeyStale, stale), slog.Any(circuit.LogKeyTTL, currentTTL), slog.Any(circuit.LogKeySessionID, s.ID))
-				s.Bus.Emit(&roster.Signal{
+				s.Bus.Emit(&signal.Signal{
 					Event: EventSessionError,
-					Agent: roster.AgentServer,
-					Meta:  map[string]string{roster.MetaKeyError: fmt.Sprintf("session TTL expired: no activity for %v", stale)},
+					Agent: signal.AgentServer,
+					Meta:  map[string]string{signal.MetaKeyError: fmt.Sprintf("session TTL expired: no activity for %v", stale)},
 				})
 				s.dispatcher.Abort(fmt.Errorf("%w for %v", ErrSessionTTLExpired, stale))
 				s.mu.Lock()
@@ -419,7 +419,7 @@ func (s *CircuitSession) run(ctx context.Context, runFn RunFunc) {
 	if err != nil {
 		s.state = StateError
 		s.err = err
-		s.Bus.Emit(&roster.Signal{Event: EventSessionError, Agent: roster.AgentServer, Meta: map[string]string{roster.MetaKeyError: err.Error()}})
+		s.Bus.Emit(&signal.Signal{Event: EventSessionError, Agent: signal.AgentServer, Meta: map[string]string{signal.MetaKeyError: err.Error()}})
 		s.log.ErrorContext(ctx, circuit.LogCircuitRunFailed, slog.Any(circuit.LogKeyError, err))
 		s.writeReport(result) // write partial report even on error
 		s.writeRunRecord()
@@ -427,7 +427,7 @@ func (s *CircuitSession) run(ctx context.Context, runFn RunFunc) {
 	}
 	s.state = StateDone
 	s.result = result
-	s.Bus.Emit(&roster.Signal{Event: EventSessionDone, Agent: roster.AgentServer})
+	s.Bus.Emit(&signal.Signal{Event: EventSessionDone, Agent: signal.AgentServer})
 	s.log.InfoContext(ctx, circuit.LogCircuitRunComplete)
 	s.writeReport(result)
 	s.writeRunRecord()

@@ -18,8 +18,8 @@ import (
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/roster"
 	"github.com/dpopsuev/origami/subprocess"
+	"github.com/dpopsuev/troupe/signal"
 )
 
 // Signal event name constants emitted by the Mediator.
@@ -83,7 +83,7 @@ type Mediator struct {
 	papercupSchemas map[string]sdkmcp.Tool
 
 	// Observability: routing signals and optional trace recording.
-	Bus      *roster.MemBus
+	Bus      *signal.MemBus
 	stateDir string                // empty = tracing disabled
 	recorder *engine.TraceRecorder // nil when tracing disabled
 
@@ -98,7 +98,7 @@ func New(configs []BackendConfig, opts ...Option) *Mediator {
 		circuitBackends: make(map[string]string),
 		sessionAffinity: make(map[string]string),
 		papercupSchemas: make(map[string]sdkmcp.Tool),
-		Bus:             roster.NewMemBus(),
+		Bus:             signal.NewMemBus(),
 	}
 	for _, cfg := range configs {
 		gw.backends[cfg.Name] = &subprocess.RemoteBackend{Endpoint: cfg.Endpoint}
@@ -175,7 +175,7 @@ func (gw *Mediator) initTraceRecording() {
 		return
 	}
 	gw.recorder = rec
-	gw.Bus.OnEmit(func(sig roster.Signal) {
+	gw.Bus.OnEmit(func(sig signal.Signal) {
 		rec.HandleSignal(sig.Timestamp, sig.Event, sig.Agent, sig.CaseID, sig.Step, sig.Meta)
 	})
 }
@@ -268,9 +268,9 @@ func (gw *Mediator) routeStartCircuit(ctx context.Context, args map[string]any) 
 	}
 
 	// Emit route agentport.
-	gw.Bus.Emit(&roster.Signal{
+	gw.Bus.Emit(&signal.Signal{
 		Event: EventRoute,
-		Agent: roster.AgentMediator,
+		Agent: signal.AgentMediator,
 		Meta: map[string]string{
 			MetaKeyBackend:              backendName,
 			circuit.ExtraKeyCircuitType: circuitType,
@@ -292,9 +292,9 @@ func (gw *Mediator) routeStartCircuit(ctx context.Context, args map[string]any) 
 		}
 		gw.mu.Unlock()
 
-		gw.Bus.Emit(&roster.Signal{
+		gw.Bus.Emit(&signal.Signal{
 			Event: EventSessionStart,
-			Agent: roster.AgentMediator,
+			Agent: signal.AgentMediator,
 			Meta: map[string]string{
 				MetaKeySessionID:            sessionID,
 				MetaKeyBackend:              backendName,
@@ -311,9 +311,9 @@ func (gw *Mediator) routeStartCircuit(ctx context.Context, args map[string]any) 
 // NotifySessionDone emits a session_done signal for observability.
 // Called externally when a child session completes (e.g., after get_report).
 func (gw *Mediator) NotifySessionDone(sessionID, backendName string) {
-	gw.Bus.Emit(&roster.Signal{
+	gw.Bus.Emit(&signal.Signal{
 		Event: EventSessionDone,
-		Agent: roster.AgentMediator,
+		Agent: signal.AgentMediator,
 		Meta: map[string]string{
 			MetaKeySessionID: sessionID,
 			MetaKeyBackend:   backendName,
@@ -399,7 +399,7 @@ func (gw *Mediator) ListTools() []sdkmcp.Tool {
 
 // Signals returns the mediator's SignalBus for observability integration.
 // MCP servers hosting the mediator can register get_signals on this bus.
-func (gw *Mediator) Signals() *roster.MemBus { return gw.Bus }
+func (gw *Mediator) Signals() *signal.MemBus { return gw.Bus }
 
 // Healthy returns true if all backends respond to ping.
 func (gw *Mediator) Healthy(ctx context.Context) bool {

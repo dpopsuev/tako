@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/identity"
 )
 
 const (
@@ -64,7 +64,7 @@ func (LogicalLayout) Layout(def *circuit.CircuitDef) (CircuitLayout, error) {
 
 	zones := make([]ZoneLayout, 0, len(def.Zones))
 	for name, zd := range def.Zones {
-		zElem, _ := roster.ResolveApproach(strings.ToLower(zd.Approach))
+		zElem, _ := identity.ResolveApproach(strings.ToLower(zd.Approach))
 		zones = append(zones, ZoneLayout{Name: name, Element: string(zElem)})
 	}
 

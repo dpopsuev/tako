@@ -28,7 +28,7 @@ import (
 
 	"github.com/dpopsuev/battery/tool"
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/identity"
 )
 
 // RunInstrumentNodeContract runs the circuit.Node compliance suite against
@@ -192,5 +192,5 @@ func RunInstrumentToolContract(t *testing.T, factory func() tool.Tool) {
 	})
 }
 
-// Ensure roster.Element is used (interface compliance — ElementAffinity returns it).
-var _ roster.Element = roster.Element("")
+// Ensure identity.Element is used (interface compliance — ElementAffinity returns it).
+var _ identity.Element = identity.Element("")

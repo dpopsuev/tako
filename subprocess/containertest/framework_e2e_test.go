@@ -12,7 +12,7 @@ import (
 
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/mcp"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/signal"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -52,7 +52,7 @@ func TestFramework_E2E_InProcess(t *testing.T) {
 		StepSchemas:               stepSchemas,
 		DefaultGetNextStepTimeout: 5000,
 		DefaultSessionTTL:         30000,
-		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus roster.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
+		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 			runFn := echoRunFunc(disp, totalCases, totalSteps)
 			meta := mcp.SessionMeta{
 				TotalCases: totalCases,

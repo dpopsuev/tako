@@ -12,8 +12,8 @@ import (
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/prompt"
 	"github.com/dpopsuev/origami/resource"
-	"github.com/dpopsuev/origami/roster"
 	"github.com/dpopsuev/origami/toolkit"
+	"github.com/dpopsuev/troupe/signal"
 )
 
 // FieldDef, StepSchema, ExtraParamDef — canonical definitions in toolkit/.
@@ -66,7 +66,7 @@ type CircuitConfig struct {
 	// session's SignalBus for domain-specific observability signals.
 	// Returns a RunFunc (executed in a goroutine), initial metadata
 	// (total_cases, scenario name), and an error.
-	CreateSession func(ctx context.Context, params StartParams, disp *dispatch.MuxDispatcher, bus roster.Bus) (RunFunc, SessionMeta, error)
+	CreateSession func(ctx context.Context, params StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (RunFunc, SessionMeta, error)
 
 	// FormatReport converts domain-specific run result into human-readable
 	// text and optional structured data. Called by get_report.
@@ -239,7 +239,7 @@ type StartParams struct {
 // consumer implements them in their schematic package.
 type SchematicHooks struct {
 	// CreateSession wires up a domain-specific circuit run.
-	CreateSession func(ctx context.Context, params StartParams, disp *dispatch.MuxDispatcher, bus roster.Bus) (RunFunc, SessionMeta, error)
+	CreateSession func(ctx context.Context, params StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (RunFunc, SessionMeta, error)
 
 	// FormatReport converts domain-specific run result into human-readable
 	// text and optional structured data.

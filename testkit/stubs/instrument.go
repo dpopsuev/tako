@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/identity"
 )
 
 // StubInstrumentTool implements battery.Tool with canned responses.
@@ -89,7 +89,7 @@ func (s *StubInstrumentTool) CallCount() int {
 // Bridges the battery.Tool interface to circuit.Node for testing.
 type StubInstrumentNode struct {
 	tool    *StubInstrumentTool
-	element roster.Element
+	element identity.Element
 }
 
 // NewStubInstrumentNode creates an instrument node wrapping a stub tool.
@@ -97,8 +97,8 @@ func NewStubInstrumentNode(tool *StubInstrumentTool) *StubInstrumentNode {
 	return &StubInstrumentNode{tool: tool}
 }
 
-func (n *StubInstrumentNode) Name() string                    { return n.tool.Name() }
-func (n *StubInstrumentNode) ElementAffinity() roster.Element { return n.element }
+func (n *StubInstrumentNode) Name() string                      { return n.tool.Name() }
+func (n *StubInstrumentNode) ElementAffinity() identity.Element { return n.element }
 
 func (n *StubInstrumentNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	// Marshal walker state context as input (mirrors real InstrumentNode behavior).

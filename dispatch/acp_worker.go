@@ -7,7 +7,8 @@ import (
 	"os"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe"
+	"github.com/dpopsuev/troupe/signal"
 )
 
 // Steps where dialectic collective debate improves quality.
@@ -26,11 +27,11 @@ var collectiveSteps = map[string]bool{
 // are routed through a dialectic debate instead of a single agent.
 type ACPWorkerDispatcher struct {
 	mux        *MuxDispatcher
-	broker     roster.Broker
-	bus        roster.Bus
+	broker     troupe.Broker
+	bus        signal.Bus
 	role       string
 	workers    int
-	collective roster.Actor
+	collective troupe.Actor
 	log        *slog.Logger
 }
 
@@ -43,20 +44,20 @@ func WithACPWorkerLogger(l *slog.Logger) ACPWorkerOption {
 }
 
 // WithACPWorkerBus attaches a signal bus for lifecycle events.
-func WithACPWorkerBus(bus roster.Bus) ACPWorkerOption {
+func WithACPWorkerBus(bus signal.Bus) ACPWorkerOption {
 	return func(d *ACPWorkerDispatcher) { d.bus = bus }
 }
 
 // WithACPWorkerCollective routes hard steps (investigate, review) through
 // a dialectic collective instead of a single agent.
-func WithACPWorkerCollective(c roster.Actor) ACPWorkerOption {
+func WithACPWorkerCollective(c troupe.Actor) ACPWorkerOption {
 	return func(d *ACPWorkerDispatcher) { d.collective = c }
 }
 
 // NewACPWorkerDispatcher creates a dispatcher that runs N ACP agent workers.
 // Each worker pulls prompts from the MuxDispatcher, asks the agent via
 // Staff.AskRole, and submits the response back.
-func NewACPWorkerDispatcher(mux *MuxDispatcher, broker roster.Broker, role string, workers int, opts ...ACPWorkerOption) *ACPWorkerDispatcher {
+func NewACPWorkerDispatcher(mux *MuxDispatcher, broker troupe.Broker, role string, workers int, opts ...ACPWorkerOption) *ACPWorkerDispatcher {
 	if workers < 1 {
 		workers = 1
 	}
@@ -79,8 +80,8 @@ func (d *ACPWorkerDispatcher) Run(ctx context.Context) error {
 }
 
 func (d *ACPWorkerDispatcher) workerLoop(ctx context.Context, workerID string) error {
-	d.emit(roster.EventWorkerStarted, "", "", map[string]string{roster.MetaKeyWorkerID: workerID})
-	defer d.emit(roster.EventWorkerStopped, "", "", map[string]string{roster.MetaKeyWorkerID: workerID})
+	d.emit(signal.EventWorkerStarted, "", "", map[string]string{signal.MetaKeyWorkerID: workerID})
+	defer d.emit(signal.EventWorkerStopped, "", "", map[string]string{signal.MetaKeyWorkerID: workerID})
 
 	for {
 		dc, err := d.mux.GetNextStep(ctx)
@@ -91,7 +92,7 @@ func (d *ACPWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 			return fmt.Errorf("get_next_step: %w", err)
 		}
 
-		d.emit(roster.EventWorkerStart, dc.CaseID, dc.Step, map[string]string{roster.MetaKeyWorkerID: workerID})
+		d.emit(signal.EventWorkerStart, dc.CaseID, dc.Step, map[string]string{signal.MetaKeyWorkerID: workerID})
 
 		// Build the prompt from content or file.
 		prompt := dc.PromptContent
@@ -110,7 +111,7 @@ func (d *ACPWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 			d.log.InfoContext(ctx, circuit.LogRoutingToCollective, slog.Any(circuit.LogKeyStep, dc.Step), slog.Any(circuit.LogKeyCaseID, dc.CaseID))
 			response, err = d.collective.Perform(ctx, prompt)
 		} else {
-			configs, pickErr := d.broker.Pick(ctx, roster.BrokerPrefs{Role: d.role, Count: 1})
+			configs, pickErr := d.broker.Pick(ctx, troupe.Preferences{Role: d.role, Count: 1})
 			if pickErr != nil || len(configs) == 0 {
 				d.log.ErrorContext(ctx, circuit.LogNoWorkersAvailable, slog.Any(circuit.LogKeyRole, d.role))
 				continue
@@ -123,25 +124,25 @@ func (d *ACPWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 			response, err = actor.Perform(ctx, prompt)
 		}
 		if err != nil {
-			d.emit(roster.EventWorkerError, dc.CaseID, dc.Step, map[string]string{
-				roster.MetaKeyWorkerID: workerID,
-				roster.MetaKeyError:    err.Error(),
+			d.emit(signal.EventWorkerError, dc.CaseID, dc.Step, map[string]string{
+				signal.MetaKeyWorkerID: workerID,
+				signal.MetaKeyError:    err.Error(),
 			})
 			d.log.ErrorContext(ctx, circuit.LogACPAgentFailed, slog.Any(circuit.LogKeyWorker, workerID), slog.Any(circuit.LogKeyCaseID, dc.CaseID), slog.Any(circuit.LogKeyStep, dc.Step), slog.Any(circuit.LogKeyError, err))
 			continue
 		}
 
 		if err := d.mux.SubmitArtifact(ctx, dc.DispatchID, []byte(response)); err != nil {
-			d.emit(roster.EventWorkerError, dc.CaseID, dc.Step, map[string]string{
-				roster.MetaKeyWorkerID: workerID,
-				roster.MetaKeyError:    err.Error(),
+			d.emit(signal.EventWorkerError, dc.CaseID, dc.Step, map[string]string{
+				signal.MetaKeyWorkerID: workerID,
+				signal.MetaKeyError:    err.Error(),
 			})
 			return fmt.Errorf("submit_artifact dispatch_id=%d: %w", dc.DispatchID, err)
 		}
 
-		d.emit(roster.EventWorkerDone, dc.CaseID, dc.Step, map[string]string{
-			roster.MetaKeyWorkerID: workerID,
-			roster.MetaKeyBytes:    fmt.Sprintf("%d", len(response)),
+		d.emit(signal.EventWorkerDone, dc.CaseID, dc.Step, map[string]string{
+			signal.MetaKeyWorkerID: workerID,
+			signal.MetaKeyBytes:    fmt.Sprintf("%d", len(response)),
 		})
 
 		d.log.InfoContext(ctx, circuit.LogStepComplete, slog.Any(circuit.LogKeyWorker, workerID), slog.Any(circuit.LogKeyCaseID, dc.CaseID), slog.Any(circuit.LogKeyStep, dc.Step), slog.Any(circuit.LogKeyBytes, len(response)))
@@ -150,9 +151,9 @@ func (d *ACPWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 
 func (d *ACPWorkerDispatcher) emit(event, caseID, step string, meta map[string]string) {
 	if d.bus != nil {
-		d.bus.Emit(&roster.Signal{
+		d.bus.Emit(&signal.Signal{
 			Event:  event,
-			Agent:  roster.AgentWorker,
+			Agent:  signal.AgentWorker,
 			CaseID: caseID,
 			Step:   step,
 			Meta:   meta,

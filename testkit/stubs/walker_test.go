@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/roster"
 	"github.com/dpopsuev/origami/testkit/stubs"
+	"github.com/dpopsuev/troupe/identity"
 )
 
 func TestStubWalker_CannedArtifact(t *testing.T) {
@@ -77,7 +77,7 @@ func TestStubWalker_Identity(t *testing.T) {
 
 func TestStubWalker_SetIdentity(t *testing.T) {
 	w := stubs.NewStubWalker("w1", nil)
-	newID := roster.AgentIdentity{Name: "w2"}
+	newID := identity.Archetype{Name: "w2"}
 	w.SetIdentity(&newID)
 
 	id := w.Identity()
@@ -121,8 +121,8 @@ type stubNode struct {
 	name string
 }
 
-func (n *stubNode) Name() string                    { return n.name }
-func (n *stubNode) ElementAffinity() roster.Element { return "" }
+func (n *stubNode) Name() string                      { return n.name }
+func (n *stubNode) ElementAffinity() identity.Element { return "" }
 func (n *stubNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return nil, nil
 }

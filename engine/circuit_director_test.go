@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe"
 )
 
 func TestCircuitDetail_String_WithArtifact(t *testing.T) {
@@ -25,7 +25,7 @@ func TestCircuitDetail_String_WithoutArtifact(t *testing.T) {
 }
 
 func TestChannelObserver_NodeEnter(t *testing.T) {
-	ch := make(chan roster.Event, 10) //nolint:mnd // buffer
+	ch := make(chan troupe.Event, 10) //nolint:mnd // buffer
 	obs := &channelObserver{ch: ch}
 
 	obs.OnEvent(&circuit.WalkEvent{
@@ -51,7 +51,7 @@ func TestChannelObserver_NodeEnter(t *testing.T) {
 }
 
 func TestChannelObserver_NodeExit_Success(t *testing.T) {
-	ch := make(chan roster.Event, 10) //nolint:mnd // buffer
+	ch := make(chan troupe.Event, 10) //nolint:mnd // buffer
 	obs := &channelObserver{ch: ch}
 
 	obs.OnEvent(&circuit.WalkEvent{
@@ -71,7 +71,7 @@ func TestChannelObserver_NodeExit_Success(t *testing.T) {
 }
 
 func TestChannelObserver_NodeExit_Error(t *testing.T) {
-	ch := make(chan roster.Event, 10) //nolint:mnd // buffer
+	ch := make(chan troupe.Event, 10) //nolint:mnd // buffer
 	obs := &channelObserver{ch: ch}
 
 	obs.OnEvent(&circuit.WalkEvent{
@@ -90,7 +90,7 @@ func TestChannelObserver_NodeExit_Error(t *testing.T) {
 }
 
 func TestChannelObserver_Transition(t *testing.T) {
-	ch := make(chan roster.Event, 10) //nolint:mnd // buffer
+	ch := make(chan troupe.Event, 10) //nolint:mnd // buffer
 	obs := &channelObserver{ch: ch}
 
 	obs.OnEvent(&circuit.WalkEvent{
@@ -113,7 +113,7 @@ func TestChannelObserver_Transition(t *testing.T) {
 }
 
 func TestChannelObserver_SkipsUnknownEvents(t *testing.T) {
-	ch := make(chan roster.Event, 10) //nolint:mnd // buffer
+	ch := make(chan troupe.Event, 10) //nolint:mnd // buffer
 	obs := &channelObserver{ch: ch}
 
 	obs.OnEvent(&circuit.WalkEvent{Type: circuit.EventWalkComplete})
@@ -127,7 +127,7 @@ func TestChannelObserver_SkipsUnknownEvents(t *testing.T) {
 }
 
 func TestChannelObserver_DropsWhenFull(t *testing.T) {
-	ch := make(chan roster.Event) // unbuffered — always full
+	ch := make(chan troupe.Event) // unbuffered — always full
 	obs := &channelObserver{ch: ch}
 
 	// Should not block or panic

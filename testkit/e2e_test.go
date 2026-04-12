@@ -13,9 +13,9 @@ import (
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/mcp"
-	"github.com/dpopsuev/origami/roster"
 	"github.com/dpopsuev/origami/testkit/builders"
 	"github.com/dpopsuev/origami/testkit/stubs"
+	"github.com/dpopsuev/troupe/signal"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -176,7 +176,7 @@ func TestE2E_MCP_AllStubs(t *testing.T) {
 		StepSchemas:               stepSchemas,
 		DefaultGetNextStepTimeout: 2000,
 		DefaultSessionTTL:         30000,
-		CreateSession: func(ctx context.Context, _ mcp.StartParams, disp *dispatch.MuxDispatcher, bus roster.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
+		CreateSession: func(ctx context.Context, _ mcp.StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 			runFn := func(ctx context.Context) (any, error) {
 				for c := 0; c < nCases; c++ {
 					caseID := fmt.Sprintf("C%02d", c+1)

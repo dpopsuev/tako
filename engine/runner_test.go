@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/identity"
 )
 
 type runnerTestArtifact struct {
@@ -22,26 +22,26 @@ func (a *runnerTestArtifact) Raw() any            { return a.raw }
 
 type runnerTestNode struct {
 	name    string
-	element roster.Element
+	element identity.Element
 	out     circuit.Artifact
 	err     error
 }
 
-func (n *runnerTestNode) Name() string                    { return n.name }
-func (n *runnerTestNode) ElementAffinity() roster.Element { return n.element }
+func (n *runnerTestNode) Name() string                      { return n.name }
+func (n *runnerTestNode) ElementAffinity() identity.Element { return n.element }
 func (n *runnerTestNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return n.out, n.err
 }
 
 type runnerTestWalker struct {
-	identity roster.AgentIdentity
+	identity identity.Archetype
 	state    *circuit.WalkerState
 	visited  []string
 }
 
-func (w *runnerTestWalker) Identity() roster.AgentIdentity       { return w.identity }
-func (w *runnerTestWalker) SetIdentity(id *roster.AgentIdentity) { w.identity = *id }
-func (w *runnerTestWalker) State() *circuit.WalkerState          { return w.state }
+func (w *runnerTestWalker) Identity() identity.Archetype       { return w.identity }
+func (w *runnerTestWalker) SetIdentity(id *identity.Archetype) { w.identity = *id }
+func (w *runnerTestWalker) State() *circuit.WalkerState        { return w.state }
 func (w *runnerTestWalker) Handle(ctx context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
 	w.visited = append(w.visited, node.Name())
 	return node.Process(ctx, nc)
@@ -269,7 +269,7 @@ func TestNewRunner_InvalidCircuit(t *testing.T) {
 
 func TestRunner_Walk_NilWalker(t *testing.T) {
 	def := &circuit.CircuitDef{
-		Circuit:     "nil-walker",
+		Circuit: "nil-walker",
 		Nodes: []circuit.NodeDef{
 			{Name: "a", Approach: "rapid", Instrument: "transformer", Action: "echo"},
 			{Name: "b", Approach: "analytical", Instrument: "transformer", Action: "echo"},

@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/identity"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/uri"
 )
@@ -91,21 +91,21 @@ func approachTraitHints(_ *document, lines []string) []InlayHint {
 			continue
 		}
 		val := strings.TrimSpace(strings.TrimPrefix(trimmed, "approach:"))
-		a := roster.Approach(val)
+		a := identity.Approach(val)
 		info, ok := approachDocs[val]
 		if !ok {
 			continue
 		}
 
-		emoji := roster.ApproachEmoji(a)
-		traits := roster.ApproachTraits(a)
+		emoji := identity.ApproachEmoji(a)
+		traits := identity.ApproachTraits(a)
 		label := fmt.Sprintf("%s spd:%s ev:%d lp:%d", emoji, traits.Speed, traits.EvidenceDepth, traits.MaxLoops)
 		hints = append(hints, InlayHint{
 			Position:    Position{Line: safeUint32(i), Character: safeUint32(len(line))},
 			Label:       label,
 			Kind:        1,
 			PaddingLeft: true,
-			Tooltip:     markdownTooltip(fmt.Sprintf("### %s %s\n\n%s\n\n```\n%s\n```", emoji, val, info.Description, roster.ApproachTraitsSummary(a))),
+			Tooltip:     markdownTooltip(fmt.Sprintf("### %s %s\n\n%s\n\n```\n%s\n```", emoji, val, info.Description, identity.ApproachTraitsSummary(a))),
 		})
 	}
 	return hints

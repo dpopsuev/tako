@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/identity"
 )
 
 const testNodeName = "test"
@@ -61,8 +61,8 @@ type contractNode struct {
 	name string
 }
 
-func (n *contractNode) Name() string                    { return n.name }
-func (n *contractNode) ElementAffinity() roster.Element { return "" }
+func (n *contractNode) Name() string                      { return n.name }
+func (n *contractNode) ElementAffinity() identity.Element { return "" }
 func (n *contractNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return &contractArt{typ: n.name}, nil
 }

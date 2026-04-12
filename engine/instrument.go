@@ -11,7 +11,7 @@ import (
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/circuit/def"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/identity"
 )
 
 // InstrumentRegistry maps instrument names to their loaded manifests.
@@ -26,7 +26,7 @@ type InstrumentDispatcher interface {
 // instrumentNode implements circuit.Node by dispatching through an InstrumentDispatcher.
 type instrumentNode struct {
 	name       string
-	element    roster.Element
+	element    identity.Element
 	manifest   *circuit.InstrumentManifest
 	actionName string
 	action     def.ActionDef
@@ -36,8 +36,8 @@ type instrumentNode struct {
 	config     map[string]any // circuit vars
 }
 
-func (n *instrumentNode) Name() string                    { return n.name }
-func (n *instrumentNode) ElementAffinity() roster.Element { return n.element }
+func (n *instrumentNode) Name() string                      { return n.name }
+func (n *instrumentNode) ElementAffinity() identity.Element { return n.element }
 
 func (n *instrumentNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	logger := slog.Default().With(slog.Any(circuit.LogKeyComponent, circuit.LogComponentInstrument))
@@ -224,7 +224,7 @@ func (a *instrumentArtifact) Confidence() float64 { return a.confidence }
 func (a *instrumentArtifact) Raw() any            { return a.raw }
 
 // resolveInstrumentNode creates an instrumentNode from a manifest and NodeDef.
-func resolveInstrumentNode(_ *circuit.CircuitDef, nd *circuit.NodeDef, manifest *circuit.InstrumentManifest, elem roster.Element, workDir string) (circuit.Node, error) {
+func resolveInstrumentNode(_ *circuit.CircuitDef, nd *circuit.NodeDef, manifest *circuit.InstrumentManifest, elem identity.Element, workDir string) (circuit.Node, error) {
 	name := string(nd.Name)
 	actionName := nd.Action
 	if actionName == "" {

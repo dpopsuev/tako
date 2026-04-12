@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/signal"
 )
 
 var (
@@ -34,7 +34,7 @@ type MuxDispatcher struct {
 	abortCh  chan struct{}
 	abortErr error
 
-	bus roster.Bus // optional; for zone_shift signals
+	bus signal.Bus // optional; for zone_shift signals
 
 	queueMu sync.Mutex
 	queue   []Context // buffered overflow for hint-based matching
@@ -43,9 +43,9 @@ type MuxDispatcher struct {
 // MuxOption configures a MuxDispatcher.
 type MuxOption func(*MuxDispatcher)
 
-// WithMuxSignalBus attaches a roster.Bus for emitting dispatch-level signals
+// WithMuxSignalBus attaches a signal.Bus for emitting dispatch-level signals
 // (e.g. zone_shift on work stealing).
-func WithMuxSignalBus(bus roster.Bus) MuxOption {
+func WithMuxSignalBus(bus signal.Bus) MuxOption {
 	return func(d *MuxDispatcher) { d.bus = bus }
 }
 
@@ -293,14 +293,14 @@ func (d *MuxDispatcher) emitZoneShift(hints PullHints, dc Context) {
 	if fromZone == "" {
 		fromZone = hints.PreferredCaseID
 	}
-	d.bus.Emit(&roster.Signal{
-		Event:  roster.EventZoneShift,
-		Agent:  roster.AgentWorker,
+	d.bus.Emit(&signal.Signal{
+		Event:  signal.EventZoneShift,
+		Agent:  signal.AgentWorker,
 		CaseID: dc.CaseID,
 		Step:   dc.Step,
 		Meta: map[string]string{
-			roster.MetaKeyFromZone: fromZone,
-			roster.MetaKeyToZone:   dc.Provider,
+			signal.MetaKeyFromZone: fromZone,
+			signal.MetaKeyToZone:   dc.Provider,
 		},
 	})
 }
@@ -309,14 +309,14 @@ func (d *MuxDispatcher) emitDispatchRouted(dc Context, reason string) {
 	if d.bus == nil {
 		return
 	}
-	d.bus.Emit(&roster.Signal{
-		Event:  roster.EventDispatchRouted,
-		Agent:  roster.AgentWorker,
+	d.bus.Emit(&signal.Signal{
+		Event:  signal.EventDispatchRouted,
+		Agent:  signal.AgentWorker,
 		CaseID: dc.CaseID,
 		Step:   dc.Step,
 		Meta: map[string]string{
-			roster.MetaKeyDispatchReason: reason,
-			roster.MetaKeyQueueDepth:     strconv.Itoa(d.queueLen()),
+			signal.MetaKeyDispatchReason: reason,
+			signal.MetaKeyQueueDepth:     strconv.Itoa(d.queueLen()),
 		},
 	})
 }

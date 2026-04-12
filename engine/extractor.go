@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/identity"
 )
 
 // Extractor, ExtractorRegistry are defined in engine/handler.
@@ -18,12 +18,12 @@ import (
 // extractorNode is a Node that delegates processing to an Extractor.
 type extractorNode struct {
 	name    string
-	element roster.Element
+	element identity.Element
 	ext     Extractor
 }
 
-func (n *extractorNode) Name() string                    { return n.name }
-func (n *extractorNode) ElementAffinity() roster.Element { return n.element }
+func (n *extractorNode) Name() string                      { return n.name }
+func (n *extractorNode) ElementAffinity() identity.Element { return n.element }
 
 func (n *extractorNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	var input any

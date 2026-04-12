@@ -10,7 +10,7 @@ import (
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/identity"
 )
 
 // PreflightReport captures structured diagnostics from a preflight check.
@@ -152,14 +152,14 @@ func checkMediatorHealth(report *PreflightReport, endpoint string) {
 // preflightWalker is a stub Walker that returns a minimal artifact on Handle
 // and then cancels the walk context, causing a clean exit after the first node.
 type preflightWalker struct {
-	identity roster.AgentIdentity
+	identity identity.Archetype
 	state    *circuit.WalkerState
 	cancel   context.CancelFunc
 }
 
-func (w *preflightWalker) Identity() roster.AgentIdentity       { return w.identity }
-func (w *preflightWalker) SetIdentity(id *roster.AgentIdentity) { w.identity = *id }
-func (w *preflightWalker) State() *circuit.WalkerState          { return w.state }
+func (w *preflightWalker) Identity() identity.Archetype       { return w.identity }
+func (w *preflightWalker) SetIdentity(id *identity.Archetype) { w.identity = *id }
+func (w *preflightWalker) State() *circuit.WalkerState        { return w.state }
 
 func (w *preflightWalker) Handle(_ context.Context, _ circuit.Node, _ circuit.NodeContext) (circuit.Artifact, error) {
 	// Cancel the context so the walk loop exits cleanly after this node.

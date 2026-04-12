@@ -5,20 +5,20 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/identity"
 )
 
 // --- Shared test helpers for engine/ test files ---
 
 type stubNode struct {
 	name     string
-	element  roster.Element
+	element  identity.Element
 	artifact circuit.Artifact
 	err      error
 }
 
-func (n *stubNode) Name() string                    { return n.name }
-func (n *stubNode) ElementAffinity() roster.Element { return n.element }
+func (n *stubNode) Name() string                      { return n.name }
+func (n *stubNode) ElementAffinity() identity.Element { return n.element }
 func (n *stubNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return n.artifact, n.err
 }
@@ -56,8 +56,8 @@ type slowNode struct {
 	duration time.Duration
 }
 
-func (n *slowNode) Name() string                    { return n.name }
-func (n *slowNode) ElementAffinity() roster.Element { return "" }
+func (n *slowNode) Name() string                      { return n.name }
+func (n *slowNode) ElementAffinity() identity.Element { return "" }
 func (n *slowNode) Process(ctx context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	select {
 	case <-time.After(n.duration):
@@ -75,14 +75,14 @@ func (t *echoTransformer) Transform(_ context.Context, tc *TransformerContext) (
 }
 
 type stubWalker struct {
-	identity roster.AgentIdentity
+	identity identity.Archetype
 	state    *circuit.WalkerState
 	visited  []string
 }
 
-func (w *stubWalker) Identity() roster.AgentIdentity       { return w.identity }
-func (w *stubWalker) SetIdentity(id *roster.AgentIdentity) { w.identity = *id }
-func (w *stubWalker) State() *circuit.WalkerState          { return w.state }
+func (w *stubWalker) Identity() identity.Archetype       { return w.identity }
+func (w *stubWalker) SetIdentity(id *identity.Archetype) { w.identity = *id }
+func (w *stubWalker) State() *circuit.WalkerState        { return w.state }
 func (w *stubWalker) Handle(_ context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
 	w.visited = append(w.visited, node.Name())
 	return node.Process(context.Background(), nc)

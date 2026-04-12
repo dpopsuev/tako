@@ -18,7 +18,8 @@ import (
 	"os/signal"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe"
+	"github.com/dpopsuev/troupe/broker"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -46,8 +47,8 @@ func run(gateway, agentName, sessionID string) error {
 
 	// Spawn ACP agent via Bugle.
 	// ACP launcher absorbed into Broker
-	broker := roster.NewBroker("")
-	actor, err := broker.Spawn(ctx, roster.ActorConfig{
+	broker := broker.New("")
+	actor, err := broker.Spawn(ctx, troupe.ActorConfig{
 		Model: agentName,
 		Role:  "worker",
 	})

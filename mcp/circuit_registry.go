@@ -8,7 +8,7 @@ import (
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/signal"
 )
 
 // CircuitType defines a named circuit type that can be registered with
@@ -22,7 +22,7 @@ type CircuitType struct {
 	ExtraParamDefs []ExtraParamDef
 	WorkerPreamble string
 
-	CreateSession func(ctx context.Context, params StartParams, disp *dispatch.MuxDispatcher, bus roster.Bus) (RunFunc, SessionMeta, error)
+	CreateSession func(ctx context.Context, params StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (RunFunc, SessionMeta, error)
 	FormatReport  func(result any) (formatted string, structured any, err error)
 }
 
@@ -78,7 +78,7 @@ func (r *CircuitTypeRegistry) RouteSession(
 	ctx context.Context,
 	params StartParams,
 	disp *dispatch.MuxDispatcher,
-	bus roster.Bus,
+	bus signal.Bus,
 ) (RunFunc, SessionMeta, error) {
 	typeName, _ := params.Extra[circuit.ExtraKeyCircuitType].(string)
 

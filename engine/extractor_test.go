@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/identity"
 )
 
 // stubExtractor is a minimal Extractor for testing.
@@ -235,7 +235,7 @@ done: _done
 
 func TestLoadCircuit_ExtractorHandler_RoundTrip(t *testing.T) {
 	original := &circuit.CircuitDef{
-		Circuit:     "ext-roundtrip",
+		Circuit: "ext-roundtrip",
 		Nodes: []circuit.NodeDef{
 			{Name: "parse", Approach: "methodical", Action: "json-v1", Instrument: "extractor"},
 			{Name: "process", Action: "compute", Instrument: "node"},
@@ -421,8 +421,8 @@ type extTestNode struct {
 	name string
 }
 
-func (n *extTestNode) Name() string                    { return n.name }
-func (n *extTestNode) ElementAffinity() roster.Element { return "" }
+func (n *extTestNode) Name() string                      { return n.name }
+func (n *extTestNode) ElementAffinity() identity.Element { return "" }
 func (n *extTestNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return nil, nil
 }

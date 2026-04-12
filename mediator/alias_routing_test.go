@@ -12,7 +12,7 @@ import (
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/mcp"
 	"github.com/dpopsuev/origami/mediator"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/signal"
 )
 
 // TestMediator_AliasRouting_StepByAlias verifies that the mediator can
@@ -28,7 +28,7 @@ func TestMediator_AliasRouting_StepByAlias(t *testing.T) {
 		},
 		DefaultGetNextStepTimeout: 5000,
 		DefaultSessionTTL:         300000,
-		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus roster.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
+		CreateSession: func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 			return func(ctx context.Context) (any, error) {
 				if _, err := disp.Dispatch(ctx, dispatch.Context{CaseID: "C01", Step: "STEP"}); err != nil {
 					return nil, err

@@ -15,7 +15,10 @@ import (
 	"github.com/dpopsuev/origami/dispatch/guard"
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/engine/trace"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe"
+	"github.com/dpopsuev/troupe/broker"
+	"github.com/dpopsuev/troupe/collective"
+	"github.com/dpopsuev/troupe/signal"
 )
 
 // Log event names specific to session bridge observability.
@@ -45,7 +48,7 @@ const (
 // pattern in engine/transformer.go.
 func SessionFactoryToConfig(factory engine.SessionFactory) CircuitConfig {
 	cfg := CircuitConfig{
-		CreateSession: func(ctx context.Context, params StartParams, disp *dispatch.MuxDispatcher, bus roster.Bus) (RunFunc, SessionMeta, error) {
+		CreateSession: func(ctx context.Context, params StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) (RunFunc, SessionMeta, error) {
 			// TSK-515: Auto-wire token tracking — consumers get it for free.
 			tracker := budget.NewTracker()
 			trackedDisp := guard.NewTokenTrackingDispatcher(disp, tracker)
@@ -303,7 +306,7 @@ func computeErrorRates(results []engine.BatchWalkResult) map[string]NodeErrorRat
 	return result
 }
 
-func wrapWithACPWorkers(inner RunFunc, params StartParams, disp *dispatch.MuxDispatcher, bus roster.Bus) RunFunc {
+func wrapWithACPWorkers(inner RunFunc, params StartParams, disp *dispatch.MuxDispatcher, bus signal.Bus) RunFunc {
 	agentCmd, _ := params.Extra[ExtraKeyDispatchCommand].(string)
 	if agentCmd == "" {
 		agentCmd = defaultACPAgent
@@ -311,13 +314,13 @@ func wrapWithACPWorkers(inner RunFunc, params StartParams, disp *dispatch.MuxDis
 	workers := max(params.Parallel, 1)
 
 	return func(ctx context.Context) (any, error) {
-		meter := roster.NewInMemoryMeter()
-		broker := roster.NewBroker("",
-			roster.WithMeter(meter),
+		meter := broker.NewInMemoryMeter()
+		broker := broker.New("",
+			broker.WithMeter(meter),
 		)
 
 		for range workers {
-			_, spawnErr := broker.Spawn(ctx, roster.ActorConfig{
+			_, spawnErr := broker.Spawn(ctx, troupe.ActorConfig{
 				Model: agentCmd,
 				Role:  defaultACPRole,
 			})
@@ -333,7 +336,7 @@ func wrapWithACPWorkers(inner RunFunc, params StartParams, disp *dispatch.MuxDis
 		)
 
 		// Spawn a dialectic collective for hard steps (investigate, review).
-		coll, collErr := roster.SpawnCollective(ctx, broker, 2, &roster.Dialectic{MaxRounds: 2}) //nolint:mnd // thesis + antithesis
+		coll, collErr := collective.SpawnCollective(ctx, broker, 2, &collective.Dialectic{MaxRounds: 2}) //nolint:mnd // thesis + antithesis
 		if collErr != nil {
 			slog.WarnContext(ctx, circuit.LogCollectiveSpawnFailed, slog.Any(circuit.LogKeyError, collErr))
 		} else {

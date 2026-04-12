@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/identity"
 )
 
 type execTestNode struct {
@@ -13,8 +13,8 @@ type execTestNode struct {
 	artifact circuit.Artifact
 }
 
-func (n execTestNode) Name() string                    { return n.name }
-func (n execTestNode) ElementAffinity() roster.Element { return "" }
+func (n execTestNode) Name() string                      { return n.name }
+func (n execTestNode) ElementAffinity() identity.Element { return "" }
 func (n execTestNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return n.artifact, nil
 }

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/identity"
 )
 
 const (
@@ -38,7 +38,7 @@ type Graph interface {
 type Zone struct {
 	Name            string
 	NodeNames       []string
-	ElementAffinity roster.Element
+	ElementAffinity identity.Element
 	Stickiness      int // 0-3 stickiness value for agents in this zone
 	Domain          string
 	ContextFilter   *circuit.ContextFilterDef

@@ -10,7 +10,7 @@ import (
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/identity"
 )
 
 func TestCollective_TwoWalkersScheduleByAffinity(t *testing.T) {
@@ -21,16 +21,16 @@ func TestCollective_TwoWalkersScheduleByAffinity(t *testing.T) {
 	//   Then walker_switch events fire as affinity changes
 
 	coordinator := circuit.NewProcessWalker("coordinator")
-	coordinator.SetIdentity(&roster.AgentIdentity{
+	coordinator.SetIdentity(&identity.Archetype{
 		Name:         "Coordinator",
-		Element:      roster.ElementEarth,
+		Element:      identity.ElementEarth,
 		StepAffinity: map[string]float64{"plan": 0.95, "synthesize": 0.95},
 	})
 
 	specialistA := circuit.NewProcessWalker("specialist-a")
-	specialistA.SetIdentity(&roster.AgentIdentity{
+	specialistA.SetIdentity(&identity.Archetype{
 		Name:         "Specialist A",
-		Element:      roster.ElementWater,
+		Element:      identity.ElementWater,
 		StepAffinity: map[string]float64{"research_a": 0.95},
 	})
 
@@ -71,23 +71,23 @@ func TestCollective_WalkCompletesWithMultipleWalkers(t *testing.T) {
 	//   And all nodes are visited
 
 	coordinator := circuit.NewProcessWalker("coordinator")
-	coordinator.SetIdentity(&roster.AgentIdentity{
+	coordinator.SetIdentity(&identity.Archetype{
 		Name:         "Coordinator",
-		Element:      roster.ElementEarth,
+		Element:      identity.ElementEarth,
 		StepAffinity: map[string]float64{"plan": 0.95, "synthesize": 0.95},
 	})
 
 	specialistA := circuit.NewProcessWalker("specialist-a")
-	specialistA.SetIdentity(&roster.AgentIdentity{
+	specialistA.SetIdentity(&identity.Archetype{
 		Name:         "Specialist A",
-		Element:      roster.ElementWater,
+		Element:      identity.ElementWater,
 		StepAffinity: map[string]float64{"research_a": 0.95},
 	})
 
 	specialistB := circuit.NewProcessWalker("specialist-b")
-	specialistB.SetIdentity(&roster.AgentIdentity{
+	specialistB.SetIdentity(&identity.Archetype{
 		Name:         "Specialist B",
-		Element:      roster.ElementFire,
+		Element:      identity.ElementFire,
 		StepAffinity: map[string]float64{"research_b": 0.95},
 	})
 

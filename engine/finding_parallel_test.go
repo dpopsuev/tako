@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/identity"
 )
 
 func findingTestNode(name string, confidence float64, raw any) func(circuit.NodeDef) circuit.Node {
@@ -27,8 +27,8 @@ type findingEnforcerNodeImpl struct {
 	finding   *circuit.Finding
 }
 
-func (n *findingEnforcerNodeImpl) Name() string                    { return n.name }
-func (n *findingEnforcerNodeImpl) ElementAffinity() roster.Element { return "" }
+func (n *findingEnforcerNodeImpl) Name() string                      { return n.name }
+func (n *findingEnforcerNodeImpl) ElementAffinity() identity.Element { return "" }
 func (n *findingEnforcerNodeImpl) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	if n.finding != nil {
 		if c, ok := nc.WalkerState.Context[circuit.FindingCollectorKey].(circuit.FindingCollector); ok {
@@ -99,7 +99,7 @@ func TestArtifactCaptureObserver_FilteredNodes(t *testing.T) {
 
 func twoNodeCircuit() *circuit.CircuitDef {
 	return &circuit.CircuitDef{
-		Circuit:     "test-work",
+		Circuit: "test-work",
 		Nodes: []circuit.NodeDef{
 			{Name: "step1", Instrument: "node"},
 			{Name: "step2", Instrument: "node"},
@@ -114,7 +114,7 @@ func twoNodeCircuit() *circuit.CircuitDef {
 
 func twoNodeEnforcerCircuit() *circuit.CircuitDef {
 	return &circuit.CircuitDef{
-		Circuit:     "test-enforcer",
+		Circuit: "test-enforcer",
 		Nodes: []circuit.NodeDef{
 			{Name: "check", Instrument: "node"},
 			{Name: "report", Instrument: "node"},
@@ -178,7 +178,7 @@ func TestRunWithEnforcer_EnforcerCanceledOnWorkComplete(t *testing.T) {
 	workDef := twoNodeCircuit()
 
 	enforcerDef := &circuit.CircuitDef{
-		Circuit:     "test-enforcer",
+		Circuit: "test-enforcer",
 		Nodes: []circuit.NodeDef{
 			{Name: "slow-check", Instrument: "node"},
 			{Name: "done", Instrument: "node"},
@@ -259,7 +259,7 @@ func TestRunWithEnforcer_ErrorFinding(t *testing.T) {
 	workDef := twoNodeCircuit()
 
 	enforcerDef := &circuit.CircuitDef{
-		Circuit:     "test-enforcer",
+		Circuit: "test-enforcer",
 		Nodes: []circuit.NodeDef{
 			{Name: "audit", Instrument: "node"},
 			{Name: "done", Instrument: "node"},

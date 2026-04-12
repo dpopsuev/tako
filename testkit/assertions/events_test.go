@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/roster"
 	"github.com/dpopsuev/origami/testkit/assertions"
+	"github.com/dpopsuev/troupe/signal"
 )
 
 func TestAssertEventOrder_Pass(t *testing.T) {
@@ -61,18 +61,18 @@ func TestAssertNoEvent_EmptyEvents(t *testing.T) {
 }
 
 func TestWaitForSignal_Found(t *testing.T) {
-	bus := roster.NewMemBus()
+	bus := signal.NewMemBus()
 	go func() {
 		time.Sleep(20 * time.Millisecond)
-		bus.Emit(&roster.Signal{Event: "target", Agent: "agent", CaseID: "case", Step: "step"})
+		bus.Emit(&signal.Signal{Event: "target", Agent: "agent", CaseID: "case", Step: "step"})
 	}()
 
 	assertions.WaitForSignal(t, bus, "target", 2*time.Second)
 }
 
 func TestWaitForSignal_AlreadyPresent(t *testing.T) {
-	bus := roster.NewMemBus()
-	bus.Emit(&roster.Signal{Event: "target", Agent: "agent", CaseID: "case", Step: "step"})
+	bus := signal.NewMemBus()
+	bus.Emit(&signal.Signal{Event: "target", Agent: "agent", CaseID: "case", Step: "step"})
 
 	assertions.WaitForSignal(t, bus, "target", 100*time.Millisecond)
 }

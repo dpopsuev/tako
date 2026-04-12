@@ -6,13 +6,13 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/identity"
 )
 
 func TestCollectiveWalker_LinearWithTwoWalkers(t *testing.T) {
-	nodeA := &stubNode{name: "classify", element: roster.ElementFire, artifact: &stubArtifact{typ: "classification", confidence: 0.9}}
-	nodeB := &stubNode{name: "investigate", element: roster.ElementWater, artifact: &stubArtifact{typ: "investigation", confidence: 0.8}}
-	nodeC := &stubNode{name: "decide", element: roster.ElementEarth, artifact: &stubArtifact{typ: "decision", confidence: 0.95}}
+	nodeA := &stubNode{name: "classify", element: identity.ElementFire, artifact: &stubArtifact{typ: "classification", confidence: 0.9}}
+	nodeB := &stubNode{name: "investigate", element: identity.ElementWater, artifact: &stubArtifact{typ: "investigation", confidence: 0.8}}
+	nodeC := &stubNode{name: "decide", element: identity.ElementEarth, artifact: &stubArtifact{typ: "decision", confidence: 0.95}}
 
 	edges := []circuit.Edge{
 		&stubEdge{id: "E1", from: "classify", to: "investigate"},
@@ -26,17 +26,17 @@ func TestCollectiveWalker_LinearWithTwoWalkers(t *testing.T) {
 	}
 
 	herald := &stubWalker{
-		identity: roster.AgentIdentity{
+		identity: identity.Archetype{
 			Name:         "Herald",
-			Element:      roster.ElementFire,
+			Element:      identity.ElementFire,
 			StepAffinity: map[string]float64{"classify": 0.9, "investigate": 0.1, "decide": 0.5},
 		},
 		state: circuit.NewWalkerState("herald-1"),
 	}
 	seeker := &stubWalker{
-		identity: roster.AgentIdentity{
+		identity: identity.Archetype{
 			Name:         "Seeker",
-			Element:      roster.ElementWater,
+			Element:      identity.ElementWater,
 			StepAffinity: map[string]float64{"classify": 0.1, "investigate": 0.9, "decide": 0.3},
 		},
 		state: circuit.NewWalkerState("seeker-1"),
@@ -71,7 +71,7 @@ func TestCollectiveWalker_MaxStepsGuard(t *testing.T) {
 	}
 
 	w := &stubWalker{
-		identity: roster.AgentIdentity{Name: "Solo"},
+		identity: identity.Archetype{Name: "Solo"},
 		state:    circuit.NewWalkerState("solo-1"),
 	}
 
@@ -102,7 +102,7 @@ func TestCollectiveWalker_NilObserver(t *testing.T) {
 	}
 
 	w := &stubWalker{
-		identity: roster.AgentIdentity{Name: "Solo"},
+		identity: identity.Archetype{Name: "Solo"},
 		state:    circuit.NewWalkerState("s1"),
 	}
 
@@ -114,8 +114,8 @@ func TestCollectiveWalker_NilObserver(t *testing.T) {
 }
 
 func TestCollectiveWalker_MismatchEmitted(t *testing.T) {
-	nodeA := &stubNode{name: "A", element: roster.ElementFire, artifact: &stubArtifact{typ: "a", confidence: 0.8}}
-	nodeB := &stubNode{name: "B", element: roster.ElementWater, artifact: &stubArtifact{typ: "b", confidence: 0.7}}
+	nodeA := &stubNode{name: "A", element: identity.ElementFire, artifact: &stubArtifact{typ: "a", confidence: 0.8}}
+	nodeB := &stubNode{name: "B", element: identity.ElementWater, artifact: &stubArtifact{typ: "b", confidence: 0.7}}
 
 	edges := []circuit.Edge{
 		&stubEdge{id: "A-B", from: "A", to: "B"},
@@ -128,17 +128,17 @@ func TestCollectiveWalker_MismatchEmitted(t *testing.T) {
 	}
 
 	wFire := &stubWalker{
-		identity: roster.AgentIdentity{
+		identity: identity.Archetype{
 			Name:         "FireWalker",
-			Element:      roster.ElementFire,
+			Element:      identity.ElementFire,
 			StepAffinity: map[string]float64{"A": 0.9, "B": 0.1},
 		},
 		state: circuit.NewWalkerState("fire-1"),
 	}
 	wWater := &stubWalker{
-		identity: roster.AgentIdentity{
+		identity: identity.Archetype{
 			Name:         "WaterWalker",
-			Element:      roster.ElementWater,
+			Element:      identity.ElementWater,
 			StepAffinity: map[string]float64{"A": 0.1, "B": 0.9},
 		},
 		state: circuit.NewWalkerState("water-1"),

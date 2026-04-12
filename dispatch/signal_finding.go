@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/roster"
+	"github.com/dpopsuev/troupe/signal"
 )
 
 const findingEventPrefix = "enforcer:"
@@ -23,7 +23,7 @@ const (
 // EmitFinding encodes a Finding as a Signal on the bus.
 // Event format: "enforcer:<severity>". Meta carries domain, source,
 // node_name, message, and JSON-encoded evidence.
-func EmitFinding(bus roster.Bus, f *circuit.Finding) {
+func EmitFinding(bus signal.Bus, f *circuit.Finding) {
 	meta := map[string]string{
 		MetaKeyDomain:   f.Domain,
 		MetaKeySource:   f.Source,
@@ -35,7 +35,7 @@ func EmitFinding(bus roster.Bus, f *circuit.Finding) {
 			meta[MetaKeyEvidence] = string(data)
 		}
 	}
-	bus.Emit(&roster.Signal{
+	bus.Emit(&signal.Signal{
 		Event: findingEventPrefix + string(f.Severity),
 		Agent: f.Source,
 		Step:  f.NodeName,
@@ -45,7 +45,7 @@ func EmitFinding(bus roster.Bus, f *circuit.Finding) {
 
 // DecodeFinding converts a Signal back to a Finding.
 // Returns false if the signal is not a finding agentport.
-func DecodeFinding(s *roster.Signal) (circuit.Finding, bool) {
+func DecodeFinding(s *signal.Signal) (circuit.Finding, bool) {
 	if !strings.HasPrefix(s.Event, findingEventPrefix) {
 		return circuit.Finding{}, false
 	}
@@ -71,7 +71,7 @@ func DecodeFinding(s *roster.Signal) (circuit.Finding, bool) {
 
 // FindingsSince returns all findings emitted on the bus since index idx.
 // Non-finding signals are skipped.
-func FindingsSince(bus roster.Bus, idx int) []circuit.Finding {
+func FindingsSince(bus signal.Bus, idx int) []circuit.Finding {
 	signals := bus.Since(idx)
 	var findings []circuit.Finding
 	for i := range signals {
