@@ -1,0 +1,17 @@
+apiVersion: origami/v1
+kind: Instrument
+metadata:
+  name: dummy-upper
+  namespace: testkit
+  description: "Uppercases JSON input — proves multi-instrument routing works"
+spec:
+  dispatch: cli
+  binary: bash
+  tune: "--version"
+  actions:
+    upper:
+      command: "testkit/instruments/dummy-upper/upper.sh"
+      input_schema: |
+        {"type": "object", "properties": {"text": {"type": "string"}}}
+      output_schema: |
+        {"type": "object", "properties": {"upper": {"type": "string"}}}

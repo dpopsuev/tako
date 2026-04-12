@@ -114,6 +114,91 @@ func TestInstrument_ExecDispatch_DummyFail(t *testing.T) {
 	}
 }
 
+func TestInstrument_MultiInstrument_CorrectRouting(t *testing.T) {
+	// Scenario: Circuit with two different instruments dispatches correctly
+	//   Given a circuit with node "greet" using dummy-echo and node "transform" using dummy-upper
+	//   When I walk the circuit
+	//   Then greet produces an echo artifact and transform produces an upper artifact
+	//   And each artifact type identifies the correct instrument
+
+	echoManifest, err := circuit.LoadInstrumentManifest(
+		instrumentPath(t, "dummy-echo/instrument.yaml"),
+	)
+	if err != nil {
+		t.Fatalf("load echo manifest: %v", err)
+	}
+
+	upperManifest, err := circuit.LoadInstrumentManifest(
+		instrumentPath(t, "dummy-upper/instrument.yaml"),
+	)
+	if err != nil {
+		t.Fatalf("load upper manifest: %v", err)
+	}
+
+	def := &circuit.CircuitDef{
+		Circuit: "multi-instrument",
+		Start:   "greet",
+		Done:    "_done",
+		Nodes: []circuit.NodeDef{
+			{Name: "greet", Instrument: "dummy-echo", Action: "echo"},
+			{Name: "transform", Instrument: "dummy-upper", Action: "upper"},
+		},
+		Edges: []circuit.EdgeDef{
+			{ID: "greet-transform", From: "greet", To: "transform"},
+			{ID: "transform-done", From: "transform", To: "_done"},
+		},
+	}
+
+	reg := &engine.GraphRegistries{
+		Instruments: engine.InstrumentRegistry{
+			"dummy-echo":  echoManifest,
+			"dummy-upper": upperManifest,
+		},
+		InstrumentDir: repoRoot(),
+	}
+
+	g, err := engine.BuildGraph(def, reg)
+	if err != nil {
+		t.Fatalf("BuildGraph: %v", err)
+	}
+
+	walker := circuit.NewProcessWalker("test")
+	if err := g.Walk(context.Background(), walker, "greet"); err != nil {
+		t.Fatalf("Walk: %v", err)
+	}
+
+	// Verify greet artifact comes from dummy-echo.
+	greetArt, ok := walker.State().Outputs["greet"]
+	if !ok {
+		t.Fatal("greet artifact missing from outputs")
+	}
+	if greetArt.Type() != "instrument:dummy-echo:echo" {
+		t.Errorf("greet Type() = %q, want instrument:dummy-echo:echo", greetArt.Type())
+	}
+
+	// Verify transform artifact comes from dummy-upper.
+	transformArt, ok := walker.State().Outputs["transform"]
+	if !ok {
+		t.Fatal("transform artifact missing from outputs")
+	}
+	if transformArt.Type() != "instrument:dummy-upper:upper" {
+		t.Errorf("transform Type() = %q, want instrument:dummy-upper:upper", transformArt.Type())
+	}
+
+	// Verify the upper artifact contains uppercased output.
+	raw, ok := transformArt.Raw().(map[string]any)
+	if !ok {
+		t.Fatalf("transform Raw() type = %T, want map[string]any", transformArt.Raw())
+	}
+	upper, ok := raw["upper"].(string)
+	if !ok {
+		t.Fatalf("upper field type = %T, want string", raw["upper"])
+	}
+	if upper == "" {
+		t.Error("upper output is empty")
+	}
+}
+
 // instrumentPath returns the absolute path to a testkit instrument fixture.
 func instrumentPath(t *testing.T, rel string) string {
 	t.Helper()
