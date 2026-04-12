@@ -63,6 +63,10 @@ type GraphRegistries struct {
 	Instruments      InstrumentRegistry
 	InstrumentDir    string // working directory for instrument commands
 	MediatorEndpoint string
+
+	// Approval gate wiring.
+	ApprovalStore    ApprovalStore // optional — parks output at gated nodes
+	ApprovalNotifier Notifier      // optional — sends notifications when items are parked
 }
 
 // BuildGraph constructs a Graph from a circuit.CircuitDef using the full registries bundle.
@@ -171,6 +175,12 @@ func BuildGraph(def *circuit.CircuitDef, reg *GraphRegistries) (Graph, error) {
 	}
 	if len(gatedNodes) > 0 {
 		opts = append(opts, WithGatedNodes(gatedNodes))
+	}
+	if reg.ApprovalStore != nil {
+		opts = append(opts, WithApprovalStore(reg.ApprovalStore))
+	}
+	if reg.ApprovalNotifier != nil {
+		opts = append(opts, WithApprovalNotifier(reg.ApprovalNotifier))
 	}
 
 	opts = append(opts, WithRegistries(reg))

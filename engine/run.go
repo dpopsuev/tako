@@ -311,7 +311,7 @@ func Run(ctx context.Context, circuitPath string, input any, opts ...RunOption) 
 
 	err = runner.Walk(ctx, walker, startNode)
 
-	if errors.Is(err, errWalkInterrupted) {
+	if errors.Is(err, ErrWalkInterrupted) {
 		return nil
 	}
 

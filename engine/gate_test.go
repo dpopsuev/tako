@@ -115,9 +115,9 @@ func TestWalk_GatedNode_Interrupts(t *testing.T) {
 	walker := circuit.NewProcessWalker("test")
 	walkErr := g.Walk(context.Background(), walker, "review")
 
-	// Walk returns errWalkInterrupted for gated nodes.
-	if !errors.Is(walkErr, errWalkInterrupted) {
-		t.Fatalf("Walk: expected errWalkInterrupted, got %v", walkErr)
+	// Walk returns ErrWalkInterrupted for gated nodes.
+	if !errors.Is(walkErr, ErrWalkInterrupted) {
+		t.Fatalf("Walk: expected ErrWalkInterrupted, got %v", walkErr)
 	}
 
 	// Verify artifact was parked.

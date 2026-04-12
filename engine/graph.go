@@ -5,6 +5,7 @@ package engine
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -19,10 +20,10 @@ const (
 	walkStatusInterrupted = "interrupted"
 )
 
-// errWalkInterrupted is the sentinel error returned by Walk when a node
+// ErrWalkInterrupted is the sentinel error returned by Walk when a node
 // signals an Interrupt. The Run() function checks for this to decide
 // whether to clean up the checkpoint.
-var errWalkInterrupted = fmt.Errorf("walk interrupted")
+var ErrWalkInterrupted = errors.New("walk interrupted")
 
 // Graph is a directed graph of Nodes connected by Edges, partitioned into Zones.
 type Graph interface {
@@ -378,7 +379,7 @@ func (g *DefaultGraph) walkInner(ctx context.Context, walker circuit.Walker, sta
 						"reason": intr.Reason,
 					},
 				})
-				return errWalkInterrupted
+				return ErrWalkInterrupted
 			}
 			state.Status = walkStatusError
 			emitEvent(obs, &circuit.WalkEvent{Type: circuit.EventNodeExit, Node: node.Name(), Walker: walkerName, Elapsed: nodeElapsed, Error: err})
@@ -417,7 +418,7 @@ func (g *DefaultGraph) walkInner(ctx context.Context, walker circuit.Walker, sta
 					"reason": "gate:approval",
 				},
 			})
-			return errWalkInterrupted
+			return ErrWalkInterrupted
 		}
 
 		edges := g.EdgesFrom(node.Name())
