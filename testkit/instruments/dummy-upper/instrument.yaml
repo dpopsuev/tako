@@ -6,7 +6,7 @@ metadata:
   description: "Uppercases JSON input — compiled Go binary proves language-agnostic dispatch"
 spec:
   dispatch: cli
-  binary: testkit/instruments/dummy-upper/dummy-upper
+  binary: dummy-upper
   tune: "< /dev/null"
   actions:
     upper:

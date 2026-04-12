@@ -8,18 +8,33 @@ import (
 	"testing"
 )
 
+// instrumentBinDir is the temp directory where compiled instrument binaries live.
+// Set by TestMain, prepended to PATH so exec.LookPath finds them.
+var instrumentBinDir string
+
 func TestMain(m *testing.M) {
-	if err := buildInstrumentBinaries(); err != nil {
+	var err error
+	instrumentBinDir, err = os.MkdirTemp("", "origami-test-instruments-*")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "TestMain: create temp dir: %v\n", err)
+		os.Exit(1)
+	}
+	defer os.RemoveAll(instrumentBinDir)
+
+	if err := buildGoBinaries(); err != nil {
 		fmt.Fprintf(os.Stderr, "TestMain: build instruments: %v\n", err)
 		os.Exit(1)
 	}
+
+	// Prepend bin dir to PATH so exec.LookPath resolves instrument binaries.
+	os.Setenv("PATH", instrumentBinDir+":"+os.Getenv("PATH"))
+
 	os.Exit(m.Run())
 }
 
-// buildInstrumentBinaries finds all testkit/instruments/*/main.go and
-// compiles each into a binary at testkit/instruments/<name>/<name>.
-// Runs once per test package execution, not per test.
-func buildInstrumentBinaries() error {
+// buildGoBinaries finds all testkit/instruments/*/main.go and compiles
+// each into instrumentBinDir/<name>.
+func buildGoBinaries() error {
 	root := repoRoot()
 	pattern := filepath.Join(root, "testkit", "instruments", "*", "main.go")
 	matches, err := filepath.Glob(pattern)
@@ -30,15 +45,7 @@ func buildInstrumentBinaries() error {
 	for _, mainGo := range matches {
 		dir := filepath.Dir(mainGo)
 		name := filepath.Base(dir)
-		bin := filepath.Join(dir, name)
-
-		// Skip if binary is fresh (newer than source).
-		if binInfo, err := os.Stat(bin); err == nil {
-			srcInfo, _ := os.Stat(mainGo)
-			if srcInfo != nil && !srcInfo.ModTime().After(binInfo.ModTime()) {
-				continue
-			}
-		}
+		bin := filepath.Join(instrumentBinDir, name)
 
 		pkg := "./testkit/instruments/" + name + "/"
 		cmd := exec.Command("go", "build", "-o", bin, pkg)
@@ -46,7 +53,7 @@ func buildInstrumentBinaries() error {
 		if out, err := cmd.CombinedOutput(); err != nil {
 			return fmt.Errorf("build %s: %w\n%s", name, err, out)
 		}
-		fmt.Fprintf(os.Stderr, "built instrument: %s\n", name)
+		fmt.Fprintf(os.Stderr, "built instrument: %s → %s\n", name, bin)
 	}
 
 	return nil

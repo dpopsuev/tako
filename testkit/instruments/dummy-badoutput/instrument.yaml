@@ -6,7 +6,7 @@ metadata:
   description: "Returns JSON missing required field — proves output schema enforcement"
 spec:
   dispatch: cli
-  binary: testkit/instruments/dummy-badoutput/dummy-badoutput
+  binary: dummy-badoutput
   tune: "< /dev/null"
   actions:
     run:
