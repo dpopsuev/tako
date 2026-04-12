@@ -73,6 +73,8 @@ var NodeFields = FieldRegistry{
 	"after":         {},
 	"schema":        {},
 	"cache":         {},
+	"gate":          {ValidValues: []string{"approval"}},
+	"gate_notify":   {},
 	"meta":          {},
 	"code":          {},
 	"display_name":  {},

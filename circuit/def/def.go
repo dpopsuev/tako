@@ -192,6 +192,8 @@ type NodeDef struct {
 	After        []string        `yaml:"after,omitempty"`
 	Schema       *ArtifactSchema `yaml:"schema,omitempty"`
 	Cache        *CacheDef       `yaml:"cache,omitempty"`
+	Gate         string          `yaml:"gate,omitempty"`        // "approval" — engine parks output, waits for human
+	GateNotify   string          `yaml:"gate_notify,omitempty"` // notification channel adapter name
 	Config       *NodeConfig     `yaml:"meta,omitempty"`
 
 	// Vocabulary and output schema

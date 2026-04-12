@@ -116,4 +116,7 @@ var (
 
 	// ErrOutputSchemaViolation is returned when instrument output doesn't match the declared schema.
 	ErrOutputSchemaViolation = errors.New("output schema violation")
+
+	// ErrApprovalNotFound is returned when an approval item does not exist.
+	ErrApprovalNotFound = errors.New("approval not found")
 )
