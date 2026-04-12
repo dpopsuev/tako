@@ -274,3 +274,28 @@ func TestGenerateWiredBinary(t *testing.T) {
 		t.Logf("Full generated code:\n%s", code)
 	}
 }
+
+func TestGenerateDomainServe_NoUnusedImports(t *testing.T) {
+	m := &Manifest{
+		Name:    "test-unused",
+		Version: "1.0",
+		DomainServe: &DomainServeConfig{
+			Port: 9300,
+			Assets: &AssetMap{
+				Files: map[string]string{"data": "data.yaml"},
+			},
+		},
+	}
+
+	src, err := GenerateDomainServe(m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	code := string(src)
+
+	// Every import in the generated code must be used.
+	// path/filepath was historically imported but unused.
+	if strings.Contains(code, `"path/filepath"`) && !strings.Contains(code, "filepath.") {
+		t.Errorf("generated code imports path/filepath but never uses it — remove from template")
+	}
+}

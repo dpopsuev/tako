@@ -503,7 +503,6 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
-	"path/filepath"
 
 	"github.com/dpopsuev/origami/domainserve"
 )
