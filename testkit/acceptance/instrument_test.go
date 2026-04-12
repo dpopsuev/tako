@@ -7,6 +7,7 @@ package acceptance
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/dpopsuev/origami/circuit"
@@ -196,6 +197,56 @@ func TestInstrument_MultiInstrument_CorrectRouting(t *testing.T) {
 	}
 	if upper == "" {
 		t.Error("upper output is empty")
+	}
+}
+
+func TestInstrument_OutputSchemaViolation_RejectsWalk(t *testing.T) {
+	// Scenario: Instrument returns JSON that violates declared output_schema
+	//   Given a circuit with a node using dummy-badoutput which declares
+	//     output_schema requiring "status" field but returns {"wrong": "field"}
+	//   When I walk the circuit
+	//   Then the walk fails with an error mentioning schema violation
+
+	manifest, err := circuit.LoadInstrumentManifest(
+		instrumentPath(t, "dummy-badoutput/instrument.yaml"),
+	)
+	if err != nil {
+		t.Fatalf("load manifest: %v", err)
+	}
+
+	def := &circuit.CircuitDef{
+		Circuit: "schema-violation",
+		Start:   "check",
+		Done:    "_done",
+		Nodes: []circuit.NodeDef{
+			{Name: "check", Instrument: "dummy-badoutput", Action: "run"},
+		},
+		Edges: []circuit.EdgeDef{
+			{ID: "check-done", From: "check", To: "_done"},
+		},
+	}
+
+	reg := &engine.GraphRegistries{
+		Instruments: engine.InstrumentRegistry{
+			"dummy-badoutput": manifest,
+		},
+		InstrumentDir: repoRoot(),
+	}
+
+	g, err := engine.BuildGraph(def, reg)
+	if err != nil {
+		t.Fatalf("BuildGraph: %v", err)
+	}
+
+	walker := circuit.NewProcessWalker("test")
+	err = g.Walk(context.Background(), walker, "check")
+	if err == nil {
+		t.Fatal("Walk should fail when instrument output violates schema")
+	}
+
+	errMsg := err.Error()
+	if !strings.Contains(errMsg, "schema violation") && !strings.Contains(errMsg, "missing required") {
+		t.Errorf("error should mention schema violation, got: %s", errMsg)
 	}
 }
 

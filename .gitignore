@@ -32,6 +32,7 @@ deploy/ca-certificates.crt
 
 # Compiled test instrument binaries
 testkit/instruments/dummy-upper/dummy-upper
+testkit/instruments/dummy-badoutput/dummy-badoutput
 
 # MCP runtime databases
 *.db
