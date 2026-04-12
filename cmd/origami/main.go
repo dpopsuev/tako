@@ -51,6 +51,8 @@ func main() {
 		err = componentCmd(os.Args[2:])
 	case "fold":
 		err = foldCmd(os.Args[2:])
+	case "tune":
+		err = tuneCmd(os.Args[2:])
 	case "autodoc":
 		err = autodocCmd(os.Args[2:])
 	case "capture":
@@ -94,6 +96,7 @@ Commands:
   skill      Skill scaffolding (scaffold SKILL.md from circuit YAML)
   component  Component management (list, inspect, validate)
   fold       Compile a YAML manifest into a standalone binary
+  tune       Preflight-check instruments (--sum to compute checksums)
   autodoc    Generate documentation tree from circuit YAML
   capture    Capture an offline bundle for a schematic (e.g. gnd)
   trace      Read and render a JSONL execution trace

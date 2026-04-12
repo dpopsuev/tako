@@ -68,4 +68,7 @@ var (
 
 	// ErrUsageOrigamiLintProfileNameFormatTextJsonFixFileYaml is returned for: usage: origami lint [--profile <name>] [--format text|json] [--fix] <file.yaml>...
 	ErrUsageOrigamiLintProfileNameFormatTextJsonFixFileYaml = errors.New("usage: origami lint [--profile <name>] [--format text|json] [--fix] <file.yaml>...")
+
+	// errYAMLPath is returned when a YAML path cannot be resolved.
+	errYAMLPath = errors.New("yaml path")
 )
