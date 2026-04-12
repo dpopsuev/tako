@@ -3,15 +3,15 @@ kind: Instrument
 metadata:
   name: dummy-upper
   namespace: testkit
-  description: "Uppercases JSON input — proves multi-instrument routing works"
+  description: "Uppercases JSON input — compiled Go binary proves language-agnostic dispatch"
 spec:
   dispatch: cli
-  binary: bash
-  tune: "--version"
+  binary: testkit/instruments/dummy-upper/dummy-upper
+  tune: "< /dev/null"
   actions:
     upper:
-      command: "testkit/instruments/dummy-upper/upper.sh"
+      command: "upper"
       input_schema: |
         {"type": "object", "properties": {"text": {"type": "string"}}}
       output_schema: |
-        {"type": "object", "properties": {"upper": {"type": "string"}}}
+        {"type": "object", "properties": {"upper": {"type": "string"}}, "required": ["upper"]}

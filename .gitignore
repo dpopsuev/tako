@@ -30,6 +30,9 @@ deploy/ca-certificates.crt
 .claude/scheduled_tasks.lock
 .claude/worktrees/
 
+# Compiled test instrument binaries
+testkit/instruments/dummy-upper/dummy-upper
+
 # MCP runtime databases
 *.db
 *.db-shm
