@@ -162,6 +162,10 @@ type CircuitConfig struct {
 	// Instruments is the instrument registry from fold-generated code.
 	// Passed to engine.GraphRegistries.Instruments for dispatch.
 	Instruments engine.InstrumentRegistry
+
+	// ApprovalStore enables the approval gate MCP tool. When set, the
+	// "approval" tool is registered with actions: list, get, approve, reject, comment.
+	ApprovalStore engine.ApprovalStore
 }
 
 // FindSchema returns the StepSchema for the given step name, or an error

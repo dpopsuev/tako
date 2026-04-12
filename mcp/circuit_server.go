@@ -345,6 +345,9 @@ func (s *CircuitServer) registerTools() {
 		Name:        "signal",
 		Description: "Agent signal bus. Actions: emit (send signal), list (read signals), health (worker status).",
 	}, NoOutputSchema(s.handleSignalDispatch))
+
+	// Register approval gate tool if store is configured.
+	s.registerApprovalTool()
 }
 
 // dispatchCircuitAction routes the consolidated circuit tool to the appropriate handler.

@@ -86,4 +86,10 @@ var (
 
 	// ErrResourceFilesRequired is returned when diff action is missing file paths.
 	ErrResourceFilesRequired = errors.New("file_a and file_b are required for diff")
+
+	// ErrUnknownApprovalAction is returned for unrecognized approval tool actions.
+	ErrUnknownApprovalAction = errors.New("unknown approval action")
+
+	// ErrApprovalIDRequired is returned when an approval action requires an ID.
+	ErrApprovalIDRequired = errors.New("id is required for approval action")
 )
