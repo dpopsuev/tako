@@ -136,6 +136,15 @@ func runBoard(ctx context.Context, data []byte, opts *Options) error {
 		return err
 	}
 
+	if len(m.Instruments) > 0 {
+		baseDir, _ := os.Getwd()
+		loaded, err := LoadInstruments(m.Instruments, baseDir)
+		if err != nil {
+			return err
+		}
+		m.LoadedInstruments = loaded
+	}
+
 	if opts.ExportDataDir != "" {
 		return exportDataDir(m, boardDir, opts)
 	}
@@ -160,6 +169,14 @@ func runLegacy(ctx context.Context, data []byte, opts *Options) error {
 	manifestDir := filepath.Dir(opts.ManifestPath)
 	if err := validateManifest(m, manifestDir, opts.Verbose); err != nil {
 		return err
+	}
+
+	if len(m.Instruments) > 0 {
+		loaded, err := LoadInstruments(m.Instruments, manifestDir)
+		if err != nil {
+			return err
+		}
+		m.LoadedInstruments = loaded
 	}
 
 	if opts.ExportDataDir != "" {
@@ -236,6 +253,9 @@ func boardToManifest(bm *BoardManifest) *Manifest {
 
 	// Map params.
 	m.Params = bm.Params
+
+	// Map instruments.
+	m.Instruments = bm.Instruments
 
 	return m
 }

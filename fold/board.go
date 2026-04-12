@@ -24,6 +24,7 @@ type BoardManifest struct {
 	Scorecard   string            `yaml:"scorecard,omitempty"`
 	Report      string            `yaml:"report,omitempty"`
 	Prompts     map[string]string `yaml:"prompts,omitempty"`
+	Instruments map[string]string `yaml:"instruments,omitempty"` // name → manifest path
 	Compose     *ComposeRef       `yaml:"compose,omitempty"`
 	Circuit     *CircuitBlock     `yaml:"circuit,omitempty"`
 	Calibration *CalibBlock       `yaml:"calibration,omitempty"`

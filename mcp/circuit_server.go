@@ -656,6 +656,7 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 		ResourceRegistry:    s.Config.ResourceRegistry,
 		SubCircuitResolvers: s.Config.SubCircuitResolvers,
 		Tools:               s.Config.Tools,
+		Instruments:         s.Config.Instruments,
 	}
 	if recorder != nil {
 		params.Observer = recorder

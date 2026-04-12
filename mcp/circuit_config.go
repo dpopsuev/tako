@@ -9,6 +9,7 @@ import (
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
+	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/prompt"
 	"github.com/dpopsuev/origami/resource"
 	"github.com/dpopsuev/origami/roster"
@@ -157,6 +158,10 @@ type CircuitConfig struct {
 	// Tools is the typed tool registry from fold-generated code.
 	// Passed to SessionParams.Tools for consumer access.
 	Tools *tool.Registry
+
+	// Instruments is the instrument registry from fold-generated code.
+	// Passed to engine.GraphRegistries.Instruments for dispatch.
+	Instruments engine.InstrumentRegistry
 }
 
 // FindSchema returns the StepSchema for the given step name, or an error
@@ -222,6 +227,11 @@ type StartParams struct {
 
 	// Tools is the typed tool registry from CircuitConfig.
 	Tools *tool.Registry
+
+	// Instruments is the instrument registry from CircuitConfig.
+	// Copied by the framework. Used by the session bridge to pass
+	// instruments to engine.GraphRegistries.Instruments.
+	Instruments engine.InstrumentRegistry
 }
 
 // SchematicHooks groups the domain-specific callbacks that a schematic

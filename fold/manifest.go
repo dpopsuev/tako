@@ -34,6 +34,11 @@ type Manifest struct {
 	Bind        map[string]map[string]string
 	Params      []ParamDef
 
+	// Instruments — name → manifest path. Populated from board or legacy manifest.
+	Instruments map[string]string
+	// LoadedInstruments — parsed manifests, populated by LoadInstruments during fold.
+	LoadedInstruments []LoadedInstrument
+
 	// Bridge fields — populated by bridgeUsesToLegacy from Uses/Bind.
 	Schematics map[string]SchematicRef
 	Connectors map[string]ConnectorRef
@@ -53,6 +58,7 @@ type manifestYAML struct {
 		Uses        map[string]UsesRef           `yaml:"uses,omitempty"`
 		Bind        map[string]map[string]string `yaml:"bind,omitempty"`
 		Params      []ParamDef                   `yaml:"params,omitempty"`
+		Instruments map[string]string            `yaml:"instruments,omitempty"`
 	} `yaml:"spec"`
 }
 
@@ -210,6 +216,7 @@ func ParseManifest(data []byte) (*Manifest, error) {
 		Uses:        raw.Spec.Uses,
 		Bind:        raw.Spec.Bind,
 		Params:      raw.Spec.Params,
+		Instruments: raw.Spec.Instruments,
 	}
 
 	if ds := m.DomainServe; ds != nil {

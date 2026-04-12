@@ -145,4 +145,8 @@ type SessionParams struct {
 	// Consumers read connector dependencies via Tools.Get(name)
 	// instead of type-asserting from Extra. Nil when no tools are wired.
 	Tools *tool.Registry
+
+	// Instruments is the instrument registry from fold-generated code.
+	// Passed to GraphRegistries.Instruments for dispatch.
+	Instruments InstrumentRegistry
 }

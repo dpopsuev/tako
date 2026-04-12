@@ -63,6 +63,7 @@ func SessionFactoryToConfig(factory engine.SessionFactory) CircuitConfig {
 				ResourceRegistry:    params.ResourceRegistry,
 				SubCircuitResolvers: params.SubCircuitResolvers,
 				Tools:               params.Tools,
+				Instruments:         params.Instruments,
 			}
 
 			sessionCfg, err := factory.CreateSession(ctx, &engineParams)
@@ -121,6 +122,7 @@ func buildRunFunc(cfg *engine.SessionConfig, params *engine.SessionParams, resol
 			Transformers: cfg.Transformers,
 			Extractors:   cfg.Extractors,
 			Hooks:        cfg.Hooks,
+			Instruments:  params.Instruments,
 		}
 		// Load sub-circuit definitions from resolvers (e.g., GND within RCA).
 		if len(resolvers) > 0 && params.DomainFS != nil {

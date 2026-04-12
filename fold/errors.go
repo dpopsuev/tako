@@ -74,4 +74,7 @@ var (
 
 	// ErrCompositionCycle is returned when board composition has a cycle.
 	ErrCompositionCycle = errors.New("board composition: cycle detected")
+
+	// ErrInstrument is returned for instrument manifest errors during fold.
+	ErrInstrument = errors.New("instrument")
 )
