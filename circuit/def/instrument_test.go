@@ -23,7 +23,10 @@ func TestLoadInstrumentManifest_ValidExec(t *testing.T) {
 	if m.Dispatch != DispatchCLI {
 		t.Errorf("Dispatch = %q, want exec", m.Dispatch)
 	}
-	if m.Tune != "oculus --version" {
+	if m.Binary != "oculus" {
+		t.Errorf("Binary = %q", m.Binary)
+	}
+	if m.Tune != "--version" {
 		t.Errorf("Tune = %q", m.Tune)
 	}
 	if len(m.Actions) != 2 {
@@ -33,7 +36,7 @@ func TestLoadInstrumentManifest_ValidExec(t *testing.T) {
 	if !ok {
 		t.Fatal("missing scan action")
 	}
-	if scan.Command != "oculus scan --format=json" {
+	if scan.Command != "scan --format=json" {
 		t.Errorf("scan.Command = %q", scan.Command)
 	}
 	if scan.InputSchema == "" {
@@ -105,6 +108,7 @@ metadata:
   namespace: instruments
 spec:
   dispatch: cli
+  binary: bash
   tune: "test --version"
   actions:
     run: {}
@@ -182,6 +186,7 @@ metadata:
   namespace: instruments
 spec:
   dispatch: cli
+  binary: bash
   tune: "test --version"
 `)
 	_, err := ParseInstrumentManifest(data, "test.yaml")
@@ -197,6 +202,7 @@ metadata:
   namespace: instruments
 spec:
   dispatch: cli
+  binary: bash
   tune: "test --version"
   actions:
     run:
@@ -215,6 +221,7 @@ metadata:
   namespace: instruments
 spec:
   dispatch: cli
+  binary: bash
   tune: "test --version"
   actions:
     run:
@@ -234,6 +241,7 @@ metadata:
   namespace: instruments
 spec:
   dispatch: cli
+  binary: bash
   tune: "test --version"
   actions:
     run:
@@ -284,6 +292,7 @@ metadata:
   namespace: test
 spec:
   dispatch: cli
+  binary: bash
   tune: "true"
   actions:
     scan:
@@ -311,6 +320,7 @@ metadata:
   namespace: test
 spec:
   dispatch: cli
+  binary: bash
   tune: "true"
   actions:
     scan:

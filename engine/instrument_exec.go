@@ -8,10 +8,11 @@ import (
 	"os/exec"
 )
 
-// ExecDispatcher implements InstrumentDispatcher for dispatch: exec.
-// It shells out to the action's command, sends JSON on stdin, reads JSON from stdout.
+// ExecDispatcher implements InstrumentDispatcher for dispatch: cli.
+// It shells out to the binary + action command, sends JSON on stdin, reads JSON from stdout.
 type ExecDispatcher struct {
-	Command string // shell command from ActionDef.Command
+	Binary  string // executable name from InstrumentManifest.Binary
+	Command string // action-specific args from ActionDef.Command
 	WorkDir string // optional working directory
 }
 
@@ -19,12 +20,14 @@ type ExecDispatcher struct {
 var _ InstrumentDispatcher = (*ExecDispatcher)(nil)
 
 func (d *ExecDispatcher) Dispatch(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
-	if d.Command == "" {
+	if d.Binary == "" && d.Command == "" {
 		return nil, fmt.Errorf("%w: empty command", ErrInstrumentDispatch)
 	}
 
+	fullCmd := d.Binary + " " + d.Command
+
 	//nolint:gosec // command comes from validated instrument manifest, not user input
-	cmd := exec.CommandContext(ctx, "bash", "-c", d.Command)
+	cmd := exec.CommandContext(ctx, "bash", "-c", fullCmd)
 	if d.WorkDir != "" {
 		cmd.Dir = d.WorkDir
 	}

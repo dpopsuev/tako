@@ -17,9 +17,10 @@ func NewInstrumentManifest(name string) *InstrumentManifestBuilder {
 			Name:      name,
 			Namespace: "test",
 			Dispatch:  def.DispatchCLI,
-			Tune:      "true", // always succeeds
+			Binary:    "echo",
+			Tune:      "--version",
 			Actions: map[string]def.ActionDef{
-				"default": {Command: "echo"},
+				"default": {Command: "ok"},
 			},
 		},
 	}
@@ -34,6 +35,12 @@ func (b *InstrumentManifestBuilder) WithNamespace(ns string) *InstrumentManifest
 // WithDispatch sets the dispatch mode.
 func (b *InstrumentManifestBuilder) WithDispatch(mode def.DispatchMode) *InstrumentManifestBuilder {
 	b.m.Dispatch = mode
+	return b
+}
+
+// WithBinary sets the binary name.
+func (b *InstrumentManifestBuilder) WithBinary(bin string) *InstrumentManifestBuilder {
+	b.m.Binary = bin
 	return b
 }
 

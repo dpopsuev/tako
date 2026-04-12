@@ -7,16 +7,17 @@ metadata:
 spec:
   version: "1.0"
   dispatch: cli
-  tune: "oculus --version"
+  binary: oculus
+  tune: "--version"
   actions:
     scan:
-      command: "oculus scan --format=json"
+      command: "scan --format=json"
       input_schema: |
         {"type": "object", "properties": {"repo_path": {"type": "string"}}, "required": ["repo_path"]}
       output_schema: |
         {"type": "object", "properties": {"findings": {"type": "array"}, "clean": {"type": "boolean"}}}
     layers:
-      command: "oculus layers --format=json"
+      command: "layers --format=json"
       input_schema: |
         {"type": "object", "properties": {"repo_path": {"type": "string"}}}
       output_schema: |

@@ -49,8 +49,9 @@ type InstrumentManifest struct {
 	Version     string               `yaml:"version"`
 	Description string               `yaml:"description,omitempty"`
 	Dispatch    DispatchMode         `yaml:"dispatch"`
-	Tune        string               `yaml:"tune"`               // preflight command — must succeed before circuit starts
-	Checksum    string               `yaml:"checksum,omitempty"` // sha256:<hex> — verified against tune stdout
+	Binary      string               `yaml:"binary"`             // executable name — resolved via PATH, hashed for checksum
+	Tune        string               `yaml:"tune"`               // preflight args — appended to binary (e.g. "--version")
+	Checksum    string               `yaml:"checksum,omitempty"` // sha256:<hex> — verified against binary file hash
 	Endpoint    string               `yaml:"endpoint,omitempty"` // mcp dispatch: server endpoint
 	Image       string               `yaml:"image,omitempty"`    // docker dispatch: container image
 	Actions     map[string]ActionDef `yaml:"actions"`
@@ -66,6 +67,9 @@ func (m *InstrumentManifest) Validate(path string) error {
 	}
 	if m.Tune == "" {
 		return fmt.Errorf("%w: %s: spec.tune is required — instrument must declare a preflight check", ErrInstrumentManifest, path)
+	}
+	if m.Binary == "" && (m.Dispatch == DispatchCLI || m.Dispatch == DispatchContainer) {
+		return fmt.Errorf("%w: %s: spec.binary is required for %s dispatch", ErrInstrumentManifest, path, m.Dispatch)
 	}
 	if !isValidDispatchMode(m.Dispatch) {
 		return fmt.Errorf("%w: %s: spec.dispatch %q is not valid — must be one of: cli, mcp, container, inproc", ErrInstrumentManifest, path, m.Dispatch)
@@ -136,6 +140,7 @@ type instrumentManifestYAML struct {
 	Spec struct {
 		Version  string               `yaml:"version,omitempty"`
 		Dispatch DispatchMode         `yaml:"dispatch"`
+		Binary   string               `yaml:"binary"`
 		Tune     string               `yaml:"tune"`
 		Checksum string               `yaml:"checksum,omitempty"`
 		Endpoint string               `yaml:"endpoint,omitempty"`
@@ -177,6 +182,7 @@ func ParseInstrumentManifest(data []byte, path string) (*InstrumentManifest, err
 		Version:     raw.Spec.Version,
 		Description: raw.Metadata.Description,
 		Dispatch:    raw.Spec.Dispatch,
+		Binary:      raw.Spec.Binary,
 		Tune:        raw.Spec.Tune,
 		Checksum:    raw.Spec.Checksum,
 		Endpoint:    raw.Spec.Endpoint,

@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log/slog"
+	"os"
 	"os/exec"
 	"sort"
 	"strings"
@@ -48,21 +49,22 @@ func TuneAll(ctx context.Context, instruments InstrumentRegistry, workDir string
 	return nil
 }
 
-// tuneInstrument runs a single instrument's tune command and optionally
-// verifies the checksum of its stdout output.
+// tuneInstrument runs a single instrument's tune command (binary + tune args)
+// and optionally verifies the binary file's checksum.
 func tuneInstrument(ctx context.Context, logger *slog.Logger, name string, manifest *circuit.InstrumentManifest, workDir string) error {
+	tuneCmd := manifest.Binary + " " + manifest.Tune
+
 	logger.DebugContext(ctx, circuit.LogTuneStarted,
 		slog.Any(circuit.LogKeyInstrument, name),
-		slog.Any(circuit.LogKeyCommand, manifest.Tune))
+		slog.Any(circuit.LogKeyCommand, tuneCmd))
 
 	//nolint:gosec // command comes from validated instrument manifest, not user input
-	cmd := exec.CommandContext(ctx, "bash", "-c", manifest.Tune)
+	cmd := exec.CommandContext(ctx, "bash", "-c", tuneCmd)
 	if workDir != "" {
 		cmd.Dir = workDir
 	}
 
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
+	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
@@ -71,13 +73,13 @@ func tuneInstrument(ctx context.Context, logger *slog.Logger, name string, manif
 		}
 		stderrMsg := stderr.String()
 		if stderrMsg != "" {
-			return fmt.Errorf("%w: %s: command %q failed: %w\nstderr: %s", ErrTuneFailed, name, manifest.Tune, err, stderrMsg)
+			return fmt.Errorf("%w: %s: command %q failed: %w\nstderr: %s", ErrTuneFailed, name, tuneCmd, err, stderrMsg)
 		}
-		return fmt.Errorf("%w: %s: command %q failed: %w", ErrTuneFailed, name, manifest.Tune, err)
+		return fmt.Errorf("%w: %s: command %q failed: %w", ErrTuneFailed, name, tuneCmd, err)
 	}
 
 	if manifest.Checksum != "" {
-		if err := verifyChecksum(name, stdout.Bytes(), manifest.Checksum); err != nil {
+		if err := verifyBinaryChecksum(name, manifest.Binary, manifest.Checksum); err != nil {
 			return err
 		}
 	}
@@ -88,21 +90,42 @@ func tuneInstrument(ctx context.Context, logger *slog.Logger, name string, manif
 	return nil
 }
 
-// ComputeChecksum runs an instrument's tune command and returns the
-// "sha256:<hex>" string suitable for the manifest's checksum field.
-// This is the generator half of the pin/verify cycle.
-func ComputeChecksum(ctx context.Context, manifest *circuit.InstrumentManifest, workDir string) (string, error) {
-	//nolint:gosec // command comes from validated instrument manifest, not user input
-	cmd := exec.CommandContext(ctx, "bash", "-c", manifest.Tune)
-	if workDir != "" {
-		cmd.Dir = workDir
+// ComputeChecksum resolves the binary on PATH and returns its file hash
+// as "sha256:<hex>". This is the generator half of the pin/verify cycle.
+func ComputeChecksum(manifest *circuit.InstrumentManifest) (string, error) {
+	return hashBinary(manifest.Binary)
+}
+
+// verifyBinaryChecksum resolves the binary on PATH, hashes the file,
+// and compares against the declared checksum.
+func verifyBinaryChecksum(name, binary, declared string) error {
+	got, err := hashBinary(binary)
+	if err != nil {
+		return fmt.Errorf("%w: %s: %w", ErrChecksumMismatch, name, err)
 	}
-	var stdout bytes.Buffer
-	cmd.Stdout = &stdout
-	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("tune command failed: %w", err)
+
+	prefix, want, ok := strings.Cut(declared, ":")
+	if !ok || prefix != "sha256" {
+		return fmt.Errorf("%w: %s: checksum must use format sha256:<hex>, got %q", ErrChecksumMismatch, name, declared)
 	}
-	hash := sha256.Sum256(stdout.Bytes())
+
+	if got != "sha256:"+want {
+		return fmt.Errorf("%w: %s: expected %s, got %s", ErrChecksumMismatch, name, declared, got)
+	}
+	return nil
+}
+
+// hashBinary resolves a binary name via PATH and returns sha256:<hex> of the file.
+func hashBinary(binary string) (string, error) {
+	path, err := exec.LookPath(binary)
+	if err != nil {
+		return "", fmt.Errorf("binary %q not found on PATH: %w", binary, err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("read binary %q: %w", path, err)
+	}
+	hash := sha256.Sum256(data)
 	return "sha256:" + hex.EncodeToString(hash[:]), nil
 }
 

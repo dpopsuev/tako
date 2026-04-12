@@ -28,9 +28,10 @@ func testManifest() *circuit.InstrumentManifest {
 		Name:      "test-instrument",
 		Namespace: "test",
 		Dispatch:  circuit.DispatchCLI,
-		Tune:      "true",
+		Binary:    "echo",
+		Tune:      "--version",
 		Actions: map[string]def.ActionDef{
-			"echo": {Command: "echo test"},
+			"echo": {Command: "test"},
 		},
 	}
 }
@@ -193,8 +194,9 @@ func TestResolveInstrumentNode_ActionDefaultsToNodeName(t *testing.T) {
 	manifest := &circuit.InstrumentManifest{
 		Name:     "test",
 		Dispatch: circuit.DispatchCLI,
-		Tune:     "true",
-		Actions:  map[string]def.ActionDef{"scan": {Command: "echo"}},
+		Binary:   "echo",
+		Tune:     "--version",
+		Actions:  map[string]def.ActionDef{"scan": {Command: "scan"}},
 	}
 	nd := &circuit.NodeDef{Name: "scan"} // no explicit Action
 	d := &circuit.CircuitDef{}

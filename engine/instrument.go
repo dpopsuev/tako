@@ -259,7 +259,7 @@ func resolveInstrumentNode(_ *circuit.CircuitDef, nd *circuit.NodeDef, manifest 
 func createDispatcher(manifest *circuit.InstrumentManifest, action def.ActionDef, workDir string) (InstrumentDispatcher, error) {
 	switch manifest.Dispatch {
 	case circuit.DispatchCLI:
-		return &ExecDispatcher{Command: action.Command, WorkDir: workDir}, nil
+		return &ExecDispatcher{Binary: manifest.Binary, Command: action.Command, WorkDir: workDir}, nil
 	default:
 		return nil, fmt.Errorf("%w: dispatch mode %q is not supported for manifest-based dispatch", ErrInstrument, manifest.Dispatch)
 	}

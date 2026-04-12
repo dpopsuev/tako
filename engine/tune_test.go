@@ -10,29 +10,41 @@ import (
 	"github.com/dpopsuev/origami/circuit/def"
 )
 
-func tuneManifest(name, tuneCmd string) *circuit.InstrumentManifest {
+func tuneManifest(name, tuneArgs string) *circuit.InstrumentManifest {
 	return &circuit.InstrumentManifest{
 		Kind:      circuit.KindInstrument,
 		Name:      name,
 		Namespace: "test",
 		Dispatch:  circuit.DispatchCLI,
-		Tune:      tuneCmd,
+		Binary:    "bash",
+		Tune:      tuneArgs,
 		Actions: map[string]def.ActionDef{
 			"default": {Command: "echo ok"},
 		},
 	}
 }
 
-func tuneManifestWithChecksum(name, tuneCmd, checksum string) *circuit.InstrumentManifest {
-	m := tuneManifest(name, tuneCmd)
+func tuneManifestWithChecksum(name, checksum string) *circuit.InstrumentManifest {
+	m := tuneManifest(name, "--version")
 	m.Checksum = checksum
 	return m
 }
 
+// bashChecksum returns sha256:<hex> of the bash binary for test assertions.
+func bashChecksum(t *testing.T) string {
+	t.Helper()
+	m := tuneManifest("bash", "--version")
+	cs, err := ComputeChecksum(m)
+	if err != nil {
+		t.Fatalf("ComputeChecksum(bash): %v", err)
+	}
+	return cs
+}
+
 func TestTuneAll_AllPass(t *testing.T) {
 	reg := InstrumentRegistry{
-		"alpha": tuneManifest("alpha", "true"),
-		"beta":  tuneManifest("beta", "true"),
+		"alpha": tuneManifest("alpha", "--version"),
+		"beta":  tuneManifest("beta", "--version"),
 	}
 
 	if err := TuneAll(t.Context(), reg, ""); err != nil {
@@ -40,10 +52,16 @@ func TestTuneAll_AllPass(t *testing.T) {
 	}
 }
 
+func failManifest(name string) *circuit.InstrumentManifest {
+	m := tuneManifest(name, "--version")
+	m.Binary = "false"
+	return m
+}
+
 func TestTuneAll_OneFails(t *testing.T) {
 	reg := InstrumentRegistry{
-		"good": tuneManifest("good", "true"),
-		"bad":  tuneManifest("bad", "false"),
+		"good": tuneManifest("good", "--version"),
+		"bad":  failManifest("bad"),
 	}
 
 	err := TuneAll(t.Context(), reg, "")
@@ -69,7 +87,7 @@ func TestTuneAll_ContextCancellation(t *testing.T) {
 	cancel()
 
 	reg := InstrumentRegistry{
-		"slow": tuneManifest("slow", "sleep 10"),
+		"slow": tuneManifest("slow", "-c 'sleep 10'"),
 	}
 
 	err := TuneAll(ctx, reg, "")
@@ -83,7 +101,7 @@ func TestTuneAll_ContextCancellation(t *testing.T) {
 
 func TestTuneAll_StderrInError(t *testing.T) {
 	reg := InstrumentRegistry{
-		"noisy": tuneManifest("noisy", "echo 'boom' >&2 && false"),
+		"noisy": tuneManifest("noisy", "-c 'echo boom >&2 && false'"),
 	}
 
 	err := TuneAll(t.Context(), reg, "")
@@ -102,8 +120,8 @@ func TestTuneAll_StderrInError(t *testing.T) {
 func TestTuneAll_DeterministicOrder(t *testing.T) {
 	// "aaa" sorts before "zzz". If "aaa" fails, "zzz" should not be attempted.
 	reg := InstrumentRegistry{
-		"aaa": tuneManifest("aaa", "false"),
-		"zzz": tuneManifest("zzz", "true"),
+		"aaa": failManifest("aaa"),
+		"zzz": tuneManifest("zzz", "--version"),
 	}
 
 	err := TuneAll(t.Context(), reg, "")
@@ -116,15 +134,10 @@ func TestTuneAll_DeterministicOrder(t *testing.T) {
 	}
 }
 
-// sha256 of "ok\n" (output of `echo ok`)
-const echoOKChecksum = "sha256:dc51b8c96c2d745df3bd5590d990230a482fd247123599548e0632fdbf97fc22"
-
-// sha256 of "" (output of `true`)
-const emptyChecksum = "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-
 func TestTuneAll_ChecksumPass(t *testing.T) {
+	cs := bashChecksum(t)
 	reg := InstrumentRegistry{
-		"pinned": tuneManifestWithChecksum("pinned", "echo ok", echoOKChecksum),
+		"pinned": tuneManifestWithChecksum("pinned", cs),
 	}
 	if err := TuneAll(t.Context(), reg, ""); err != nil {
 		t.Fatalf("TuneAll: unexpected error: %v", err)
@@ -133,7 +146,7 @@ func TestTuneAll_ChecksumPass(t *testing.T) {
 
 func TestTuneAll_ChecksumMismatch(t *testing.T) {
 	reg := InstrumentRegistry{
-		"tampered": tuneManifestWithChecksum("tampered", "echo ok", "sha256:0000000000000000000000000000000000000000000000000000000000000000"),
+		"tampered": tuneManifestWithChecksum("tampered", "sha256:0000000000000000000000000000000000000000000000000000000000000000"),
 	}
 	err := TuneAll(t.Context(), reg, "")
 	if err == nil {
@@ -145,9 +158,8 @@ func TestTuneAll_ChecksumMismatch(t *testing.T) {
 }
 
 func TestTuneAll_ChecksumAbsent_Skipped(t *testing.T) {
-	// No checksum declared — should pass without verification.
 	reg := InstrumentRegistry{
-		"unpinned": tuneManifest("unpinned", "echo ok"),
+		"unpinned": tuneManifest("unpinned", "--version"), // no checksum → skip verification
 	}
 	if err := TuneAll(t.Context(), reg, ""); err != nil {
 		t.Fatalf("TuneAll: unexpected error: %v", err)
@@ -156,7 +168,7 @@ func TestTuneAll_ChecksumAbsent_Skipped(t *testing.T) {
 
 func TestTuneAll_ChecksumBadFormat(t *testing.T) {
 	reg := InstrumentRegistry{
-		"bad": tuneManifestWithChecksum("bad", "true", "md5:abc123"),
+		"bad": tuneManifestWithChecksum("bad", "md5:abc123"),
 	}
 	err := TuneAll(t.Context(), reg, "")
 	if err == nil {
@@ -167,33 +179,29 @@ func TestTuneAll_ChecksumBadFormat(t *testing.T) {
 	}
 }
 
-func TestTuneAll_ChecksumEmptyOutput(t *testing.T) {
-	// `true` outputs nothing — verify against sha256 of empty string.
-	reg := InstrumentRegistry{
-		"empty": tuneManifestWithChecksum("empty", "true", emptyChecksum),
-	}
-	if err := TuneAll(t.Context(), reg, ""); err != nil {
-		t.Fatalf("TuneAll: unexpected error: %v", err)
-	}
-}
-
 func TestComputeChecksum(t *testing.T) {
-	m := tuneManifest("test", "echo ok")
-	got, err := ComputeChecksum(t.Context(), m, "")
+	m := tuneManifest("test", "--version")
+	got, err := ComputeChecksum(m)
 	if err != nil {
 		t.Fatalf("ComputeChecksum: %v", err)
 	}
-	if got != echoOKChecksum {
-		t.Errorf("ComputeChecksum = %q, want %q", got, echoOKChecksum)
+	if !strings.HasPrefix(got, "sha256:") {
+		t.Errorf("ComputeChecksum = %q, want sha256:... prefix", got)
+	}
+	if len(got) != 71 { // "sha256:" + 64 hex chars
+		t.Errorf("ComputeChecksum length = %d, want 71", len(got))
 	}
 }
 
 func TestTuneAll_ChecksumSingleBitFlip(t *testing.T) {
-	// Flip one character in the hash — must fail.
-	// Original ends in ...fc22, flip last char to fc23.
-	flipped := "sha256:dc51b8c96c2d745df3bd5590d990230a482fd247123599548e0632fdbf97fc23"
+	cs := bashChecksum(t)
+	// Flip last character.
+	flipped := cs[:len(cs)-1] + "0"
+	if flipped == cs {
+		flipped = cs[:len(cs)-1] + "1"
+	}
 	reg := InstrumentRegistry{
-		"flipped": tuneManifestWithChecksum("flipped", "echo ok", flipped),
+		"flipped": tuneManifestWithChecksum("flipped", flipped),
 	}
 	err := TuneAll(t.Context(), reg, "")
 	if err == nil {
@@ -204,15 +212,24 @@ func TestTuneAll_ChecksumSingleBitFlip(t *testing.T) {
 	}
 }
 
-func TestVerifyChecksum_Direct(t *testing.T) {
-	// Direct unit test for verifyChecksum.
-	if err := verifyChecksum("test", []byte("ok\n"), echoOKChecksum); err != nil {
-		t.Errorf("verifyChecksum: %v", err)
+func TestHashBinary(t *testing.T) {
+	got, err := hashBinary("bash")
+	if err != nil {
+		t.Fatalf("hashBinary: %v", err)
 	}
-	if err := verifyChecksum("test", []byte("tampered\n"), echoOKChecksum); err == nil {
-		t.Error("verifyChecksum: expected error for tampered content")
+	if !strings.HasPrefix(got, "sha256:") {
+		t.Errorf("hashBinary = %q, want sha256:... prefix", got)
 	}
-	if err := verifyChecksum("test", []byte("ok\n"), "noprefix"); err == nil {
-		t.Error("verifyChecksum: expected error for missing sha256: prefix")
+	// Same binary should produce same hash.
+	got2, _ := hashBinary("bash")
+	if got != got2 {
+		t.Errorf("hashBinary not deterministic: %q != %q", got, got2)
+	}
+}
+
+func TestHashBinary_NotFound(t *testing.T) {
+	_, err := hashBinary("nonexistent-binary-xyz-123")
+	if err == nil {
+		t.Error("expected error for nonexistent binary")
 	}
 }

@@ -122,6 +122,7 @@ var InstrumentFields = FieldRegistry{
 	"version":     {},
 	"description": {},
 	"dispatch":    {Required: true, ValidValues: ValidDispatchModes},
+	"binary":      {},
 	"tune":        {Required: true},
 	"checksum":    {},
 	"endpoint":    {},

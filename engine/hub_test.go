@@ -178,9 +178,10 @@ func testHubManifest(name, action string) *circuit.InstrumentManifest {
 		Name:      name,
 		Namespace: "test",
 		Dispatch:  circuit.DispatchCLI,
-		Tune:      "true",
+		Binary:    "echo",
+		Tune:      "--version",
 		Actions: map[string]def.ActionDef{
-			action: {Command: "echo ok"},
+			action: {Command: "ok"},
 		},
 	}
 }
