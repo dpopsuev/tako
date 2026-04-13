@@ -21,7 +21,8 @@ nodes:
   - name: fix
     instrument: transformer
     action: fix
-    description: "Diagnose and fix the highest priority finding"
+    gate: approval
+    description: "Diagnose and fix the highest priority finding — human reviews diff before merge"
     output:
       - name: fixed
         type: array

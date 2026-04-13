@@ -239,6 +239,10 @@ type StartParams struct {
 	// Copied by the framework. Used by the session bridge to pass
 	// instruments to engine.GraphRegistries.Instruments.
 	Instruments engine.InstrumentRegistry
+
+	// ApprovalStore enables gate: approval on circuit nodes. Copied from
+	// CircuitConfig. Passed to engine.GraphRegistries.ApprovalStore.
+	ApprovalStore engine.ApprovalStore
 }
 
 // SchematicHooks groups the domain-specific callbacks that a schematic

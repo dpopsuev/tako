@@ -719,6 +719,7 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 		SubCircuitResolvers: s.Config.SubCircuitResolvers,
 		Tools:               s.Config.Tools,
 		Instruments:         s.Config.Instruments,
+		ApprovalStore:       s.Config.ApprovalStore,
 	}
 	if recorder != nil {
 		params.Observer = recorder

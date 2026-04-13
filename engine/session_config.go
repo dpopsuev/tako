@@ -149,4 +149,8 @@ type SessionParams struct {
 	// Instruments is the instrument registry from fold-generated code.
 	// Passed to GraphRegistries.Instruments for dispatch.
 	Instruments InstrumentRegistry
+
+	// ApprovalStore enables gate: approval on circuit nodes. When set,
+	// the engine parks node output for human review via the approval MCP tool.
+	ApprovalStore ApprovalStore
 }
