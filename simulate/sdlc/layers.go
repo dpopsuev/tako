@@ -7,7 +7,6 @@ var OrigamiLayers = []string{
 	// Foundation
 	"circuit/def",
 	"circuit",
-	"circuit/topology",
 	// Shared
 	"toolkit",
 	"roster",
@@ -35,7 +34,6 @@ var OrigamiLayers = []string{
 	"mediator",
 	"lsp",
 	"autodoc",
-	"domainfs",
 	"domainserve",
 	// Infrastructure
 	"mcp",
@@ -55,9 +53,6 @@ var OrigamiLayers = []string{
 	"testkit/contracts",
 	"testkit/assertions",
 	"testkit/acceptance",
-	// View
-	"view",
-	"cli",
 	// Binaries
 	"cmd/origami",
 	"cmd/operator",
