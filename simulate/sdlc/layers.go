@@ -18,6 +18,7 @@ var OrigamiLayers = []string{
 	"internal/mathutil",
 	"report",
 	// Engine
+	"engine/gate",
 	"engine/handler",
 	"engine/trace",
 	"engine/telemetry",

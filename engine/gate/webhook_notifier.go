@@ -1,12 +1,9 @@
-package engine
-
-// Category: Execution — webhook notifier for approval gates.
+package gate
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -16,7 +13,7 @@ import (
 )
 
 // ErrWebhookFailed is returned when the webhook HTTP POST fails.
-var ErrWebhookFailed = errors.New("webhook failed")
+var ErrWebhookFailed = fmt.Errorf("webhook failed")
 
 // WebhookNotifier sends HTTP POST notifications when items are parked
 // for approval. Follows CloudEvents envelope format.

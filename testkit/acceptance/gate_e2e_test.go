@@ -10,6 +10,7 @@ import (
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/origami/engine/gate"
 	"github.com/dpopsuev/origami/testkit/assertions"
 	"github.com/dpopsuev/origami/testkit/stubs"
 )
@@ -24,7 +25,7 @@ func gateCircuit(gatedNode string) *circuit.CircuitDef {
 		Done:    "_done",
 		Nodes: []circuit.NodeDef{
 			{Name: "process", Instrument: "transformer", Action: "passthrough"},
-			{Name: nn, Instrument: "transformer", Action: "passthrough", Gate: engine.GateApproval},
+			{Name: nn, Instrument: "transformer", Action: "passthrough", Gate: gate.GateApproval},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "process-" + gatedNode, From: "process", To: nn},
@@ -33,7 +34,7 @@ func gateCircuit(gatedNode string) *circuit.CircuitDef {
 	}
 }
 
-func buildGateGraph(t *testing.T, def *circuit.CircuitDef, store engine.ApprovalStore, notifier engine.Notifier) (engine.Graph, *traceCollector) {
+func buildGateGraph(t *testing.T, def *circuit.CircuitDef, store gate.ApprovalStore, notifier gate.Notifier) (engine.Graph, *traceCollector) {
 	t.Helper()
 	reg := &engine.GraphRegistries{
 		ApprovalStore:    store,
@@ -114,8 +115,8 @@ func TestGateE2E_ParkApproveResume(t *testing.T) {
 		t.Errorf("notifier calls = %d, want 1", notifier.CallCount())
 	}
 
-	err := store.Resolve(ctx, parked.ID, engine.Decision{
-		Status:   engine.ApprovalApproved,
+	err := store.Resolve(ctx, parked.ID, gate.Decision{
+		Status:   gate.ApprovalApproved,
 		Comment:  "LGTM",
 		Operator: "test-operator",
 	})
@@ -149,8 +150,8 @@ func TestGateE2E_ResumeAfterApproval(t *testing.T) {
 	parked := assertions.AssertParked(t, store, "deploy")
 
 	// Approve.
-	store.Resolve(ctx, parked.ID, engine.Decision{
-		Status: engine.ApprovalApproved, Operator: "test",
+	store.Resolve(ctx, parked.ID, gate.Decision{
+		Status: gate.ApprovalApproved, Operator: "test",
 	})
 
 	// Resume walk from the edge after the gated node.
@@ -196,8 +197,8 @@ func TestGateE2E_RejectionWithComment(t *testing.T) {
 	parked := assertions.AssertParked(t, store, "deploy")
 
 	// Reject WITH comment.
-	err := store.Resolve(ctx, parked.ID, engine.Decision{
-		Status:   engine.ApprovalRejected,
+	err := store.Resolve(ctx, parked.ID, gate.Decision{
+		Status:   gate.ApprovalRejected,
 		Comment:  "Not ready for production — missing rollback plan",
 		Operator: "reviewer",
 	})
@@ -239,8 +240,8 @@ func TestGateE2E_MultiGate_SequentialApproval(t *testing.T) {
 		Done:    "_done",
 		Nodes: []circuit.NodeDef{
 			{Name: "process", Instrument: "transformer", Action: "passthrough"},
-			{Name: "review", Instrument: "transformer", Action: "passthrough", Gate: engine.GateApproval},
-			{Name: "deploy", Instrument: "transformer", Action: "passthrough", Gate: engine.GateApproval},
+			{Name: "review", Instrument: "transformer", Action: "passthrough", Gate: gate.GateApproval},
+			{Name: "deploy", Instrument: "transformer", Action: "passthrough", Gate: gate.GateApproval},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "process-review", From: "process", To: "review"},
@@ -272,8 +273,8 @@ func TestGateE2E_MultiGate_SequentialApproval(t *testing.T) {
 	t.Logf("gate 1: id=%s node=%s", parked1.ID, parked1.NodeName)
 
 	// Approve first gate.
-	store.Resolve(ctx, parked1.ID, engine.Decision{
-		Status: engine.ApprovalApproved, Operator: "lead", Comment: "code looks good",
+	store.Resolve(ctx, parked1.ID, gate.Decision{
+		Status: gate.ApprovalApproved, Operator: "lead", Comment: "code looks good",
 	})
 
 	// Walk 2: resume from review's successor — should park at deploy.
@@ -291,8 +292,8 @@ func TestGateE2E_MultiGate_SequentialApproval(t *testing.T) {
 	}
 
 	// Approve second gate.
-	store.Resolve(ctx, parked2.ID, engine.Decision{
-		Status: engine.ApprovalApproved, Operator: "ops", Comment: "deploy approved",
+	store.Resolve(ctx, parked2.ID, gate.Decision{
+		Status: gate.ApprovalApproved, Operator: "ops", Comment: "deploy approved",
 	})
 
 	// Verify both approved, none pending.
@@ -355,7 +356,7 @@ func TestGateE2E_RetryAfterRejection(t *testing.T) {
 		Done:    "_done",
 		Nodes: []circuit.NodeDef{
 			{Name: "process", Instrument: "transformer", Action: "passthrough"},
-			{Name: "deploy", Instrument: "transformer", Action: "capture-feedback", Gate: engine.GateApproval},
+			{Name: "deploy", Instrument: "transformer", Action: "capture-feedback", Gate: gate.GateApproval},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "process-deploy", From: "process", To: "deploy"},
@@ -392,8 +393,8 @@ func TestGateE2E_RetryAfterRejection(t *testing.T) {
 	}
 
 	// Reject with comment.
-	err = store.Resolve(ctx, parked.ID, engine.Decision{
-		Status:   engine.ApprovalRejected,
+	err = store.Resolve(ctx, parked.ID, gate.Decision{
+		Status:   gate.ApprovalRejected,
 		Comment:  "missing rollback plan",
 		Operator: "reviewer",
 	})
@@ -426,8 +427,8 @@ func TestGateE2E_RetryAfterRejection(t *testing.T) {
 		t.Error("re-parked item has same ID as original — should be unique")
 	}
 
-	err = store.Resolve(ctx, parked2.ID, engine.Decision{
-		Status:   engine.ApprovalApproved,
+	err = store.Resolve(ctx, parked2.ID, gate.Decision{
+		Status:   gate.ApprovalApproved,
 		Comment:  "rollback plan added",
 		Operator: "lead",
 	})

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/origami/engine/gate"
 )
 
 // RunApprovalStoreContract verifies that an ApprovalStore implementation
@@ -15,20 +15,20 @@ import (
 // Usage:
 //
 //	func TestMyStore_Contract(t *testing.T) {
-//	    contracts.RunApprovalStoreContract(t, func() engine.ApprovalStore {
+//	    contracts.RunApprovalStoreContract(t, func() gate.ApprovalStore {
 //	        return NewMyApprovalStore()
 //	    })
 //	}
-func RunApprovalStoreContract(t *testing.T, factory func() engine.ApprovalStore) {
+func RunApprovalStoreContract(t *testing.T, factory func() gate.ApprovalStore) {
 	t.Helper()
 
-	item := engine.ApprovalItem{
+	item := gate.ApprovalItem{
 		ID:         "test-001",
 		CircuitRun: "run-abc",
 		NodeName:   "create-pr",
 		Output:     json.RawMessage(`{"diff": "...", "title": "Fix bug"}`),
 		ParkedAt:   time.Now(),
-		Status:     engine.ApprovalPending,
+		Status:     gate.ApprovalPending,
 	}
 
 	t.Run("Park_and_Get", func(t *testing.T) {
@@ -46,7 +46,7 @@ func RunApprovalStoreContract(t *testing.T, factory func() engine.ApprovalStore)
 		if got.NodeName != item.NodeName {
 			t.Errorf("NodeName = %q, want %q", got.NodeName, item.NodeName)
 		}
-		if got.Status != engine.ApprovalPending {
+		if got.Status != gate.ApprovalPending {
 			t.Errorf("Status = %q, want pending", got.Status)
 		}
 	})
@@ -55,7 +55,7 @@ func RunApprovalStoreContract(t *testing.T, factory func() engine.ApprovalStore)
 		store := factory()
 		store.Park(context.Background(), item)
 
-		pending, err := store.List(context.Background(), engine.ApprovalPending)
+		pending, err := store.List(context.Background(), gate.ApprovalPending)
 		if err != nil {
 			t.Fatalf("List: %v", err)
 		}
@@ -71,8 +71,8 @@ func RunApprovalStoreContract(t *testing.T, factory func() engine.ApprovalStore)
 		store := factory()
 		store.Park(context.Background(), item)
 
-		decision := engine.Decision{
-			Status:   engine.ApprovalApproved,
+		decision := gate.Decision{
+			Status:   gate.ApprovalApproved,
 			Comment:  "LGTM",
 			Operator: "alice",
 		}
@@ -81,7 +81,7 @@ func RunApprovalStoreContract(t *testing.T, factory func() engine.ApprovalStore)
 		}
 
 		got, _ := store.Get(context.Background(), item.ID)
-		if got.Status != engine.ApprovalApproved {
+		if got.Status != gate.ApprovalApproved {
 			t.Errorf("Status after approve = %q, want approved", got.Status)
 		}
 		if got.Decision == nil {
@@ -96,15 +96,15 @@ func RunApprovalStoreContract(t *testing.T, factory func() engine.ApprovalStore)
 		store := factory()
 		store.Park(context.Background(), item)
 
-		decision := engine.Decision{
-			Status:   engine.ApprovalRejected,
+		decision := gate.Decision{
+			Status:   gate.ApprovalRejected,
 			Comment:  "Needs rework",
 			Operator: "bob",
 		}
 		store.Resolve(context.Background(), item.ID, decision)
 
 		got, _ := store.Get(context.Background(), item.ID)
-		if got.Status != engine.ApprovalRejected {
+		if got.Status != gate.ApprovalRejected {
 			t.Errorf("Status after reject = %q, want rejected", got.Status)
 		}
 	})
@@ -112,16 +112,16 @@ func RunApprovalStoreContract(t *testing.T, factory func() engine.ApprovalStore)
 	t.Run("List_After_Resolve_Excludes_Resolved", func(t *testing.T) {
 		store := factory()
 		store.Park(context.Background(), item)
-		store.Resolve(context.Background(), item.ID, engine.Decision{
-			Status: engine.ApprovalApproved, Operator: "alice",
+		store.Resolve(context.Background(), item.ID, gate.Decision{
+			Status: gate.ApprovalApproved, Operator: "alice",
 		})
 
-		pending, _ := store.List(context.Background(), engine.ApprovalPending)
+		pending, _ := store.List(context.Background(), gate.ApprovalPending)
 		if len(pending) != 0 {
 			t.Errorf("List pending after resolve = %d, want 0", len(pending))
 		}
 
-		approved, _ := store.List(context.Background(), engine.ApprovalApproved)
+		approved, _ := store.List(context.Background(), gate.ApprovalApproved)
 		if len(approved) != 1 {
 			t.Errorf("List approved = %d, want 1", len(approved))
 		}
@@ -137,8 +137,8 @@ func RunApprovalStoreContract(t *testing.T, factory func() engine.ApprovalStore)
 
 	t.Run("Resolve_NotFound", func(t *testing.T) {
 		store := factory()
-		err := store.Resolve(context.Background(), "nonexistent", engine.Decision{
-			Status: engine.ApprovalApproved, Operator: "alice",
+		err := store.Resolve(context.Background(), "nonexistent", gate.Decision{
+			Status: gate.ApprovalApproved, Operator: "alice",
 		})
 		if err == nil {
 			t.Error("Resolve nonexistent should return error")

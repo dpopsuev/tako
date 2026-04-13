@@ -4,16 +4,16 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/origami/engine/gate"
 	"github.com/dpopsuev/origami/testkit/assertions"
 	"github.com/dpopsuev/origami/testkit/stubs"
 )
 
 func parkItem(store *stubs.MemoryApprovalStore, node string) {
-	item := engine.ApprovalItem{
+	item := gate.ApprovalItem{
 		ID:       "apr-" + node,
 		NodeName: node,
-		Status:   engine.ApprovalPending,
+		Status:   gate.ApprovalPending,
 	}
 	store.Park(context.TODO(), item)
 }
@@ -32,8 +32,8 @@ func TestAssertApproved_AfterResolve(t *testing.T) {
 	store := stubs.NewMemoryApprovalStore()
 	parkItem(store, "deploy")
 
-	store.Resolve(context.TODO(), "apr-deploy", engine.Decision{
-		Status:   engine.ApprovalApproved,
+	store.Resolve(context.TODO(), "apr-deploy", gate.Decision{
+		Status:   gate.ApprovalApproved,
 		Operator: "test",
 	})
 
@@ -49,8 +49,8 @@ func TestAssertNoPending_AfterResolve(t *testing.T) {
 	store := stubs.NewMemoryApprovalStore()
 	parkItem(store, "deploy")
 
-	store.Resolve(context.TODO(), "apr-deploy", engine.Decision{
-		Status:   engine.ApprovalApproved,
+	store.Resolve(context.TODO(), "apr-deploy", gate.Decision{
+		Status:   gate.ApprovalApproved,
 		Operator: "test",
 	})
 

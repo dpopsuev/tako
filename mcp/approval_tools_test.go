@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/origami/engine/gate"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -26,25 +26,25 @@ func extractText(t *testing.T, res *sdkmcp.CallToolResult) string {
 
 // testStore is a minimal in-memory ApprovalStore for mcp-internal tests.
 type testStore struct {
-	items map[string]*engine.ApprovalItem
+	items map[string]*gate.ApprovalItem
 }
 
-func newTestStore() *testStore { return &testStore{items: make(map[string]*engine.ApprovalItem)} }
-func (s *testStore) Park(_ context.Context, item engine.ApprovalItem) error {
+func newTestStore() *testStore { return &testStore{items: make(map[string]*gate.ApprovalItem)} }
+func (s *testStore) Park(_ context.Context, item gate.ApprovalItem) error {
 	cp := item
 	s.items[item.ID] = &cp
 	return nil
 }
-func (s *testStore) Get(_ context.Context, id string) (*engine.ApprovalItem, error) {
+func (s *testStore) Get(_ context.Context, id string) (*gate.ApprovalItem, error) {
 	item, ok := s.items[id]
 	if !ok {
-		return nil, engine.ErrApprovalNotFound
+		return nil, gate.ErrApprovalNotFound
 	}
 	cp := *item
 	return &cp, nil
 }
-func (s *testStore) List(_ context.Context, status engine.ApprovalStatus) ([]engine.ApprovalItem, error) {
-	var result []engine.ApprovalItem
+func (s *testStore) List(_ context.Context, status gate.ApprovalStatus) ([]gate.ApprovalItem, error) {
+	var result []gate.ApprovalItem
 	for _, item := range s.items {
 		if item.Status == status {
 			result = append(result, *item)
@@ -52,10 +52,10 @@ func (s *testStore) List(_ context.Context, status engine.ApprovalStatus) ([]eng
 	}
 	return result, nil
 }
-func (s *testStore) Resolve(_ context.Context, id string, d engine.Decision) error {
+func (s *testStore) Resolve(_ context.Context, id string, d gate.Decision) error {
 	item, ok := s.items[id]
 	if !ok {
-		return engine.ErrApprovalNotFound
+		return gate.ErrApprovalNotFound
 	}
 	item.Status = d.Status
 	item.Decision = &d
@@ -80,8 +80,8 @@ func TestApprovalHandler_ListEmpty(t *testing.T) {
 
 func TestApprovalHandler_ParkAndList(t *testing.T) {
 	store := newTestStore()
-	store.Park(t.Context(), engine.ApprovalItem{
-		ID: "test-001", NodeName: "create-pr", Status: engine.ApprovalPending,
+	store.Park(t.Context(), gate.ApprovalItem{
+		ID: "test-001", NodeName: "create-pr", Status: gate.ApprovalPending,
 		Output: json.RawMessage(`{"diff":"..."}`), ParkedAt: time.Now(),
 	})
 	srv := &CircuitServer{Config: &CircuitConfig{ApprovalStore: store}}
@@ -100,8 +100,8 @@ func TestApprovalHandler_ParkAndList(t *testing.T) {
 
 func TestApprovalHandler_Approve(t *testing.T) {
 	store := newTestStore()
-	store.Park(t.Context(), engine.ApprovalItem{
-		ID: "test-001", NodeName: "create-pr", Status: engine.ApprovalPending,
+	store.Park(t.Context(), gate.ApprovalItem{
+		ID: "test-001", NodeName: "create-pr", Status: gate.ApprovalPending,
 	})
 	srv := &CircuitServer{Config: &CircuitConfig{ApprovalStore: store}}
 
@@ -113,7 +113,7 @@ func TestApprovalHandler_Approve(t *testing.T) {
 	}
 
 	item, _ := store.Get(t.Context(), "test-001")
-	if item.Status != engine.ApprovalApproved {
+	if item.Status != gate.ApprovalApproved {
 		t.Errorf("status = %q, want approved", item.Status)
 	}
 	if item.Decision.Operator != "alice" {
@@ -123,8 +123,8 @@ func TestApprovalHandler_Approve(t *testing.T) {
 
 func TestApprovalHandler_Reject(t *testing.T) {
 	store := newTestStore()
-	store.Park(t.Context(), engine.ApprovalItem{
-		ID: "test-001", NodeName: "deploy", Status: engine.ApprovalPending,
+	store.Park(t.Context(), gate.ApprovalItem{
+		ID: "test-001", NodeName: "deploy", Status: gate.ApprovalPending,
 	})
 	srv := &CircuitServer{Config: &CircuitConfig{ApprovalStore: store}}
 
@@ -133,15 +133,15 @@ func TestApprovalHandler_Reject(t *testing.T) {
 	})
 
 	item, _ := store.Get(t.Context(), "test-001")
-	if item.Status != engine.ApprovalRejected {
+	if item.Status != gate.ApprovalRejected {
 		t.Errorf("status = %q, want rejected", item.Status)
 	}
 }
 
 func TestApprovalHandler_GetById(t *testing.T) {
 	store := newTestStore()
-	store.Park(t.Context(), engine.ApprovalItem{
-		ID: "test-001", NodeName: "create-pr", Status: engine.ApprovalPending,
+	store.Park(t.Context(), gate.ApprovalItem{
+		ID: "test-001", NodeName: "create-pr", Status: gate.ApprovalPending,
 		Output: json.RawMessage(`{"diff":"fix auth"}`),
 	})
 	srv := &CircuitServer{Config: &CircuitConfig{ApprovalStore: store}}

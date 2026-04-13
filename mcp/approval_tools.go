@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/origami/engine/gate"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -28,12 +28,12 @@ type approvalInput struct {
 }
 
 type approvalListOutput struct {
-	Items []engine.ApprovalItem `json:"items"`
-	Count int                   `json:"count"`
+	Items []gate.ApprovalItem `json:"items"`
+	Count int                 `json:"count"`
 }
 
 type approvalGetOutput struct {
-	engine.ApprovalItem
+	gate.ApprovalItem
 }
 
 type approvalResolveOutput struct {
@@ -66,9 +66,9 @@ func (s *CircuitServer) handleApprovalDispatch(ctx context.Context, req *sdkmcp.
 	case actionGet:
 		return s.handleApprovalGet(ctx, input)
 	case actionApprove:
-		return s.handleApprovalResolve(ctx, input, engine.ApprovalApproved)
+		return s.handleApprovalResolve(ctx, input, gate.ApprovalApproved)
 	case actionReject:
-		return s.handleApprovalResolve(ctx, input, engine.ApprovalRejected)
+		return s.handleApprovalResolve(ctx, input, gate.ApprovalRejected)
 	case actionComment:
 		return s.handleApprovalComment(ctx, input)
 	default:
@@ -77,12 +77,12 @@ func (s *CircuitServer) handleApprovalDispatch(ctx context.Context, req *sdkmcp.
 }
 
 func (s *CircuitServer) handleApprovalList(ctx context.Context, _ approvalInput) (*sdkmcp.CallToolResult, approvalListOutput, error) {
-	items, err := s.Config.ApprovalStore.List(ctx, engine.ApprovalPending)
+	items, err := s.Config.ApprovalStore.List(ctx, gate.ApprovalPending)
 	if err != nil {
 		return nil, approvalListOutput{}, err
 	}
 	if items == nil {
-		items = []engine.ApprovalItem{}
+		items = []gate.ApprovalItem{}
 	}
 
 	// Sort by priority: critical > high > medium > low > empty.
@@ -113,7 +113,7 @@ func (s *CircuitServer) handleApprovalGet(ctx context.Context, input approvalInp
 	}, approvalListOutput{}, nil
 }
 
-func (s *CircuitServer) handleApprovalResolve(ctx context.Context, input approvalInput, status engine.ApprovalStatus) (*sdkmcp.CallToolResult, approvalListOutput, error) {
+func (s *CircuitServer) handleApprovalResolve(ctx context.Context, input approvalInput, status gate.ApprovalStatus) (*sdkmcp.CallToolResult, approvalListOutput, error) {
 	if input.ID == "" {
 		return toolError(ErrApprovalIDRequired), approvalListOutput{}, nil
 	}
@@ -123,7 +123,7 @@ func (s *CircuitServer) handleApprovalResolve(ctx context.Context, input approva
 		operator = "unknown"
 	}
 
-	decision := engine.Decision{
+	decision := gate.Decision{
 		Status:   status,
 		Comment:  input.Comment,
 		Operator: operator,

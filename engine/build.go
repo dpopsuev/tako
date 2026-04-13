@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine/gate"
 	"github.com/dpopsuev/troupe/identity"
 )
 
@@ -65,8 +66,8 @@ type GraphRegistries struct {
 	MediatorEndpoint string
 
 	// Approval gate wiring.
-	ApprovalStore    ApprovalStore // optional — parks output at gated nodes
-	ApprovalNotifier Notifier      // optional — sends notifications when items are parked
+	ApprovalStore    gate.ApprovalStore // optional — parks output at gated nodes
+	ApprovalNotifier gate.Notifier      // optional — sends notifications when items are parked
 }
 
 // BuildGraph constructs a Graph from a circuit.CircuitDef using the full registries bundle.

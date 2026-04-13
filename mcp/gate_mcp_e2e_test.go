@@ -10,6 +10,7 @@ import (
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/origami/engine/gate"
 	"github.com/dpopsuev/origami/mcp"
 	"github.com/dpopsuev/origami/testkit/stubs"
 	"github.com/dpopsuev/troupe/signal"
@@ -39,7 +40,7 @@ func TestGateMCP_E2E_ApproveViaToolLayer(t *testing.T) {
 		Done:    "_done",
 		Nodes: []circuit.NodeDef{
 			{Name: "process", Instrument: "transformer", Action: "passthrough"},
-			{Name: "deploy", Instrument: "transformer", Action: "passthrough", Gate: engine.GateApproval},
+			{Name: "deploy", Instrument: "transformer", Action: "passthrough", Gate: gate.GateApproval},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "process-deploy", From: "process", To: "deploy"},

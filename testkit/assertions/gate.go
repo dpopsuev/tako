@@ -8,17 +8,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/origami/engine/gate"
 )
 
 // AssertParked verifies that a pending approval item exists for the given node.
 // On failure, dumps the full store contents for debugging.
-func AssertParked(tb testing.TB, store engine.ApprovalStore, nodeName string) engine.ApprovalItem {
+func AssertParked(tb testing.TB, store gate.ApprovalStore, nodeName string) gate.ApprovalItem {
 	tb.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	items, err := store.List(ctx, engine.ApprovalPending)
+	items, err := store.List(ctx, gate.ApprovalPending)
 	if err != nil {
 		tb.Fatalf("AssertParked: List failed: %v", err)
 	}
@@ -31,12 +31,12 @@ func AssertParked(tb testing.TB, store engine.ApprovalStore, nodeName string) en
 
 	// Failure — dump store for debugging.
 	tb.Fatalf("AssertParked: no pending item for node %q\n%s", nodeName, dumpStore(ctx, store))
-	return engine.ApprovalItem{} // unreachable
+	return gate.ApprovalItem{} // unreachable
 }
 
 // AssertApproved verifies that an approval item has been approved.
 // On failure, dumps the item's current state.
-func AssertApproved(tb testing.TB, store engine.ApprovalStore, itemID string) {
+func AssertApproved(tb testing.TB, store gate.ApprovalStore, itemID string) {
 	tb.Helper()
 	ctx := context.Background()
 
@@ -44,14 +44,14 @@ func AssertApproved(tb testing.TB, store engine.ApprovalStore, itemID string) {
 	if err != nil {
 		tb.Fatalf("AssertApproved: Get(%q) failed: %v", itemID, err)
 	}
-	if item.Status != engine.ApprovalApproved {
+	if item.Status != gate.ApprovalApproved {
 		tb.Fatalf("AssertApproved: item %q status = %q, want %q\n%s",
-			itemID, item.Status, engine.ApprovalApproved, dumpItem(item))
+			itemID, item.Status, gate.ApprovalApproved, dumpItem(item))
 	}
 }
 
 // AssertRejected verifies that an approval item has been rejected.
-func AssertRejected(tb testing.TB, store engine.ApprovalStore, itemID string) {
+func AssertRejected(tb testing.TB, store gate.ApprovalStore, itemID string) {
 	tb.Helper()
 	ctx := context.Background()
 
@@ -59,18 +59,18 @@ func AssertRejected(tb testing.TB, store engine.ApprovalStore, itemID string) {
 	if err != nil {
 		tb.Fatalf("AssertRejected: Get(%q) failed: %v", itemID, err)
 	}
-	if item.Status != engine.ApprovalRejected {
+	if item.Status != gate.ApprovalRejected {
 		tb.Fatalf("AssertRejected: item %q status = %q, want %q\n%s",
-			itemID, item.Status, engine.ApprovalRejected, dumpItem(item))
+			itemID, item.Status, gate.ApprovalRejected, dumpItem(item))
 	}
 }
 
 // AssertNoPending verifies that the store has no pending items.
-func AssertNoPending(tb testing.TB, store engine.ApprovalStore) {
+func AssertNoPending(tb testing.TB, store gate.ApprovalStore) {
 	tb.Helper()
 	ctx := context.Background()
 
-	items, err := store.List(ctx, engine.ApprovalPending)
+	items, err := store.List(ctx, gate.ApprovalPending)
 	if err != nil {
 		tb.Fatalf("AssertNoPending: List failed: %v", err)
 	}
@@ -80,9 +80,9 @@ func AssertNoPending(tb testing.TB, store engine.ApprovalStore) {
 }
 
 // dumpStore returns a formatted summary of all store items for debugging.
-func dumpStore(ctx context.Context, store engine.ApprovalStore) string {
-	var all []engine.ApprovalItem
-	for _, status := range []engine.ApprovalStatus{engine.ApprovalPending, engine.ApprovalApproved, engine.ApprovalRejected} {
+func dumpStore(ctx context.Context, store gate.ApprovalStore) string {
+	var all []gate.ApprovalItem
+	for _, status := range []gate.ApprovalStatus{gate.ApprovalPending, gate.ApprovalApproved, gate.ApprovalRejected} {
 		items, _ := store.List(ctx, status)
 		all = append(all, items...)
 	}
@@ -98,7 +98,7 @@ func dumpStore(ctx context.Context, store engine.ApprovalStore) string {
 }
 
 // dumpItem returns a JSON representation of an item for debugging.
-func dumpItem(item *engine.ApprovalItem) string {
+func dumpItem(item *gate.ApprovalItem) string {
 	data, _ := json.MarshalIndent(item, "  ", "  ")
 	return "  " + string(data)
 }

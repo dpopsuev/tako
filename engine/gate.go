@@ -1,74 +1,14 @@
 package engine
 
-// Category: Execution — approval gate for write nodes.
+// Category: Execution — approval gate resume logic.
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine/gate"
 )
-
-// GateApproval is the gate value that triggers engine-enforced approval.
-const GateApproval = "approval"
-
-// ApprovalStatus tracks the lifecycle of an approval item.
-type ApprovalStatus string
-
-const (
-	ApprovalPending  ApprovalStatus = "pending"
-	ApprovalApproved ApprovalStatus = "approved"
-	ApprovalRejected ApprovalStatus = "rejected"
-)
-
-// ApprovalItem represents a node output parked for human review.
-type ApprovalItem struct {
-	ID         string          `json:"id"`
-	CircuitRun string          `json:"circuit_run"`
-	NodeName   string          `json:"node_name"`
-	Circuit    string          `json:"circuit,omitempty"`  // sub-circuit that parked this item
-	Priority   string          `json:"priority,omitempty"` // critical > high > medium > low
-	SpecID     string          `json:"spec_id,omitempty"`  // Scribe artifact to validate against
-	Output     json.RawMessage `json:"output"`
-	ParkedAt   time.Time       `json:"parked_at"`
-	Status     ApprovalStatus  `json:"status"`
-	Decision   *Decision       `json:"decision,omitempty"`
-}
-
-// Decision is the human's verdict on a parked approval item.
-type Decision struct {
-	Status   ApprovalStatus `json:"status"`
-	Comment  string         `json:"comment,omitempty"`
-	Operator string         `json:"operator"`
-}
-
-// ApprovalStore persists pending approval items durably.
-// Implementations: MemoryApprovalStore (test), SQLiteApprovalStore (production).
-type ApprovalStore interface {
-	// Park stores a node output for human review.
-	Park(ctx context.Context, item ApprovalItem) error
-
-	// Get retrieves an approval item by ID.
-	Get(ctx context.Context, id string) (*ApprovalItem, error)
-
-	// List returns all items matching the given status.
-	List(ctx context.Context, status ApprovalStatus) ([]ApprovalItem, error)
-
-	// Resolve records the human's decision on a pending item.
-	Resolve(ctx context.Context, id string, decision Decision) error
-}
-
-// Notifier sends notifications when items are parked for approval.
-// Implementations: StubNotifier (test), SlackNotifier, WebhookNotifier.
-type Notifier interface {
-	Notify(ctx context.Context, item ApprovalItem) error
-}
-
-// ContextKeyRejectionFeedback is the walker context key where rejection
-// comments are injected before retrying a gated node.
-const ContextKeyRejectionFeedback = "rejection_feedback"
 
 // ResumeFromGate resumes a walk that was interrupted at a gated node.
 //
@@ -80,11 +20,11 @@ const ContextKeyRejectionFeedback = "rejection_feedback"
 // If the gate was approved: resumes the walk from the edges after the gated
 // node (walks the successor node).
 //
-// If the gate is still pending: returns ErrApprovalStillPending.
-func ResumeFromGate(ctx context.Context, g Graph, walker circuit.Walker, store ApprovalStore) error {
+// If the gate is still pending: returns gate.ErrApprovalStillPending.
+func ResumeFromGate(ctx context.Context, g Graph, walker circuit.Walker, store gate.ApprovalStore) error {
 	state := walker.State()
 	if state.Status != walkStatusInterrupted || state.CurrentNode == "" {
-		return ErrNoGatedNode
+		return gate.ErrNoGatedNode
 	}
 
 	gatedNode := state.CurrentNode
@@ -109,21 +49,21 @@ func ResumeFromGate(ctx context.Context, g Graph, walker circuit.Walker, store A
 	}
 
 	switch item.Status {
-	case ApprovalPending:
-		return fmt.Errorf("%w: %s", ErrApprovalStillPending, itemID)
+	case gate.ApprovalPending:
+		return fmt.Errorf("%w: %s", gate.ErrApprovalStillPending, itemID)
 
-	case ApprovalRejected:
+	case gate.ApprovalRejected:
 		// Inject rejection feedback into walker context for the retry.
 		if item.Decision != nil && item.Decision.Comment != "" {
-			state.Context[ContextKeyRejectionFeedback] = item.Decision.Comment
+			state.Context[gate.ContextKeyRejectionFeedback] = item.Decision.Comment
 		}
 		// Reset walker status so Walk can proceed.
 		state.Status = walkStatusRunning
 		return g.Walk(ctx, walker, gatedNode)
 
-	case ApprovalApproved:
+	case gate.ApprovalApproved:
 		// Clear any prior rejection feedback.
-		delete(state.Context, ContextKeyRejectionFeedback)
+		delete(state.Context, gate.ContextKeyRejectionFeedback)
 		state.Status = walkStatusRunning
 
 		// Find the successor node and resume from there.
@@ -144,6 +84,6 @@ func ResumeFromGate(ctx context.Context, g Graph, walker circuit.Walker, store A
 		return g.Walk(ctx, walker, nextNode)
 
 	default:
-		return fmt.Errorf("%w: %q for %s", ErrUnexpectedApprovalStatus, item.Status, itemID)
+		return fmt.Errorf("%w: %q for %s", gate.ErrUnexpectedApprovalStatus, item.Status, itemID)
 	}
 }

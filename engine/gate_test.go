@@ -8,19 +8,20 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine/gate"
 )
 
 // testApprovalStore is a minimal in-memory ApprovalStore for engine-internal tests.
 type testApprovalStore struct {
 	mu    sync.Mutex
-	items map[string]*ApprovalItem
+	items map[string]*gate.ApprovalItem
 }
 
 func newTestApprovalStore() *testApprovalStore {
-	return &testApprovalStore{items: make(map[string]*ApprovalItem)}
+	return &testApprovalStore{items: make(map[string]*gate.ApprovalItem)}
 }
 
-func (s *testApprovalStore) Park(_ context.Context, item ApprovalItem) error {
+func (s *testApprovalStore) Park(_ context.Context, item gate.ApprovalItem) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	cp := item
@@ -28,21 +29,21 @@ func (s *testApprovalStore) Park(_ context.Context, item ApprovalItem) error {
 	return nil
 }
 
-func (s *testApprovalStore) Get(_ context.Context, id string) (*ApprovalItem, error) {
+func (s *testApprovalStore) Get(_ context.Context, id string) (*gate.ApprovalItem, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	item, ok := s.items[id]
 	if !ok {
-		return nil, fmt.Errorf("%w: %q", ErrApprovalNotFound, id)
+		return nil, fmt.Errorf("%w: %q", gate.ErrApprovalNotFound, id)
 	}
 	cp := *item
 	return &cp, nil
 }
 
-func (s *testApprovalStore) List(_ context.Context, status ApprovalStatus) ([]ApprovalItem, error) {
+func (s *testApprovalStore) List(_ context.Context, status gate.ApprovalStatus) ([]gate.ApprovalItem, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	var result []ApprovalItem
+	var result []gate.ApprovalItem
 	for _, item := range s.items {
 		if item.Status == status {
 			result = append(result, *item)
@@ -51,12 +52,12 @@ func (s *testApprovalStore) List(_ context.Context, status ApprovalStatus) ([]Ap
 	return result, nil
 }
 
-func (s *testApprovalStore) Resolve(_ context.Context, id string, decision Decision) error {
+func (s *testApprovalStore) Resolve(_ context.Context, id string, decision gate.Decision) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	item, ok := s.items[id]
 	if !ok {
-		return fmt.Errorf("%w: %q", ErrApprovalNotFound, id)
+		return fmt.Errorf("%w: %q", gate.ErrApprovalNotFound, id)
 	}
 	item.Status = decision.Status
 	item.Decision = &decision
@@ -66,11 +67,11 @@ func (s *testApprovalStore) Resolve(_ context.Context, id string, decision Decis
 // testNotifier records notification calls.
 type testNotifier struct {
 	mu    sync.Mutex
-	calls []ApprovalItem
+	calls []gate.ApprovalItem
 	err   error
 }
 
-func (n *testNotifier) Notify(_ context.Context, item ApprovalItem) error {
+func (n *testNotifier) Notify(_ context.Context, item gate.ApprovalItem) error {
 	n.mu.Lock()
 	defer n.mu.Unlock()
 	n.calls = append(n.calls, item)
@@ -93,7 +94,7 @@ func TestWalk_GatedNode_Interrupts(t *testing.T) {
 		Start:   "review",
 		Done:    "_done",
 		Nodes: []circuit.NodeDef{
-			{Name: "review", Instrument: "transformer", Action: "passthrough", Gate: GateApproval},
+			{Name: "review", Instrument: "transformer", Action: "passthrough", Gate: gate.GateApproval},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "review-done", From: "review", To: "_done"},
@@ -121,7 +122,7 @@ func TestWalk_GatedNode_Interrupts(t *testing.T) {
 	}
 
 	// Verify artifact was parked.
-	pending, err := store.List(context.Background(), ApprovalPending)
+	pending, err := store.List(context.Background(), gate.ApprovalPending)
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
@@ -165,7 +166,7 @@ func TestWalk_UngatedNode_NoInterrupt(t *testing.T) {
 	}
 
 	// No items should be parked.
-	pending, _ := store.List(context.Background(), ApprovalPending)
+	pending, _ := store.List(context.Background(), gate.ApprovalPending)
 	if len(pending) != 0 {
 		t.Errorf("pending = %d, want 0 for ungated node", len(pending))
 	}
@@ -177,7 +178,7 @@ func TestWalk_GatedNode_NotifiesSent(t *testing.T) {
 		Start:   "deploy",
 		Done:    "_done",
 		Nodes: []circuit.NodeDef{
-			{Name: "deploy", Instrument: "transformer", Action: "passthrough", Gate: GateApproval},
+			{Name: "deploy", Instrument: "transformer", Action: "passthrough", Gate: gate.GateApproval},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "deploy-done", From: "deploy", To: "_done"},
@@ -211,7 +212,7 @@ func TestWalk_GatedNode_NotifierError_DoesNotBlockPark(t *testing.T) {
 		Start:   "deploy",
 		Done:    "_done",
 		Nodes: []circuit.NodeDef{
-			{Name: "deploy", Instrument: "transformer", Action: "passthrough", Gate: GateApproval},
+			{Name: "deploy", Instrument: "transformer", Action: "passthrough", Gate: gate.GateApproval},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "deploy-done", From: "deploy", To: "_done"},
@@ -236,7 +237,7 @@ func TestWalk_GatedNode_NotifierError_DoesNotBlockPark(t *testing.T) {
 	g.Walk(context.Background(), walker, "deploy")
 
 	// Item should still be parked even if notification fails.
-	pending, _ := store.List(context.Background(), ApprovalPending)
+	pending, _ := store.List(context.Background(), gate.ApprovalPending)
 	if len(pending) != 1 {
 		t.Errorf("pending = %d, want 1 even when notifier fails", len(pending))
 	}

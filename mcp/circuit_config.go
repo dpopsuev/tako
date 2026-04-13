@@ -10,6 +10,7 @@ import (
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/origami/engine/gate"
 	"github.com/dpopsuev/origami/prompt"
 	"github.com/dpopsuev/origami/resource"
 	"github.com/dpopsuev/origami/toolkit"
@@ -168,7 +169,7 @@ type CircuitConfig struct {
 
 	// ApprovalStore enables the approval gate MCP tool. When set, the
 	// "approval" tool is registered with actions: list, get, approve, reject, comment.
-	ApprovalStore engine.ApprovalStore
+	ApprovalStore gate.ApprovalStore
 }
 
 // FindSchema returns the StepSchema for the given step name, or an error
@@ -242,7 +243,7 @@ type StartParams struct {
 
 	// ApprovalStore enables gate: approval on circuit nodes. Copied from
 	// CircuitConfig. Passed to engine.GraphRegistries.ApprovalStore.
-	ApprovalStore engine.ApprovalStore
+	ApprovalStore gate.ApprovalStore
 }
 
 // SchematicHooks groups the domain-specific callbacks that a schematic

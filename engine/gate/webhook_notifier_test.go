@@ -1,4 +1,4 @@
-package engine_test
+package gate_test
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/origami/engine/gate"
 )
 
 func TestWebhookNotifier_SendsCloudEvent(t *testing.T) {
@@ -25,15 +25,15 @@ func TestWebhookNotifier_SendsCloudEvent(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	notifier := engine.NewWebhookNotifier(srv.URL, "origami/test")
+	notifier := gate.NewWebhookNotifier(srv.URL, "origami/test")
 
-	item := engine.ApprovalItem{
+	item := gate.ApprovalItem{
 		ID:         "apr-001",
 		CircuitRun: "run-1",
 		NodeName:   "deploy",
 		Output:     json.RawMessage(`{"diff":"..."}`),
 		ParkedAt:   time.Now(),
-		Status:     engine.ApprovalPending,
+		Status:     gate.ApprovalPending,
 	}
 
 	err := notifier.Notify(context.Background(), item)
@@ -82,13 +82,13 @@ func TestWebhookNotifier_HandlesErrorResponse(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	notifier := engine.NewWebhookNotifier(srv.URL, "origami/test")
+	notifier := gate.NewWebhookNotifier(srv.URL, "origami/test")
 
-	err := notifier.Notify(context.Background(), engine.ApprovalItem{
+	err := notifier.Notify(context.Background(), gate.ApprovalItem{
 		ID:       "apr-002",
 		NodeName: "deploy",
 		ParkedAt: time.Now(),
-		Status:   engine.ApprovalPending,
+		Status:   gate.ApprovalPending,
 	})
 	if err == nil {
 		t.Fatal("expected error for 500 response")
@@ -96,5 +96,5 @@ func TestWebhookNotifier_HandlesErrorResponse(t *testing.T) {
 }
 
 func TestWebhookNotifier_ImplementsNotifier(t *testing.T) {
-	var _ engine.Notifier = (*engine.WebhookNotifier)(nil)
+	var _ gate.Notifier = (*gate.WebhookNotifier)(nil)
 }

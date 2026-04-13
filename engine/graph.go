@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/engine/gate"
 	"github.com/dpopsuev/troupe/identity"
 )
 
@@ -67,8 +68,8 @@ type DefaultGraph struct {
 	registries       *GraphRegistries          // retained for DelegateNode sub-walk building
 	graphFactory     GraphFactory              // injected factory for delegate sub-graph construction
 	hub              Hub                       // optional instrument hub — SetActiveNode on node entry
-	approvalStore    ApprovalStore             // optional — parks output at gated nodes
-	approvalNotifier Notifier                  // optional — sends notifications when items are parked
+	approvalStore    gate.ApprovalStore        // optional — parks output at gated nodes
+	approvalNotifier gate.Notifier             // optional — sends notifications when items are parked
 	gatedNodes       map[string]string         // node name → gate type (built from CircuitDef)
 }
 
@@ -143,13 +144,13 @@ func (g *DefaultGraph) parkForApproval(ctx context.Context, state *circuit.Walke
 
 	approvalID := fmt.Sprintf("%s:%s:%d", state.ID, nodeName, attempt)
 
-	item := ApprovalItem{
+	item := gate.ApprovalItem{
 		ID:         approvalID,
 		CircuitRun: state.ID,
 		NodeName:   nodeName,
 		Output:     output,
 		ParkedAt:   time.Now(),
-		Status:     ApprovalPending,
+		Status:     gate.ApprovalPending,
 	}
 
 	if err := g.approvalStore.Park(ctx, item); err != nil {
@@ -176,14 +177,14 @@ func WithGatedNodes(gates map[string]string) GraphOption {
 }
 
 // WithApprovalStore attaches a durable approval store for gated nodes.
-func WithApprovalStore(store ApprovalStore) GraphOption {
+func WithApprovalStore(store gate.ApprovalStore) GraphOption {
 	return func(g *DefaultGraph) {
 		g.approvalStore = store
 	}
 }
 
 // WithApprovalNotifier attaches a notifier for gated node approvals.
-func WithApprovalNotifier(n Notifier) GraphOption {
+func WithApprovalNotifier(n gate.Notifier) GraphOption {
 	return func(g *DefaultGraph) {
 		g.approvalNotifier = n
 	}
@@ -419,7 +420,7 @@ func (g *DefaultGraph) walkInner(ctx context.Context, walker circuit.Walker, sta
 		state.Outputs[node.Name()] = artifact
 
 		// Gate check: if this node has gate: approval, park the output and interrupt.
-		if g.gatedNodes != nil && g.gatedNodes[node.Name()] == GateApproval && g.approvalStore != nil {
+		if g.gatedNodes != nil && g.gatedNodes[node.Name()] == gate.GateApproval && g.approvalStore != nil {
 			if err := g.parkForApproval(ctx, state, node.Name(), artifact); err != nil {
 				slog.WarnContext(ctx, "gate: park failed", slog.Any(circuit.LogKeyNode, node.Name()), slog.Any(circuit.LogKeyError, err))
 			}

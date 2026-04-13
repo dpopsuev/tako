@@ -8,6 +8,7 @@ import (
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
+	"github.com/dpopsuev/origami/engine/gate"
 	"github.com/dpopsuev/origami/prompt"
 	"github.com/dpopsuev/origami/resource"
 	"github.com/dpopsuev/origami/toolkit"
@@ -152,5 +153,5 @@ type SessionParams struct {
 
 	// ApprovalStore enables gate: approval on circuit nodes. When set,
 	// the engine parks node output for human review via the approval MCP tool.
-	ApprovalStore ApprovalStore
+	ApprovalStore gate.ApprovalStore
 }
