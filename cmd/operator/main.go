@@ -18,7 +18,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/engine/trace"
 	"github.com/dpopsuev/origami/operator"
 	"github.com/dpopsuev/origami/simulate/sdlc"
@@ -33,7 +32,7 @@ const (
 
 func main() {
 	repoPath := flag.String("repo", ".", "repository path to watch")
-	mode := flag.String("mode", "in-process", "actor mode: in-process or container")
+	mode := flag.String("mode", "in-process", "actor mode: in-process, mcp, or container")
 	image := flag.String("image", "origami-sdlc:latest", "container image for circuit runner")
 	runtime := flag.String("runtime", "docker", "container runtime: docker or podman")
 	interval := flag.Duration("interval", 30*time.Second, "poll interval")
@@ -57,39 +56,19 @@ func main() {
 
 	var actor operator.Actor
 	switch *mode {
-	case "in-process":
-		// Set env so the factory picks up repo path and mode.
+	case "in-process", "mcp":
+		// Production path: MCPActor runs circuit through MCP transport.
 		os.Setenv(sdlc.EnvRepoPath, *repoPath)
 		os.Setenv(sdlc.EnvMode, "real")
-
-		factory := sdlc.SessionFactory()
-		actor = operator.NewInProcessActor(func(ctx context.Context, _ operator.DriftResult) (*operator.RunResult, error) {
-			start := time.Now()
-			cfg, err := factory.CreateSession(ctx, &engine.SessionParams{})
-			if err != nil {
-				return &operator.RunResult{Success: false, Duration: time.Since(start), Error: err.Error()}, nil
-			}
-			result, err := sdlc.Run(ctx, sdlc.RunConfig{
-				Transformers: cfg.Transformers,
-			})
-			if err != nil {
-				return &operator.RunResult{Success: false, Duration: time.Since(start), Error: err.Error()}, nil
-			}
-			for _, wr := range result.WalkResults {
-				if wr.Error != nil {
-					return &operator.RunResult{Success: false, Duration: time.Since(start), Error: wr.Error.Error()}, nil
-				}
-			}
-			return &operator.RunResult{Success: true, Duration: time.Since(start)}, nil
-		})
+		actor = operator.NewMCPActor(sdlc.SessionFactory())
 	case "container":
 		actor = operator.NewContainerActor(*image, *repoPath, operator.WithRuntime(*runtime))
 	default:
-		fmt.Fprintf(os.Stderr, "unknown mode: %s (use in-process or container)\n", *mode)
+		fmt.Fprintf(os.Stderr, "unknown mode: %s (use in-process, mcp, or container)\n", *mode)
 		os.Exit(1)
 	}
 
-	recorder := trace.NewFlightRecorder(5000)
+	recorder := trace.NewFlightRecorder(5000) //nolint:mnd // reasonable buffer
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()

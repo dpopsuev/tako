@@ -39,8 +39,9 @@ type RunResult struct {
 	Recorder *trace.FlightRecorder
 }
 
-// Run executes the SDLC circuit end-to-end with the given configuration.
-// Uses engine.BatchWalk directly — no MCP, no Dispatcher, no ceremony.
+// Deprecated: Run uses engine.BatchWalk directly, bypassing MCP dispatch.
+// Use operator.MCPActor with SessionFactory() for the production path.
+// Kept for test harness use only.
 func Run(ctx context.Context, cfg RunConfig) (*RunResult, error) {
 	def, err := LoadCircuit()
 	if err != nil {
