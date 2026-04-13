@@ -1,0 +1,171 @@
+kind: Schematic
+circuit: sdlc-gauntlet
+start: scan
+done: _done
+finally: teardown
+description: "E2E gauntlet — 11 nodes mapping to 7 user stories"
+nodes:
+  - name: scan
+    instrument: transformer
+    action: scan
+    description: "Story 1: detect lint issue, file task in Scribe"
+    output:
+      - name: clean
+        type: bool
+        required: true
+      - name: findings
+        type: array
+      - name: task_id
+        type: string
+
+  - name: poll-scribe
+    instrument: transformer
+    action: poll-scribe
+    description: "Story 2: poll Scribe for mature tasks, allocate"
+    output:
+      - name: has_task
+        type: bool
+        required: true
+      - name: task_id
+        type: string
+
+  - name: plan-review
+    instrument: transformer
+    action: plan-review
+    gate: approval
+    description: "Story 2: human reviews plan — gate parks for approval"
+    output:
+      - name: approved
+        type: bool
+        required: true
+
+  - name: write-test
+    instrument: transformer
+    action: write-test
+    description: "Story 3: RED phase — write test file"
+    output:
+      - name: test_file
+        type: string
+        required: true
+
+  - name: write-code
+    instrument: transformer
+    action: write-code
+    description: "Story 3: GREEN phase — apply fix patch"
+    output:
+      - name: files_changed
+        type: array
+        required: true
+
+  - name: build
+    instrument: transformer
+    action: build
+    description: "Story 4: compile the code"
+    output:
+      - name: pass
+        type: bool
+        required: true
+      - name: output
+        type: string
+
+  - name: test
+    instrument: transformer
+    action: test
+    description: "Story 4: run test suite"
+    output:
+      - name: pass
+        type: bool
+        required: true
+      - name: total
+        type: int
+      - name: failed
+        type: int
+
+  - name: self-review
+    instrument: transformer
+    action: self-review
+    description: "Story 4: stamp each requirement with file:line evidence"
+    output:
+      - name: all_verified
+        type: bool
+        required: true
+      - name: stamps
+        type: array
+
+  - name: diff-review
+    instrument: transformer
+    action: diff-review
+    gate: approval
+    description: "Stories 5/6: human reviews diff — gate parks for approval"
+    output:
+      - name: approved
+        type: bool
+        required: true
+
+  - name: mark-done
+    instrument: transformer
+    action: mark-done
+    description: "Story 5: mark Scribe task as done"
+    output:
+      - name: updated
+        type: bool
+        required: true
+
+  - name: teardown
+    instrument: transformer
+    action: teardown
+    description: "Cleanup — runs on every exit (finally)"
+    output:
+      - name: cleaned
+        type: array
+
+edges:
+  - id: scan-poll
+    from: scan
+    to: poll-scribe
+    when: "true"
+
+  - id: poll-plan
+    from: poll-scribe
+    to: plan-review
+    when: "output.has_task == true"
+
+  - id: plan-write-test
+    from: plan-review
+    to: write-test
+    when: "true"
+
+  - id: write-test-write-code
+    from: write-test
+    to: write-code
+    when: "true"
+
+  - id: write-code-build
+    from: write-code
+    to: build
+    when: "true"
+
+  - id: build-test
+    from: build
+    to: test
+    when: "output.pass == true"
+
+  - id: test-review
+    from: test
+    to: self-review
+    when: "output.pass == true"
+
+  - id: review-diff
+    from: self-review
+    to: diff-review
+    when: "true"
+
+  - id: diff-done
+    from: diff-review
+    to: mark-done
+    when: "true"
+
+  - id: done-end
+    from: mark-done
+    to: _done
+    when: "true"
