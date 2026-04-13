@@ -1,0 +1,53 @@
+kind: Schematic
+circuit: sdlc-v2
+start: plan
+done: _done
+finally: teardown
+description: "Autonomous SDLC flywheel — four nested feedback loops as delegate sub-circuits"
+
+nodes:
+  - name: plan
+    instrument: circuit
+    action: planning
+    description: "Poll Scribe for mature tasks, resolve context, gate: work-approval"
+
+  - name: code
+    instrument: circuit
+    action: coding
+    description: "TDD inner loop — RED/GREEN/BLUE in isolated worktree"
+
+  - name: verify
+    instrument: circuit
+    action: verifying
+    description: "Quality gates — build, test, lint, security, self-review, gate: diff-approval"
+
+  - name: ship
+    instrument: circuit
+    action: operating
+    description: "Deploy canary, monitor, promote or rollback + file bug"
+
+  - name: teardown
+    instrument: transformer
+    action: teardown
+    description: "Cleanup worktrees, temp files, release locks"
+
+edges:
+  - id: plan-code
+    from: plan
+    to: code
+    description: "Plan approved — start coding"
+
+  - id: code-verify
+    from: code
+    to: verify
+    description: "Code ready — enter quality gates"
+
+  - id: verify-ship
+    from: verify
+    to: ship
+    description: "All gates passed — deploy"
+
+  - id: ship-done
+    from: ship
+    to: _done
+    description: "Shipped or bug filed — cycle complete"
