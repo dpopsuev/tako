@@ -19,10 +19,11 @@ type promptInput struct {
 }
 
 func (s *CircuitServer) registerPromptTool() {
-	sdkmcp.AddTool(s.MCPServer, &sdkmcp.Tool{
+	s.MCPServer.AddTool(&sdkmcp.Tool{
 		Name:        "prompt",
 		Description: "Prompt CRUD. Actions: list (all prompts), get (by name), update (edit content), create (new prompt), rollback (revert to version).",
-	}, NoOutputSchema(s.handlePromptDispatch))
+		InputSchema: map[string]any{"type": "object"},
+	}, rawHandler(s.handlePromptDispatch))
 }
 
 func (s *CircuitServer) handlePromptDispatch(_ context.Context, _ *sdkmcp.CallToolRequest, input *promptInput) (*sdkmcp.CallToolResult, any, error) {

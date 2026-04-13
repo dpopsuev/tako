@@ -51,10 +51,11 @@ func (s *CircuitServer) registerApprovalTool() {
 		return
 	}
 
-	sdkmcp.AddTool(s.MCPServer, &sdkmcp.Tool{
+	s.MCPServer.AddTool(&sdkmcp.Tool{
 		Name:        "approval",
 		Description: "Approval gate review. Actions: list (pending items), get (view output), approve, reject, comment.",
-	}, NoOutputSchema(s.handleApprovalDispatch))
+		InputSchema: map[string]any{"type": "object"},
+	}, rawHandler(s.handleApprovalDispatch))
 }
 
 func (s *CircuitServer) handleApprovalDispatch(ctx context.Context, req *sdkmcp.CallToolRequest, input approvalInput) (*sdkmcp.CallToolResult, approvalListOutput, error) {

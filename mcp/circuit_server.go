@@ -315,17 +315,6 @@ type getWorkerHealthOutput struct {
 
 // --- Tool registration ---
 
-// NoOutputSchema wraps a typed handler so the MCP SDK's Out type parameter is
-// `any`, which suppresses outputSchema generation. Some MCP clients (including
-// Cursor) don't support outputSchema and fail to parse the tools list when it's
-// present.
-func NoOutputSchema[In, Out any](h func(context.Context, *sdkmcp.CallToolRequest, In) (*sdkmcp.CallToolResult, Out, error)) sdkmcp.ToolHandlerFor[In, any] {
-	return func(ctx context.Context, req *sdkmcp.CallToolRequest, input In) (*sdkmcp.CallToolResult, any, error) {
-		res, out, err := h(ctx, req, input)
-		return res, out, err
-	}
-}
-
 func (s *CircuitServer) registerTools() {
 	// Register consolidated "circuit" tool with action-based dispatch.
 	s.MCPServer.AddTool(
@@ -342,13 +331,38 @@ func (s *CircuitServer) registerTools() {
 	)
 
 	// Register consolidated "signal" tool with action-based dispatch.
-	sdkmcp.AddTool(s.MCPServer, &sdkmcp.Tool{
+	s.MCPServer.AddTool(&sdkmcp.Tool{
 		Name:        "signal",
 		Description: "Agent signal bus. Actions: emit (send signal), list (read signals), health (worker status).",
-	}, NoOutputSchema(s.handleSignalDispatch))
+		InputSchema: map[string]any{"type": "object"},
+	}, rawHandler(s.handleSignalDispatch))
 
 	// Register approval gate tool if store is configured.
 	s.registerApprovalTool()
+}
+
+// rawHandler adapts a typed handler into a raw ToolHandler by unmarshaling
+// input from the request arguments. Replaces NoOutputSchema — no output
+// schema is generated because we use the untyped AddTool path.
+func rawHandler[In, Out any](h func(context.Context, *sdkmcp.CallToolRequest, In) (*sdkmcp.CallToolResult, Out, error)) sdkmcp.ToolHandler {
+	return func(ctx context.Context, req *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error) {
+		var input In
+		if req.Params != nil && req.Params.Arguments != nil {
+			if err := json.Unmarshal(req.Params.Arguments, &input); err != nil {
+				return toolError(fmt.Errorf("invalid arguments: %w", err)), nil
+			}
+		}
+		res, out, err := h(ctx, req, input)
+		if err != nil {
+			return toolError(err), nil
+		}
+		// If the handler returned a CallToolResult, use it directly.
+		// Otherwise, marshal the Out value as JSON (mirrors SDK typed handler behavior).
+		if res != nil {
+			return res, nil
+		}
+		return marshalToolResult(out)
+	}
 }
 
 // dispatchCircuitAction routes the consolidated circuit tool to the appropriate handler.

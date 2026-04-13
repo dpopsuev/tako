@@ -26,10 +26,11 @@ const (
 )
 
 func (s *CircuitServer) registerResourceTool() {
-	sdkmcp.AddTool(s.MCPServer, &sdkmcp.Tool{
+	s.MCPServer.AddTool(&sdkmcp.Tool{
 		Name:        "resource",
 		Description: "Origami resource API. Actions: kinds (list registered), list (discover all resources), get (load by kind/name), validate (check correctness), diff (compare two resources).",
-	}, NoOutputSchema(s.handleResourceDispatch))
+		InputSchema: map[string]any{"type": "object"},
+	}, rawHandler(s.handleResourceDispatch))
 }
 
 func (s *CircuitServer) handleResourceDispatch(_ context.Context, _ *sdkmcp.CallToolRequest, input *resourceInput) (*sdkmcp.CallToolResult, any, error) {

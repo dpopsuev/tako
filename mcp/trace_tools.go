@@ -74,10 +74,11 @@ type diffRunsOutput struct {
 // registerTraceTools adds the consolidated "trace" MCP tool.
 // Only called when StateDir is configured.
 func (s *CircuitServer) registerTraceTools() {
-	sdkmcp.AddTool(s.MCPServer, &sdkmcp.Tool{
+	s.MCPServer.AddTool(&sdkmcp.Tool{
 		Name:        "trace",
 		Description: "Execution trace and run comparison. Actions: events (trace events with filters), report (persisted run report), diff (compare two runs).",
-	}, NoOutputSchema(s.handleTraceDispatch))
+		InputSchema: map[string]any{"type": "object"},
+	}, rawHandler(s.handleTraceDispatch))
 }
 
 // handleTraceDispatch routes the consolidated trace tool to the appropriate handler.
