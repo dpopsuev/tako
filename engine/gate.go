@@ -28,6 +28,9 @@ type ApprovalItem struct {
 	ID         string          `json:"id"`
 	CircuitRun string          `json:"circuit_run"`
 	NodeName   string          `json:"node_name"`
+	Circuit    string          `json:"circuit,omitempty"`  // sub-circuit that parked this item
+	Priority   string          `json:"priority,omitempty"` // critical > high > medium > low
+	SpecID     string          `json:"spec_id,omitempty"`  // Scribe artifact to validate against
 	Output     json.RawMessage `json:"output"`
 	ParkedAt   time.Time       `json:"parked_at"`
 	Status     ApprovalStatus  `json:"status"`

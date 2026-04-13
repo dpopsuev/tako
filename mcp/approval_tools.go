@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/dpopsuev/origami/engine"
 
@@ -84,6 +85,11 @@ func (s *CircuitServer) handleApprovalList(ctx context.Context, _ approvalInput)
 		items = []engine.ApprovalItem{}
 	}
 
+	// Sort by priority: critical > high > medium > low > empty.
+	sort.SliceStable(items, func(i, j int) bool {
+		return priorityRank(items[i].Priority) < priorityRank(items[j].Priority)
+	})
+
 	out := approvalListOutput{Items: items, Count: len(items)}
 	data, _ := json.Marshal(out)
 	return &sdkmcp.CallToolResult{
@@ -153,4 +159,20 @@ func (s *CircuitServer) handleApprovalComment(ctx context.Context, input approva
 	return &sdkmcp.CallToolResult{
 		Content: []sdkmcp.Content{&sdkmcp.TextContent{Text: string(data)}},
 	}, approvalListOutput{}, nil
+}
+
+// priorityRank maps priority strings to sort order (lower = higher priority).
+func priorityRank(p string) int {
+	switch p {
+	case "critical":
+		return 0
+	case "high":
+		return 1
+	case "medium":
+		return 2
+	case "low":
+		return 3
+	default:
+		return 4
+	}
 }
