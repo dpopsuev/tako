@@ -15,6 +15,7 @@ import (
 )
 
 const (
+	walkStatusRunning     = "running"
 	walkStatusError       = "error"
 	walkStatusDone        = "done"
 	walkStatusInterrupted = "interrupted"
@@ -128,8 +129,22 @@ func (g *DefaultGraph) parkForApproval(ctx context.Context, state *circuit.Walke
 		output = data
 	}
 
+	// Build a unique approval ID. On retries (rejection → re-walk),
+	// the gate attempt counter ensures each park gets a distinct ID.
+	gateAttemptKey := "_gate_attempt:" + nodeName
+	attempt := 0
+	if v, ok := state.Context[gateAttemptKey]; ok {
+		if n, ok := v.(int); ok {
+			attempt = n
+		}
+	}
+	attempt++
+	state.Context[gateAttemptKey] = attempt
+
+	approvalID := fmt.Sprintf("%s:%s:%d", state.ID, nodeName, attempt)
+
 	item := ApprovalItem{
-		ID:         state.ID + ":" + nodeName,
+		ID:         approvalID,
 		CircuitRun: state.ID,
 		NodeName:   nodeName,
 		Output:     output,
