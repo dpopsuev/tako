@@ -3,7 +3,7 @@ module github.com/dpopsuev/origami
 go 1.25.8
 
 require (
-	github.com/dpopsuev/battery v0.3.0
+	github.com/dpopsuev/battery v0.4.0
 	github.com/expr-lang/expr v1.17.8
 	github.com/jedib0t/go-pretty/v6 v6.7.8
 	github.com/modelcontextprotocol/go-sdk v1.5.0
@@ -64,7 +64,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clipperhouse/stringish v0.1.1 // indirect
 	github.com/clipperhouse/uax29/v2 v2.5.0 // indirect
-	github.com/dpopsuev/troupe v0.7.1
+	github.com/dpopsuev/troupe v0.9.0
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/jsonschema-go v0.4.2 // indirect
