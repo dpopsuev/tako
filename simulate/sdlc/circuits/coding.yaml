@@ -1,0 +1,142 @@
+kind: Schematic
+circuit: coding
+start: create-worktree
+done: code-ready
+vars:
+  max_fix_attempts: 5
+
+nodes:
+  - name: create-worktree
+    instrument: transformer
+    action: create-worktree
+    description: "Create an isolated git worktree branch for changes"
+    output:
+      - name: branch
+        type: string
+        required: true
+      - name: worktree_path
+        type: string
+        required: true
+
+  - name: write-test
+    instrument: transformer
+    action: write-test
+    description: "Write tests FIRST based on the spec (RED phase)"
+    output:
+      - name: test_files
+        type: array
+        required: true
+
+  - name: run-test-red
+    instrument: transformer
+    action: run-test
+    description: "Run tests — expected to FAIL (RED confirmation)"
+    output:
+      - name: pass
+        type: bool
+        required: true
+      - name: output
+        type: string
+
+  - name: write-code
+    instrument: transformer
+    action: write-code
+    description: "Write minimal code to make tests pass (GREEN phase)"
+    output:
+      - name: files_changed
+        type: array
+        required: true
+
+  - name: run-test-green
+    instrument: transformer
+    action: run-test
+    description: "Run tests — expected to PASS (GREEN confirmation)"
+    output:
+      - name: pass
+        type: bool
+        required: true
+      - name: output
+        type: string
+
+  - name: refactor
+    instrument: transformer
+    action: refactor
+    description: "Refactor with tests green (BLUE phase) — clean up, extract, rename"
+    output:
+      - name: files_changed
+        type: array
+
+  - name: run-test-blue
+    instrument: transformer
+    action: run-test
+    description: "Run tests after refactor — must still pass (BLUE confirmation)"
+    output:
+      - name: pass
+        type: bool
+        required: true
+      - name: output
+        type: string
+
+edges:
+  # Setup
+  - id: worktree-test
+    from: create-worktree
+    to: write-test
+
+  # RED phase
+  - id: test-written-run
+    from: write-test
+    to: run-test-red
+
+  - id: red-confirmed
+    from: run-test-red
+    to: write-code
+    when: "output.pass != true"
+    description: "Tests fail as expected — RED confirmed"
+
+  - id: red-already-passes
+    from: run-test-red
+    to: code-ready
+    when: "output.pass == true"
+    description: "Tests already pass — spec already covered"
+
+  # GREEN phase
+  - id: code-written-run
+    from: write-code
+    to: run-test-green
+
+  - id: green-confirmed
+    from: run-test-green
+    to: refactor
+    when: "output.pass == true"
+    description: "Tests pass — GREEN confirmed"
+
+  - id: green-retry
+    from: run-test-green
+    to: write-code
+    when: "output.pass != true && state.loops.green_retry < config.max_fix_attempts"
+    loop: true
+    description: "Tests still fail — retry code generation"
+
+  - id: green-exhausted
+    from: run-test-green
+    to: code-ready
+    when: "output.pass != true && state.loops.green_retry >= config.max_fix_attempts"
+    description: "Max attempts — exit with partial result"
+
+  # BLUE phase
+  - id: refactor-run
+    from: refactor
+    to: run-test-blue
+
+  - id: blue-confirmed
+    from: run-test-blue
+    to: code-ready
+    when: "output.pass == true"
+    description: "Tests pass after refactor — BLUE confirmed"
+
+  - id: blue-undo
+    from: run-test-blue
+    to: code-ready
+    when: "output.pass != true"
+    description: "Refactor broke tests — revert refactor, still GREEN"

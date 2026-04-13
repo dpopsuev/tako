@@ -1,0 +1,146 @@
+kind: Schematic
+circuit: verifying
+start: build
+done: merged
+
+nodes:
+  - name: build
+    instrument: transformer
+    action: build
+    description: "Compile the codebase (go build ./...)"
+    output:
+      - name: pass
+        type: bool
+        required: true
+      - name: output
+        type: string
+
+  - name: test
+    instrument: transformer
+    action: test
+    description: "Run test suite (go test ./... -short)"
+    output:
+      - name: pass
+        type: bool
+        required: true
+      - name: output
+        type: string
+
+  - name: lint
+    instrument: transformer
+    action: lint
+    description: "Run golangci-lint"
+    output:
+      - name: pass
+        type: bool
+        required: true
+      - name: output
+        type: string
+
+  - name: security-scan
+    instrument: transformer
+    action: security-scan
+    description: "Vulnerability scan (osv-scanner or equivalent)"
+    output:
+      - name: clean
+        type: bool
+        required: true
+      - name: findings
+        type: array
+
+  - name: self-review
+    instrument: transformer
+    action: self-review
+    description: "Agent validates diff against Scribe spec — stamps each requirement with evidence"
+    output:
+      - name: all_verified
+        type: bool
+        required: true
+      - name: stamps
+        type: array
+
+  - name: diff-review
+    instrument: transformer
+    action: diff-review
+    gate: approval
+    description: "Human reviews the validated diff — gate: diff-approval"
+    output:
+      - name: approved
+        type: bool
+        required: true
+
+  - name: release
+    instrument: transformer
+    action: release
+    description: "Git merge to main / create PR"
+    output:
+      - name: merged
+        type: bool
+        required: true
+
+edges:
+  # Quality chain
+  - id: build-test
+    from: build
+    to: test
+    when: "output.pass == true"
+
+  - id: build-fail
+    from: build
+    to: merged
+    when: "output.pass != true"
+    description: "Build failed — exit with feedback for coding circuit"
+
+  - id: test-lint
+    from: test
+    to: lint
+    when: "output.pass == true"
+
+  - id: test-fail
+    from: test
+    to: merged
+    when: "output.pass != true"
+    description: "Tests failed — exit with feedback"
+
+  - id: lint-security
+    from: lint
+    to: security-scan
+    when: "output.pass == true"
+
+  - id: lint-fail
+    from: lint
+    to: merged
+    when: "output.pass != true"
+    description: "Lint failed — exit with feedback"
+
+  - id: security-review
+    from: security-scan
+    to: self-review
+    when: "output.clean == true"
+
+  - id: security-fail
+    from: security-scan
+    to: merged
+    when: "output.clean != true"
+    description: "Vulnerabilities found — exit with feedback"
+
+  # Self-review gate
+  - id: review-gate
+    from: self-review
+    to: diff-review
+    when: "output.all_verified == true"
+
+  - id: review-fail
+    from: self-review
+    to: merged
+    when: "output.all_verified != true"
+    description: "Self-review failed — requirements not met, recode"
+
+  # Human gate
+  - id: approved-release
+    from: diff-review
+    to: release
+
+  - id: release-done
+    from: release
+    to: merged

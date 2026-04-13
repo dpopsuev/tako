@@ -1,0 +1,61 @@
+kind: Schematic
+circuit: planning
+start: poll-scribe
+done: ready
+
+nodes:
+  - name: poll-scribe
+    instrument: transformer
+    action: poll-scribe
+    description: "Query Scribe for the highest-priority mature task"
+    output:
+      - name: task_id
+        type: string
+      - name: title
+        type: string
+      - name: has_task
+        type: bool
+        required: true
+
+  - name: resolve-context
+    instrument: transformer
+    action: resolve-context
+    description: "Enrich task with Lex coding rules + Locus architecture context"
+    output:
+      - name: spec
+        type: object
+        required: true
+      - name: rules
+        type: array
+      - name: architecture
+        type: object
+
+  - name: plan-review
+    instrument: transformer
+    action: plan-review
+    gate: approval
+    description: "Human reviews the plan before coding starts — gate: work-approval"
+    output:
+      - name: approved
+        type: bool
+        required: true
+
+edges:
+  - id: poll-resolve
+    from: poll-scribe
+    to: resolve-context
+    when: "output.has_task == true"
+
+  - id: poll-idle
+    from: poll-scribe
+    to: ready
+    when: "output.has_task != true"
+    description: "No mature tasks — idle"
+
+  - id: resolve-review
+    from: resolve-context
+    to: plan-review
+
+  - id: review-ready
+    from: plan-review
+    to: ready
