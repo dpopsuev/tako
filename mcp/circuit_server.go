@@ -670,18 +670,43 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 	} else {
 		runCtx, runCancel = context.WithCancel(context.Background())
 	}
-	bus := signal.NewMemBus()
-	disp := dispatch.NewMuxDispatcher(runCtx, dispatch.WithMuxSignalBus(bus))
-
-	// Generate session ID and set up trace recording BEFORE CreateSession
-	// so the recorder is available as StartParams.Observer for walker events.
+	// Generate session ID early — needed for run directory path.
 	s.mu.Lock()
 	s.sessCount++
 	seqN := s.sessCount
 	s.mu.Unlock()
 	sessID := fmt.Sprintf("s-%d-%d", time.Now().UnixMilli(), seqN)
 
-	recorder, runDir := setupTraceRecorder(s.Config.StateDir, sessID, bus, logger)
+	memBus := signal.NewMemBus()
+	bus := signal.Bus(memBus)
+
+	// When StateDir is configured, wrap MemBus with DurableEventLog so
+	// events persist to {runDir}/events.jsonl alongside the trace.
+	if s.Config.StateDir != "" {
+		runDir := filepath.Join(s.Config.StateDir, "runs", sessID)
+		if err := os.MkdirAll(runDir, 0o750); err == nil {
+			eventsPath := filepath.Join(runDir, "events.jsonl")
+			durableLog, durErr := signal.NewDurableJSONLines(eventsPath)
+			if durErr != nil {
+				logger.WarnContext(ctx, "durable event log failed, using in-memory only",
+					slog.Any(circuit.LogKeyError, durErr))
+			} else {
+				// Wire MemBus emissions to durable store.
+				memBus.OnEmit(func(sig signal.Signal) {
+					ts, _ := time.Parse(time.RFC3339Nano, sig.Timestamp)
+					durableLog.Emit(signal.Event{
+						TraceID:   sig.CaseID,
+						Source:    sig.Agent,
+						Kind:      sig.Event,
+						Timestamp: ts,
+					})
+				})
+			}
+		}
+	}
+	disp := dispatch.NewMuxDispatcher(runCtx, dispatch.WithMuxSignalBus(bus))
+
+	recorder, runDir := setupTraceRecorder(s.Config.StateDir, sessID, memBus, logger)
 
 	params := StartParams{
 		Parallel:            parallel,

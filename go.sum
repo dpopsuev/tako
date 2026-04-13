@@ -35,8 +35,8 @@ github.com/dpopsuev/battery v0.5.0 h1:IgZNzUm5QfRlGCx2lgR6Dk/UEwN5d8SDqLMSu6T4bG
 github.com/dpopsuev/battery v0.5.0/go.mod h1:XYI+WScQ2fMwPFuXRYwLzU8tGhS3OnpaIZNmHCpvWps=
 github.com/dpopsuev/oculus v1.1.1-0.20260412161252-2c28c63dbe9e h1:dbypk/FrpPQQ4xFLj+SrFeJ69iI3L5nbhBjnIwiQLGM=
 github.com/dpopsuev/oculus v1.1.1-0.20260412161252-2c28c63dbe9e/go.mod h1:E7PdwlOPq29sUuvu1pX20w3d0HnbIBQy5JaN1RTlU/k=
-github.com/dpopsuev/troupe v0.9.0 h1:3JUtKiig9bOwo/kUZORw7XeyZomLg6qnVc0t3NyiFs0=
-github.com/dpopsuev/troupe v0.9.0/go.mod h1:GA//0mMB7SdCYHFXwrpJ8bKsxTBAjUq/5sfESeZP7Ic=
+github.com/dpopsuev/troupe v0.10.0 h1:OrFkJKgIqMjxcZFrJbXv0eZdBtsf97YBajRBjbv4Na8=
+github.com/dpopsuev/troupe v0.10.0/go.mod h1:GA//0mMB7SdCYHFXwrpJ8bKsxTBAjUq/5sfESeZP7Ic=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1mIlRU8Am5FuJP05cCM98=
