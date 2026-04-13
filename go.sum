@@ -31,8 +31,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dnaeon/go-vcr v1.2.0 h1:zHCHvJYTMh1N7xnV7zf1m1GPBF9Ad0Jk/whtQ1663qI=
 github.com/dnaeon/go-vcr v1.2.0/go.mod h1:R4UdLID7HZT3taECzJs4YgbbH6PIGXB6W/sc5OLb6RQ=
-github.com/dpopsuev/battery v0.5.0 h1:IgZNzUm5QfRlGCx2lgR6Dk/UEwN5d8SDqLMSu6T4bGg=
-github.com/dpopsuev/battery v0.5.0/go.mod h1:XYI+WScQ2fMwPFuXRYwLzU8tGhS3OnpaIZNmHCpvWps=
+github.com/dpopsuev/battery v0.6.0 h1:BdE/Xmm1XBVdW7JVkot0saTjZUPHgdZ5oL0I+KS0DpQ=
+github.com/dpopsuev/battery v0.6.0/go.mod h1:XYI+WScQ2fMwPFuXRYwLzU8tGhS3OnpaIZNmHCpvWps=
 github.com/dpopsuev/oculus v1.1.1-0.20260412161252-2c28c63dbe9e h1:dbypk/FrpPQQ4xFLj+SrFeJ69iI3L5nbhBjnIwiQLGM=
 github.com/dpopsuev/oculus v1.1.1-0.20260412161252-2c28c63dbe9e/go.mod h1:E7PdwlOPq29sUuvu1pX20w3d0HnbIBQy5JaN1RTlU/k=
 github.com/dpopsuev/troupe v0.10.0 h1:OrFkJKgIqMjxcZFrJbXv0eZdBtsf97YBajRBjbv4Na8=
