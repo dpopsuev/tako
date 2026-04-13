@@ -257,9 +257,26 @@ func resolveInstrumentNode(_ *circuit.CircuitDef, nd *circuit.NodeDef, manifest 
 // createDispatcher creates the appropriate InstrumentDispatcher for the manifest's dispatch mode.
 // Inproc instruments are handled separately by inprocResolvers — they don't go through this path.
 func createDispatcher(manifest *circuit.InstrumentManifest, action def.ActionDef, workDir string) (InstrumentDispatcher, error) {
+	actionName := ""
+	for name, a := range manifest.Actions {
+		if a.Command == action.Command && a.GoFunc == action.GoFunc {
+			actionName = name
+			break
+		}
+	}
+	if actionName == "" {
+		actionName = action.Command
+	}
+
 	switch manifest.Dispatch {
 	case circuit.DispatchCLI:
 		return &ExecDispatcher{Binary: manifest.Binary, Command: action.Command, WorkDir: workDir}, nil
+	case circuit.DispatchMCP:
+		return &LazyMCPDispatcher{
+			serverName: manifest.Name,
+			actionName: actionName,
+			endpoint:   manifest.Endpoint,
+		}, nil
 	default:
 		return nil, fmt.Errorf("%w: dispatch mode %q is not supported for manifest-based dispatch", ErrInstrument, manifest.Dispatch)
 	}

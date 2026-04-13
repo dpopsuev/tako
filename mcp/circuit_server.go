@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dpopsuev/battery/mcpserver"
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/engine"
@@ -541,14 +542,13 @@ func (s *CircuitServer) handleSignalDispatch(ctx context.Context, req *sdkmcp.Ca
 }
 
 // marshalToolResult marshals any value into a CallToolResult with JSON text content.
+// Delegates to battery/mcpserver.JSONResult.
 func marshalToolResult(v any) (*sdkmcp.CallToolResult, error) {
-	data, err := json.Marshal(v)
+	res, err := mcpserver.JSONResult(v)
 	if err != nil {
-		return toolError(fmt.Errorf("marshal tool output: %w", err)), nil
+		return toolError(err), nil
 	}
-	return &sdkmcp.CallToolResult{
-		Content: []sdkmcp.Content{&sdkmcp.TextContent{Text: string(data)}},
-	}, nil
+	return res, nil
 }
 
 // buildCircuitTool constructs the consolidated "circuit" Tool with an explicit
@@ -1592,12 +1592,10 @@ func (s *CircuitServer) Session() *CircuitSession {
 	return s.session
 }
 
-// toolError wraps a Go error into a CallToolResult with IsError=true,
-// matching how the SDK's typed handler converts errors.
+// toolError wraps a Go error into a CallToolResult with IsError=true.
+// Delegates to battery/mcpserver.ErrorResult.
 func toolError(err error) *sdkmcp.CallToolResult {
-	var res sdkmcp.CallToolResult
-	res.SetError(err)
-	return &res
+	return mcpserver.ErrorResult(err)
 }
 
 func (s *CircuitServer) getSession(id string) (*CircuitSession, error) {

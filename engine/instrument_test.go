@@ -251,9 +251,9 @@ func TestResolveByInstrument_FallsBackToBuiltin(t *testing.T) {
 func TestResolveByInstrument_UnsupportedDispatchMode(t *testing.T) {
 	manifest := &circuit.InstrumentManifest{
 		Name:     "remote",
-		Dispatch: circuit.DispatchMCP,
+		Dispatch: "grpc", // genuinely unsupported dispatch mode
 		Tune:     "true",
-		Actions:  map[string]def.ActionDef{"call": {Command: ""}},
+		Actions:  map[string]def.ActionDef{"call": {Command: "grpc-call"}},
 	}
 	reg := &GraphRegistries{
 		Instruments: InstrumentRegistry{"remote": manifest},

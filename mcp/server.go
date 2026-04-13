@@ -1,24 +1,24 @@
 package mcp
 
 import (
+	"github.com/dpopsuev/battery/mcpserver"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// Server wraps the MCP SDK server. Domains create a server with NewServer,
-// register tools via sdkmcp.AddTool(s.MCPServer, &sdkmcp.Tool{...}, handler),
-// then run with s.MCPServer.Run(ctx, transport).
+// Server wraps the Battery MCP server framework. Domains create a server
+// with NewServer, register tools via the builder API or raw SDK access,
+// then run with Serve().
 type Server struct {
-	MCPServer *sdkmcp.Server
+	Battery   *mcpserver.Server
+	MCPServer *sdkmcp.Server // raw SDK access for typed handlers
 }
 
-// NewServer creates an MCP server with the given implementation name and version.
-// The caller registers tools using sdkmcp.AddTool(s.MCPServer, tool, handler)
-// and runs the server with s.MCPServer.Run(ctx, &sdkmcp.StdioTransport{}).
+// NewServer creates an MCP server backed by Battery's mcpserver framework.
+// Auto-Observable wrapping, panic recovery, and result helpers are built in.
 func NewServer(name, version string) *Server {
+	batt := mcpserver.NewServer(name, version)
 	return &Server{
-		MCPServer: sdkmcp.NewServer(
-			&sdkmcp.Implementation{Name: name, Version: version},
-			nil,
-		),
+		Battery:   batt,
+		MCPServer: batt.SDK(),
 	}
 }
