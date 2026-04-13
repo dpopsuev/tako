@@ -138,7 +138,7 @@ func NewLocalHub(def *circuit.CircuitDef, instruments InstrumentRegistry, workDi
 			if err != nil {
 				continue
 			}
-			d, err := createDispatcher(it.manifest, action, workDir)
+			d, err := CreateDispatcher(it.manifest, action, workDir)
 			if err != nil {
 				return nil, err
 			}

@@ -97,6 +97,9 @@ func NewCircuitServer(cfg *CircuitConfig) *CircuitServer {
 	if cfg.ResourceRegistry != nil && cfg.DomainFS != nil {
 		s.registerResourceTool()
 	}
+	s.registerInstrumentTool()
+	s.registerOperatorTool()
+	s.registerBudgetTool()
 	return s
 }
 

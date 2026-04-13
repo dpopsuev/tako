@@ -163,6 +163,9 @@ type CircuitConfig struct {
 	// Passed to engine.GraphRegistries.Instruments for dispatch.
 	Instruments engine.InstrumentRegistry
 
+	// InstrumentDir is the working directory for instrument commands.
+	InstrumentDir string
+
 	// ApprovalStore enables the approval gate MCP tool. When set, the
 	// "approval" tool is registered with actions: list, get, approve, reject, comment.
 	ApprovalStore engine.ApprovalStore

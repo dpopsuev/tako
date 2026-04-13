@@ -236,7 +236,7 @@ func resolveInstrumentNode(_ *circuit.CircuitDef, nd *circuit.NodeDef, manifest 
 		return nil, fmt.Errorf("%w: %q: %w", ErrInstrument, name, err)
 	}
 
-	dispatcher, err := createDispatcher(manifest, action, workDir)
+	dispatcher, err := CreateDispatcher(manifest, action, workDir)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %q: %w", ErrInstrument, name, err)
 	}
@@ -254,9 +254,9 @@ func resolveInstrumentNode(_ *circuit.CircuitDef, nd *circuit.NodeDef, manifest 
 	}, nil
 }
 
-// createDispatcher creates the appropriate InstrumentDispatcher for the manifest's dispatch mode.
+// CreateDispatcher creates the appropriate InstrumentDispatcher for the manifest's dispatch mode.
 // Inproc instruments are handled separately by inprocResolvers — they don't go through this path.
-func createDispatcher(manifest *circuit.InstrumentManifest, action def.ActionDef, workDir string) (InstrumentDispatcher, error) {
+func CreateDispatcher(manifest *circuit.InstrumentManifest, action def.ActionDef, workDir string) (InstrumentDispatcher, error) {
 	actionName := ""
 	for name, a := range manifest.Actions {
 		if a.Command == action.Command && a.GoFunc == action.GoFunc {

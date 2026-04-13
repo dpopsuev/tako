@@ -92,4 +92,13 @@ var (
 
 	// ErrApprovalIDRequired is returned when an approval action requires an ID.
 	ErrApprovalIDRequired = errors.New("id is required for approval action")
+
+	// ErrUnknownInstrumentAction is returned for unrecognized instrument tool actions.
+	ErrUnknownInstrumentAction = errors.New("unknown instrument action")
+
+	// ErrUnknownOperatorAction is returned for unrecognized operator tool actions.
+	ErrUnknownOperatorAction = errors.New("unknown operator action")
+
+	// ErrUnknownBudgetAction is returned for unrecognized budget tool actions.
+	ErrUnknownBudgetAction = errors.New("unknown budget action")
 )
