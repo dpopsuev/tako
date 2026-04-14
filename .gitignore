@@ -37,4 +37,4 @@ deploy/ca-certificates.crt
 .certs/*.pem
 .certs/*.key
 .certs/*.crt
-origami
+/origami
