@@ -129,8 +129,10 @@ func buildRunFunc(cfg *engine.SessionConfig, params *engine.SessionParams, resol
 			Instruments:   params.Instruments,
 			ApprovalStore: params.ApprovalStore,
 		}
-		// Load sub-circuit definitions from resolvers (e.g., GND within RCA).
-		if len(resolvers) > 0 && params.DomainFS != nil {
+		// Load sub-circuit definitions from filesystem. Resolvers provide
+		// overlays (e.g., GND within RCA); plain sub-circuits (e.g., SDLC
+		// planning/coding/verifying) load from DomainFS without resolvers.
+		if params.DomainFS != nil {
 			shared.Circuits = def.LoadSubCircuitsFromFS(params.DomainFS, resolvers)
 		}
 

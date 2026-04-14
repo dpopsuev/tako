@@ -2,10 +2,12 @@ package sdlc
 
 import (
 	"context"
+	"io/fs"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/engine/trace"
 	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
@@ -187,4 +189,74 @@ func TestSDLC_FlightRecorderCaptures(t *testing.T) {
 	if !hasComplete {
 		t.Error("missing circuit:complete event")
 	}
+}
+
+func TestSDLCV2_SubCircuitDelegation(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	domainFS := os.DirFS(".")
+
+	// Load v2 parent circuit.
+	v2Data, err := fs.ReadFile(domainFS, "circuits/sdlc-v2.yaml")
+	if err != nil {
+		t.Fatalf("read sdlc-v2.yaml: %v", err)
+	}
+	v2Def, err := circuit.LoadCircuit(v2Data)
+	if err != nil {
+		t.Fatalf("parse sdlc-v2.yaml: %v", err)
+	}
+
+	// Load sub-circuits from filesystem.
+	subCircuits := circuit.LoadSubCircuitsFromFS(domainFS, nil)
+	if subCircuits == nil {
+		t.Fatal("no sub-circuits loaded from circuits/ directory")
+	}
+
+	// Verify all 4 sub-circuits loaded.
+	for _, name := range []string{"planning", "coding", "verifying", "operating"} {
+		if _, ok := subCircuits[name]; !ok {
+			t.Fatalf("sub-circuit %q not loaded", name)
+		}
+	}
+
+	// Build registries with all stubs + sub-circuits.
+	shared := &engine.GraphRegistries{
+		Transformers: StubTransformers(true),
+		Circuits:     subCircuits,
+	}
+
+	cases := []engine.BatchCase{
+		{ID: "v2-e2e", Context: map[string]any{}},
+	}
+
+	results := engine.BatchWalk(ctx, engine.BatchWalkConfig{
+		Def:      v2Def,
+		Shared:   shared,
+		Cases:    cases,
+		Parallel: 1,
+	})
+
+	if len(results) != 1 {
+		t.Fatalf("expected 1 walk result, got %d", len(results))
+	}
+
+	wr := results[0]
+	if wr.Error != nil {
+		t.Fatalf("v2 walk error: %v", wr.Error)
+	}
+
+	// All 4 delegate nodes should have artifacts.
+	for _, node := range []string{"plan", "code", "verify", "ship"} {
+		if _, ok := wr.StepArtifacts[node]; !ok {
+			t.Errorf("missing artifact for delegate node %q", node)
+		}
+	}
+
+	// Teardown (finally) should have run.
+	if _, ok := wr.StepArtifacts["teardown"]; !ok {
+		t.Error("missing teardown artifact (finally node)")
+	}
+
+	t.Logf("v2 E2E: %d nodes walked, %d artifacts", len(wr.StepArtifacts), len(wr.StepArtifacts))
 }
