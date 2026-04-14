@@ -1,7 +1,7 @@
 # Origami — Makefile (thin wrapper around justfile)
 # Prefer `just` for full recipes. This exists so `make lint` works everywhere.
 
-.PHONY: build install test test-fast test-accept fmt lint lint-new vet circuit check preflight cover clean install-hooks
+.PHONY: build install test test-fast test-accept fmt lint lint-new vet circuit check preflight cover clean install-hooks serve-image serve
 
 build:
 	go build ./...
@@ -48,6 +48,18 @@ install-hooks:
 	@echo 'make lint-new' >> .git/hooks/pre-commit
 	@chmod +x .git/hooks/pre-commit
 	@echo "pre-commit hook installed (runs make lint-new)"
+
+serve-image:
+	podman build -f Dockerfile.serve -t origami-serve:latest .
+
+serve:
+	podman run --rm -p 9100:9100 \
+		-e SDLC_REPO_PATH=/workspace \
+		-e SDLC_MODE=real \
+		-e SDLC_PROVIDER=$${SDLC_PROVIDER:-anthropic} \
+		-e SDLC_MODEL=$${SDLC_MODEL:-claude-sonnet-4-6} \
+		-v $$(pwd):/workspace:Z \
+		origami-serve:latest
 
 clean:
 	rm -rf bin/ coverage.out coverage.html
