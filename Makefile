@@ -54,11 +54,14 @@ serve-image:
 
 serve:
 	podman run --rm -p 9100:9100 \
-		-e SDLC_REPO_PATH=/workspace \
-		-e SDLC_MODE=real \
+		-e REPO_URL=$${REPO_URL} \
+		-e REPO_BRANCH=$${REPO_BRANCH:-master} \
+		-e SDLC_MODE=$${SDLC_MODE:-real} \
 		-e SDLC_PROVIDER=$${SDLC_PROVIDER:-anthropic} \
 		-e SDLC_MODEL=$${SDLC_MODEL:-claude-sonnet-4-6} \
-		-v $$(pwd):/workspace:Z \
+		-e GIT_USER="$$(git config user.name)" \
+		-e GIT_EMAIL="$$(git config user.email)" \
+		-v $${SSH_AUTH_SOCK}:/ssh-agent:Z -e SSH_AUTH_SOCK=/ssh-agent \
 		origami-serve:latest
 
 clean:
