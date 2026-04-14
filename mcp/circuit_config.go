@@ -6,6 +6,7 @@ import (
 	"io/fs"
 
 	"github.com/dpopsuev/battery/tool"
+	"github.com/dpopsuev/troupe"
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
@@ -170,6 +171,11 @@ type CircuitConfig struct {
 	// ApprovalStore enables the approval gate MCP tool. When set, the
 	// "approval" tool is registered with actions: list, get, approve, reject, comment.
 	ApprovalStore gate.ApprovalStore
+
+	// Broker enables the agent MCP tool for agent discovery and delegation.
+	// When set, the "agent" tool is registered with actions: discover,
+	// delegate, status. Typically set by the serve command.
+	Broker troupe.Broker
 }
 
 // FindSchema returns the StepSchema for the given step name, or an error

@@ -98,6 +98,7 @@ func NewCircuitServer(cfg *CircuitConfig) *CircuitServer {
 	s.registerInstrumentTool()
 	s.registerOperatorTool()
 	s.registerBudgetTool()
+	s.registerAgentTool()
 	return s
 }
 
