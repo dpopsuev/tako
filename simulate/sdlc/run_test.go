@@ -62,8 +62,8 @@ func TestSDLCTypes_AllOutputsTyped(t *testing.T) {
 			// Must be a pointer to a struct, not a map.
 			switch result.(type) {
 			case *sdlctype.ScanResult, *sdlctype.FixResult, *sdlctype.BuildResult, *sdlctype.TestResult,
-				*sdlctype.DeployResult, *sdlctype.ValidateResult, *sdlctype.HardenResult,
-				*sdlctype.ReleaseResult, *sdlctype.TeardownResult:
+				*sdlctype.SelfReviewResult, *sdlctype.DeployResult, *sdlctype.ValidateResult,
+				*sdlctype.HardenResult, *sdlctype.ReleaseResult, *sdlctype.TeardownResult:
 				// OK — typed struct
 			default:
 				t.Errorf("expected typed struct, got %T", result)

@@ -42,6 +42,7 @@ var OrigamiLayers = []string{
 	"instruments/oculus",
 	"instruments/gotools",
 	"instruments/llmfix",
+	"instruments/selfreview",
 	// Simulation
 	"simulate/sdlc/sdlctype",
 	"simulate/sdlc",

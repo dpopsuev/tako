@@ -64,6 +64,22 @@ type ReleaseResult struct {
 	Changelog string `json:"changelog"`
 }
 
+// SelfReviewResult is produced by the self-review node.
+// It validates that code changes address every requirement in the Scribe artifact.
+type SelfReviewResult struct {
+	AllVerified bool    `json:"all_verified"` // true only when every requirement has evidence
+	Stamps      []Stamp `json:"stamps"`       // per-requirement verification evidence
+}
+
+// Stamp records whether a single requirement was satisfied by the code changes.
+// Field maps to a Scribe artifact field (title, goal, or section name).
+// Evidence is a "file:line" reference where the requirement is addressed.
+type Stamp struct {
+	Field    string `json:"field"`    // requirement source: "title", "goal", or section name
+	Status   string `json:"status"`   // "verified" or "unverified"
+	Evidence string `json:"evidence"` // "path/to/file:line" or empty if unverified
+}
+
 // TeardownResult is produced by the teardown (finally) node.
 type TeardownResult struct {
 	Cleaned []string `json:"cleaned"` // resources removed

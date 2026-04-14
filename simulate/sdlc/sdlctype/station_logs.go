@@ -4,10 +4,11 @@ import "github.com/dpopsuev/origami/engine/trace"
 
 // Station log type names.
 const (
-	stationLogTypeScan  = "scan"
-	stationLogTypeFix   = "fix"
-	stationLogTypeBuild = "build"
-	stationLogTypeTest  = "test"
+	stationLogTypeScan       = "scan"
+	stationLogTypeFix        = "fix"
+	stationLogTypeBuild      = "build"
+	stationLogTypeTest       = "test"
+	stationLogTypeSelfReview = "self-review"
 )
 
 // ScanStationLog records scan instrument internals for FlightRecorder.
@@ -53,10 +54,22 @@ type TestStationLog struct {
 // StationLogType implements trace.StationLogger.
 func (t *TestStationLog) StationLogType() string { return stationLogTypeTest }
 
+// SelfReviewStationLog records self-review instrument internals for FlightRecorder.
+type SelfReviewStationLog struct {
+	RequirementsTotal    int  // total requirement fields checked
+	RequirementsVerified int  // fields with evidence found
+	AllVerified          bool // overall pass/fail
+	StampsAttached       bool // whether stamps were written back to Scribe
+}
+
+// StationLogType implements trace.StationLogger.
+func (s *SelfReviewStationLog) StationLogType() string { return stationLogTypeSelfReview }
+
 // Compile-time interface checks.
 var (
 	_ trace.StationLogger = (*ScanStationLog)(nil)
 	_ trace.StationLogger = (*FixStationLog)(nil)
 	_ trace.StationLogger = (*BuildStationLog)(nil)
 	_ trace.StationLogger = (*TestStationLog)(nil)
+	_ trace.StationLogger = (*SelfReviewStationLog)(nil)
 )

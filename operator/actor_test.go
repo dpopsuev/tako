@@ -5,20 +5,34 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/engine/trace"
 	"github.com/dpopsuev/origami/simulate/sdlc"
 )
 
+// runCircuit is a test helper that runs the SDLC circuit via engine.BatchWalk directly.
+func runCircuit(ctx context.Context, transformers engine.TransformerRegistry) ([]engine.BatchWalkResult, error) {
+	def, err := sdlc.LoadCircuit()
+	if err != nil {
+		return nil, err
+	}
+	results := engine.BatchWalk(ctx, engine.BatchWalkConfig{
+		Def:      def,
+		Shared:   &engine.GraphRegistries{Transformers: transformers},
+		Cases:    []engine.BatchCase{{ID: "sdlc-run", Context: map[string]any{}}},
+		Parallel: 1,
+	})
+	return results, nil
+}
+
 func TestInProcessActor_RunsCircuit(t *testing.T) {
 	actor := NewInProcessActor(func(ctx context.Context, _ DriftResult) (*RunResult, error) {
 		start := time.Now()
-		result, err := sdlc.Run(ctx, sdlc.RunConfig{
-			Transformers: sdlc.StubTransformers(true),
-		})
+		results, err := runCircuit(ctx, sdlc.StubTransformers(true))
 		if err != nil {
 			return &RunResult{Success: false, Duration: time.Since(start), Error: err.Error()}, nil
 		}
-		for _, wr := range result.WalkResults {
+		for _, wr := range results {
 			if wr.Error != nil {
 				return &RunResult{Success: false, Duration: time.Since(start), Error: wr.Error.Error()}, nil
 			}
@@ -40,9 +54,7 @@ func TestInProcessActor_ViaOperatorLoop(t *testing.T) {
 	observer := &stubObserver{}
 	actor := NewInProcessActor(func(ctx context.Context, _ DriftResult) (*RunResult, error) {
 		start := time.Now()
-		_, err := sdlc.Run(ctx, sdlc.RunConfig{
-			Transformers: sdlc.StubTransformers(false), // dirty → fix loop → clean
-		})
+		_, err := runCircuit(ctx, sdlc.StubTransformers(false)) // dirty → fix loop → clean
 		if err != nil {
 			return &RunResult{Success: false, Duration: time.Since(start), Error: err.Error()}, nil
 		}

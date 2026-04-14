@@ -23,6 +23,7 @@ func StubTransformers(clean bool) engine.TransformerRegistry {
 		"fix":           stubFix(),
 		"build":         stubBuild(),
 		"test":          stubTest(),
+		"self-review":   stubSelfReview(),
 		"deploy-canary": stubDeploy(),
 		"validate":      stubValidate(),
 		"harden":        stubHarden(),
@@ -88,6 +89,17 @@ func stubHarden() engine.Transformer {
 func stubRelease() engine.Transformer {
 	return engine.TransformerFunc("release", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
 		return &sdlctype.ReleaseResult{Tag: "v0.9.0", Changelog: "fixed unused import in engine/graph.go"}, nil
+	})
+}
+
+func stubSelfReview() engine.Transformer {
+	return engine.TransformerFunc("self-review", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+		return &sdlctype.SelfReviewResult{
+			AllVerified: true,
+			Stamps: []sdlctype.Stamp{
+				{Field: "title", Status: "verified", Evidence: "main.go:1"},
+			},
+		}, nil
 	})
 }
 
