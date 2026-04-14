@@ -3,7 +3,7 @@ module github.com/dpopsuev/origami
 go 1.25.8
 
 require (
-	github.com/dpopsuev/battery v0.6.0
+	github.com/dpopsuev/battery v0.7.0
 	github.com/expr-lang/expr v1.17.8
 	github.com/jedib0t/go-pretty/v6 v6.7.8
 	github.com/modelcontextprotocol/go-sdk v1.5.0
@@ -32,7 +32,7 @@ require (
 	cloud.google.com/go/auth/oauth2adapt v0.2.4 // indirect
 	cloud.google.com/go/compute/metadata v0.5.0 // indirect
 	github.com/anthropics/anthropic-sdk-go v1.26.0 // indirect
-	github.com/dpopsuev/oculus v1.1.1-0.20260412161252-2c28c63dbe9e
+	github.com/dpopsuev/oculus v1.2.0
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
