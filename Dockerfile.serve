@@ -36,7 +36,8 @@ cd "$WORKSPACE"
 git config user.name "${GIT_USER:-origami-circuit}"
 git config user.email "${GIT_EMAIL:-origami@localhost}"
 
-export SDLC_REPO_PATH="$WORKSPACE"
+# SDLC circuit YAML lives in simulate/sdlc/ — point DomainFS there.
+export SDLC_REPO_PATH="${SDLC_REPO_PATH:-$WORKSPACE/simulate/sdlc}"
 
 exec origami serve \
   --circuit "${CIRCUIT:-sdlc}" \
