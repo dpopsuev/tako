@@ -9,6 +9,7 @@ import (
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/troupe"
 	"github.com/dpopsuev/troupe/broker"
+	"github.com/dpopsuev/troupe/collective"
 	"github.com/dpopsuev/troupe/signal"
 )
 
@@ -35,6 +36,7 @@ type ACPWorkerDispatcher struct {
 	role       string
 	workers    int
 	collective troupe.Actor
+	strategies map[string]collective.CollectiveStrategy // step → strategy (scatter, race, etc.)
 	hooks      []broker.Hook
 	log        *slog.Logger
 }
@@ -62,6 +64,19 @@ func WithACPWorkerCollective(c troupe.Actor) ACPWorkerOption {
 // that the broker will call on spawn/perform events.
 func WithACPWorkerHooks(hooks ...broker.Hook) ACPWorkerOption {
 	return func(d *ACPWorkerDispatcher) { d.hooks = append(d.hooks, hooks...) }
+}
+
+// WithACPWorkerStrategy registers a collective strategy for specific steps.
+// When a step matches, the dispatcher spawns a collective with the given
+// strategy instead of using a single agent. Use Scatter for fan-out-and-merge,
+// Race for first-best, etc.
+func WithACPWorkerStrategy(step string, strategy collective.CollectiveStrategy, agentCount int) ACPWorkerOption {
+	return func(d *ACPWorkerDispatcher) {
+		if d.strategies == nil {
+			d.strategies = make(map[string]collective.CollectiveStrategy)
+		}
+		d.strategies[step] = strategy
+	}
 }
 
 // NewACPWorkerDispatcher creates a dispatcher that runs N ACP agent workers.
@@ -118,9 +133,12 @@ func (d *ACPWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 			prompt = string(data)
 		}
 
-		// Route hard steps through collective debate, others to single agent.
+		// Route steps: strategy map → legacy collective → single agent.
 		var response string
-		if d.collective != nil && collectiveSteps[dc.Step] {
+		if strategy, ok := d.strategies[dc.Step]; ok {
+			d.log.InfoContext(ctx, "routing to collective strategy", slog.Any(circuit.LogKeyStep, dc.Step), slog.Any(circuit.LogKeyCaseID, dc.CaseID))
+			response, err = d.executeStrategy(ctx, strategy, prompt)
+		} else if d.collective != nil && collectiveSteps[dc.Step] {
 			d.log.InfoContext(ctx, circuit.LogRoutingToCollective, slog.Any(circuit.LogKeyStep, dc.Step), slog.Any(circuit.LogKeyCaseID, dc.CaseID))
 			response, err = d.collective.Perform(ctx, prompt)
 		} else {
@@ -187,6 +205,18 @@ func (d *ACPWorkerDispatcher) ensureActor(ctx context.Context, current troupe.Ac
 		return nil, fmt.Errorf("spawn failed: %w", spawnErr)
 	}
 	return actor, nil
+}
+
+const defaultScatterAgents = 3
+
+// executeStrategy spawns a collective with the given strategy and runs it.
+func (d *ACPWorkerDispatcher) executeStrategy(ctx context.Context, strategy collective.CollectiveStrategy, prompt string) (string, error) {
+	coll, err := collective.SpawnCollective(ctx, d.broker, defaultScatterAgents, strategy)
+	if err != nil {
+		return "", fmt.Errorf("spawn collective: %w", err)
+	}
+	defer coll.Kill(ctx) //nolint:errcheck // best-effort cleanup
+	return coll.Perform(ctx, prompt)
 }
 
 func (d *ACPWorkerDispatcher) emit(event, caseID, step string, meta map[string]string) {
