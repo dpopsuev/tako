@@ -7,6 +7,8 @@ import (
 	"log/slog"
 	"os"
 
+	battmcp "github.com/dpopsuev/battery/mcp"
+	"github.com/dpopsuev/battery/tool"
 	"github.com/dpopsuev/troupe/execution"
 
 	"github.com/dpopsuev/origami/circuit"
@@ -14,6 +16,9 @@ import (
 	"github.com/dpopsuev/origami/instruments/gotools"
 	"github.com/dpopsuev/origami/instruments/llmfix"
 	oculusinst "github.com/dpopsuev/origami/instruments/oculus"
+	"github.com/dpopsuev/origami/instruments/selfreview"
+
+	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 var (
@@ -36,9 +41,15 @@ const (
 	// 16384 is enough for any single Go file (64k available on Sonnet 4.6).
 	sdlcMaxTokens = 16384
 
+	// EnvScribeEndpoint is the MCP endpoint for Scribe (e.g., http://host.containers.internal:PORT/mcp).
+	EnvScribeEndpoint = "SCRIBE_ENDPOINT"
+	// EnvLocusEndpoint is the MCP endpoint for Locus.
+	EnvLocusEndpoint = "LOCUS_ENDPOINT"
+
 	logKeyProvider = "provider"
 	logKeyModel    = "model"
 	logKeyError    = "error"
+	logKeyEndpoint = "endpoint"
 )
 
 // SessionFactory returns a SessionFactory for the SDLC circuit.
@@ -118,7 +129,47 @@ func realTransformers(repoPath string) (engine.TransformerRegistry, error) {
 		reg["fix"] = llmfix.NewFixTransformer(provider, model, repoPath)
 	}
 
+	// Wire Scribe + self-review via MCPAdapter.
+	if scribeEndpoint := os.Getenv(EnvScribeEndpoint); scribeEndpoint != "" {
+		registry, err := connectMCPService(context.Background(), "scribe", scribeEndpoint)
+		if err != nil {
+			slog.WarnContext(context.Background(), "Scribe connection failed, self-review will use stub",
+				slog.String(logKeyEndpoint, scribeEndpoint),
+				slog.String(logKeyError, err.Error()))
+		} else {
+			reg["self-review"] = selfreview.New(registry, repoPath)
+			slog.InfoContext(context.Background(), "self-review instrument wired via Scribe",
+				slog.String(logKeyEndpoint, scribeEndpoint))
+		}
+	}
+
+	// Wire Locus (future: enrich scan/fix prompts with architecture context).
+	if locusEndpoint := os.Getenv(EnvLocusEndpoint); locusEndpoint != "" {
+		if _, err := connectMCPService(context.Background(), "locus", locusEndpoint); err != nil {
+			slog.WarnContext(context.Background(), "Locus connection failed",
+				slog.String(logKeyEndpoint, locusEndpoint),
+				slog.String(logKeyError, err.Error()))
+		} else {
+			slog.InfoContext(context.Background(), "Locus connected",
+				slog.String(logKeyEndpoint, locusEndpoint))
+		}
+	}
+
 	return reg, nil
+}
+
+// connectMCPService connects to an external MCP server via StreamableHTTP
+// and registers its tools in a new tool.Registry.
+func connectMCPService(ctx context.Context, name, endpoint string) (*tool.Registry, error) {
+	registry := tool.NewRegistry()
+	mcpAdapter := battmcp.NewMCPAdapter(registry)
+
+	transport := &sdkmcp.StreamableClientTransport{Endpoint: endpoint}
+	if err := mcpAdapter.RegisterMCP(ctx, name, transport); err != nil {
+		return nil, fmt.Errorf("connect %s at %s: %w", name, endpoint, err)
+	}
+
+	return registry, nil
 }
 
 // SchematicResolver returns a circuit asset resolver for sub-circuit

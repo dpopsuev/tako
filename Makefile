@@ -54,15 +54,19 @@ serve-image:
 
 serve:
 	podman run --rm -p 9100:9100 \
+		--security-opt label=disable \
+		--add-host=host.containers.internal:host-gateway \
 		-e REPO_URL=$${REPO_URL} \
 		-e REPO_BRANCH=$${REPO_BRANCH:-master} \
 		-e SDLC_MODE=$${SDLC_MODE:-real} \
 		-e SDLC_PROVIDER=$${SDLC_PROVIDER:-anthropic} \
 		-e SDLC_MODEL=$${SDLC_MODEL:-claude-sonnet-4-6} \
+		-e SCRIBE_ENDPOINT=$${SCRIBE_ENDPOINT} \
+		-e LOCUS_ENDPOINT=$${LOCUS_ENDPOINT} \
 		-e GIT_USER="$$(git config user.name)" \
 		-e GIT_EMAIL="$$(git config user.email)" \
-		-v $${SSH_AUTH_SOCK}:/ssh-agent:Z -e SSH_AUTH_SOCK=/ssh-agent \
-		-v $${HOME}/.ssh:/root/.ssh:ro,Z \
+		-v $${SSH_AUTH_SOCK}:/ssh-agent -e SSH_AUTH_SOCK=/ssh-agent \
+		-v $${HOME}/.ssh:/root/.ssh:ro \
 		origami-serve:latest
 
 clean:
