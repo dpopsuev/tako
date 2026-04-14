@@ -1,7 +1,7 @@
 kind: Schematic
 # Combined overlay + sub-circuit: imports base, adds a circuit handler node.
 # Tests: overlay merge + sub-circuit delegation in one circuit.
-# This is the pattern Asterisk uses (RCA base + gather-code GND subgraph).
+# This is the pattern consumers use (main circuit base + gather-code sub-circuit subgraph).
 import: base
 circuit: base
 

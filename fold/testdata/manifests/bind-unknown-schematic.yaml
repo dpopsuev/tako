@@ -14,4 +14,4 @@ spec:
     port: 9300
     assets:
       circuits:
-        rca: circuits/rca.yaml
+        alpha: circuits/alpha.yaml

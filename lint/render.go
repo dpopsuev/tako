@@ -50,7 +50,7 @@ func (r *Renderer) Render(f Finding) {
 	fmt.Fprintf(r.w, "%s%s[%s]%s: %s\n",
 		sevColor, sev, f.RuleID, r.reset(), f.Message)
 
-	// Location: --> circuits/rca.yaml:15:5
+	// Location: --> circuits/alpha.yaml:15:5
 	if f.File != "" {
 		loc := f.File
 		if f.Line > 0 {

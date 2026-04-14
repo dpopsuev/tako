@@ -24,11 +24,11 @@ func TestComposition_MergesUsesFromBase(t *testing.T) {
 	}
 
 	// Child's uses + base's uses.
-	if len(merged.Uses) != 3 { //nolint:mnd // rca + gnd from base + tuner from child
+	if len(merged.Uses) != 3 { //nolint:mnd // alpha + beta from base + tuner from child
 		t.Errorf("Uses count = %d, want 3", len(merged.Uses))
 	}
-	if merged.Uses["rca"] == "" {
-		t.Error("missing rca from base")
+	if merged.Uses["alpha"] == "" {
+		t.Error("missing alpha from base")
 	}
 	if merged.Uses["tuner"] == "" {
 		t.Error("missing tuner from child")
@@ -132,7 +132,7 @@ func TestComposition_BaseBindInherited(t *testing.T) {
 		t.Fatalf("ResolveBoardComposition: %v", err)
 	}
 
-	if merged.Bind["rca.source"] == "" {
-		t.Error("bind rca.source should be inherited from base")
+	if merged.Bind["alpha.source"] == "" {
+		t.Error("bind alpha.source should be inherited from base")
 	}
 }

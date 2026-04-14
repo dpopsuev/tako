@@ -114,13 +114,13 @@ func TestRuntime_GeneratedCode_ContainsResourceRegistry(t *testing.T) {
 			Assets: &AssetMap{Circuits: map[string]string{"test": "circuits/test.yaml"}},
 		},
 		Schematics: map[string]SchematicRef{
-			"rca": {
-				Path:     "github.com/dpopsuev/origami-rca",
-				Bindings: map[string]string{"source": "reportportal"},
+			"alpha": {
+				Path:     "github.com/example/schematic-a",
+				Bindings: map[string]string{"source": "datasource"},
 			},
 		},
 		Connectors: map[string]ConnectorRef{
-			"reportportal": {Path: "github.com/dpopsuev/origami-rca/connectors/rp"},
+			"datasource": {Path: "github.com/example/schematic-a/connectors/rp"},
 		},
 	}
 

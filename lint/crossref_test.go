@@ -199,12 +199,12 @@ func TestCrossRefEngine_NoProjectFiles(t *testing.T) {
 func TestLoadProjectFiles(t *testing.T) {
 	files := map[string][]byte{
 		"circuit.yaml": []byte(`kind: Circuit
-circuit: rca
+circuit: alpha
 calibration:
   outputs:
     - scorer_name: actual_defect_type`),
 		"scorecard.yaml": []byte(`kind: Scorecard
-scorecard: rca
+scorecard: alpha
 metrics:
   - id: M1
     params:

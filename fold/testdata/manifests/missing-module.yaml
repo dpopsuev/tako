@@ -4,10 +4,10 @@ metadata:
   name: test
 spec:
   uses:
-    rca:
+    alpha:
       kind: Schematic
   domain_serve:
     port: 9300
     assets:
       circuits:
-        rca: circuits/rca.yaml
+        alpha: circuits/alpha.yaml

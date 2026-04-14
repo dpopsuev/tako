@@ -139,7 +139,7 @@ type SessionParams struct {
 
 	// SubCircuitResolvers maps schematic names to their embedded circuit YAML.
 	// Consumers with custom RunFunc use this to load sub-circuit definitions
-	// (e.g., GND within RCA) via circuit.LoadSubCircuitsFromFS(domainFS, resolvers).
+	// (e.g., sub-circuit within main circuit) via circuit.LoadSubCircuitsFromFS(domainFS, resolvers).
 	SubCircuitResolvers map[string]circuit.AssetResolver
 
 	// Tools is the typed tool registry from fold-generated code.

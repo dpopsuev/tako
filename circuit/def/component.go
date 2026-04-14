@@ -42,7 +42,7 @@ func (g GivesDef) WireMode() string {
 type ComponentManifest struct {
 	Kind        Kind   `yaml:"kind"`
 	Component   string `yaml:"component"`
-	Module      string `yaml:"module"` // Go import path (e.g. github.com/dpopsuev/origami-rca)
+	Module      string `yaml:"module"` // Go import path (e.g. github.com/example/schematic-a)
 	Namespace   string `yaml:"namespace"`
 	Version     string `yaml:"version"`
 	Description string `yaml:"description,omitempty"`
@@ -68,7 +68,7 @@ type ComponentManifest struct {
 	Schemas        []string        `yaml:"schemas,omitempty"`         // step schema paths (relative to domain FS)
 	Report         string          `yaml:"report,omitempty"`          // report template YAML path
 	Dispatch       DispatchDef     `yaml:"dispatch,omitempty"`        // dispatch provider config
-	SessionFactory string          `yaml:"session_factory,omitempty"` // Go symbol: "rca.Factory()"
+	SessionFactory string          `yaml:"session_factory,omitempty"` // Go symbol: "alpha.Factory()"
 	CustomKinds    []CustomKindDef `yaml:"custom_kinds,omitempty"`    // CRDs registered by this schematic
 }
 

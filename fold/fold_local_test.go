@@ -25,11 +25,11 @@ func TestCreateWiredBuildModule_DefaultNoReplace(t *testing.T) {
 	resolver := &mockResolver{
 		paths: map[string]string{
 			origamiModule:                     "/home/user/Workspace/origami",
-			"github.com/dpopsuev/origami-rca": "/home/user/Workspace/origami-rca",
+			"github.com/example/schematic-a": "/home/user/Workspace/schematic-a",
 		},
 	}
 	g := &ResolvedGraph{
-		Imports: []ImportEntry{{Path: "github.com/dpopsuev/origami-rca"}},
+		Imports: []ImportEntry{{Path: "github.com/example/schematic-a"}},
 	}
 
 	err := createWiredBuildModule(tmpDir, "test", resolver, g, false)
@@ -54,11 +54,11 @@ func TestCreateWiredBuildModule_LocalEnablesReplace(t *testing.T) {
 	resolver := &mockResolver{
 		paths: map[string]string{
 			origamiModule:                     "/home/user/Workspace/origami",
-			"github.com/dpopsuev/origami-rca": "/home/user/Workspace/origami-rca",
+			"github.com/example/schematic-a": "/home/user/Workspace/schematic-a",
 		},
 	}
 	g := &ResolvedGraph{
-		Imports: []ImportEntry{{Path: "github.com/dpopsuev/origami-rca"}},
+		Imports: []ImportEntry{{Path: "github.com/example/schematic-a"}},
 	}
 
 	err := createWiredBuildModule(tmpDir, "test", resolver, g, true)
@@ -75,8 +75,8 @@ func TestCreateWiredBuildModule_LocalEnablesReplace(t *testing.T) {
 	if !strings.Contains(content, "replace "+origamiModule) {
 		t.Errorf("--local should inject origami replace, got:\n%s", content)
 	}
-	if !strings.Contains(content, "replace github.com/dpopsuev/origami-rca") {
-		t.Errorf("--local should inject rca replace, got:\n%s", content)
+	if !strings.Contains(content, "replace github.com/example/schematic-a") {
+		t.Errorf("--local should inject schematic-a replace, got:\n%s", content)
 	}
 }
 
@@ -237,7 +237,7 @@ func TestCreateDomainServeBuildModule_LocalPrintsWarning(t *testing.T) {
 }
 
 func TestLocalFlag_SimulatedRemoteFailure(t *testing.T) {
-	// Simulate the origami-rca incident:
+	// Simulate the schematic-a incident:
 	// A module exists locally but not in the go.mod when local=false.
 	// Without --local: go.mod has NO replace → go mod tidy would fail (module not on proxy).
 	// With --local: go.mod has replace → build succeeds.

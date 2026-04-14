@@ -33,13 +33,13 @@ func TestE2E_WiredBinary_NoOrigamiImportWithoutResolvers(t *testing.T) {
 			Assets: &AssetMap{Circuits: map[string]string{"test": "circuits/test.yaml"}},
 		},
 		Schematics: map[string]SchematicRef{
-			"rca": {
-				Path:     "github.com/dpopsuev/origami-rca",
-				Bindings: map[string]string{"source": "reportportal"},
+			"alpha": {
+				Path:     "github.com/example/schematic-a",
+				Bindings: map[string]string{"source": "datasource"},
 			},
 		},
 		Connectors: map[string]ConnectorRef{
-			"reportportal": {Path: "github.com/dpopsuev/origami-rca/connectors/rp"},
+			"datasource": {Path: "github.com/example/schematic-a/connectors/rp"},
 		},
 	}
 
@@ -74,13 +74,13 @@ func TestE2E_WiredBinary_OrigamiImportWithResolvers(t *testing.T) {
 			Assets: &AssetMap{Circuits: map[string]string{"test": "circuits/test.yaml"}},
 		},
 		Schematics: map[string]SchematicRef{
-			"rca": {
-				Path:     "github.com/dpopsuev/origami-rca",
-				Bindings: map[string]string{"source": "reportportal"},
+			"alpha": {
+				Path:     "github.com/example/schematic-a",
+				Bindings: map[string]string{"source": "datasource"},
 			},
 		},
 		Connectors: map[string]ConnectorRef{
-			"reportportal": {Path: "github.com/dpopsuev/origami-rca/connectors/rp"},
+			"datasource": {Path: "github.com/example/schematic-a/connectors/rp"},
 		},
 	}
 
@@ -91,9 +91,9 @@ func TestE2E_WiredBinary_OrigamiImportWithResolvers(t *testing.T) {
 
 	// Add a sub-schematic with a resolver to trigger NeedsOrigami
 	g.Schematics = append(g.Schematics, ResolvedSchematic{
-		Name:     "gnd",
-		Module:   "github.com/dpopsuev/origami-gnd",
-		Alias:    "gnd",
+		Name:     "beta",
+		Module:   "github.com/example/schematic-b",
+		Alias:    "beta",
 		Factory:  "NewServer",
 		Resolver: "CircuitResolver",
 	})
@@ -127,10 +127,10 @@ func TestE2E_WiredBinary_ErrVariableDeclared(t *testing.T) {
 			Assets: &AssetMap{Circuits: map[string]string{"test": "circuits/test.yaml"}},
 		},
 		Schematics: map[string]SchematicRef{
-			"rca": {Path: "github.com/dpopsuev/origami-rca", Bindings: map[string]string{"source": "reportportal"}},
+			"alpha": {Path: "github.com/example/schematic-a", Bindings: map[string]string{"source": "datasource"}},
 		},
 		Connectors: map[string]ConnectorRef{
-			"reportportal": {Path: "github.com/dpopsuev/origami-rca/connectors/rp"},
+			"datasource": {Path: "github.com/example/schematic-a/connectors/rp"},
 		},
 	}
 
@@ -183,15 +183,15 @@ func TestE2E_PortWiring_MatchingTypesPass(t *testing.T) {
 	//   Then validatePortWiring passes
 
 	tmpDir := t.TempDir()
-	writeTestFile(t, tmpDir, "circuits/rca.yaml", `
-circuit: rca
+	writeTestFile(t, tmpDir, "circuits/alpha.yaml", `
+circuit: alpha
 ports:
   - name: post-triage
     direction: out
     type: "[]string"
 wiring:
-  - from: rca.out:post-triage
-    to: gnd.in:keywords
+  - from: alpha.out:post-triage
+    to: beta.in:keywords
 nodes:
   - name: triage
 edges:
@@ -201,8 +201,8 @@ edges:
 start: triage
 done: _done
 `)
-	writeTestFile(t, tmpDir, "circuits/gnd.yaml", `
-circuit: gnd
+	writeTestFile(t, tmpDir, "circuits/beta.yaml", `
+circuit: beta
 ports:
   - name: keywords
     direction: in
@@ -223,8 +223,8 @@ done: _done
 			Port: 9300,
 			Assets: &AssetMap{
 				Circuits: map[string]string{
-					"rca": "circuits/rca.yaml",
-					"gnd": "circuits/gnd.yaml",
+					"alpha": "circuits/alpha.yaml",
+					"beta":  "circuits/beta.yaml",
 				},
 			},
 		},
@@ -239,15 +239,15 @@ func TestE2E_PortWiring_MismatchRejects(t *testing.T) {
 	// Scenario: Mismatched port types rejected at fold time
 
 	tmpDir := t.TempDir()
-	writeTestFile(t, tmpDir, "circuits/rca.yaml", `
-circuit: rca
+	writeTestFile(t, tmpDir, "circuits/alpha.yaml", `
+circuit: alpha
 ports:
   - name: post-triage
     direction: out
     type: TriageResult
 wiring:
-  - from: rca.out:post-triage
-    to: gnd.in:keywords
+  - from: alpha.out:post-triage
+    to: beta.in:keywords
 nodes:
   - name: triage
 edges:
@@ -257,8 +257,8 @@ edges:
 start: triage
 done: _done
 `)
-	writeTestFile(t, tmpDir, "circuits/gnd.yaml", `
-circuit: gnd
+	writeTestFile(t, tmpDir, "circuits/beta.yaml", `
+circuit: beta
 ports:
   - name: keywords
     direction: in
@@ -279,8 +279,8 @@ done: _done
 			Port: 9300,
 			Assets: &AssetMap{
 				Circuits: map[string]string{
-					"rca": "circuits/rca.yaml",
-					"gnd": "circuits/gnd.yaml",
+					"alpha": "circuits/alpha.yaml",
+					"beta":  "circuits/beta.yaml",
 				},
 			},
 		},
@@ -305,12 +305,12 @@ func TestE2E_DomainServe_AllAssetTypes(t *testing.T) {
 		DomainServe: &DomainServeConfig{
 			Port: 9300,
 			Assets: &AssetMap{
-				Circuits:   map[string]string{"rca": "circuits/rca.yaml", "gnd": "circuits/gnd.yaml"},
+				Circuits:   map[string]string{"alpha": "circuits/alpha.yaml", "beta": "circuits/beta.yaml"},
 				Prompts:    map[string]string{"recall": "prompts/recall.md", "triage": "prompts/triage.md"},
-				Scorecards: map[string]string{"rca": "scorecards/rca.yaml"},
+				Scorecards: map[string]string{"alpha": "scorecards/alpha.yaml"},
 				Scenarios:  map[string]string{"ptp": "scenarios/ptp.yaml"},
 				Sources:    map[string]string{"ptp": "sources/ptp.yaml"},
-				Reports:    map[string]string{"rca": "reports/rca.yaml"},
+				Reports:    map[string]string{"alpha": "reports/alpha.yaml"},
 				Files:      map[string]string{"heuristics": "heuristics.yaml"},
 			},
 		},
@@ -323,10 +323,10 @@ func TestE2E_DomainServe_AllAssetTypes(t *testing.T) {
 	code := string(src)
 
 	for _, p := range []string{
-		"circuits/rca.yaml", "circuits/gnd.yaml",
+		"circuits/alpha.yaml", "circuits/beta.yaml",
 		"prompts/recall.md", "prompts/triage.md",
-		"scorecards/rca.yaml", "scenarios/ptp.yaml",
-		"sources/ptp.yaml", "reports/rca.yaml",
+		"scorecards/alpha.yaml", "scenarios/ptp.yaml",
+		"sources/ptp.yaml", "reports/alpha.yaml",
 		"heuristics.yaml",
 	} {
 		if !strings.Contains(code, "//go:embed "+p) {

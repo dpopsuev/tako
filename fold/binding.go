@@ -41,7 +41,7 @@ func bridgeUsesToLegacy(m *Manifest) {
 
 // ResolvedConnector is a connector ready for codegen instantiation.
 type ResolvedConnector struct {
-	Name    string // manifest key (e.g. "reportportal")
+	Name    string // manifest key (e.g. "datasource")
 	Module  string // Go import path
 	Alias   string // import alias for codegen
 	Entries []ResolvedSatisfy
@@ -56,7 +56,7 @@ type ResolvedSatisfy struct {
 
 // ResolvedSchematic is a schematic with all sockets resolved to providers.
 type ResolvedSchematic struct {
-	Name     string // manifest key (e.g. "gnd", "rca")
+	Name     string // manifest key (e.g. "beta", "alpha")
 	Module   string // Go import path
 	Alias    string // import alias for codegen
 	Factory  string // constructor function (e.g. "NewRouter", "NewServer")
@@ -65,7 +65,7 @@ type ResolvedSchematic struct {
 
 	// SessionFactory mode: when set, fold generates CircuitConfig inline
 	// using the consumer's SessionFactory instead of calling Factory.
-	SessionFactory string              // Go symbol: "rca.Factory()" or "Factory()"
+	SessionFactory string              // Go symbol: "alpha.Factory()" or "Factory()"
 	Params         []circuit.ParamDef  // extra start_circuit parameters
 	Schemas        []string            // step schema paths
 	Report         string              // report template path
@@ -505,15 +505,15 @@ func sanitize(s string) string {
 
 // resolveComponentPath resolves a SchematicRef/ConnectorRef path to the
 // filesystem location of component.yaml. Supports both relative paths
-// (e.g. "schematics/rca") and module-qualified paths
-// (e.g. "github.com/dpopsuev/origami-rca").
+// (e.g. "schematics/alpha") and module-qualified paths
+// (e.g. "github.com/example/schematic-a").
 func resolveComponentPath(refPath, origamiRoot string, resolver ModuleResolver) string {
 	// Module path: first segment contains a dot (e.g. "github.com").
 	if parts := strings.SplitN(refPath, "/", 2); strings.Contains(parts[0], ".") && resolver != nil {
 		// Try the full path as a module, then walk up to find the module root.
-		// For "github.com/dpopsuev/origami-rca/connectors/rp":
-		//   try rh-rca/connectors/rp → no go.mod
-		//   try rh-rca → has go.mod → subpath = connectors/rp
+		// For "github.com/example/schematic-a/connectors/rp":
+		//   try schematic-a/connectors/rp → no go.mod
+		//   try schematic-a → has go.mod → subpath = connectors/rp
 		segments := strings.Split(refPath, "/")
 		for i := len(segments); i >= 3; i-- { // minimum: host/org/repo
 			candidate := strings.Join(segments[:i], "/")

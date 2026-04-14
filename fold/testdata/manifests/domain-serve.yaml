@@ -1,10 +1,10 @@
 apiVersion: origami/v1
 kind: Board
 metadata:
-  name: asterisk
+  name: consumer
 spec:
   domain_serve:
     port: 9300
     assets:
       circuits:
-        rca: circuits/rca.yaml
+        alpha: circuits/alpha.yaml

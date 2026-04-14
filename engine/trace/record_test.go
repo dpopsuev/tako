@@ -87,7 +87,7 @@ func TestRunRecord_TraceIDRoundTrip(t *testing.T) {
 	rec := RunRecord{
 		ID:          "s-456-1",
 		TraceID:     "tr-parent-99",
-		Scenario:    "gnd",
+		Scenario:    "beta",
 		Parallel:    1,
 		StartedAt:   now,
 		CompletedAt: now.Add(10 * time.Second),

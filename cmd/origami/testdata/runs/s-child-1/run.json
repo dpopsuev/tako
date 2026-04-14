@@ -1,7 +1,7 @@
 {
   "id": "s-child-1",
   "trace_id": "tr-child-42",
-  "scenario": "gnd",
+  "scenario": "beta",
   "parallel": 1,
   "started_at": "2026-03-20T10:00:04Z",
   "completed_at": "2026-03-20T10:00:09Z",

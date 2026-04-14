@@ -49,7 +49,7 @@ func TestMediator_AliasRouting_StepByAlias(t *testing.T) {
 
 	// Create mediator.
 	gw := mediator.New([]mediator.BackendConfig{
-		{Name: "rca", Endpoint: backend.URL + "/mcp"},
+		{Name: "alpha", Endpoint: backend.URL + "/mcp"},
 	})
 	ctx := t.Context()
 	if err := gw.Start(ctx); err != nil {

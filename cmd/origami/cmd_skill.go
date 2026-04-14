@@ -25,7 +25,7 @@ func skillCmd(args []string) error {
 
 func skillScaffold(args []string) error {
 	fs := flag.NewFlagSet("skill scaffold", flag.ContinueOnError)
-	toolName := fs.String("tool", "", "tool name (e.g. asterisk, achilles)")
+	toolName := fs.String("tool", "", "tool name (e.g. myapp, achilles)")
 	outDir := fs.String("out", "", "output directory for SKILL.md (default: .cursor/skills/<tool>-calibrate/)")
 	if err := fs.Parse(args); err != nil {
 		return err

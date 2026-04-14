@@ -172,7 +172,7 @@ func TestDiag_D3_CircuitMediatorFallback(t *testing.T) {
 		Circuit: "test", Start: "a", Done: "done",
 		Nodes: []circuit.NodeDef{
 			{Name: "a", Instrument: "transformer", Action: "passthrough"},
-			{Name: "sub", Instrument: "circuit", Action: "gnd"},
+			{Name: "sub", Instrument: "circuit", Action: "beta"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "a-sub", From: "a", To: "sub"},
@@ -182,7 +182,7 @@ func TestDiag_D3_CircuitMediatorFallback(t *testing.T) {
 	reg := &GraphRegistries{
 		Transformers:     TransformerRegistry{"passthrough": TransformerFunc("passthrough", func(_ context.Context, tc *TransformerContext) (any, error) { return tc.Input, nil })},
 		MediatorEndpoint: "http://localhost:9000/mcp",
-		// Note: no Circuits map — gnd will fall back to mediator
+		// Note: no Circuits map — beta will fall back to mediator
 	}
 
 	logs := captureDiagLogs(func() {
@@ -195,15 +195,15 @@ func TestDiag_D3_CircuitMediatorFallback(t *testing.T) {
 	if !diagContains(logs, "D3") {
 		t.Errorf("expected D3 warning for mediator fallback, got:\n%s", logs)
 	}
-	if !diagContains(logs, "gnd") {
-		t.Errorf("expected handler name 'gnd' in warning, got:\n%s", logs)
+	if !diagContains(logs, "beta") {
+		t.Errorf("expected handler name 'beta' in warning, got:\n%s", logs)
 	}
 }
 
 func TestDiag_D3_NoWarningForLocalCircuit(t *testing.T) {
 	// When the circuit resolves locally, no D3 warning should be emitted.
 	innerDef := &circuit.CircuitDef{
-		Circuit: "gnd", Start: "x", Done: "done",
+		Circuit: "beta", Start: "x", Done: "done",
 		Nodes: []circuit.NodeDef{
 			{Name: "x", Instrument: "transformer", Action: "passthrough"},
 		},
@@ -213,7 +213,7 @@ func TestDiag_D3_NoWarningForLocalCircuit(t *testing.T) {
 		Circuit: "test", Start: "a", Done: "done",
 		Nodes: []circuit.NodeDef{
 			{Name: "a", Instrument: "transformer", Action: "passthrough"},
-			{Name: "sub", Instrument: "circuit", Action: "gnd"},
+			{Name: "sub", Instrument: "circuit", Action: "beta"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "a-sub", From: "a", To: "sub"},
@@ -223,7 +223,7 @@ func TestDiag_D3_NoWarningForLocalCircuit(t *testing.T) {
 	reg := &GraphRegistries{
 		Transformers:     TransformerRegistry{"passthrough": TransformerFunc("passthrough", func(_ context.Context, tc *TransformerContext) (any, error) { return tc.Input, nil })},
 		MediatorEndpoint: "http://localhost:9000/mcp",
-		Circuits:         map[string]*circuit.CircuitDef{"gnd": innerDef},
+		Circuits:         map[string]*circuit.CircuitDef{"beta": innerDef},
 	}
 
 	logs := captureDiagLogs(func() {

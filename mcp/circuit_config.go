@@ -46,7 +46,7 @@ const (
 // three hooks (session creation, step schemas, report formatting) and the
 // generic CircuitServer handles all protocol mechanics.
 type CircuitConfig struct {
-	Name    string // server implementation name (e.g. "asterisk", "achilles")
+	Name    string // server implementation name (e.g. "myapp", "achilles")
 	Version string // server version (e.g. "dev")
 
 	// StepSchemas declares the artifact schema for each circuit step.
@@ -59,8 +59,8 @@ type CircuitConfig struct {
 	ExtraParamDefs []ExtraParamDef
 
 	// WorkerPreamble is domain-specific instruction text prepended to the
-	// auto-generated worker prompt. For example: "You are an Asterisk
-	// calibration worker."
+	// auto-generated worker prompt. For example: "You are a calibration
+	// worker for <domain>."
 	WorkerPreamble string
 
 	// CreateSession wires up a domain-specific circuit run. It receives
@@ -152,7 +152,7 @@ type CircuitConfig struct {
 	ResourceRegistry *resource.KindRegistry
 
 	// SubCircuitResolvers maps schematic names to their circuit YAML resolvers.
-	// Fold-generated code sets this for sub-schematics (e.g., GND within RCA).
+	// Fold-generated code sets this for sub-schematics (e.g., sub-circuit within main circuit).
 	// The session bridge loads sub-circuit definitions from these resolvers
 	// and passes them to the engine via GraphRegistries.Circuits.
 	SubCircuitResolvers map[string]circuit.AssetResolver

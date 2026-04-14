@@ -1,6 +1,6 @@
 // Package calibrate provides generic calibration primitives for measuring
-// domain accuracy across scenario-vs-ground-truth runs. Consumers (Asterisk,
-// Achilles, etc.) supply domain-specific scoring; this package provides the
+// domain accuracy across scenario-vs-ground-truth runs. Consumers supply
+// domain-specific scoring; this package provides the
 // shared types, aggregation, and report formatting.
 package calibrate
 

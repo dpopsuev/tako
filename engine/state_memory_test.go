@@ -220,7 +220,7 @@ func TestInMemoryStore_Search(t *testing.T) {
 
 func TestInMemoryStore_SearchByTag(t *testing.T) {
 	store := NewInMemoryStore()
-	store.SetNSTagged("semantic", "w1", "k1", "v1", []string{"rca", "ptp"})
+	store.SetNSTagged("semantic", "w1", "k1", "v1", []string{"alpha", "ptp"})
 	store.SetNSTagged("semantic", "w1", "k2", "v2", []string{"security"})
 
 	results := store.Search("semantic", "ptp")
@@ -234,7 +234,7 @@ func TestInMemoryStore_SearchByTag(t *testing.T) {
 
 func TestTaggedMemoryStore_AutoTags(t *testing.T) {
 	inner := NewInMemoryStore()
-	wrapped := &TaggedMemoryStore{Inner: inner, Tags: []string{"run-001", "rca"}}
+	wrapped := &TaggedMemoryStore{Inner: inner, Tags: []string{"run-001", "alpha"}}
 
 	wrapped.SetNS("semantic", "w1", "finding", "goroutine leak")
 
@@ -242,8 +242,8 @@ func TestTaggedMemoryStore_AutoTags(t *testing.T) {
 	if item.Value != "goroutine leak" {
 		t.Errorf("value = %v, want 'goroutine leak'", item.Value)
 	}
-	if len(item.Tags) != 2 || item.Tags[0] != "run-001" || item.Tags[1] != "rca" {
-		t.Errorf("tags = %v, want [run-001 rca]", item.Tags)
+	if len(item.Tags) != 2 || item.Tags[0] != "run-001" || item.Tags[1] != "alpha" {
+		t.Errorf("tags = %v, want [run-001 alpha]", item.Tags)
 	}
 }
 

@@ -13,7 +13,7 @@ func TestRenderer_PlainText_Error(t *testing.T) {
 		RuleID:   "S2",
 		Severity: SeverityError,
 		Message:  "invalid approach",
-		File:     "circuits/rca.yaml",
+		File:     "circuits/alpha.yaml",
 		Line:     15,
 		Column:   5,
 		Expected: `one of [rapid, aggressive, methodical, rigorous, analytical, holistic]`,
@@ -25,7 +25,7 @@ func TestRenderer_PlainText_Error(t *testing.T) {
 	if !strings.Contains(out, "error[S2]: invalid approach") {
 		t.Errorf("missing header in output:\n%s", out)
 	}
-	if !strings.Contains(out, "--> circuits/rca.yaml:15:5") {
+	if !strings.Contains(out, "--> circuits/alpha.yaml:15:5") {
 		t.Errorf("missing location in output:\n%s", out)
 	}
 	if !strings.Contains(out, "expected:") {
@@ -46,7 +46,7 @@ func TestRenderer_PlainText_Warning(t *testing.T) {
 		RuleID:   "S5",
 		Severity: SeverityWarning,
 		Message:  "missing edge name",
-		File:     "circuits/rca.yaml",
+		File:     "circuits/alpha.yaml",
 		Line:     20,
 	})
 
@@ -54,7 +54,7 @@ func TestRenderer_PlainText_Warning(t *testing.T) {
 	if !strings.Contains(out, "warning[S5]: missing edge name") {
 		t.Errorf("missing header in output:\n%s", out)
 	}
-	if !strings.Contains(out, "--> circuits/rca.yaml:20") {
+	if !strings.Contains(out, "--> circuits/alpha.yaml:20") {
 		t.Errorf("missing location in output:\n%s", out)
 	}
 }
@@ -66,16 +66,16 @@ func TestRenderer_WithRelatedSpans(t *testing.T) {
 		RuleID:   "S10",
 		Severity: SeverityError,
 		Message:  "type mismatch in wiring",
-		File:     "circuits/rca.yaml",
+		File:     "circuits/alpha.yaml",
 		Line:     10,
 		Related: []Span{
-			{File: "circuits/gnd.yaml", Line: 5, Label: "target port declared here"},
+			{File: "circuits/beta.yaml", Line: 5, Label: "target port declared here"},
 		},
 		Reason: "port types must match for wiring",
 	})
 
 	out := buf.String()
-	if !strings.Contains(out, "circuits/gnd.yaml:5 (target port declared here)") {
+	if !strings.Contains(out, "circuits/beta.yaml:5 (target port declared here)") {
 		t.Errorf("missing related span in output:\n%s", out)
 	}
 	if !strings.Contains(out, "reason: port types must match") {

@@ -371,7 +371,7 @@ func TestCircuitRefNode_Interface(t *testing.T) {
 }
 
 func TestCircuitRefNode_GenerateCircuit(t *testing.T) {
-	inner := &circuit.CircuitDef{Circuit: "gnd", Start: "X", Done: "_done"}
+	inner := &circuit.CircuitDef{Circuit: "beta", Start: "X", Done: "_done"}
 	n := &circuitRefNode{name: "gather", circuitDef: inner}
 
 	got, err := n.GenerateCircuit(context.Background(), circuit.NodeContext{})
@@ -385,7 +385,7 @@ func TestCircuitRefNode_GenerateCircuit(t *testing.T) {
 
 func TestBuildGraph_CircuitRefNode(t *testing.T) {
 	innerDef := &circuit.CircuitDef{
-		Circuit: "gnd",
+		Circuit: "beta",
 		Start:   "K1",
 		Done:    "_done",
 		Nodes: []circuit.NodeDef{
@@ -397,12 +397,12 @@ func TestBuildGraph_CircuitRefNode(t *testing.T) {
 	}
 
 	outerDef := &circuit.CircuitDef{
-		Circuit: "rca",
+		Circuit: "alpha",
 		Start:   "A",
 		Done:    "_done",
 		Nodes: []circuit.NodeDef{
 			{Name: "A", Instrument: "transformer", Action: "passthrough"},
-			{Name: "B", Instrument: InstrumentCircuit, Action: "gnd"},
+			{Name: "B", Instrument: InstrumentCircuit, Action: "beta"},
 			{Name: "C", Instrument: "transformer", Action: "passthrough"},
 		},
 		Edges: []circuit.EdgeDef{
@@ -417,7 +417,7 @@ func TestBuildGraph_CircuitRefNode(t *testing.T) {
 			"passthrough": &passthroughTransformer{},
 		},
 		Circuits: map[string]*circuit.CircuitDef{
-			"gnd": innerDef,
+			"beta": innerDef,
 		},
 	}
 
@@ -437,7 +437,7 @@ func TestBuildGraph_CircuitRefNode(t *testing.T) {
 
 func TestWalk_CircuitRefNode_SubWalk(t *testing.T) {
 	innerDef := &circuit.CircuitDef{
-		Circuit: "gnd",
+		Circuit: "beta",
 		Start:   "K1",
 		Done:    "_done",
 		Nodes: []circuit.NodeDef{
@@ -449,12 +449,12 @@ func TestWalk_CircuitRefNode_SubWalk(t *testing.T) {
 	}
 
 	outerDef := &circuit.CircuitDef{
-		Circuit: "rca",
+		Circuit: "alpha",
 		Start:   "A",
 		Done:    "_done",
 		Nodes: []circuit.NodeDef{
 			{Name: "A", Instrument: "transformer", Action: "passthrough"},
-			{Name: "B", Instrument: InstrumentCircuit, Action: "gnd"},
+			{Name: "B", Instrument: InstrumentCircuit, Action: "beta"},
 			{Name: "C", Instrument: "transformer", Action: "passthrough"},
 		},
 		Edges: []circuit.EdgeDef{
@@ -469,7 +469,7 @@ func TestWalk_CircuitRefNode_SubWalk(t *testing.T) {
 			"passthrough": &passthroughTransformer{},
 		},
 		Circuits: map[string]*circuit.CircuitDef{
-			"gnd": innerDef,
+			"beta": innerDef,
 		},
 	}
 
@@ -492,8 +492,8 @@ func TestWalk_CircuitRefNode_SubWalk(t *testing.T) {
 	if !ok {
 		t.Fatalf("output type = %T, want *DelegateArtifact", da)
 	}
-	if delArt.GeneratedCircuit.Circuit != "gnd" {
-		t.Errorf("inner circuit = %q, want %q", delArt.GeneratedCircuit.Circuit, "gnd")
+	if delArt.GeneratedCircuit.Circuit != "beta" {
+		t.Errorf("inner circuit = %q, want %q", delArt.GeneratedCircuit.Circuit, "beta")
 	}
 
 	// Inner artifact namespaced into outer outputs.
@@ -602,7 +602,7 @@ func TestBuildGraph_CircuitRefNode_MissingCircuit(t *testing.T) {
 
 func TestDelegateEvents_CarryCircuitType_CircuitRef(t *testing.T) {
 	innerDef := &circuit.CircuitDef{
-		Circuit: "gnd",
+		Circuit: "beta",
 		Start:   "K1",
 		Done:    "_done",
 		Nodes: []circuit.NodeDef{
@@ -614,12 +614,12 @@ func TestDelegateEvents_CarryCircuitType_CircuitRef(t *testing.T) {
 	}
 
 	outerDef := &circuit.CircuitDef{
-		Circuit: "rca",
+		Circuit: "alpha",
 		Start:   "A",
 		Done:    "_done",
 		Nodes: []circuit.NodeDef{
 			{Name: "A", Instrument: "transformer", Action: "passthrough"},
-			{Name: "B", Instrument: InstrumentCircuit, Action: "gnd"},
+			{Name: "B", Instrument: InstrumentCircuit, Action: "beta"},
 			{Name: "C", Instrument: "transformer", Action: "passthrough"},
 		},
 		Edges: []circuit.EdgeDef{
@@ -634,7 +634,7 @@ func TestDelegateEvents_CarryCircuitType_CircuitRef(t *testing.T) {
 			"passthrough": &passthroughTransformer{},
 		},
 		Circuits: map[string]*circuit.CircuitDef{
-			"gnd": innerDef,
+			"beta": innerDef,
 		},
 	}
 
@@ -656,8 +656,8 @@ func TestDelegateEvents_CarryCircuitType_CircuitRef(t *testing.T) {
 	if len(starts) != 1 {
 		t.Fatalf("delegate_start events = %d, want 1", len(starts))
 	}
-	if ct, _ := starts[0].Metadata["circuit_type"].(string); ct != "gnd" {
-		t.Errorf("delegate_start circuit_type = %q, want %q", ct, "gnd")
+	if ct, _ := starts[0].Metadata["circuit_type"].(string); ct != "beta" {
+		t.Errorf("delegate_start circuit_type = %q, want %q", ct, "beta")
 	}
 
 	// EventDelegateEnd must carry circuit_type.
@@ -665,8 +665,8 @@ func TestDelegateEvents_CarryCircuitType_CircuitRef(t *testing.T) {
 	if len(ends) != 1 {
 		t.Fatalf("delegate_end events = %d, want 1", len(ends))
 	}
-	if ct, _ := ends[0].Metadata["circuit_type"].(string); ct != "gnd" {
-		t.Errorf("delegate_end circuit_type = %q, want %q", ct, "gnd")
+	if ct, _ := ends[0].Metadata["circuit_type"].(string); ct != "beta" {
+		t.Errorf("delegate_end circuit_type = %q, want %q", ct, "beta")
 	}
 }
 

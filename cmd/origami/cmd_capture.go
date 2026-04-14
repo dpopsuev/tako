@@ -13,7 +13,7 @@ import (
 
 func captureCmd(args []string) error {
 	fs := flag.NewFlagSet("capture", flag.ContinueOnError)
-	schematic := fs.String("schematic", "", "schematic name (e.g. gnd)")
+	schematic := fs.String("schematic", "", "schematic name (e.g. beta)")
 	sourcePack := fs.String("source-pack", "", "path to source pack YAML")
 	output := fs.String("output", "", "output directory for the bundle")
 	overwrite := fs.Bool("overwrite", false, "overwrite existing bundle")

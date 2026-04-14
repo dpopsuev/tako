@@ -7,13 +7,13 @@ import (
 
 func TestGenerateDomainServe_Assets(t *testing.T) {
 	m := &Manifest{
-		Name:    "asterisk",
+		Name:    "consumer",
 		Version: "1.0",
 		DomainServe: &DomainServeConfig{
 			Port: 9300,
 			Assets: &AssetMap{
 				Circuits: map[string]string{
-					"rca":         "circuits/rca.yaml",
+					"alpha":       "circuits/alpha.yaml",
 					"calibration": "circuits/calibration.yaml",
 				},
 				Prompts: map[string]string{
@@ -34,13 +34,13 @@ func TestGenerateDomainServe_Assets(t *testing.T) {
 
 	for _, want := range []string{
 		"//go:embed circuits/calibration.yaml",
-		"//go:embed circuits/rca.yaml",
+		"//go:embed circuits/alpha.yaml",
 		"//go:embed prompts/recall/judge-similarity.md",
 		"//go:embed vocabulary.yaml",
 		"var domainData embed.FS",
 		"AssetIndex",
 		`"circuits"`,
-		`"rca"`,
+		`"alpha"`,
 		`"vocabulary"`,
 	} {
 		if !strings.Contains(code, want) {
@@ -102,12 +102,12 @@ func TestGenerateDomainServe_NoAssets(t *testing.T) {
 
 func TestGenerateDomainServe_DataDirFlag(t *testing.T) {
 	m := &Manifest{
-		Name:    "asterisk",
+		Name:    "consumer",
 		Version: "1.0",
 		DomainServe: &DomainServeConfig{
 			Port: 9300,
 			Assets: &AssetMap{
-				Circuits: map[string]string{"rca": "circuits/rca.yaml"},
+				Circuits: map[string]string{"alpha": "circuits/alpha.yaml"},
 			},
 		},
 	}
@@ -134,12 +134,12 @@ func TestGenerateDomainServe_DataDirFlag(t *testing.T) {
 
 func TestGenerateDomainServe_HealthzFlag(t *testing.T) {
 	m := &Manifest{
-		Name:    "asterisk",
+		Name:    "consumer",
 		Version: "1.0",
 		DomainServe: &DomainServeConfig{
 			Port: 9300,
 			Assets: &AssetMap{
-				Circuits: map[string]string{"rca": "circuits/rca.yaml"},
+				Circuits: map[string]string{"alpha": "circuits/alpha.yaml"},
 			},
 		},
 	}
@@ -168,23 +168,23 @@ func TestGenerateDomainServe_HealthzFlag(t *testing.T) {
 func TestGenerateWiredBinary_DataDirFlag(t *testing.T) {
 	root := origamiRoot(t)
 	m := &Manifest{
-		Name:    "asterisk",
+		Name:    "consumer",
 		Version: "1.0",
 		DomainServe: &DomainServeConfig{
 			Port: 9300,
 			Assets: &AssetMap{
-				Circuits: map[string]string{"rca": "circuits/rca.yaml"},
+				Circuits: map[string]string{"alpha": "circuits/alpha.yaml"},
 				Files:    map[string]string{"vocabulary": "vocabulary.yaml"},
 			},
 		},
 		Schematics: map[string]SchematicRef{
-			"rca": {
-				Path:     "github.com/dpopsuev/origami-rca",
-				Bindings: map[string]string{"source": "reportportal"},
+			"alpha": {
+				Path:     "github.com/example/schematic-a",
+				Bindings: map[string]string{"source": "datasource"},
 			},
 		},
 		Connectors: map[string]ConnectorRef{
-			"reportportal": {Path: "github.com/dpopsuev/origami-rca/connectors/rp"},
+			"datasource": {Path: "github.com/example/schematic-a/connectors/rp"},
 		},
 	}
 
@@ -218,25 +218,25 @@ func TestGenerateWiredBinary(t *testing.T) {
 	root := origamiRoot(t)
 
 	m := &Manifest{
-		Name:    "asterisk",
+		Name:    "consumer",
 		Version: "1.0",
 		DomainServe: &DomainServeConfig{
 			Port: 9300,
 			Assets: &AssetMap{
-				Circuits: map[string]string{"rca": "circuits/rca.yaml"},
+				Circuits: map[string]string{"alpha": "circuits/alpha.yaml"},
 				Files:    map[string]string{"vocabulary": "vocabulary.yaml"},
 			},
 		},
 		Schematics: map[string]SchematicRef{
-			"rca": {
-				Path: "github.com/dpopsuev/origami-rca",
+			"alpha": {
+				Path: "github.com/example/schematic-a",
 				Bindings: map[string]string{
-					"source": "reportportal",
+					"source": "datasource",
 				},
 			},
 		},
 		Connectors: map[string]ConnectorRef{
-			"reportportal": {Path: "github.com/dpopsuev/origami-rca/connectors/rp"},
+			"datasource": {Path: "github.com/example/schematic-a/connectors/rp"},
 		},
 	}
 
@@ -254,8 +254,8 @@ func TestGenerateWiredBinary(t *testing.T) {
 	for _, want := range []string{
 		"DO NOT EDIT",
 		"package main",
-		`"github.com/dpopsuev/origami-rca"`,
-		"origamirca.Factory()",
+		`"github.com/example/schematic-a"`,
+		"schematica.Factory()",
 		"fwmcp.SessionFactoryToConfig(factory)",
 		"bridgedCfg.DomainFS = domainFS",
 		"domainserve.New(domainFS",

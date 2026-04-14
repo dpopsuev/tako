@@ -1,9 +1,9 @@
 apiVersion: origami/v1
 kind: Component
 metadata:
-  name: test-rp
-  module: github.com/dpopsuev/origami-rca/connectors/rp
-  namespace: reportportal
+  name: test-ds
+  module: github.com/example/schematic-a/connectors/rp
+  namespace: datasource
 spec:
   version: "1.0"
   needs:

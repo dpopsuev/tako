@@ -128,7 +128,7 @@ func TestLiveStore_MultiKind(t *testing.T) {
 	store := NewLiveStore(reg)
 
 	store.Create(circuit.KindScenario, "ptp", scenarioYAML("ptp"))
-	store.Create(circuit.KindScorecard, "rca", scorecardYAML("rca"))
+	store.Create(circuit.KindScorecard, "alpha", scorecardYAML("alpha"))
 
 	all, _ := store.List("")
 	if len(all) != 2 {

@@ -119,11 +119,11 @@ func scanExportedFuncs(dir string) (map[string]bool, error) {
 	return exports, nil
 }
 
-// extractSymbolName extracts the function name from a symbol like "Factory()" or "rca.Factory()".
+// extractSymbolName extracts the function name from a symbol like "Factory()" or "alpha.Factory()".
 func extractSymbolName(symbol string) string {
 	// Strip parentheses: "Factory()" → "Factory"
 	sym := strings.TrimSuffix(symbol, "()")
-	// Strip package prefix: "rca.Factory" → "Factory"
+	// Strip package prefix: "alpha.Factory" → "Factory"
 	if idx := strings.LastIndex(sym, "."); idx >= 0 {
 		sym = sym[idx+1:]
 	}

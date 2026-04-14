@@ -12,18 +12,18 @@ func TestResolve_BoardUsesAndBind(t *testing.T) {
 		Name:    "test-board",
 		Version: "1.0",
 		Uses: map[string]UsesRef{
-			"rca": {
+			"alpha": {
 				Kind:   "Schematic",
-				Module: "github.com/dpopsuev/origami-rca",
+				Module: "github.com/example/schematic-a",
 			},
-			"reportportal": {
+			"datasource": {
 				Kind:   "Component",
-				Module: "github.com/dpopsuev/origami-rca/connectors/rp",
+				Module: "github.com/example/schematic-a/connectors/rp",
 			},
 		},
 		Bind: map[string]map[string]string{
-			"rca": {
-				"source": "reportportal",
+			"alpha": {
+				"source": "datasource",
 			},
 		},
 	}
@@ -33,11 +33,11 @@ func TestResolve_BoardUsesAndBind(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if g.Root.Name != "rca" {
-		t.Errorf("root = %q, want rca", g.Root.Name)
+	if g.Root.Name != "alpha" {
+		t.Errorf("root = %q, want alpha", g.Root.Name)
 	}
 
-	// RCA sockets have no option: fields — no resolved options expected.
+	// Sockets have no option: fields — no resolved options expected.
 	if len(g.Root.Options) != 0 {
 		t.Errorf("root options = %v, want none (sockets have no option: field)", g.Root.Options)
 	}

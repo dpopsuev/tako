@@ -3,11 +3,11 @@ name: base-board
 description: "Base board for composition tests"
 
 uses:
-  rca: github.com/dpopsuev/origami-rca
-  gnd: github.com/dpopsuev/origami-gnd
+  alpha: github.com/example/schematic-a
+  beta: github.com/example/schematic-b
 
 bind:
-  rca.source: github.com/dpopsuev/origami-components/rp
+  alpha.source: github.com/dpopsuev/origami-components/rp
 
 serve:
   port: 9300

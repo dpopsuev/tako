@@ -2,7 +2,7 @@ package toolkit
 
 import "context"
 
-// Driver implements GND access for a specific SourceKind.
+// Driver implements source access for a specific SourceKind.
 // Drivers are registered with the access router.
 type Driver interface {
 	Handles() SourceKind

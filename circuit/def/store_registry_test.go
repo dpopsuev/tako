@@ -18,35 +18,35 @@ func (e *memoryEngine) Migrate(_ *StoreSchema) error     { return nil }
 func TestStoreRegistry_ResolveByName(t *testing.T) {
 	wiring := &StoreWiring{
 		Stores: map[string]StoreBinding{
-			"rca": {Engine: "memory"},
-			"gnd": {Engine: "memory", Config: map[string]string{"mode": "ephemeral"}},
+			"alpha": {Engine: "memory"},
+			"beta":  {Engine: "memory", Config: map[string]string{"mode": "ephemeral"}},
 		},
 	}
 	reg := NewStoreRegistry(wiring)
 	reg.RegisterEngine("memory", func() StoreEngine { return &memoryEngine{} })
 
-	rca, err := reg.Resolve("rca")
+	alphaStore, err := reg.Resolve("alpha")
 	if err != nil {
-		t.Fatalf("resolve rca: %v", err)
+		t.Fatalf("resolve alpha: %v", err)
 	}
-	if !rca.(*memoryEngine).opened {
-		t.Error("rca engine should be opened")
+	if !alphaStore.(*memoryEngine).opened {
+		t.Error("alpha engine should be opened")
 	}
 
-	gnd, err := reg.Resolve("gnd")
+	betaStore, err := reg.Resolve("beta")
 	if err != nil {
-		t.Fatalf("resolve gnd: %v", err)
+		t.Fatalf("resolve beta: %v", err)
 	}
-	if gnd.(*memoryEngine).config["mode"] != "ephemeral" {
-		t.Error("gnd config should have mode=ephemeral")
+	if betaStore.(*memoryEngine).config["mode"] != "ephemeral" {
+		t.Error("beta config should have mode=ephemeral")
 	}
 
 	// Second resolve returns same instance.
-	rca2, err := reg.Resolve("rca")
+	alpha2, err := reg.Resolve("alpha")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if rca2 != rca {
+	if alpha2 != alphaStore {
 		t.Error("second resolve should return same instance")
 	}
 }

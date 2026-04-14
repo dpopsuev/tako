@@ -68,7 +68,7 @@ type HarnessConfig struct {
 	Plan       *ResolutionPlan
 
 	// PortStubs provides canned data for port boundaries during
-	// isolated calibration. Keyed by port name (e.g. "rca.in:code-context").
+	// isolated calibration. Keyed by port name (e.g. "alpha.in:code-context").
 	// Adapters check this map at port boundaries.
 	PortStubs PortStubs
 

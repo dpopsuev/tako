@@ -21,7 +21,7 @@ func TestMergeComponents_SingleComponent(t *testing.T) {
 	// Given: empty base + one component with a transformer
 	base := &GraphRegistries{Transformers: TransformerRegistry{}}
 	comp := &Component{
-		Namespace:    "rca",
+		Namespace:    "alpha",
 		Transformers: TransformerRegistry{"llm": stubTransformerFor("llm")},
 	}
 
@@ -32,8 +32,8 @@ func TestMergeComponents_SingleComponent(t *testing.T) {
 	}
 
 	// Then: FQCN + short name registered
-	if _, ok := merged.Transformers["rca.llm"]; !ok {
-		t.Error("missing FQCN rca.llm")
+	if _, ok := merged.Transformers["alpha.llm"]; !ok {
+		t.Error("missing FQCN alpha.llm")
 	}
 	if _, ok := merged.Transformers["llm"]; !ok {
 		t.Error("missing short name llm")
@@ -43,10 +43,10 @@ func TestMergeComponents_SingleComponent(t *testing.T) {
 func TestMergeComponents_NamespaceCollision(t *testing.T) {
 	// Given: base with existing FQCN + component with same FQCN
 	base := &GraphRegistries{
-		Transformers: TransformerRegistry{"rca.llm": stubTransformerFor("llm")},
+		Transformers: TransformerRegistry{"alpha.llm": stubTransformerFor("llm")},
 	}
 	comp := &Component{
-		Namespace:    "rca",
+		Namespace:    "alpha",
 		Transformers: TransformerRegistry{"llm": stubTransformerFor("llm2")},
 	}
 
@@ -69,7 +69,7 @@ func TestMergeComponents_ShortNamePreservesFirst(t *testing.T) {
 		Transformers: TransformerRegistry{"llm": existing},
 	}
 	comp := &Component{
-		Namespace:    "gnd",
+		Namespace:    "beta",
 		Transformers: TransformerRegistry{"llm": stubTransformerFor("new")},
 	}
 
@@ -84,17 +84,17 @@ func TestMergeComponents_ShortNamePreservesFirst(t *testing.T) {
 		t.Error("short name should preserve first registration")
 	}
 	// But FQCN is registered
-	if _, ok := merged.Transformers["gnd.llm"]; !ok {
-		t.Error("missing FQCN gnd.llm")
+	if _, ok := merged.Transformers["beta.llm"]; !ok {
+		t.Error("missing FQCN beta.llm")
 	}
 }
 
 func TestMergeComponents_ExtractorCollision(t *testing.T) {
 	base := &GraphRegistries{
-		Extractors: ExtractorRegistry{"rca.json": &JSONSchemaExtractor{}},
+		Extractors: ExtractorRegistry{"alpha.json": &JSONSchemaExtractor{}},
 	}
 	comp := &Component{
-		Namespace:  "rca",
+		Namespace:  "alpha",
 		Extractors: ExtractorRegistry{"json": &JSONSchemaExtractor{}},
 	}
 
@@ -109,10 +109,10 @@ func TestMergeComponents_ExtractorCollision(t *testing.T) {
 
 func TestMergeComponents_HookCollision(t *testing.T) {
 	base := &GraphRegistries{
-		Hooks: HookRegistry{"rca.store": NewHookFunc("store", nil)},
+		Hooks: HookRegistry{"alpha.store": NewHookFunc("store", nil)},
 	}
 	comp := &Component{
-		Namespace: "rca",
+		Namespace: "alpha",
 		Hooks:     HookRegistry{"store": NewHookFunc("store", nil)},
 	}
 
@@ -129,7 +129,7 @@ func TestMergeComponents_NilBase(t *testing.T) {
 	// Given: base with nil registries
 	base := &GraphRegistries{}
 	comp := &Component{
-		Namespace:    "rca",
+		Namespace:    "alpha",
 		Transformers: TransformerRegistry{"llm": stubTransformerFor("llm")},
 	}
 
@@ -138,8 +138,8 @@ func TestMergeComponents_NilBase(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MergeComponents: %v", err)
 	}
-	if _, ok := merged.Transformers["rca.llm"]; !ok {
-		t.Error("missing rca.llm after nil base merge")
+	if _, ok := merged.Transformers["alpha.llm"]; !ok {
+		t.Error("missing alpha.llm after nil base merge")
 	}
 }
 
@@ -149,7 +149,7 @@ func TestMergeComponents_PreservesBaseFields(t *testing.T) {
 		Circuits:         map[string]*circuit.CircuitDef{"test": {}},
 		MediatorEndpoint: "http://localhost:9000",
 	}
-	comp := &Component{Namespace: "rca"}
+	comp := &Component{Namespace: "alpha"}
 
 	// When: merge
 	merged, err := MergeComponents(base, comp)

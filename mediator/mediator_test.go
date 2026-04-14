@@ -261,10 +261,10 @@ func mustJSON(v any) json.RawMessage {
 // --- TSK-185: Routing signal emission ---
 
 func TestMediator_EmitsRouteSignal(t *testing.T) {
-	backend := newNamedCircuitBackend(t, "rca")
+	backend := newNamedCircuitBackend(t, "alpha")
 
 	gw := mediator.New([]mediator.BackendConfig{
-		{Name: "rca", Endpoint: backend.URL + "/mcp"},
+		{Name: "alpha", Endpoint: backend.URL + "/mcp"},
 	})
 	ctx := t.Context()
 	if err := gw.Start(ctx); err != nil {
@@ -302,16 +302,16 @@ func TestMediator_EmitsRouteSignal(t *testing.T) {
 	if signals[0].Agent != "mediator" {
 		t.Errorf("signals[0].Agent = %q, want %q", signals[0].Agent, "mediator")
 	}
-	if signals[0].Meta["backend"] != "rca" {
-		t.Errorf("signals[0].Meta[backend] = %q, want %q", signals[0].Meta["backend"], "rca")
+	if signals[0].Meta["backend"] != "alpha" {
+		t.Errorf("signals[0].Meta[backend] = %q, want %q", signals[0].Meta["backend"], "alpha")
 	}
 
 	// Second signal should be "session_start".
 	if signals[1].Event != "session_start" {
 		t.Errorf("signals[1].Event = %q, want %q", signals[1].Event, "session_start")
 	}
-	if signals[1].Meta["backend"] != "rca" {
-		t.Errorf("signals[1].Meta[backend] = %q, want %q", signals[1].Meta["backend"], "rca")
+	if signals[1].Meta["backend"] != "alpha" {
+		t.Errorf("signals[1].Meta[backend] = %q, want %q", signals[1].Meta["backend"], "alpha")
 	}
 	if signals[1].Meta["session_id"] == "" {
 		t.Error("signals[1].Meta[session_id] is empty, expected a session ID")
@@ -319,12 +319,12 @@ func TestMediator_EmitsRouteSignal(t *testing.T) {
 }
 
 func TestMediator_EmitsRouteSignalWithCircuitType(t *testing.T) {
-	rcaBackend := newNamedCircuitBackend(t, "rca")
-	gndBackend := newNamedCircuitBackend(t, "gnd")
+	alphaBackend := newNamedCircuitBackend(t, "alpha")
+	betaBackend := newNamedCircuitBackend(t, "beta")
 
 	gw := mediator.New([]mediator.BackendConfig{
-		{Name: "rca", Endpoint: rcaBackend.URL + "/mcp"},
-		{Name: "gnd", Endpoint: gndBackend.URL + "/mcp", CircuitType: "gnd"},
+		{Name: "alpha", Endpoint: alphaBackend.URL + "/mcp"},
+		{Name: "beta", Endpoint: betaBackend.URL + "/mcp", CircuitType: "beta"},
 	})
 	ctx := t.Context()
 	if err := gw.Start(ctx); err != nil {
@@ -337,13 +337,13 @@ func TestMediator_EmitsRouteSignalWithCircuitType(t *testing.T) {
 
 	session := connectMediator(t, ts)
 
-	// Route to gnd backend via circuit_type.
+	// Route to beta backend via circuit_type.
 	_, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
 		Name: "circuit",
 		Arguments: mustJSON(map[string]any{
 			"action": "start",
 			"force":  true,
-			"extra":  map[string]any{"circuit_type": "gnd"},
+			"extra":  map[string]any{"circuit_type": "beta"},
 		}),
 	})
 	if err != nil {
@@ -355,18 +355,18 @@ func TestMediator_EmitsRouteSignalWithCircuitType(t *testing.T) {
 		t.Fatalf("expected at least 2 signals, got %d", len(signals))
 	}
 
-	// Route signal should reference gnd backend and circuit_type.
-	if signals[0].Meta["backend"] != "gnd" {
-		t.Errorf("route signal backend = %q, want %q", signals[0].Meta["backend"], "gnd")
+	// Route signal should reference beta backend and circuit_type.
+	if signals[0].Meta["backend"] != "beta" {
+		t.Errorf("route signal backend = %q, want %q", signals[0].Meta["backend"], "beta")
 	}
-	if signals[0].Meta["circuit_type"] != "gnd" {
-		t.Errorf("route signal circuit_type = %q, want %q", signals[0].Meta["circuit_type"], "gnd")
+	if signals[0].Meta["circuit_type"] != "beta" {
+		t.Errorf("route signal circuit_type = %q, want %q", signals[0].Meta["circuit_type"], "beta")
 	}
 }
 
 func TestMediator_NotifySessionDone(t *testing.T) {
 	gw := mediator.New(nil)
-	gw.NotifySessionDone("s-abc-1", "rca")
+	gw.NotifySessionDone("s-abc-1", "alpha")
 
 	signals := gw.Bus.Since(0)
 	if len(signals) != 1 {
@@ -378,8 +378,8 @@ func TestMediator_NotifySessionDone(t *testing.T) {
 	if signals[0].Meta["session_id"] != "s-abc-1" {
 		t.Errorf("session_id = %q, want %q", signals[0].Meta["session_id"], "s-abc-1")
 	}
-	if signals[0].Meta["backend"] != "rca" {
-		t.Errorf("backend = %q, want %q", signals[0].Meta["backend"], "rca")
+	if signals[0].Meta["backend"] != "alpha" {
+		t.Errorf("backend = %q, want %q", signals[0].Meta["backend"], "alpha")
 	}
 }
 
@@ -666,12 +666,12 @@ func newNamedCircuitBackend(t *testing.T, label string) *httptest.Server {
 }
 
 func TestMediator_SessionAffinityRouting(t *testing.T) {
-	rcaBackend := newNamedCircuitBackend(t, "rca")
+	alphaBackend := newNamedCircuitBackend(t, "alpha")
 	dsrBackend := newNamedCircuitBackend(t, "dsr")
 
 	gw := mediator.New([]mediator.BackendConfig{
-		{Name: "rca", Endpoint: rcaBackend.URL + "/mcp"},
-		{Name: "dsr", Endpoint: dsrBackend.URL + "/mcp", CircuitType: "gnd"},
+		{Name: "alpha", Endpoint: alphaBackend.URL + "/mcp"},
+		{Name: "dsr", Endpoint: dsrBackend.URL + "/mcp", CircuitType: "beta"},
 	})
 	ctx := t.Context()
 	if err := gw.Start(ctx); err != nil {
@@ -684,32 +684,32 @@ func TestMediator_SessionAffinityRouting(t *testing.T) {
 
 	session := connectMediator(t, ts)
 
-	// Start circuit on default backend (rca — no circuit_type).
-	rcaStart, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
+	// Start circuit on default backend (alpha — no circuit_type).
+	alphaStart, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
 		Name:      "circuit",
 		Arguments: mustJSON(map[string]any{"action": "start", "force": true}),
 	})
 	if err != nil {
-		t.Fatalf("circuit/start (rca): %v", err)
+		t.Fatalf("circuit/start (alpha): %v", err)
 	}
-	rcaText := extractText(t, rcaStart)
-	var rcaOut map[string]any
-	json.Unmarshal([]byte(rcaText), &rcaOut)
-	rcaSessionID, _ := rcaOut["session_id"].(string)
-	if rcaSessionID == "" {
-		t.Fatalf("no session_id from rca start: %s", rcaText)
+	alphaText := extractText(t, alphaStart)
+	var alphaOut map[string]any
+	json.Unmarshal([]byte(alphaText), &alphaOut)
+	alphaSessionID, _ := alphaOut["session_id"].(string)
+	if alphaSessionID == "" {
+		t.Fatalf("no session_id from alpha start: %s", alphaText)
 	}
 
 	// Small delay to ensure different session IDs (timestamp-based).
 	time.Sleep(2 * time.Millisecond)
 
-	// Start circuit on dsr backend (circuit_type=gnd).
+	// Start circuit on dsr backend (circuit_type=beta).
 	dsrStart, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
 		Name: "circuit",
 		Arguments: mustJSON(map[string]any{
 			"action": "start",
 			"force":  true,
-			"extra":  map[string]any{"circuit_type": "gnd"},
+			"extra":  map[string]any{"circuit_type": "beta"},
 		}),
 	})
 	if err != nil {
@@ -723,8 +723,8 @@ func TestMediator_SessionAffinityRouting(t *testing.T) {
 		t.Fatalf("no session_id from dsr start: %s", dsrText)
 	}
 
-	if rcaSessionID == dsrSessionID {
-		t.Fatal("rca and dsr should have different session IDs")
+	if alphaSessionID == dsrSessionID {
+		t.Fatal("alpha and dsr should have different session IDs")
 	}
 
 	// Drive both sessions to completion.
@@ -762,25 +762,25 @@ func TestMediator_SessionAffinityRouting(t *testing.T) {
 		}
 	}
 
-	drainSession(rcaSessionID, "rca")
+	drainSession(alphaSessionID, "alpha")
 	drainSession(dsrSessionID, "dsr")
 
 	// Verify reports come from correct backends.
-	rcaReport, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
+	alphaReport, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
 		Name:      "circuit",
-		Arguments: mustJSON(map[string]any{"action": "report", "session_id": rcaSessionID}),
+		Arguments: mustJSON(map[string]any{"action": "report", "session_id": alphaSessionID}),
 	})
 	if err != nil {
-		t.Fatalf("circuit/report (rca): %v", err)
+		t.Fatalf("circuit/report (alpha): %v", err)
 	}
-	var rcaReportOut map[string]any
-	json.Unmarshal([]byte(extractText(t, rcaReport)), &rcaReportOut)
-	if structured, ok := rcaReportOut["structured"].(map[string]any); ok {
-		if structured["backend"] != "rca" {
-			t.Errorf("rca report backend = %v, want rca", structured["backend"])
+	var alphaReportOut map[string]any
+	json.Unmarshal([]byte(extractText(t, alphaReport)), &alphaReportOut)
+	if structured, ok := alphaReportOut["structured"].(map[string]any); ok {
+		if structured["backend"] != "alpha" {
+			t.Errorf("alpha report backend = %v, want alpha", structured["backend"])
 		}
 	} else {
-		t.Errorf("rca report missing structured field: %s", extractText(t, rcaReport))
+		t.Errorf("alpha report missing structured field: %s", extractText(t, alphaReport))
 	}
 
 	dsrReport, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
@@ -887,7 +887,7 @@ func TestMediator_MCPToolsReachableViaHTTP(t *testing.T) {
 	backend := newCircuitBackend(t)
 
 	gw := mediator.New([]mediator.BackendConfig{
-		{Name: "rca", Endpoint: backend.URL + "/mcp"},
+		{Name: "alpha", Endpoint: backend.URL + "/mcp"},
 	})
 	ctx := t.Context()
 	if err := gw.Start(ctx); err != nil {
@@ -925,7 +925,7 @@ func TestWorker_CanCallToolsViaHTTPTransport(t *testing.T) {
 	backend := newCircuitBackend(t)
 
 	gw := mediator.New([]mediator.BackendConfig{
-		{Name: "rca", Endpoint: backend.URL + "/mcp"},
+		{Name: "alpha", Endpoint: backend.URL + "/mcp"},
 	})
 	ctx := t.Context()
 	if err := gw.Start(ctx); err != nil {

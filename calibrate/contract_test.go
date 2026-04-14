@@ -127,14 +127,14 @@ func TestFoldContracts_SingleCircuit(t *testing.T) {
 	single := &CalibrationContract{
 		Outputs: []ContractField{{Field: "a.b", ScorerName: "x", Type: "string"}},
 	}
-	folded := FoldContracts(map[string]*CalibrationContract{"rca": single})
+	folded := FoldContracts(map[string]*CalibrationContract{"alpha": single})
 	if folded != single {
 		t.Error("single circuit should return the contract as-is")
 	}
 }
 
 func TestFoldContracts_MultiCircuit(t *testing.T) {
-	rca := &CalibrationContract{
+	alphaContract := &CalibrationContract{
 		Inputs:  []ContractField{{Field: "inp.a", ScorerName: "gt_a", Type: "string"}},
 		Outputs: []ContractField{{Field: "inv.dt", ScorerName: "defect_type", Type: "string"}},
 	}
@@ -142,8 +142,8 @@ func TestFoldContracts_MultiCircuit(t *testing.T) {
 		Outputs: []ContractField{{Field: "gather.files", ScorerName: "files_found", Type: "array"}},
 	}
 	folded := FoldContracts(map[string]*CalibrationContract{
-		"rca": rca,
-		"gnd": harv,
+		"alpha": alphaContract,
+		"beta":  harv,
 	})
 
 	if len(folded.Inputs) != 1 {
@@ -157,11 +157,11 @@ func TestFoldContracts_MultiCircuit(t *testing.T) {
 	for _, o := range folded.Outputs {
 		outNames[o.ScorerName] = true
 	}
-	if !outNames["rca.defect_type"] {
-		t.Error("missing rca.defect_type")
+	if !outNames["alpha.defect_type"] {
+		t.Error("missing alpha.defect_type")
 	}
-	if !outNames["gnd.files_found"] {
-		t.Error("missing gnd.files_found")
+	if !outNames["beta.files_found"] {
+		t.Error("missing beta.files_found")
 	}
 }
 

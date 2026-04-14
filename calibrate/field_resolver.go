@@ -3,7 +3,7 @@ package calibrate
 import "strings"
 
 // ResolvePath navigates a nested map using dot-separated keys.
-// "rca.defect_type" walks m["rca"].(map[string]any)["defect_type"].
+// "alpha.defect_type" walks m["alpha"].(map[string]any)["defect_type"].
 // A single-segment path is a direct key lookup with no splitting overhead.
 func ResolvePath(m map[string]any, path string) (any, bool) {
 	if !strings.Contains(path, ".") {

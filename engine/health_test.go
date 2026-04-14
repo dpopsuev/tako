@@ -17,7 +17,7 @@ func (u *unhealthyComponent) HealthCheck(_ context.Context) error { return u.err
 func TestCheckComponentHealth_AllHealthy(t *testing.T) {
 	comps := []*Component{
 		{Name: "rp", Health: &healthyComponent{}},
-		{Name: "gnd", Health: &healthyComponent{}},
+		{Name: "beta", Health: &healthyComponent{}},
 	}
 	if err := CheckComponentHealth(context.Background(), comps); err != nil {
 		t.Fatalf("expected no error, got: %v", err)
@@ -27,7 +27,7 @@ func TestCheckComponentHealth_AllHealthy(t *testing.T) {
 func TestCheckComponentHealth_OneUnhealthy(t *testing.T) {
 	comps := []*Component{
 		{Name: "rp", Health: &healthyComponent{}},
-		{Name: "gnd", Health: &unhealthyComponent{err: errors.New("connection refused")}},
+		{Name: "beta", Health: &unhealthyComponent{err: errors.New("connection refused")}},
 	}
 	err := CheckComponentHealth(context.Background(), comps)
 	if err == nil {

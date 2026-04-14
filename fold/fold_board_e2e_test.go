@@ -15,24 +15,24 @@ func TestE2E_BoardManifest_ResolvesAndGenerates(t *testing.T) {
 		Name:    "test-board",
 		Version: "1.0",
 		Uses: map[string]UsesRef{
-			"rca": {
+			"alpha": {
 				Kind:   "Schematic",
-				Module: "github.com/dpopsuev/origami-rca",
+				Module: "github.com/example/schematic-a",
 			},
-			"reportportal": {
+			"datasource": {
 				Kind:   "Component",
-				Module: "github.com/dpopsuev/origami-rca/connectors/rp",
+				Module: "github.com/example/schematic-a/connectors/rp",
 			},
 		},
 		Bind: map[string]map[string]string{
-			"rca": {
-				"source": "reportportal",
+			"alpha": {
+				"source": "datasource",
 			},
 		},
 		DomainServe: &DomainServeConfig{
 			Port: 9300,
 			Assets: &AssetMap{
-				Circuits: map[string]string{"rca": "circuits/rca.yaml"},
+				Circuits: map[string]string{"alpha": "circuits/alpha.yaml"},
 			},
 		},
 	}
@@ -68,7 +68,7 @@ func TestE2E_BoardManifest_ResolvesAndGenerates(t *testing.T) {
 }
 
 func TestE2E_BoardManifest_NegativeRejectsUnboundSocket(t *testing.T) {
-	// rh-rca's sockets are all optional: true, so missing bindings
+	// Sockets are all optional: true, so missing bindings
 	// are accepted. This test verifies Resolve succeeds (not errors)
 	// when a factory-mode schematic has no bindings.
 	root := origamiRoot(t)
@@ -78,15 +78,15 @@ func TestE2E_BoardManifest_NegativeRejectsUnboundSocket(t *testing.T) {
 		Name:    "test-board",
 		Version: "1.0",
 		Uses: map[string]UsesRef{
-			"rca": {
+			"alpha": {
 				Kind:   "Schematic",
-				Module: "github.com/dpopsuev/origami-rca",
+				Module: "github.com/example/schematic-a",
 			},
 		},
 		Bind: map[string]map[string]string{},
 		DomainServe: &DomainServeConfig{
 			Port:   9300,
-			Assets: &AssetMap{Circuits: map[string]string{"rca": "circuits/rca.yaml"}},
+			Assets: &AssetMap{Circuits: map[string]string{"alpha": "circuits/alpha.yaml"}},
 		},
 	}
 

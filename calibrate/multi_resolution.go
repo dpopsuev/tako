@@ -57,7 +57,7 @@ type StubDef struct {
 	Fixture string `yaml:"fixture"` // path to canned data file
 }
 
-// PortStubs maps port names (e.g. "rca.in:code-context") to loaded fixture
+// PortStubs maps port names (e.g. "alpha.in:code-context") to loaded fixture
 // data. Adapters check this map at port boundaries to short-circuit with
 // canned data instead of invoking the real sub-circuit.
 type PortStubs map[string]any

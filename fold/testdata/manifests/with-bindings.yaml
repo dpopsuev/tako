@@ -1,18 +1,18 @@
 apiVersion: origami/v1
 kind: Board
 metadata:
-  name: asterisk
+  name: consumer
 spec:
   uses:
-    rca:
+    alpha:
       kind: Schematic
-      module: github.com/dpopsuev/origami-rca
-    gnd:
+      module: github.com/example/schematic-a
+    beta:
       kind: Schematic
-      module: github.com/dpopsuev/origami-gnd
-    reportportal:
+      module: github.com/example/schematic-b
+    datasource:
       kind: Component
-      module: github.com/dpopsuev/origami-rca/connectors/rp
+      module: github.com/example/schematic-a/connectors/rp
   bind:
-    rca:
-      source: reportportal
+    alpha:
+      source: datasource

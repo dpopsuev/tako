@@ -227,7 +227,7 @@ func boardToManifest(bm *BoardManifest) *Manifest {
 	if len(bm.Bind) > 0 {
 		m.Bind = make(map[string]map[string]string)
 		for key, module := range bm.Bind {
-			// key is "schematic.socket" (e.g., "rca.source")
+			// key is "schematic.socket" (e.g., "alpha.source")
 			parts := splitBindKey(key)
 			if len(parts) == 2 {
 				if m.Bind[parts[0]] == nil {
@@ -260,7 +260,7 @@ func boardToManifest(bm *BoardManifest) *Manifest {
 	return m
 }
 
-// splitBindKey splits "rca.source" into ["rca", "source"].
+// splitBindKey splits "alpha.source" into ["alpha", "source"].
 func splitBindKey(key string) []string {
 	idx := strings.Index(key, ".")
 	if idx < 0 {
@@ -551,7 +551,7 @@ func readGitTag(repoDir string) string {
 }
 
 // moduleRoot extracts the module root from a Go import path.
-// "github.com/dpopsuev/origami-rca/connectors/rp" → "github.com/dpopsuev/origami-rca"
+// "github.com/example/schematic-a/connectors/rp" → "github.com/example/schematic-a"
 // Returns "" for standard library or origami-internal paths.
 func moduleRoot(importPath string) string {
 	parts := strings.Split(importPath, "/")
@@ -1018,7 +1018,7 @@ func validatePortWiring(m *Manifest, manifestDir string) error {
 	return nil
 }
 
-// parseWiringRef parses a wiring reference like "rca.out:post-triage"
+// parseWiringRef parses a wiring reference like "alpha.out:post-triage"
 // into (circuit, port_name).
 func parseWiringRef(ref string) (circuitName, port string) {
 	dotIdx := strings.Index(ref, ".")

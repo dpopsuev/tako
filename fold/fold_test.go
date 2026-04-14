@@ -32,7 +32,7 @@ func TestRun_IntegrationBuild_Assets(t *testing.T) {
 		}
 	}
 
-	writeFile("circuits/rca.yaml", "topology: cascade\ndescription: RCA circuit\n")
+	writeFile("circuits/alpha.yaml", "topology: cascade\ndescription: Alpha circuit\n")
 	writeFile("prompts/recall.md", "You are a recall judge.")
 	writeFile("vocabulary.yaml", "defects:\n  pb001: product bug\n")
 
@@ -47,7 +47,7 @@ spec:
     port: 9300
     assets:
       circuits:
-        rca: circuits/rca.yaml
+        alpha: circuits/alpha.yaml
       prompts:
         recall: prompts/recall.md
       files:
@@ -102,14 +102,14 @@ func TestCopyEmbedFiles_SkipsDomainPlacedFiles(t *testing.T) {
 		os.WriteFile(p, []byte(content), 0o644)
 	}
 
-	writeFile(manifestDir, "circuits/rca.yaml", "circuit content")
+	writeFile(manifestDir, "circuits/alpha.yaml", "circuit content")
 	writeFile(manifestDir, "vocabulary.yaml", "vocab content")
 
 	writeFile(tmpDir, "heuristics.yaml", "domain-placed heuristics")
 
 	ds := &DomainServeConfig{
 		Assets: &AssetMap{
-			Circuits: map[string]string{"rca": "circuits/rca.yaml"},
+			Circuits: map[string]string{"alpha": "circuits/alpha.yaml"},
 			Files: map[string]string{
 				"vocabulary": "vocabulary.yaml",
 				"heuristics": "heuristics.yaml",
@@ -129,12 +129,12 @@ func TestCopyEmbedFiles_SkipsDomainPlacedFiles(t *testing.T) {
 		t.Errorf("heuristics.yaml was overwritten, got %q", string(data))
 	}
 
-	data, err = os.ReadFile(filepath.Join(tmpDir, "circuits", "rca.yaml"))
+	data, err = os.ReadFile(filepath.Join(tmpDir, "circuits", "alpha.yaml"))
 	if err != nil {
-		t.Fatalf("read circuits/rca.yaml: %v", err)
+		t.Fatalf("read circuits/alpha.yaml: %v", err)
 	}
 	if string(data) != "circuit content" {
-		t.Errorf("circuits/rca.yaml = %q, want 'circuit content'", string(data))
+		t.Errorf("circuits/alpha.yaml = %q, want 'circuit content'", string(data))
 	}
 }
 
@@ -180,15 +180,15 @@ func TestBuildContainerImage_RequiresDocker(t *testing.T) {
 }
 
 func TestContainerImageName_Default(t *testing.T) {
-	m := &Manifest{Name: "asterisk", DomainServe: &DomainServeConfig{Port: 9300}}
+	m := &Manifest{Name: "consumer", DomainServe: &DomainServeConfig{Port: 9300}}
 	opts := Options{}
 
 	imgName := opts.ImageName
 	if imgName == "" {
 		imgName = "origami-" + m.Name + "-domain"
 	}
-	if imgName != "origami-asterisk-domain" {
-		t.Errorf("default image name = %q, want origami-asterisk-domain", imgName)
+	if imgName != "origami-consumer-domain" {
+		t.Errorf("default image name = %q, want origami-consumer-domain", imgName)
 	}
 }
 
@@ -224,27 +224,27 @@ func TestValidateCircuitRefs_ValidRef(t *testing.T) {
 		os.WriteFile(p, []byte(content), 0o644)
 	}
 
-	writeFile("circuits/rca.yaml", `
+	writeFile("circuits/alpha.yaml", `
 nodes:
   - name: gather-code
     instrument: circuit
-    action: gnd
+    action: beta
   - name: resolve
     instrument: transformer
     action: resolve
 `)
-	writeFile("circuits/gnd.yaml", `
+	writeFile("circuits/beta.yaml", `
 nodes:
   - name: tree
-    action: gnd.tree
+    action: beta.tree
 `)
 
 	m := &Manifest{
 		DomainServe: &DomainServeConfig{
 			Assets: &AssetMap{
 				Circuits: map[string]string{
-					"rca": "circuits/rca.yaml",
-					"gnd": "circuits/gnd.yaml",
+					"alpha": "circuits/alpha.yaml",
+					"beta":  "circuits/beta.yaml",
 				},
 			},
 		},
@@ -259,7 +259,7 @@ func TestValidateCircuitRefs_MissingRef(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := filepath.Join(tmpDir, "circuits")
 	os.MkdirAll(p, 0o755)
-	os.WriteFile(filepath.Join(p, "rca.yaml"), []byte(`
+	os.WriteFile(filepath.Join(p, "alpha.yaml"), []byte(`
 nodes:
   - name: gather-code
     instrument: circuit
@@ -269,7 +269,7 @@ nodes:
 	m := &Manifest{
 		DomainServe: &DomainServeConfig{
 			Assets: &AssetMap{
-				Circuits: map[string]string{"rca": "circuits/rca.yaml"},
+				Circuits: map[string]string{"alpha": "circuits/alpha.yaml"},
 			},
 		},
 	}
@@ -356,7 +356,7 @@ func TestRun_IntegrationBuild_WithDomains(t *testing.T) {
 		os.WriteFile(p, []byte(content), 0o644)
 	}
 
-	writeFile("circuits/rca.yaml", "topology: cascade\n")
+	writeFile("circuits/alpha.yaml", "topology: cascade\n")
 	writeFile("vocabulary.yaml", "defects:\n  pb001: product bug\n")
 	writeFile("domains/ocp/ptp/heuristics.yaml", "kind: HeuristicRules\nheuristics: []\n")
 	writeFile("domains/ocp/ptp/scenarios/ptp-mock.yaml", "kind: Scenario\nscenario: ptp-mock\n")
@@ -375,7 +375,7 @@ spec:
     assets:
       vocabulary: vocabulary.yaml
       circuits:
-        rca: circuits/rca.yaml
+        alpha: circuits/alpha.yaml
 `), 0o644)
 
 	output := filepath.Join(t.TempDir(), "test-domains")
@@ -409,7 +409,7 @@ func TestExportDataDir_MatchesEmbedLayout(t *testing.T) {
 	}
 
 	// Create domain files at the un-flattened paths (like a real workspace).
-	writeFile("circuits/rca.yaml", "circuit: rca\n")
+	writeFile("circuits/alpha.yaml", "circuit: alpha\n")
 	writeFile("prompts/recall/judge.md", "prompt: recall\n")
 	writeFile("vocabulary.yaml", "metrics:\n  M1: accuracy\n")
 	writeFile("domains/ocp/ptp/scenarios/ptp.yaml", "kind: Scenario\nscenario: ptp\ncases: []\n")
@@ -428,7 +428,7 @@ spec:
     assets:
       vocabulary: vocabulary.yaml
       circuits:
-        rca: circuits/rca.yaml
+        alpha: circuits/alpha.yaml
       prompts:
         recall: prompts/recall/judge.md
 `), 0o644)
@@ -446,7 +446,7 @@ spec:
 
 	// Verify flattened domain files exist at the expected paths.
 	wantFiles := map[string]string{
-		"circuits/rca.yaml":       "circuit: rca\n",
+		"circuits/alpha.yaml":     "circuit: alpha\n",
 		"prompts/recall/judge.md": "prompt: recall\n",
 		"vocabulary.yaml":         "metrics:\n  M1: accuracy\n",
 		"scenarios/ptp.yaml":      "kind: Scenario\nscenario: ptp\ncases: []\n",
@@ -540,8 +540,8 @@ func TestPortWiring_MatchingTypes(t *testing.T) {
 		os.WriteFile(p, []byte(content), 0o644)
 	}
 
-	writeFile("circuits/rca.yaml", `
-circuit: rca
+	writeFile("circuits/alpha.yaml", `
+circuit: alpha
 ports:
   - name: post-triage
     direction: out
@@ -556,8 +556,8 @@ start: triage
 done: _done
 `)
 
-	writeFile("circuits/gnd.yaml", `
-circuit: gnd
+	writeFile("circuits/beta.yaml", `
+circuit: beta
 ports:
   - name: keywords
     direction: in
@@ -575,8 +575,8 @@ done: _done
 	writeFile("circuits/orchestrator.yaml", `
 circuit: orchestrator
 wiring:
-  - from: "rca.out:post-triage"
-    to: "gnd.in:keywords"
+  - from: "alpha.out:post-triage"
+    to: "beta.in:keywords"
 nodes:
   - name: init
 edges:
@@ -591,8 +591,8 @@ done: _done
 		DomainServe: &DomainServeConfig{
 			Assets: &AssetMap{
 				Circuits: map[string]string{
-					"rca":          "circuits/rca.yaml",
-					"gnd":          "circuits/gnd.yaml",
+					"alpha":        "circuits/alpha.yaml",
+					"beta":         "circuits/beta.yaml",
 					"orchestrator": "circuits/orchestrator.yaml",
 				},
 			},
@@ -613,8 +613,8 @@ func TestPortWiring_MismatchedTypes(t *testing.T) {
 		os.WriteFile(p, []byte(content), 0o644)
 	}
 
-	writeFile("circuits/rca.yaml", `
-circuit: rca
+	writeFile("circuits/alpha.yaml", `
+circuit: alpha
 ports:
   - name: post-triage
     direction: out
@@ -629,8 +629,8 @@ start: triage
 done: _done
 `)
 
-	writeFile("circuits/gnd.yaml", `
-circuit: gnd
+	writeFile("circuits/beta.yaml", `
+circuit: beta
 ports:
   - name: keywords
     direction: in
@@ -648,8 +648,8 @@ done: _done
 	writeFile("circuits/orchestrator.yaml", `
 circuit: orchestrator
 wiring:
-  - from: "rca.out:post-triage"
-    to: "gnd.in:keywords"
+  - from: "alpha.out:post-triage"
+    to: "beta.in:keywords"
 nodes:
   - name: init
 edges:
@@ -664,8 +664,8 @@ done: _done
 		DomainServe: &DomainServeConfig{
 			Assets: &AssetMap{
 				Circuits: map[string]string{
-					"rca":          "circuits/rca.yaml",
-					"gnd":          "circuits/gnd.yaml",
+					"alpha":        "circuits/alpha.yaml",
+					"beta":         "circuits/beta.yaml",
 					"orchestrator": "circuits/orchestrator.yaml",
 				},
 			},
@@ -696,8 +696,8 @@ func TestPortWiring_NoWiring(t *testing.T) {
 		os.WriteFile(p, []byte(content), 0o644)
 	}
 
-	writeFile("circuits/rca.yaml", `
-circuit: rca
+	writeFile("circuits/alpha.yaml", `
+circuit: alpha
 nodes:
   - name: triage
 `)
@@ -705,7 +705,7 @@ nodes:
 	m := &Manifest{
 		DomainServe: &DomainServeConfig{
 			Assets: &AssetMap{
-				Circuits: map[string]string{"rca": "circuits/rca.yaml"},
+				Circuits: map[string]string{"alpha": "circuits/alpha.yaml"},
 			},
 		},
 	}
@@ -731,8 +731,8 @@ func TestPortWiring_UntypedPortsSkipped(t *testing.T) {
 		os.WriteFile(p, []byte(content), 0o644)
 	}
 
-	writeFile("circuits/rca.yaml", `
-circuit: rca
+	writeFile("circuits/alpha.yaml", `
+circuit: alpha
 ports:
   - name: post-triage
     direction: out
@@ -740,8 +740,8 @@ nodes:
   - name: triage
 `)
 
-	writeFile("circuits/gnd.yaml", `
-circuit: gnd
+	writeFile("circuits/beta.yaml", `
+circuit: beta
 ports:
   - name: keywords
     direction: in
@@ -752,8 +752,8 @@ nodes:
 	writeFile("circuits/orchestrator.yaml", `
 circuit: orchestrator
 wiring:
-  - from: "rca.out:post-triage"
-    to: "gnd.in:keywords"
+  - from: "alpha.out:post-triage"
+    to: "beta.in:keywords"
 nodes:
   - name: init
 `)
@@ -762,8 +762,8 @@ nodes:
 		DomainServe: &DomainServeConfig{
 			Assets: &AssetMap{
 				Circuits: map[string]string{
-					"rca":          "circuits/rca.yaml",
-					"gnd":          "circuits/gnd.yaml",
+					"alpha":        "circuits/alpha.yaml",
+					"beta":         "circuits/beta.yaml",
 					"orchestrator": "circuits/orchestrator.yaml",
 				},
 			},
@@ -792,7 +792,7 @@ func TestRun_DomainOnly_SkipsBindings(t *testing.T) {
 		os.WriteFile(p, []byte(content), 0o644)
 	}
 
-	writeFile("circuits/rca.yaml", "circuit: rca\ntopology: cascade\nnodes:\n  - name: a\n    approach: analytical\n")
+	writeFile("circuits/alpha.yaml", "circuit: alpha\ntopology: cascade\nnodes:\n  - name: a\n    approach: analytical\n")
 	writeFile("vocabulary.yaml", "metrics:\n  M1: accuracy\n")
 
 	manifest := filepath.Join(tmpDir, "origami.yaml")
@@ -803,15 +803,15 @@ metadata:
   name: test-domain-only
 spec:
   uses:
-    rca:
+    alpha:
       kind: Schematic
-      module: github.com/dpopsuev/origami-rca
+      module: github.com/example/schematic-a
   domain_serve:
     port: 9300
     assets:
       vocabulary: vocabulary.yaml
       circuits:
-        rca: circuits/rca.yaml
+        alpha: circuits/alpha.yaml
 `), 0o644)
 
 	m, err := LoadManifest(manifest)

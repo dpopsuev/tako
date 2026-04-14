@@ -64,8 +64,8 @@ func resultText(result *sdkmcp.CallToolResult) string {
 
 func TestDomainInfo(t *testing.T) {
 	fs := fstest.MapFS{
-		"circuits/rca.yaml": &fstest.MapFile{
-			Data: []byte("circuit: rca\ntopology: cascade\ndescription: Root-cause analysis\n"),
+		"circuits/alpha.yaml": &fstest.MapFile{
+			Data: []byte("circuit: alpha\ntopology: cascade\ndescription: Primary analysis\n"),
 		},
 	}
 
@@ -90,21 +90,21 @@ func TestDomainInfo(t *testing.T) {
 	if len(info.Circuits) != 1 {
 		t.Fatalf("circuits = %d, want 1", len(info.Circuits))
 	}
-	if info.Circuits[0].Name != "rca" {
-		t.Errorf("circuit name = %q, want rca", info.Circuits[0].Name)
+	if info.Circuits[0].Name != "alpha" {
+		t.Errorf("circuit name = %q, want alpha", info.Circuits[0].Name)
 	}
 	if info.Circuits[0].Topology != "cascade" {
 		t.Errorf("topology = %q, want cascade", info.Circuits[0].Topology)
 	}
-	if info.Circuits[0].Description != "Root-cause analysis" {
-		t.Errorf("description = %q, want Root-cause analysis", info.Circuits[0].Description)
+	if info.Circuits[0].Description != "Primary analysis" {
+		t.Errorf("description = %q, want Primary analysis", info.Circuits[0].Description)
 	}
 }
 
 func TestDomainInfo_MultipleCircuits(t *testing.T) {
 	fs := fstest.MapFS{
-		"circuits/rca.yaml": &fstest.MapFile{
-			Data: []byte("circuit: rca\ntopology: cascade\ndescription: RCA\n"),
+		"circuits/alpha.yaml": &fstest.MapFile{
+			Data: []byte("circuit: alpha\ntopology: cascade\ndescription: Alpha\n"),
 		},
 		"circuits/trend.yaml": &fstest.MapFile{
 			Data: []byte("circuit: trend\ntopology: cascade\ndescription: Trend analysis\n"),
@@ -203,9 +203,9 @@ func TestDomainList(t *testing.T) {
 
 func TestDomainList_Root(t *testing.T) {
 	fs := fstest.MapFS{
-		"circuits/rca.yaml": &fstest.MapFile{Data: []byte("a")},
-		"prompts/x.md":      &fstest.MapFile{Data: []byte("b")},
-		"vocabulary.yaml":   &fstest.MapFile{Data: []byte("c")},
+		"circuits/alpha.yaml": &fstest.MapFile{Data: []byte("a")},
+		"prompts/x.md":        &fstest.MapFile{Data: []byte("b")},
+		"vocabulary.yaml":     &fstest.MapFile{Data: []byte("c")},
 	}
 
 	session := setup(t, fs)
@@ -387,14 +387,14 @@ func setupFS(t *testing.T, fsys fs.FS, cfg domainserve.Config) *sdkmcp.ClientSes
 func TestEmbedVsMounted_FunctionalEquivalence(t *testing.T) {
 	// --- shared test data ---
 	files := map[string]string{
-		"circuits/rca.yaml":       "circuit: rca\ntopology: cascade\ndescription: Root-cause analysis\n",
+		"circuits/alpha.yaml":     "circuit: alpha\ntopology: cascade\ndescription: Primary analysis\n",
 		"prompts/recall/judge.md": "You are a recall judge.",
 		"vocabulary.yaml":         "defects:\n  pb001: product bug\n",
 		"scenarios/ptp.yaml":      "scenario: ptp\ncases: [C01]\n",
 	}
 	assets := &domainserve.AssetIndex{
 		Sections: map[string]map[string]string{
-			"circuits": {"rca": "circuits/rca.yaml"},
+			"circuits": {"alpha": "circuits/alpha.yaml"},
 			"prompts":  {"recall": "prompts/recall/judge.md"},
 		},
 		Files: map[string]string{
@@ -436,14 +436,14 @@ func TestEmbedVsMounted_FunctionalEquivalence(t *testing.T) {
 	}
 	calls := []toolCall{
 		{"domain_info", nil},
-		{"domain_read", map[string]any{"path": "circuits/rca.yaml"}},
+		{"domain_read", map[string]any{"path": "circuits/alpha.yaml"}},
 		{"domain_read", map[string]any{"path": "prompts/recall/judge.md"}},
 		{"domain_read", map[string]any{"path": "vocabulary.yaml"}},
 		{"domain_read", map[string]any{"path": "scenarios/ptp.yaml"}},
 		{"domain_list", map[string]any{"path": "."}},
 		{"domain_list", map[string]any{"path": "circuits"}},
 		{"domain_list", map[string]any{"path": "prompts/recall"}},
-		{"domain_resolve", map[string]any{"section": "circuits", "key": "rca"}},
+		{"domain_resolve", map[string]any{"section": "circuits", "key": "alpha"}},
 		{"domain_resolve", map[string]any{"section": "prompts", "key": "recall"}},
 		{"domain_resolve", map[string]any{"section": "vocabulary"}},
 	}
@@ -481,13 +481,13 @@ func argsKey(args map[string]any) string {
 
 func TestDomainInfo_WithAssets(t *testing.T) {
 	fsys := fstest.MapFS{
-		"circuits/rca.yaml": &fstest.MapFile{
-			Data: []byte("topology: cascade\ndescription: RCA circuit\n"),
+		"circuits/alpha.yaml": &fstest.MapFile{
+			Data: []byte("topology: cascade\ndescription: Alpha circuit\n"),
 		},
 	}
 	assets := &domainserve.AssetIndex{
 		Sections: map[string]map[string]string{
-			"circuits": {"rca": "circuits/rca.yaml"},
+			"circuits": {"alpha": "circuits/alpha.yaml"},
 		},
 	}
 
@@ -502,8 +502,8 @@ func TestDomainInfo_WithAssets(t *testing.T) {
 	if len(info.Circuits) != 1 {
 		t.Fatalf("circuits = %d, want 1", len(info.Circuits))
 	}
-	if info.Circuits[0].Name != "rca" {
-		t.Errorf("circuit name = %q, want rca", info.Circuits[0].Name)
+	if info.Circuits[0].Name != "alpha" {
+		t.Errorf("circuit name = %q, want alpha", info.Circuits[0].Name)
 	}
 	if info.Circuits[0].Topology != "cascade" {
 		t.Errorf("topology = %q, want cascade", info.Circuits[0].Topology)

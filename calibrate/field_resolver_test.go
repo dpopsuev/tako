@@ -12,11 +12,11 @@ func TestResolvePath_Simple(t *testing.T) {
 
 func TestResolvePath_Nested(t *testing.T) {
 	m := map[string]any{
-		"rca": map[string]any{
+		"alpha": map[string]any{
 			"defect_type": "pb001",
 		},
 	}
-	v, ok := ResolvePath(m, "rca.defect_type")
+	v, ok := ResolvePath(m, "alpha.defect_type")
 	if !ok || v != "pb001" {
 		t.Errorf("got %v/%v, want pb001/true", v, ok)
 	}

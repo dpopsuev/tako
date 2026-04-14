@@ -3,7 +3,7 @@
 //
 // Usage:
 //
-//	mediator [--port=9000] --backend rca=http://rca:9200/mcp --backend gnd:gnd=http://gnd:9100/mcp
+//	mediator [--port=9000] --backend alpha=http://alpha:9200/mcp --backend beta:beta=http://beta:9100/mcp
 //
 // Backend format: name=url (default backend) or name:circuit_type=url (typed backend).
 package main

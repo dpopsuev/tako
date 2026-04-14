@@ -387,7 +387,7 @@ func (r *PortTypeConsistency) Check(ctx *LintContext) []Finding {
 	return findings
 }
 
-// parseWiringRef parses a wiring reference like "rca.out:post-triage"
+// parseWiringRef parses a wiring reference like "alpha.out:post-triage"
 // into (circuit, direction, port_name).
 func parseWiringRef(ref string) (circuit, direction, port string) {
 	// Format: circuit.direction:port_name

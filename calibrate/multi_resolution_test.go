@@ -190,17 +190,17 @@ func TestLoadPortStubs_ValidJSON(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	stubs := []StubDef{{Port: "rca.in:code-context", Fixture: fixture}}
+	stubs := []StubDef{{Port: "alpha.in:code-context", Fixture: fixture}}
 	ps, err := LoadPortStubs(stubs)
 	if err != nil {
 		t.Fatalf("LoadPortStubs: %v", err)
 	}
-	if !ps.IsPortStubbed("rca.in:code-context") {
+	if !ps.IsPortStubbed("alpha.in:code-context") {
 		t.Error("port should be stubbed")
 	}
-	m, ok := ps.Get("rca.in:code-context").(map[string]any)
+	m, ok := ps.Get("alpha.in:code-context").(map[string]any)
 	if !ok {
-		t.Fatalf("expected map, got %T", ps.Get("rca.in:code-context"))
+		t.Fatalf("expected map, got %T", ps.Get("alpha.in:code-context"))
 	}
 	if _, ok := m["files"]; !ok {
 		t.Error("expected files key in fixture data")

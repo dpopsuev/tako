@@ -24,22 +24,22 @@ func origamiRoot(t *testing.T) string {
 	return root
 }
 
-func TestResolve_AsteriskLike(t *testing.T) {
+func TestResolve_ConsumerLike(t *testing.T) {
 	root := origamiRoot(t)
 
 	m := &Manifest{
-		Name:    "asterisk",
+		Name:    "consumer",
 		Version: "1.0",
 		Schematics: map[string]SchematicRef{
-			"rca": {
-				Path: "github.com/dpopsuev/origami-rca",
+			"alpha": {
+				Path: "github.com/example/schematic-a",
 				Bindings: map[string]string{
-					"source": "reportportal",
+					"source": "datasource",
 				},
 			},
 		},
 		Connectors: map[string]ConnectorRef{
-			"reportportal": {Path: "github.com/dpopsuev/origami-rca/connectors/rp"},
+			"datasource": {Path: "github.com/example/schematic-a/connectors/rp"},
 		},
 	}
 
@@ -48,18 +48,18 @@ func TestResolve_AsteriskLike(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if g.Root.Name != "rca" {
-		t.Errorf("root = %q, want rca", g.Root.Name)
+	if g.Root.Name != "alpha" {
+		t.Errorf("root = %q, want alpha", g.Root.Name)
 	}
 	if g.Root.SessionFactory != "Factory()" {
 		t.Errorf("root session_factory = %q, want Factory()", g.Root.SessionFactory)
 	}
 
 	if len(g.Schematics) != 0 {
-		t.Fatalf("sub-schematics = %d, want 0 (gnd is a separate service)", len(g.Schematics))
+		t.Fatalf("sub-schematics = %d, want 0 (beta is a separate service)", len(g.Schematics))
 	}
 
-	// RCA sockets have no option: fields (removed — functions don't exist yet).
+	// Sockets have no option: fields (removed — functions don't exist yet).
 	// No resolved options expected from socket binding.
 	if len(g.Root.Options) != 0 {
 		t.Errorf("root options = %v, want none (sockets have no option: field)", g.Root.Options)
@@ -67,15 +67,15 @@ func TestResolve_AsteriskLike(t *testing.T) {
 }
 
 func TestResolve_MissingBinding(t *testing.T) {
-	// rh-rca's sockets are all optional: true, so empty bindings
+	// Sockets are all optional: true, so empty bindings
 	// are accepted. Verify Resolve succeeds.
 	root := origamiRoot(t)
 
 	m := &Manifest{
 		Name: "test",
 		Schematics: map[string]SchematicRef{
-			"rca": {
-				Path:     "github.com/dpopsuev/origami-rca",
+			"alpha": {
+				Path:     "github.com/example/schematic-a",
 				Bindings: map[string]string{},
 			},
 		},
@@ -92,8 +92,8 @@ func TestResolve_CycleDetection(t *testing.T) {
 	m := &Manifest{
 		Name: "test",
 		Schematics: map[string]SchematicRef{
-			"a": {Path: "github.com/dpopsuev/origami-rca", Bindings: map[string]string{"source": "b"}},
-			"b": {Path: "github.com/dpopsuev/origami-gnd", Bindings: map[string]string{"git": "a"}},
+			"a": {Path: "github.com/example/schematic-a", Bindings: map[string]string{"source": "b"}},
+			"b": {Path: "github.com/example/schematic-b", Bindings: map[string]string{"git": "a"}},
 		},
 		Connectors: map[string]ConnectorRef{},
 	}
@@ -111,8 +111,8 @@ func TestTopoSort_SingleRoot(t *testing.T) {
 	m := &Manifest{
 		Name: "test",
 		Schematics: map[string]SchematicRef{
-			"rca": {Path: "github.com/dpopsuev/origami-rca", Bindings: map[string]string{"gnd": "gnd"}},
-			"gnd": {Path: "github.com/dpopsuev/origami-gnd"},
+			"alpha": {Path: "github.com/example/schematic-a", Bindings: map[string]string{"beta": "beta"}},
+			"beta":  {Path: "github.com/example/schematic-b"},
 		},
 	}
 
@@ -120,11 +120,11 @@ func TestTopoSort_SingleRoot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if root != "rca" {
-		t.Errorf("root = %q, want rca", root)
+	if root != "alpha" {
+		t.Errorf("root = %q, want alpha", root)
 	}
-	if len(order) != 1 || order[0] != "gnd" {
-		t.Errorf("order = %v, want [gnd]", order)
+	if len(order) != 1 || order[0] != "beta" {
+		t.Errorf("order = %v, want [beta]", order)
 	}
 }
 
@@ -132,12 +132,12 @@ func TestTopoSort_MultipleRoots_NoEntry(t *testing.T) {
 	m := &Manifest{
 		Name: "test",
 		Uses: map[string]UsesRef{
-			"a": {Kind: "Schematic", Module: "github.com/dpopsuev/origami-rca"},
-			"b": {Kind: "Schematic", Module: "github.com/dpopsuev/origami-gnd"},
+			"a": {Kind: "Schematic", Module: "github.com/example/schematic-a"},
+			"b": {Kind: "Schematic", Module: "github.com/example/schematic-b"},
 		},
 		Schematics: map[string]SchematicRef{
-			"a": {Path: "github.com/dpopsuev/origami-rca"},
-			"b": {Path: "github.com/dpopsuev/origami-gnd"},
+			"a": {Path: "github.com/example/schematic-a"},
+			"b": {Path: "github.com/example/schematic-b"},
 		},
 	}
 
@@ -154,12 +154,12 @@ func TestTopoSort_MultipleRoots_WithEntry(t *testing.T) {
 	m := &Manifest{
 		Name: "test",
 		Uses: map[string]UsesRef{
-			"rca": {Kind: "Schematic", Module: "github.com/dpopsuev/origami-rca", Entry: true},
-			"gnd": {Kind: "Schematic", Module: "github.com/dpopsuev/origami-gnd"},
+			"alpha": {Kind: "Schematic", Module: "github.com/example/schematic-a", Entry: true},
+			"beta":  {Kind: "Schematic", Module: "github.com/example/schematic-b"},
 		},
 		Schematics: map[string]SchematicRef{
-			"rca": {Path: "github.com/dpopsuev/origami-rca"},
-			"gnd": {Path: "github.com/dpopsuev/origami-gnd"},
+			"alpha": {Path: "github.com/example/schematic-a"},
+			"beta":  {Path: "github.com/example/schematic-b"},
 		},
 	}
 
@@ -167,11 +167,11 @@ func TestTopoSort_MultipleRoots_WithEntry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if root != "rca" {
-		t.Errorf("root = %q, want rca", root)
+	if root != "alpha" {
+		t.Errorf("root = %q, want alpha", root)
 	}
-	if len(order) != 1 || order[0] != "gnd" {
-		t.Errorf("order = %v, want [gnd]", order)
+	if len(order) != 1 || order[0] != "beta" {
+		t.Errorf("order = %v, want [beta]", order)
 	}
 }
 
@@ -183,12 +183,12 @@ func TestTopoSort_MultipleRoots_BothWithSessionFactory_RequiresEntryFlag(t *test
 	m := &Manifest{
 		Name: "test",
 		Uses: map[string]UsesRef{
-			"rca": {Kind: "Schematic", Module: "github.com/dpopsuev/origami-rca"},
-			"gnd": {Kind: "Schematic", Module: "github.com/dpopsuev/origami-gnd"},
+			"alpha": {Kind: "Schematic", Module: "github.com/example/schematic-a"},
+			"beta":  {Kind: "Schematic", Module: "github.com/example/schematic-b"},
 		},
 		Schematics: map[string]SchematicRef{
-			"rca": {Path: "github.com/dpopsuev/origami-rca"},
-			"gnd": {Path: "github.com/dpopsuev/origami-gnd"},
+			"alpha": {Path: "github.com/example/schematic-a"},
+			"beta":  {Path: "github.com/example/schematic-b"},
 		},
 	}
 	// Both have session_factory — topoSort cannot use it to disambiguate.
@@ -204,10 +204,10 @@ func TestImportAlias(t *testing.T) {
 		mod  string
 		want string
 	}{
-		{"github.com/dpopsuev/origami-rca/connectors/rp", "rp"},
+		{"github.com/example/schematic-a/connectors/rp", "rp"},
 		{"github.com/dpopsuev/origami/instruments/github", "github"},
-		{"github.com/dpopsuev/origami-gnd", "origamignd"},
-		{"github.com/dpopsuev/origami-rca/mcpconfig", "mcpconfig"},
+		{"github.com/example/schematic-b", "schematicb"},
+		{"github.com/example/schematic-a/mcpconfig", "mcpconfig"},
 	}
 	for _, tt := range tests {
 		got := importAlias(tt.mod)
@@ -228,11 +228,11 @@ func TestParseManifest_WithBindings(t *testing.T) {
 	if len(m.Uses) != 3 {
 		t.Errorf("uses count = %d, want 3", len(m.Uses))
 	}
-	if m.Uses["rca"].Module != "github.com/dpopsuev/origami-rca" {
-		t.Errorf("uses[rca].module = %q", m.Uses["rca"].Module)
+	if m.Uses["alpha"].Module != "github.com/example/schematic-a" {
+		t.Errorf("uses[alpha].module = %q", m.Uses["alpha"].Module)
 	}
-	if m.Bind["rca"]["source"] != "reportportal" {
-		t.Errorf("bind[rca][source] = %q", m.Bind["rca"]["source"])
+	if m.Bind["alpha"]["source"] != "datasource" {
+		t.Errorf("bind[alpha][source] = %q", m.Bind["alpha"]["source"])
 	}
 }
 

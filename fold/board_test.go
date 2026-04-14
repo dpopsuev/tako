@@ -23,8 +23,8 @@ func TestParseBoardManifest_AllFields(t *testing.T) {
 	if len(bm.Uses) != 2 {
 		t.Errorf("Uses count = %d, want 2", len(bm.Uses))
 	}
-	if bm.Uses["rca"] != "github.com/dpopsuev/origami-rca" {
-		t.Errorf("Uses[rca] = %q", bm.Uses["rca"])
+	if bm.Uses["alpha"] != "github.com/example/schematic-a" {
+		t.Errorf("Uses[alpha] = %q", bm.Uses["alpha"])
 	}
 	if len(bm.Bind) != 1 {
 		t.Errorf("Bind count = %d, want 1", len(bm.Bind))

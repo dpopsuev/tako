@@ -23,39 +23,39 @@ func makeTestType(name string) *CircuitType {
 
 func TestCircuitTypeRegistry_Register(t *testing.T) {
 	reg := NewCircuitTypeRegistry()
-	reg.Register(makeTestType("rca"))
-	reg.Register(makeTestType("gnd"))
+	reg.Register(makeTestType("alpha"))
+	reg.Register(makeTestType("beta"))
 
 	names := reg.Names()
 	if len(names) != 2 {
 		t.Fatalf("expected 2 types, got %d", len(names))
 	}
-	if names[0] != "gnd" || names[1] != "rca" {
+	if names[0] != "alpha" || names[1] != "beta" {
 		t.Errorf("names should be sorted: got %v", names)
 	}
 }
 
 func TestCircuitTypeRegistry_RegisterDuplicatePanics(t *testing.T) {
 	reg := NewCircuitTypeRegistry()
-	reg.Register(makeTestType("rca"))
+	reg.Register(makeTestType("alpha"))
 	defer func() {
 		if r := recover(); r == nil {
 			t.Error("expected panic on duplicate")
 		}
 	}()
-	reg.Register(makeTestType("rca"))
+	reg.Register(makeTestType("alpha"))
 }
 
 func TestCircuitTypeRegistry_Lookup(t *testing.T) {
 	reg := NewCircuitTypeRegistry()
-	reg.Register(makeTestType("rca"))
+	reg.Register(makeTestType("alpha"))
 
-	ct := reg.Lookup("rca")
+	ct := reg.Lookup("alpha")
 	if ct == nil {
 		t.Fatal("lookup returned nil")
 	}
-	if ct.Name != "rca" {
-		t.Errorf("got %s, want rca", ct.Name)
+	if ct.Name != "alpha" {
+		t.Errorf("got %s, want alpha", ct.Name)
 	}
 
 	if reg.Lookup("missing") != nil {
@@ -65,40 +65,40 @@ func TestCircuitTypeRegistry_Lookup(t *testing.T) {
 
 func TestCircuitTypeRegistry_RouteSession_SingleType(t *testing.T) {
 	reg := NewCircuitTypeRegistry()
-	reg.Register(makeTestType("rca"))
+	reg.Register(makeTestType("alpha"))
 
 	runFn, meta, err := reg.RouteSession(context.Background(), StartParams{}, nil, nil)
 	if err != nil {
 		t.Fatalf("route single type: %v", err)
 	}
-	if meta.Scenario != "rca" {
-		t.Errorf("meta.Scenario: got %s, want rca", meta.Scenario)
+	if meta.Scenario != "alpha" {
+		t.Errorf("meta.Scenario: got %s, want alpha", meta.Scenario)
 	}
 	result, _ := runFn(context.Background())
-	if result != "rca" {
-		t.Errorf("result: got %v, want rca", result)
+	if result != "alpha" {
+		t.Errorf("result: got %v, want alpha", result)
 	}
 }
 
 func TestCircuitTypeRegistry_RouteSession_ExplicitType(t *testing.T) {
 	reg := NewCircuitTypeRegistry()
-	reg.Register(makeTestType("rca"))
-	reg.Register(makeTestType("gnd"))
+	reg.Register(makeTestType("alpha"))
+	reg.Register(makeTestType("beta"))
 
-	params := StartParams{Extra: map[string]any{"circuit_type": "gnd"}}
+	params := StartParams{Extra: map[string]any{"circuit_type": "beta"}}
 	_, meta, err := reg.RouteSession(context.Background(), params, nil, nil)
 	if err != nil {
 		t.Fatalf("route explicit type: %v", err)
 	}
-	if meta.Scenario != "gnd" {
-		t.Errorf("meta.Scenario: got %s, want gnd", meta.Scenario)
+	if meta.Scenario != "beta" {
+		t.Errorf("meta.Scenario: got %s, want beta", meta.Scenario)
 	}
 }
 
 func TestCircuitTypeRegistry_RouteSession_MissingTypeMultiple(t *testing.T) {
 	reg := NewCircuitTypeRegistry()
-	reg.Register(makeTestType("rca"))
-	reg.Register(makeTestType("gnd"))
+	reg.Register(makeTestType("alpha"))
+	reg.Register(makeTestType("beta"))
 
 	_, _, err := reg.RouteSession(context.Background(), StartParams{}, nil, nil)
 	if err == nil {
@@ -108,7 +108,7 @@ func TestCircuitTypeRegistry_RouteSession_MissingTypeMultiple(t *testing.T) {
 
 func TestCircuitTypeRegistry_RouteSession_UnknownType(t *testing.T) {
 	reg := NewCircuitTypeRegistry()
-	reg.Register(makeTestType("rca"))
+	reg.Register(makeTestType("alpha"))
 
 	params := StartParams{Extra: map[string]any{"circuit_type": "bad"}}
 	_, _, err := reg.RouteSession(context.Background(), params, nil, nil)
@@ -119,8 +119,8 @@ func TestCircuitTypeRegistry_RouteSession_UnknownType(t *testing.T) {
 
 func TestCircuitTypeRegistry_MergedStepSchemas(t *testing.T) {
 	reg := NewCircuitTypeRegistry()
-	reg.Register(makeTestType("rca"))
-	reg.Register(makeTestType("gnd"))
+	reg.Register(makeTestType("alpha"))
+	reg.Register(makeTestType("beta"))
 
 	merged := reg.MergedStepSchemas()
 	if len(merged) != 2 {

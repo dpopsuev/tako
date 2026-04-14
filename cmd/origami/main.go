@@ -102,7 +102,7 @@ Commands:
   fold       Compile a YAML manifest into a standalone binary
   tune       Preflight-check instruments (--sum to compute checksums)
   autodoc    Generate documentation tree from circuit YAML
-  capture    Capture an offline bundle for a schematic (e.g. gnd)
+  capture    Capture an offline bundle for a schematic (e.g. beta)
   trace      Read and render a JSONL execution trace
   report     Read and render a run report scorecard
   diff       Compare metrics between two runs

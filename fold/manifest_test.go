@@ -71,8 +71,8 @@ func TestParseManifest_Assets(t *testing.T) {
 	if a == nil {
 		t.Fatal("assets is nil")
 	}
-	if got := a.Circuits["rca"]; got != "circuits/rca.yaml" {
-		t.Errorf("circuits.rca = %q", got)
+	if got := a.Circuits["alpha"]; got != "circuits/alpha.yaml" {
+		t.Errorf("circuits.alpha = %q", got)
 	}
 	if got := a.Prompts["recall"]; got != "prompts/recall/judge-similarity.md" {
 		t.Errorf("prompts.recall = %q", got)
@@ -94,15 +94,15 @@ func TestParseManifest_NoAssets(t *testing.T) {
 
 func TestAssetMap_AllPaths(t *testing.T) {
 	a := &AssetMap{
-		Circuits: map[string]string{"rca": "circuits/rca.yaml", "calibration": "circuits/calibration.yaml"},
+		Circuits: map[string]string{"alpha": "circuits/alpha.yaml", "calibration": "circuits/calibration.yaml"},
 		Prompts:  map[string]string{"recall": "prompts/recall/judge-similarity.md"},
-		Schemas:  map[string]string{"recall": "schemas/rca/F0_RECALL.yaml"},
+		Schemas:  map[string]string{"recall": "schemas/alpha/F0_RECALL.yaml"},
 		Files:    map[string]string{"vocabulary": "vocabulary.yaml", "heuristics": "heuristics.yaml"},
 	}
 	paths := a.AllPaths()
 	want := []string{
-		"circuits/calibration.yaml", "circuits/rca.yaml", "heuristics.yaml",
-		"prompts/recall/judge-similarity.md", "schemas/rca/F0_RECALL.yaml", "vocabulary.yaml",
+		"circuits/alpha.yaml", "circuits/calibration.yaml", "heuristics.yaml",
+		"prompts/recall/judge-similarity.md", "schemas/alpha/F0_RECALL.yaml", "vocabulary.yaml",
 	}
 	if len(paths) != len(want) {
 		t.Fatalf("AllPaths() = %v, want %v", paths, want)
@@ -126,7 +126,7 @@ func TestAssetMap_AllPaths_Dedup(t *testing.T) {
 
 func TestAssetMap_Sections(t *testing.T) {
 	a := &AssetMap{
-		Circuits: map[string]string{"rca": "circuits/rca.yaml"},
+		Circuits: map[string]string{"alpha": "circuits/alpha.yaml"},
 		Prompts:  map[string]string{"recall": "prompts/recall.md"},
 		Files:    map[string]string{"vocab": "vocab.yaml"},
 	}

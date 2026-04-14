@@ -36,7 +36,7 @@ func DefaultCrossRefRules() []CrossRefRule {
 			RefLabel:    "scenario repo reference",
 		},
 		// S34 (port-wiring) deferred: wiring uses namespaced references
-		// (e.g., "rca.out:post-triage") which need namespace-aware matching
+		// (e.g., "alpha.out:post-triage") which need namespace-aware matching
 		// against bare port names. Requires a custom check function.
 	}
 }

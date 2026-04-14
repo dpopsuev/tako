@@ -233,7 +233,7 @@ func TestPrometheusCollector_TokenMetrics(t *testing.T) {
 	reg := prometheus.NewRegistry()
 	col := NewPrometheusCollector(reg)
 
-	col.StartWalk("rca-circuit")
+	col.StartWalk("alpha-circuit")
 	col.RecordTokens("recall", "recall_node", 500, 200, 0.0045)
 	col.RecordTokens("triage", "triage_node", 300, 100, 0.0024)
 

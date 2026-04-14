@@ -102,11 +102,11 @@ func TestS35_ExpectedPathNodeNames_ValidNodes(t *testing.T) {
 // --- S36: circuit-handler-resolution ---
 
 func TestS36_CircuitHandlerResolution_Unresolvable(t *testing.T) {
-	// Node with handler_type=circuit handler=gnd, no circuit file for gnd → finding
+	// Node with handler_type=circuit handler=beta, no circuit file for beta → finding
 	def := &circuit.CircuitDef{
-		Circuit: "rca",
+		Circuit: "alpha",
 		Nodes: []circuit.NodeDef{
-			{Name: "gather", Instrument: "circuit", Action: "gnd"},
+			{Name: "gather", Instrument: "circuit", Action: "beta"},
 			{Name: "triage", Approach: "rapid"},
 		},
 		Edges: []circuit.EdgeDef{
@@ -117,12 +117,12 @@ func TestS36_CircuitHandlerResolution_Unresolvable(t *testing.T) {
 		Done:  "_done",
 	}
 
-	ctx := NewLintContextFromDef(def, "rca.yaml")
+	ctx := NewLintContextFromDef(def, "alpha.yaml")
 	ctx.ProjectFiles = map[string][]ProjectFile{
 		"circuit": {{
-			File: "rca.yaml",
+			File: "alpha.yaml",
 			Kind: "circuit",
-			Data: map[string]any{"circuit": "rca"},
+			Data: map[string]any{"circuit": "alpha"},
 		}},
 	}
 
@@ -134,8 +134,8 @@ func TestS36_CircuitHandlerResolution_Unresolvable(t *testing.T) {
 	if findings[0].RuleID != "S36/circuit-handler-resolution" {
 		t.Errorf("unexpected rule ID: %s", findings[0].RuleID)
 	}
-	if !strings.Contains(findings[0].Message, "gnd") {
-		t.Errorf("expected message to mention 'gnd', got %q", findings[0].Message)
+	if !strings.Contains(findings[0].Message, "beta") {
+		t.Errorf("expected message to mention 'beta', got %q", findings[0].Message)
 	}
 	if findings[0].Severity != SeverityError {
 		t.Errorf("expected error severity, got %v", findings[0].Severity)
@@ -144,9 +144,9 @@ func TestS36_CircuitHandlerResolution_Unresolvable(t *testing.T) {
 
 func TestS36_CircuitHandlerResolution_Resolvable(t *testing.T) {
 	def := &circuit.CircuitDef{
-		Circuit: "rca",
+		Circuit: "alpha",
 		Nodes: []circuit.NodeDef{
-			{Name: "gather", Instrument: "circuit", Action: "gnd"},
+			{Name: "gather", Instrument: "circuit", Action: "beta"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "gather", To: "_done"},
@@ -155,11 +155,11 @@ func TestS36_CircuitHandlerResolution_Resolvable(t *testing.T) {
 		Done:  "_done",
 	}
 
-	ctx := NewLintContextFromDef(def, "rca.yaml")
+	ctx := NewLintContextFromDef(def, "alpha.yaml")
 	ctx.ProjectFiles = map[string][]ProjectFile{
 		"circuit": {
-			{File: "rca.yaml", Kind: "circuit", Data: map[string]any{"circuit": "rca"}},
-			{File: "gnd.yaml", Kind: "circuit", Data: map[string]any{"circuit": "gnd"}},
+			{File: "alpha.yaml", Kind: "circuit", Data: map[string]any{"circuit": "alpha"}},
+			{File: "beta.yaml", Kind: "circuit", Data: map[string]any{"circuit": "beta"}},
 		},
 	}
 
@@ -263,11 +263,11 @@ func TestS37_DeadNodeDetection_AllTested(t *testing.T) {
 // --- S38: mediator-backend-coverage ---
 
 func TestS38_MediatorBackendCoverage_NoCircuitNoResolver(t *testing.T) {
-	// handler_type=circuit handler=gnd, no circuit file, no registries → finding (warning)
+	// handler_type=circuit handler=beta, no circuit file, no registries → finding (warning)
 	def := &circuit.CircuitDef{
-		Circuit: "rca",
+		Circuit: "alpha",
 		Nodes: []circuit.NodeDef{
-			{Name: "gather", Instrument: "circuit", Action: "gnd"},
+			{Name: "gather", Instrument: "circuit", Action: "beta"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "gather", To: "_done"},
@@ -276,7 +276,7 @@ func TestS38_MediatorBackendCoverage_NoCircuitNoResolver(t *testing.T) {
 		Done:  "_done",
 	}
 
-	ctx := NewLintContextFromDef(def, "rca.yaml")
+	ctx := NewLintContextFromDef(def, "alpha.yaml")
 	// No project files, no registries
 
 	rule := &MediatorBackendCoverage{}
@@ -290,8 +290,8 @@ func TestS38_MediatorBackendCoverage_NoCircuitNoResolver(t *testing.T) {
 	if findings[0].Severity != SeverityWarning {
 		t.Errorf("expected warning severity, got %v", findings[0].Severity)
 	}
-	if !strings.Contains(findings[0].Message, "gnd") {
-		t.Errorf("expected message to mention 'gnd', got %q", findings[0].Message)
+	if !strings.Contains(findings[0].Message, "beta") {
+		t.Errorf("expected message to mention 'beta', got %q", findings[0].Message)
 	}
 	if !strings.Contains(findings[0].Message, "no mediator endpoint") {
 		t.Errorf("expected message to mention no mediator endpoint, got %q", findings[0].Message)
@@ -300,9 +300,9 @@ func TestS38_MediatorBackendCoverage_NoCircuitNoResolver(t *testing.T) {
 
 func TestS38_MediatorBackendCoverage_WithLocalCircuit(t *testing.T) {
 	def := &circuit.CircuitDef{
-		Circuit: "rca",
+		Circuit: "alpha",
 		Nodes: []circuit.NodeDef{
-			{Name: "gather", Instrument: "circuit", Action: "gnd"},
+			{Name: "gather", Instrument: "circuit", Action: "beta"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "gather", To: "_done"},
@@ -311,10 +311,10 @@ func TestS38_MediatorBackendCoverage_WithLocalCircuit(t *testing.T) {
 		Done:  "_done",
 	}
 
-	ctx := NewLintContextFromDef(def, "rca.yaml")
+	ctx := NewLintContextFromDef(def, "alpha.yaml")
 	ctx.ProjectFiles = map[string][]ProjectFile{
 		"circuit": {
-			{File: "gnd.yaml", Kind: "circuit", Data: map[string]any{"circuit": "gnd"}},
+			{File: "beta.yaml", Kind: "circuit", Data: map[string]any{"circuit": "beta"}},
 		},
 	}
 
@@ -327,9 +327,9 @@ func TestS38_MediatorBackendCoverage_WithLocalCircuit(t *testing.T) {
 
 func TestS38_MediatorBackendCoverage_WithMediatorEndpoint(t *testing.T) {
 	def := &circuit.CircuitDef{
-		Circuit: "rca",
+		Circuit: "alpha",
 		Nodes: []circuit.NodeDef{
-			{Name: "gather", Instrument: "circuit", Action: "gnd"},
+			{Name: "gather", Instrument: "circuit", Action: "beta"},
 		},
 		Edges: []circuit.EdgeDef{
 			{ID: "e1", From: "gather", To: "_done"},
@@ -338,7 +338,7 @@ func TestS38_MediatorBackendCoverage_WithMediatorEndpoint(t *testing.T) {
 		Done:  "_done",
 	}
 
-	ctx := NewLintContextFromDef(def, "rca.yaml")
+	ctx := NewLintContextFromDef(def, "alpha.yaml")
 	ctx.Registries = &engine.GraphRegistries{
 		MediatorEndpoint: "localhost:9000",
 	}
@@ -363,7 +363,7 @@ func TestS39_PortTypeConsistency_Mismatch(t *testing.T) {
 			{Name: "post-triage", Direction: "out", Type: "string"},
 		},
 		Wiring: []circuit.WiringDef{
-			{From: "orchestrator.out:post-triage", To: "gnd.in:keywords"},
+			{From: "orchestrator.out:post-triage", To: "beta.in:keywords"},
 		},
 		Nodes: []circuit.NodeDef{
 			{Name: "init"},
@@ -378,10 +378,10 @@ func TestS39_PortTypeConsistency_Mismatch(t *testing.T) {
 	ctx := NewLintContextFromDef(def, "orchestrator.yaml")
 	ctx.ProjectFiles = map[string][]ProjectFile{
 		"circuit": {{
-			File: "gnd.yaml",
+			File: "beta.yaml",
 			Kind: "circuit",
 			Data: map[string]any{
-				"circuit": "gnd",
+				"circuit": "beta",
 				"ports": []any{
 					map[string]any{"name": "keywords", "direction": "in", "type": "[]string"},
 				},
@@ -412,7 +412,7 @@ func TestS39_PortTypeConsistency_Match(t *testing.T) {
 			{Name: "post-triage", Direction: "out", Type: "string"},
 		},
 		Wiring: []circuit.WiringDef{
-			{From: "orchestrator.out:post-triage", To: "gnd.in:keywords"},
+			{From: "orchestrator.out:post-triage", To: "beta.in:keywords"},
 		},
 		Nodes: []circuit.NodeDef{
 			{Name: "init"},
@@ -427,10 +427,10 @@ func TestS39_PortTypeConsistency_Match(t *testing.T) {
 	ctx := NewLintContextFromDef(def, "orchestrator.yaml")
 	ctx.ProjectFiles = map[string][]ProjectFile{
 		"circuit": {{
-			File: "gnd.yaml",
+			File: "beta.yaml",
 			Kind: "circuit",
 			Data: map[string]any{
-				"circuit": "gnd",
+				"circuit": "beta",
 				"ports": []any{
 					map[string]any{"name": "keywords", "direction": "in", "type": "string"},
 				},
@@ -454,8 +454,8 @@ func TestParseWiringRef(t *testing.T) {
 		direction string
 		port      string
 	}{
-		{"rca.out:post-triage", "rca", "out", "post-triage"},
-		{"gnd.in:keywords", "gnd", "in", "keywords"},
+		{"alpha.out:post-triage", "alpha", "out", "post-triage"},
+		{"beta.in:keywords", "beta", "in", "keywords"},
 		{"bad", "", "", ""},
 		{"circuit.out", "circuit", "out", ""},
 	}

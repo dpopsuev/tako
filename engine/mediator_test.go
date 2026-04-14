@@ -225,7 +225,7 @@ func TestMCPCircuitTransformer_PropagatesTraceID(t *testing.T) {
 	ts := newCapturingCircuitServer(t, captured)
 
 	trans := &MCPCircuitTransformer{
-		CircuitType: "gnd",
+		CircuitType: "beta",
 		Endpoint:    ts.URL + "/mcp",
 	}
 
@@ -258,7 +258,7 @@ func TestMCPCircuitTransformer_GeneratesTraceIDWhenMissing(t *testing.T) {
 	ts := newCapturingCircuitServer(t, captured)
 
 	trans := &MCPCircuitTransformer{
-		CircuitType: "gnd",
+		CircuitType: "beta",
 		Endpoint:    ts.URL + "/mcp",
 	}
 

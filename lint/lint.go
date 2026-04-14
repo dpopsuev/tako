@@ -121,7 +121,7 @@ type PromptFieldError struct {
 
 // PromptValidator checks a prompt template's field references and returns
 // errors for any that cannot be resolved against the expected parameter type.
-// Implementations are provided by domain modules (e.g. modules/rca).
+// Implementations are provided by domain modules (e.g. modules/alpha).
 type PromptValidator func(content string) []PromptFieldError
 
 // LintContext holds all data available to lint rules during checking.
@@ -459,7 +459,7 @@ func WithRegistries(reg *engine.GraphRegistries) Option {
 }
 
 // WithPromptFS provides an fs.FS containing prompt templates for the
-// P1/template-param-validity rule. Typically rca.DefaultPromptFS.
+// P1/template-param-validity rule. Typically the consumer's DefaultPromptFS.
 func WithPromptFS(fsys fs.FS) Option {
 	return func(c *runConfig) { c.promptFS = fsys }
 }

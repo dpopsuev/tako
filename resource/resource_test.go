@@ -354,11 +354,11 @@ func TestResource_Summary(t *testing.T) {
 	r := &Resource{
 		Kind:     circuit.KindScorecard,
 		Version:  "v2",
-		Metadata: Metadata{Name: "rca"},
-		Source:   "scorecards/rca.yaml",
+		Metadata: Metadata{Name: "alpha"},
+		Source:   "scorecards/alpha.yaml",
 	}
 	got := r.Summary()
-	if got != "Scorecard/rca (v2) [scorecards/rca.yaml]" {
+	if got != "Scorecard/alpha (v2) [scorecards/alpha.yaml]" {
 		t.Errorf("Summary = %q", got)
 	}
 }

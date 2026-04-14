@@ -281,10 +281,10 @@ func TestStoreDeclaration_LifecycleParsing(t *testing.T) {
 	raw := `
 - name: session_store
   lifecycle: session
-  schema: rca-session
+  schema: alpha-session
 - name: persistent_store
   lifecycle: persistent
-  schema: rca-persistent
+  schema: alpha-persistent
 `
 	var decls []StoreDeclaration
 	if err := yaml.Unmarshal([]byte(raw), &decls); err != nil {
@@ -293,11 +293,11 @@ func TestStoreDeclaration_LifecycleParsing(t *testing.T) {
 	if len(decls) != 2 {
 		t.Fatalf("len = %d, want 2", len(decls))
 	}
-	if decls[0].Name != "session_store" || decls[0].Lifecycle != LifecycleSession || decls[0].Schema != "rca-session" {
-		t.Errorf("decls[0] = %+v, want session_store/session/rca-session", decls[0])
+	if decls[0].Name != "session_store" || decls[0].Lifecycle != LifecycleSession || decls[0].Schema != "alpha-session" {
+		t.Errorf("decls[0] = %+v, want session_store/session/alpha-session", decls[0])
 	}
-	if decls[1].Name != "persistent_store" || decls[1].Lifecycle != LifecyclePersistent || decls[1].Schema != "rca-persistent" {
-		t.Errorf("decls[1] = %+v, want persistent_store/persistent/rca-persistent", decls[1])
+	if decls[1].Name != "persistent_store" || decls[1].Lifecycle != LifecyclePersistent || decls[1].Schema != "alpha-persistent" {
+		t.Errorf("decls[1] = %+v, want persistent_store/persistent/alpha-persistent", decls[1])
 	}
 }
 
@@ -316,10 +316,10 @@ tables:
 stores:
   - name: main
     lifecycle: persistent
-    schema: rca-main
+    schema: alpha-main
   - name: session
     lifecycle: session
-    schema: rca-session
+    schema: alpha-session
 `
 	s, err := LoadStoreSchema([]byte(yaml))
 	if err != nil {
@@ -328,10 +328,10 @@ stores:
 	if len(s.Stores) != 2 {
 		t.Fatalf("Stores len = %d, want 2", len(s.Stores))
 	}
-	if s.Stores[0].Name != "main" || s.Stores[0].Lifecycle != LifecyclePersistent || s.Stores[0].Schema != "rca-main" {
-		t.Errorf("Stores[0] = %+v, want main/persistent/rca-main", s.Stores[0])
+	if s.Stores[0].Name != "main" || s.Stores[0].Lifecycle != LifecyclePersistent || s.Stores[0].Schema != "alpha-main" {
+		t.Errorf("Stores[0] = %+v, want main/persistent/alpha-main", s.Stores[0])
 	}
-	if s.Stores[1].Name != "session" || s.Stores[1].Lifecycle != LifecycleSession || s.Stores[1].Schema != "rca-session" {
-		t.Errorf("Stores[1] = %+v, want session/session/rca-session", s.Stores[1])
+	if s.Stores[1].Name != "session" || s.Stores[1].Lifecycle != LifecycleSession || s.Stores[1].Schema != "alpha-session" {
+		t.Errorf("Stores[1] = %+v, want session/session/alpha-session", s.Stores[1])
 	}
 }

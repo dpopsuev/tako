@@ -15,7 +15,7 @@ func TestWriteAndReadManifest(t *testing.T) {
 
 	want := &calibrate.Manifest{
 		SchemaVersion: calibrate.SchemaV1,
-		Schematic:     "gnd",
+		Schematic:     "beta",
 		CapturedAt:    time.Date(2026, 3, 10, 12, 0, 0, 0, time.UTC),
 		Repos: []calibrate.RepoEntry{
 			{Name: "my-repo", Branch: "main", SHA: "abc123", Files: []string{"go.mod", "main.go"}},
@@ -72,7 +72,7 @@ func TestValidateBundle_AllPresent(t *testing.T) {
 	fsys := fstest.MapFS{
 		"manifest.yaml": &fstest.MapFile{Data: []byte(`
 schema_version: v1
-schematic: gnd
+schematic: beta
 captured_at: "2026-03-10T12:00:00Z"
 repos:
   - name: myrepo
@@ -98,7 +98,7 @@ func TestValidateBundle_MissingFile(t *testing.T) {
 	fsys := fstest.MapFS{
 		"manifest.yaml": &fstest.MapFile{Data: []byte(`
 schema_version: v1
-schematic: gnd
+schematic: beta
 captured_at: "2026-03-10T12:00:00Z"
 repos:
   - name: myrepo
@@ -123,7 +123,7 @@ func TestValidateBundle_SHAMismatch(t *testing.T) {
 	fsys := fstest.MapFS{
 		"manifest.yaml": &fstest.MapFile{Data: []byte(`
 schema_version: v1
-schematic: gnd
+schematic: beta
 captured_at: "2026-03-10T12:00:00Z"
 docs:
   - name: arch

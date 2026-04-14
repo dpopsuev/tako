@@ -13,7 +13,7 @@ import (
 
 // CaseRunner runs a single calibration case through the domain circuit.
 // Consumers implement this interface to connect their domain circuit
-// (e.g., Asterisk's RCA circuit) to the generic calibration circuit.
+// (e.g., a consumer's analysis circuit) to the generic calibration circuit.
 type CaseRunner interface {
 	RunCase(ctx context.Context, caseID string, input any) (any, error)
 }

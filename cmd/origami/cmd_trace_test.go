@@ -117,11 +117,11 @@ func TestTraceCmd_FollowAnnotatesDelegations(t *testing.T) {
 	out := buf.String()
 
 	// Should contain delegation markers.
-	mustContain(t, out, "[DELEGATION START: gnd]")
-	mustContain(t, out, "[DELEGATION END: gnd]")
+	mustContain(t, out, "[DELEGATION START: beta]")
+	mustContain(t, out, "[DELEGATION END: beta]")
 
 	// Should inline child trace events (indented with circuit label).
-	mustContain(t, out, "[gnd]")
+	mustContain(t, out, "[beta]")
 	mustContain(t, out, "tree")
 	mustContain(t, out, "search")
 }

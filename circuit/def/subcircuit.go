@@ -15,7 +15,7 @@ import (
 // the matching AssetResolver (keyed by circuit name), and returns a map
 // suitable for GraphRegistries.Circuits.
 //
-// The circuit name is derived from the filename: "circuits/gnd.yaml" -> "gnd".
+// The circuit name is derived from the filename: "circuits/beta.yaml" -> "beta".
 // If no resolver exists for a circuit name, the YAML is loaded without overlay
 // resolution (treated as a standalone circuit definition).
 func LoadSubCircuitsFromFS(fsys fs.FS, resolvers map[string]AssetResolver) map[string]*CircuitDef {

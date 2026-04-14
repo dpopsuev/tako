@@ -22,10 +22,10 @@ func writeGoFile(t *testing.T, dir, content string) {
 func TestValidateExports_MissingOptionFunc(t *testing.T) {
 	// RED: component.yaml declares option: WithSourceReader, module doesn't export it.
 	modDir := t.TempDir()
-	writeGoFile(t, modDir, "package rca\n\nfunc Factory() {}\n")
+	writeGoFile(t, modDir, "package alpha\n\nfunc Factory() {}\n")
 
 	cm := &def.ComponentManifest{
-		Module: "github.com/test/rca",
+		Module: "github.com/test/alpha",
 		Needs: struct {
 			Origami    string          `yaml:"origami,omitempty"`
 			Transports []def.SocketDef `yaml:"transports,omitempty"`
@@ -50,10 +50,10 @@ func TestValidateExports_MissingOptionFunc(t *testing.T) {
 func TestValidateExports_MissingSessionFactory(t *testing.T) {
 	// RED: component.yaml declares session_factory: "Factory()", module doesn't export it.
 	modDir := t.TempDir()
-	writeGoFile(t, modDir, "package rca\n\nfunc OtherFunc() {}\n")
+	writeGoFile(t, modDir, "package alpha\n\nfunc OtherFunc() {}\n")
 
 	cm := &def.ComponentManifest{
-		Module:         "github.com/test/rca",
+		Module:         "github.com/test/alpha",
 		SessionFactory: "Factory()",
 	}
 
@@ -69,10 +69,10 @@ func TestValidateExports_MissingSessionFactory(t *testing.T) {
 func TestValidateExports_MissingResolver(t *testing.T) {
 	// RED: component.yaml declares resolver: SchematicResolver, module doesn't export it.
 	modDir := t.TempDir()
-	writeGoFile(t, modDir, "package gnd\n\nfunc Factory() {}\n")
+	writeGoFile(t, modDir, "package beta\n\nfunc Factory() {}\n")
 
 	cm := &def.ComponentManifest{
-		Module:   "github.com/test/gnd",
+		Module:   "github.com/test/beta",
 		Resolver: "SchematicResolver",
 	}
 
@@ -88,7 +88,7 @@ func TestValidateExports_MissingResolver(t *testing.T) {
 func TestValidateExports_AllPresent(t *testing.T) {
 	// GREEN path: all declared symbols exist.
 	modDir := t.TempDir()
-	writeGoFile(t, modDir, `package rca
+	writeGoFile(t, modDir, `package alpha
 
 func Factory() {}
 func SchematicResolver() {}
@@ -96,7 +96,7 @@ func WithSourceReader() {}
 `)
 
 	cm := &def.ComponentManifest{
-		Module:         "github.com/test/rca",
+		Module:         "github.com/test/alpha",
 		SessionFactory: "Factory()",
 		Resolver:       "SchematicResolver",
 		Needs: struct {
@@ -119,10 +119,10 @@ func WithSourceReader() {}
 func TestValidateExports_OptionalSocketSkipped(t *testing.T) {
 	// Optional sockets without option field are not checked.
 	modDir := t.TempDir()
-	writeGoFile(t, modDir, "package rca\n")
+	writeGoFile(t, modDir, "package alpha\n")
 
 	cm := &def.ComponentManifest{
-		Module: "github.com/test/rca",
+		Module: "github.com/test/alpha",
 		Needs: struct {
 			Origami    string          `yaml:"origami,omitempty"`
 			Transports []def.SocketDef `yaml:"transports,omitempty"`

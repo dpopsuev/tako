@@ -1,25 +1,25 @@
 apiVersion: origami/v1
 kind: Board
 metadata:
-  name: asterisk
+  name: consumer
 spec:
   uses:
-    rca:
+    alpha:
       kind: Schematic
-      module: github.com/dpopsuev/origami-rca
-    reportportal:
+      module: github.com/example/schematic-a
+    datasource:
       kind: Component
       module: github.com/dpopsuev/origami-components/rp
     mcp:
       kind: Component
       module: github.com/dpopsuev/origami/instruments/mcp
   bind:
-    rca:
-      data: reportportal
+    alpha:
+      data: datasource
       transport: mcp
   domains: [ocp/ptp]
   domain_serve:
     port: 9300
     assets:
       circuits:
-        rca: circuits/rca.yaml
+        alpha: circuits/alpha.yaml

@@ -16,11 +16,11 @@ import (
 
 func newResourceServer() *mcp.CircuitServer {
 	domainFS := fstest.MapFS{
-		"circuits/rca.yaml": &fstest.MapFile{
-			Data: []byte("kind: Schematic\nversion: v1\nmetadata:\n  name: rca\ncircuit: rca\nnodes:\n  - name: recall\n    handler: transformer:recall\nedges: []\nstart: recall\ndone: recall\n"),
+		"circuits/alpha.yaml": &fstest.MapFile{
+			Data: []byte("kind: Schematic\nversion: v1\nmetadata:\n  name: alpha\ncircuit: alpha\nnodes:\n  - name: recall\n    handler: transformer:recall\nedges: []\nstart: recall\ndone: recall\n"),
 		},
-		"scorecards/rca.yaml": &fstest.MapFile{
-			Data: []byte("kind: Scorecard\nversion: v1\nmetadata:\n  name: rca\nmetrics:\n  - id: M1\n    name: accuracy\n    scorer: exact_match\n    threshold: 0.7\n"),
+		"scorecards/alpha.yaml": &fstest.MapFile{
+			Data: []byte("kind: Scorecard\nversion: v1\nmetadata:\n  name: alpha\nmetrics:\n  - id: M1\n    name: accuracy\n    scorer: exact_match\n    threshold: 0.7\n"),
 		},
 		"scenarios/ptp.yaml": &fstest.MapFile{
 			Data: []byte("kind: Scenario\nversion: v1\nmetadata:\n  name: ptp\ncases: []\n"),
@@ -165,8 +165,8 @@ func TestResourceTool_Diff(t *testing.T) {
 
 	raw := callResourceToolRaw(ctx, t, session, map[string]any{
 		"action": "diff",
-		"file_a": "circuits/rca.yaml",
-		"file_b": "scorecards/rca.yaml",
+		"file_a": "circuits/alpha.yaml",
+		"file_b": "scorecards/alpha.yaml",
 	})
 	var result map[string]any
 	json.Unmarshal(raw, &result)
