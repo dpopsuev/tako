@@ -13,12 +13,15 @@ import (
 
 	battmcp "github.com/dpopsuev/battery/mcp"
 	"github.com/dpopsuev/battery/tool"
+	"github.com/dpopsuev/troupe/execution"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 
+	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/engine/gate"
 	"github.com/dpopsuev/origami/mcp"
 	"github.com/dpopsuev/origami/simulate/sdlc"
+	troupesignal "github.com/dpopsuev/troupe/signal"
 )
 
 var errUnknownCircuit = errors.New("unknown circuit")
@@ -30,6 +33,7 @@ const (
 	logKeyService  = "service"
 	logKeyTools    = "tools"
 	logKeyError    = "error"
+	logKeyModel    = "model"
 
 	serveReadHeaderTimeout = 10 * time.Second
 )
@@ -71,7 +75,10 @@ func serveCmd(args []string) error {
 	// 4. Connect to external MCP services via Battery MCPAdapter.
 	cfg.Tools = connectExternalTools(ctx)
 
-	// 5. Create CircuitServer.
+	// 5. Create LLM provider via Troupe execution (credential management).
+	injectLLMProvider(&cfg)
+
+	// 6. Create CircuitServer.
 	srv := mcp.NewCircuitServer(&cfg)
 	defer srv.Shutdown()
 
@@ -141,6 +148,46 @@ func connectExternalTools(ctx context.Context) *tool.Registry {
 		slog.Any(logKeyTools, registry.Names()))
 
 	return registry
+}
+
+// injectLLMProvider creates an LLM provider via Troupe's execution package
+// (credential management) and injects it into the CircuitConfig so the factory
+// receives it via params.Extra. The serve command owns credentials — the factory
+// never touches env vars or provider creation.
+func injectLLMProvider(cfg *mcp.CircuitConfig) {
+	providerName := os.Getenv(sdlc.EnvProvider)
+	model := os.Getenv(sdlc.EnvModel)
+	if providerName == "" {
+		return
+	}
+	if model == "" {
+		slog.WarnContext(context.Background(), "SDLC_PROVIDER set but SDLC_MODEL empty — LLM fix disabled")
+		return
+	}
+
+	provider, err := execution.NewProviderWithConfig(providerName, execution.ProviderConfig{
+		MaxTokens: sdlc.SDLCMaxTokens,
+	})
+	if err != nil {
+		slog.ErrorContext(context.Background(), "LLM provider creation failed — fix transformer will use stub",
+			slog.String(logKeyError, err.Error()))
+		return
+	}
+
+	// Wrap CreateSession to inject provider into Extra before the factory sees it.
+	origCreate := cfg.CreateSession
+	cfg.CreateSession = func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus troupesignal.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
+		if params.Extra == nil {
+			params.Extra = make(map[string]any)
+		}
+		params.Extra[sdlc.ExtraKeyProvider] = provider
+		params.Extra[sdlc.ExtraKeyModel] = model
+		return origCreate(ctx, params, disp, bus)
+	}
+
+	slog.InfoContext(context.Background(), "LLM provider injected via Troupe execution",
+		slog.String(logKeyService, providerName),
+		slog.String(logKeyModel, model))
 }
 
 func resolveFactory(name string) (engine.SessionFactory, error) {
