@@ -10,11 +10,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"time"
 
 	battmcp "github.com/dpopsuev/battery/mcp"
 	"github.com/dpopsuev/battery/tool"
 	"github.com/dpopsuev/troupe/execution"
+	"github.com/dpopsuev/troupe/resilience"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/dpopsuev/origami/circuit"
@@ -202,7 +204,13 @@ func injectLLMProvider(cfg *mcp.CircuitConfig) {
 		return
 	}
 
-	// Wrap CreateSession to inject provider into Extra before the factory sees it.
+	// Create shared token budget for rate limiting.
+	budget := resilience.NewTokenBudget(resilience.TokenBudgetConfig{
+		TokensPerMinute: envInt("SDLC_TOKEN_BUDGET", 0),
+		Burst:           envInt("SDLC_TOKEN_BURST", 0),
+	})
+
+	// Wrap CreateSession to inject provider + budget into Extra.
 	origCreate := cfg.CreateSession
 	cfg.CreateSession = func(ctx context.Context, params mcp.StartParams, disp *dispatch.MuxDispatcher, bus troupesignal.Bus) (mcp.RunFunc, mcp.SessionMeta, error) {
 		if params.Extra == nil {
@@ -210,6 +218,7 @@ func injectLLMProvider(cfg *mcp.CircuitConfig) {
 		}
 		params.Extra[sdlc.ExtraKeyProvider] = provider
 		params.Extra[sdlc.ExtraKeyModel] = model
+		params.Extra[sdlc.ExtraKeyTokenBudget] = budget
 		return origCreate(ctx, params, disp, bus)
 	}
 
@@ -283,6 +292,18 @@ func nodeToStepSchema(name string, outputs []circuit.OutputField) mcp.StepSchema
 		}
 	}
 	return mcp.StepSchema{Name: name, Defs: defs}
+}
+
+func envInt(key string, fallback int) int {
+	v := os.Getenv(key)
+	if v == "" {
+		return fallback
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return fallback
+	}
+	return n
 }
 
 func resolveFactory(name string) (engine.SessionFactory, error) {

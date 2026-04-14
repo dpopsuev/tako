@@ -39,8 +39,8 @@ func TestExtractFindings_NilInput(t *testing.T) {
 // Contract: pickFixableFinding skips non-file findings.
 func TestPickFixableFinding(t *testing.T) {
 	findings := []sdlctype.Finding{
-		{File: "engine", Rule: "hot-spot", Severity: "warning"},       // package name, not file
-		{File: "dispatch", Rule: "hot-spot", Severity: "warning"},     // package name
+		{File: "engine", Rule: "hot-spot", Severity: "warning"},               // package name, not file
+		{File: "dispatch", Rule: "hot-spot", Severity: "warning"},             // package name
 		{File: "engine/graph.go", Rule: "layer-violation", Severity: "error"}, // real file
 	}
 	picked, ok := pickFixableFinding(findings)

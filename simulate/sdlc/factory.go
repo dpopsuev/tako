@@ -55,6 +55,8 @@ const (
 	ExtraKeyProvider = "llm_provider"
 	// ExtraKeyModel is the Extra map key for the LLM model name.
 	ExtraKeyModel = "llm_model"
+	// ExtraKeyTokenBudget is the Extra map key for the shared TokenBudget.
+	ExtraKeyTokenBudget = "token_budget"
 )
 
 // SessionFactory returns a SessionFactory for the SDLC circuit.
@@ -83,17 +85,21 @@ func (f *sdlcFactory) CreateSession(_ context.Context, params *engine.SessionPar
 		mode = m
 	}
 
-	// Extract injected provider from Extra (set by serve command).
+	// Extract injected provider + budget from Extra (set by serve command).
 	var provider anyllm.Provider
 	var model string
+	var budget tdd.TokenBudget
 	if p, ok := params.Extra[ExtraKeyProvider].(anyllm.Provider); ok {
 		provider = p
 	}
 	if m, ok := params.Extra[ExtraKeyModel].(string); ok {
 		model = m
 	}
+	if tb, ok := params.Extra[ExtraKeyTokenBudget].(tdd.TokenBudget); ok {
+		budget = tb
+	}
 
-	transformers, err := buildTransformers(repoPath, mode, params.Tools, provider, model)
+	transformers, err := buildTransformers(repoPath, mode, params.Tools, provider, model, budget)
 	if err != nil {
 		return nil, err
 	}
@@ -123,14 +129,14 @@ func (f *sdlcFactory) CreateSession(_ context.Context, params *engine.SessionPar
 	}, nil
 }
 
-func buildTransformers(repoPath, mode string, tools *tool.Registry, provider anyllm.Provider, model string) (engine.TransformerRegistry, error) {
+func buildTransformers(repoPath, mode string, tools *tool.Registry, provider anyllm.Provider, model string, budget tdd.TokenBudget) (engine.TransformerRegistry, error) {
 	if mode == "real" {
-		return realTransformers(repoPath, tools, provider, model)
+		return realTransformers(repoPath, tools, provider, model, budget)
 	}
 	return StubTransformers(true), nil
 }
 
-func realTransformers(repoPath string, tools *tool.Registry, provider anyllm.Provider, model string) (engine.TransformerRegistry, error) {
+func realTransformers(repoPath string, tools *tool.Registry, provider anyllm.Provider, model string, budget tdd.TokenBudget) (engine.TransformerRegistry, error) {
 	reg := StubTransformers(true)
 
 	// Replace stubs with real instruments.
@@ -144,10 +150,14 @@ func realTransformers(repoPath string, tools *tool.Registry, provider anyllm.Pro
 
 	// Wire LLM-backed instruments if provider was injected by serve command.
 	if provider != nil && model != "" {
-		reg["fix"] = llmfix.NewFixTransformer(provider, model, repoPath)
-		reg["write-test"] = tdd.NewWriteTest(provider, model, repoPath)
-		reg["write-code"] = tdd.NewWriteCode(provider, model, repoPath)
-		reg["refactor"] = tdd.NewRefactor(provider, model, repoPath)
+		var fixOpts []llmfix.FixOption
+		if budget != nil {
+			fixOpts = append(fixOpts, llmfix.WithTokenBudget(budget))
+		}
+		reg["fix"] = llmfix.NewFixTransformer(provider, model, repoPath, fixOpts...)
+		reg["write-test"] = tdd.NewWriteTest(provider, model, repoPath, budget)
+		reg["write-code"] = tdd.NewWriteCode(provider, model, repoPath, budget)
+		reg["refactor"] = tdd.NewRefactor(provider, model, repoPath, budget)
 		slog.InfoContext(context.Background(), "LLM instruments wired via injected provider")
 	}
 

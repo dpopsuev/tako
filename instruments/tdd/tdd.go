@@ -23,6 +23,11 @@ import (
 
 var errNoChoices = errors.New("tdd: LLM returned no choices")
 
+// TokenBudget is an optional token-weighted rate limiter.
+type TokenBudget interface {
+	Spend(ctx context.Context, tokens int) error
+}
+
 const (
 	logKeyPhase = "phase"
 	logKeyFiles = "files"
@@ -36,7 +41,13 @@ type fileChange struct {
 
 // --- Shared LLM call ---
 
-func callLLM(ctx context.Context, provider anyllm.Provider, model, prompt string, tool anyllm.Tool, toolName string) ([]fileChange, error) {
+func callLLM(ctx context.Context, provider anyllm.Provider, model, prompt string, tool anyllm.Tool, toolName string, budget TokenBudget) ([]fileChange, error) {
+	if budget != nil {
+		if err := budget.Spend(ctx, len(prompt)/4); err != nil { //nolint:mnd // ~4 chars per token
+			return nil, fmt.Errorf("tdd: token budget: %w", err)
+		}
+	}
+
 	resp, err := provider.Completion(ctx, anyllm.CompletionParams{
 		Model: model,
 		Messages: []anyllm.Message{
@@ -197,14 +208,15 @@ type WriteTest struct {
 	provider anyllm.Provider
 	model    string
 	repoPath string
+	budget   TokenBudget
 
 	mu             sync.Mutex
 	lastStationLog trace.StationLogger
 }
 
 // NewWriteTest creates a write-test transformer.
-func NewWriteTest(provider anyllm.Provider, model, repoPath string) *WriteTest {
-	return &WriteTest{provider: provider, model: model, repoPath: repoPath}
+func NewWriteTest(provider anyllm.Provider, model, repoPath string, budget TokenBudget) *WriteTest {
+	return &WriteTest{provider: provider, model: model, repoPath: repoPath, budget: budget}
 }
 
 func (w *WriteTest) Name() string { return "write-test" }
@@ -218,7 +230,7 @@ func (w *WriteTest) Transform(ctx context.Context, tc *handler.TransformerContex
 	spec := extractSpec(tc)
 	prompt := fmt.Sprintf("Write Go tests for this specification. Use table-driven tests, stdlib only (no testify). Return one test file.\n\nSpec:\n%s", spec)
 
-	changes, err := callLLM(ctx, w.provider, w.model, prompt, writeTestTool, "write_test")
+	changes, err := callLLM(ctx, w.provider, w.model, prompt, writeTestTool, "write_test", w.budget)
 	if err != nil {
 		return nil, fmt.Errorf("write-test: %w", err)
 	}
@@ -246,14 +258,15 @@ type WriteCode struct {
 	provider anyllm.Provider
 	model    string
 	repoPath string
+	budget   TokenBudget
 
 	mu             sync.Mutex
 	lastStationLog trace.StationLogger
 }
 
 // NewWriteCode creates a write-code transformer.
-func NewWriteCode(provider anyllm.Provider, model, repoPath string) *WriteCode {
-	return &WriteCode{provider: provider, model: model, repoPath: repoPath}
+func NewWriteCode(provider anyllm.Provider, model, repoPath string, budget TokenBudget) *WriteCode {
+	return &WriteCode{provider: provider, model: model, repoPath: repoPath, budget: budget}
 }
 
 func (w *WriteCode) Name() string { return "write-code" }
@@ -270,7 +283,7 @@ func (w *WriteCode) Transform(ctx context.Context, tc *handler.TransformerContex
 
 	prompt := fmt.Sprintf("Write minimal Go code to make these tests pass. No extra features, no premature abstractions.\n\nSpec:\n%s\n\nTests:\n%s", spec, testContent)
 
-	changes, err := callLLM(ctx, w.provider, w.model, prompt, writeCodeTool, "write_code")
+	changes, err := callLLM(ctx, w.provider, w.model, prompt, writeCodeTool, "write_code", w.budget)
 	if err != nil {
 		return nil, fmt.Errorf("write-code: %w", err)
 	}
@@ -298,14 +311,15 @@ type Refactor struct {
 	provider anyllm.Provider
 	model    string
 	repoPath string
+	budget   TokenBudget
 
 	mu             sync.Mutex
 	lastStationLog trace.StationLogger
 }
 
 // NewRefactor creates a refactor transformer.
-func NewRefactor(provider anyllm.Provider, model, repoPath string) *Refactor {
-	return &Refactor{provider: provider, model: model, repoPath: repoPath}
+func NewRefactor(provider anyllm.Provider, model, repoPath string, budget TokenBudget) *Refactor {
+	return &Refactor{provider: provider, model: model, repoPath: repoPath, budget: budget}
 }
 
 func (r *Refactor) Name() string { return "refactor" }
@@ -323,7 +337,7 @@ func (r *Refactor) Transform(ctx context.Context, tc *handler.TransformerContext
 
 	prompt := fmt.Sprintf("Refactor this Go code. Extract helpers, improve naming, remove duplication. Tests must still pass — do not change test files.\n\nCode:\n%s\n\nTests:\n%s", codeContent, testContent)
 
-	changes, err := callLLM(ctx, r.provider, r.model, prompt, refactorTool, "refactor_code")
+	changes, err := callLLM(ctx, r.provider, r.model, prompt, refactorTool, "refactor_code", r.budget)
 	if err != nil {
 		return nil, fmt.Errorf("refactor: %w", err)
 	}

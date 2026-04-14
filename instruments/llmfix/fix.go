@@ -38,6 +38,12 @@ const (
 	logKeyResponseHead = "response_head"
 )
 
+// TokenBudget is an optional token-weighted rate limiter.
+// When set, Spend(ctx, tokens) is called before each LLM call.
+type TokenBudget interface {
+	Spend(ctx context.Context, tokens int) error
+}
+
 // FixTransformer calls an LLM to generate code fixes for scan findings.
 type FixTransformer struct {
 	provider       anyllm.Provider
@@ -45,6 +51,7 @@ type FixTransformer struct {
 	repoPath       string
 	dryRun         bool   // when true, don't write files — just return what would change
 	promptTemplate string // Go text/template for the fix prompt
+	budget         TokenBudget
 
 	mu             sync.Mutex
 	lastStationLog trace.StationLogger
@@ -62,6 +69,11 @@ func WithPromptTemplate(tmpl string) FixOption {
 // WithDryRun prevents actual file writes — useful for testing.
 func WithDryRun() FixOption {
 	return func(f *FixTransformer) { f.dryRun = true }
+}
+
+// WithTokenBudget sets a shared token-weighted rate limiter.
+func WithTokenBudget(tb TokenBudget) FixOption {
+	return func(f *FixTransformer) { f.budget = tb }
 }
 
 // NewFixTransformer creates a fix transformer with the given LLM provider.
@@ -104,6 +116,13 @@ func (f *FixTransformer) Transform(ctx context.Context, tc *engine.TransformerCo
 
 	// Build prompt from template.
 	prompt := f.buildFixPrompt(finding)
+
+	// Rate-limit via token budget if configured.
+	if f.budget != nil {
+		if err := f.budget.Spend(ctx, len(prompt)/4); err != nil { //nolint:mnd // ~4 chars per token
+			return nil, fmt.Errorf("llm fix: token budget: %w", err)
+		}
+	}
 
 	// Call LLM with tool use — structured output, no text parsing.
 	resp, err := f.provider.Completion(ctx, anyllm.CompletionParams{
