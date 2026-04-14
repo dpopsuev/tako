@@ -13,6 +13,8 @@ import (
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/origami/instruments/enrichment"
+	"github.com/dpopsuev/origami/instruments/gitops"
 	"github.com/dpopsuev/origami/instruments/gotools"
 	"github.com/dpopsuev/origami/instruments/llmfix"
 	oculusinst "github.com/dpopsuev/origami/instruments/oculus"
@@ -134,6 +136,10 @@ func realTransformers(repoPath string, tools *tool.Registry, provider anyllm.Pro
 	reg["scan"] = oculusinst.NewScanTransformer(repoPath, oculusinst.WithLayers(OrigamiLayers))
 	reg["build"] = gotools.NewBuildTransformer(repoPath)
 	reg["test"] = gotools.NewTestTransformer(repoPath)
+	reg["lint"] = gotools.NewLintTransformer(repoPath)
+	reg["security-scan"] = gotools.NewSecurityScanTransformer(repoPath)
+	reg["create-worktree"] = gitops.NewCreateWorktree(repoPath)
+	reg["release"] = gitops.NewRelease(repoPath)
 
 	// Wire LLM fix if provider was injected by serve command.
 	if provider != nil && model != "" {
@@ -151,7 +157,8 @@ func realTransformers(repoPath string, tools *tool.Registry, provider anyllm.Pro
 			reg["file-bug"] = scribeops.NewFileBug(tools)
 			reg["plan-review"] = scribeops.NewGatePassthrough("plan-review")
 			reg["diff-review"] = scribeops.NewGatePassthrough("diff-review")
-			slog.InfoContext(context.Background(), "Scribe transformers wired via Battery tools")
+			reg["resolve-context"] = enrichment.NewResolveContext(tools)
+			slog.InfoContext(context.Background(), "Scribe + enrichment transformers wired via Battery tools")
 		}
 	}
 
