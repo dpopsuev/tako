@@ -41,6 +41,9 @@ const (
 	EnvScribeEndpoint = "SCRIBE_ENDPOINT"
 	// EnvLocusEndpoint is the MCP endpoint for Locus (used by serve command, not factory).
 	EnvLocusEndpoint = "LOCUS_ENDPOINT"
+	// EnvCircuitDir is the directory containing circuit YAML (used by serve command).
+	// When different from EnvRepoPath (e.g., origami dogfooding itself).
+	EnvCircuitDir = "SDLC_CIRCUIT_DIR"
 	// EnvScope is the Scribe scope for this circuit (e.g., "origami", "asterisk").
 	EnvScope = "CIRCUIT_SCOPE"
 

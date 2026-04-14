@@ -82,12 +82,18 @@ func serveCmd(args []string) error {
 	// 5. Create LLM provider via Troupe execution (credential management).
 	injectLLMProvider(&cfg)
 
-	// 6. Auto-generate StepSchemas from circuit YAML output fields.
-	repoPath := os.Getenv(sdlc.EnvRepoPath)
-	if repoPath == "" {
-		repoPath = "."
+	// 6. Set DomainFS for circuit YAML loading.
+	// SDLC_CIRCUIT_DIR is where circuit YAML lives (defaults to SDLC_REPO_PATH).
+	circuitDir := os.Getenv(sdlc.EnvCircuitDir)
+	if circuitDir == "" {
+		circuitDir = os.Getenv(sdlc.EnvRepoPath)
 	}
-	cfg.DomainFS = os.DirFS(repoPath)
+	if circuitDir == "" {
+		circuitDir = "."
+	}
+	cfg.DomainFS = os.DirFS(circuitDir)
+
+	// 7. Auto-generate StepSchemas from circuit YAML output fields.
 	cfg.StepSchemas = generateStepSchemas(cfg.DomainFS)
 
 	// 7. Create CircuitServer.
