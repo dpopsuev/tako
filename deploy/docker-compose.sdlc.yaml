@@ -1,9 +1,13 @@
-# Origami SDLC Dogfood Stack
+# Origami SDLC Circuit Server
 #
-# 3 containers: scribe (work graph), locus (code analysis), circuit (SDLC runner)
+# Circuit server ONLY. Scribe and Locus are independent services —
+# they have their own deployment (docker run, systemd, compose in their
+# own repos). Origami connects to them via SCRIBE_ENDPOINT and LOCUS_ENDPOINT.
 #
 # Prerequisites:
-#   make serve-image   # builds origami-serve:latest
+#   make serve-image                          # builds origami-serve:latest
+#   Scribe running at $SCRIBE_ENDPOINT        # e.g. http://localhost:8080/mcp
+#   Locus running at $LOCUS_ENDPOINT          # e.g. http://localhost:8081/mcp
 #
 # Usage:
 #   REPO_URL=git@github.com:user/repo.git make serve-stack
@@ -13,26 +17,6 @@
 #   { "origami-circuit": { "type": "http", "url": "http://localhost:9100/mcp" } }
 
 services:
-  scribe:
-    image: ghcr.io/dpopsuev/scribe:${SCRIBE_TAG:-latest}
-    mem_limit: 512m
-    restart: unless-stopped
-    ports:
-      - "8080:8080"
-    environment:
-      - SCRIBE_TRANSPORT=http
-      - SCRIBE_ADDR=:8080
-    volumes:
-      - ${SCRIBE_DATA:-~/.scribe}:/data
-
-  locus:
-    image: ghcr.io/dpopsuev/locus:${LOCUS_TAG:-latest}
-    mem_limit: 2g
-    restart: unless-stopped
-    command: ["serve", "--transport", "http", "--addr", ":8081"]
-    ports:
-      - "8081:8081"
-
   circuit:
     image: origami-serve:latest
     mem_limit: 4g
@@ -41,14 +25,16 @@ services:
       - "9100:9100"
     security_opt:
       - label=disable
+    extra_hosts:
+      - "host.containers.internal:host-gateway"
     environment:
       - REPO_URL=${REPO_URL}
       - REPO_BRANCH=${REPO_BRANCH:-master}
       - SDLC_MODE=${SDLC_MODE:-real}
       - SDLC_PROVIDER=${SDLC_PROVIDER:-anthropic}
       - SDLC_MODEL=${SDLC_MODEL:-claude-sonnet-4-6}
-      - SCRIBE_ENDPOINT=http://scribe:8080/mcp
-      - LOCUS_ENDPOINT=http://locus:8081/mcp
+      - SCRIBE_ENDPOINT=${SCRIBE_ENDPOINT:-http://host.containers.internal:8080/mcp}
+      - LOCUS_ENDPOINT=${LOCUS_ENDPOINT:-http://host.containers.internal:8081/mcp}
       - CIRCUIT_SCOPE=${CIRCUIT_SCOPE:-origami}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - GIT_USER=${GIT_USER}
@@ -57,6 +43,3 @@ services:
     volumes:
       - ${SSH_AUTH_SOCK}:/ssh-agent
       - ${HOME}/.ssh:/root/.ssh:ro
-    depends_on:
-      - scribe
-      - locus
