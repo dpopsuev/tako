@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
-	oculus "github.com/dpopsuev/oculus"
-	oculusengine "github.com/dpopsuev/oculus/engine"
-	"github.com/dpopsuev/oculus/port"
+	oculus "github.com/dpopsuev/oculus/v3"
+	oculusengine "github.com/dpopsuev/oculus/v3/engine"
+	"github.com/dpopsuev/oculus/v3/port"
 
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/engine/trace"

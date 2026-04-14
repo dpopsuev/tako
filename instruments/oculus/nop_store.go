@@ -3,8 +3,8 @@ package oculus
 import (
 	"context"
 
-	"github.com/dpopsuev/oculus/arch"
-	"github.com/dpopsuev/oculus/port"
+	"github.com/dpopsuev/oculus/v3/arch"
+	"github.com/dpopsuev/oculus/v3/port"
 )
 
 // NopStore implements port.Store with no persistence — every scan is fresh.

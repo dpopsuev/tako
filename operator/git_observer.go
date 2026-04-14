@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	oculusengine "github.com/dpopsuev/oculus/engine"
+	oculusengine "github.com/dpopsuev/oculus/v3/engine"
 	oculusstore "github.com/dpopsuev/origami/instruments/oculus"
 )
 
