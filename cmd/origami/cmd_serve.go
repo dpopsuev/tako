@@ -69,12 +69,23 @@ func serveCmd(args []string) error {
 	cfg := mcp.SessionFactoryToConfig(factory)
 	cfg.Name = *circuitName
 	cfg.Version = version
-	if *stateDir != "" {
-		cfg.StateDir = *stateDir
-	}
 
-	// 3. Wire approval gate.
-	cfg.ApprovalStore = gate.NewMemoryStore()
+	// 3. Wire state directory + durable stores.
+	stateBase := *stateDir
+	if stateBase == "" {
+		stateBase = "/tmp/origami-state"
+	}
+	cfg.StateDir = stateBase
+
+	approvalPath := stateBase + "/approvals.json"
+	fileStore, storeErr := gate.NewFileStore(approvalPath)
+	if storeErr != nil {
+		slog.WarnContext(ctx, "durable approval store failed, using in-memory",
+			slog.String(logKeyError, storeErr.Error()))
+		cfg.ApprovalStore = gate.NewMemoryStore()
+	} else {
+		cfg.ApprovalStore = fileStore
+	}
 
 	// 4. Connect to external MCP services via Battery MCPAdapter.
 	cfg.Tools = connectExternalTools(ctx)
@@ -83,7 +94,6 @@ func serveCmd(args []string) error {
 	injectLLMProvider(&cfg)
 
 	// 6. Set DomainFS for circuit YAML loading.
-	// SDLC_CIRCUIT_DIR is where circuit YAML lives (defaults to SDLC_REPO_PATH).
 	circuitDir := os.Getenv(sdlc.EnvCircuitDir)
 	if circuitDir == "" {
 		circuitDir = os.Getenv(sdlc.EnvRepoPath)
