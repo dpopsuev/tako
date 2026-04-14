@@ -20,6 +20,7 @@ import (
 	oculusinst "github.com/dpopsuev/origami/instruments/oculus"
 	"github.com/dpopsuev/origami/instruments/scribeops"
 	"github.com/dpopsuev/origami/instruments/selfreview"
+	"github.com/dpopsuev/origami/instruments/tdd"
 )
 
 var errUnknownCircuit = errors.New("unknown circuit")
@@ -141,10 +142,13 @@ func realTransformers(repoPath string, tools *tool.Registry, provider anyllm.Pro
 	reg["create-worktree"] = gitops.NewCreateWorktree(repoPath)
 	reg["release"] = gitops.NewRelease(repoPath)
 
-	// Wire LLM fix if provider was injected by serve command.
+	// Wire LLM-backed instruments if provider was injected by serve command.
 	if provider != nil && model != "" {
 		reg["fix"] = llmfix.NewFixTransformer(provider, model, repoPath)
-		slog.InfoContext(context.Background(), "LLM fix instrument wired via injected provider")
+		reg["write-test"] = tdd.NewWriteTest(provider, model, repoPath)
+		reg["write-code"] = tdd.NewWriteCode(provider, model, repoPath)
+		reg["refactor"] = tdd.NewRefactor(provider, model, repoPath)
+		slog.InfoContext(context.Background(), "LLM instruments wired via injected provider")
 	}
 
 	// Wire Scribe-backed transformers if Battery tools are available.
