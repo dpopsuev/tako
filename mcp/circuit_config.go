@@ -176,6 +176,11 @@ type CircuitConfig struct {
 	// When set, the "agent" tool is registered with actions: discover,
 	// delegate, status. Typically set by the serve command.
 	Broker troupe.Broker
+
+	// Observers are walk-level observers injected into every circuit run.
+	// Composed with the trace recorder via MultiObserver. Use this to wire
+	// telemetry (OTel, Prometheus) without touching session code.
+	Observers []circuit.WalkObserver
 }
 
 // FindSchema returns the StepSchema for the given step name, or an error

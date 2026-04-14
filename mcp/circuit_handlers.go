@@ -177,8 +177,16 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 		Instruments:         s.Config.Instruments,
 		ApprovalStore:       s.Config.ApprovalStore,
 	}
+	// Compose observers: trace recorder + config-injected observers (telemetry, etc.).
+	var observers []circuit.WalkObserver
 	if recorder != nil {
-		params.Observer = recorder
+		observers = append(observers, recorder)
+	}
+	observers = append(observers, s.Config.Observers...)
+	if len(observers) == 1 {
+		params.Observer = observers[0]
+	} else if len(observers) > 1 {
+		params.Observer = circuit.MultiObserver(observers)
 	}
 
 	if s.Config.Preflight != nil {

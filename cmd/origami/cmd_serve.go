@@ -23,6 +23,7 @@ import (
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/engine/gate"
+	"github.com/dpopsuev/origami/engine/telemetry"
 	"github.com/dpopsuev/origami/mcp"
 	"github.com/dpopsuev/origami/simulate/sdlc"
 	"github.com/dpopsuev/origami/toolkit"
@@ -108,7 +109,10 @@ func serveCmd(args []string) error {
 	// 7. Auto-generate StepSchemas from circuit YAML output fields.
 	cfg.StepSchemas = generateStepSchemas(cfg.DomainFS)
 
-	// 7. Create CircuitServer.
+	// 8. Wire telemetry observers (OTel + Prometheus) for every circuit run.
+	cfg.Observers = telemetry.DefaultObservability()
+
+	// 9. Create CircuitServer.
 	srv := mcp.NewCircuitServer(&cfg)
 	defer srv.Shutdown()
 

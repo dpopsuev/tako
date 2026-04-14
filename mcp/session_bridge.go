@@ -136,6 +136,18 @@ func buildRunFunc(cfg *engine.SessionConfig, params *engine.SessionParams, resol
 			shared.Circuits = def.LoadSubCircuitsFromFS(params.DomainFS, resolvers)
 		}
 
+		// Soundcheck: verify all instruments can tune before the walk starts.
+		if len(params.Instruments) > 0 {
+			instrumentDir := params.StateDir
+			if instrumentDir == "" {
+				instrumentDir = "."
+			}
+			if tuneErr := engine.TuneAll(ctx, params.Instruments, instrumentDir); tuneErr != nil {
+				slog.WarnContext(ctx, "instrument soundcheck failed — some instruments may not work",
+					slog.String(circuit.LogKeyError, tuneErr.Error()))
+			}
+		}
+
 		// TSK-516: Auto-collect trace events for step latency computation.
 		collector := &trace.TraceCollector{}
 		var observer circuit.WalkObserver
