@@ -34,10 +34,8 @@ github.com/dpopsuev/battery v0.7.0 h1:lpBZNRaPSGPi4NLF2eZ4zMdsG9NRi0CPIa9+Bi41NV
 github.com/dpopsuev/battery v0.7.0/go.mod h1:XYI+WScQ2fMwPFuXRYwLzU8tGhS3OnpaIZNmHCpvWps=
 github.com/dpopsuev/oculus/v3 v3.18.0 h1:uSwVh67/jA3jI0ePbBeWSJUfwvd3CGQU+oExUmnQI5k=
 github.com/dpopsuev/oculus/v3 v3.18.0/go.mod h1:pPm2FOTqwsacl7kCAiywrpA45UkPVkXBmYLn1bMjCgo=
-github.com/dpopsuev/troupe v0.11.0 h1:hNx5K130v2C7pwEGkOCc5z7bPT8Nr/Eq+EucRGByCao=
-github.com/dpopsuev/troupe v0.11.0/go.mod h1:GA//0mMB7SdCYHFXwrpJ8bKsxTBAjUq/5sfESeZP7Ic=
-github.com/dpopsuev/troupe v0.12.0 h1:UU5qD4DSsps76WajVLS/wYTt1Ory9HwnZosAMrV8xJQ=
-github.com/dpopsuev/troupe v0.12.0/go.mod h1:GA//0mMB7SdCYHFXwrpJ8bKsxTBAjUq/5sfESeZP7Ic=
+github.com/dpopsuev/troupe v0.13.0 h1:5jIvGvZS2iObexUgfEYPibiC2F7bdlxcY71XgdVpUWw=
+github.com/dpopsuev/troupe v0.13.0/go.mod h1:GA//0mMB7SdCYHFXwrpJ8bKsxTBAjUq/5sfESeZP7Ic=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1mIlRU8Am5FuJP05cCM98=

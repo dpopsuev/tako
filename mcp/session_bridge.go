@@ -319,8 +319,10 @@ func wrapWithACPWorkers(inner RunFunc, params StartParams, disp *dispatch.MuxDis
 
 	return func(ctx context.Context) (any, error) {
 		meter := broker.NewInMemoryMeter()
+		hook := newObservabilityHook(bus)
 		broker := broker.New("",
 			broker.WithMeter(meter),
+			broker.WithHook(hook),
 		)
 
 		for range workers {

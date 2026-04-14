@@ -276,7 +276,8 @@ func (s *CircuitServer) spawnACPWorkers(
 		workerCount = 1
 	}
 	// ACP launcher absorbed into Broker
-	broker := broker.New("")
+	hook := newObservabilityHook(bus)
+	broker := broker.New("", broker.WithHook(hook))
 	for range workerCount {
 		if _, spawnErr := broker.Spawn(runCtx, troupe.ActorConfig{
 			Model: input.Agent,

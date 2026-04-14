@@ -8,8 +8,11 @@ import (
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/troupe"
+	"github.com/dpopsuev/troupe/broker"
 	"github.com/dpopsuev/troupe/signal"
 )
+
+var errNoActors = fmt.Errorf("no actors available")
 
 // Steps where dialectic collective debate improves quality.
 // These are scored by M1 (defect_type), M8 (convergence), M15 (component).
@@ -32,6 +35,7 @@ type ACPWorkerDispatcher struct {
 	role       string
 	workers    int
 	collective troupe.Actor
+	hooks      []broker.Hook
 	log        *slog.Logger
 }
 
@@ -52,6 +56,12 @@ func WithACPWorkerBus(bus signal.Bus) ACPWorkerOption {
 // a dialectic collective instead of a single agent.
 func WithACPWorkerCollective(c troupe.Actor) ACPWorkerOption {
 	return func(d *ACPWorkerDispatcher) { d.collective = c }
+}
+
+// WithACPWorkerHooks registers lifecycle hooks (SpawnHook, PerformHook)
+// that the broker will call on spawn/perform events.
+func WithACPWorkerHooks(hooks ...broker.Hook) ACPWorkerOption {
+	return func(d *ACPWorkerDispatcher) { d.hooks = append(d.hooks, hooks...) }
 }
 
 // NewACPWorkerDispatcher creates a dispatcher that runs N ACP agent workers.
@@ -83,6 +93,9 @@ func (d *ACPWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 	d.emit(signal.EventWorkerStarted, "", "", map[string]string{signal.MetaKeyWorkerID: workerID})
 	defer d.emit(signal.EventWorkerStopped, "", "", map[string]string{signal.MetaKeyWorkerID: workerID})
 
+	// Actor pool: spawn once, reuse across steps.
+	var actor troupe.Actor
+
 	for {
 		dc, err := d.mux.GetNextStep(ctx)
 		if err != nil {
@@ -111,17 +124,17 @@ func (d *ACPWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 			d.log.InfoContext(ctx, circuit.LogRoutingToCollective, slog.Any(circuit.LogKeyStep, dc.Step), slog.Any(circuit.LogKeyCaseID, dc.CaseID))
 			response, err = d.collective.Perform(ctx, prompt)
 		} else {
-			configs, pickErr := d.broker.Pick(ctx, troupe.Preferences{Role: d.role, Count: 1})
-			if pickErr != nil || len(configs) == 0 {
-				d.log.ErrorContext(ctx, circuit.LogNoWorkersAvailable, slog.Any(circuit.LogKeyRole, d.role))
-				continue
-			}
-			actor, spawnErr := d.broker.Spawn(ctx, configs[0])
-			if spawnErr != nil {
-				d.log.ErrorContext(ctx, circuit.LogNoWorkersAvailable, slog.Any(circuit.LogKeyRole, d.role), slog.Any(circuit.LogKeyError, spawnErr))
+			// Ensure we have a healthy actor — spawn if needed, respawn if unhealthy.
+			actor, err = d.ensureActor(ctx, actor, workerID)
+			if err != nil {
 				continue
 			}
 			response, err = actor.Perform(ctx, prompt)
+			if err != nil {
+				// Actor failed — kill and clear so next iteration respawns.
+				_ = actor.Kill(ctx)
+				actor = nil
+			}
 		}
 		if err != nil {
 			d.emit(signal.EventWorkerError, dc.CaseID, dc.Step, map[string]string{
@@ -147,6 +160,33 @@ func (d *ACPWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 
 		d.log.InfoContext(ctx, circuit.LogStepComplete, slog.Any(circuit.LogKeyWorker, workerID), slog.Any(circuit.LogKeyCaseID, dc.CaseID), slog.Any(circuit.LogKeyStep, dc.Step), slog.Any(circuit.LogKeyBytes, len(response)))
 	}
+}
+
+// ensureActor returns a healthy actor, spawning or respawning as needed.
+func (d *ACPWorkerDispatcher) ensureActor(ctx context.Context, current troupe.Actor, workerID string) (troupe.Actor, error) {
+	// Reuse if alive and ready.
+	if current != nil && current.Ready() {
+		return current, nil
+	}
+
+	// Kill stale actor.
+	if current != nil {
+		d.log.WarnContext(ctx, "agent not ready, respawning", slog.Any(circuit.LogKeyWorker, workerID))
+		_ = current.Kill(ctx)
+	}
+
+	// Spawn fresh.
+	configs, pickErr := d.broker.Pick(ctx, troupe.Preferences{Role: d.role, Count: 1})
+	if pickErr != nil || len(configs) == 0 {
+		d.log.ErrorContext(ctx, circuit.LogNoWorkersAvailable, slog.Any(circuit.LogKeyRole, d.role))
+		return nil, fmt.Errorf("%w for role %s", errNoActors, d.role)
+	}
+	actor, spawnErr := d.broker.Spawn(ctx, configs[0])
+	if spawnErr != nil {
+		d.log.ErrorContext(ctx, circuit.LogNoWorkersAvailable, slog.Any(circuit.LogKeyRole, d.role), slog.Any(circuit.LogKeyError, spawnErr))
+		return nil, fmt.Errorf("spawn failed: %w", spawnErr)
+	}
+	return actor, nil
 }
 
 func (d *ACPWorkerDispatcher) emit(event, caseID, step string, meta map[string]string) {
