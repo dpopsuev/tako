@@ -17,6 +17,10 @@ func origamiRoot(t *testing.T) string {
 	if _, err := os.Stat(filepath.Join(root, "go.mod")); err != nil {
 		t.Skipf("origami root not found at %s", root)
 	}
+	// Skip when sibling origami-rca repo isn't available (e.g. CI).
+	if _, err := os.Stat(filepath.Join(root, "origami-rca")); err != nil {
+		t.Skipf("origami-rca sibling repo not found — skipping (CI)")
+	}
 	return root
 }
 

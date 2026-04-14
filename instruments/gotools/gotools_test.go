@@ -107,7 +107,7 @@ func TestTestContract_MatchesStub(t *testing.T) {
 		"stub": engine.TransformerFunc("test", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
 			return &sdlctype.TestResult{Pass: true}, nil
 		}),
-		"real": NewTestTransformer(root),
+		"real": NewTestTransformer(root, WithPackages("./engine/trace/")),
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)

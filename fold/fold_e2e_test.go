@@ -425,7 +425,12 @@ func origamiRootE2E(t *testing.T) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return filepath.Dir(wd)
+	root := filepath.Dir(wd)
+	// Skip when sibling origami-rca repo isn't available (e.g. CI).
+	if _, err := os.Stat(filepath.Join(root, "origami-rca")); err != nil {
+		t.Skipf("origami-rca sibling repo not found — skipping (CI)")
+	}
+	return root
 }
 
 func writeTestFile(t *testing.T, base, name, content string) {
