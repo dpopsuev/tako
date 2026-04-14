@@ -7,6 +7,9 @@ import (
 	"io/fs"
 	"log/slog"
 	"os"
+	"os/exec"
+	"strings"
+	"time"
 
 	"github.com/dpopsuev/battery/tool"
 	anyllm "github.com/mozilla-ai/any-llm-go/providers"
@@ -21,9 +24,12 @@ import (
 	"github.com/dpopsuev/origami/instruments/scribeops"
 	"github.com/dpopsuev/origami/instruments/selfreview"
 	"github.com/dpopsuev/origami/instruments/tdd"
+	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
 )
 
 var errUnknownCircuit = errors.New("unknown circuit")
+
+const logKeyError = "error"
 
 // Environment variable names.
 const (
@@ -147,6 +153,12 @@ func realTransformers(repoPath string, tools *tool.Registry, provider anyllm.Pro
 	reg["security-scan"] = gotools.NewSecurityScanTransformer(repoPath)
 	reg["create-worktree"] = gitops.NewCreateWorktree(repoPath)
 	reg["release"] = gitops.NewRelease(repoPath)
+	reg["run-test"] = gotools.NewTestTransformer(repoPath)
+	reg["teardown"] = newTeardownTransformer(repoPath)
+	reg["deploy-canary"] = newDeployCanaryTransformer(repoPath)
+	reg["monitor-health"] = newMonitorHealthTransformer(repoPath)
+	reg["promote"] = newPromoteTransformer(repoPath)
+	reg["rollback"] = newRollbackTransformer(repoPath)
 
 	// Wire LLM-backed instruments if provider was injected by serve command.
 	if provider != nil && model != "" {
@@ -169,14 +181,90 @@ func realTransformers(repoPath string, tools *tool.Registry, provider anyllm.Pro
 			reg["poll-scribe"] = scribeops.NewPollScribe(tools)
 			reg["mark-done"] = scribeops.NewMarkDone(tools)
 			reg["file-bug"] = scribeops.NewFileBug(tools)
-			reg["plan-review"] = scribeops.NewGatePassthrough("plan-review")
-			reg["diff-review"] = scribeops.NewGatePassthrough("diff-review")
 			reg["resolve-context"] = enrichment.NewResolveContext(tools)
+			// plan-review and diff-review: NO transformer override.
+			// The circuit YAML declares gate: approval — the engine parks
+			// automatically. GatePassthrough was defeating the HITL gates.
 			slog.InfoContext(context.Background(), "Scribe + enrichment transformers wired via Battery tools")
 		}
 	}
 
 	return reg, nil
+}
+
+// newDeployCanaryTransformer creates a release candidate tag on HEAD.
+// For Go libraries, "deploy canary" = tag the current state for testing.
+func newDeployCanaryTransformer(repoPath string) engine.Transformer {
+	return engine.TransformerFunc("deploy-canary", func(ctx context.Context, _ *engine.TransformerContext) (any, error) {
+		tag := fmt.Sprintf("rc-%d", time.Now().Unix())
+		cmd := exec.CommandContext(ctx, "git", "tag", tag)
+		cmd.Dir = repoPath
+		if err := cmd.Run(); err != nil {
+			return &sdlctype.DeployResult{Canary: false}, nil
+		}
+		return &sdlctype.DeployResult{Version: tag, Canary: true}, nil
+	})
+}
+
+// newMonitorHealthTransformer verifies the tagged state builds and tests pass.
+func newMonitorHealthTransformer(repoPath string) engine.Transformer {
+	return engine.TransformerFunc("monitor-health", func(ctx context.Context, _ *engine.TransformerContext) (any, error) {
+		// Build check.
+		build := exec.CommandContext(ctx, "go", "build", "./...")
+		build.Dir = repoPath
+		if err := build.Run(); err != nil {
+			return &sdlctype.MonitorHealthResult{Healthy: false, Metrics: map[string]any{"build": "failed"}}, nil
+		}
+		// Test check (short mode for speed).
+		test := exec.CommandContext(ctx, "go", "test", "./...", "-short", "-count=1")
+		test.Dir = repoPath
+		if err := test.Run(); err != nil {
+			return &sdlctype.MonitorHealthResult{Healthy: false, Metrics: map[string]any{"test": "failed"}}, nil
+		}
+		return &sdlctype.MonitorHealthResult{Healthy: true, Metrics: map[string]any{"build": "pass", "test": "pass"}}, nil
+	})
+}
+
+// newPromoteTransformer pushes the RC tag to origin.
+func newPromoteTransformer(repoPath string) engine.Transformer {
+	return engine.TransformerFunc("promote", func(ctx context.Context, _ *engine.TransformerContext) (any, error) {
+		// Push all tags.
+		cmd := exec.CommandContext(ctx, "git", "push", "--tags")
+		cmd.Dir = repoPath
+		if err := cmd.Run(); err != nil {
+			return &sdlctype.PromoteResult{Promoted: false}, nil
+		}
+		return &sdlctype.PromoteResult{Promoted: true}, nil
+	})
+}
+
+// newRollbackTransformer deletes the RC tag (local only, not pushed).
+func newRollbackTransformer(repoPath string) engine.Transformer {
+	return engine.TransformerFunc("rollback", func(ctx context.Context, _ *engine.TransformerContext) (any, error) {
+		// Find and delete the most recent rc-* tag.
+		out, err := exec.CommandContext(ctx, "git", "tag", "-l", "rc-*", "--sort=-version:refname").Output()
+		if err != nil || len(out) == 0 {
+			return &sdlctype.RollbackResult{RolledBack: false}, nil
+		}
+		tag := strings.SplitN(strings.TrimSpace(string(out)), "\n", 2)[0]
+		del := exec.CommandContext(ctx, "git", "tag", "-d", tag)
+		del.Dir = repoPath
+		if err := del.Run(); err != nil {
+			return &sdlctype.RollbackResult{RolledBack: false}, nil
+		}
+		return &sdlctype.RollbackResult{RolledBack: true}, nil
+	})
+}
+
+// newTeardownTransformer creates a teardown transformer that cleans up
+// worktrees and temp files. Runs as the circuit's finally node.
+func newTeardownTransformer(repoPath string) engine.Transformer {
+	return engine.TransformerFunc("teardown", func(ctx context.Context, _ *engine.TransformerContext) (any, error) {
+		if err := llmfix.CleanupWorktrees(ctx, repoPath); err != nil {
+			slog.WarnContext(ctx, "teardown: worktree cleanup failed", slog.String(logKeyError, err.Error()))
+		}
+		return &sdlctype.TeardownResult{Cleaned: []string{"worktrees"}}, nil
+	})
 }
 
 // SchematicResolver returns a circuit asset resolver that reads sub-circuit

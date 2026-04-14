@@ -29,8 +29,11 @@ func (c *CreateWorktree) Name() string { return "create-worktree" }
 
 // Transform implements handler.Transformer.
 func (c *CreateWorktree) Transform(ctx context.Context, tc *handler.TransformerContext) (any, error) {
-	branch := fmt.Sprintf("circuit/%s/%d", tc.WalkerState.ID, time.Now().Unix())
-	wtPath := c.repoPath + "/.worktrees/" + tc.WalkerState.ID
+	// Sanitize case ID — delegate sub-circuits produce IDs with colons
+	// (e.g. "sdlc-run:delegate:code") which are invalid in git branch names.
+	sanitized := sanitizeBranchName(tc.WalkerState.ID)
+	branch := fmt.Sprintf("circuit/%s/%d", sanitized, time.Now().Unix())
+	wtPath := c.repoPath + "/.worktrees/" + sanitized
 
 	// Create branch.
 	if err := gitCmd(ctx, c.repoPath, "checkout", "-b", branch); err != nil {
@@ -76,6 +79,13 @@ func (r *Release) Transform(ctx context.Context, _ *handler.TransformerContext) 
 		Tag:       branch,
 		Changelog: "branch pushed to origin",
 	}, nil
+}
+
+var branchSanitizer = strings.NewReplacer(":", "-", " ", "-")
+
+// sanitizeBranchName replaces characters invalid in git branch names.
+func sanitizeBranchName(name string) string {
+	return branchSanitizer.Replace(name)
 }
 
 func gitCmd(ctx context.Context, dir string, args ...string) error {
