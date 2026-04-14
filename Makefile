@@ -62,6 +62,7 @@ serve:
 		-e GIT_USER="$$(git config user.name)" \
 		-e GIT_EMAIL="$$(git config user.email)" \
 		-v $${SSH_AUTH_SOCK}:/ssh-agent:Z -e SSH_AUTH_SOCK=/ssh-agent \
+		-v $${HOME}/.ssh:/root/.ssh:ro,Z \
 		origami-serve:latest
 
 clean:
