@@ -49,6 +49,7 @@ services:
       - SDLC_MODEL=${SDLC_MODEL:-claude-sonnet-4-6}
       - SCRIBE_ENDPOINT=http://scribe:8080/mcp
       - LOCUS_ENDPOINT=http://locus:8081/mcp
+      - CIRCUIT_SCOPE=${CIRCUIT_SCOPE:-origami}
       - GIT_USER=${GIT_USER}
       - GIT_EMAIL=${GIT_EMAIL}
       - SSH_AUTH_SOCK=/ssh-agent

@@ -43,6 +43,9 @@ const (
 	EnvScribeEndpoint = "SCRIBE_ENDPOINT"
 	// EnvLocusEndpoint is the MCP endpoint for Locus (used by serve command, not factory).
 	EnvLocusEndpoint = "LOCUS_ENDPOINT"
+	// EnvScope is the Scribe scope for this circuit (e.g., "origami", "asterisk").
+	// Filters all Scribe queries so the circuit only sees its own artifacts.
+	EnvScope = "CIRCUIT_SCOPE"
 
 	logKeyProvider = "provider"
 	logKeyModel    = "model"
@@ -85,8 +88,13 @@ func (f *sdlcFactory) CreateSession(_ context.Context, params *engine.SessionPar
 		return nil, fmt.Errorf("load sdlc circuit: %w", err)
 	}
 
+	caseCtx := map[string]any{}
+	if scope := os.Getenv(EnvScope); scope != "" {
+		caseCtx["scope"] = scope
+	}
+
 	cases := []engine.BatchCase{
-		{ID: "sdlc-run", Context: map[string]any{}},
+		{ID: "sdlc-run", Context: caseCtx},
 	}
 
 	return &engine.SessionConfig{
