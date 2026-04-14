@@ -1,0 +1,66 @@
+# Origami SDLC Dogfood Stack
+#
+# 3 containers: scribe (work graph), locus (code analysis), circuit (SDLC runner)
+#
+# Prerequisites:
+#   make serve-image   # builds origami-serve:latest
+#
+# Usage:
+#   REPO_URL=git@github.com:user/repo.git make serve-stack
+#   curl http://localhost:9100/healthz
+#
+# Claude Code MCP config:
+#   { "origami-circuit": { "type": "http", "url": "http://localhost:9100/mcp" } }
+
+services:
+  scribe:
+    image: ghcr.io/dpopsuev/scribe:${SCRIBE_TAG:-latest}
+    ports:
+      - "8080:8080"
+    environment:
+      - SCRIBE_TRANSPORT=http
+      - SCRIBE_ADDR=:8080
+    volumes:
+      - ${SCRIBE_DATA:-~/.scribe}:/data
+    healthcheck:
+      test: ["CMD", "scribe", "serve", "--healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  locus:
+    image: ghcr.io/dpopsuev/locus:${LOCUS_TAG:-latest}
+    command: ["serve", "--transport", "http", "--addr", ":8081"]
+    ports:
+      - "8081:8081"
+    healthcheck:
+      test: ["CMD", "locus", "serve", "--healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  circuit:
+    image: origami-serve:latest
+    ports:
+      - "9100:9100"
+    security_opt:
+      - label=disable
+    environment:
+      - REPO_URL=${REPO_URL}
+      - REPO_BRANCH=${REPO_BRANCH:-master}
+      - SDLC_MODE=${SDLC_MODE:-real}
+      - SDLC_PROVIDER=${SDLC_PROVIDER:-anthropic}
+      - SDLC_MODEL=${SDLC_MODEL:-claude-sonnet-4-6}
+      - SCRIBE_ENDPOINT=http://scribe:8080/mcp
+      - LOCUS_ENDPOINT=http://locus:8081/mcp
+      - GIT_USER=${GIT_USER}
+      - GIT_EMAIL=${GIT_EMAIL}
+      - SSH_AUTH_SOCK=/ssh-agent
+    volumes:
+      - ${SSH_AUTH_SOCK}:/ssh-agent
+      - ${HOME}/.ssh:/root/.ssh:ro
+    depends_on:
+      scribe:
+        condition: service_healthy
+      locus:
+        condition: service_healthy

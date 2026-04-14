@@ -1,7 +1,7 @@
 # Origami — Makefile (thin wrapper around justfile)
 # Prefer `just` for full recipes. This exists so `make lint` works everywhere.
 
-.PHONY: build install test test-fast test-accept fmt lint lint-new vet circuit check preflight cover clean install-hooks serve-image serve
+.PHONY: build install test test-fast test-accept fmt lint lint-new vet circuit check preflight cover clean install-hooks serve-image serve serve-stack serve-stack-down
 
 build:
 	go build ./...
@@ -68,6 +68,16 @@ serve:
 		-v $${SSH_AUTH_SOCK}:/ssh-agent -e SSH_AUTH_SOCK=/ssh-agent \
 		-v $${HOME}/.ssh:/root/.ssh:ro \
 		origami-serve:latest
+
+serve-stack:
+	REPO_URL=$${REPO_URL} \
+	REPO_BRANCH=$${REPO_BRANCH:-master} \
+	GIT_USER="$$(git config user.name)" \
+	GIT_EMAIL="$$(git config user.email)" \
+	podman compose -f deploy/docker-compose.sdlc.yaml up -d
+
+serve-stack-down:
+	podman compose -f deploy/docker-compose.sdlc.yaml down
 
 clean:
 	rm -rf bin/ coverage.out coverage.html

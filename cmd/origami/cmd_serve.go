@@ -11,6 +11,10 @@ import (
 	"os/signal"
 	"time"
 
+	battmcp "github.com/dpopsuev/battery/mcp"
+	"github.com/dpopsuev/battery/tool"
+	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
+
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/engine/gate"
 	"github.com/dpopsuev/origami/mcp"
@@ -20,8 +24,12 @@ import (
 var errUnknownCircuit = errors.New("unknown circuit")
 
 const (
-	logKeyCircuit = "circuit"
-	logKeyAddr    = "addr"
+	logKeyCircuit  = "circuit"
+	logKeyAddr     = "addr"
+	logKeyEndpoint = "endpoint"
+	logKeyService  = "service"
+	logKeyTools    = "tools"
+	logKeyError    = "error"
 
 	serveReadHeaderTimeout = 10 * time.Second
 )
@@ -40,6 +48,9 @@ func serveCmd(args []string) error {
 		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})))
 	}
 
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
 	// 1. Resolve circuit → SessionFactory.
 	factory, err := resolveFactory(*circuitName)
 	if err != nil {
@@ -57,14 +68,14 @@ func serveCmd(args []string) error {
 	// 3. Wire approval gate.
 	cfg.ApprovalStore = gate.NewMemoryStore()
 
-	// 4. Create CircuitServer.
+	// 4. Connect to external MCP services via Battery MCPAdapter.
+	cfg.Tools = connectExternalTools(ctx)
+
+	// 5. Create CircuitServer.
 	srv := mcp.NewCircuitServer(&cfg)
 	defer srv.Shutdown()
 
-	// 5. Serve HTTP with graceful shutdown.
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer stop()
-
+	// 6. Serve HTTP with graceful shutdown.
 	addr := fmt.Sprintf(":%d", *port)
 	httpServer := &http.Server{
 		Addr:              addr,
@@ -87,6 +98,49 @@ func serveCmd(args []string) error {
 
 	slog.InfoContext(ctx, "circuit server stopped")
 	return nil
+}
+
+// connectExternalTools creates a Battery MCPAdapter and connects to any
+// external MCP services specified via environment variables. Returns the
+// shared tool.Registry (nil if no services configured).
+func connectExternalTools(ctx context.Context) *tool.Registry {
+	registry := tool.NewRegistry()
+	adapter := battmcp.NewMCPAdapter(registry)
+
+	services := []struct {
+		name   string
+		envVar string
+	}{
+		{"scribe", sdlc.EnvScribeEndpoint},
+		{"locus", sdlc.EnvLocusEndpoint},
+	}
+
+	for _, svc := range services {
+		endpoint := os.Getenv(svc.envVar)
+		if endpoint == "" {
+			continue
+		}
+		transport := &sdkmcp.StreamableClientTransport{Endpoint: endpoint}
+		if err := adapter.RegisterMCP(ctx, svc.name, transport); err != nil {
+			slog.WarnContext(ctx, "external service connection failed",
+				slog.String(logKeyService, svc.name),
+				slog.String(logKeyEndpoint, endpoint),
+				slog.String(logKeyError, err.Error()))
+		} else {
+			slog.InfoContext(ctx, "external service connected",
+				slog.String(logKeyService, svc.name),
+				slog.String(logKeyEndpoint, endpoint))
+		}
+	}
+
+	if len(registry.Names()) == 0 {
+		return nil
+	}
+
+	slog.InfoContext(ctx, "Battery tools registered",
+		slog.Any(logKeyTools, registry.Names()))
+
+	return registry
 }
 
 func resolveFactory(name string) (engine.SessionFactory, error) {
