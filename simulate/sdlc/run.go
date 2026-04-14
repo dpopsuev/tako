@@ -12,7 +12,6 @@ import (
 )
 
 // CircuitPath is the default path to the SDLC circuit YAML within DomainFS.
-// Changed to v2 by TSK-772 after sub-circuit delegation is wired.
 const CircuitPath = "circuits/sdlc.yaml"
 
 // LoadCircuit reads and parses the SDLC circuit from a filesystem.
@@ -77,6 +76,7 @@ func Run(ctx context.Context, cfg RunConfig) (*RunResult, error) {
 
 	shared := &engine.GraphRegistries{
 		Transformers: cfg.Transformers,
+		Circuits:     circuit.LoadSubCircuitsFromFS(domainFS, nil),
 	}
 
 	// Single case — the SDLC circuit operates on one codebase per run.

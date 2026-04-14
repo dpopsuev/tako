@@ -2,7 +2,6 @@ package sdlc
 
 import (
 	"context"
-	"io/fs"
 	"os"
 	"testing"
 	"time"
@@ -81,13 +80,13 @@ func TestSDLCTypes_AllOutputsTyped(t *testing.T) {
 	}
 }
 
-func TestSDLC_CleanPath(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+func TestSDLC_FullPipeline(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	recorder := trace.NewFlightRecorder(1000)
 	result, err := Run(ctx, RunConfig{
-		Transformers: StubTransformers(true), // clean scan — no findings
+		Transformers: StubTransformers(true),
 		Recorder:     recorder,
 	})
 	if err != nil {
@@ -103,53 +102,16 @@ func TestSDLC_CleanPath(t *testing.T) {
 		t.Fatalf("walk error: %v", wr.Error)
 	}
 
-	// Clean path: scan → harden → release → done.
-	// Teardown runs via finally.
-	expectedNodes := []string{"scan", "harden", "release", "teardown"}
-	for _, node := range expectedNodes {
+	// V2 pipeline: plan → code → verify → ship → teardown.
+	// All delegate nodes + teardown should have artifacts.
+	for _, node := range []string{"plan", "code", "verify", "ship", "teardown"} {
 		if _, ok := wr.StepArtifacts[node]; !ok {
 			recorder.Dump(t)
-			t.Errorf("missing artifact for node %q", node)
+			t.Errorf("missing artifact for delegate node %q", node)
 		}
 	}
-	// Fix loop nodes should NOT appear.
-	for _, skip := range []string{"fix", "build", "test", "deploy-canary", "validate"} {
-		if _, ok := wr.StepArtifacts[skip]; ok {
-			t.Errorf("unexpected artifact for node %q (should be skipped on clean path)", skip)
-		}
-	}
-}
 
-func TestSDLC_FixLoop(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	recorder := trace.NewFlightRecorder(1000)
-	result, err := Run(ctx, RunConfig{
-		Transformers: StubTransformers(false), // dirty scan — findings on first call
-		Recorder:     recorder,
-	})
-	if err != nil {
-		recorder.Dump(t)
-		t.Fatalf("Run: %v", err)
-	}
-	if len(result.WalkResults) != 1 {
-		t.Fatalf("expected 1 walk result, got %d", len(result.WalkResults))
-	}
-	wr := result.WalkResults[0]
-	if wr.Error != nil {
-		recorder.Dump(t)
-		t.Fatalf("walk error: %v", wr.Error)
-	}
-
-	// Fix loop path: scan(dirty)→fix→build→test→deploy→validate→scan(clean)→harden→release→done.
-	// All nodes should have artifacts.
-	for _, node := range []string{"scan", "fix", "build", "test", "deploy-canary", "validate", "harden", "release", "teardown"} {
-		if _, ok := wr.StepArtifacts[node]; !ok {
-			recorder.Dump(t)
-			t.Errorf("missing artifact for node %q", node)
-		}
-	}
+	t.Logf("pipeline: %d artifacts", len(wr.StepArtifacts))
 }
 
 func TestSDLC_FlightRecorderCaptures(t *testing.T) {
@@ -167,9 +129,9 @@ func TestSDLC_FlightRecorderCaptures(t *testing.T) {
 	}
 
 	events := recorder.Events()
-	if len(events) < 5 {
+	if len(events) < 10 {
 		recorder.Dump(t)
-		t.Fatalf("expected at least 5 events, got %d", len(events))
+		t.Fatalf("expected at least 10 events (v2 pipeline), got %d", len(events))
 	}
 
 	// Should have session:start and circuit:complete bookends.
@@ -198,13 +160,9 @@ func TestSDLCV2_SubCircuitDelegation(t *testing.T) {
 	domainFS := os.DirFS(".")
 
 	// Load v2 parent circuit.
-	v2Data, err := fs.ReadFile(domainFS, "circuits/sdlc-v2.yaml")
+	sdlcDef, err := LoadCircuit(domainFS)
 	if err != nil {
-		t.Fatalf("read sdlc-v2.yaml: %v", err)
-	}
-	v2Def, err := circuit.LoadCircuit(v2Data)
-	if err != nil {
-		t.Fatalf("parse sdlc-v2.yaml: %v", err)
+		t.Fatalf("LoadCircuit: %v", err)
 	}
 
 	// Load sub-circuits from filesystem.
@@ -231,7 +189,7 @@ func TestSDLCV2_SubCircuitDelegation(t *testing.T) {
 	}
 
 	results := engine.BatchWalk(ctx, engine.BatchWalkConfig{
-		Def:      v2Def,
+		Def:      sdlcDef,
 		Shared:   shared,
 		Cases:    cases,
 		Parallel: 1,

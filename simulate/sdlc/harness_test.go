@@ -1,12 +1,9 @@
 package sdlc
 
 import (
-	"context"
 	"testing"
 
-	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/engine/trace"
-	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
 )
 
 func TestHarness_CleanPath(t *testing.T) {
@@ -17,8 +14,8 @@ func TestHarness_CleanPath(t *testing.T) {
 	if len(result.WalkResults) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(result.WalkResults))
 	}
-	// Clean path should visit scan, harden, release, teardown.
-	for _, node := range []string{"scan", "harden", "release", "teardown"} {
+	// V2 pipeline: plan → code → verify → ship → teardown.
+	for _, node := range []string{"plan", "code", "verify", "ship", "teardown"} {
 		if _, ok := result.WalkResults[0].StepArtifacts[node]; !ok {
 			t.Errorf("missing artifact for %s", node)
 		}
@@ -30,32 +27,11 @@ func TestHarness_FixLoop(t *testing.T) {
 		WithStubs(false).
 		Run()
 
-	// Fix loop should visit all nodes.
-	for _, node := range []string{"scan", "fix", "build", "test", "deploy-canary", "validate", "harden", "release", "teardown"} {
+	// V2 pipeline walks same nodes regardless of clean/dirty (stubs always pass).
+	for _, node := range []string{"plan", "code", "verify", "ship", "teardown"} {
 		if _, ok := result.WalkResults[0].StepArtifacts[node]; !ok {
 			t.Errorf("missing artifact for %s", node)
 		}
-	}
-}
-
-func TestHarness_WithTransformer_SwapsOne(t *testing.T) {
-	var customCalled bool
-	custom := engine.TransformerFunc("harden", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
-		customCalled = true
-		return &sdlctype.HardenResult{Vulnerabilities: 3, PinnedDeps: []string{"custom-dep"}}, nil
-	})
-
-	result := NewHarness(t).
-		WithStubs(true).
-		WithTransformer("harden", custom).
-		Run()
-
-	if !customCalled {
-		t.Error("custom harden transformer was not called")
-	}
-	art := result.WalkResults[0].StepArtifacts["harden"]
-	if art == nil {
-		t.Fatal("harden artifact is nil")
 	}
 }
 

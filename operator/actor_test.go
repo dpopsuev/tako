@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/engine/trace"
 	"github.com/dpopsuev/origami/simulate/sdlc"
@@ -13,13 +14,17 @@ import (
 
 // runCircuit is a test helper that runs the SDLC circuit via engine.BatchWalk directly.
 func runCircuit(ctx context.Context, transformers engine.TransformerRegistry) ([]engine.BatchWalkResult, error) {
-	def, err := sdlc.LoadCircuit(os.DirFS("../simulate/sdlc"))
+	domainFS := os.DirFS("../simulate/sdlc")
+	def, err := sdlc.LoadCircuit(domainFS)
 	if err != nil {
 		return nil, err
 	}
 	results := engine.BatchWalk(ctx, engine.BatchWalkConfig{
-		Def:      def,
-		Shared:   &engine.GraphRegistries{Transformers: transformers},
+		Def: def,
+		Shared: &engine.GraphRegistries{
+			Transformers: transformers,
+			Circuits:     circuit.LoadSubCircuitsFromFS(domainFS, nil),
+		},
 		Cases:    []engine.BatchCase{{ID: "sdlc-run", Context: map[string]any{}}},
 		Parallel: 1,
 	})
