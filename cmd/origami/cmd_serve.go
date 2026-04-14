@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"net/http"
 	"os"
@@ -16,11 +17,13 @@ import (
 	"github.com/dpopsuev/troupe/execution"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 
+	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/engine/gate"
 	"github.com/dpopsuev/origami/mcp"
 	"github.com/dpopsuev/origami/simulate/sdlc"
+	"github.com/dpopsuev/origami/toolkit"
 	troupesignal "github.com/dpopsuev/troupe/signal"
 )
 
@@ -34,6 +37,7 @@ const (
 	logKeyTools    = "tools"
 	logKeyError    = "error"
 	logKeyModel    = "model"
+	logKeyCount    = "count"
 
 	serveReadHeaderTimeout = 10 * time.Second
 )
@@ -78,7 +82,15 @@ func serveCmd(args []string) error {
 	// 5. Create LLM provider via Troupe execution (credential management).
 	injectLLMProvider(&cfg)
 
-	// 6. Create CircuitServer.
+	// 6. Auto-generate StepSchemas from circuit YAML output fields.
+	repoPath := os.Getenv(sdlc.EnvRepoPath)
+	if repoPath == "" {
+		repoPath = "."
+	}
+	cfg.DomainFS = os.DirFS(repoPath)
+	cfg.StepSchemas = generateStepSchemas(cfg.DomainFS)
+
+	// 7. Create CircuitServer.
 	srv := mcp.NewCircuitServer(&cfg)
 	defer srv.Shutdown()
 
@@ -188,6 +200,73 @@ func injectLLMProvider(cfg *mcp.CircuitConfig) {
 	slog.InfoContext(context.Background(), "LLM provider injected via Troupe execution",
 		slog.String(logKeyService, providerName),
 		slog.String(logKeyModel, model))
+}
+
+// generateStepSchemas loads the circuit YAML from DomainFS and harvests
+// output field declarations into StepSchemas. Each node with output: fields
+// becomes a StepSchema with FieldDefs. Sub-circuits are also harvested.
+func generateStepSchemas(domainFS fs.FS) []mcp.StepSchema {
+	// Load main circuit.
+	def, err := sdlc.LoadCircuit(domainFS)
+	if err != nil {
+		slog.WarnContext(context.Background(), "failed to load circuit for StepSchemas",
+			slog.String(logKeyError, err.Error()))
+		return nil
+	}
+
+	schemas := make([]mcp.StepSchema, 0, len(def.Nodes))
+
+	// Harvest from main circuit nodes.
+	for i := range def.Nodes {
+		node := &def.Nodes[i]
+		if len(node.Output) == 0 {
+			continue
+		}
+		schemas = append(schemas, nodeToStepSchema(string(node.Name), node.Output))
+	}
+
+	// Harvest from sub-circuit nodes.
+	resolver := sdlc.SchematicResolver(domainFS)
+	for i := range def.Nodes {
+		node := &def.Nodes[i]
+		if node.Instrument != "circuit" {
+			continue
+		}
+		subData, err := resolver(node.Action)
+		if err != nil {
+			continue
+		}
+		subDef, err := circuit.LoadCircuit(subData)
+		if err != nil {
+			continue
+		}
+		for j := range subDef.Nodes {
+			subNode := &subDef.Nodes[j]
+			if len(subNode.Output) == 0 {
+				continue
+			}
+			schemas = append(schemas, nodeToStepSchema(string(subNode.Name), subNode.Output))
+		}
+	}
+
+	if len(schemas) > 0 {
+		slog.InfoContext(context.Background(), "StepSchemas generated from circuit YAML",
+			slog.Int(logKeyCount, len(schemas)))
+	}
+
+	return schemas
+}
+
+func nodeToStepSchema(name string, outputs []circuit.OutputField) mcp.StepSchema {
+	defs := make([]toolkit.FieldDef, len(outputs))
+	for i, o := range outputs {
+		defs[i] = toolkit.FieldDef{
+			Name:     o.Name,
+			Type:     o.Type,
+			Required: o.Required,
+		}
+	}
+	return mcp.StepSchema{Name: name, Defs: defs}
 }
 
 func resolveFactory(name string) (engine.SessionFactory, error) {
