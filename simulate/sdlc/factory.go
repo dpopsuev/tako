@@ -16,6 +16,7 @@ import (
 	"github.com/dpopsuev/origami/instruments/gotools"
 	"github.com/dpopsuev/origami/instruments/llmfix"
 	oculusinst "github.com/dpopsuev/origami/instruments/oculus"
+	"github.com/dpopsuev/origami/instruments/scribeops"
 	"github.com/dpopsuev/origami/instruments/selfreview"
 )
 
@@ -140,12 +141,17 @@ func realTransformers(repoPath string, tools *tool.Registry, provider anyllm.Pro
 		slog.InfoContext(context.Background(), "LLM fix instrument wired via injected provider")
 	}
 
-	// Wire self-review if Scribe tools are available via Battery.
-	// Day 1: no tools → stub (all_verified=true). Day 2: Scribe connected → real stamps.
+	// Wire Scribe-backed transformers if Battery tools are available.
+	// Day 1: no tools → stubs. Day 2: Scribe connected → real.
 	if tools != nil {
 		if _, err := tools.Get("scribe.artifact"); err == nil {
 			reg["self-review"] = selfreview.New(tools, repoPath)
-			slog.InfoContext(context.Background(), "self-review wired via Battery tools")
+			reg["poll-scribe"] = scribeops.NewPollScribe(tools)
+			reg["mark-done"] = scribeops.NewMarkDone(tools)
+			reg["file-bug"] = scribeops.NewFileBug(tools)
+			reg["plan-review"] = scribeops.NewGatePassthrough("plan-review")
+			reg["diff-review"] = scribeops.NewGatePassthrough("diff-review")
+			slog.InfoContext(context.Background(), "Scribe transformers wired via Battery tools")
 		}
 	}
 
