@@ -64,7 +64,13 @@ func TestSDLCTypes_AllOutputsTyped(t *testing.T) {
 			switch result.(type) {
 			case *sdlctype.ScanResult, *sdlctype.FixResult, *sdlctype.BuildResult, *sdlctype.TestResult,
 				*sdlctype.SelfReviewResult, *sdlctype.DeployResult, *sdlctype.ValidateResult,
-				*sdlctype.HardenResult, *sdlctype.ReleaseResult, *sdlctype.TeardownResult:
+				*sdlctype.HardenResult, *sdlctype.ReleaseResult, *sdlctype.TeardownResult,
+				// V2 sub-circuit types
+				*sdlctype.PollScribeResult, *sdlctype.ResolveContextResult, *sdlctype.GateResult,
+				*sdlctype.CreateWorktreeResult, *sdlctype.WriteTestResult, *sdlctype.WriteCodeResult,
+				*sdlctype.RefactorResult, *sdlctype.LintResult, *sdlctype.SecurityScanResult,
+				*sdlctype.MonitorHealthResult, *sdlctype.PromoteResult, *sdlctype.RollbackResult,
+				*sdlctype.FileBugResult, *sdlctype.MarkDoneResult:
 				// OK — typed struct
 			default:
 				t.Errorf("expected typed struct, got %T", result)

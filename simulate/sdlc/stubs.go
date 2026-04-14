@@ -19,6 +19,7 @@ func StubTransformers(clean bool) engine.TransformerRegistry {
 	scanCalls := &atomic.Int32{}
 
 	return engine.TransformerRegistry{
+		// V1 nodes (sdlc.yaml)
 		"scan":          stubScan(clean, scanCalls),
 		"fix":           stubFix(),
 		"build":         stubBuild(),
@@ -29,6 +30,26 @@ func StubTransformers(clean bool) engine.TransformerRegistry {
 		"harden":        stubHarden(),
 		"release":       stubRelease(),
 		"teardown":      stubTeardown(),
+		// V2 planning sub-circuit
+		"poll-scribe":     stubPollScribe(),
+		"resolve-context": stubResolveContext(),
+		"plan-review":     stubGate("plan-review"),
+		// V2 coding sub-circuit
+		"create-worktree": stubCreateWorktree(),
+		"write-test":      stubWriteTest(),
+		"run-test":        stubRunTest(),
+		"write-code":      stubWriteCode(),
+		"refactor":        stubRefactor(),
+		// V2 verifying sub-circuit (build, test, self-review, release reused from v1)
+		"lint":          stubLint(),
+		"security-scan": stubSecurityScan(),
+		"diff-review":   stubGate("diff-review"),
+		// V2 operating sub-circuit (deploy-canary reused from v1)
+		"monitor-health": stubMonitorHealth(),
+		"promote":        stubPromote(),
+		"rollback":       stubRollback(),
+		"file-bug":       stubFileBug(),
+		"mark-done":      stubMarkDone(),
 	}
 }
 
@@ -106,5 +127,100 @@ func stubSelfReview() engine.Transformer {
 func stubTeardown() engine.Transformer {
 	return engine.TransformerFunc("teardown", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
 		return &sdlctype.TeardownResult{Cleaned: []string{"canary-deployment"}}, nil
+	})
+}
+
+// --- V2 sub-circuit stubs ---
+
+func stubPollScribe() engine.Transformer {
+	return engine.TransformerFunc("poll-scribe", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+		return &sdlctype.PollScribeResult{HasTask: true, TaskID: "TSK-1", Title: "stub task"}, nil
+	})
+}
+
+func stubResolveContext() engine.Transformer {
+	return engine.TransformerFunc("resolve-context", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+		return &sdlctype.ResolveContextResult{
+			Spec:  map[string]any{"title": "stub spec", "goal": "stub goal"},
+			Rules: []string{"no-unused-imports"},
+		}, nil
+	})
+}
+
+func stubGate(name string) engine.Transformer {
+	return engine.TransformerFunc(name, func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+		return &sdlctype.GateResult{Approved: true}, nil
+	})
+}
+
+func stubCreateWorktree() engine.Transformer {
+	return engine.TransformerFunc("create-worktree", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+		return &sdlctype.CreateWorktreeResult{Branch: "fix/stub", WorktreePath: "/tmp/worktree"}, nil
+	})
+}
+
+func stubWriteTest() engine.Transformer {
+	return engine.TransformerFunc("write-test", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+		return &sdlctype.WriteTestResult{TestFiles: []string{"engine/graph_test.go"}}, nil
+	})
+}
+
+func stubRunTest() engine.Transformer {
+	return engine.TransformerFunc("run-test", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+		return &sdlctype.TestResult{Pass: true, Total: 1, Failed: 0, Output: "PASS"}, nil
+	})
+}
+
+func stubWriteCode() engine.Transformer {
+	return engine.TransformerFunc("write-code", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+		return &sdlctype.WriteCodeResult{FilesChanged: []string{"engine/graph.go"}}, nil
+	})
+}
+
+func stubRefactor() engine.Transformer {
+	return engine.TransformerFunc("refactor", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+		return &sdlctype.RefactorResult{FilesChanged: []string{"engine/graph.go"}}, nil
+	})
+}
+
+func stubLint() engine.Transformer {
+	return engine.TransformerFunc("lint", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+		return &sdlctype.LintResult{Pass: true, Output: "ok"}, nil
+	})
+}
+
+func stubSecurityScan() engine.Transformer {
+	return engine.TransformerFunc("security-scan", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+		return &sdlctype.SecurityScanResult{Clean: true}, nil
+	})
+}
+
+func stubMonitorHealth() engine.Transformer {
+	return engine.TransformerFunc("monitor-health", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+		return &sdlctype.MonitorHealthResult{Healthy: true, Metrics: map[string]any{"error_rate": 0.001}}, nil
+	})
+}
+
+func stubPromote() engine.Transformer {
+	return engine.TransformerFunc("promote", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+		return &sdlctype.PromoteResult{Promoted: true}, nil
+	})
+}
+
+func stubRollback() engine.Transformer {
+	return engine.TransformerFunc("rollback", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+		return &sdlctype.RollbackResult{RolledBack: true}, nil
+	})
+}
+
+func stubFileBug() engine.Transformer {
+	return engine.TransformerFunc("file-bug", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+		return &sdlctype.FileBugResult{BugID: "BUG-1"}, nil
+	})
+}
+
+func stubMarkDone() engine.Transformer {
+	return engine.TransformerFunc("mark-done", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+		return &sdlctype.MarkDoneResult{Updated: true}, nil
 	})
 }

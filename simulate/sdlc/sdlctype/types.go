@@ -80,6 +80,86 @@ type Stamp struct {
 	Evidence string `json:"evidence"` // "path/to/file:line" or empty if unverified
 }
 
+// --- V2 sub-circuit result types ---
+
+// PollScribeResult is produced by the poll-scribe node (planning circuit).
+type PollScribeResult struct {
+	HasTask bool   `json:"has_task"`
+	TaskID  string `json:"task_id,omitempty"`
+	Title   string `json:"title,omitempty"`
+}
+
+// ResolveContextResult is produced by the resolve-context node (planning circuit).
+type ResolveContextResult struct {
+	Spec         map[string]any `json:"spec"`
+	Rules        []string       `json:"rules,omitempty"`
+	Architecture map[string]any `json:"architecture,omitempty"`
+}
+
+// GateResult is produced by gate passthrough nodes (plan-review, diff-review).
+type GateResult struct {
+	Approved bool `json:"approved"`
+}
+
+// CreateWorktreeResult is produced by the create-worktree node (coding circuit).
+type CreateWorktreeResult struct {
+	Branch       string `json:"branch"`
+	WorktreePath string `json:"worktree_path"`
+}
+
+// WriteTestResult is produced by the write-test node (coding circuit, RED phase).
+type WriteTestResult struct {
+	TestFiles []string `json:"test_files"`
+}
+
+// WriteCodeResult is produced by the write-code node (coding circuit, GREEN phase).
+type WriteCodeResult struct {
+	FilesChanged []string `json:"files_changed"`
+}
+
+// RefactorResult is produced by the refactor node (coding circuit, BLUE phase).
+type RefactorResult struct {
+	FilesChanged []string `json:"files_changed,omitempty"`
+}
+
+// LintResult is produced by the lint node (verifying circuit).
+type LintResult struct {
+	Pass   bool   `json:"pass"`
+	Output string `json:"output"`
+}
+
+// SecurityScanResult is produced by the security-scan node (verifying circuit).
+type SecurityScanResult struct {
+	Clean    bool      `json:"clean"`
+	Findings []Finding `json:"findings,omitempty"`
+}
+
+// MonitorHealthResult is produced by the monitor-health node (operating circuit).
+type MonitorHealthResult struct {
+	Healthy bool           `json:"healthy"`
+	Metrics map[string]any `json:"metrics,omitempty"`
+}
+
+// PromoteResult is produced by the promote node (operating circuit).
+type PromoteResult struct {
+	Promoted bool `json:"promoted"`
+}
+
+// RollbackResult is produced by the rollback node (operating circuit).
+type RollbackResult struct {
+	RolledBack bool `json:"rolled_back"`
+}
+
+// FileBugResult is produced by the file-bug node (operating circuit).
+type FileBugResult struct {
+	BugID string `json:"bug_id"`
+}
+
+// MarkDoneResult is produced by the mark-done node (operating circuit).
+type MarkDoneResult struct {
+	Updated bool `json:"updated"`
+}
+
 // TeardownResult is produced by the teardown (finally) node.
 type TeardownResult struct {
 	Cleaned []string `json:"cleaned"` // resources removed
