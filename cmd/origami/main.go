@@ -29,6 +29,7 @@ var (
 	errOrchestrateRemoved = errors.New("orchestrate command removed: use Troupe Director interface")
 )
 
+//nolint:gocyclo // CLI command dispatcher — one case per subcommand
 func main() {
 	if len(os.Args) < 2 {
 		printUsage()
@@ -69,6 +70,8 @@ func main() {
 		err = calibrateCmd(os.Args[2:])
 	case "workers":
 		err = workersCmd(os.Args[2:])
+	case "serve":
+		err = serveCmd(os.Args[2:])
 	case "orchestrate":
 		err = errOrchestrateRemoved
 	case "version", "--version":
@@ -89,6 +92,7 @@ func printUsage() {
 	fmt.Fprintln(os.Stderr, `Usage: origami <command> [flags]
 
 Commands:
+  serve      Start HTTP MCP server for a circuit (e.g. origami serve --circuit sdlc)
   run        Execute a circuit YAML
   validate   Validate a circuit YAML without executing
   lint       Static analysis for circuit YAML (rules, profiles, auto-fix)
@@ -258,8 +262,8 @@ func lintCmd(args []string) error {
 			data, _ := json.MarshalIndent(findings, "", "  ")
 			fmt.Println(string(data))
 		} else {
-			for _, f := range findings {
-				fmt.Println(f.String())
+			for i := range findings {
+				fmt.Println(findings[i].String())
 			}
 		}
 

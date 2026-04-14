@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -681,6 +682,25 @@ func (s *CircuitServer) Session() *CircuitSession {
 // Delegates to battery/mcpserver.ErrorResult.
 func toolError(err error) *sdkmcp.CallToolResult {
 	return mcpserver.ErrorResult(err)
+}
+
+// Handler returns an http.Handler that serves the CircuitServer over
+// Streamable HTTP MCP. Mounts /mcp (MCP protocol), /healthz, /readyz.
+// Use with http.Server for production serving.
+func (s *CircuitServer) Handler() http.Handler {
+	mcpHandler := sdkmcp.NewStreamableHTTPHandler(
+		func(_ *http.Request) *sdkmcp.Server { return s.MCPServer },
+		&sdkmcp.StreamableHTTPOptions{Stateless: false},
+	)
+	mux := http.NewServeMux()
+	mux.Handle("/mcp", mcpHandler)
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	mux.HandleFunc("/readyz", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	return mux
 }
 
 func (s *CircuitServer) getSession(id string) (*CircuitSession, error) {
