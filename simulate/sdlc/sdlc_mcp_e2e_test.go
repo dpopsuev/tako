@@ -182,7 +182,7 @@ func TestSDLC_MCP_E2E_FoldPathExists(t *testing.T) {
 	}
 
 	// Circuit YAML loads.
-	def, err := sdlc.LoadCircuit()
+	def, err := sdlc.LoadCircuit(os.DirFS("."))
 	if err != nil {
 		t.Fatalf("LoadCircuit: %v", err)
 	}

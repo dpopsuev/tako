@@ -2,20 +2,27 @@ package sdlc
 
 import (
 	"context"
-	_ "embed"
 	"fmt"
+	"io/fs"
+	"os"
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/engine/trace"
 )
 
-//go:embed circuits/sdlc.yaml
-var sdlcCircuitData []byte
+// CircuitPath is the default path to the SDLC circuit YAML within DomainFS.
+// Changed to v2 by TSK-772 after sub-circuit delegation is wired.
+const CircuitPath = "circuits/sdlc.yaml"
 
-// LoadCircuit parses the embedded SDLC circuit definition.
-func LoadCircuit() (*circuit.CircuitDef, error) {
-	return circuit.LoadCircuit(sdlcCircuitData)
+// LoadCircuit reads and parses the SDLC circuit from a filesystem.
+// The domainFS is typically os.DirFS(repoPath) set by the serve command.
+func LoadCircuit(domainFS fs.FS) (*circuit.CircuitDef, error) {
+	data, err := fs.ReadFile(domainFS, CircuitPath)
+	if err != nil {
+		return nil, fmt.Errorf("read circuit %s: %w", CircuitPath, err)
+	}
+	return circuit.LoadCircuit(data)
 }
 
 // RunConfig configures an SDLC circuit run.
@@ -28,6 +35,10 @@ type RunConfig struct {
 
 	// Parallel controls concurrent case execution. Default 1.
 	Parallel int
+
+	// DomainFS is the filesystem to load circuit YAML from.
+	// When nil, defaults to os.DirFS(".").
+	DomainFS fs.FS
 }
 
 // RunResult holds the output of an SDLC circuit run.
@@ -43,7 +54,11 @@ type RunResult struct {
 // Use operator.MCPActor with SessionFactory() for the production path.
 // Kept for test harness use only.
 func Run(ctx context.Context, cfg RunConfig) (*RunResult, error) {
-	def, err := LoadCircuit()
+	domainFS := cfg.DomainFS
+	if domainFS == nil {
+		domainFS = os.DirFS(".")
+	}
+	def, err := LoadCircuit(domainFS)
 	if err != nil {
 		return nil, fmt.Errorf("load sdlc circuit: %w", err)
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"os"
 
@@ -45,7 +46,6 @@ const (
 
 	logKeyProvider = "provider"
 	logKeyModel    = "model"
-	logKeyError    = "error"
 )
 
 // SessionFactory returns a SessionFactory for the SDLC circuit.
@@ -76,7 +76,11 @@ func (f *sdlcFactory) CreateSession(_ context.Context, params *engine.SessionPar
 		return nil, err
 	}
 
-	def, err := LoadCircuit()
+	domainFS := params.DomainFS
+	if domainFS == nil {
+		domainFS = os.DirFS(repoPath)
+	}
+	def, err := LoadCircuit(domainFS)
 	if err != nil {
 		return nil, fmt.Errorf("load sdlc circuit: %w", err)
 	}
@@ -140,14 +144,16 @@ func realTransformers(repoPath string, tools *tool.Registry) (engine.Transformer
 	return reg, nil
 }
 
-// SchematicResolver returns a circuit asset resolver for sub-circuit
-// delegation. The SDLC circuit is self-contained (no sub-circuits),
-// but fold requires this function when declared in component.yaml.
-func SchematicResolver() circuit.AssetResolver {
+// SchematicResolver returns a circuit asset resolver that reads sub-circuit
+// YAML from the given filesystem. Resolves by name: planning, coding,
+// verifying, operating, sdlc-v2.
+func SchematicResolver(domainFS fs.FS) circuit.AssetResolver {
 	return func(name string) ([]byte, error) {
-		if name == "sdlc" {
-			return sdlcCircuitData, nil
+		path := "circuits/" + name + ".yaml"
+		data, err := fs.ReadFile(domainFS, path)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %s: %w", errUnknownCircuit, name, err)
 		}
-		return nil, fmt.Errorf("%w: %s", errUnknownCircuit, name)
+		return data, nil
 	}
 }

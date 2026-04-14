@@ -39,7 +39,7 @@ func TestOperator_MCP_DriftConvergence(t *testing.T) {
 	}
 
 	t.Setenv("SDLC_MODE", "stub")
-	t.Setenv("SDLC_REPO_PATH", ".")
+	t.Setenv("SDLC_REPO_PATH", "../simulate/sdlc")
 
 	obs := &stubObserver{}
 	actor := operator.NewMCPActor(

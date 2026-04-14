@@ -2,6 +2,7 @@ package sdlc
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -11,7 +12,7 @@ import (
 )
 
 func TestSDLCCircuit_Validates(t *testing.T) {
-	def, err := LoadCircuit()
+	def, err := LoadCircuit(os.DirFS("."))
 	if err != nil {
 		t.Fatalf("LoadCircuit: %v", err)
 	}
@@ -21,7 +22,7 @@ func TestSDLCCircuit_Validates(t *testing.T) {
 }
 
 func TestSDLCCircuit_FinallyNode(t *testing.T) {
-	def, err := LoadCircuit()
+	def, err := LoadCircuit(os.DirFS("."))
 	if err != nil {
 		t.Fatal(err)
 	}

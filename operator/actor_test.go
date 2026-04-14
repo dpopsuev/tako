@@ -2,6 +2,7 @@ package operator
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -12,7 +13,7 @@ import (
 
 // runCircuit is a test helper that runs the SDLC circuit via engine.BatchWalk directly.
 func runCircuit(ctx context.Context, transformers engine.TransformerRegistry) ([]engine.BatchWalkResult, error) {
-	def, err := sdlc.LoadCircuit()
+	def, err := sdlc.LoadCircuit(os.DirFS("../simulate/sdlc"))
 	if err != nil {
 		return nil, err
 	}

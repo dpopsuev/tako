@@ -14,7 +14,7 @@ func TestMCPActor_RunsCircuitViaMCP(t *testing.T) {
 	}
 
 	t.Setenv("SDLC_MODE", "stub")
-	t.Setenv("SDLC_REPO_PATH", ".")
+	t.Setenv("SDLC_REPO_PATH", "../simulate/sdlc")
 
 	actor := operator.NewMCPActor(
 		sdlc.SessionFactory(),
