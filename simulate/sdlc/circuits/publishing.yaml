@@ -1,0 +1,47 @@
+kind: Schematic
+circuit: publishing
+start: diff-review
+done: published
+description: "Externalization gate — human reviews the full picture, then release mutates the world"
+
+nodes:
+  - name: diff-review
+    instrument: transformer
+    action: diff-review
+    gate: approval
+    description: "Human reviews: diff, test results, canary health, bouncer stamps"
+    output:
+      - name: approved
+        type: bool
+        required: true
+
+  - name: release
+    instrument: transformer
+    action: release
+    description: "Git merge to main / create PR — mutates the world"
+    output:
+      - name: merged
+        type: bool
+        required: true
+
+  - name: mark-done
+    instrument: transformer
+    action: mark-done
+    description: "Mark the Scribe task as complete"
+    output:
+      - name: updated
+        type: bool
+        required: true
+
+edges:
+  - id: approved-release
+    from: diff-review
+    to: release
+
+  - id: release-mark
+    from: release
+    to: mark-done
+
+  - id: mark-published
+    from: mark-done
+    to: published

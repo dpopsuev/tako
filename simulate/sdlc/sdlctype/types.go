@@ -134,28 +134,28 @@ type SecurityScanResult struct {
 	Findings []Finding `json:"findings,omitempty"`
 }
 
-// MonitorHealthResult is produced by the monitor-health node (operating circuit).
+// MonitorHealthResult is produced by the monitor-health node (verifying/publishing circuit).
 type MonitorHealthResult struct {
 	Healthy bool           `json:"healthy"`
 	Metrics map[string]any `json:"metrics,omitempty"`
 }
 
-// PromoteResult is produced by the promote node (operating circuit).
+// PromoteResult is produced by the promote node (verifying/publishing circuit).
 type PromoteResult struct {
 	Promoted bool `json:"promoted"`
 }
 
-// RollbackResult is produced by the rollback node (operating circuit).
+// RollbackResult is produced by the rollback node (verifying/publishing circuit).
 type RollbackResult struct {
 	RolledBack bool `json:"rolled_back"`
 }
 
-// FileBugResult is produced by the file-bug node (operating circuit).
+// FileBugResult is produced by the file-bug node (verifying/publishing circuit).
 type FileBugResult struct {
 	BugID string `json:"bug_id"`
 }
 
-// MarkDoneResult is produced by the mark-done node (operating circuit).
+// MarkDoneResult is produced by the mark-done node (verifying/publishing circuit).
 type MarkDoneResult struct {
 	Updated bool `json:"updated"`
 }

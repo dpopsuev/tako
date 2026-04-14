@@ -40,16 +40,16 @@ func StubTransformers(clean bool) engine.TransformerRegistry {
 		"run-test":        stubRunTest(),
 		"write-code":      stubWriteCode(),
 		"refactor":        stubRefactor(),
-		// V2 verifying sub-circuit (build, test, self-review, release reused from v1)
-		"lint":          stubLint(),
-		"security-scan": stubSecurityScan(),
-		"diff-review":   stubGate("diff-review"),
-		// V2 operating sub-circuit (deploy-canary reused from v1)
+		// V2 verifying sub-circuit (centrifuge: quality + canary + bouncer)
+		"lint":           stubLint(),
+		"security-scan":  stubSecurityScan(),
 		"monitor-health": stubMonitorHealth(),
 		"promote":        stubPromote(),
 		"rollback":       stubRollback(),
 		"file-bug":       stubFileBug(),
-		"mark-done":      stubMarkDone(),
+		// V2 publishing sub-circuit (externalization gate + release)
+		"diff-review": stubGate("diff-review"),
+		"mark-done":   stubMarkDone(),
 	}
 }
 

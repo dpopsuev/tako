@@ -181,7 +181,7 @@ func realTransformers(repoPath string, tools *tool.Registry, provider anyllm.Pro
 
 // SchematicResolver returns a circuit asset resolver that reads sub-circuit
 // YAML from the given filesystem. Resolves by name: planning, coding,
-// verifying, operating, sdlc-v2.
+// verifying, publishing.
 func SchematicResolver(domainFS fs.FS) circuit.AssetResolver {
 	return func(name string) ([]byte, error) {
 		path := "circuits/" + name + ".yaml"

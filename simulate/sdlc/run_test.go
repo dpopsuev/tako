@@ -102,9 +102,9 @@ func TestSDLC_FullPipeline(t *testing.T) {
 		t.Fatalf("walk error: %v", wr.Error)
 	}
 
-	// V2 pipeline: plan → code → verify → ship → teardown.
+	// Fan-Out/Fan-In pipeline: plan → code → verify → publish → teardown.
 	// All delegate nodes + teardown should have artifacts.
-	for _, node := range []string{"plan", "code", "verify", "ship", "teardown"} {
+	for _, node := range []string{"plan", "code", "verify", "publish", "teardown"} {
 		if _, ok := wr.StepArtifacts[node]; !ok {
 			recorder.Dump(t)
 			t.Errorf("missing artifact for delegate node %q", node)
@@ -172,7 +172,7 @@ func TestSDLCV2_SubCircuitDelegation(t *testing.T) {
 	}
 
 	// Verify all 4 sub-circuits loaded.
-	for _, name := range []string{"planning", "coding", "verifying", "operating"} {
+	for _, name := range []string{"planning", "coding", "verifying", "publishing"} {
 		if _, ok := subCircuits[name]; !ok {
 			t.Fatalf("sub-circuit %q not loaded", name)
 		}
@@ -205,7 +205,7 @@ func TestSDLCV2_SubCircuitDelegation(t *testing.T) {
 	}
 
 	// All 4 delegate nodes should have artifacts.
-	for _, node := range []string{"plan", "code", "verify", "ship"} {
+	for _, node := range []string{"plan", "code", "verify", "publish"} {
 		if _, ok := wr.StepArtifacts[node]; !ok {
 			t.Errorf("missing artifact for delegate node %q", node)
 		}

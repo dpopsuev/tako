@@ -3,13 +3,13 @@ circuit: sdlc
 start: plan
 done: _done
 finally: teardown
-description: "Autonomous SDLC flywheel — four nested feedback loops as delegate sub-circuits"
+description: "Fan-Out/Fan-In SDLC — cold-start gate, autonomous centrifuge, externalization gate"
 
 nodes:
   - name: plan
     instrument: circuit
     action: planning
-    description: "Poll Scribe for mature tasks, resolve context, gate: work-approval"
+    description: "Cold-start gate — poll Scribe, resolve context, human approves plan"
 
   - name: code
     instrument: circuit
@@ -19,12 +19,12 @@ nodes:
   - name: verify
     instrument: circuit
     action: verifying
-    description: "Quality gates — build, test, lint, security, self-review, gate: diff-approval"
+    description: "Centrifuge — build, test, lint, security, canary, bouncer (all autonomous)"
 
-  - name: ship
+  - name: publish
     instrument: circuit
-    action: operating
-    description: "Deploy canary, monitor, promote or rollback + file bug"
+    action: publishing
+    description: "Externalization gate — human reviews, then release mutates the world"
 
   - name: teardown
     instrument: transformer
@@ -40,14 +40,14 @@ edges:
   - id: code-verify
     from: code
     to: verify
-    description: "Code ready — enter quality gates"
+    description: "Code ready — enter centrifuge"
 
-  - id: verify-ship
+  - id: verify-publish
     from: verify
-    to: ship
-    description: "All gates passed — deploy"
+    to: publish
+    description: "Centrifuge passed — enter externalization gate"
 
-  - id: ship-done
-    from: ship
+  - id: publish-done
+    from: publish
     to: _done
-    description: "Shipped or bug filed — cycle complete"
+    description: "Released — cycle complete"

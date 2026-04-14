@@ -1,7 +1,8 @@
 kind: Schematic
 circuit: verifying
 start: build
-done: merged
+done: verified
+description: "Autonomous centrifuge — quality gates + canary + bouncer, no HITL"
 
 nodes:
   - name: build
@@ -48,35 +49,54 @@ nodes:
       - name: findings
         type: array
 
+  - name: deploy-canary
+    instrument: transformer
+    action: deploy-canary
+    description: "Deploy to canary environment (blue/green, reversible)"
+    output:
+      - name: deployed
+        type: bool
+        required: true
+
+  - name: monitor-health
+    instrument: transformer
+    action: monitor-health
+    description: "Check canary health metrics"
+    output:
+      - name: healthy
+        type: bool
+        required: true
+      - name: metrics
+        type: object
+
+  - name: rollback
+    instrument: transformer
+    action: rollback
+    description: "Rollback canary deployment"
+    output:
+      - name: rolled_back
+        type: bool
+        required: true
+
+  - name: file-bug
+    instrument: transformer
+    action: file-bug
+    description: "File a bug in Scribe for the failed deployment"
+    output:
+      - name: bug_id
+        type: string
+        required: true
+
   - name: self-review
     instrument: transformer
     action: self-review
-    description: "Agent validates diff against Scribe spec — stamps each requirement with evidence"
+    description: "Bouncer — agent validates diff against spec, stamps requirements with evidence"
     output:
       - name: all_verified
         type: bool
         required: true
       - name: stamps
         type: array
-
-  - name: diff-review
-    instrument: transformer
-    action: diff-review
-    gate: approval
-    description: "Human reviews the validated diff — gate: diff-approval"
-    output:
-      - name: approved
-        type: bool
-        required: true
-
-  - name: release
-    instrument: transformer
-    action: release
-    description: "Git merge to main / create PR"
-    output:
-      - name: merged
-        type: bool
-        required: true
 
 edges:
   # Quality chain
@@ -87,9 +107,9 @@ edges:
 
   - id: build-fail
     from: build
-    to: merged
+    to: verified
     when: "output.pass != true"
-    description: "Build failed — exit with feedback for coding circuit"
+    description: "Build failed — exit with feedback"
 
   - id: test-lint
     from: test
@@ -98,7 +118,7 @@ edges:
 
   - id: test-fail
     from: test
-    to: merged
+    to: verified
     when: "output.pass != true"
     description: "Tests failed — exit with feedback"
 
@@ -109,38 +129,55 @@ edges:
 
   - id: lint-fail
     from: lint
-    to: merged
+    to: verified
     when: "output.pass != true"
     description: "Lint failed — exit with feedback"
 
-  - id: security-review
+  - id: security-canary
     from: security-scan
-    to: self-review
+    to: deploy-canary
     when: "output.clean == true"
 
   - id: security-fail
     from: security-scan
-    to: merged
+    to: verified
     when: "output.clean != true"
     description: "Vulnerabilities found — exit with feedback"
 
-  # Self-review gate
-  - id: review-gate
+  # Canary (blue/green, reversible)
+  - id: canary-monitor
+    from: deploy-canary
+    to: monitor-health
+
+  - id: healthy-bouncer
+    from: monitor-health
+    to: self-review
+    when: "output.healthy == true"
+    description: "Canary healthy — bouncer validates before human"
+
+  - id: unhealthy-rollback
+    from: monitor-health
+    to: rollback
+    when: "output.healthy != true"
+
+  - id: rollback-bug
+    from: rollback
+    to: file-bug
+
+  - id: bug-exit
+    from: file-bug
+    to: verified
+    description: "Bug filed — feeds back to planning circuit"
+
+  # Bouncer → exit
+  - id: bouncer-pass
     from: self-review
-    to: diff-review
+    to: verified
     when: "output.all_verified == true"
+    description: "Bouncer passed — ready for human externalization gate"
 
-  - id: review-fail
+  - id: bouncer-fail
     from: self-review
-    to: merged
+    to: verified
     when: "output.all_verified != true"
-    description: "Self-review failed — requirements not met, recode"
-
-  # Human gate
-  - id: approved-release
-    from: diff-review
-    to: release
-
-  - id: release-done
-    from: release
-    to: merged
+    description: "Bouncer rejected — requirements not met"

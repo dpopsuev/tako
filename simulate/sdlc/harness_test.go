@@ -15,7 +15,7 @@ func TestHarness_CleanPath(t *testing.T) {
 		t.Fatalf("expected 1 result, got %d", len(result.WalkResults))
 	}
 	// V2 pipeline: plan → code → verify → ship → teardown.
-	for _, node := range []string{"plan", "code", "verify", "ship", "teardown"} {
+	for _, node := range []string{"plan", "code", "verify", "publish", "teardown"} {
 		if _, ok := result.WalkResults[0].StepArtifacts[node]; !ok {
 			t.Errorf("missing artifact for %s", node)
 		}
@@ -28,7 +28,7 @@ func TestHarness_FixLoop(t *testing.T) {
 		Run()
 
 	// V2 pipeline walks same nodes regardless of clean/dirty (stubs always pass).
-	for _, node := range []string{"plan", "code", "verify", "ship", "teardown"} {
+	for _, node := range []string{"plan", "code", "verify", "publish", "teardown"} {
 		if _, ok := result.WalkResults[0].StepArtifacts[node]; !ok {
 			t.Errorf("missing artifact for %s", node)
 		}
