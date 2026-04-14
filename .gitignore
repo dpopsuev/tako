@@ -18,9 +18,10 @@ Thumbs.db
 # Debug
 __debug_bin*
 
-# Frontend (LSP extension)
-lsp/vscode/node_modules/
-lsp/vscode/out/
+# LSP editor clients
+lsp/clients/*/node_modules/
+lsp/clients/*/out/
+*.vsix
 
 # Deploy runtime
 deploy/.origami/
