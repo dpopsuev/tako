@@ -15,6 +15,8 @@
 services:
   scribe:
     image: ghcr.io/dpopsuev/scribe:${SCRIBE_TAG:-latest}
+    mem_limit: 512m
+    restart: unless-stopped
     ports:
       - "8080:8080"
     environment:
@@ -22,25 +24,19 @@ services:
       - SCRIBE_ADDR=:8080
     volumes:
       - ${SCRIBE_DATA:-~/.scribe}:/data
-    healthcheck:
-      test: ["CMD", "scribe", "serve", "--healthz"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
 
   locus:
     image: ghcr.io/dpopsuev/locus:${LOCUS_TAG:-latest}
+    mem_limit: 2g
+    restart: unless-stopped
     command: ["serve", "--transport", "http", "--addr", ":8081"]
     ports:
       - "8081:8081"
-    healthcheck:
-      test: ["CMD", "locus", "serve", "--healthz"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
 
   circuit:
     image: origami-serve:latest
+    mem_limit: 4g
+    restart: "no"
     ports:
       - "9100:9100"
     security_opt:
@@ -60,7 +56,5 @@ services:
       - ${SSH_AUTH_SOCK}:/ssh-agent
       - ${HOME}/.ssh:/root/.ssh:ro
     depends_on:
-      scribe:
-        condition: service_healthy
-      locus:
-        condition: service_healthy
+      - scribe
+      - locus
