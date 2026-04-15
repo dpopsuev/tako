@@ -23,8 +23,8 @@ func TestScribeObserver_DetectsMatureTasks(t *testing.T) {
 
 	// Stub Scribe server returns 2 mature tasks.
 	srv := mcpserver.NewServer("stub-scribe", "v0.0.1").
-		Tool(server.ToolMeta{Name: "artifact", Description: "Stub artifact"}, func(_ context.Context, _ json.RawMessage) (string, error) {
-			return `[{"id":"TSK-1","title":"fix auth","status":"mature","priority":"high"},{"id":"TSK-2","title":"add tests","status":"mature","priority":"medium"}]`, nil
+		Tool(server.ToolMeta{Name: "artifact", Description: "Stub artifact"}, func(_ context.Context, _ json.RawMessage) (tool.Result, error) {
+			return tool.TextResult(`[{"id":"TSK-1","title":"fix auth","status":"mature","priority":"high"},{"id":"TSK-2","title":"add tests","status":"mature","priority":"medium"}]`), nil
 		})
 
 	serverTransport, clientTransport := sdkmcp.NewInMemoryTransports()
@@ -56,8 +56,8 @@ func TestScribeObserver_NoPendingTasks(t *testing.T) {
 
 	// Stub Scribe returns empty list.
 	srv := mcpserver.NewServer("stub-scribe", "v0.0.1").
-		Tool(server.ToolMeta{Name: "artifact", Description: "Stub artifact"}, func(_ context.Context, _ json.RawMessage) (string, error) {
-			return `[]`, nil
+		Tool(server.ToolMeta{Name: "artifact", Description: "Stub artifact"}, func(_ context.Context, _ json.RawMessage) (tool.Result, error) {
+			return tool.TextResult(`[]`), nil
 		})
 
 	serverTransport, clientTransport := sdkmcp.NewInMemoryTransports()

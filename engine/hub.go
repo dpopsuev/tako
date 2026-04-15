@@ -100,15 +100,15 @@ func (t *instrumentTool) Name() string                 { return t.name }
 func (t *instrumentTool) Description() string          { return t.description }
 func (t *instrumentTool) InputSchema() json.RawMessage { return t.inputSchema }
 
-func (t *instrumentTool) Execute(ctx context.Context, input json.RawMessage) (string, error) {
+func (t *instrumentTool) Execute(ctx context.Context, input json.RawMessage) (tool.Result, error) {
 	if t.dispatcher == nil {
-		return "", ErrInstrumentDispatch
+		return tool.Result{}, ErrInstrumentDispatch
 	}
 	output, err := t.dispatcher.Dispatch(ctx, input)
 	if err != nil {
-		return "", err
+		return tool.Result{}, err
 	}
-	return string(output), nil
+	return tool.TextResult(string(output)), nil
 }
 
 // LocalHub is the in-process Hub implementation. It routes tool calls
@@ -175,7 +175,11 @@ func (h *LocalHub) Call(ctx context.Context, name string, input json.RawMessage)
 	// Look up tool in active node's tools first.
 	for _, t := range h.routes[h.activeNode] {
 		if t.Name() == name {
-			return t.Execute(ctx, input)
+			result, execErr := t.Execute(ctx, input)
+			if execErr != nil {
+				return "", execErr
+			}
+			return result.Text(), nil
 		}
 	}
 

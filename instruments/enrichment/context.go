@@ -85,7 +85,7 @@ func (r *ResolveContext) resolveRules(ctx context.Context) []string {
 			Name string `json:"name"`
 		} `json:"rules"`
 	}
-	if json.Unmarshal([]byte(raw), &resolved) != nil {
+	if json.Unmarshal([]byte(raw.Text()), &resolved) != nil {
 		return nil
 	}
 
@@ -114,7 +114,7 @@ func (r *ResolveContext) resolveArchitecture(ctx context.Context) map[string]any
 	}
 
 	var arch map[string]any
-	if json.Unmarshal([]byte(raw), &arch) != nil {
+	if json.Unmarshal([]byte(raw.Text()), &arch) != nil {
 		return nil
 	}
 	return arch

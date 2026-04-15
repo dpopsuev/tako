@@ -8,6 +8,7 @@ import (
 
 	"github.com/dpopsuev/battery/mcpserver"
 	"github.com/dpopsuev/battery/server"
+	"github.com/dpopsuev/battery/tool"
 	"github.com/dpopsuev/origami/engine"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -23,8 +24,8 @@ func TestMCPDispatcher_E2E(t *testing.T) {
 		Tool(server.ToolMeta{
 			Name:        "analyze",
 			Description: "Analyze code",
-		}, func(_ context.Context, input json.RawMessage) (string, error) {
-			return `{"findings":3,"status":"ok"}`, nil
+		}, func(_ context.Context, input json.RawMessage) (tool.Result, error) {
+			return tool.TextResult(`{"findings":3,"status":"ok"}`), nil
 		})
 
 	serverTransport, clientTransport := sdkmcp.NewInMemoryTransports()
@@ -62,8 +63,8 @@ func TestMCPDispatcher_ImplementsInstrumentDispatcher(t *testing.T) {
 	defer cancel()
 
 	srv := mcpserver.NewServer("iface-test", "v1.0.0").
-		Tool(server.ToolMeta{Name: "ping", Description: "Ping"}, func(_ context.Context, _ json.RawMessage) (string, error) {
-			return "pong", nil
+		Tool(server.ToolMeta{Name: "ping", Description: "Ping"}, func(_ context.Context, _ json.RawMessage) (tool.Result, error) {
+			return tool.TextResult("pong"), nil
 		})
 
 	serverTransport, clientTransport := sdkmcp.NewInMemoryTransports()

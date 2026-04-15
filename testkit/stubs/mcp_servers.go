@@ -7,6 +7,7 @@ import (
 
 	"github.com/dpopsuev/battery/mcpserver"
 	"github.com/dpopsuev/battery/server"
+	"github.com/dpopsuev/battery/tool"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -52,8 +53,8 @@ func stubMCPServer(t *testing.T, name string, tools map[string]string) sdkmcp.Tr
 		srv.Tool(server.ToolMeta{
 			Name:        toolName,
 			Description: "Stub " + toolName,
-		}, func(_ context.Context, _ json.RawMessage) (string, error) {
-			return resp, nil
+		}, func(_ context.Context, _ json.RawMessage) (tool.Result, error) {
+			return tool.TextResult(resp), nil
 		})
 	}
 

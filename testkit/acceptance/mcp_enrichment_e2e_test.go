@@ -50,24 +50,24 @@ func TestMCPEnrichment_E2E(t *testing.T) {
 	if err != nil {
 		t.Fatalf("scribe.artifact: %v", err)
 	}
-	if result == "" {
+	if result.Text() == "" {
 		t.Error("scribe.artifact returned empty result")
 	}
-	t.Logf("scribe.artifact: %s", result)
+	t.Logf("scribe.artifact: %s", result.Text())
 
 	// Verify Lex tools work.
 	result, err = registry.Execute(ctx, "lex.lexicon", json.RawMessage(`{"action":"resolve"}`))
 	if err != nil {
 		t.Fatalf("lex.lexicon: %v", err)
 	}
-	t.Logf("lex.lexicon: %s", result)
+	t.Logf("lex.lexicon: %s", result.Text())
 
 	// Verify Locus tools work.
 	result, err = registry.Execute(ctx, "locus.analysis", json.RawMessage(`{"action":"deps"}`))
 	if err != nil {
 		t.Fatalf("locus.analysis: %v", err)
 	}
-	t.Logf("locus.analysis: %s", result)
+	t.Logf("locus.analysis: %s", result.Text())
 
 	// Verify cleanup.
 	adapter.UnregisterMCP("scribe")

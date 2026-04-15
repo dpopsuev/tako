@@ -9,6 +9,7 @@ import (
 
 	"github.com/dpopsuev/battery/mcpserver"
 	"github.com/dpopsuev/battery/server"
+	"github.com/dpopsuev/battery/tool"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -265,17 +266,17 @@ func (s *ToyScribeStore) handleAttachSection(input ScribeToolInput) (any, error)
 func (s *ToyScribeStore) Serve(t *testing.T) sdkmcp.Transport {
 	t.Helper()
 
-	handler := server.Handler(func(ctx context.Context, raw json.RawMessage) (string, error) {
+	handler := server.Handler(func(ctx context.Context, raw json.RawMessage) (tool.Result, error) {
 		var input ScribeToolInput
 		if err := json.Unmarshal(raw, &input); err != nil {
-			return "", fmt.Errorf("unmarshal: %w", err)
+			return tool.Result{}, fmt.Errorf("unmarshal: %w", err)
 		}
 		result, err := s.Handle(ctx, input)
 		if err != nil {
-			return "", err
+			return tool.Result{}, err
 		}
 		data, _ := json.Marshal(result)
-		return string(data), nil
+		return tool.TextResult(string(data)), nil
 	})
 
 	srv := mcpserver.NewServer("toy-scribe", "test").

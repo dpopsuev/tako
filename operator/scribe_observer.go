@@ -56,7 +56,7 @@ func (o *ScribeObserver) Observe() (*CurrentState, error) {
 	// Parse the table output — Scribe returns either tabular text or JSON.
 	// For structured consumption, parse as JSON array.
 	var items []scribeListResponse
-	_ = json.Unmarshal([]byte(result), &items)
+	_ = json.Unmarshal([]byte(result.Text()), &items)
 
 	return &CurrentState{
 		HeadSHA:      "", // not git-based

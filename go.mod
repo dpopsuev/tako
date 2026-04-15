@@ -3,7 +3,7 @@ module github.com/dpopsuev/origami
 go 1.25.8
 
 require (
-	github.com/dpopsuev/battery v0.9.0
+	github.com/dpopsuev/battery v0.10.1
 	github.com/expr-lang/expr v1.17.8
 	github.com/jedib0t/go-pretty/v6 v6.7.8
 	github.com/modelcontextprotocol/go-sdk v1.5.0

@@ -154,7 +154,7 @@ func RunInstrumentToolContract(t *testing.T, factory func() tool.Tool) {
 		if err != nil {
 			t.Fatalf("Execute returned error: %v", err)
 		}
-		if result == "" {
+		if result.Text() == "" {
 			t.Error("Execute returned empty result")
 		}
 	})

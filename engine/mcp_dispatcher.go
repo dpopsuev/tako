@@ -54,7 +54,7 @@ func (d *MCPDispatcher) Dispatch(ctx context.Context, input json.RawMessage) (js
 		return nil, err
 	}
 
-	return json.RawMessage(result), nil
+	return json.RawMessage(result.Text()), nil
 }
 
 // LazyMCPDispatcher defers MCP connection to first Dispatch call.

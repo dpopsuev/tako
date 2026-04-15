@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"sync"
 
+	"github.com/dpopsuev/battery/tool"
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/troupe/identity"
 )
@@ -35,7 +36,7 @@ func (s *StubInstrumentTool) Name() string                 { return s.name }
 func (s *StubInstrumentTool) Description() string          { return s.description }
 func (s *StubInstrumentTool) InputSchema() json.RawMessage { return s.schema }
 
-func (s *StubInstrumentTool) Execute(ctx context.Context, input json.RawMessage) (string, error) {
+func (s *StubInstrumentTool) Execute(ctx context.Context, input json.RawMessage) (tool.Result, error) {
 	s.mu.Lock()
 	s.calls = append(s.calls, input)
 	err := s.err
@@ -43,9 +44,9 @@ func (s *StubInstrumentTool) Execute(ctx context.Context, input json.RawMessage)
 	s.mu.Unlock()
 
 	if err != nil {
-		return "", err
+		return tool.Result{}, err
 	}
-	return result, nil
+	return tool.TextResult(result), nil
 }
 
 // SetError injects an error for all subsequent Execute calls.
@@ -118,7 +119,7 @@ func (n *StubInstrumentNode) Process(ctx context.Context, nc circuit.NodeContext
 	}
 	return &InstrumentArtifact{
 		name: n.tool.Name(),
-		raw:  result,
+		raw:  result.Text(),
 	}, nil
 }
 

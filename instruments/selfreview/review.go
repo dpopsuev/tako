@@ -346,7 +346,7 @@ func (s *SelfReviewTransformer) getScribeArtifact(ctx context.Context, id string
 		return nil, err
 	}
 	var art scribeArtifact
-	if err := json.Unmarshal([]byte(result), &art); err != nil {
+	if err := json.Unmarshal([]byte(result.Text()), &art); err != nil {
 		return nil, fmt.Errorf("parse artifact: %w", err)
 	}
 	return &art, nil

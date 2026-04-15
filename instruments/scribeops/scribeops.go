@@ -22,7 +22,7 @@ func scribeCall(ctx context.Context, registry *tool.Registry, params map[string]
 	if err != nil {
 		return nil, err
 	}
-	return json.RawMessage(result), nil
+	return json.RawMessage(result.Text()), nil
 }
 
 // PollScribe queries Scribe for the highest-priority mature task in scope.

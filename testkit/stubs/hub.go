@@ -74,7 +74,11 @@ func (h *StubHub) Call(ctx context.Context, name string, input json.RawMessage) 
 	tools := h.routes[node]
 	for _, t := range tools {
 		if t.Name() == name {
-			return t.Execute(ctx, input)
+			result, execErr := t.Execute(ctx, input)
+			if execErr != nil {
+				return "", execErr
+			}
+			return result.Text(), nil
 		}
 	}
 	return "", fmt.Errorf("%w: tool %q not found for node %q", engine.ErrInstrument, name, node)
