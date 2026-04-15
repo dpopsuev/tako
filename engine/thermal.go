@@ -10,6 +10,11 @@ import (
 	"github.com/dpopsuev/origami/circuit"
 )
 
+const (
+	defaultThermalWarning = 5 * time.Minute
+	defaultThermalCeiling = 15 * time.Minute
+)
+
 type thermalConfig struct {
 	warning time.Duration
 	ceiling time.Duration

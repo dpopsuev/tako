@@ -239,14 +239,21 @@ func Run(ctx context.Context, circuitPath string, input any, opts ...RunOption) 
 	} else {
 		obs = logObs
 	}
-	if cfg.thermalBudget != nil {
+	// Thermal budget: default 5min warning, 15min ceiling.
+	// Override via WithThermalBudget. Always active — every circuit
+	// gets runaway protection for free.
+	tb := cfg.thermalBudget
+	if tb == nil {
+		tb = &thermalConfig{warning: defaultThermalWarning, ceiling: defaultThermalCeiling}
+	}
+	{
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithCancel(ctx)
 		defer cancel()
 		obs = &thermalObserver{
 			inner:   obs,
-			warning: cfg.thermalBudget.warning,
-			ceiling: cfg.thermalBudget.ceiling,
+			warning: tb.warning,
+			ceiling: tb.ceiling,
 			cancel:  cancel,
 		}
 	}
