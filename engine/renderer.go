@@ -39,7 +39,7 @@ type rendererNode struct {
 }
 
 func (n *rendererNode) Name() string                      { return n.name }
-func (n *rendererNode) ElementAffinity() identity.Element { return n.element }
+func (n *rendererNode) Approach() identity.Element { return n.element }
 
 func (n *rendererNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	var input any

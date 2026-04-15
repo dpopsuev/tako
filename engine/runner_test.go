@@ -28,7 +28,7 @@ type runnerTestNode struct {
 }
 
 func (n *runnerTestNode) Name() string                      { return n.name }
-func (n *runnerTestNode) ElementAffinity() identity.Element { return n.element }
+func (n *runnerTestNode) Approach() identity.Element { return n.element }
 func (n *runnerTestNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return n.out, n.err
 }

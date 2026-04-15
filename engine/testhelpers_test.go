@@ -18,7 +18,7 @@ type stubNode struct {
 }
 
 func (n *stubNode) Name() string                      { return n.name }
-func (n *stubNode) ElementAffinity() identity.Element { return n.element }
+func (n *stubNode) Approach() identity.Element { return n.element }
 func (n *stubNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return n.artifact, n.err
 }
@@ -57,7 +57,7 @@ type slowNode struct {
 }
 
 func (n *slowNode) Name() string                      { return n.name }
-func (n *slowNode) ElementAffinity() identity.Element { return "" }
+func (n *slowNode) Approach() identity.Element { return "" }
 func (n *slowNode) Process(ctx context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	select {
 	case <-time.After(n.duration):

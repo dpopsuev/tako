@@ -8,7 +8,7 @@ import "context"
 // Implementations are domain-specific (e.g. recall, triage, investigate).
 type Node interface {
 	Name() string
-	ElementAffinity() Element
+	Approach() Element
 	Process(ctx context.Context, nc NodeContext) (Artifact, error)
 }
 

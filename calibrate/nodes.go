@@ -85,7 +85,7 @@ type CaseResultEntry struct {
 type LoadScenarioNode struct{}
 
 func (n *LoadScenarioNode) Name() string                      { return "load_scenario" }
-func (n *LoadScenarioNode) ElementAffinity() identity.Element { return identity.ElementEarth }
+func (n *LoadScenarioNode) Approach() identity.Element { return identity.ElementEarth }
 
 func (n *LoadScenarioNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	raw, ok := nc.WalkerState.Context["input"]
@@ -116,7 +116,7 @@ func (n *LoadScenarioNode) Process(_ context.Context, nc circuit.NodeContext) (c
 type FanOutCasesNode struct{}
 
 func (n *FanOutCasesNode) Name() string                      { return "fan_out" }
-func (n *FanOutCasesNode) ElementAffinity() identity.Element { return identity.ElementWater }
+func (n *FanOutCasesNode) Approach() identity.Element { return identity.ElementWater }
 
 func (n *FanOutCasesNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	ci := extractInput(nc)
@@ -132,7 +132,7 @@ func (n *FanOutCasesNode) Process(_ context.Context, nc circuit.NodeContext) (ci
 type WalkCaseNode struct{}
 
 func (n *WalkCaseNode) Name() string                      { return "walk_case" }
-func (n *WalkCaseNode) ElementAffinity() identity.Element { return identity.ElementFire }
+func (n *WalkCaseNode) Approach() identity.Element { return identity.ElementFire }
 
 func (n *WalkCaseNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	ci := extractInput(nc)
@@ -177,7 +177,7 @@ func runOneCase(ctx context.Context, runner CaseRunner, c CaseInput) CaseResultE
 type ScoreCaseNode struct{}
 
 func (n *ScoreCaseNode) Name() string                      { return "score_case" }
-func (n *ScoreCaseNode) ElementAffinity() identity.Element { return identity.ElementEarth }
+func (n *ScoreCaseNode) Approach() identity.Element { return identity.ElementEarth }
 
 func (n *ScoreCaseNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	ci := extractInput(nc)
@@ -215,7 +215,7 @@ func (n *ScoreCaseNode) Process(_ context.Context, nc circuit.NodeContext) (circ
 type FanInResultsNode struct{}
 
 func (n *FanInResultsNode) Name() string                      { return "fan_in" }
-func (n *FanInResultsNode) ElementAffinity() identity.Element { return identity.ElementWater }
+func (n *FanInResultsNode) Approach() identity.Element { return identity.ElementWater }
 
 func (n *FanInResultsNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	prior := nc.PriorArtifact
@@ -255,7 +255,7 @@ func (n *FanInResultsNode) Process(_ context.Context, nc circuit.NodeContext) (c
 type AggregateNode struct{}
 
 func (n *AggregateNode) Name() string                      { return "aggregate" }
-func (n *AggregateNode) ElementAffinity() identity.Element { return identity.ElementEarth }
+func (n *AggregateNode) Approach() identity.Element { return identity.ElementEarth }
 
 func (n *AggregateNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	ci := extractInput(nc)
@@ -288,7 +288,7 @@ func (n *AggregateNode) Process(_ context.Context, nc circuit.NodeContext) (circ
 type ReportNode struct{}
 
 func (n *ReportNode) Name() string                      { return "report" }
-func (n *ReportNode) ElementAffinity() identity.Element { return identity.ElementAir }
+func (n *ReportNode) Approach() identity.Element { return identity.ElementAir }
 
 func (n *ReportNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	ci := extractInput(nc)

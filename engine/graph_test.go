@@ -287,8 +287,8 @@ func TestGraph_Zones(t *testing.T) {
 	nodeC := &stubNode{name: "C"}
 
 	zones := []Zone{
-		{Name: "front", NodeNames: []string{"A", "B"}, ElementAffinity: "fire", Stickiness: 0},
-		{Name: "back", NodeNames: []string{"C"}, ElementAffinity: "water", Stickiness: 3},
+		{Name: "front", NodeNames: []string{"A", "B"}, Approach: "fire", Stickiness: 0},
+		{Name: "back", NodeNames: []string{"C"}, Approach: "water", Stickiness: 3},
 	}
 
 	g, err := NewGraph("test", []circuit.Node{nodeA, nodeB, nodeC}, nil, zones)

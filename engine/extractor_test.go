@@ -76,8 +76,8 @@ func TestExtractorNode_Process(t *testing.T) {
 	if node.Name() != "parse" {
 		t.Errorf("Name() = %q, want %q", node.Name(), "parse")
 	}
-	if node.ElementAffinity() != "earth" {
-		t.Errorf("ElementAffinity() = %q, want %q", node.ElementAffinity(), "earth")
+	if node.Approach() != "earth" {
+		t.Errorf("Approach() = %q, want %q", node.Approach(), "earth")
 	}
 
 	prior := &extractorArtifact{typeName: "raw", raw: "hello"}
@@ -422,7 +422,7 @@ type extTestNode struct {
 }
 
 func (n *extTestNode) Name() string                      { return n.name }
-func (n *extTestNode) ElementAffinity() identity.Element { return "" }
+func (n *extTestNode) Approach() identity.Element { return "" }
 func (n *extTestNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return nil, nil
 }

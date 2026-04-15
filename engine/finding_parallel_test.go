@@ -28,7 +28,7 @@ type findingEnforcerNodeImpl struct {
 }
 
 func (n *findingEnforcerNodeImpl) Name() string                      { return n.name }
-func (n *findingEnforcerNodeImpl) ElementAffinity() identity.Element { return "" }
+func (n *findingEnforcerNodeImpl) Approach() identity.Element { return "" }
 func (n *findingEnforcerNodeImpl) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	if n.finding != nil {
 		if c, ok := nc.WalkerState.Context[circuit.FindingCollectorKey].(circuit.FindingCollector); ok {

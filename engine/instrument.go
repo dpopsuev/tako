@@ -37,7 +37,7 @@ type instrumentNode struct {
 }
 
 func (n *instrumentNode) Name() string                      { return n.name }
-func (n *instrumentNode) ElementAffinity() identity.Element { return n.element }
+func (n *instrumentNode) Approach() identity.Element { return n.element }
 
 func (n *instrumentNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	logger := slog.Default().With(slog.Any(circuit.LogKeyComponent, circuit.LogComponentInstrument))

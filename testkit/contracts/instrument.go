@@ -43,10 +43,10 @@ func RunInstrumentNodeContract(t *testing.T, factory func() circuit.Node) {
 		}
 	})
 
-	t.Run("ElementAffinity_Valid", func(t *testing.T) {
+	t.Run("Approach_Valid", func(t *testing.T) {
 		n := factory()
-		// ElementAffinity may be empty (no affinity) but must not panic.
-		_ = n.ElementAffinity()
+		// Approach may be empty (no affinity) but must not panic.
+		_ = n.Approach()
 	})
 
 	t.Run("Process_ReturnsArtifact", func(t *testing.T) {
@@ -192,5 +192,5 @@ func RunInstrumentToolContract(t *testing.T, factory func() tool.Tool) {
 	})
 }
 
-// Ensure identity.Element is used (interface compliance — ElementAffinity returns it).
+// Ensure identity.Element is used (interface compliance — Approach returns it).
 var _ identity.Element = identity.Element("")

@@ -23,7 +23,7 @@ type extractorNode struct {
 }
 
 func (n *extractorNode) Name() string                      { return n.name }
-func (n *extractorNode) ElementAffinity() identity.Element { return n.element }
+func (n *extractorNode) Approach() identity.Element { return n.element }
 
 func (n *extractorNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	var input any

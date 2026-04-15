@@ -24,8 +24,8 @@ func TestTransformerNode_Process(t *testing.T) {
 	if node.Name() != "test-node" {
 		t.Errorf("Name() = %q", node.Name())
 	}
-	if node.ElementAffinity() != identity.ElementFire {
-		t.Errorf("Element = %q", node.ElementAffinity())
+	if node.Approach() != identity.ElementFire {
+		t.Errorf("Element = %q", node.Approach())
 	}
 
 	nc := circuit.NodeContext{
@@ -141,7 +141,7 @@ type testNode struct {
 }
 
 func (n *testNode) Name() string                      { return n.name }
-func (n *testNode) ElementAffinity() identity.Element { return identity.ElementFire }
+func (n *testNode) Approach() identity.Element { return identity.ElementFire }
 func (n *testNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	return &stubArtifact{raw: map[string]any{"processed": true}}, nil
 }

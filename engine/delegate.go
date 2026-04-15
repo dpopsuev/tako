@@ -76,7 +76,7 @@ type dslDelegateNode struct {
 }
 
 func (n *dslDelegateNode) Name() string                      { return n.name }
-func (n *dslDelegateNode) ElementAffinity() identity.Element { return n.element }
+func (n *dslDelegateNode) Approach() identity.Element { return n.element }
 
 func (n *dslDelegateNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	da, err := n.GenerateCircuit(ctx, nc)
@@ -133,7 +133,7 @@ type circuitRefNode struct {
 }
 
 func (n *circuitRefNode) Name() string                      { return n.name }
-func (n *circuitRefNode) ElementAffinity() identity.Element { return n.element }
+func (n *circuitRefNode) Approach() identity.Element { return n.element }
 
 func (n *circuitRefNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	return &DelegateArtifact{GeneratedCircuit: n.circuitDef, NodeCount: len(n.circuitDef.Nodes)}, nil

@@ -98,7 +98,7 @@ func NewStubInstrumentNode(tool *StubInstrumentTool) *StubInstrumentNode {
 }
 
 func (n *StubInstrumentNode) Name() string                      { return n.tool.Name() }
-func (n *StubInstrumentNode) ElementAffinity() identity.Element { return n.element }
+func (n *StubInstrumentNode) Approach() identity.Element { return n.element }
 
 func (n *StubInstrumentNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	// Marshal walker state context as input (mirrors real InstrumentNode behavior).

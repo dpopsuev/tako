@@ -352,7 +352,7 @@ type testDelegateNode struct {
 }
 
 func (n *testDelegateNode) Name() string                      { return n.name }
-func (n *testDelegateNode) ElementAffinity() identity.Element { return "" }
+func (n *testDelegateNode) Approach() identity.Element { return "" }
 func (n *testDelegateNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return nil, nil
 }

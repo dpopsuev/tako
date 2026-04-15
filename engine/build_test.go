@@ -14,7 +14,7 @@ type buildTestNode struct {
 }
 
 func (n *buildTestNode) Name() string                      { return n.name }
-func (n *buildTestNode) ElementAffinity() identity.Element { return "" }
+func (n *buildTestNode) Approach() identity.Element { return "" }
 func (n *buildTestNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return nil, nil
 }

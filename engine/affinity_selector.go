@@ -3,7 +3,7 @@ package engine
 import "github.com/dpopsuev/origami/circuit"
 
 // AffinitySelector picks the walker whose StepAffinity for the current node
-// is highest, with ElementAffinity as a tiebreaker.
+// is highest, with Approach as a tiebreaker.
 type AffinitySelector struct {
 	lastMismatch float64
 }
@@ -25,7 +25,7 @@ func (s *AffinitySelector) SelectWalker(node circuit.Node, walkers []circuit.Wal
 	}
 
 	nodeName := node.Name()
-	nodeElement := node.ElementAffinity()
+	nodeElement := node.Approach()
 
 	var best circuit.Walker
 	bestScore := -1.0
@@ -63,7 +63,7 @@ func affinityMismatch(w circuit.Walker, node circuit.Node) float64 {
 	id := w.Identity()
 	affinityScore := id.StepAffinity[node.Name()]
 	elementBonus := 0.0
-	if id.Element == node.ElementAffinity() && id.Element != "" {
+	if id.Element == node.Approach() && id.Element != "" {
 		elementBonus = 0.5
 	}
 	maxPossible := 1.5

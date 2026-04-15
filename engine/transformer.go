@@ -32,7 +32,7 @@ type transformerNode struct {
 }
 
 func (n *transformerNode) Name() string                      { return n.name }
-func (n *transformerNode) ElementAffinity() identity.Element { return n.element }
+func (n *transformerNode) Approach() identity.Element { return n.element }
 
 func (n *transformerNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	logger := slog.Default().With(slog.Any(circuit.LogKeyComponent, circuit.LogComponentTransform))
