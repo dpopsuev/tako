@@ -1,6 +1,5 @@
-package engine
-
-// Category: Execution — default walker construction.
+// Package walker provides default walker construction for circuit execution.
+package walker
 
 import (
 	"github.com/dpopsuev/origami/circuit"
