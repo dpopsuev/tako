@@ -1,6 +1,6 @@
 // Package transformers provides built-in Transformer implementations for the
 // Origami DSL. These are the "batteries included" that require zero custom code.
-package transformers
+package core
 
 import (
 	"context"

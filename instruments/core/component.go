@@ -1,4 +1,4 @@
-package transformers
+package core
 
 import (
 	"github.com/dpopsuev/origami/dispatch"

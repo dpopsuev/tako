@@ -27,7 +27,7 @@ var OrigamiLayers = []string{
 	"lint",
 	"calibrate",
 	"fold",
-	"transformers",
+	"instruments/core",
 	// Adapters
 	"lsp",
 	"autodoc",

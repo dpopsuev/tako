@@ -1,4 +1,4 @@
-package transformers
+package core
 
 import (
 	"context"

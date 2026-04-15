@@ -10,7 +10,7 @@ import (
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/transformers"
+	"github.com/dpopsuev/origami/instruments/core"
 )
 
 // TestCalibrateWithCLI proves the generic calibration path:
@@ -85,8 +85,8 @@ func TestCalibrateWithCLI(t *testing.T) {
 	}
 
 	// Wire: CLIDispatcher → CoreComponent(core.llm) → calibrate.Run()
-	coreComp := transformers.CoreComponent(cliDisp,
-		transformers.WithCoreBaseDir("testdata"),
+	coreComp := core.CoreComponent(cliDisp,
+		core.WithCoreBaseDir("testdata"),
 	)
 
 	contract := ContractFromDef(circuitDef.Calibration)

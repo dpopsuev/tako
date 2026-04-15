@@ -14,9 +14,9 @@ import (
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/origami/instruments/core"
 	"github.com/dpopsuev/origami/lint"
 	originamilsp "github.com/dpopsuev/origami/lsp"
-	"github.com/dpopsuev/origami/transformers"
 )
 
 // Build-time variables injected via -ldflags.
@@ -144,7 +144,7 @@ func runCmd(args []string) error {
 	defer cancel()
 
 	builtins := engine.TransformerRegistry{
-		"file": transformers.NewFile(transformers.WithRootDir(filepath.Dir(circuitPath))),
+		"file": core.NewFile(core.WithRootDir(filepath.Dir(circuitPath))),
 	}
 
 	opts := []engine.RunOption{
