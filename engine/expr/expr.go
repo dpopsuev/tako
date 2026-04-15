@@ -1,9 +1,10 @@
-package engine
-
-// Category: Core Primitives — expression edge.
+// Package expr provides expression edge compilation and evaluation for
+// circuit when: conditions. Uses expr-lang for typed expression evaluation.
+package expr
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path"
 
@@ -11,6 +12,9 @@ import (
 	"github.com/expr-lang/expr"
 	"github.com/expr-lang/expr/vm"
 )
+
+// ErrEdge is returned for edge compilation/evaluation failures.
+var ErrEdge = errors.New("edge")
 
 // ExprContext is the evaluation context passed to when: expressions.
 type ExprContext struct {
