@@ -7,10 +7,7 @@ import (
 	"github.com/dpopsuev/battery/tool"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/dispatch"
 	"github.com/dpopsuev/origami/engine/gate"
-	"github.com/dpopsuev/origami/prompt"
-	"github.com/dpopsuev/origami/resource"
 	"github.com/dpopsuev/origami/toolkit"
 )
 
@@ -117,11 +114,11 @@ type SessionParams struct {
 	// it to RunOptions via engine.WithRunObserver(params.Observer).
 	Observer circuit.WalkObserver
 
-	// Dispatcher is the framework-created MuxDispatcher for LLM dispatch.
-	// Consumers that need to create domain-specific transformers (e.g.,
-	// prompt-filling transformers) use this to wire dispatch.
-	// Nil when no dispatch is needed (e.g., stub/heuristic backends).
-	Dispatcher dispatch.Dispatcher
+	// Dispatcher is the framework-created dispatcher for LLM dispatch.
+	// Consumers type-assert to dispatch.Dispatcher when wiring transformers.
+	// Typed as any to avoid engine/ → dispatch/ dependency (DIP: domain
+	// must not import infrastructure).
+	Dispatcher any
 
 	// Relayer wraps the Dispatcher as a PromptRelayer for sub-circuit
 	// delegation via MCPCircuitTransformer. Set by the bridge.
@@ -130,12 +127,17 @@ type SessionParams struct {
 	// PromptStore is the framework-injected prompt store. Consumers use
 	// this to load/edit prompts at runtime instead of fs.ReadFile.
 	// Nil when no PromptStore is configured.
-	PromptStore prompt.Store
+	// PromptStore provides CRUD access to prompts. Typed as any to avoid
+	// engine/ → prompt/ dependency. Consumers type-assert to prompt.Store.
+	PromptStore any
 
 	// ResourceRegistry is the framework-injected kind registry. Consumers
 	// use this to load/validate/discover any registered resource kind.
 	// Nil when no ResourceRegistry is configured.
-	ResourceRegistry *resource.KindRegistry
+	// ResourceRegistry provides kind-based resource discovery. Typed as any
+	// to avoid engine/ → resource/ dependency. Consumers type-assert to
+	// *resource.KindRegistry.
+	ResourceRegistry any
 
 	// SubCircuitResolvers maps schematic names to their embedded circuit YAML.
 	// Consumers with custom RunFunc use this to load sub-circuit definitions

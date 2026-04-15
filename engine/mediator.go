@@ -10,7 +10,6 @@ import (
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/subprocess"
 )
 
 // PromptRelayer is a type alias for circuit.PromptRelayer.
@@ -44,8 +43,11 @@ func (t *MCPCircuitTransformer) Transform(ctx context.Context, tc *TransformerCo
 	}
 
 	transport := &sdkmcp.StreamableClientTransport{Endpoint: t.Endpoint}
-	connector := subprocess.DefaultConnector()
-	session, err := connector.Connect(ctx, transport)
+	client := sdkmcp.NewClient(
+		&sdkmcp.Implementation{Name: "origami-engine", Version: "v0.1.0"},
+		nil,
+	)
+	session, err := client.Connect(ctx, transport, nil)
 	if err != nil {
 		return nil, fmt.Errorf("mediator connect to %s for circuit_type %q: %w",
 			t.Endpoint, t.CircuitType, err)
