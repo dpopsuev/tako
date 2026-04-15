@@ -1,6 +1,6 @@
 // Package report provides a YAML-driven report template engine.
 // Report layouts are defined declaratively; rendering walks the sections
-// and assembles the final output using toolkit.TableBuilder for tables
+// and assembles the final output using TableBuilder for tables
 // and text/template for free-form text.
 package calibrate
 
@@ -10,8 +10,6 @@ import (
 	"os"
 	"strings"
 	"text/template"
-
-	"github.com/dpopsuev/origami/toolkit"
 
 	"gopkg.in/yaml.v3"
 )
@@ -70,9 +68,9 @@ func ParseReportDef(data []byte) (*ReportDef, error) {
 // data is a map of keys to values; table sections look up DataKey
 // to find []map[string]any rows.
 func Render(def *ReportDef, data map[string]any) (string, error) {
-	mode := toolkit.ASCII
+	mode := ASCII
 	if def.Format == "markdown" {
-		mode = toolkit.Markdown
+		mode = Markdown
 	}
 
 	var buf strings.Builder
@@ -82,7 +80,7 @@ func Render(def *ReportDef, data map[string]any) (string, error) {
 	return buf.String(), nil
 }
 
-func renderSections(buf *strings.Builder, sections []SectionDef, data map[string]any, mode toolkit.Mode) error {
+func renderSections(buf *strings.Builder, sections []SectionDef, data map[string]any, mode Mode) error {
 	for i := range sections {
 		if i > 0 {
 			buf.WriteString("\n")
@@ -109,7 +107,7 @@ func renderSections(buf *strings.Builder, sections []SectionDef, data map[string
 	return nil
 }
 
-func renderRepeat(buf *strings.Builder, sec *SectionDef, data map[string]any, mode toolkit.Mode) error {
+func renderRepeat(buf *strings.Builder, sec *SectionDef, data map[string]any, mode Mode) error {
 	if sec.Items == "" {
 		return ErrRepeatSectionRequiresItemsField
 	}
@@ -144,7 +142,7 @@ func renderRepeat(buf *strings.Builder, sec *SectionDef, data map[string]any, mo
 	return nil
 }
 
-func renderHeader(buf *strings.Builder, sec *SectionDef, mode toolkit.Mode) {
+func renderHeader(buf *strings.Builder, sec *SectionDef, mode Mode) {
 	level := sec.Level
 	if level < 1 {
 		level = 1
@@ -153,7 +151,7 @@ func renderHeader(buf *strings.Builder, sec *SectionDef, mode toolkit.Mode) {
 		level = 3
 	}
 
-	if mode == toolkit.Markdown {
+	if mode == Markdown {
 		buf.WriteString(strings.Repeat("#", level) + " " + sec.Title + "\n")
 	} else {
 		buf.WriteString(sec.Title + "\n")
@@ -168,7 +166,7 @@ func renderHeader(buf *strings.Builder, sec *SectionDef, mode toolkit.Mode) {
 	}
 }
 
-func renderTable(buf *strings.Builder, sec *SectionDef, data map[string]any, mode toolkit.Mode) error {
+func renderTable(buf *strings.Builder, sec *SectionDef, data map[string]any, mode Mode) error {
 	if sec.Title != "" {
 		buf.WriteString(sec.Title + "\n")
 	}
@@ -184,7 +182,7 @@ func renderTable(buf *strings.Builder, sec *SectionDef, data map[string]any, mod
 		return fmt.Errorf("%w: %q] must be []map[string]any, got %T", ErrData, sec.DataKey, rawRows)
 	}
 
-	tb := toolkit.NewTable(mode)
+	tb := NewTable(mode)
 	tb.Header(sec.Columns...)
 
 	for _, row := range rows {

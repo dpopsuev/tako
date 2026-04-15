@@ -1,4 +1,4 @@
-package toolkit
+package calibrate
 
 // Typed map[string]any accessors. Safe: return zero values on missing/mistyped keys.
 

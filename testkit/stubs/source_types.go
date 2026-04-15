@@ -1,4 +1,4 @@
-package toolkit
+package stubs
 
 // SourceKind classifies what a data source represents.
 type SourceKind string
@@ -29,7 +29,7 @@ const (
 	Unknown     ResolutionStatus = "unknown"
 )
 
-// Source is a single data source — a repository, specification document,
+// Source is a single data source -- a repository, specification document,
 // API endpoint, or other information resource available to a circuit.
 type Source struct {
 	Name       string            `json:"name" yaml:"name"`

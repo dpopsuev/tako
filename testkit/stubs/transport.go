@@ -4,10 +4,10 @@ import (
 	"context"
 	"sync"
 
-	"github.com/dpopsuev/origami/toolkit"
+	"github.com/dpopsuev/origami/testkit"
 )
 
-// StubTransport implements toolkit.Transport with call tracking.
+// StubTransport implements testkit.Transport with call tracking.
 // Thread-safe, supports error injection.
 type StubTransport struct {
 	mu    sync.Mutex
@@ -20,7 +20,7 @@ func NewStubTransport() *StubTransport {
 	return &StubTransport{}
 }
 
-func (s *StubTransport) Serve(ctx context.Context, handler toolkit.TransportHandler) error {
+func (s *StubTransport) Serve(ctx context.Context, handler testkit.TransportHandler) error {
 	s.mu.Lock()
 	s.calls = append(s.calls, "Serve")
 	err := s.err
@@ -66,12 +66,12 @@ func (s *StubTransport) Reset() {
 	s.err = nil
 }
 
-// StubTrigger implements toolkit.Trigger with call tracking.
+// StubTrigger implements testkit.Trigger with call tracking.
 type StubTrigger struct {
 	mu     sync.Mutex
 	calls  []string
-	handle toolkit.SessionHandle
-	params toolkit.TriggerParams
+	handle testkit.SessionHandle
+	params testkit.TriggerParams
 	err    error
 }
 
@@ -80,7 +80,7 @@ func NewStubTrigger() *StubTrigger {
 	return &StubTrigger{}
 }
 
-func (s *StubTrigger) Start(ctx context.Context, params toolkit.TriggerParams) (toolkit.SessionHandle, error) {
+func (s *StubTrigger) Start(ctx context.Context, params testkit.TriggerParams) (testkit.SessionHandle, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.calls = append(s.calls, "Start")
@@ -92,7 +92,7 @@ func (s *StubTrigger) Start(ctx context.Context, params toolkit.TriggerParams) (
 }
 
 // WithHandle sets the canned session handle returned by Start.
-func (s *StubTrigger) WithHandle(h toolkit.SessionHandle) {
+func (s *StubTrigger) WithHandle(h testkit.SessionHandle) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.handle = h
@@ -108,7 +108,7 @@ func (s *StubTrigger) Calls() []string {
 }
 
 // LastParams returns the params from the most recent Start call.
-func (s *StubTrigger) LastParams() toolkit.TriggerParams {
+func (s *StubTrigger) LastParams() testkit.TriggerParams {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.params
@@ -121,7 +121,7 @@ func (s *StubTrigger) SetError(err error) {
 	s.err = err
 }
 
-// StubSessionHandle implements toolkit.SessionHandle.
+// StubSessionHandle implements testkit.SessionHandle.
 type StubSessionHandle struct {
 	mu     sync.Mutex
 	id     string

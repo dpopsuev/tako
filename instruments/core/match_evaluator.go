@@ -1,12 +1,16 @@
-package toolkit
+package core
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
 
 	"gopkg.in/yaml.v3"
 )
+
+// ErrMatchEvaluatorRuleSet is returned when a named rule set is not found.
+var ErrMatchEvaluatorRuleSet = errors.New("match evaluator: rule set")
 
 // MatchRule defines a single pattern-matching rule. Conditions are ANDed:
 // all specified conditions must be satisfied for the rule to match.

@@ -1,4 +1,4 @@
-package toolkit
+package calibrate
 
 import (
 	"github.com/jedib0t/go-pretty/v6/table"

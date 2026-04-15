@@ -8,7 +8,6 @@ import (
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine/gate"
-	"github.com/dpopsuev/origami/toolkit"
 )
 
 // SessionConfig is the domain-specific configuration returned by a
@@ -92,9 +91,9 @@ type StepSchemaProvider interface {
 	StepSchemas() []StepSchema
 }
 
-// StepSchema is a type alias for toolkit.StepSchema, re-exported here
-// so consumers don't need to import toolkit/ just for step schemas.
-type StepSchema = toolkit.StepSchema
+// StepSchema is a type alias for circuit.StepSchema, re-exported here
+// so consumers don't need to import circuit/ just for step schemas.
+type StepSchema = circuit.StepSchema
 
 // SessionParams are the parsed parameters from a start_circuit tool call.
 // Domain-specific fields live in Extra.

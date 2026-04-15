@@ -3,34 +3,32 @@ package stubs
 import (
 	"context"
 	"sync"
-
-	"github.com/dpopsuev/origami/toolkit"
 )
 
-// StubDriver implements toolkit.Driver with canned responses.
+// StubDriver implements Driver with canned responses.
 // Thread-safe, supports error injection and call tracking.
 // Composes StubSourceReader for read/search/list/ensure operations.
 type StubDriver struct {
 	mu     sync.Mutex
-	kind   toolkit.SourceKind
+	kind   SourceKind
 	reader *StubSourceReader
 	calls  []string
 	err    error
 }
 
 // NewStubDriver creates a driver for the given source kind.
-func NewStubDriver(kind toolkit.SourceKind) *StubDriver {
+func NewStubDriver(kind SourceKind) *StubDriver {
 	return &StubDriver{
 		kind:   kind,
 		reader: NewStubSourceReader(nil),
 	}
 }
 
-func (d *StubDriver) Handles() toolkit.SourceKind {
+func (d *StubDriver) Handles() SourceKind {
 	return d.kind
 }
 
-func (d *StubDriver) Ensure(ctx context.Context, src *toolkit.Source) error {
+func (d *StubDriver) Ensure(ctx context.Context, src *Source) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.calls = append(d.calls, "Ensure:"+src.Name)
@@ -40,7 +38,7 @@ func (d *StubDriver) Ensure(ctx context.Context, src *toolkit.Source) error {
 	return d.reader.Ensure(ctx, src)
 }
 
-func (d *StubDriver) Search(ctx context.Context, src *toolkit.Source, query string, maxResults int) ([]toolkit.SearchResult, error) {
+func (d *StubDriver) Search(ctx context.Context, src *Source, query string, maxResults int) ([]SearchResult, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.calls = append(d.calls, "Search:"+src.Name+":"+query)
@@ -50,7 +48,7 @@ func (d *StubDriver) Search(ctx context.Context, src *toolkit.Source, query stri
 	return d.reader.Search(ctx, src, query, maxResults)
 }
 
-func (d *StubDriver) Read(ctx context.Context, src *toolkit.Source, path string) ([]byte, error) {
+func (d *StubDriver) Read(ctx context.Context, src *Source, path string) ([]byte, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.calls = append(d.calls, "Read:"+src.Name+":"+path)
@@ -60,7 +58,7 @@ func (d *StubDriver) Read(ctx context.Context, src *toolkit.Source, path string)
 	return d.reader.Read(ctx, src, path)
 }
 
-func (d *StubDriver) List(ctx context.Context, src *toolkit.Source, root string, maxDepth int) ([]toolkit.ContentEntry, error) {
+func (d *StubDriver) List(ctx context.Context, src *Source, root string, maxDepth int) ([]ContentEntry, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.calls = append(d.calls, "List:"+src.Name+":"+root)
@@ -103,11 +101,11 @@ func (d *StubDriver) WithReadData(key string, data []byte) {
 }
 
 // WithSearchData sets canned search results. Key format: "sourceName:query".
-func (d *StubDriver) WithSearchData(key string, results []toolkit.SearchResult) {
+func (d *StubDriver) WithSearchData(key string, results []SearchResult) {
 	d.reader.WithSearchData(key, results)
 }
 
 // WithListData sets canned list entries. Key format: "sourceName:root".
-func (d *StubDriver) WithListData(key string, entries []toolkit.ContentEntry) {
+func (d *StubDriver) WithListData(key string, entries []ContentEntry) {
 	d.reader.WithListData(key, entries)
 }

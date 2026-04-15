@@ -4,17 +4,15 @@ import (
 	"context"
 	"fmt"
 	"sync"
-
-	"github.com/dpopsuev/origami/toolkit"
 )
 
-// StubSourceReader implements toolkit.SourceReader with canned responses.
+// StubSourceReader implements SourceReader with canned responses.
 // Thread-safe, supports error injection and call tracking.
 type StubSourceReader struct {
 	mu          sync.Mutex
-	readData    map[string][]byte                 // keyed by source.Name + ":" + path
-	searchData  map[string][]toolkit.SearchResult // keyed by source.Name + ":" + query
-	listData    map[string][]toolkit.ContentEntry // keyed by source.Name + ":" + root
+	readData    map[string][]byte         // keyed by source.Name + ":" + path
+	searchData  map[string][]SearchResult // keyed by source.Name + ":" + query
+	listData    map[string][]ContentEntry // keyed by source.Name + ":" + root
 	ensuredSrcs []string
 	err         error
 	calls       []string
@@ -28,13 +26,13 @@ func NewStubSourceReader(readData map[string][]byte) *StubSourceReader {
 	}
 	return &StubSourceReader{
 		readData:   readData,
-		searchData: make(map[string][]toolkit.SearchResult),
-		listData:   make(map[string][]toolkit.ContentEntry),
+		searchData: make(map[string][]SearchResult),
+		listData:   make(map[string][]ContentEntry),
 	}
 }
 
 // Ensure records that a source was ensured.
-func (s *StubSourceReader) Ensure(_ context.Context, src *toolkit.Source) error {
+func (s *StubSourceReader) Ensure(_ context.Context, src *Source) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -48,7 +46,7 @@ func (s *StubSourceReader) Ensure(_ context.Context, src *toolkit.Source) error 
 }
 
 // Search returns canned search results for a source+query pair.
-func (s *StubSourceReader) Search(_ context.Context, src *toolkit.Source, query string, _ int) ([]toolkit.SearchResult, error) {
+func (s *StubSourceReader) Search(_ context.Context, src *Source, query string, _ int) ([]SearchResult, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -66,7 +64,7 @@ func (s *StubSourceReader) Search(_ context.Context, src *toolkit.Source, query 
 }
 
 // Read returns canned data for a source+path pair.
-func (s *StubSourceReader) Read(_ context.Context, src *toolkit.Source, path string) ([]byte, error) {
+func (s *StubSourceReader) Read(_ context.Context, src *Source, path string) ([]byte, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -84,7 +82,7 @@ func (s *StubSourceReader) Read(_ context.Context, src *toolkit.Source, path str
 }
 
 // List returns canned content entries for a source+root pair.
-func (s *StubSourceReader) List(_ context.Context, src *toolkit.Source, root string, _ int) ([]toolkit.ContentEntry, error) {
+func (s *StubSourceReader) List(_ context.Context, src *Source, root string, _ int) ([]ContentEntry, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -109,14 +107,14 @@ func (s *StubSourceReader) SetError(err error) {
 }
 
 // WithSearchData sets canned search results for a source+query key.
-func (s *StubSourceReader) WithSearchData(key string, results []toolkit.SearchResult) {
+func (s *StubSourceReader) WithSearchData(key string, results []SearchResult) {
 	s.mu.Lock()
 	s.searchData[key] = results
 	s.mu.Unlock()
 }
 
 // WithListData sets canned list entries for a source+root key.
-func (s *StubSourceReader) WithListData(key string, entries []toolkit.ContentEntry) {
+func (s *StubSourceReader) WithListData(key string, entries []ContentEntry) {
 	s.mu.Lock()
 	s.listData[key] = entries
 	s.mu.Unlock()

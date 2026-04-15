@@ -4,17 +4,7 @@ import (
 	"context"
 
 	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/toolkit"
 )
-
-// Re-exports from toolkit for backward compatibility.
-type (
-	MatchRule      = toolkit.MatchRule
-	MatchRuleSet   = toolkit.MatchRuleSet
-	MatchEvaluator = toolkit.MatchEvaluator
-)
-
-var NewMatchEvaluator = toolkit.NewMatchEvaluator
 
 // matchTransformer wraps a MatchEvaluator as a engine.Instrument.
 // Config must include "rule_set" (string) and may include "field" (string)

@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/origami/testkit/stubs"
-	"github.com/dpopsuev/origami/toolkit"
 )
 
 func TestStubSourceReader_Read_CannedData(t *testing.T) {
@@ -14,7 +13,7 @@ func TestStubSourceReader_Read_CannedData(t *testing.T) {
 		"my-repo:README.md": []byte("hello world"),
 	})
 
-	src := &toolkit.Source{Name: "my-repo"}
+	src := &stubs.Source{Name: "my-repo"}
 	data, err := sr.Read(context.Background(), src, "README.md")
 	if err != nil {
 		t.Fatal(err)
@@ -27,7 +26,7 @@ func TestStubSourceReader_Read_CannedData(t *testing.T) {
 func TestStubSourceReader_Read_MissingKey(t *testing.T) {
 	sr := stubs.NewStubSourceReader(nil)
 
-	src := &toolkit.Source{Name: "my-repo"}
+	src := &stubs.Source{Name: "my-repo"}
 	_, err := sr.Read(context.Background(), src, "nonexistent.txt")
 	if err == nil {
 		t.Error("expected error for missing key, got nil")
@@ -41,7 +40,7 @@ func TestStubSourceReader_ErrorInjection(t *testing.T) {
 	injected := errors.New("connection failed")
 	sr.SetError(injected)
 
-	src := &toolkit.Source{Name: "my-repo"}
+	src := &stubs.Source{Name: "my-repo"}
 
 	_, err := sr.Read(context.Background(), src, "file.txt")
 	if !errors.Is(err, injected) {
@@ -67,7 +66,7 @@ func TestStubSourceReader_ErrorInjection(t *testing.T) {
 func TestStubSourceReader_Ensure(t *testing.T) {
 	sr := stubs.NewStubSourceReader(nil)
 
-	src := &toolkit.Source{Name: "my-repo"}
+	src := &stubs.Source{Name: "my-repo"}
 	err := sr.Ensure(context.Background(), src)
 	if err != nil {
 		t.Fatal(err)
@@ -81,11 +80,11 @@ func TestStubSourceReader_Ensure(t *testing.T) {
 
 func TestStubSourceReader_Search(t *testing.T) {
 	sr := stubs.NewStubSourceReader(nil)
-	sr.WithSearchData("my-repo:error", []toolkit.SearchResult{
+	sr.WithSearchData("my-repo:error", []stubs.SearchResult{
 		{Source: "my-repo", Path: "main.go", Snippet: "log.Error(...)"},
 	})
 
-	src := &toolkit.Source{Name: "my-repo"}
+	src := &stubs.Source{Name: "my-repo"}
 	results, err := sr.Search(context.Background(), src, "error", 10)
 	if err != nil {
 		t.Fatal(err)
@@ -100,12 +99,12 @@ func TestStubSourceReader_Search(t *testing.T) {
 
 func TestStubSourceReader_List(t *testing.T) {
 	sr := stubs.NewStubSourceReader(nil)
-	sr.WithListData("my-repo:/", []toolkit.ContentEntry{
+	sr.WithListData("my-repo:/", []stubs.ContentEntry{
 		{Path: "main.go", IsDir: false},
 		{Path: "pkg", IsDir: true},
 	})
 
-	src := &toolkit.Source{Name: "my-repo"}
+	src := &stubs.Source{Name: "my-repo"}
 	entries, err := sr.List(context.Background(), src, "/", 2)
 	if err != nil {
 		t.Fatal(err)
@@ -119,7 +118,7 @@ func TestStubSourceReader_CallTracking(t *testing.T) {
 	sr := stubs.NewStubSourceReader(map[string][]byte{
 		"r:f": []byte("x"),
 	})
-	src := &toolkit.Source{Name: "r"}
+	src := &stubs.Source{Name: "r"}
 	sr.Ensure(context.Background(), src)
 	sr.Read(context.Background(), src, "f")
 
@@ -140,7 +139,7 @@ func TestStubSourceReader_Reset(t *testing.T) {
 		"r:f": []byte("x"),
 	})
 	sr.SetError(errors.New("e"))
-	sr.Ensure(context.Background(), &toolkit.Source{Name: "r"})
+	sr.Ensure(context.Background(), &stubs.Source{Name: "r"})
 	sr.Reset()
 
 	if len(sr.Calls()) != 0 {
@@ -150,7 +149,7 @@ func TestStubSourceReader_Reset(t *testing.T) {
 		t.Error("ensured sources not cleared after Reset")
 	}
 	// error should be cleared
-	src := &toolkit.Source{Name: "r"}
+	src := &stubs.Source{Name: "r"}
 	_, err := sr.Read(context.Background(), src, "f")
 	if err != nil {
 		t.Error("error should be cleared after Reset")

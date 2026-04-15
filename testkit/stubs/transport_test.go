@@ -6,15 +6,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/toolkit"
+	"github.com/dpopsuev/origami/testkit"
 )
 
 func TestStubTransport_SatisfiesTransportInterface(t *testing.T) {
-	var _ toolkit.Transport = (*StubTransport)(nil)
+	var _ testkit.Transport = (*StubTransport)(nil)
 }
 
 func TestStubTrigger_SatisfiesTriggerInterface(t *testing.T) {
-	var _ toolkit.Trigger = (*StubTrigger)(nil)
+	var _ testkit.Trigger = (*StubTrigger)(nil)
 }
 
 func TestStubTransport_Serve_BlocksUntilContextCancel(t *testing.T) {
@@ -73,7 +73,7 @@ func TestStubTrigger_Start_ReturnsCannedHandle(t *testing.T) {
 	handle := &StubSessionHandle{id: "test-session"}
 	tr.WithHandle(handle)
 
-	got, err := tr.Start(context.Background(), toolkit.TriggerParams{})
+	got, err := tr.Start(context.Background(), testkit.TriggerParams{})
 	if err != nil {
 		t.Fatalf("Start: %v", err)
 	}
@@ -86,7 +86,7 @@ func TestStubTrigger_Start_TracksParams(t *testing.T) {
 	tr := NewStubTrigger()
 	tr.WithHandle(&StubSessionHandle{id: "s1"})
 
-	params := toolkit.TriggerParams{Parallel: 4, Force: true}
+	params := testkit.TriggerParams{Parallel: 4, Force: true}
 	_, err := tr.Start(context.Background(), params)
 	if err != nil {
 		t.Fatalf("Start: %v", err)

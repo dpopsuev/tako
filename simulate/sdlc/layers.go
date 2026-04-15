@@ -8,7 +8,6 @@ var OrigamiLayers = []string{
 	"circuit/def",
 	"circuit",
 	// Shared
-	"toolkit",
 	"roster",
 	"budget",
 	"resource",

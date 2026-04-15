@@ -14,16 +14,15 @@ import (
 	"github.com/dpopsuev/origami/engine/gate"
 	"github.com/dpopsuev/origami/prompt"
 	"github.com/dpopsuev/origami/resource"
-	"github.com/dpopsuev/origami/toolkit"
 	"github.com/dpopsuev/troupe/signal"
 )
 
-// FieldDef, StepSchema, ExtraParamDef — canonical definitions in toolkit/.
+// FieldDef, StepSchema, ExtraParamDef — canonical definitions in circuit/.
 // Type aliases here for backwards compatibility within mcp/ package.
 type (
-	FieldDef      = toolkit.FieldDef
-	StepSchema    = toolkit.StepSchema
-	ExtraParamDef = toolkit.ExtraParamDef
+	FieldDef      = circuit.FieldDef
+	StepSchema    = circuit.StepSchema
+	ExtraParamDef = circuit.ExtraParamDef
 )
 
 // SessionObserver receives lifecycle events from the circuit server.

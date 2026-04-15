@@ -26,7 +26,6 @@ import (
 	"github.com/dpopsuev/origami/engine/telemetry"
 	"github.com/dpopsuev/origami/mcp"
 	"github.com/dpopsuev/origami/simulate/sdlc"
-	"github.com/dpopsuev/origami/toolkit"
 	troupesignal "github.com/dpopsuev/troupe/signal"
 )
 
@@ -287,9 +286,9 @@ func generateStepSchemas(domainFS fs.FS) []mcp.StepSchema {
 }
 
 func nodeToStepSchema(name string, outputs []circuit.OutputField) mcp.StepSchema {
-	defs := make([]toolkit.FieldDef, len(outputs))
+	defs := make([]circuit.FieldDef, len(outputs))
 	for i, o := range outputs {
-		defs[i] = toolkit.FieldDef{
+		defs[i] = circuit.FieldDef{
 			Name:     o.Name,
 			Type:     o.Type,
 			Required: o.Required,

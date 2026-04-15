@@ -1,6 +1,12 @@
-package toolkit
+package circuit
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
+
+// ErrStep is returned for step schema validation failures.
+var ErrStep = errors.New("step")
 
 // FieldDef describes a single field in a step's artifact schema.
 type FieldDef struct {
