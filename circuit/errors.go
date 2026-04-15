@@ -25,12 +25,6 @@ var (
 
 	// ErrEscalate is returned by RunOperator when Evaluate returns ActionEscalate.
 	// The caller (e.g. a Broker) should handle the escalation.
-	ErrEscalate = errors.New("framework: operator escalation requested")
-
-	// ErrMaxIterations is returned by RunOperator when the iteration limit is reached
-	// without the goal being met.
-	ErrMaxIterations = errors.New("framework: operator max iterations exceeded")
-
 	// ErrFindingVeto is returned by VetoHook when a FindingError targets the
 	// current node. The hookingWalker intercepts this and wraps the artifact
 	// with Confidence() 0.
