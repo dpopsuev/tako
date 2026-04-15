@@ -15,7 +15,6 @@ var OrigamiLayers = []string{
 	"subprocess/containertest",
 	"resource",
 	"prompt",
-	"internal/mathutil",
 	"report",
 	// Engine
 	"engine/gate",

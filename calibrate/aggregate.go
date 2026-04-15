@@ -2,8 +2,7 @@ package calibrate
 
 import (
 	"fmt"
-
-	"github.com/dpopsuev/origami/internal/mathutil"
+	"math"
 )
 
 // PassEvaluator decides whether a metric passes after aggregation.
@@ -43,8 +42,8 @@ func AggregateRunMetrics(runs []MetricSet, eval PassEvaluator) MetricSet {
 	agg := runs[0]
 	for i := range agg.Metrics {
 		vals := allByID[agg.Metrics[i].ID]
-		agg.Metrics[i].Value = mathutil.Mean(vals)
-		sd := mathutil.Stddev(vals)
+		agg.Metrics[i].Value = Mean(vals)
+		sd := Stddev(vals)
 		agg.Metrics[i].Detail = fmt.Sprintf("mean of %d runs (σ=%.3f)", len(runs), sd)
 		agg.Metrics[i].Pass = eval(&agg.Metrics[i])
 	}
@@ -53,15 +52,43 @@ func AggregateRunMetrics(runs []MetricSet, eval PassEvaluator) MetricSet {
 }
 
 // Mean returns the arithmetic mean of vals. Returns 0 for empty input.
-// Delegated to internal/mathutil for use by other packages.
-func Mean(vals []float64) float64 { return mathutil.Mean(vals) }
+func Mean(vals []float64) float64 {
+	if len(vals) == 0 {
+		return 0
+	}
+	sum := 0.0
+	for _, v := range vals {
+		sum += v
+	}
+	return sum / float64(len(vals))
+}
 
 // Stddev returns the sample standard deviation (Bessel-corrected, N-1).
 // Returns 0 when fewer than 2 values are provided.
-func Stddev(vals []float64) float64 { return mathutil.Stddev(vals) }
+func Stddev(vals []float64) float64 {
+	if len(vals) < 2 {
+		return 0
+	}
+	m := Mean(vals)
+	sum := 0.0
+	for _, v := range vals {
+		sum += (v - m) * (v - m)
+	}
+	return math.Sqrt(sum / float64(len(vals)-1))
+}
 
 // SafeDiv divides two integers. Returns 1.0 when denom is 0.
-func SafeDiv(num, denom int) float64 { return mathutil.SafeDiv(num, denom) }
+func SafeDiv(num, denom int) float64 {
+	if denom == 0 {
+		return 1.0
+	}
+	return float64(num) / float64(denom)
+}
 
 // SafeDivFloat divides two float64 values. Returns 1.0 when denom is 0.
-func SafeDivFloat(num, denom float64) float64 { return mathutil.SafeDivFloat(num, denom) }
+func SafeDivFloat(num, denom float64) float64 {
+	if denom == 0 {
+		return 1.0
+	}
+	return num / denom
+}
