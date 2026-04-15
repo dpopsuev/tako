@@ -294,8 +294,7 @@ func resolveTransformerHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg
 		return nil, err
 	}
 	return &transformerNode{
-		name:       name,
-		element:    elem,
+		baseNode:   baseNode{name: name, element: elem},
 		trans:      t,
 		prompt:     nd.Prompt,
 		input:      nd.Input,
@@ -316,9 +315,8 @@ func resolveExtractorHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *
 		return nil, err
 	}
 	return &extractorNode{
-		name:    name,
-		element: elem,
-		ext:     ext,
+		baseNode: baseNode{name: name, element: elem},
+		ext:      ext,
 	}, nil
 }
 
@@ -333,9 +331,8 @@ func resolveRendererHandler(_ *circuit.CircuitDef, nd *circuit.NodeDef, reg *Gra
 		return nil, err
 	}
 	return &rendererNode{
-		name:    name,
-		element: elem,
-		rnd:     rnd,
+		baseNode: baseNode{name: name, element: elem},
+		rnd:      rnd,
 	}, nil
 }
 
@@ -369,8 +366,7 @@ func resolveDelegateHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *G
 		return nil, fmt.Errorf("node %q: delegate action: %w", name, err)
 	}
 	return &dslDelegateNode{
-		name:       name,
-		element:    elem,
+		baseNode:   baseNode{name: name, element: elem},
 		gen:        gen,
 		config:     def.Vars,
 		nodeConfig: nd.EffectiveConfig(),
@@ -388,15 +384,13 @@ func resolveCircuitHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *Gr
 		cd := reg.Circuits[action]
 		slog.DebugContext(context.Background(), circuit.LogCircuitHandlerLocal, slog.Any(circuit.LogKeyComponent, circuit.LogComponentBuild), slog.Any(circuit.LogKeyNode, name), slog.Any(circuit.LogKeyHandler, action))
 		return &circuitRefNode{
-			name:       name,
-			element:    elem,
+			baseNode:   baseNode{name: name, element: elem},
 			circuitDef: cd,
 		}, nil
 	case reg.MediatorEndpoint != "":
 		slog.DebugContext(context.Background(), circuit.LogCircuitHandlerMediator, slog.Any(circuit.LogKeyComponent, circuit.LogComponentBuild), slog.Any(circuit.LogKeyNode, name), slog.Any(circuit.LogKeyHandler, action), slog.Any(circuit.LogKeyEndpoint, reg.MediatorEndpoint))
 		return &transformerNode{
-			name:       name,
-			element:    elem,
+			baseNode:   baseNode{name: name, element: elem},
 			trans:      &MCPCircuitTransformer{CircuitType: action, Endpoint: reg.MediatorEndpoint},
 			config:     def.Vars,
 			nodeConfig: nd.EffectiveConfig(),

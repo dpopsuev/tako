@@ -37,7 +37,7 @@ func testManifest() *circuit.InstrumentManifest {
 }
 
 func TestInstrumentNode_Name(t *testing.T) {
-	n := &instrumentNode{name: "scan"}
+	n := &instrumentNode{baseNode: baseNode{name: "scan"}}
 	if n.Name() != "scan" {
 		t.Errorf("Name() = %q, want %q", n.Name(), "scan")
 	}
@@ -46,7 +46,7 @@ func TestInstrumentNode_Name(t *testing.T) {
 func TestInstrumentNode_Process_ReturnsArtifact(t *testing.T) {
 	disp := &stubDispatcher{result: json.RawMessage(`{"ok":true}`)}
 	n := &instrumentNode{
-		name:       "scan",
+		baseNode:   baseNode{name: "scan"},
 		manifest:   testManifest(),
 		actionName: "echo",
 		dispatcher: disp,
@@ -77,7 +77,7 @@ func TestInstrumentNode_Process_ReturnsArtifact(t *testing.T) {
 func TestInstrumentNode_Process_DispatcherError(t *testing.T) {
 	disp := &stubDispatcher{err: errors.New("command failed")}
 	n := &instrumentNode{
-		name:       "scan",
+		baseNode:   baseNode{name: "scan"},
 		manifest:   testManifest(),
 		actionName: "echo",
 		dispatcher: disp,
@@ -95,7 +95,7 @@ func TestInstrumentNode_Process_DispatcherError(t *testing.T) {
 func TestInstrumentNode_Process_ResolvesInput(t *testing.T) {
 	disp := &stubDispatcher{result: json.RawMessage(`{}`)}
 	n := &instrumentNode{
-		name:       "triage",
+		baseNode:   baseNode{name: "triage"},
 		manifest:   testManifest(),
 		actionName: "echo",
 		dispatcher: disp,
@@ -129,7 +129,7 @@ func TestInstrumentNode_Process_ResolvesInput(t *testing.T) {
 func TestInstrumentNode_Process_NilWalkerState(t *testing.T) {
 	disp := &stubDispatcher{result: json.RawMessage(`{}`)}
 	n := &instrumentNode{
-		name:       "scan",
+		baseNode:   baseNode{name: "scan"},
 		manifest:   testManifest(),
 		actionName: "echo",
 		dispatcher: disp,
@@ -150,7 +150,7 @@ func TestInstrumentNode_Process_ContextCancellation(t *testing.T) {
 
 	disp := &stubDispatcher{err: context.Canceled}
 	n := &instrumentNode{
-		name:       "scan",
+		baseNode:   baseNode{name: "scan"},
 		manifest:   testManifest(),
 		actionName: "echo",
 		dispatcher: disp,

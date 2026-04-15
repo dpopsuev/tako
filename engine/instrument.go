@@ -25,8 +25,7 @@ type InstrumentDispatcher interface {
 
 // instrumentNode implements circuit.Node by dispatching through an InstrumentDispatcher.
 type instrumentNode struct {
-	name       string
-	element    identity.Element
+	baseNode
 	manifest   *circuit.InstrumentManifest
 	actionName string
 	action     def.ActionDef
@@ -35,9 +34,6 @@ type instrumentNode struct {
 	input      string         // from NodeDef.Input (e.g. "${recall.output}")
 	config     map[string]any // circuit vars
 }
-
-func (n *instrumentNode) Name() string                      { return n.name }
-func (n *instrumentNode) Approach() identity.Element { return n.element }
 
 func (n *instrumentNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	logger := slog.Default().With(slog.Any(circuit.LogKeyComponent, circuit.LogComponentInstrument))
@@ -242,8 +238,7 @@ func resolveInstrumentNode(_ *circuit.CircuitDef, nd *circuit.NodeDef, manifest 
 	}
 
 	return &instrumentNode{
-		name:       name,
-		element:    elem,
+		baseNode:   baseNode{name: name, element: elem},
 		manifest:   manifest,
 		actionName: actionName,
 		action:     action,

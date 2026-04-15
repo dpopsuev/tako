@@ -81,7 +81,7 @@ func TestTemplateRenderer_BadInput(t *testing.T) {
 
 func TestRendererNode_Process(t *testing.T) {
 	rnd := &stubRenderer{name: "test", output: "rendered text"}
-	node := &rendererNode{name: "render-node", rnd: rnd}
+	node := &rendererNode{baseNode: baseNode{name: "render-node"}, rnd: rnd}
 
 	art, err := node.Process(context.Background(), circuit.NodeContext{})
 	if err != nil {

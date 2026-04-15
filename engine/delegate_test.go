@@ -363,7 +363,7 @@ func (n *testDelegateNode) GenerateCircuit(_ context.Context, _ circuit.NodeCont
 // --- circuitRefNode tests ---
 
 func TestCircuitRefNode_Interface(t *testing.T) {
-	n := &circuitRefNode{name: "sub", circuitDef: &circuit.CircuitDef{Circuit: "inner"}}
+	n := &circuitRefNode{baseNode: baseNode{name: "sub"}, circuitDef: &circuit.CircuitDef{Circuit: "inner"}}
 	var _ DelegateNode = n
 	if n.Name() != "sub" {
 		t.Errorf("Name() = %q, want %q", n.Name(), "sub")
@@ -372,7 +372,7 @@ func TestCircuitRefNode_Interface(t *testing.T) {
 
 func TestCircuitRefNode_GenerateCircuit(t *testing.T) {
 	inner := &circuit.CircuitDef{Circuit: "beta", Start: "X", Done: "_done"}
-	n := &circuitRefNode{name: "gather", circuitDef: inner}
+	n := &circuitRefNode{baseNode: baseNode{name: "gather"}, circuitDef: inner}
 
 	got, err := n.GenerateCircuit(context.Background(), circuit.NodeContext{})
 	if err != nil {

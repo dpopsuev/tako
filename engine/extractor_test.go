@@ -71,7 +71,7 @@ func TestExtractorNode_Process(t *testing.T) {
 		},
 	}
 
-	node := &extractorNode{name: "parse", element: "earth", ext: ext}
+	node := &extractorNode{baseNode: baseNode{name: "parse", element: "earth"}, ext: ext}
 
 	if node.Name() != "parse" {
 		t.Errorf("Name() = %q, want %q", node.Name(), "parse")
@@ -108,7 +108,7 @@ func TestExtractorNode_NilPriorArtifact(t *testing.T) {
 			return "ok", nil
 		},
 	}
-	node := &extractorNode{name: "n", ext: ext}
+	node := &extractorNode{baseNode: baseNode{name: "n"}, ext: ext}
 	nc := circuit.NodeContext{PriorArtifact: nil}
 	_, err := node.Process(context.Background(), nc)
 	if err != nil {
@@ -123,7 +123,7 @@ func TestExtractorNode_ExtractError(t *testing.T) {
 			return nil, fmt.Errorf("parse failed")
 		},
 	}
-	node := &extractorNode{name: "n", ext: ext}
+	node := &extractorNode{baseNode: baseNode{name: "n"}, ext: ext}
 	_, err := node.Process(context.Background(), circuit.NodeContext{})
 	if err == nil {
 		t.Fatal("expected error")

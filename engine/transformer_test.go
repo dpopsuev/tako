@@ -15,10 +15,9 @@ import (
 func TestTransformerNode_Process(t *testing.T) {
 	trans := &echoTransformer{}
 	node := &transformerNode{
-		name:    "test-node",
-		element: identity.ElementFire,
-		trans:   trans,
-		config:  map[string]any{"key": "val"},
+		baseNode: baseNode{name: "test-node", element: identity.ElementFire},
+		trans:    trans,
+		config:   map[string]any{"key": "val"},
 	}
 
 	if node.Name() != "test-node" {
@@ -46,7 +45,7 @@ func TestTransformerNode_Process(t *testing.T) {
 
 func TestTransformerNode_NilInput(t *testing.T) {
 	trans := &echoTransformer{}
-	node := &transformerNode{name: "test", trans: trans}
+	node := &transformerNode{baseNode: baseNode{name: "test"}, trans: trans}
 
 	artifact, err := node.Process(context.Background(), circuit.NodeContext{})
 	if err != nil {
@@ -149,11 +148,10 @@ func (n *testNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit
 func TestTransformerNode_ResolveInput(t *testing.T) {
 	trans := &echoTransformer{}
 	node := &transformerNode{
-		name:    "triage",
-		element: identity.ElementFire,
-		trans:   trans,
-		input:   "${recall.output}",
-		config:  map[string]any{"key": "val"},
+		baseNode: baseNode{name: "triage", element: identity.ElementFire},
+		trans:    trans,
+		input:    "${recall.output}",
+		config:   map[string]any{"key": "val"},
 	}
 
 	recallArtifact := &stubArtifact{
@@ -185,8 +183,7 @@ func TestTransformerNode_ResolveInput(t *testing.T) {
 
 func TestTransformerNode_RenderPrompt(t *testing.T) {
 	captureNode := &transformerNode{
-		name:    "triage",
-		element: identity.ElementFire,
+		baseNode: baseNode{name: "triage", element: identity.ElementFire},
 		trans: TransformerFunc("capture", func(_ context.Context, tc *TransformerContext) (any, error) {
 			return map[string]any{"prompt": tc.Prompt}, nil
 		}),
@@ -213,8 +210,8 @@ func TestTransformerNode_RenderPrompt(t *testing.T) {
 func TestTransformerNode_EmptyInput_FallsBackToPrior(t *testing.T) {
 	trans := &echoTransformer{}
 	node := &transformerNode{
-		name:  "test",
-		trans: trans,
+		baseNode: baseNode{name: "test"},
+		trans:    trans,
 	}
 
 	state := circuit.NewWalkerState("test")
@@ -246,8 +243,7 @@ func TestTransformerNode_NodeConfigReachesTransformer(t *testing.T) {
 		}, nil
 	})
 	node := &transformerNode{
-		name:       "test-node",
-		element:    identity.ElementFire,
+		baseNode:   baseNode{name: "test-node", element: identity.ElementFire},
 		trans:      captureConfig,
 		nodeConfig: &circuit.NodeConfig{OutputPath: "recall.json", MaxRetries: 3},
 	}
@@ -521,8 +517,8 @@ func TestTransformerNode_WalkerStateReachesTransformer(t *testing.T) {
 	})
 
 	node := &transformerNode{
-		name:  "test-node",
-		trans: captureTrans,
+		baseNode: baseNode{name: "test-node"},
+		trans:    captureTrans,
 	}
 
 	state := circuit.NewWalkerState("walker-1")
@@ -680,8 +676,8 @@ func (t *typedEchoTransformer) Transform(_ context.Context, tc *TransformerConte
 func TestTypedTransformer_MatchingInput(t *testing.T) {
 	trans := &typedEchoTransformer{inputType: reflect.TypeOf(map[string]any{})}
 	node := &transformerNode{
-		name:  "typed-node",
-		trans: trans,
+		baseNode: baseNode{name: "typed-node"},
+		trans:    trans,
 	}
 
 	nc := circuit.NodeContext{
@@ -700,8 +696,8 @@ func TestTypedTransformer_MatchingInput(t *testing.T) {
 func TestTypedTransformer_NilInput(t *testing.T) {
 	trans := &typedEchoTransformer{inputType: reflect.TypeOf(map[string]any{})}
 	node := &transformerNode{
-		name:  "typed-node",
-		trans: trans,
+		baseNode: baseNode{name: "typed-node"},
+		trans:    trans,
 	}
 
 	_, err := node.Process(context.Background(), circuit.NodeContext{})
@@ -719,8 +715,8 @@ func TestTypedTransformer_NilInput(t *testing.T) {
 func TestTypedTransformer_WrongInputType(t *testing.T) {
 	trans := &typedEchoTransformer{inputType: reflect.TypeOf(map[string]any{})}
 	node := &transformerNode{
-		name:  "typed-node",
-		trans: trans,
+		baseNode: baseNode{name: "typed-node"},
+		trans:    trans,
 	}
 
 	nc := circuit.NodeContext{
@@ -739,8 +735,8 @@ func TestTypedTransformer_RegularTransformer_NoValidation(t *testing.T) {
 	// echoTransformer does NOT implement TypedTransformer — no validation should occur.
 	trans := &echoTransformer{}
 	node := &transformerNode{
-		name:  "untyped-node",
-		trans: trans,
+		baseNode: baseNode{name: "untyped-node"},
+		trans:    trans,
 	}
 
 	// nil input should pass through without error (backward compatible).
@@ -758,8 +754,8 @@ func TestTypedTransformer_NilInputType_AcceptsAny(t *testing.T) {
 	// TypedTransformer that returns nil InputType — accepts any input.
 	trans := &typedEchoTransformer{inputType: nil}
 	node := &transformerNode{
-		name:  "any-node",
-		trans: trans,
+		baseNode: baseNode{name: "any-node"},
+		trans:    trans,
 	}
 
 	nc := circuit.NodeContext{
