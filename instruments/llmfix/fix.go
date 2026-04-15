@@ -89,7 +89,7 @@ func NewFixTransformer(provider anyllm.Provider, model, repoPath string, opts ..
 	return f
 }
 
-// Name implements engine.Transformer.
+// Name implements engine.Instrument.
 func (f *FixTransformer) Name() string { return "llm-fix" }
 
 // LastStationLog implements engine.StationLoggable.
@@ -99,9 +99,9 @@ func (f *FixTransformer) LastStationLog() trace.StationLogger {
 	return f.lastStationLog
 }
 
-// Transform implements engine.Transformer. Reads scan findings from prior
+// Transform implements engine.Instrument. Reads scan findings from prior
 // artifact, asks the LLM for fixes, applies them, returns FixResult.
-func (f *FixTransformer) Transform(ctx context.Context, tc *engine.TransformerContext) (any, error) {
+func (f *FixTransformer) Transform(ctx context.Context, tc *engine.InstrumentContext) (any, error) {
 	// Extract findings from prior artifact (scan output).
 	findings := extractFindings(tc)
 	if len(findings) == 0 {
@@ -429,7 +429,7 @@ func extractToolUseChanges(toolCalls []anyllm.ToolCall) []fileChange {
 }
 
 // extractFindings pulls scan findings from the walker context or prior artifact.
-func extractFindings(tc *engine.TransformerContext) []sdlctype.Finding {
+func extractFindings(tc *engine.InstrumentContext) []sdlctype.Finding {
 	if tc.Input == nil {
 		return nil
 	}

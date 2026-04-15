@@ -65,7 +65,7 @@ func TestE2E_Calibration_AllStubs(t *testing.T) {
 	// Step 3: Create a Component that registers the stub transformer.
 	comp := &engine.Component{
 		Namespace: "testkit",
-		Transformers: engine.TransformerRegistry{
+		Instruments: engine.InstrumentRegistry{
 			"stub": stubTx,
 		},
 	}

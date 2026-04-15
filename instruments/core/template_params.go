@@ -31,7 +31,7 @@ const transformerNameTemplateParams = "template-params"
 func (t *TemplateParamsTransformer) Name() string        { return transformerNameTemplateParams }
 func (t *TemplateParamsTransformer) Deterministic() bool { return true }
 
-func (t *TemplateParamsTransformer) Transform(_ context.Context, tc *engine.TransformerContext) (any, error) {
+func (t *TemplateParamsTransformer) Transform(_ context.Context, tc *engine.InstrumentContext) (any, error) {
 	params := make(map[string]any)
 
 	cfg := tc.NodeConfig

@@ -74,7 +74,7 @@ func TestBuildGraphWith_TransformerNode(t *testing.T) {
 	}
 
 	reg := &GraphRegistries{
-		Transformers: TransformerRegistry{"echo": trans},
+		Instruments: InstrumentRegistry{"echo": trans},
 	}
 
 	graph, err := BuildGraph(def, reg)
@@ -114,7 +114,7 @@ func TestBuildGraphWith_MixedTransformerAndWalker(t *testing.T) {
 	}
 
 	reg := &GraphRegistries{
-		Transformers: TransformerRegistry{"echo": trans},
+		Instruments: InstrumentRegistry{"echo": trans},
 		Nodes:        NodeRegistry{"legacy": nodeFactory},
 	}
 
@@ -184,7 +184,7 @@ func TestTransformerNode_ResolveInput(t *testing.T) {
 func TestTransformerNode_RenderPrompt(t *testing.T) {
 	captureNode := &transformerNode{
 		baseNode: baseNode{name: "triage", element: identity.ElementFire},
-		trans: TransformerFunc("capture", func(_ context.Context, tc *TransformerContext) (any, error) {
+		trans: InstrumentFunc("capture", func(_ context.Context, tc *InstrumentContext) (any, error) {
 			return map[string]any{"prompt": tc.Prompt}, nil
 		}),
 		prompt: "Analyze {{.Node}} with threshold {{.Config.threshold}}",
@@ -236,7 +236,7 @@ func TestTransformerNode_EmptyInput_FallsBackToPrior(t *testing.T) {
 }
 
 func TestTransformerNode_NodeConfigReachesTransformer(t *testing.T) {
-	captureConfig := TransformerFunc("capture-config", func(_ context.Context, tc *TransformerContext) (any, error) {
+	captureConfig := InstrumentFunc("capture-config", func(_ context.Context, tc *InstrumentContext) (any, error) {
 		return map[string]any{
 			"output_path": tc.NodeConfig.OutputPath,
 			"max_retries": tc.NodeConfig.MaxRetries,
@@ -313,9 +313,9 @@ done: _done
 	}
 }
 
-func TestBuildGraph_NodeConfigReachesTransformerContext(t *testing.T) {
+func TestBuildGraph_NodeConfigReachesInstrumentContext(t *testing.T) {
 	var capturedConfig *circuit.NodeConfig
-	captureTrans := TransformerFunc("capture", func(_ context.Context, tc *TransformerContext) (any, error) {
+	captureTrans := InstrumentFunc("capture", func(_ context.Context, tc *InstrumentContext) (any, error) {
 		capturedConfig = tc.NodeConfig
 		return map[string]any{"ok": true}, nil
 	})
@@ -339,7 +339,7 @@ func TestBuildGraph_NodeConfigReachesTransformerContext(t *testing.T) {
 	}
 
 	runner, err := NewRunnerWith(def, &GraphRegistries{
-		Transformers: TransformerRegistry{"capture": captureTrans},
+		Instruments: InstrumentRegistry{"capture": captureTrans},
 	})
 	if err != nil {
 		t.Fatalf("NewRunnerWith: %v", err)
@@ -466,7 +466,7 @@ func TestBuiltinGoTemplate_NoRegistry(t *testing.T) {
 
 func TestBuiltinTransformer_WithNodeConfig(t *testing.T) {
 	var capturedConfig *circuit.NodeConfig
-	configCapture := TransformerFunc("config-capture", func(_ context.Context, tc *TransformerContext) (any, error) {
+	configCapture := InstrumentFunc("config-capture", func(_ context.Context, tc *InstrumentContext) (any, error) {
 		capturedConfig = tc.NodeConfig
 		return tc.Prompt, nil
 	})
@@ -490,7 +490,7 @@ func TestBuiltinTransformer_WithNodeConfig(t *testing.T) {
 	}
 
 	runner, err := NewRunnerWith(def, &GraphRegistries{
-		Transformers: TransformerRegistry{"config-capture": configCapture},
+		Instruments: InstrumentRegistry{"config-capture": configCapture},
 	})
 	if err != nil {
 		t.Fatalf("NewRunnerWith: %v", err)
@@ -511,7 +511,7 @@ func TestBuiltinTransformer_WithNodeConfig(t *testing.T) {
 
 func TestTransformerNode_WalkerStateReachesTransformer(t *testing.T) {
 	var captured *circuit.WalkerState
-	captureTrans := TransformerFunc("capture-state", func(_ context.Context, tc *TransformerContext) (any, error) {
+	captureTrans := InstrumentFunc("capture-state", func(_ context.Context, tc *InstrumentContext) (any, error) {
 		captured = tc.WalkerState
 		return "ok", nil
 	})
@@ -531,7 +531,7 @@ func TestTransformerNode_WalkerStateReachesTransformer(t *testing.T) {
 	}
 
 	if captured == nil {
-		t.Fatal("WalkerState was not passed to TransformerContext")
+		t.Fatal("WalkerState was not passed to InstrumentContext")
 	}
 	if captured.ID != "walker-1" {
 		t.Errorf("WalkerState.ID = %q, want walker-1", captured.ID)
@@ -542,7 +542,7 @@ func TestTransformerNode_WalkerStateReachesTransformer(t *testing.T) {
 }
 
 func TestTransformerNode_SlowTransform_ContextDeadline(t *testing.T) {
-	slowTrans := TransformerFunc("slow", func(ctx context.Context, tc *TransformerContext) (any, error) {
+	slowTrans := InstrumentFunc("slow", func(ctx context.Context, tc *InstrumentContext) (any, error) {
 		select {
 		case <-time.After(1 * time.Second):
 			return "done", nil
@@ -564,7 +564,7 @@ func TestTransformerNode_SlowTransform_ContextDeadline(t *testing.T) {
 	}
 
 	runner, err := NewRunnerWith(def, &GraphRegistries{
-		Transformers: TransformerRegistry{"slow": slowTrans},
+		Instruments: InstrumentRegistry{"slow": slowTrans},
 	})
 	if err != nil {
 		t.Fatalf("NewRunnerWith: %v", err)
@@ -589,7 +589,7 @@ func TestTransformerNode_SlowTransform_ContextDeadline(t *testing.T) {
 }
 
 func TestTransformerNode_ContextCancellation_PropagatesError(t *testing.T) {
-	blockingTrans := TransformerFunc("blocking", func(ctx context.Context, tc *TransformerContext) (any, error) {
+	blockingTrans := InstrumentFunc("blocking", func(ctx context.Context, tc *InstrumentContext) (any, error) {
 		<-ctx.Done()
 		return nil, ctx.Err()
 	})
@@ -607,7 +607,7 @@ func TestTransformerNode_ContextCancellation_PropagatesError(t *testing.T) {
 	}
 
 	runner, err := NewRunnerWith(def, &GraphRegistries{
-		Transformers: TransformerRegistry{"blocking": blockingTrans},
+		Instruments: InstrumentRegistry{"blocking": blockingTrans},
 	})
 	if err != nil {
 		t.Fatalf("NewRunnerWith: %v", err)
@@ -642,7 +642,7 @@ func TestIsTransformerNode(t *testing.T) {
 		Edges: []circuit.EdgeDef{{ID: "e", From: "t", To: "_done"}},
 	}
 	reg := &GraphRegistries{
-		Transformers: TransformerRegistry{"echo": &echoTransformer{}},
+		Instruments: InstrumentRegistry{"echo": &echoTransformer{}},
 	}
 	g, err := BuildGraph(def, reg)
 	if err != nil {
@@ -660,7 +660,7 @@ func TestIsTransformerNode(t *testing.T) {
 	}
 }
 
-// --- TypedTransformer tests ---
+// --- TypedInstrument tests ---
 
 // typedEchoTransformer expects a map[string]any input.
 type typedEchoTransformer struct {
@@ -669,11 +669,11 @@ type typedEchoTransformer struct {
 
 func (t *typedEchoTransformer) Name() string            { return "typed-echo" }
 func (t *typedEchoTransformer) InputType() reflect.Type { return t.inputType }
-func (t *typedEchoTransformer) Transform(_ context.Context, tc *TransformerContext) (any, error) {
+func (t *typedEchoTransformer) Transform(_ context.Context, tc *InstrumentContext) (any, error) {
 	return map[string]any{"echoed": tc.Input, "node": tc.NodeName}, nil
 }
 
-func TestTypedTransformer_MatchingInput(t *testing.T) {
+func TestTypedInstrument_MatchingInput(t *testing.T) {
 	trans := &typedEchoTransformer{inputType: reflect.TypeOf(map[string]any{})}
 	node := &transformerNode{
 		baseNode: baseNode{name: "typed-node"},
@@ -693,7 +693,7 @@ func TestTypedTransformer_MatchingInput(t *testing.T) {
 	}
 }
 
-func TestTypedTransformer_NilInput(t *testing.T) {
+func TestTypedInstrument_NilInput(t *testing.T) {
 	trans := &typedEchoTransformer{inputType: reflect.TypeOf(map[string]any{})}
 	node := &transformerNode{
 		baseNode: baseNode{name: "typed-node"},
@@ -702,7 +702,7 @@ func TestTypedTransformer_NilInput(t *testing.T) {
 
 	_, err := node.Process(context.Background(), circuit.NodeContext{})
 	if err == nil {
-		t.Fatal("Process should fail with nil input for TypedTransformer")
+		t.Fatal("Process should fail with nil input for TypedInstrument")
 	}
 	if !strings.Contains(err.Error(), "expected input type") {
 		t.Errorf("error should mention expected type, got: %v", err)
@@ -712,7 +712,7 @@ func TestTypedTransformer_NilInput(t *testing.T) {
 	}
 }
 
-func TestTypedTransformer_WrongInputType(t *testing.T) {
+func TestTypedInstrument_WrongInputType(t *testing.T) {
 	trans := &typedEchoTransformer{inputType: reflect.TypeOf(map[string]any{})}
 	node := &transformerNode{
 		baseNode: baseNode{name: "typed-node"},
@@ -724,15 +724,15 @@ func TestTypedTransformer_WrongInputType(t *testing.T) {
 	}
 	_, err := node.Process(context.Background(), nc)
 	if err == nil {
-		t.Fatal("Process should fail with wrong input type for TypedTransformer")
+		t.Fatal("Process should fail with wrong input type for TypedInstrument")
 	}
 	if !strings.Contains(err.Error(), "not assignable to expected") {
 		t.Errorf("error should mention assignability, got: %v", err)
 	}
 }
 
-func TestTypedTransformer_RegularTransformer_NoValidation(t *testing.T) {
-	// echoTransformer does NOT implement TypedTransformer — no validation should occur.
+func TestTypedInstrument_RegularTransformer_NoValidation(t *testing.T) {
+	// echoTransformer does NOT implement TypedInstrument — no validation should occur.
 	trans := &echoTransformer{}
 	node := &transformerNode{
 		baseNode: baseNode{name: "untyped-node"},
@@ -750,8 +750,8 @@ func TestTypedTransformer_RegularTransformer_NoValidation(t *testing.T) {
 	}
 }
 
-func TestTypedTransformer_NilInputType_AcceptsAny(t *testing.T) {
-	// TypedTransformer that returns nil InputType — accepts any input.
+func TestTypedInstrument_NilInputType_AcceptsAny(t *testing.T) {
+	// TypedInstrument that returns nil InputType — accepts any input.
 	trans := &typedEchoTransformer{inputType: nil}
 	node := &transformerNode{
 		baseNode: baseNode{name: "any-node"},

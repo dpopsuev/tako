@@ -43,7 +43,7 @@ const transformerNameLLM = "llm"
 func (t *LLMTransformer) Name() string        { return transformerNameLLM }
 func (t *LLMTransformer) Deterministic() bool { return false }
 
-func (t *LLMTransformer) Transform(ctx context.Context, tc *engine.TransformerContext) (any, error) {
+func (t *LLMTransformer) Transform(ctx context.Context, tc *engine.InstrumentContext) (any, error) {
 	promptPath := tc.Prompt
 	if promptPath != "" && !filepath.IsAbs(promptPath) {
 		promptPath = filepath.Join(t.baseDir, promptPath)

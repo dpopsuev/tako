@@ -251,7 +251,7 @@ colors:
 	}
 
 	m := NewMatch()
-	tc := &engine.TransformerContext{
+	tc := &engine.InstrumentContext{
 		Input: "the sky is blue",
 		NodeConfig: &circuit.NodeConfig{
 			Evaluator: eval,
@@ -286,7 +286,7 @@ test:
 `))
 
 	m := NewMatch()
-	tc := &engine.TransformerContext{
+	tc := &engine.InstrumentContext{
 		Input: map[string]any{"text": "error occurred"},
 		NodeConfig: &circuit.NodeConfig{
 			Evaluator: eval,
@@ -306,7 +306,7 @@ test:
 
 func TestMatchTransformer_MissingEvaluator(t *testing.T) {
 	m := NewMatch()
-	tc := &engine.TransformerContext{NodeConfig: &circuit.NodeConfig{}}
+	tc := &engine.InstrumentContext{NodeConfig: &circuit.NodeConfig{}}
 	_, err := m.Transform(context.Background(), tc)
 	if err == nil {
 		t.Error("expected error for missing evaluator")
@@ -321,7 +321,7 @@ test:
       result: y
 `))
 	m := NewMatch()
-	tc := &engine.TransformerContext{
+	tc := &engine.InstrumentContext{
 		NodeConfig: &circuit.NodeConfig{Evaluator: eval},
 	}
 	_, err := m.Transform(context.Background(), tc)

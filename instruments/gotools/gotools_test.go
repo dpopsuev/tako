@@ -30,7 +30,7 @@ func TestBuild_ReturnsTypedResult(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	result, err := tx.Transform(ctx, &engine.TransformerContext{})
+	result, err := tx.Transform(ctx, &engine.InstrumentContext{})
 	if err != nil {
 		t.Fatalf("Transform: %v", err)
 	}
@@ -55,7 +55,7 @@ func TestTest_ReturnsTypedResult(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	result, err := tx.Transform(ctx, &engine.TransformerContext{})
+	result, err := tx.Transform(ctx, &engine.InstrumentContext{})
 	if err != nil {
 		t.Fatalf("Transform: %v", err)
 	}
@@ -74,8 +74,8 @@ func TestTest_ReturnsTypedResult(t *testing.T) {
 // Contract: same interface as stub — Liskov substitution.
 func TestBuildContract_MatchesStub(t *testing.T) {
 	root := origamiRoot(t)
-	transformers := map[string]engine.Transformer{
-		"stub": engine.TransformerFunc("build", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+	transformers := map[string]engine.Instrument{
+		"stub": engine.InstrumentFunc("build", func(_ context.Context, _ *engine.InstrumentContext) (any, error) {
 			return &sdlctype.BuildResult{Pass: true}, nil
 		}),
 		"real": NewBuildTransformer(root),
@@ -86,7 +86,7 @@ func TestBuildContract_MatchesStub(t *testing.T) {
 
 	for name, tx := range transformers {
 		t.Run(name, func(t *testing.T) {
-			result, err := tx.Transform(ctx, &engine.TransformerContext{})
+			result, err := tx.Transform(ctx, &engine.InstrumentContext{})
 			if err != nil {
 				t.Fatalf("Transform: %v", err)
 			}
@@ -103,8 +103,8 @@ func TestBuildContract_MatchesStub(t *testing.T) {
 // Contract: same interface as stub — Liskov substitution.
 func TestTestContract_MatchesStub(t *testing.T) {
 	root := origamiRoot(t)
-	transformers := map[string]engine.Transformer{
-		"stub": engine.TransformerFunc("test", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+	transformers := map[string]engine.Instrument{
+		"stub": engine.InstrumentFunc("test", func(_ context.Context, _ *engine.InstrumentContext) (any, error) {
 			return &sdlctype.TestResult{Pass: true}, nil
 		}),
 		"real": NewTestTransformer(root, WithPackages("./engine/trace/")),
@@ -115,7 +115,7 @@ func TestTestContract_MatchesStub(t *testing.T) {
 
 	for name, tx := range transformers {
 		t.Run(name, func(t *testing.T) {
-			result, err := tx.Transform(ctx, &engine.TransformerContext{})
+			result, err := tx.Transform(ctx, &engine.InstrumentContext{})
 			if err != nil {
 				t.Fatalf("Transform: %v", err)
 			}
@@ -136,7 +136,7 @@ func TestBuild_FailingBuild_ReturnsPassFalse(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	result, err := tx.Transform(ctx, &engine.TransformerContext{})
+	result, err := tx.Transform(ctx, &engine.InstrumentContext{})
 	if err != nil {
 		t.Fatalf("Transform should not error: %v", err)
 	}

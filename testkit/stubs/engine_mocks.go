@@ -64,7 +64,7 @@ type MockTuner struct {
 	Err error
 }
 
-func (m *MockTuner) TuneAll(_ context.Context, _ engine.InstrumentRegistry, _ string) error {
+func (m *MockTuner) TuneAll(_ context.Context, _ engine.ManifestRegistry, _ string) error {
 	return m.Err
 }
 

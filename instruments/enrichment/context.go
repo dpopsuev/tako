@@ -31,11 +31,11 @@ func NewResolveContext(registry *tool.Registry) *ResolveContext {
 	return &ResolveContext{registry: registry}
 }
 
-// Name implements handler.Transformer.
+// Name implements handler.Instrument.
 func (r *ResolveContext) Name() string { return "resolve-context" }
 
-// Transform implements handler.Transformer.
-func (r *ResolveContext) Transform(ctx context.Context, tc *handler.TransformerContext) (any, error) {
+// Transform implements handler.Instrument.
+func (r *ResolveContext) Transform(ctx context.Context, tc *handler.InstrumentContext) (any, error) {
 	result := &sdlctype.ResolveContextResult{
 		Spec: make(map[string]any),
 	}
@@ -120,4 +120,4 @@ func (r *ResolveContext) resolveArchitecture(ctx context.Context) map[string]any
 	return arch
 }
 
-var _ handler.Transformer = (*ResolveContext)(nil)
+var _ handler.Instrument = (*ResolveContext)(nil)

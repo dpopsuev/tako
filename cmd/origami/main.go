@@ -143,13 +143,13 @@ func runCmd(args []string) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	builtins := engine.TransformerRegistry{
+	builtins := engine.InstrumentRegistry{
 		"file": core.NewFile(core.WithRootDir(filepath.Dir(circuitPath))),
 	}
 
 	opts := []engine.RunOption{
 		engine.WithLogger(logger),
-		engine.WithTransformers(builtins),
+		engine.WithInstruments(builtins),
 	}
 	if len(sets) > 0 {
 		opts = append(opts, engine.WithOverrides(map[string]any(sets)))

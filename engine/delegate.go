@@ -68,7 +68,7 @@ func (a *DelegateArtifact) confidence() float64 {
 // has delegate: true and generator: set.
 type dslDelegateNode struct {
 	baseNode
-	gen        Transformer
+	gen        Instrument
 	config     map[string]any
 	nodeConfig *circuit.NodeConfig
 }
@@ -87,7 +87,7 @@ func (n *dslDelegateNode) GenerateCircuit(ctx context.Context, nc circuit.NodeCo
 		input = nc.PriorArtifact.Raw()
 	}
 
-	tc := &TransformerContext{
+	tc := &InstrumentContext{
 		Input:       input,
 		Config:      n.config,
 		NodeName:    n.name,

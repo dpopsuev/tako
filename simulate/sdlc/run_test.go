@@ -49,12 +49,12 @@ func TestSDLCCircuit_FinallyNode(t *testing.T) {
 func TestSDLCTypes_AllOutputsTyped(t *testing.T) {
 	// Every stub transformer must return a pointer to a typed struct,
 	// not map[string]any. This is the hard-typing contract.
-	stubs := StubTransformers(true)
+	stubs := StubInstruments(true)
 	ctx := context.Background()
 
 	for name, tx := range stubs {
 		t.Run(name, func(t *testing.T) {
-			result, err := tx.Transform(ctx, &engine.TransformerContext{})
+			result, err := tx.Transform(ctx, &engine.InstrumentContext{})
 			if err != nil {
 				t.Fatalf("Transform: %v", err)
 			}
@@ -86,7 +86,7 @@ func TestSDLC_FullPipeline(t *testing.T) {
 
 	recorder := trace.NewFlightRecorder(1000)
 	result, err := Run(ctx, RunConfig{
-		Transformers: StubTransformers(true),
+		Instruments: StubInstruments(true),
 		Recorder:     recorder,
 	})
 	if err != nil {
@@ -120,7 +120,7 @@ func TestSDLC_FlightRecorderCaptures(t *testing.T) {
 
 	recorder := trace.NewFlightRecorder(1000)
 	_, err := Run(ctx, RunConfig{
-		Transformers: StubTransformers(true),
+		Instruments: StubInstruments(true),
 		Recorder:     recorder,
 	})
 	if err != nil {
@@ -180,7 +180,7 @@ func TestSDLCV2_SubCircuitDelegation(t *testing.T) {
 
 	// Build registries with all stubs + sub-circuits.
 	shared := &engine.GraphRegistries{
-		Transformers: StubTransformers(true),
+		Instruments: StubInstruments(true),
 		Circuits:     subCircuits,
 	}
 

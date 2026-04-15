@@ -11,7 +11,7 @@ import (
 
 // MermaidOptions configures Mermaid rendering.
 type MermaidOptions struct {
-	Registry engine.TransformerRegistry // optional; enables D/S boundary visualization
+	Registry engine.InstrumentRegistry // optional; enables D/S boundary visualization
 }
 
 // RenderMermaid generates a Mermaid flowchart from a CircuitDef with zone

@@ -35,11 +35,11 @@ func NewPollScribe(registry *tool.Registry) *PollScribe {
 	return &PollScribe{registry: registry}
 }
 
-// Name implements handler.Transformer.
+// Name implements handler.Instrument.
 func (p *PollScribe) Name() string { return "poll-scribe" }
 
-// Transform implements handler.Transformer.
-func (p *PollScribe) Transform(ctx context.Context, tc *handler.TransformerContext) (any, error) {
+// Transform implements handler.Instrument.
+func (p *PollScribe) Transform(ctx context.Context, tc *handler.InstrumentContext) (any, error) {
 	scope, _ := tc.WalkerState.Context["scope"].(string)
 
 	params := map[string]any{
@@ -91,11 +91,11 @@ func NewMarkDone(registry *tool.Registry) *MarkDone {
 	return &MarkDone{registry: registry}
 }
 
-// Name implements handler.Transformer.
+// Name implements handler.Instrument.
 func (m *MarkDone) Name() string { return "mark-done" }
 
-// Transform implements handler.Transformer.
-func (m *MarkDone) Transform(ctx context.Context, tc *handler.TransformerContext) (any, error) {
+// Transform implements handler.Instrument.
+func (m *MarkDone) Transform(ctx context.Context, tc *handler.InstrumentContext) (any, error) {
 	taskID := findTaskIDFromState(tc)
 	if taskID == "" {
 		return &sdlctype.MarkDoneResult{Updated: false}, nil
@@ -124,11 +124,11 @@ func NewFileBug(registry *tool.Registry) *FileBug {
 	return &FileBug{registry: registry}
 }
 
-// Name implements handler.Transformer.
+// Name implements handler.Instrument.
 func (f *FileBug) Name() string { return "file-bug" }
 
-// Transform implements handler.Transformer.
-func (f *FileBug) Transform(ctx context.Context, tc *handler.TransformerContext) (any, error) {
+// Transform implements handler.Instrument.
+func (f *FileBug) Transform(ctx context.Context, tc *handler.InstrumentContext) (any, error) {
 	scope, _ := tc.WalkerState.Context["scope"].(string)
 
 	raw, err := scribeCall(ctx, f.registry, map[string]any{
@@ -160,16 +160,16 @@ func NewGatePassthrough(name string) *GatePassthrough {
 	return &GatePassthrough{name: name}
 }
 
-// Name implements handler.Transformer.
+// Name implements handler.Instrument.
 func (g *GatePassthrough) Name() string { return g.name }
 
-// Transform implements handler.Transformer.
-func (g *GatePassthrough) Transform(_ context.Context, _ *handler.TransformerContext) (any, error) {
+// Transform implements handler.Instrument.
+func (g *GatePassthrough) Transform(_ context.Context, _ *handler.InstrumentContext) (any, error) {
 	return &sdlctype.GateResult{Approved: true}, nil
 }
 
 // findTaskIDFromState searches walker state for a task_id from a prior node.
-func findTaskIDFromState(tc *handler.TransformerContext) string {
+func findTaskIDFromState(tc *handler.InstrumentContext) string {
 	if tc.WalkerState == nil {
 		return ""
 	}
@@ -193,8 +193,8 @@ func findTaskIDFromState(tc *handler.TransformerContext) string {
 
 // Compile-time interface checks.
 var (
-	_ handler.Transformer = (*PollScribe)(nil)
-	_ handler.Transformer = (*MarkDone)(nil)
-	_ handler.Transformer = (*FileBug)(nil)
-	_ handler.Transformer = (*GatePassthrough)(nil)
+	_ handler.Instrument = (*PollScribe)(nil)
+	_ handler.Instrument = (*MarkDone)(nil)
+	_ handler.Instrument = (*FileBug)(nil)
+	_ handler.Instrument = (*GatePassthrough)(nil)
 )

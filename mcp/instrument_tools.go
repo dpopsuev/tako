@@ -35,7 +35,7 @@ type instrumentInvokeOutput struct {
 
 // registerInstrumentTool adds the "instrument" MCP tool if instruments are configured.
 func (s *CircuitServer) registerInstrumentTool() {
-	if len(s.Config.Instruments) == 0 {
+	if len(s.Config.Manifests) == 0 {
 		return
 	}
 
@@ -58,8 +58,8 @@ func (s *CircuitServer) handleInstrumentDispatch(_ context.Context, _ *sdkmcp.Ca
 }
 
 func (s *CircuitServer) handleInstrumentList() (*sdkmcp.CallToolResult, any, error) {
-	infos := make([]instrumentInfo, 0, len(s.Config.Instruments))
-	for name, manifest := range s.Config.Instruments {
+	infos := make([]instrumentInfo, 0, len(s.Config.Manifests))
+	for name, manifest := range s.Config.Manifests {
 		var actions []string
 		for actionName := range manifest.Actions {
 			actions = append(actions, actionName)
@@ -79,7 +79,7 @@ func (s *CircuitServer) handleInstrumentList() (*sdkmcp.CallToolResult, any, err
 }
 
 func (s *CircuitServer) handleInstrumentInvoke(input instrumentInput) (*sdkmcp.CallToolResult, any, error) {
-	manifest, ok := s.Config.Instruments[input.Name]
+	manifest, ok := s.Config.Manifests[input.Name]
 	if !ok {
 		return toolError(fmt.Errorf("%w: %q", engine.ErrInstrument, input.Name)), nil, nil
 	}

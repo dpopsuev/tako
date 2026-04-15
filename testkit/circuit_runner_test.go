@@ -19,8 +19,8 @@ func TestRunCircuit_LinearWalk(t *testing.T) {
 		Done("_done").
 		Build()
 
-	transformers := engine.TransformerRegistry{
-		"echo": engine.TransformerFunc("echo", func(_ context.Context, tc *engine.TransformerContext) (any, error) {
+	transformers := engine.InstrumentRegistry{
+		"echo": engine.InstrumentFunc("echo", func(_ context.Context, tc *engine.InstrumentContext) (any, error) {
 			return map[string]any{"node": tc.NodeName}, nil
 		}),
 	}
@@ -54,8 +54,8 @@ func TestRunCircuit_BranchingWalk(t *testing.T) {
 		Done("_done").
 		Build()
 
-	transformers := engine.TransformerRegistry{
-		"echo": engine.TransformerFunc("echo", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+	transformers := engine.InstrumentRegistry{
+		"echo": engine.InstrumentFunc("echo", func(_ context.Context, _ *engine.InstrumentContext) (any, error) {
 			return "ok", nil
 		}),
 	}
@@ -82,7 +82,7 @@ func TestRunCircuit_MissingTransformer(t *testing.T) {
 		Edges:   []circuit.EdgeDef{{ID: "e1", From: "a", To: "_done"}},
 	}
 
-	result := RunCircuit(context.Background(), def, engine.TransformerRegistry{})
+	result := RunCircuit(context.Background(), def, engine.InstrumentRegistry{})
 
 	if result.Error == nil {
 		t.Fatal("expected error for missing transformer")
@@ -97,8 +97,8 @@ func TestRunCircuit_WithInput(t *testing.T) {
 		Done("_done").
 		Build()
 
-	transformers := engine.TransformerRegistry{
-		"echo": engine.TransformerFunc("echo", func(_ context.Context, tc *engine.TransformerContext) (any, error) {
+	transformers := engine.InstrumentRegistry{
+		"echo": engine.InstrumentFunc("echo", func(_ context.Context, tc *engine.InstrumentContext) (any, error) {
 			return tc.WalkerState.Context["input"], nil
 		}),
 	}

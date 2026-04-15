@@ -27,13 +27,13 @@ func TestCoreComponent_RegistersBuiltins(t *testing.T) {
 
 	expected := []string{"http", "jq", "file", "template-params", "match"}
 	for _, name := range expected {
-		if _, ok := comp.Transformers[name]; !ok {
+		if _, ok := comp.Instruments[name]; !ok {
 			t.Errorf("missing transformer %q", name)
 		}
 	}
 
 	// llm should NOT be registered when dispatcher is nil
-	if _, ok := comp.Transformers["llm"]; ok {
+	if _, ok := comp.Instruments["llm"]; ok {
 		t.Error("llm should not be registered when dispatcher is nil")
 	}
 }
@@ -42,7 +42,7 @@ func TestCoreComponent_WithDispatcher(t *testing.T) {
 	d := stubDispatcher{}
 	comp := CoreComponent(d)
 
-	if _, ok := comp.Transformers["llm"]; !ok {
+	if _, ok := comp.Instruments["llm"]; !ok {
 		t.Error("llm should be registered when dispatcher is provided")
 	}
 }
@@ -54,7 +54,7 @@ func TestWithCoreBaseDir(t *testing.T) {
 	if comp.Namespace != "core" {
 		t.Errorf("Namespace = %q, want core", comp.Namespace)
 	}
-	if len(comp.Transformers) == 0 {
+	if len(comp.Instruments) == 0 {
 		t.Error("no transformers registered")
 	}
 }
@@ -69,7 +69,7 @@ func TestTemplateParamsTransformer_Basic(t *testing.T) {
 		t.Error("Deterministic() should return true")
 	}
 
-	tc := &engine.TransformerContext{
+	tc := &engine.InstrumentContext{
 		NodeName: "build-context",
 		Config:   map[string]any{"env": "prod"},
 		NodeConfig: &circuit.NodeConfig{
@@ -101,7 +101,7 @@ func TestTemplateParamsTransformer_Basic(t *testing.T) {
 func TestTemplateParamsTransformer_IncludeState(t *testing.T) {
 	tp := NewTemplateParams()
 
-	tc := &engine.TransformerContext{
+	tc := &engine.InstrumentContext{
 		NodeName: "merge",
 		Input:    map[string]any{"findings": []string{"f1"}},
 		NodeConfig: &circuit.NodeConfig{
@@ -123,7 +123,7 @@ func TestTemplateParamsTransformer_IncludeState(t *testing.T) {
 func TestTemplateParamsTransformer_Pick(t *testing.T) {
 	tp := NewTemplateParams()
 
-	tc := &engine.TransformerContext{
+	tc := &engine.InstrumentContext{
 		NodeName: "filter",
 		Config:   map[string]any{"env": "prod", "debug": true, "region": "us"},
 		NodeConfig: &circuit.NodeConfig{

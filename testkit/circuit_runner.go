@@ -87,14 +87,14 @@ func WithHooks(hooks engine.HookRegistry) RunCircuitOption {
 // RunCircuit executes a circuit in-process with the given transformers.
 // No MCP, no containers, no dispatch — pure engine walk. Returns a
 // RunResult with events, path, and error for test assertions.
-func RunCircuit(ctx context.Context, def *circuit.CircuitDef, transformers engine.TransformerRegistry, opts ...RunCircuitOption) *RunResult {
+func RunCircuit(ctx context.Context, def *circuit.CircuitDef, transformers engine.InstrumentRegistry, opts ...RunCircuitOption) *RunResult {
 	cfg := &runCircuitConfig{}
 	for _, o := range opts {
 		o(cfg)
 	}
 
 	reg := &engine.GraphRegistries{
-		Transformers: transformers,
+		Instruments: transformers,
 		Extractors:   cfg.extractors,
 		Hooks:        cfg.hooks,
 		Circuits:     cfg.circuits,

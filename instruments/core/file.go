@@ -40,7 +40,7 @@ const transformerNameFile = "file"
 func (t *FileTransformer) Name() string        { return transformerNameFile }
 func (t *FileTransformer) Deterministic() bool { return true }
 
-func (t *FileTransformer) Transform(ctx context.Context, tc *engine.TransformerContext) (any, error) {
+func (t *FileTransformer) Transform(ctx context.Context, tc *engine.InstrumentContext) (any, error) {
 	path := tc.Prompt
 	if path == "" && tc.NodeConfig != nil {
 		if p, ok := tc.NodeConfig.Extras["path"].(string); ok {

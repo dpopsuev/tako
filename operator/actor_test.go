@@ -13,7 +13,7 @@ import (
 )
 
 // runCircuit is a test helper that runs the SDLC circuit via engine.BatchWalk directly.
-func runCircuit(ctx context.Context, transformers engine.TransformerRegistry) ([]engine.BatchWalkResult, error) {
+func runCircuit(ctx context.Context, transformers engine.InstrumentRegistry) ([]engine.BatchWalkResult, error) {
 	domainFS := os.DirFS("../simulate/sdlc")
 	def, err := sdlc.LoadCircuit(domainFS)
 	if err != nil {
@@ -22,7 +22,7 @@ func runCircuit(ctx context.Context, transformers engine.TransformerRegistry) ([
 	results := engine.BatchWalk(ctx, engine.BatchWalkConfig{
 		Def: def,
 		Shared: &engine.GraphRegistries{
-			Transformers: transformers,
+			Instruments: transformers,
 			Circuits:     circuit.LoadSubCircuitsFromFS(domainFS, nil),
 		},
 		Cases:    []engine.BatchCase{{ID: "sdlc-run", Context: map[string]any{}}},
@@ -34,7 +34,7 @@ func runCircuit(ctx context.Context, transformers engine.TransformerRegistry) ([
 func TestInProcessActor_RunsCircuit(t *testing.T) {
 	actor := NewInProcessActor(func(ctx context.Context, _ DriftResult) (*RunResult, error) {
 		start := time.Now()
-		results, err := runCircuit(ctx, sdlc.StubTransformers(true))
+		results, err := runCircuit(ctx, sdlc.StubInstruments(true))
 		if err != nil {
 			return &RunResult{Success: false, Duration: time.Since(start), Error: err.Error()}, nil
 		}
@@ -60,7 +60,7 @@ func TestInProcessActor_ViaOperatorLoop(t *testing.T) {
 	observer := &stubObserver{}
 	actor := NewInProcessActor(func(ctx context.Context, _ DriftResult) (*RunResult, error) {
 		start := time.Now()
-		_, err := runCircuit(ctx, sdlc.StubTransformers(false)) // dirty → fix loop → clean
+		_, err := runCircuit(ctx, sdlc.StubInstruments(false)) // dirty → fix loop → clean
 		if err != nil {
 			return &RunResult{Success: false, Duration: time.Since(start), Error: err.Error()}, nil
 		}

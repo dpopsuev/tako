@@ -20,11 +20,11 @@ func (n *buildTestNode) Process(_ context.Context, _ circuit.NodeContext) (circu
 }
 
 func TestResolveByInstrument_Transformer(t *testing.T) {
-	stub := TransformerFunc("test-transformer", func(_ context.Context, _ *TransformerContext) (any, error) {
+	stub := InstrumentFunc("test-transformer", func(_ context.Context, _ *InstrumentContext) (any, error) {
 		return "result", nil
 	})
 	reg := &GraphRegistries{
-		Transformers: TransformerRegistry{"test-transformer": stub},
+		Instruments: InstrumentRegistry{"test-transformer": stub},
 	}
 	def := &circuit.CircuitDef{}
 	nd := &circuit.NodeDef{Name: "test-node", Action: "test-transformer", Instrument: "transformer"}
@@ -109,11 +109,11 @@ func TestBuildGraph_MinimalCircuit(t *testing.T) {
 			{ID: "a-done", From: "a", To: "_done", When: "true"},
 		},
 	}
-	stub := TransformerFunc("echo", func(_ context.Context, _ *TransformerContext) (any, error) {
+	stub := InstrumentFunc("echo", func(_ context.Context, _ *InstrumentContext) (any, error) {
 		return "echo", nil
 	})
 	reg := &GraphRegistries{
-		Transformers: TransformerRegistry{"echo": stub},
+		Instruments: InstrumentRegistry{"echo": stub},
 	}
 
 	g, err := BuildGraph(def, reg)
@@ -134,7 +134,7 @@ func TestBuildGraph_MissingTransformer(t *testing.T) {
 		},
 	}
 	reg := &GraphRegistries{
-		Transformers: TransformerRegistry{},
+		Instruments: InstrumentRegistry{},
 	}
 
 	_, err := BuildGraph(def, reg)

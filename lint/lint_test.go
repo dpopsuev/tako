@@ -17,7 +17,7 @@ type testTransformer struct {
 
 func (t *testTransformer) Name() string        { return t.name }
 func (t *testTransformer) Deterministic() bool { return t.det }
-func (t *testTransformer) Transform(_ context.Context, _ *engine.TransformerContext) (any, error) {
+func (t *testTransformer) Transform(_ context.Context, _ *engine.InstrumentContext) (any, error) {
 	return nil, nil
 }
 
@@ -673,7 +673,7 @@ done: _done
 	stoch := &testTransformer{name: "custom.stochastic", det: false}
 	deter := &testTransformer{name: "custom.deterministic", det: true}
 	reg := &engine.GraphRegistries{
-		Transformers: engine.TransformerRegistry{
+		Instruments: engine.InstrumentRegistry{
 			"custom.stochastic":    stoch,
 			"custom.deterministic": deter,
 		},

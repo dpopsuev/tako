@@ -47,7 +47,7 @@ func TestFindings_VetoHookZeroesConfidence(t *testing.T) {
 
 	// Build runner (not raw graph) — hooks are processed by Runner, not Graph
 	runner, err := engine.NewRunnerWith(def, &engine.GraphRegistries{
-		Transformers: standardTransformers(),
+		Instruments: standardTransformers(),
 		Hooks:        hooks,
 	})
 	if err != nil {
@@ -127,7 +127,7 @@ func TestFindings_ExpressionEdgeFiringOnFindingCount(t *testing.T) {
 	}
 
 	g, err := engine.BuildGraph(def, &engine.GraphRegistries{
-		Transformers: standardTransformers(),
+		Instruments: standardTransformers(),
 	})
 	if err != nil {
 		t.Fatalf("BuildGraph: %v", err)

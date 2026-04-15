@@ -34,7 +34,7 @@ type MCPCircuitTransformer struct {
 func (t *MCPCircuitTransformer) Name() string { return "mediator.circuit" }
 
 //nolint:gocyclo,funlen // MCP client loop with session lifecycle — complexity is inherent
-func (t *MCPCircuitTransformer) Transform(ctx context.Context, tc *TransformerContext) (any, error) {
+func (t *MCPCircuitTransformer) Transform(ctx context.Context, tc *InstrumentContext) (any, error) {
 	slog.DebugContext(ctx, circuit.LogMediatorDelegateStart, slog.Any(circuit.LogKeyCircuitType, t.CircuitType), slog.Any(circuit.LogKeyEndpoint, t.Endpoint), slog.Any(circuit.LogKeyNode, tc.NodeName))
 
 	var relayer PromptRelayer

@@ -161,9 +161,9 @@ type CircuitConfig struct {
 	// Passed to SessionParams.Tools for consumer access.
 	Tools *tool.Registry
 
-	// Instruments is the instrument registry from fold-generated code.
-	// Passed to engine.GraphRegistries.Instruments for dispatch.
-	Instruments engine.InstrumentRegistry
+	// Manifests is the instrument manifest registry from fold-generated code.
+	// Passed to engine.GraphRegistries.Manifests for dispatch.
+	Manifests engine.ManifestRegistry
 
 	// InstrumentDir is the working directory for instrument commands.
 	InstrumentDir string
@@ -247,10 +247,10 @@ type StartParams struct {
 	// Tools is the typed tool registry from CircuitConfig.
 	Tools *tool.Registry
 
-	// Instruments is the instrument registry from CircuitConfig.
+	// Manifests is the instrument manifest registry from CircuitConfig.
 	// Copied by the framework. Used by the session bridge to pass
-	// instruments to engine.GraphRegistries.Instruments.
-	Instruments engine.InstrumentRegistry
+	// manifests to engine.GraphRegistries.Manifests.
+	Manifests engine.ManifestRegistry
 
 	// ApprovalStore enables gate: approval on circuit nodes. Copied from
 	// CircuitConfig. Passed to engine.GraphRegistries.ApprovalStore.

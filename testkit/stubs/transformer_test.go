@@ -16,7 +16,7 @@ func TestStubTransformer_CannedArtifact(t *testing.T) {
 		"recall": art,
 	})
 
-	result, err := st.Transform(context.Background(), &engine.TransformerContext{NodeName: "recall"})
+	result, err := st.Transform(context.Background(), &engine.InstrumentContext{NodeName: "recall"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,7 +28,7 @@ func TestStubTransformer_CannedArtifact(t *testing.T) {
 func TestStubTransformer_DefaultArtifact(t *testing.T) {
 	st := stubs.NewStubTransformer("test", nil)
 
-	result, err := st.Transform(context.Background(), &engine.TransformerContext{NodeName: "recall"})
+	result, err := st.Transform(context.Background(), &engine.InstrumentContext{NodeName: "recall"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,7 +42,7 @@ func TestStubTransformer_ErrorInjection(t *testing.T) {
 	injected := errors.New("boom")
 	st.SetError("recall", injected)
 
-	_, err := st.Transform(context.Background(), &engine.TransformerContext{NodeName: "recall"})
+	_, err := st.Transform(context.Background(), &engine.InstrumentContext{NodeName: "recall"})
 	if !errors.Is(err, injected) {
 		t.Errorf("got %v, want injected error", err)
 	}
@@ -50,9 +50,9 @@ func TestStubTransformer_ErrorInjection(t *testing.T) {
 
 func TestStubTransformer_CallTracking(t *testing.T) {
 	st := stubs.NewStubTransformer("test", nil)
-	st.Transform(context.Background(), &engine.TransformerContext{NodeName: "recall"})
-	st.Transform(context.Background(), &engine.TransformerContext{NodeName: "triage"})
-	st.Transform(context.Background(), &engine.TransformerContext{NodeName: "recall"})
+	st.Transform(context.Background(), &engine.InstrumentContext{NodeName: "recall"})
+	st.Transform(context.Background(), &engine.InstrumentContext{NodeName: "triage"})
+	st.Transform(context.Background(), &engine.InstrumentContext{NodeName: "recall"})
 
 	calls := st.Calls()
 	if len(calls) != 3 {
@@ -69,13 +69,13 @@ func TestStubTransformer_CallTracking(t *testing.T) {
 func TestStubTransformer_Reset(t *testing.T) {
 	st := stubs.NewStubTransformer("test", nil)
 	st.SetError("recall", errors.New("e"))
-	st.Transform(context.Background(), &engine.TransformerContext{NodeName: "other"})
+	st.Transform(context.Background(), &engine.InstrumentContext{NodeName: "other"})
 	st.Reset()
 
 	if st.CallCount() != 0 {
 		t.Error("calls not cleared after Reset")
 	}
-	_, err := st.Transform(context.Background(), &engine.TransformerContext{NodeName: "recall"})
+	_, err := st.Transform(context.Background(), &engine.InstrumentContext{NodeName: "recall"})
 	if err != nil {
 		t.Error("error not cleared after Reset")
 	}

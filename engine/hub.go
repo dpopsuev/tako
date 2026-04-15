@@ -49,7 +49,7 @@ type HubRoutingTable map[string][]tool.Tool
 // BuildHubRoutingTable constructs a routing table from a circuit definition
 // and instrument registry. Each node that references a manifest-based
 // instrument gets tools for its action.
-func BuildHubRoutingTable(def *circuit.CircuitDef, instruments InstrumentRegistry) HubRoutingTable {
+func BuildHubRoutingTable(def *circuit.CircuitDef, instruments ManifestRegistry) HubRoutingTable {
 	table := make(HubRoutingTable)
 	for i := range def.Nodes {
 		nd := &def.Nodes[i]
@@ -124,7 +124,7 @@ var _ Hub = (*LocalHub)(nil)
 
 // NewLocalHub creates a Hub from a routing table, wiring dispatchers for
 // each instrument tool. The workDir is used for exec dispatch.
-func NewLocalHub(def *circuit.CircuitDef, instruments InstrumentRegistry, workDir string) (*LocalHub, error) {
+func NewLocalHub(def *circuit.CircuitDef, instruments ManifestRegistry, workDir string) (*LocalHub, error) {
 	table := BuildHubRoutingTable(def, instruments)
 
 	// Wire dispatchers into instrumentTools.

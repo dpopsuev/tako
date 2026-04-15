@@ -51,7 +51,7 @@ func TestRun_BasicCircuit(t *testing.T) {
 	trans := &echoTransformer{}
 
 	err := Run(context.Background(), path, map[string]any{"data": true},
-		WithTransformers(TransformerRegistry{"echo": trans}),
+		WithInstruments(InstrumentRegistry{"echo": trans}),
 	)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
@@ -80,7 +80,7 @@ done: _done
 	trans := &echoTransformer{}
 
 	err := Run(context.Background(), path, nil,
-		WithTransformers(TransformerRegistry{"echo": trans}),
+		WithInstruments(InstrumentRegistry{"echo": trans}),
 		WithOverrides(map[string]any{"threshold": 0.9}),
 	)
 	if err != nil {
@@ -115,7 +115,7 @@ done: _done
 	}))
 
 	err := Run(context.Background(), path, nil,
-		WithTransformers(TransformerRegistry{"echo": trans}),
+		WithInstruments(InstrumentRegistry{"echo": trans}),
 		WithHooks(hooks),
 	)
 	if err != nil {
@@ -144,7 +144,7 @@ func TestRun_InvalidYAML(t *testing.T) {
 func TestValidate_ValidCircuit(t *testing.T) {
 	path := writeTempCircuit(t, testCircuitYAML)
 	err := Validate(path,
-		WithTransformers(TransformerRegistry{"echo": &echoTransformer{}}),
+		WithInstruments(InstrumentRegistry{"echo": &echoTransformer{}}),
 	)
 	if err != nil {
 		t.Fatalf("Validate: %v", err)
@@ -168,7 +168,7 @@ start: a
 done: _done
 `
 	path := writeTempCircuit(t, yaml)
-	err := Validate(path, WithTransformers(TransformerRegistry{"echo": &echoTransformer{}}))
+	err := Validate(path, WithInstruments(InstrumentRegistry{"echo": &echoTransformer{}}))
 	if err == nil {
 		t.Fatal("expected validation error for invalid expression")
 	}
@@ -207,14 +207,14 @@ done: _done
 	var capturedPrompt string
 	var capturedInput any
 
-	capture := TransformerFunc("capture", func(_ context.Context, tc *TransformerContext) (any, error) {
+	capture := InstrumentFunc("capture", func(_ context.Context, tc *InstrumentContext) (any, error) {
 		capturedPrompt = tc.Prompt
 		capturedInput = tc.Input
 		return map[string]any{"captured": true}, nil
 	})
 
 	err := Run(context.Background(), path, nil,
-		WithTransformers(TransformerRegistry{
+		WithInstruments(InstrumentRegistry{
 			"echo":    &echoTransformer{},
 			"capture": capture,
 		}),
@@ -280,7 +280,7 @@ done: _done
 	}
 
 	err := Run(context.Background(), path, nil,
-		WithTransformers(TransformerRegistry{"echo": &echoTransformer{}}),
+		WithInstruments(InstrumentRegistry{"echo": &echoTransformer{}}),
 		WithCollective([]circuit.Walker{herald, seeker}, &AffinitySelector{}, WithMaxSteps(20)),
 	)
 	if err != nil {
@@ -318,7 +318,7 @@ func TestRun_WithTeam_InputPropagated(t *testing.T) {
 	}
 
 	err := Run(context.Background(), path, map[string]any{"hello": "world"},
-		WithTransformers(TransformerRegistry{"echo": &echoTransformer{}}),
+		WithInstruments(InstrumentRegistry{"echo": &echoTransformer{}}),
 		WithCollective([]circuit.Walker{w}, &AffinitySelector{}),
 	)
 	if err != nil {
@@ -340,7 +340,7 @@ func TestRun_WithTeam_InputPropagated(t *testing.T) {
 
 func TestValidate_MissingTransformer(t *testing.T) {
 	path := writeTempCircuit(t, testCircuitYAML)
-	err := Validate(path, WithTransformers(TransformerRegistry{}))
+	err := Validate(path, WithInstruments(InstrumentRegistry{}))
 	if err == nil {
 		t.Fatal("expected error for missing transformer when registry is provided but empty")
 	}
@@ -361,7 +361,7 @@ func TestRun_WithCheckpointer_SavesAfterEachNode(t *testing.T) {
 
 	trace := &TraceCollector{}
 	err := Run(context.Background(), path, nil,
-		WithTransformers(TransformerRegistry{"echo": &echoTransformer{}}),
+		WithInstruments(InstrumentRegistry{"echo": &echoTransformer{}}),
 		WithCheckpointer(cp),
 		WithRunObserver(trace),
 	)
@@ -418,7 +418,7 @@ done: _done
 	cp.Save(saved)
 
 	err := Run(context.Background(), path, nil,
-		WithTransformers(TransformerRegistry{"echo": &echoTransformer{}}),
+		WithInstruments(InstrumentRegistry{"echo": &echoTransformer{}}),
 		WithCheckpointer(cp),
 		WithResume("run"),
 	)
@@ -469,12 +469,12 @@ done: _done
 	cp, _ := NewJSONCheckpointer(cpDir)
 	trace := &TraceCollector{}
 
-	interruptTrans := TransformerFunc("interrupt-here", func(_ context.Context, _ *TransformerContext) (any, error) {
+	interruptTrans := InstrumentFunc("interrupt-here", func(_ context.Context, _ *InstrumentContext) (any, error) {
 		return nil, Interrupt{Reason: "need approval"}
 	})
 
 	err := Run(context.Background(), path, nil,
-		WithTransformers(TransformerRegistry{
+		WithInstruments(InstrumentRegistry{
 			"echo":           &echoTransformer{},
 			"interrupt-here": interruptTrans,
 		}),
@@ -516,7 +516,7 @@ func TestRun_ResumeWithInput_AfterInterrupt(t *testing.T) {
 	}
 
 	err := Run(context.Background(), path, nil,
-		WithTransformers(TransformerRegistry{"echo": &echoTransformer{}}),
+		WithInstruments(InstrumentRegistry{"echo": &echoTransformer{}}),
 		WithCheckpointer(cp),
 		WithResumeInput("resumable", map[string]any{"approved": true}),
 		WithWalker(w),

@@ -99,7 +99,7 @@ func writeFiles(dir string, changes []fileChange) ([]string, error) {
 }
 
 // extractSpec reads the resolve-context output from walker state.
-func extractSpec(tc *handler.TransformerContext) string {
+func extractSpec(tc *handler.InstrumentContext) string {
 	if tc.WalkerState == nil {
 		return ""
 	}
@@ -113,7 +113,7 @@ func extractSpec(tc *handler.TransformerContext) string {
 }
 
 // extractTestFiles reads the write-test output from walker state.
-func extractTestFiles(tc *handler.TransformerContext) []string {
+func extractTestFiles(tc *handler.InstrumentContext) []string {
 	if tc.WalkerState == nil {
 		return nil
 	}
@@ -126,7 +126,7 @@ func extractTestFiles(tc *handler.TransformerContext) []string {
 }
 
 // extractCodeFiles reads the write-code output from walker state.
-func extractCodeFiles(tc *handler.TransformerContext) []string {
+func extractCodeFiles(tc *handler.InstrumentContext) []string {
 	if tc.WalkerState == nil {
 		return nil
 	}
@@ -226,7 +226,7 @@ func (w *WriteTest) LastStationLog() trace.StationLogger {
 	return w.lastStationLog
 }
 
-func (w *WriteTest) Transform(ctx context.Context, tc *handler.TransformerContext) (any, error) {
+func (w *WriteTest) Transform(ctx context.Context, tc *handler.InstrumentContext) (any, error) {
 	spec := extractSpec(tc)
 	prompt := fmt.Sprintf("Write Go tests for this specification. Use table-driven tests, stdlib only (no testify). Return one test file.\n\nSpec:\n%s", spec)
 
@@ -276,7 +276,7 @@ func (w *WriteCode) LastStationLog() trace.StationLogger {
 	return w.lastStationLog
 }
 
-func (w *WriteCode) Transform(ctx context.Context, tc *handler.TransformerContext) (any, error) {
+func (w *WriteCode) Transform(ctx context.Context, tc *handler.InstrumentContext) (any, error) {
 	testFiles := extractTestFiles(tc)
 	testContent := readFileContents(w.repoPath, testFiles)
 	spec := extractSpec(tc)
@@ -329,7 +329,7 @@ func (r *Refactor) LastStationLog() trace.StationLogger {
 	return r.lastStationLog
 }
 
-func (r *Refactor) Transform(ctx context.Context, tc *handler.TransformerContext) (any, error) {
+func (r *Refactor) Transform(ctx context.Context, tc *handler.InstrumentContext) (any, error) {
 	codeFiles := extractCodeFiles(tc)
 	codeContent := readFileContents(r.repoPath, codeFiles)
 	testFiles := extractTestFiles(tc)
@@ -370,9 +370,9 @@ func (t *tddStationLog) StationLogType() string { return "tdd-" + strings.ToLowe
 
 // Compile-time interface checks.
 var (
-	_ handler.Transformer     = (*WriteTest)(nil)
-	_ handler.Transformer     = (*WriteCode)(nil)
-	_ handler.Transformer     = (*Refactor)(nil)
+	_ handler.Instrument      = (*WriteTest)(nil)
+	_ handler.Instrument      = (*WriteCode)(nil)
+	_ handler.Instrument      = (*Refactor)(nil)
 	_ handler.StationLoggable = (*WriteTest)(nil)
 	_ handler.StationLoggable = (*WriteCode)(nil)
 	_ handler.StationLoggable = (*Refactor)(nil)

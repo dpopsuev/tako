@@ -31,7 +31,7 @@ func testdataPath(t *testing.T, rel string) string {
 type contextEchoTransformer struct{}
 
 func (t *contextEchoTransformer) Name() string { return "context-echo" }
-func (t *contextEchoTransformer) Transform(_ context.Context, tc *engine.TransformerContext) (any, error) {
+func (t *contextEchoTransformer) Transform(_ context.Context, tc *engine.InstrumentContext) (any, error) {
 	out := make(map[string]any)
 	if tc.WalkerState != nil {
 		for k, v := range tc.WalkerState.Context {
@@ -45,13 +45,13 @@ func (t *contextEchoTransformer) Transform(_ context.Context, tc *engine.Transfo
 type echoTransformer struct{}
 
 func (t *echoTransformer) Name() string { return "echo" }
-func (t *echoTransformer) Transform(_ context.Context, tc *engine.TransformerContext) (any, error) {
+func (t *echoTransformer) Transform(_ context.Context, tc *engine.InstrumentContext) (any, error) {
 	return map[string]any{"echoed": tc.Input, "node": tc.NodeName}, nil
 }
 
 // standardTransformers returns registries with passthrough, echo, and context-echo.
-func standardTransformers() engine.TransformerRegistry {
-	return engine.TransformerRegistry{
+func standardTransformers() engine.InstrumentRegistry {
+	return engine.InstrumentRegistry{
 		"echo":         &echoTransformer{},
 		"context-echo": &contextEchoTransformer{},
 	}
@@ -60,7 +60,7 @@ func standardTransformers() engine.TransformerRegistry {
 // standardRegistries returns GraphRegistries with standard test transformers.
 func standardRegistries() *engine.GraphRegistries {
 	return &engine.GraphRegistries{
-		Transformers: standardTransformers(),
+		Instruments: standardTransformers(),
 	}
 }
 
@@ -83,7 +83,7 @@ func runFixture(t *testing.T, rel string, input any, opts ...engine.RunOption) e
 	t.Helper()
 	absPath := testdataPath(t, rel)
 	allOpts := append([]engine.RunOption{
-		engine.WithTransformers(standardTransformers()),
+		engine.WithInstruments(standardTransformers()),
 	}, opts...)
 	return engine.Run(context.Background(), absPath, input, allOpts...)
 }

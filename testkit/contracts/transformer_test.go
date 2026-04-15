@@ -9,7 +9,7 @@ import (
 )
 
 func TestStubTransformer_PassesContract(t *testing.T) {
-	contracts.RunTransformerContract(t, func() engine.Transformer {
+	contracts.RunInstrumentContract(t, func() engine.Instrument {
 		return stubs.NewStubTransformer("test-stub", nil)
 	})
 }

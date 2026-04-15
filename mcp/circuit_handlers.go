@@ -174,7 +174,7 @@ func (s *CircuitServer) handleStartCircuit(ctx context.Context, _ *sdkmcp.CallTo
 		ResourceRegistry:    s.Config.ResourceRegistry,
 		SubCircuitResolvers: s.Config.SubCircuitResolvers,
 		Tools:               s.Config.Tools,
-		Instruments:         s.Config.Instruments,
+		Manifests:           s.Config.Manifests,
 		ApprovalStore:       s.Config.ApprovalStore,
 	}
 	// Compose observers: trace recorder + config-injected observers (telemetry, etc.).

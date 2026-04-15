@@ -130,20 +130,20 @@ func (f *sdlcFactory) CreateSession(_ context.Context, params *engine.SessionPar
 
 	return &engine.SessionConfig{
 		CircuitDef:   def,
-		Transformers: transformers,
+		Instruments: transformers,
 		Cases:        cases,
 	}, nil
 }
 
-func buildTransformers(repoPath, mode string, tools *tool.Registry, provider anyllm.Provider, model string, budget tdd.TokenBudget) (engine.TransformerRegistry, error) {
+func buildTransformers(repoPath, mode string, tools *tool.Registry, provider anyllm.Provider, model string, budget tdd.TokenBudget) (engine.InstrumentRegistry, error) {
 	if mode == "real" {
 		return realTransformers(repoPath, tools, provider, model, budget)
 	}
-	return StubTransformers(true), nil
+	return StubInstruments(true), nil
 }
 
-func realTransformers(repoPath string, tools *tool.Registry, provider anyllm.Provider, model string, budget tdd.TokenBudget) (engine.TransformerRegistry, error) {
-	reg := StubTransformers(true)
+func realTransformers(repoPath string, tools *tool.Registry, provider anyllm.Provider, model string, budget tdd.TokenBudget) (engine.InstrumentRegistry, error) {
+	reg := StubInstruments(true)
 
 	// Replace stubs with real instruments.
 	reg["scan"] = oculusinst.NewScanTransformer(repoPath, oculusinst.WithLayers(OrigamiLayers))
@@ -194,8 +194,8 @@ func realTransformers(repoPath string, tools *tool.Registry, provider anyllm.Pro
 
 // newDeployCanaryTransformer creates a release candidate tag on HEAD.
 // For Go libraries, "deploy canary" = tag the current state for testing.
-func newDeployCanaryTransformer(repoPath string) engine.Transformer {
-	return engine.TransformerFunc("deploy-canary", func(ctx context.Context, _ *engine.TransformerContext) (any, error) {
+func newDeployCanaryTransformer(repoPath string) engine.Instrument {
+	return engine.InstrumentFunc("deploy-canary", func(ctx context.Context, _ *engine.InstrumentContext) (any, error) {
 		tag := fmt.Sprintf("rc-%d", time.Now().Unix())
 		cmd := exec.CommandContext(ctx, "git", "tag", tag)
 		cmd.Dir = repoPath
@@ -207,8 +207,8 @@ func newDeployCanaryTransformer(repoPath string) engine.Transformer {
 }
 
 // newMonitorHealthTransformer verifies the tagged state builds and tests pass.
-func newMonitorHealthTransformer(repoPath string) engine.Transformer {
-	return engine.TransformerFunc("monitor-health", func(ctx context.Context, _ *engine.TransformerContext) (any, error) {
+func newMonitorHealthTransformer(repoPath string) engine.Instrument {
+	return engine.InstrumentFunc("monitor-health", func(ctx context.Context, _ *engine.InstrumentContext) (any, error) {
 		// Build check.
 		build := exec.CommandContext(ctx, "go", "build", "./...")
 		build.Dir = repoPath
@@ -226,8 +226,8 @@ func newMonitorHealthTransformer(repoPath string) engine.Transformer {
 }
 
 // newPromoteTransformer pushes the RC tag to origin.
-func newPromoteTransformer(repoPath string) engine.Transformer {
-	return engine.TransformerFunc("promote", func(ctx context.Context, _ *engine.TransformerContext) (any, error) {
+func newPromoteTransformer(repoPath string) engine.Instrument {
+	return engine.InstrumentFunc("promote", func(ctx context.Context, _ *engine.InstrumentContext) (any, error) {
 		// Push all tags.
 		cmd := exec.CommandContext(ctx, "git", "push", "--tags")
 		cmd.Dir = repoPath
@@ -239,8 +239,8 @@ func newPromoteTransformer(repoPath string) engine.Transformer {
 }
 
 // newRollbackTransformer deletes the RC tag (local only, not pushed).
-func newRollbackTransformer(repoPath string) engine.Transformer {
-	return engine.TransformerFunc("rollback", func(ctx context.Context, _ *engine.TransformerContext) (any, error) {
+func newRollbackTransformer(repoPath string) engine.Instrument {
+	return engine.InstrumentFunc("rollback", func(ctx context.Context, _ *engine.InstrumentContext) (any, error) {
 		// Find and delete the most recent rc-* tag.
 		out, err := exec.CommandContext(ctx, "git", "tag", "-l", "rc-*", "--sort=-version:refname").Output()
 		if err != nil || len(out) == 0 {
@@ -258,8 +258,8 @@ func newRollbackTransformer(repoPath string) engine.Transformer {
 
 // newTeardownTransformer creates a teardown transformer that cleans up
 // worktrees and temp files. Runs as the circuit's finally node.
-func newTeardownTransformer(repoPath string) engine.Transformer {
-	return engine.TransformerFunc("teardown", func(ctx context.Context, _ *engine.TransformerContext) (any, error) {
+func newTeardownTransformer(repoPath string) engine.Instrument {
+	return engine.InstrumentFunc("teardown", func(ctx context.Context, _ *engine.InstrumentContext) (any, error) {
 		if err := llmfix.CleanupWorktrees(ctx, repoPath); err != nil {
 			slog.WarnContext(ctx, "teardown: worktree cleanup failed", slog.String(logKeyError, err.Error()))
 		}

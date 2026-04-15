@@ -93,7 +93,7 @@ func TestHookingWalker_FiresHooks(t *testing.T) {
 	}
 
 	runner, err := NewRunnerWith(def, &GraphRegistries{
-		Transformers: TransformerRegistry{"echo": trans},
+		Instruments: InstrumentRegistry{"echo": trans},
 		Hooks:        hooks,
 	})
 	if err != nil {
@@ -132,7 +132,7 @@ func TestHookingWalker_MissingHookContinues(t *testing.T) {
 	}
 
 	runner, err := NewRunnerWith(def, &GraphRegistries{
-		Transformers: TransformerRegistry{"echo": trans},
+		Instruments: InstrumentRegistry{"echo": trans},
 		Hooks:        hooks,
 	})
 	if err != nil {
@@ -315,7 +315,7 @@ func TestBeforeHooks_FireBeforeNodeProcessing(t *testing.T) {
 	}
 
 	runner, err := NewRunnerWith(def, &GraphRegistries{
-		Transformers: TransformerRegistry{"echo": &echoTransformer{}},
+		Instruments: InstrumentRegistry{"echo": &echoTransformer{}},
 		Hooks:        hooks,
 	})
 	if err != nil {
@@ -351,7 +351,7 @@ func TestBeforeHooks_InjectIntoWalkerContext(t *testing.T) {
 		return nil
 	}))
 
-	captureTrans := TransformerFunc("capture", func(_ context.Context, tc *TransformerContext) (any, error) {
+	captureTrans := InstrumentFunc("capture", func(_ context.Context, tc *InstrumentContext) (any, error) {
 		capturedState = tc.WalkerState
 		return "ok", nil
 	})
@@ -371,7 +371,7 @@ func TestBeforeHooks_InjectIntoWalkerContext(t *testing.T) {
 	}
 
 	runner, err := NewRunnerWith(def, &GraphRegistries{
-		Transformers: TransformerRegistry{"capture": captureTrans},
+		Instruments: InstrumentRegistry{"capture": captureTrans},
 		Hooks:        hooks,
 	})
 	if err != nil {
@@ -414,7 +414,7 @@ func TestBeforeHooks_OnlyOnDeclaredNodes(t *testing.T) {
 	}
 
 	runner, err := NewRunnerWith(def, &GraphRegistries{
-		Transformers: TransformerRegistry{"echo": &echoTransformer{}},
+		Instruments: InstrumentRegistry{"echo": &echoTransformer{}},
 		Hooks:        hooks,
 	})
 	if err != nil {
@@ -446,7 +446,7 @@ func TestBeforeHooks_MissingHookContinues(t *testing.T) {
 	}
 
 	runner, err := NewRunnerWith(def, &GraphRegistries{
-		Transformers: TransformerRegistry{"echo": &echoTransformer{}},
+		Instruments: InstrumentRegistry{"echo": &echoTransformer{}},
 		Hooks:        hooks,
 	})
 	if err != nil {
@@ -504,7 +504,7 @@ func TestHookingWalker_NoHooksNoWrap(t *testing.T) {
 	}
 
 	runner, err := NewRunnerWith(def, &GraphRegistries{
-		Transformers: TransformerRegistry{"echo": trans},
+		Instruments: InstrumentRegistry{"echo": trans},
 	})
 	if err != nil {
 		t.Fatalf("NewRunnerWith: %v", err)

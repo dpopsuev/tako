@@ -14,7 +14,7 @@ func CoreComponent(d dispatch.Dispatcher, opts ...CoreComponentOption) *engine.C
 		opt(cfg)
 	}
 
-	reg := engine.TransformerRegistry{}
+	reg := engine.InstrumentRegistry{}
 	if d != nil {
 		var llmOpts []LLMOption
 		if cfg.baseDir != "" {
@@ -38,7 +38,7 @@ func CoreComponent(d dispatch.Dispatcher, opts ...CoreComponentOption) *engine.C
 		Name:         "origami-core",
 		Version:      "1.0.0",
 		Description:  "Built-in transformers: llm, http, jq, file",
-		Transformers: reg,
+		Instruments: reg,
 	}
 }
 

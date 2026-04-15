@@ -57,11 +57,11 @@ type GraphRegistries struct {
 	Edges            EdgeFactory
 	Extractors       ExtractorRegistry
 	Renderers        RendererRegistry
-	Transformers     TransformerRegistry
+	Instruments      InstrumentRegistry
 	Hooks            HookRegistry
 	Components       ComponentLoader
 	Circuits         map[string]*circuit.CircuitDef
-	Instruments      InstrumentRegistry
+	Manifests        ManifestRegistry
 	InstrumentDir    string // working directory for instrument commands
 	MediatorEndpoint string
 
@@ -91,7 +91,7 @@ func BuildGraph(def *circuit.CircuitDef, reg *GraphRegistries) (Graph, error) {
 		if err != nil {
 			return nil, fmt.Errorf("merge imports: %w", err)
 		}
-		reg.Transformers = merged.Transformers
+		reg.Instruments = merged.Instruments
 		reg.Extractors = merged.Extractors
 		reg.Hooks = merged.Hooks
 	}
@@ -269,8 +269,8 @@ func resolveByInstrument(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *Grap
 	}
 
 	// Manifest-based dispatch — cli, mcp, container instruments.
-	if reg.Instruments != nil {
-		if manifest, ok := reg.Instruments[instrument]; ok {
+	if reg.Manifests != nil {
+		if manifest, ok := reg.Manifests[instrument]; ok {
 			return resolveInstrumentNode(def, nd, manifest, elem, reg.InstrumentDir)
 		}
 	}
@@ -358,10 +358,10 @@ func resolveDelegateHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *G
 	if action == "" {
 		action = name
 	}
-	if reg.Transformers == nil {
-		return nil, fmt.Errorf("%w: %q: delegate action %q not found (transformer registry is nil)", ErrNode, name, action)
+	if reg.Instruments == nil {
+		return nil, fmt.Errorf("%w: %q: delegate action %q not found (instrument registry is nil)", ErrNode, name, action)
 	}
-	gen, err := reg.Transformers.Get(action)
+	gen, err := reg.Instruments.Get(action)
 	if err != nil {
 		return nil, fmt.Errorf("node %q: delegate action: %w", name, err)
 	}
@@ -400,18 +400,18 @@ func resolveCircuitHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *Gr
 	}
 }
 
-// resolveTransformerByName resolves a transformer by name, checking builtins first.
-func resolveTransformerByName(_ *circuit.CircuitDef, name, nodeName string, reg *GraphRegistries) (Transformer, error) {
+// resolveTransformerByName resolves an instrument by name, checking builtins first.
+func resolveTransformerByName(_ *circuit.CircuitDef, name, nodeName string, reg *GraphRegistries) (Instrument, error) {
 	switch name {
 	case BuiltinTransformerGoTemplate:
 		return &goTemplateTransformer{}, nil
 	case BuiltinTransformerPassthrough:
 		return &passthroughTransformer{}, nil
 	}
-	if reg.Transformers == nil {
-		return nil, fmt.Errorf("%w: %q: transformer %q not found (registry is nil)", ErrNode, nodeName, name)
+	if reg.Instruments == nil {
+		return nil, fmt.Errorf("%w: %q: instrument %q not found (registry is nil)", ErrNode, nodeName, name)
 	}
-	return reg.Transformers.Get(name)
+	return reg.Instruments.Get(name)
 }
 
 // dslEdge is a default Edge implementation created from an circuit.EdgeDef when

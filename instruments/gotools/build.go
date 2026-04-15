@@ -25,7 +25,7 @@ func NewBuildTransformer(repoPath string) *BuildTransformer {
 	return &BuildTransformer{repoPath: repoPath}
 }
 
-// Name implements engine.Transformer.
+// Name implements engine.Instrument.
 func (b *BuildTransformer) Name() string { return "go-build" }
 
 // LastStationLog implements engine.StationLoggable.
@@ -38,8 +38,8 @@ func (b *BuildTransformer) LastStationLog() trace.StationLogger {
 // outputSnippetMax is the maximum length of the output snippet stored in station logs.
 const outputSnippetMax = 500
 
-// Transform implements engine.Transformer.
-func (b *BuildTransformer) Transform(ctx context.Context, _ *engine.TransformerContext) (any, error) {
+// Transform implements engine.Instrument.
+func (b *BuildTransformer) Transform(ctx context.Context, _ *engine.InstrumentContext) (any, error) {
 	r := runCommand(ctx, b.repoPath, "go", "build", "./...")
 	b.mu.Lock()
 	b.lastStationLog = buildStationLog(r)

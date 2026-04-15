@@ -22,7 +22,7 @@ func TestJQ_Transform(t *testing.T) {
 		t.Fatalf("Name() = %q, want jq", jq.Name())
 	}
 
-	tc := &engine.TransformerContext{
+	tc := &engine.InstrumentContext{
 		Input:      map[string]any{"items": []any{1.0, 2.0, 3.0}},
 		Config:     map[string]any{"multiplier": 10.0},
 		NodeConfig: &circuit.NodeConfig{Expr: "len(input.items)"},
@@ -38,7 +38,7 @@ func TestJQ_Transform(t *testing.T) {
 
 func TestJQ_TransformWithConfig(t *testing.T) {
 	jq := NewJQ()
-	tc := &engine.TransformerContext{
+	tc := &engine.InstrumentContext{
 		Input:      map[string]any{"value": 5.0},
 		Config:     map[string]any{"threshold": 3.0},
 		NodeConfig: &circuit.NodeConfig{Expr: "input.value > config.threshold"},
@@ -54,7 +54,7 @@ func TestJQ_TransformWithConfig(t *testing.T) {
 
 func TestJQ_NoExpression(t *testing.T) {
 	jq := NewJQ()
-	tc := &engine.TransformerContext{NodeConfig: &circuit.NodeConfig{}}
+	tc := &engine.InstrumentContext{NodeConfig: &circuit.NodeConfig{}}
 	_, err := jq.Transform(context.Background(), tc)
 	if err == nil {
 		t.Fatal("expected error for missing expr")
@@ -63,7 +63,7 @@ func TestJQ_NoExpression(t *testing.T) {
 
 func TestJQ_InvalidExpression(t *testing.T) {
 	jq := NewJQ()
-	tc := &engine.TransformerContext{
+	tc := &engine.InstrumentContext{
 		Input:      map[string]any{},
 		NodeConfig: &circuit.NodeConfig{Expr: ">>>invalid"},
 	}
@@ -86,7 +86,7 @@ func TestFile_ReadJSON(t *testing.T) {
 		t.Fatalf("Name() = %q, want file", ft.Name())
 	}
 
-	tc := &engine.TransformerContext{Prompt: "test.json"}
+	tc := &engine.InstrumentContext{Prompt: "test.json"}
 	result, err := ft.Transform(context.Background(), tc)
 	if err != nil {
 		t.Fatalf("Transform: %v", err)
@@ -105,7 +105,7 @@ func TestFile_ReadText(t *testing.T) {
 	os.WriteFile(filepath.Join(dir, "readme.txt"), []byte("hello world"), 0o644)
 
 	ft := NewFile(WithRootDir(dir))
-	tc := &engine.TransformerContext{Prompt: "readme.txt"}
+	tc := &engine.InstrumentContext{Prompt: "readme.txt"}
 	result, err := ft.Transform(context.Background(), tc)
 	if err != nil {
 		t.Fatalf("Transform: %v", err)
@@ -122,7 +122,7 @@ func TestFile_ReadText(t *testing.T) {
 func TestFile_PathTraversal(t *testing.T) {
 	dir := t.TempDir()
 	ft := NewFile(WithRootDir(dir))
-	tc := &engine.TransformerContext{Prompt: "../../../etc/passwd"}
+	tc := &engine.InstrumentContext{Prompt: "../../../etc/passwd"}
 	_, err := ft.Transform(context.Background(), tc)
 	if err == nil {
 		t.Fatal("expected error for path traversal")
@@ -131,7 +131,7 @@ func TestFile_PathTraversal(t *testing.T) {
 
 func TestFile_NoPath(t *testing.T) {
 	ft := NewFile()
-	tc := &engine.TransformerContext{}
+	tc := &engine.InstrumentContext{}
 	_, err := ft.Transform(context.Background(), tc)
 	if err == nil {
 		t.Fatal("expected error for missing path")
@@ -152,7 +152,7 @@ func TestHTTP_Get(t *testing.T) {
 		t.Fatalf("Name() = %q, want http", ht.Name())
 	}
 
-	tc := &engine.TransformerContext{
+	tc := &engine.InstrumentContext{
 		NodeConfig: &circuit.NodeConfig{URL: ts.URL},
 	}
 	result, err := ht.Transform(context.Background(), tc)
@@ -170,7 +170,7 @@ func TestHTTP_Get(t *testing.T) {
 
 func TestHTTP_NoURL(t *testing.T) {
 	ht := NewHTTP()
-	tc := &engine.TransformerContext{NodeConfig: &circuit.NodeConfig{}}
+	tc := &engine.InstrumentContext{NodeConfig: &circuit.NodeConfig{}}
 	_, err := ht.Transform(context.Background(), tc)
 	if err == nil {
 		t.Fatal("expected error for missing url")
@@ -179,7 +179,7 @@ func TestHTTP_NoURL(t *testing.T) {
 
 func TestHTTP_AllowedHosts(t *testing.T) {
 	ht := NewHTTP(WithAllowedHosts("api.example.com"))
-	tc := &engine.TransformerContext{
+	tc := &engine.InstrumentContext{
 		NodeConfig: &circuit.NodeConfig{URL: "https://evil.com/steal"},
 	}
 	_, err := ht.Transform(context.Background(), tc)
@@ -196,7 +196,7 @@ func TestHTTP_ServerError(t *testing.T) {
 	defer ts.Close()
 
 	ht := NewHTTP()
-	tc := &engine.TransformerContext{NodeConfig: &circuit.NodeConfig{URL: ts.URL}}
+	tc := &engine.InstrumentContext{NodeConfig: &circuit.NodeConfig{URL: ts.URL}}
 	_, err := ht.Transform(context.Background(), tc)
 	if err == nil {
 		t.Fatal("expected error for 500 response")
@@ -225,7 +225,7 @@ func TestLLM_Transform(t *testing.T) {
 
 	state := circuit.NewWalkerState("test")
 	state.Context["case_id"] = "C1"
-	tc := &engine.TransformerContext{
+	tc := &engine.InstrumentContext{
 		NodeName:    "test-node",
 		Prompt:      "test-prompt.md",
 		WalkerState: state,
@@ -246,7 +246,7 @@ func TestLLM_Transform(t *testing.T) {
 func TestLLM_InvalidJSON(t *testing.T) {
 	d := &mockDispatcher{response: []byte("not json")}
 	llm := NewLLM(d)
-	tc := &engine.TransformerContext{NodeName: "test"}
+	tc := &engine.InstrumentContext{NodeName: "test"}
 	_, err := llm.Transform(context.Background(), tc)
 	if err == nil {
 		t.Fatal("expected error for invalid JSON response")
@@ -255,8 +255,8 @@ func TestLLM_InvalidJSON(t *testing.T) {
 
 // --- Transformer Registry ---
 
-func TestTransformerRegistry(t *testing.T) {
-	reg := engine.TransformerRegistry{}
+func TestInstrumentRegistry(t *testing.T) {
+	reg := engine.InstrumentRegistry{}
 	jq := NewJQ()
 	reg.Register(jq)
 
@@ -274,21 +274,21 @@ func TestTransformerRegistry(t *testing.T) {
 	}
 }
 
-func TestTransformerRegistry_Nil(t *testing.T) {
-	var reg engine.TransformerRegistry
+func TestInstrumentRegistry_Nil(t *testing.T) {
+	var reg engine.InstrumentRegistry
 	_, err := reg.Get("jq")
 	if err == nil {
 		t.Fatal("expected error for nil registry")
 	}
 }
 
-func TestTransformerRegistry_DuplicatePanic(t *testing.T) {
+func TestInstrumentRegistry_DuplicatePanic(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
 			t.Fatal("expected panic on duplicate registration")
 		}
 	}()
-	reg := engine.TransformerRegistry{}
+	reg := engine.InstrumentRegistry{}
 	jq := NewJQ()
 	reg.Register(jq)
 	reg.Register(jq)

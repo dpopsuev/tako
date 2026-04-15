@@ -54,14 +54,14 @@ func TestComposition_OverlayWithCircuitHandler(t *testing.T) {
 		},
 	}
 
-	passthrough := engine.TransformerFunc("passthrough", func(_ context.Context, tc *engine.TransformerContext) (any, error) {
+	passthrough := engine.InstrumentFunc("passthrough", func(_ context.Context, tc *engine.InstrumentContext) (any, error) {
 		return tc.Input, nil
 	})
 
 	t.Run("local circuit resolves", func(t *testing.T) {
 		reg := &engine.GraphRegistries{
-			Transformers: engine.TransformerRegistry{"passthrough": passthrough},
-			Circuits:     map[string]*circuit.CircuitDef{"inner": innerDef},
+			Instruments: engine.InstrumentRegistry{"passthrough": passthrough},
+			Circuits:    map[string]*circuit.CircuitDef{"inner": innerDef},
 		}
 		_, err := engine.BuildGraph(overlayDef, reg)
 		if err != nil {
@@ -71,7 +71,7 @@ func TestComposition_OverlayWithCircuitHandler(t *testing.T) {
 
 	t.Run("mediator fallback resolves", func(t *testing.T) {
 		reg := &engine.GraphRegistries{
-			Transformers:     engine.TransformerRegistry{"passthrough": passthrough},
+			Instruments:      engine.InstrumentRegistry{"passthrough": passthrough},
 			MediatorEndpoint: "http://localhost:9999/mcp",
 			// No Circuits — should fall back to MCPCircuitTransformer
 		}
@@ -83,7 +83,7 @@ func TestComposition_OverlayWithCircuitHandler(t *testing.T) {
 
 	t.Run("no circuit and no mediator fails", func(t *testing.T) {
 		reg := &engine.GraphRegistries{
-			Transformers: engine.TransformerRegistry{"passthrough": passthrough},
+			Instruments: engine.InstrumentRegistry{"passthrough": passthrough},
 			// No Circuits, no MediatorEndpoint
 		}
 		_, err := engine.BuildGraph(overlayDef, reg)
@@ -94,7 +94,7 @@ func TestComposition_OverlayWithCircuitHandler(t *testing.T) {
 
 	t.Run("base circuit without overlay succeeds", func(t *testing.T) {
 		reg := &engine.GraphRegistries{
-			Transformers: engine.TransformerRegistry{"passthrough": passthrough},
+			Instruments: engine.InstrumentRegistry{"passthrough": passthrough},
 		}
 		_, err := engine.BuildGraph(baseDef, reg)
 		if err != nil {
@@ -104,8 +104,8 @@ func TestComposition_OverlayWithCircuitHandler(t *testing.T) {
 
 	t.Run("walk visits all overlay nodes with local circuit", func(t *testing.T) {
 		reg := &engine.GraphRegistries{
-			Transformers: engine.TransformerRegistry{"passthrough": passthrough},
-			Circuits:     map[string]*circuit.CircuitDef{"inner": innerDef},
+			Instruments: engine.InstrumentRegistry{"passthrough": passthrough},
+			Circuits:    map[string]*circuit.CircuitDef{"inner": innerDef},
 		}
 		cases := []engine.BatchCase{{ID: "C1"}}
 		results := engine.BatchWalk(context.Background(), engine.BatchWalkConfig{

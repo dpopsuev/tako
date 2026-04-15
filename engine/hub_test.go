@@ -26,7 +26,7 @@ func TestLocalHub_SetActiveNode_ToolsRotate(t *testing.T) {
 		},
 	}
 
-	instruments := InstrumentRegistry{
+	instruments := ManifestRegistry{
 		"dummy-echo": testHubManifest("dummy-echo", "echo"),
 		"dummy-fail": testHubManifest("dummy-fail", "fail"),
 	}
@@ -98,7 +98,7 @@ func TestLocalHub_InprocInstrument_Skipped(t *testing.T) {
 	}
 
 	// No manifest for "transformer" — it's inproc.
-	hub, err := NewLocalHub(cdef, InstrumentRegistry{}, "")
+	hub, err := NewLocalHub(cdef, ManifestRegistry{}, "")
 	if err != nil {
 		t.Fatalf("NewLocalHub: %v", err)
 	}
@@ -122,7 +122,7 @@ func TestBuildHubRoutingTable_Basic(t *testing.T) {
 		},
 	}
 
-	instruments := InstrumentRegistry{
+	instruments := ManifestRegistry{
 		"dummy-echo": testHubManifest("dummy-echo", "echo"),
 	}
 
@@ -199,7 +199,7 @@ func localHubWithEcho(t *testing.T) *LocalHub {
 			{ID: "scan-done", From: "scan", To: "_done"},
 		},
 	}
-	instruments := InstrumentRegistry{
+	instruments := ManifestRegistry{
 		"dummy-echo": testHubManifest("dummy-echo", "echo"),
 	}
 	hub, err := NewLocalHub(cdef, instruments, "")

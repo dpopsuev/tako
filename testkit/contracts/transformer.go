@@ -5,7 +5,7 @@
 // Usage:
 //
 //	func TestMyTransformer(t *testing.T) {
-//	    contracts.RunTransformerContract(t, func() engine.Transformer {
+//	    contracts.RunInstrumentContract(t, func() engine.Instrument {
 //	        return &MyTransformer{}
 //	    })
 //	}
@@ -20,9 +20,9 @@ import (
 	"github.com/dpopsuev/origami/engine"
 )
 
-// RunTransformerContract runs the transformer compliance suite against
-// any Transformer implementation produced by the factory.
-func RunTransformerContract(t *testing.T, factory func() engine.Transformer) {
+// RunInstrumentContract runs the instrument compliance suite against
+// any Instrument implementation produced by the factory.
+func RunInstrumentContract(t *testing.T, factory func() engine.Instrument) {
 	t.Helper()
 
 	t.Run("Name_NonEmpty", func(t *testing.T) {
@@ -35,7 +35,7 @@ func RunTransformerContract(t *testing.T, factory func() engine.Transformer) {
 	t.Run("Transform_ReturnsResult", func(t *testing.T) {
 		tr := factory()
 		ctx := context.Background()
-		tc := &engine.TransformerContext{
+		tc := &engine.InstrumentContext{
 			NodeName:    "test-node",
 			WalkerState: circuit.NewWalkerState("test"),
 		}
@@ -53,7 +53,7 @@ func RunTransformerContract(t *testing.T, factory func() engine.Transformer) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel() // cancel immediately
 
-		tc := &engine.TransformerContext{
+		tc := &engine.InstrumentContext{
 			NodeName:    "test-node",
 			WalkerState: circuit.NewWalkerState("test"),
 		}
@@ -75,7 +75,7 @@ func RunTransformerContract(t *testing.T, factory func() engine.Transformer) {
 	t.Run("Transform_NilWalkerState_NoPanic", func(t *testing.T) {
 		tr := factory()
 		ctx := context.Background()
-		tc := &engine.TransformerContext{
+		tc := &engine.InstrumentContext{
 			NodeName: "test-node",
 			// WalkerState intentionally nil
 		}

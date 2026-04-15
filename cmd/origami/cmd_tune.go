@@ -55,7 +55,7 @@ func tuneCmd(args []string) error {
 	}
 
 	// Build registry for TuneAll.
-	reg := make(engine.InstrumentRegistry, len(loaded))
+	reg := make(engine.ManifestRegistry, len(loaded))
 	for _, inst := range loaded {
 		reg[inst.Name] = inst.Manifest
 	}

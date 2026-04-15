@@ -21,7 +21,7 @@ func NewJQ() *JQTransformer { return &JQTransformer{} }
 func (t *JQTransformer) Name() string        { return transformerNameJQ }
 func (t *JQTransformer) Deterministic() bool { return true }
 
-func (t *JQTransformer) Transform(ctx context.Context, tc *engine.TransformerContext) (any, error) {
+func (t *JQTransformer) Transform(ctx context.Context, tc *engine.InstrumentContext) (any, error) {
 	expression := ""
 	if tc.NodeConfig != nil {
 		expression = tc.NodeConfig.Expr

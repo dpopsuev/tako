@@ -10,7 +10,7 @@ import (
 type componentStubTransformer struct{ name string }
 
 func (s *componentStubTransformer) Name() string { return s.name }
-func (s *componentStubTransformer) Transform(_ context.Context, _ *TransformerContext) (any, error) {
+func (s *componentStubTransformer) Transform(_ context.Context, _ *InstrumentContext) (any, error) {
 	return nil, nil
 }
 
@@ -21,12 +21,12 @@ func (s *componentStubExtractor) Extract(_ context.Context, _ any) (any, error) 
 	return nil, nil
 }
 
-func TestTransformerForAllNodes(t *testing.T) {
+func TestInstrumentForAllNodes(t *testing.T) {
 	t.Parallel()
 	tr := &componentStubTransformer{name: "stub"}
 	nodes := []string{"a", "b", "c"}
 
-	reg := TransformerForAllNodes(tr, nodes)
+	reg := InstrumentForAllNodes(tr, nodes)
 	if len(reg) != 3 {
 		t.Fatalf("registry len = %d, want 3", len(reg))
 	}
@@ -37,9 +37,9 @@ func TestTransformerForAllNodes(t *testing.T) {
 	}
 }
 
-func TestTransformerForAllNodes_Empty(t *testing.T) {
+func TestInstrumentForAllNodes_Empty(t *testing.T) {
 	t.Parallel()
-	reg := TransformerForAllNodes(&componentStubTransformer{}, nil)
+	reg := InstrumentForAllNodes(&componentStubTransformer{}, nil)
 	if len(reg) != 0 {
 		t.Errorf("empty nodes should give empty registry, got %d", len(reg))
 	}

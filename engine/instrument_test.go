@@ -213,7 +213,7 @@ func TestResolveInstrumentNode_ActionDefaultsToNodeName(t *testing.T) {
 func TestResolveByInstrument_PrefersRegistry(t *testing.T) {
 	manifest := testManifest()
 	reg := &GraphRegistries{
-		Instruments: InstrumentRegistry{"test-instrument": manifest},
+		Manifests: ManifestRegistry{"test-instrument": manifest},
 	}
 	nd := &circuit.NodeDef{Name: "scan", Instrument: "test-instrument", Action: "echo"}
 	def := &circuit.CircuitDef{}
@@ -228,12 +228,12 @@ func TestResolveByInstrument_PrefersRegistry(t *testing.T) {
 }
 
 func TestResolveByInstrument_FallsBackToBuiltin(t *testing.T) {
-	stub := TransformerFunc("echo", func(_ context.Context, _ *TransformerContext) (any, error) {
+	stub := InstrumentFunc("echo", func(_ context.Context, _ *InstrumentContext) (any, error) {
 		return "ok", nil
 	})
 	reg := &GraphRegistries{
-		Transformers: TransformerRegistry{"echo": stub},
-		Instruments:  InstrumentRegistry{}, // empty — no manifests
+		Instruments: InstrumentRegistry{"echo": stub},
+		Manifests:   ManifestRegistry{}, // empty — no manifests
 	}
 	nd := &circuit.NodeDef{Name: "scan", Instrument: "transformer", Action: "echo"}
 	def := &circuit.CircuitDef{}
@@ -256,7 +256,7 @@ func TestResolveByInstrument_UnsupportedDispatchMode(t *testing.T) {
 		Actions:  map[string]def.ActionDef{"call": {Command: "grpc-call"}},
 	}
 	reg := &GraphRegistries{
-		Instruments: InstrumentRegistry{"remote": manifest},
+		Manifests: ManifestRegistry{"remote": manifest},
 	}
 	nd := &circuit.NodeDef{Name: "rpc", Instrument: "remote", Action: "call"}
 	def := &circuit.CircuitDef{}

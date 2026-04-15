@@ -125,7 +125,7 @@ func TestWalk_DelegateNode_SubWalk(t *testing.T) {
 	}
 
 	g.SetRegistries(&GraphRegistries{
-		Transformers: TransformerRegistry{"passthrough": &passthroughTransformer{}},
+		Instruments: InstrumentRegistry{"passthrough": &passthroughTransformer{}},
 	})
 
 	walker := &stubWalker{
@@ -267,7 +267,7 @@ func TestBuildGraph_DelegateNode_DSL(t *testing.T) {
 		},
 	}
 
-	planGen := TransformerFunc("plan", func(_ context.Context, _ *TransformerContext) (any, error) {
+	planGen := InstrumentFunc("plan", func(_ context.Context, _ *InstrumentContext) (any, error) {
 		return &circuit.CircuitDef{
 			Circuit: "generated",
 			Start:   "W1",
@@ -282,7 +282,7 @@ func TestBuildGraph_DelegateNode_DSL(t *testing.T) {
 	})
 
 	reg := &GraphRegistries{
-		Transformers: TransformerRegistry{
+		Instruments: InstrumentRegistry{
 			"passthrough": &passthroughTransformer{},
 			"plan":        planGen,
 		},
@@ -339,8 +339,8 @@ func TestBuildGraph_DelegateNode_MissingHandler(t *testing.T) {
 	if err == nil {
 		t.Fatal("BuildGraph() should fail for delegate without handler")
 	}
-	if !strings.Contains(err.Error(), "transformer registry is nil") {
-		t.Errorf("error = %q, want to contain 'transformer registry is nil'", err.Error())
+	if !strings.Contains(err.Error(), "instrument registry is nil") {
+		t.Errorf("error = %q, want to contain 'instrument registry is nil'", err.Error())
 	}
 }
 
@@ -413,7 +413,7 @@ func TestBuildGraph_CircuitRefNode(t *testing.T) {
 	}
 
 	reg := &GraphRegistries{
-		Transformers: TransformerRegistry{
+		Instruments: InstrumentRegistry{
 			"passthrough": &passthroughTransformer{},
 		},
 		Circuits: map[string]*circuit.CircuitDef{
@@ -465,7 +465,7 @@ func TestWalk_CircuitRefNode_SubWalk(t *testing.T) {
 	}
 
 	reg := &GraphRegistries{
-		Transformers: TransformerRegistry{
+		Instruments: InstrumentRegistry{
 			"passthrough": &passthroughTransformer{},
 		},
 		Circuits: map[string]*circuit.CircuitDef{
@@ -509,7 +509,7 @@ func TestWalk_CircuitRefNode_SubWalk(t *testing.T) {
 
 func TestWalk_CircuitRefNode_ContextInheritance(t *testing.T) {
 	// Inner circuit has a transformer that reads a context key.
-	contextReader := TransformerFunc("ctx-reader", func(_ context.Context, tc *TransformerContext) (any, error) {
+	contextReader := InstrumentFunc("ctx-reader", func(_ context.Context, tc *InstrumentContext) (any, error) {
 		v := tc.WalkerState.Context["test-key"]
 		return &testArtifact{typeName: "test", confidence: 1.0, raw: v}, nil
 	})
@@ -541,7 +541,7 @@ func TestWalk_CircuitRefNode_ContextInheritance(t *testing.T) {
 	}
 
 	reg := &GraphRegistries{
-		Transformers: TransformerRegistry{
+		Instruments: InstrumentRegistry{
 			"passthrough": &passthroughTransformer{},
 			"ctx-reader":  contextReader,
 		},
@@ -630,7 +630,7 @@ func TestDelegateEvents_CarryCircuitType_CircuitRef(t *testing.T) {
 	}
 
 	reg := &GraphRegistries{
-		Transformers: TransformerRegistry{
+		Instruments: InstrumentRegistry{
 			"passthrough": &passthroughTransformer{},
 		},
 		Circuits: map[string]*circuit.CircuitDef{
@@ -671,7 +671,7 @@ func TestDelegateEvents_CarryCircuitType_CircuitRef(t *testing.T) {
 }
 
 func TestDelegateEvents_CarryCircuitType_DSLDelegate(t *testing.T) {
-	planGen := TransformerFunc("plan", func(_ context.Context, _ *TransformerContext) (any, error) {
+	planGen := InstrumentFunc("plan", func(_ context.Context, _ *InstrumentContext) (any, error) {
 		return &circuit.CircuitDef{
 			Circuit: "generated",
 			Start:   "W1",
@@ -698,7 +698,7 @@ func TestDelegateEvents_CarryCircuitType_DSLDelegate(t *testing.T) {
 	}
 
 	reg := &GraphRegistries{
-		Transformers: TransformerRegistry{
+		Instruments: InstrumentRegistry{
 			"passthrough": &passthroughTransformer{},
 			"plan":        planGen,
 		},

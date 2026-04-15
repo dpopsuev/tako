@@ -16,23 +16,23 @@ func LoadComponentManifest(path string) (*circuit.ComponentManifest, error) {
 	return circuit.LoadComponentManifest(path)
 }
 
-// Component bundles reusable plumbing (transformers, extractors, hooks) under
+// Component bundles reusable plumbing (instruments, extractors, hooks) under
 // a namespace. Consumers merge components into their registries at build time.
 type Component struct {
-	Namespace    string
-	Name         string
-	Version      string
-	Description  string
-	Transformers TransformerRegistry
-	Extractors   ExtractorRegistry
-	Hooks        HookRegistry
-	Health       HealthChecker // optional: validates runtime prerequisites
+	Namespace   string
+	Name        string
+	Version     string
+	Description string
+	Instruments InstrumentRegistry
+	Extractors  ExtractorRegistry
+	Hooks       HookRegistry
+	Health      HealthChecker // optional: validates runtime prerequisites
 }
 
 // MergeComponents merges one or more components into a base GraphRegistries.
 func MergeComponents(base *GraphRegistries, components ...*Component) (*GraphRegistries, error) {
 	merged := &GraphRegistries{
-		Transformers:     cloneMap(base.Transformers),
+		Instruments:      cloneMap(base.Instruments),
 		Extractors:       cloneMap(base.Extractors),
 		Hooks:            cloneMap(base.Hooks),
 		Nodes:            base.Nodes,
@@ -44,7 +44,7 @@ func MergeComponents(base *GraphRegistries, components ...*Component) (*GraphReg
 	slog.DebugContext(context.Background(), circuit.LogMergeComponents, slog.Any(circuit.LogKeyComponent, circuit.LogComponentRegistry), slog.Any(circuit.LogKeyBaseCircuits, len(base.Circuits)), slog.Any(circuit.LogKeyMediatorEndpoint, base.MediatorEndpoint), slog.Any(circuit.LogKeyComponents, len(components)))
 
 	for _, a := range components {
-		if err := mergeTransformers(merged.Transformers, a); err != nil {
+		if err := mergeInstruments(merged.Instruments, a); err != nil {
 			return nil, err
 		}
 		if err := mergeExtractors(merged.Extractors, a); err != nil {
@@ -57,11 +57,11 @@ func MergeComponents(base *GraphRegistries, components ...*Component) (*GraphReg
 	return merged, nil
 }
 
-func mergeTransformers(dst TransformerRegistry, a *Component) error {
-	for name, t := range a.Transformers {
+func mergeInstruments(dst InstrumentRegistry, a *Component) error {
+	for name, t := range a.Instruments {
 		fqcn := a.Namespace + "." + name
 		if _, exists := dst[fqcn]; exists {
-			return fmt.Errorf("%w: %q collision (component %s)", ErrTransformer, fqcn, a.Namespace)
+			return fmt.Errorf("%w: %q collision (component %s)", ErrInproc, fqcn, a.Namespace)
 		}
 		dst[fqcn] = t
 		if _, exists := dst[name]; !exists {

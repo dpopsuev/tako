@@ -14,7 +14,7 @@ import (
 type failTransformer struct{}
 
 func (failTransformer) Name() string { return "fail-on-id" }
-func (failTransformer) Transform(_ context.Context, tc *engine.TransformerContext) (any, error) {
+func (failTransformer) Transform(_ context.Context, tc *engine.InstrumentContext) (any, error) {
 	if tc.WalkerState != nil && strings.HasPrefix(tc.WalkerState.ID, "fail-") {
 		return nil, fmt.Errorf("injected circuit error for case %s", tc.WalkerState.ID)
 	}
@@ -33,7 +33,7 @@ func errorRateCircuitDef() *circuit.CircuitDef {
 
 func errorRateShared() *engine.GraphRegistries {
 	return &engine.GraphRegistries{
-		Transformers: engine.TransformerRegistry{
+		Instruments: engine.InstrumentRegistry{
 			"fail-on-id": failTransformer{},
 		},
 	}

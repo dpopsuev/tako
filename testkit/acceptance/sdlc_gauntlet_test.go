@@ -61,7 +61,7 @@ func NewGauntlet(t *testing.T) *SDLCGauntlet {
 	transformers := g.buildTransformers()
 
 	graph, err := engine.BuildGraph(def, &engine.GraphRegistries{
-		Transformers:     transformers,
+		Instruments:      transformers,
 		ApprovalStore:    store,
 		ApprovalNotifier: notifier,
 	})
@@ -115,8 +115,8 @@ func (g *SDLCGauntlet) Reject(ctx context.Context, nodeName, comment string) {
 // Transformer builders — closures capturing gauntlet state
 // ---------------------------------------------------------------------------
 
-func (g *SDLCGauntlet) buildTransformers() engine.TransformerRegistry {
-	return engine.TransformerRegistry{
+func (g *SDLCGauntlet) buildTransformers() engine.InstrumentRegistry {
+	return engine.InstrumentRegistry{
 		"scan":        g.scanTransformer(),
 		"poll-scribe": g.pollScribeTransformer(),
 		"plan-review": g.planReviewTransformer(),
@@ -132,8 +132,8 @@ func (g *SDLCGauntlet) buildTransformers() engine.TransformerRegistry {
 }
 
 // scan: detects planted lint issue, files task in Scribe.
-func (g *SDLCGauntlet) scanTransformer() engine.Transformer {
-	return engine.TransformerFunc("scan", func(ctx context.Context, _ *engine.TransformerContext) (any, error) {
+func (g *SDLCGauntlet) scanTransformer() engine.Instrument {
+	return engine.InstrumentFunc("scan", func(ctx context.Context, _ *engine.InstrumentContext) (any, error) {
 		mainPath := filepath.Join(g.TempDir, "main.go")
 		data, err := os.ReadFile(mainPath)
 		if err != nil {
@@ -174,8 +174,8 @@ func (g *SDLCGauntlet) scanTransformer() engine.Transformer {
 }
 
 // poll-scribe: checks Scribe for mature tasks, allocates if found.
-func (g *SDLCGauntlet) pollScribeTransformer() engine.Transformer {
-	return engine.TransformerFunc("poll-scribe", func(ctx context.Context, _ *engine.TransformerContext) (any, error) {
+func (g *SDLCGauntlet) pollScribeTransformer() engine.Instrument {
+	return engine.InstrumentFunc("poll-scribe", func(ctx context.Context, _ *engine.InstrumentContext) (any, error) {
 		items := g.Scribe.List("mature")
 		if len(items) == 0 {
 			return map[string]any{"has_task": true, "task_id": ""}, nil
@@ -192,15 +192,15 @@ func (g *SDLCGauntlet) pollScribeTransformer() engine.Transformer {
 }
 
 // plan-review: returns approved=true. The gate handles parking.
-func (g *SDLCGauntlet) planReviewTransformer() engine.Transformer {
-	return engine.TransformerFunc("plan-review", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+func (g *SDLCGauntlet) planReviewTransformer() engine.Instrument {
+	return engine.InstrumentFunc("plan-review", func(_ context.Context, _ *engine.InstrumentContext) (any, error) {
 		return map[string]any{"approved": true}, nil
 	})
 }
 
 // write-test: creates a test file in the temp worktree (RED phase).
-func (g *SDLCGauntlet) writeTestTransformer() engine.Transformer {
-	return engine.TransformerFunc("write-test", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+func (g *SDLCGauntlet) writeTestTransformer() engine.Instrument {
+	return engine.InstrumentFunc("write-test", func(_ context.Context, _ *engine.InstrumentContext) (any, error) {
 		testContent := `package main
 
 import "testing"
@@ -219,8 +219,8 @@ func TestMain_Exits(t *testing.T) {
 }
 
 // write-code: applies the fix patch to the temp worktree (GREEN phase).
-func (g *SDLCGauntlet) writeCodeTransformer() engine.Transformer {
-	return engine.TransformerFunc("write-code", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+func (g *SDLCGauntlet) writeCodeTransformer() engine.Instrument {
+	return engine.InstrumentFunc("write-code", func(_ context.Context, _ *engine.InstrumentContext) (any, error) {
 		// Apply the fix: rewrite main.go without the unused import.
 		fixedContent := `package main
 
@@ -241,22 +241,22 @@ func main() {
 }
 
 // build: returns pass=true.
-func (g *SDLCGauntlet) buildTransformer() engine.Transformer {
-	return engine.TransformerFunc("build", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+func (g *SDLCGauntlet) buildTransformer() engine.Instrument {
+	return engine.InstrumentFunc("build", func(_ context.Context, _ *engine.InstrumentContext) (any, error) {
 		return map[string]any{"pass": true, "output": "build ok"}, nil
 	})
 }
 
 // test: returns pass=true.
-func (g *SDLCGauntlet) testTransformer() engine.Transformer {
-	return engine.TransformerFunc("test", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+func (g *SDLCGauntlet) testTransformer() engine.Instrument {
+	return engine.InstrumentFunc("test", func(_ context.Context, _ *engine.InstrumentContext) (any, error) {
 		return map[string]any{"pass": true, "total": 1, "failed": 0}, nil
 	})
 }
 
 // self-review: returns all_verified=true with stamps.
-func (g *SDLCGauntlet) selfReviewTransformer() engine.Transformer {
-	return engine.TransformerFunc("self-review", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+func (g *SDLCGauntlet) selfReviewTransformer() engine.Instrument {
+	return engine.InstrumentFunc("self-review", func(_ context.Context, _ *engine.InstrumentContext) (any, error) {
 		return map[string]any{
 			"all_verified": true,
 			"stamps": []map[string]string{
@@ -267,8 +267,8 @@ func (g *SDLCGauntlet) selfReviewTransformer() engine.Transformer {
 }
 
 // diff-review: returns approved=true. The gate handles parking.
-func (g *SDLCGauntlet) diffReviewTransformer() engine.Transformer {
-	return engine.TransformerFunc("diff-review", func(_ context.Context, tc *engine.TransformerContext) (any, error) {
+func (g *SDLCGauntlet) diffReviewTransformer() engine.Instrument {
+	return engine.InstrumentFunc("diff-review", func(_ context.Context, tc *engine.InstrumentContext) (any, error) {
 		out := map[string]any{"approved": true}
 		// Capture rejection feedback if present (Story 6 verification).
 		if tc.WalkerState != nil {
@@ -281,8 +281,8 @@ func (g *SDLCGauntlet) diffReviewTransformer() engine.Transformer {
 }
 
 // mark-done: marks the Scribe task as done.
-func (g *SDLCGauntlet) markDoneTransformer() engine.Transformer {
-	return engine.TransformerFunc("mark-done", func(ctx context.Context, _ *engine.TransformerContext) (any, error) {
+func (g *SDLCGauntlet) markDoneTransformer() engine.Instrument {
+	return engine.InstrumentFunc("mark-done", func(ctx context.Context, _ *engine.InstrumentContext) (any, error) {
 		// Find the allocated task and mark it done.
 		for _, status := range []string{"allocated", "in_progress", "mature", "draft"} {
 			items := g.Scribe.List(status)
@@ -298,8 +298,8 @@ func (g *SDLCGauntlet) markDoneTransformer() engine.Transformer {
 }
 
 // teardown: no-op for tests.
-func (g *SDLCGauntlet) teardownTransformer() engine.Transformer {
-	return engine.TransformerFunc("teardown", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+func (g *SDLCGauntlet) teardownTransformer() engine.Instrument {
+	return engine.InstrumentFunc("teardown", func(_ context.Context, _ *engine.InstrumentContext) (any, error) {
 		return map[string]any{"cleaned": []string{}}, nil
 	})
 }

@@ -8,9 +8,9 @@ import (
 	"github.com/dpopsuev/origami/circuit"
 )
 
-// stubTransformerFor creates a named stub transformer for testing.
-func stubTransformerFor(name string) Transformer {
-	return TransformerFunc(name, func(_ context.Context, _ *TransformerContext) (any, error) {
+// stubTransformerFor creates a named stub instrument for testing.
+func stubTransformerFor(name string) Instrument {
+	return InstrumentFunc(name, func(_ context.Context, _ *InstrumentContext) (any, error) {
 		return "stub", nil
 	})
 }
@@ -19,10 +19,10 @@ func stubTransformerFor(name string) Transformer {
 
 func TestMergeComponents_SingleComponent(t *testing.T) {
 	// Given: empty base + one component with a transformer
-	base := &GraphRegistries{Transformers: TransformerRegistry{}}
+	base := &GraphRegistries{Instruments: InstrumentRegistry{}}
 	comp := &Component{
 		Namespace:    "alpha",
-		Transformers: TransformerRegistry{"llm": stubTransformerFor("llm")},
+		Instruments: InstrumentRegistry{"llm": stubTransformerFor("llm")},
 	}
 
 	// When: merge
@@ -32,10 +32,10 @@ func TestMergeComponents_SingleComponent(t *testing.T) {
 	}
 
 	// Then: FQCN + short name registered
-	if _, ok := merged.Transformers["alpha.llm"]; !ok {
+	if _, ok := merged.Instruments["alpha.llm"]; !ok {
 		t.Error("missing FQCN alpha.llm")
 	}
-	if _, ok := merged.Transformers["llm"]; !ok {
+	if _, ok := merged.Instruments["llm"]; !ok {
 		t.Error("missing short name llm")
 	}
 }
@@ -43,11 +43,11 @@ func TestMergeComponents_SingleComponent(t *testing.T) {
 func TestMergeComponents_NamespaceCollision(t *testing.T) {
 	// Given: base with existing FQCN + component with same FQCN
 	base := &GraphRegistries{
-		Transformers: TransformerRegistry{"alpha.llm": stubTransformerFor("llm")},
+		Instruments: InstrumentRegistry{"alpha.llm": stubTransformerFor("llm")},
 	}
 	comp := &Component{
 		Namespace:    "alpha",
-		Transformers: TransformerRegistry{"llm": stubTransformerFor("llm2")},
+		Instruments: InstrumentRegistry{"llm": stubTransformerFor("llm2")},
 	}
 
 	// When: merge
@@ -57,8 +57,8 @@ func TestMergeComponents_NamespaceCollision(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected collision error")
 	}
-	if !errors.Is(err, ErrTransformer) {
-		t.Errorf("want ErrTransformer, got %v", err)
+	if !errors.Is(err, ErrInproc) {
+		t.Errorf("want ErrInproc, got %v", err)
 	}
 }
 
@@ -66,11 +66,11 @@ func TestMergeComponents_ShortNamePreservesFirst(t *testing.T) {
 	// Given: base with short name "llm" + component from different namespace also has "llm"
 	existing := stubTransformerFor("existing")
 	base := &GraphRegistries{
-		Transformers: TransformerRegistry{"llm": existing},
+		Instruments: InstrumentRegistry{"llm": existing},
 	}
 	comp := &Component{
 		Namespace:    "beta",
-		Transformers: TransformerRegistry{"llm": stubTransformerFor("new")},
+		Instruments: InstrumentRegistry{"llm": stubTransformerFor("new")},
 	}
 
 	// When: merge
@@ -80,11 +80,11 @@ func TestMergeComponents_ShortNamePreservesFirst(t *testing.T) {
 	}
 
 	// Then: short name "llm" still points to existing (first wins)
-	if merged.Transformers["llm"] != existing {
+	if merged.Instruments["llm"] != existing {
 		t.Error("short name should preserve first registration")
 	}
 	// But FQCN is registered
-	if _, ok := merged.Transformers["beta.llm"]; !ok {
+	if _, ok := merged.Instruments["beta.llm"]; !ok {
 		t.Error("missing FQCN beta.llm")
 	}
 }
@@ -130,7 +130,7 @@ func TestMergeComponents_NilBase(t *testing.T) {
 	base := &GraphRegistries{}
 	comp := &Component{
 		Namespace:    "alpha",
-		Transformers: TransformerRegistry{"llm": stubTransformerFor("llm")},
+		Instruments: InstrumentRegistry{"llm": stubTransformerFor("llm")},
 	}
 
 	// When: merge (should initialize nil maps)
@@ -138,7 +138,7 @@ func TestMergeComponents_NilBase(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MergeComponents: %v", err)
 	}
-	if _, ok := merged.Transformers["alpha.llm"]; !ok {
+	if _, ok := merged.Instruments["alpha.llm"]; !ok {
 		t.Error("missing alpha.llm after nil base merge")
 	}
 }

@@ -70,7 +70,7 @@ func (n *slowNode) Process(ctx context.Context, _ circuit.NodeContext) (circuit.
 type echoTransformer struct{}
 
 func (t *echoTransformer) Name() string { return "echo" }
-func (t *echoTransformer) Transform(_ context.Context, tc *TransformerContext) (any, error) {
+func (t *echoTransformer) Transform(_ context.Context, tc *InstrumentContext) (any, error) {
 	return map[string]any{"echoed": tc.Input, "node": tc.NodeName}, nil
 }
 

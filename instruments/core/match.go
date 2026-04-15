@@ -16,13 +16,13 @@ type (
 
 var NewMatchEvaluator = toolkit.NewMatchEvaluator
 
-// matchTransformer wraps a MatchEvaluator as a engine.Transformer.
+// matchTransformer wraps a MatchEvaluator as a engine.Instrument.
 // Config must include "rule_set" (string) and may include "field" (string)
 // to select which input field to match against.
 type matchTransformer struct{}
 
 // NewMatch returns the match transformer for pipeline use.
-func NewMatch() engine.Transformer {
+func NewMatch() engine.Instrument {
 	return &matchTransformer{}
 }
 
@@ -31,7 +31,7 @@ const transformerNameMatch = "match"
 func (t *matchTransformer) Name() string        { return transformerNameMatch }
 func (t *matchTransformer) Deterministic() bool { return true }
 
-func (t *matchTransformer) Transform(_ context.Context, tc *engine.TransformerContext) (any, error) {
+func (t *matchTransformer) Transform(_ context.Context, tc *engine.InstrumentContext) (any, error) {
 	if tc.NodeConfig == nil {
 		return nil, ErrMatchTransformerNoNodeConfig
 	}

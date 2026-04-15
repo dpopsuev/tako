@@ -104,7 +104,7 @@ func ValidateInput(input *Input) error {
 	tr := setupTransformer(t, store, tmpDir)
 	ctx := context.Background()
 
-	tc := &handler.TransformerContext{
+	tc := &handler.InstrumentContext{
 		WalkerState: walkerStateWithTask("TSK-42", []string{"handler.go", "validator.go"}),
 		Config:      map[string]any{},
 	}
@@ -182,7 +182,7 @@ func HandleRequest() {
 	tr := setupTransformer(t, store, tmpDir)
 	ctx := context.Background()
 
-	tc := &handler.TransformerContext{
+	tc := &handler.InstrumentContext{
 		WalkerState: walkerStateWithTask("TSK-1", []string{"main.go"}),
 		Config:      map[string]any{},
 	}
@@ -222,7 +222,7 @@ func TestSelfReview_NoModifiedFiles_AllUnverified(t *testing.T) {
 		"task_id": "TSK-2",
 	}}
 
-	tc := &handler.TransformerContext{
+	tc := &handler.InstrumentContext{
 		WalkerState: ws,
 		Config:      map[string]any{},
 	}
@@ -250,7 +250,7 @@ func TestSelfReview_NoTaskID_Error(t *testing.T) {
 	tr := setupTransformer(t, store, t.TempDir())
 	ctx := context.Background()
 
-	tc := &handler.TransformerContext{
+	tc := &handler.InstrumentContext{
 		WalkerState: circuit.NewWalkerState("test"),
 		Config:      map[string]any{},
 	}
@@ -289,7 +289,7 @@ func FixDatabase() {}
 		Fixed: []string{"fix.go"},
 	}}
 
-	tc := &handler.TransformerContext{
+	tc := &handler.InstrumentContext{
 		WalkerState: ws,
 		Config:      map[string]any{"task_id": "TSK-99"},
 	}
@@ -324,7 +324,7 @@ func main() {}
 	tr := setupTransformer(t, store, tmpDir)
 	ctx := context.Background()
 
-	tc := &handler.TransformerContext{
+	tc := &handler.InstrumentContext{
 		WalkerState: walkerStateWithTask("TSK-3", []string{"main.go"}),
 		Config:      map[string]any{},
 	}

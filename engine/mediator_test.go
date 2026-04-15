@@ -93,7 +93,7 @@ func TestMCPCircuitTransformer_StubBackend(t *testing.T) {
 		Endpoint:    ts.URL + "/mcp",
 	}
 
-	tc := &TransformerContext{
+	tc := &InstrumentContext{
 		NodeName:    "gather-code",
 		WalkerState: circuit.NewWalkerState("test"),
 	}
@@ -122,7 +122,7 @@ func TestMCPCircuitTransformer_ConnectionError(t *testing.T) {
 		Endpoint:    "http://127.0.0.1:1/mcp", // unreachable
 	}
 
-	tc := &TransformerContext{
+	tc := &InstrumentContext{
 		NodeName:    "gather-code",
 		WalkerState: circuit.NewWalkerState("test"),
 	}
@@ -147,7 +147,7 @@ func TestMCPCircuitTransformer_CircuitError(t *testing.T) {
 		Endpoint:    ts.URL + "/mcp",
 	}
 
-	tc := &TransformerContext{
+	tc := &InstrumentContext{
 		NodeName:    "gather-code",
 		WalkerState: circuit.NewWalkerState("test"),
 	}
@@ -229,7 +229,7 @@ func TestMCPCircuitTransformer_PropagatesTraceID(t *testing.T) {
 		Endpoint:    ts.URL + "/mcp",
 	}
 
-	tc := &TransformerContext{
+	tc := &InstrumentContext{
 		NodeName:    "gather-code",
 		WalkerState: circuit.NewWalkerState("test"),
 	}
@@ -262,7 +262,7 @@ func TestMCPCircuitTransformer_GeneratesTraceIDWhenMissing(t *testing.T) {
 		Endpoint:    ts.URL + "/mcp",
 	}
 
-	tc := &TransformerContext{
+	tc := &InstrumentContext{
 		NodeName:    "gather-code",
 		WalkerState: circuit.NewWalkerState("test"),
 	}

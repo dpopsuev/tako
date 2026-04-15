@@ -267,7 +267,7 @@ func findApproachChain(start, approach string, nodeApproaches map[string]string,
 // --- B7: stochastic-transformer ---
 
 // knownStochasticTransformers is the fallback list used when no
-// TransformerRegistry is available at lint time (static YAML analysis).
+// InstrumentRegistry is available at lint time (static YAML analysis).
 var knownStochasticTransformers = map[string]bool{
 	"core.llm": true,
 	"llm":      true,
@@ -283,9 +283,9 @@ func (r *StochasticTransformer) Severity() Severity { return SeverityInfo }
 func (r *StochasticTransformer) Tags() []string     { return []string{"best-practice", "determinism"} }
 
 func (r *StochasticTransformer) Check(ctx *LintContext) []Finding {
-	var reg engine.TransformerRegistry
+	var reg engine.InstrumentRegistry
 	if ctx.Registries != nil {
-		reg = ctx.Registries.Transformers
+		reg = ctx.Registries.Instruments
 	}
 
 	var out []Finding
@@ -311,7 +311,7 @@ func (r *StochasticTransformer) Check(ctx *LintContext) []Finding {
 	return out
 }
 
-func isStochastic(name string, reg engine.TransformerRegistry) bool {
+func isStochastic(name string, reg engine.InstrumentRegistry) bool {
 	if reg != nil {
 		if t, err := reg.Get(name); err == nil {
 			return !engine.IsDeterministic(t)
@@ -332,9 +332,9 @@ func (r *StochasticSummary) Severity() Severity { return SeverityInfo }
 func (r *StochasticSummary) Tags() []string     { return []string{"best-practice", "determinism"} }
 
 func (r *StochasticSummary) Check(ctx *LintContext) []Finding {
-	var reg engine.TransformerRegistry
+	var reg engine.InstrumentRegistry
 	if ctx.Registries != nil {
-		reg = ctx.Registries.Transformers
+		reg = ctx.Registries.Instruments
 	}
 
 	totalWithTransformer := 0

@@ -11,7 +11,7 @@ type deterministicStub struct{ name string }
 
 func (d *deterministicStub) Name() string        { return d.name }
 func (d *deterministicStub) Deterministic() bool { return true }
-func (d *deterministicStub) Transform(_ context.Context, _ *TransformerContext) (any, error) {
+func (d *deterministicStub) Transform(_ context.Context, _ *InstrumentContext) (any, error) {
 	return nil, nil
 }
 
@@ -19,14 +19,14 @@ type stochasticStub struct{ name string }
 
 func (s *stochasticStub) Name() string        { return s.name }
 func (s *stochasticStub) Deterministic() bool { return false }
-func (s *stochasticStub) Transform(_ context.Context, _ *TransformerContext) (any, error) {
+func (s *stochasticStub) Transform(_ context.Context, _ *InstrumentContext) (any, error) {
 	return nil, nil
 }
 
 type unknownStub struct{ name string }
 
 func (u *unknownStub) Name() string { return u.name }
-func (u *unknownStub) Transform(_ context.Context, _ *TransformerContext) (any, error) {
+func (u *unknownStub) Transform(_ context.Context, _ *InstrumentContext) (any, error) {
 	return nil, nil
 }
 
@@ -43,7 +43,7 @@ func TestIsDeterministic(t *testing.T) {
 }
 
 func TestIsCircuitDeterministic(t *testing.T) {
-	reg := TransformerRegistry{
+	reg := InstrumentRegistry{
 		"core.jq":  &deterministicStub{name: "core.jq"},
 		"core.llm": &stochasticStub{name: "core.llm"},
 	}

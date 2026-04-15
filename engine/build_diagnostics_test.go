@@ -29,7 +29,7 @@ func TestDiag_D1_UnreferencedHook(t *testing.T) {
 		Edges: []circuit.EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 	}
 	reg := &GraphRegistries{
-		Transformers: TransformerRegistry{"passthrough": TransformerFunc("passthrough", func(_ context.Context, tc *TransformerContext) (any, error) { return tc.Input, nil })},
+		Instruments: InstrumentRegistry{"passthrough": InstrumentFunc("passthrough", func(_ context.Context, tc *InstrumentContext) (any, error) { return tc.Input, nil })},
 		Hooks: HookRegistry{
 			"hook-a": NewHookFunc("hook-a", func(_ context.Context, _ string, _ circuit.Artifact) error { return nil }),
 			"hook-b": NewHookFunc("hook-b", func(_ context.Context, _ string, _ circuit.Artifact) error { return nil }),
@@ -60,7 +60,7 @@ func TestDiag_D2_MissingHookRef(t *testing.T) {
 		Edges: []circuit.EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 	}
 	reg := &GraphRegistries{
-		Transformers: TransformerRegistry{"passthrough": TransformerFunc("passthrough", func(_ context.Context, tc *TransformerContext) (any, error) { return tc.Input, nil })},
+		Instruments: InstrumentRegistry{"passthrough": InstrumentFunc("passthrough", func(_ context.Context, tc *InstrumentContext) (any, error) { return tc.Input, nil })},
 		Hooks: HookRegistry{
 			"hook-exists": NewHookFunc("hook-exists", func(_ context.Context, _ string, _ circuit.Artifact) error { return nil }),
 		},
@@ -91,7 +91,7 @@ func TestDiag_D4_PartialHookWiring(t *testing.T) {
 		Edges: []circuit.EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 	}
 	reg := &GraphRegistries{
-		Transformers: TransformerRegistry{"passthrough": TransformerFunc("passthrough", func(_ context.Context, tc *TransformerContext) (any, error) { return tc.Input, nil })},
+		Instruments: InstrumentRegistry{"passthrough": InstrumentFunc("passthrough", func(_ context.Context, tc *InstrumentContext) (any, error) { return tc.Input, nil })},
 		Hooks: HookRegistry{
 			"hook-a": NewHookFunc("hook-a", func(_ context.Context, _ string, _ circuit.Artifact) error { return nil }),
 		},
@@ -122,7 +122,7 @@ func TestDiag_AllHooksReferenced_NoWarnings(t *testing.T) {
 		Edges: []circuit.EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 	}
 	reg := &GraphRegistries{
-		Transformers: TransformerRegistry{"passthrough": TransformerFunc("passthrough", func(_ context.Context, tc *TransformerContext) (any, error) { return tc.Input, nil })},
+		Instruments: InstrumentRegistry{"passthrough": InstrumentFunc("passthrough", func(_ context.Context, tc *InstrumentContext) (any, error) { return tc.Input, nil })},
 		Hooks: HookRegistry{
 			"hook-a": NewHookFunc("hook-a", func(_ context.Context, _ string, _ circuit.Artifact) error { return nil }),
 			"hook-b": NewHookFunc("hook-b", func(_ context.Context, _ string, _ circuit.Artifact) error { return nil }),
@@ -150,7 +150,7 @@ func TestDiag_NoHooksRegistered_NoWarnings(t *testing.T) {
 		Edges: []circuit.EdgeDef{{ID: "a-done", From: "a", To: "done"}},
 	}
 	reg := &GraphRegistries{
-		Transformers: TransformerRegistry{"passthrough": TransformerFunc("passthrough", func(_ context.Context, tc *TransformerContext) (any, error) { return tc.Input, nil })},
+		Instruments: InstrumentRegistry{"passthrough": InstrumentFunc("passthrough", func(_ context.Context, tc *InstrumentContext) (any, error) { return tc.Input, nil })},
 	}
 
 	logs := captureDiagLogs(func() {
@@ -180,7 +180,7 @@ func TestDiag_D3_CircuitMediatorFallback(t *testing.T) {
 		},
 	}
 	reg := &GraphRegistries{
-		Transformers:     TransformerRegistry{"passthrough": TransformerFunc("passthrough", func(_ context.Context, tc *TransformerContext) (any, error) { return tc.Input, nil })},
+		Instruments:      InstrumentRegistry{"passthrough": InstrumentFunc("passthrough", func(_ context.Context, tc *InstrumentContext) (any, error) { return tc.Input, nil })},
 		MediatorEndpoint: "http://localhost:9000/mcp",
 		// Note: no Circuits map — beta will fall back to mediator
 	}
@@ -221,7 +221,7 @@ func TestDiag_D3_NoWarningForLocalCircuit(t *testing.T) {
 		},
 	}
 	reg := &GraphRegistries{
-		Transformers:     TransformerRegistry{"passthrough": TransformerFunc("passthrough", func(_ context.Context, tc *TransformerContext) (any, error) { return tc.Input, nil })},
+		Instruments:      InstrumentRegistry{"passthrough": InstrumentFunc("passthrough", func(_ context.Context, tc *InstrumentContext) (any, error) { return tc.Input, nil })},
 		MediatorEndpoint: "http://localhost:9000/mcp",
 		Circuits:         map[string]*circuit.CircuitDef{"beta": innerDef},
 	}

@@ -137,7 +137,7 @@ func TestGenerateWiredBinary_WithInstruments(t *testing.T) {
 	if !strings.Contains(code, "TuneAll") {
 		t.Error("missing TuneAll call in generated code")
 	}
-	if !strings.Contains(code, "bridgedCfg.Instruments = instruments") {
+	if !strings.Contains(code, "bridgedCfg.Manifests = instruments") {
 		t.Error("missing instrument registry wiring")
 	}
 }

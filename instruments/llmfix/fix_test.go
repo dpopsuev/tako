@@ -11,7 +11,7 @@ import (
 
 // Contract: extractFindings handles typed ScanResult.
 func TestExtractFindings_TypedInput(t *testing.T) {
-	tc := &engine.TransformerContext{
+	tc := &engine.InstrumentContext{
 		Input: &sdlctype.ScanResult{
 			Findings: []sdlctype.Finding{
 				{File: "foo.go", Rule: "unused-import", Severity: "error"},
@@ -29,7 +29,7 @@ func TestExtractFindings_TypedInput(t *testing.T) {
 
 // Contract: extractFindings handles nil input.
 func TestExtractFindings_NilInput(t *testing.T) {
-	tc := &engine.TransformerContext{}
+	tc := &engine.InstrumentContext{}
 	findings := extractFindings(tc)
 	if len(findings) != 0 {
 		t.Errorf("expected 0 findings for nil input, got %d", len(findings))
@@ -131,7 +131,7 @@ func TestParseChanges_Garbage(t *testing.T) {
 func TestFixTransformer_NoFindings(t *testing.T) {
 	// Stub provider — won't be called since there are no findings.
 	tx := NewFixTransformer(nil, "test", t.TempDir(), WithDryRun())
-	result, err := tx.Transform(context.Background(), &engine.TransformerContext{
+	result, err := tx.Transform(context.Background(), &engine.InstrumentContext{
 		Input: &sdlctype.ScanResult{Clean: true},
 	})
 	if err != nil {
@@ -148,10 +148,10 @@ func TestFixTransformer_NoFindings(t *testing.T) {
 
 // Contract: same return type as stub — Liskov.
 func TestFixContract_MatchesStub(t *testing.T) {
-	stubTx := engine.TransformerFunc("fix", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+	stubTx := engine.InstrumentFunc("fix", func(_ context.Context, _ *engine.InstrumentContext) (any, error) {
 		return &sdlctype.FixResult{Applied: "stub"}, nil
 	})
-	result, err := stubTx.Transform(context.Background(), &engine.TransformerContext{})
+	result, err := stubTx.Transform(context.Background(), &engine.InstrumentContext{})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -22,7 +22,7 @@ func NewSecurityScanTransformer(repoPath string) *SecurityScanTransformer {
 	return &SecurityScanTransformer{repoPath: repoPath}
 }
 
-// Name implements engine.Transformer.
+// Name implements engine.Instrument.
 func (s *SecurityScanTransformer) Name() string { return "security-scan" }
 
 // LastStationLog implements engine.StationLoggable.
@@ -32,8 +32,8 @@ func (s *SecurityScanTransformer) LastStationLog() trace.StationLogger {
 	return s.lastStationLog
 }
 
-// Transform implements engine.Transformer.
-func (s *SecurityScanTransformer) Transform(ctx context.Context, _ *engine.TransformerContext) (any, error) {
+// Transform implements engine.Instrument.
+func (s *SecurityScanTransformer) Transform(ctx context.Context, _ *engine.InstrumentContext) (any, error) {
 	r := runCommand(ctx, s.repoPath, "govulncheck", "./...")
 	s.mu.Lock()
 	s.lastStationLog = buildStationLog(r)
@@ -44,4 +44,4 @@ func (s *SecurityScanTransformer) Transform(ctx context.Context, _ *engine.Trans
 	}, nil
 }
 
-var _ engine.Transformer = (*SecurityScanTransformer)(nil)
+var _ engine.Instrument = (*SecurityScanTransformer)(nil)

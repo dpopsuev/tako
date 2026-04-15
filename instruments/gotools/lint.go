@@ -22,7 +22,7 @@ func NewLintTransformer(repoPath string) *LintTransformer {
 	return &LintTransformer{repoPath: repoPath}
 }
 
-// Name implements engine.Transformer.
+// Name implements engine.Instrument.
 func (l *LintTransformer) Name() string { return "lint" }
 
 // LastStationLog implements engine.StationLoggable.
@@ -32,8 +32,8 @@ func (l *LintTransformer) LastStationLog() trace.StationLogger {
 	return l.lastStationLog
 }
 
-// Transform implements engine.Transformer.
-func (l *LintTransformer) Transform(ctx context.Context, _ *engine.TransformerContext) (any, error) {
+// Transform implements engine.Instrument.
+func (l *LintTransformer) Transform(ctx context.Context, _ *engine.InstrumentContext) (any, error) {
 	r := runCommand(ctx, l.repoPath, "golangci-lint", "run", "./...")
 	l.mu.Lock()
 	l.lastStationLog = buildStationLog(r)
@@ -45,4 +45,4 @@ func (l *LintTransformer) Transform(ctx context.Context, _ *engine.TransformerCo
 	}, nil
 }
 
-var _ engine.Transformer = (*LintTransformer)(nil)
+var _ engine.Instrument = (*LintTransformer)(nil)

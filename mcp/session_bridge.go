@@ -44,7 +44,7 @@ const (
 // consumer's SessionConfig.
 //
 // Optional capabilities (ReportFormatter, StepSchemaProvider) are detected
-// via type assertion on the factory, following the DeterministicTransformer
+// via type assertion on the factory, following the DeterministicInstrument
 // pattern in engine/transformer.go.
 func SessionFactoryToConfig(factory engine.SessionFactory) CircuitConfig {
 	cfg := CircuitConfig{
@@ -66,7 +66,7 @@ func SessionFactoryToConfig(factory engine.SessionFactory) CircuitConfig {
 				ResourceRegistry:    params.ResourceRegistry,
 				SubCircuitResolvers: params.SubCircuitResolvers,
 				Tools:               params.Tools,
-				Instruments:         params.Instruments,
+				Manifests:           params.Manifests,
 				ApprovalStore:       params.ApprovalStore,
 			}
 
@@ -123,10 +123,10 @@ func buildRunFunc(cfg *engine.SessionConfig, params *engine.SessionParams, resol
 	}
 	return func(ctx context.Context) (any, error) {
 		shared := &engine.GraphRegistries{
-			Transformers:  cfg.Transformers,
+			Instruments:   cfg.Instruments,
 			Extractors:    cfg.Extractors,
 			Hooks:         cfg.Hooks,
-			Instruments:   params.Instruments,
+			Manifests:     params.Manifests,
 			ApprovalStore: params.ApprovalStore,
 		}
 		// Load sub-circuit definitions from filesystem. Resolvers provide
@@ -137,12 +137,12 @@ func buildRunFunc(cfg *engine.SessionConfig, params *engine.SessionParams, resol
 		}
 
 		// Soundcheck: verify all instruments can tune before the walk starts.
-		if len(params.Instruments) > 0 {
+		if len(params.Manifests) > 0 {
 			instrumentDir := params.StateDir
 			if instrumentDir == "" {
 				instrumentDir = "."
 			}
-			if tuneErr := engine.TuneAll(ctx, params.Instruments, instrumentDir); tuneErr != nil {
+			if tuneErr := engine.TuneAll(ctx, params.Manifests, instrumentDir); tuneErr != nil {
 				slog.WarnContext(ctx, "instrument soundcheck failed — some instruments may not work",
 					slog.String(circuit.LogKeyError, tuneErr.Error()))
 			}

@@ -370,14 +370,14 @@ func renderFactoryServer(g *ResolvedGraph, productName string) string {
 }
 
 // renderInstrumentSetup generates code that loads instrument manifests
-// and builds an engine.InstrumentRegistry. Called in the generated main().
+// and builds an engine.ManifestRegistry. Called in the generated main().
 func renderInstrumentSetup(m *Manifest) string {
 	if len(m.LoadedInstruments) == 0 {
 		return ""
 	}
 	var b strings.Builder
 	b.WriteString("\t// Load instrument manifests.\n")
-	b.WriteString("\tinstruments := fwengine.InstrumentRegistry{}\n")
+	b.WriteString("\tinstruments := fwengine.ManifestRegistry{}\n")
 	for _, inst := range m.LoadedInstruments {
 		fmt.Fprintf(&b, "\t{\n")
 		fmt.Fprintf(&b, "\t\tm, err := fwdef.LoadInstrumentManifest(%q)\n", inst.Path)
@@ -473,7 +473,7 @@ func main() {
 
 {{ .InstrumentBlock }}{{ .WiringBlock }}
 {{ .DomainConfig }}
-{{ .ServerBlock }}{{ if and .NeedsInstruments .NeedsFactory }}	bridgedCfg.Instruments = instruments
+{{ .ServerBlock }}{{ if and .NeedsInstruments .NeedsFactory }}	bridgedCfg.Manifests = instruments
 {{ end }}
 	mux := http.NewServeMux()
 	mux.Handle("/domain/", domainHandler)

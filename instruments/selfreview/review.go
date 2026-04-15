@@ -54,7 +54,7 @@ func New(registry *tool.Registry, repoPath string) *SelfReviewTransformer {
 	}
 }
 
-// Name implements handler.Transformer.
+// Name implements handler.Instrument.
 func (s *SelfReviewTransformer) Name() string { return "self-review" }
 
 // LastStationLog implements handler.StationLoggable.
@@ -64,8 +64,8 @@ func (s *SelfReviewTransformer) LastStationLog() trace.StationLogger {
 	return s.lastStationLog
 }
 
-// Transform implements handler.Transformer.
-func (s *SelfReviewTransformer) Transform(ctx context.Context, tc *handler.TransformerContext) (any, error) {
+// Transform implements handler.Instrument.
+func (s *SelfReviewTransformer) Transform(ctx context.Context, tc *handler.InstrumentContext) (any, error) {
 	// 1. Resolve task ID from walker state or config.
 	taskID := findTaskID(tc)
 	if taskID == "" {
@@ -196,7 +196,7 @@ func extractRequirements(art *scribeArtifact) []requirement {
 // --- Task ID resolution ---
 
 // findTaskID searches config, node extras, and walker state outputs for a task_id.
-func findTaskID(tc *handler.TransformerContext) string {
+func findTaskID(tc *handler.InstrumentContext) string {
 	// Circuit vars.
 	if tc.Config != nil {
 		if id, ok := tc.Config["task_id"].(string); ok && id != "" {
@@ -225,7 +225,7 @@ func findTaskID(tc *handler.TransformerContext) string {
 // --- Modified file extraction ---
 
 // findModifiedFiles extracts file paths from the prior fix output in walker state.
-func findModifiedFiles(tc *handler.TransformerContext) []string {
+func findModifiedFiles(tc *handler.InstrumentContext) []string {
 	if tc.WalkerState == nil {
 		return nil
 	}
@@ -366,6 +366,6 @@ func (s *SelfReviewTransformer) attachStamps(ctx context.Context, id string, sta
 
 // Compile-time interface checks.
 var (
-	_ handler.Transformer     = (*SelfReviewTransformer)(nil)
+	_ handler.Instrument      = (*SelfReviewTransformer)(nil)
 	_ handler.StationLoggable = (*SelfReviewTransformer)(nil)
 )

@@ -47,7 +47,7 @@ const transformerNameHTTP = "http"
 func (t *HTTPTransformer) Name() string        { return transformerNameHTTP }
 func (t *HTTPTransformer) Deterministic() bool { return true }
 
-func (t *HTTPTransformer) Transform(ctx context.Context, tc *engine.TransformerContext) (any, error) {
+func (t *HTTPTransformer) Transform(ctx context.Context, tc *engine.InstrumentContext) (any, error) {
 	url := ""
 	if tc.NodeConfig != nil {
 		url = tc.NodeConfig.URL

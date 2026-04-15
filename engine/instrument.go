@@ -14,8 +14,8 @@ import (
 	"github.com/dpopsuev/troupe/identity"
 )
 
-// InstrumentRegistry maps instrument names to their loaded manifests.
-type InstrumentRegistry map[string]*circuit.InstrumentManifest
+// ManifestRegistry maps instrument names to their loaded manifests.
+type ManifestRegistry map[string]*circuit.InstrumentManifest
 
 // InstrumentDispatcher executes an instrument action at runtime.
 // Each DispatchMode (exec, mcp, docker, go) gets its own implementation.

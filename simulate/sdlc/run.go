@@ -26,8 +26,8 @@ func LoadCircuit(domainFS fs.FS) (*circuit.CircuitDef, error) {
 
 // RunConfig configures an SDLC circuit run.
 type RunConfig struct {
-	// Transformers is the registry of node handlers (stubs or real instruments).
-	Transformers engine.TransformerRegistry
+	// Instruments is the registry of node handlers (stubs or real instruments).
+	Instruments engine.InstrumentRegistry
 
 	// Recorder captures station-level events. When nil, a default is created.
 	Recorder *trace.FlightRecorder
@@ -75,7 +75,7 @@ func Run(ctx context.Context, cfg RunConfig) (*RunResult, error) {
 	}
 
 	shared := &engine.GraphRegistries{
-		Transformers: cfg.Transformers,
+		Instruments: cfg.Instruments,
 		Circuits:     circuit.LoadSubCircuitsFromFS(domainFS, nil),
 	}
 

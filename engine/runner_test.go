@@ -283,7 +283,7 @@ func TestRunner_Walk_NilWalker(t *testing.T) {
 	}
 
 	reg := &GraphRegistries{
-		Transformers: TransformerRegistry{"echo": &echoTransformer{}},
+		Instruments: InstrumentRegistry{"echo": &echoTransformer{}},
 	}
 	runner, err := NewRunnerWith(def, reg)
 	if err != nil {

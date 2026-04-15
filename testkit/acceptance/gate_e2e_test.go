@@ -335,7 +335,7 @@ func TestGateE2E_RetryAfterRejection(t *testing.T) {
 
 	// Capture transformer — records walker context on each call.
 	capture := &feedbackCapture{}
-	captureTrans := engine.TransformerFunc("capture-feedback", func(_ context.Context, tc *engine.TransformerContext) (any, error) {
+	captureTrans := engine.InstrumentFunc("capture-feedback", func(_ context.Context, tc *engine.InstrumentContext) (any, error) {
 		capture.mu.Lock()
 		// Deep copy walker context.
 		ctxCopy := make(map[string]any)
@@ -367,7 +367,7 @@ func TestGateE2E_RetryAfterRejection(t *testing.T) {
 	store := stubs.NewMemoryApprovalStore()
 	reg := &engine.GraphRegistries{
 		ApprovalStore: store,
-		Transformers:  engine.TransformerRegistry{"capture-feedback": captureTrans},
+		Instruments:   engine.InstrumentRegistry{"capture-feedback": captureTrans},
 	}
 	g, err := engine.BuildGraph(def, reg)
 	if err != nil {

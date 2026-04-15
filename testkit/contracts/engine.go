@@ -27,15 +27,15 @@ func RunBatchWalkContract(t *testing.T, batchWalk func(context.Context, engine.B
 			},
 		}
 
-		transformers := engine.TransformerRegistry{
-			"echo": engine.TransformerFunc("echo", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+		transformers := engine.InstrumentRegistry{
+			"echo": engine.InstrumentFunc("echo", func(_ context.Context, _ *engine.InstrumentContext) (any, error) {
 				return "ok", nil
 			}),
 		}
 
 		results := batchWalk(context.Background(), engine.BatchWalkConfig{
 			Def:    def,
-			Shared: &engine.GraphRegistries{Transformers: transformers},
+			Shared: &engine.GraphRegistries{Instruments: transformers},
 			Cases:  []engine.BatchCase{{ID: "test-1"}},
 		})
 
@@ -60,8 +60,8 @@ func RunBatchWalkContract(t *testing.T, batchWalk func(context.Context, engine.B
 			},
 		}
 
-		transformers := engine.TransformerRegistry{
-			"echo": engine.TransformerFunc("echo", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+		transformers := engine.InstrumentRegistry{
+			"echo": engine.InstrumentFunc("echo", func(_ context.Context, _ *engine.InstrumentContext) (any, error) {
 				return "ok", nil
 			}),
 		}
@@ -74,7 +74,7 @@ func RunBatchWalkContract(t *testing.T, batchWalk func(context.Context, engine.B
 
 		results := batchWalk(context.Background(), engine.BatchWalkConfig{
 			Def:    def,
-			Shared: &engine.GraphRegistries{Transformers: transformers},
+			Shared: &engine.GraphRegistries{Instruments: transformers},
 			Cases:  cases,
 		})
 
@@ -85,11 +85,11 @@ func RunBatchWalkContract(t *testing.T, batchWalk func(context.Context, engine.B
 }
 
 // RunTuneContract verifies that TuneAll correctly validates instruments.
-func RunTuneContract(t *testing.T, tuneAll func(context.Context, engine.InstrumentRegistry, string) error) {
+func RunTuneContract(t *testing.T, tuneAll func(context.Context, engine.ManifestRegistry, string) error) {
 	t.Helper()
 
 	t.Run("EmptyRegistry_NoError", func(t *testing.T) {
-		err := tuneAll(context.Background(), engine.InstrumentRegistry{}, "")
+		err := tuneAll(context.Background(), engine.ManifestRegistry{}, "")
 		if err != nil {
 			t.Errorf("TuneAll with empty registry: %v", err)
 		}

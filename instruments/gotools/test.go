@@ -47,7 +47,7 @@ func NewTestTransformer(repoPath string, opts ...TestOption) *TestTransformer {
 	return t
 }
 
-// Name implements engine.Transformer.
+// Name implements engine.Instrument.
 func (t *TestTransformer) Name() string { return "go-test" }
 
 // LastStationLog implements engine.StationLoggable.
@@ -57,8 +57,8 @@ func (t *TestTransformer) LastStationLog() trace.StationLogger {
 	return t.lastStationLog
 }
 
-// Transform implements engine.Transformer.
-func (t *TestTransformer) Transform(ctx context.Context, _ *engine.TransformerContext) (any, error) {
+// Transform implements engine.Instrument.
+func (t *TestTransformer) Transform(ctx context.Context, _ *engine.InstrumentContext) (any, error) {
 	args := append([]string{"test", "-short", "-count=1"}, t.args...)
 	cmd := exec.CommandContext(ctx, "go", args...)
 	cmd.Dir = t.repoPath

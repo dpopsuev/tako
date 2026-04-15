@@ -24,11 +24,11 @@ func NewCreateWorktree(repoPath string) *CreateWorktree {
 	return &CreateWorktree{repoPath: repoPath}
 }
 
-// Name implements handler.Transformer.
+// Name implements handler.Instrument.
 func (c *CreateWorktree) Name() string { return "create-worktree" }
 
-// Transform implements handler.Transformer.
-func (c *CreateWorktree) Transform(ctx context.Context, tc *handler.TransformerContext) (any, error) {
+// Transform implements handler.Instrument.
+func (c *CreateWorktree) Transform(ctx context.Context, tc *handler.InstrumentContext) (any, error) {
 	// Sanitize case ID — delegate sub-circuits produce IDs with colons
 	// (e.g. "sdlc-run:delegate:code") which are invalid in git branch names.
 	sanitized := sanitizeBranchName(tc.WalkerState.ID)
@@ -59,11 +59,11 @@ func NewRelease(repoPath string) *Release {
 	return &Release{repoPath: repoPath}
 }
 
-// Name implements handler.Transformer.
+// Name implements handler.Instrument.
 func (r *Release) Name() string { return "release" }
 
-// Transform implements handler.Transformer.
-func (r *Release) Transform(ctx context.Context, _ *handler.TransformerContext) (any, error) {
+// Transform implements handler.Instrument.
+func (r *Release) Transform(ctx context.Context, _ *handler.InstrumentContext) (any, error) {
 	// Get current branch name.
 	branch, err := gitOutput(ctx, r.repoPath, "rev-parse", "--abbrev-ref", "HEAD")
 	if err != nil {
@@ -111,6 +111,6 @@ func gitOutput(ctx context.Context, dir string, args ...string) (string, error) 
 
 // Compile-time interface checks.
 var (
-	_ handler.Transformer = (*CreateWorktree)(nil)
-	_ handler.Transformer = (*Release)(nil)
+	_ handler.Instrument = (*CreateWorktree)(nil)
+	_ handler.Instrument = (*Release)(nil)
 )

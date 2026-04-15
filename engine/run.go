@@ -17,12 +17,12 @@ import (
 type RunOption func(*runConfig)
 
 type runConfig struct {
-	transformers   TransformerRegistry
+	instruments    InstrumentRegistry
 	hooks          HookRegistry
 	extractors     ExtractorRegistry
 	nodes          NodeRegistry
 	edges          EdgeFactory
-	instruments    InstrumentRegistry
+	manifests      ManifestRegistry
 	components     ComponentLoader
 	overrides      map[string]any
 	walker         circuit.Walker
@@ -41,9 +41,9 @@ type runConfig struct {
 	hub            Hub
 }
 
-// WithTransformers registers transformers for the run.
-func WithTransformers(reg TransformerRegistry) RunOption {
-	return func(c *runConfig) { c.transformers = reg }
+// WithInstruments registers in-process instrument handlers for the run.
+func WithInstruments(reg InstrumentRegistry) RunOption {
+	return func(c *runConfig) { c.instruments = reg }
 }
 
 // WithHooks registers hooks for the run.
@@ -66,9 +66,9 @@ func WithEdges(reg EdgeFactory) RunOption {
 	return func(c *runConfig) { c.edges = reg }
 }
 
-// WithInstruments registers instrument manifests for the run.
-func WithInstruments(reg InstrumentRegistry) RunOption {
-	return func(c *runConfig) { c.instruments = reg }
+// WithManifests registers instrument manifests for the run.
+func WithManifests(reg ManifestRegistry) RunOption {
+	return func(c *runConfig) { c.manifests = reg }
 }
 
 // WithTune enables preflight instrument tuning before the walk starts.
@@ -202,17 +202,17 @@ func Run(ctx context.Context, circuitPath string, input any, opts ...RunOption) 
 	}
 
 	reg := &GraphRegistries{
-		Nodes:        cfg.nodes,
-		Edges:        cfg.edges,
-		Extractors:   cfg.extractors,
-		Transformers: cfg.transformers,
-		Hooks:        cfg.hooks,
-		Instruments:  cfg.instruments,
-		Components:   cfg.components,
+		Nodes:       cfg.nodes,
+		Edges:       cfg.edges,
+		Extractors:  cfg.extractors,
+		Instruments: cfg.instruments,
+		Hooks:       cfg.hooks,
+		Manifests:   cfg.manifests,
+		Components:  cfg.components,
 	}
 
-	if cfg.tune && len(cfg.instruments) > 0 {
-		if err := TuneAll(ctx, cfg.instruments, reg.InstrumentDir); err != nil {
+	if cfg.tune && len(cfg.manifests) > 0 {
+		if err := TuneAll(ctx, cfg.manifests, reg.InstrumentDir); err != nil {
 			return fmt.Errorf("preflight tune: %w", err)
 		}
 	}
@@ -378,16 +378,16 @@ func Validate(circuitPath string, opts ...RunOption) error {
 	}
 
 	reg := &GraphRegistries{
-		Nodes:        cfg.nodes,
-		Edges:        cfg.edges,
-		Extractors:   cfg.extractors,
-		Transformers: cfg.transformers,
-		Hooks:        cfg.hooks,
-		Instruments:  cfg.instruments,
-		Components:   cfg.components,
+		Nodes:       cfg.nodes,
+		Edges:       cfg.edges,
+		Extractors:  cfg.extractors,
+		Instruments: cfg.instruments,
+		Hooks:       cfg.hooks,
+		Manifests:   cfg.manifests,
+		Components:  cfg.components,
 	}
 
-	hasRegistries := reg.Nodes != nil || reg.Edges != nil || reg.Extractors != nil || reg.Transformers != nil || reg.Hooks != nil || reg.Instruments != nil
+	hasRegistries := reg.Nodes != nil || reg.Edges != nil || reg.Extractors != nil || reg.Instruments != nil || reg.Hooks != nil || reg.Manifests != nil
 	if !hasRegistries {
 		return nil
 	}

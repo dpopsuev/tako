@@ -9,8 +9,8 @@ var (
 	// ErrExtractor is returned for: extractor
 	ErrExtractor = errors.New("extractor")
 
-	// ErrTransformer is returned for: transformer
-	ErrTransformer = errors.New("transformer")
+	// ErrInproc is returned for: inproc instrument handler errors.
+	ErrInproc = errors.New("inproc")
 
 	// ErrHook is returned for: hook
 	ErrHook = errors.New("hook")
@@ -72,8 +72,8 @@ var (
 	// ErrTemplateRendererExpectedCircuitTemplateContextGot is returned for: template renderer: expected circuit.TemplateContext, got
 	ErrTemplateRendererExpectedCircuitTemplateContextGot = errors.New("template renderer: expected circuit.TemplateContext, got")
 
-	// ErrTransformerRegistryIsNil is returned for: transformer registry is nil
-	ErrTransformerRegistryIsNil = errors.New("transformer registry is nil")
+	// ErrInstrumentRegistryIsNil is returned for: instrument registry is nil
+	ErrInstrumentRegistryIsNil = errors.New("instrument registry is nil")
 
 	// ErrUnknownElement is returned for: unknown element
 	ErrUnknownElement = errors.New("unknown element")

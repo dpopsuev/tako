@@ -32,7 +32,7 @@ func TestInstrument_ExecDispatch_DummyEcho(t *testing.T) {
 	def := loadFixture(t, "circuits/instrument-echo.yaml")
 
 	reg := &engine.GraphRegistries{
-		Instruments: engine.InstrumentRegistry{
+		Manifests: engine.ManifestRegistry{
 			"dummy-echo": manifest,
 		},
 		InstrumentDir: repoRoot(),
@@ -97,7 +97,7 @@ func TestInstrument_ExecDispatch_DummyFail(t *testing.T) {
 	}
 
 	reg := &engine.GraphRegistries{
-		Instruments: engine.InstrumentRegistry{
+		Manifests: engine.ManifestRegistry{
 			"dummy-fail": manifest,
 		},
 		InstrumentDir: repoRoot(),
@@ -151,7 +151,7 @@ func TestInstrument_MultiInstrument_CorrectRouting(t *testing.T) {
 	}
 
 	reg := &engine.GraphRegistries{
-		Instruments: engine.InstrumentRegistry{
+		Manifests: engine.ManifestRegistry{
 			"dummy-echo":  echoManifest,
 			"dummy-upper": upperManifest,
 		},
@@ -227,7 +227,7 @@ func TestInstrument_OutputSchemaViolation_RejectsWalk(t *testing.T) {
 	}
 
 	reg := &engine.GraphRegistries{
-		Instruments: engine.InstrumentRegistry{
+		Manifests: engine.ManifestRegistry{
 			"dummy-badoutput": manifest,
 		},
 		InstrumentDir: repoRoot(),

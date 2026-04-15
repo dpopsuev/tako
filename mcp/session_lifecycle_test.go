@@ -24,7 +24,7 @@ type lifecycleTransformer struct {
 }
 
 func (t *lifecycleTransformer) Name() string { return "dispatch-lifecycle" }
-func (t *lifecycleTransformer) Transform(ctx context.Context, tc *engine.TransformerContext) (any, error) {
+func (t *lifecycleTransformer) Transform(ctx context.Context, tc *engine.InstrumentContext) (any, error) {
 	prompt := fmt.Sprintf(`{"node":%q,"step":"test"}`, tc.NodeName)
 	data, err := t.disp.Dispatch(ctx, dispatch.Context{
 		CaseID:        tc.WalkerState.ID,
@@ -116,7 +116,7 @@ func lifecycleConfig(circuitYAML string, nCases int) mcp.CircuitConfig {
 
 			dt := &lifecycleTransformer{disp: disp}
 			reg := &engine.GraphRegistries{
-				Transformers: engine.TransformerRegistry{
+				Instruments: engine.InstrumentRegistry{
 					"dispatch-lifecycle": dt,
 				},
 			}

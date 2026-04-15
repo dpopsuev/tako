@@ -15,15 +15,15 @@ import (
 // Usage:
 //
 //	result := NewHarness(t).
-//	    WithStubs(true).       // or WithTransformers(real)
+//	    WithStubs(true).       // or WithInstruments(real)
 //	    WithTimeout(10*time.Second).
 //	    Run()
 type Harness struct {
-	t            testing.TB
-	transformers engine.TransformerRegistry
-	recorder     *trace.FlightRecorder
-	timeout      time.Duration
-	parallel     int
+	t           testing.TB
+	instruments engine.InstrumentRegistry
+	recorder    *trace.FlightRecorder
+	timeout     time.Duration
+	parallel    int
 }
 
 // NewHarness creates a simulation harness for the given test.
@@ -36,28 +36,28 @@ func NewHarness(t testing.TB) *Harness { //nolint:thelper // NewHarness is a con
 	}
 }
 
-// WithStubs configures all-stub transformers. When clean is true, the scan
+// WithStubs configures all-stub instruments. When clean is true, the scan
 // stub returns no findings (clean path). When false, the first scan returns
 // findings triggering the fix loop.
 func (h *Harness) WithStubs(clean bool) *Harness {
-	h.transformers = StubTransformers(clean)
+	h.instruments = StubInstruments(clean)
 	return h
 }
 
-// WithTransformers sets a custom transformer registry. Use this to mix
+// WithInstruments sets a custom instrument registry. Use this to mix
 // real instruments with stubs — e.g., real Oculus scan + stub fix.
-func (h *Harness) WithTransformers(reg engine.TransformerRegistry) *Harness {
-	h.transformers = reg
+func (h *Harness) WithInstruments(reg engine.InstrumentRegistry) *Harness {
+	h.instruments = reg
 	return h
 }
 
-// WithTransformer replaces a single transformer in the registry.
-// Panics if WithStubs or WithTransformers hasn't been called first.
-func (h *Harness) WithTransformer(name string, tx engine.Transformer) *Harness {
-	if h.transformers == nil {
-		h.t.Fatal("WithTransformer called before WithStubs or WithTransformers")
+// WithInstrument replaces a single instrument in the registry.
+// Panics if WithStubs or WithInstruments hasn't been called first.
+func (h *Harness) WithInstrument(name string, tx engine.Instrument) *Harness {
+	if h.instruments == nil {
+		h.t.Fatal("WithInstrument called before WithStubs or WithInstruments")
 	}
-	h.transformers[name] = tx
+	h.instruments[name] = tx
 	return h
 }
 
@@ -88,17 +88,17 @@ func (h *Harness) Recorder() *trace.FlightRecorder {
 // auto-dumps the FlightRecorder timeline to the test log.
 func (h *Harness) Run() *RunResult {
 	h.t.Helper()
-	if h.transformers == nil {
-		h.t.Fatal("no transformers configured — call WithStubs() or WithTransformers()")
+	if h.instruments == nil {
+		h.t.Fatal("no instruments configured — call WithStubs() or WithInstruments()")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), h.timeout)
 	defer cancel()
 
 	result, err := Run(ctx, RunConfig{
-		Transformers: h.transformers,
-		Recorder:     h.recorder,
-		Parallel:     h.parallel,
+		Instruments: h.instruments,
+		Recorder:    h.recorder,
+		Parallel:    h.parallel,
 	})
 	if err != nil {
 		h.recorder.Dump(h.t)
@@ -120,17 +120,17 @@ func (h *Harness) Run() *RunResult {
 // Returns the result for inspection. Does NOT auto-dump on error.
 func (h *Harness) RunExpectError() *RunResult {
 	h.t.Helper()
-	if h.transformers == nil {
-		h.t.Fatal("no transformers configured — call WithStubs() or WithTransformers()")
+	if h.instruments == nil {
+		h.t.Fatal("no instruments configured — call WithStubs() or WithInstruments()")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), h.timeout)
 	defer cancel()
 
 	result, err := Run(ctx, RunConfig{
-		Transformers: h.transformers,
-		Recorder:     h.recorder,
-		Parallel:     h.parallel,
+		Instruments: h.instruments,
+		Recorder:    h.recorder,
+		Parallel:    h.parallel,
 	})
 	if err != nil {
 		h.t.Logf("SDLC simulation error (expected): %v", err)

@@ -2,11 +2,11 @@ package engine
 
 import "github.com/dpopsuev/origami/circuit"
 
-// TransformerForAllNodes registers a single Transformer under every node name
-// in the given list. Useful for monolithic transformers that dispatch internally
+// InstrumentForAllNodes registers a single Instrument under every node name
+// in the given list. Useful for monolithic instruments that dispatch internally
 // on the node name.
-func TransformerForAllNodes(t Transformer, nodeNames []string) TransformerRegistry {
-	reg := TransformerRegistry{}
+func InstrumentForAllNodes(t Instrument, nodeNames []string) InstrumentRegistry {
+	reg := InstrumentRegistry{}
 	for _, name := range nodeNames {
 		reg[name] = t
 	}

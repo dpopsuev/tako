@@ -10,7 +10,7 @@ import (
 	"github.com/dpopsuev/origami/engine"
 )
 
-// StubTransformer implements engine.Transformer with canned artifacts.
+// StubTransformer implements engine.Instrument with canned artifacts.
 // Configure per-node responses via WithArtifact/SetError before use.
 type StubTransformer struct {
 	mu        sync.Mutex
@@ -35,7 +35,7 @@ func NewStubTransformer(name string, artifacts map[string]circuit.Artifact) *Stu
 
 func (s *StubTransformer) Name() string { return s.name }
 
-func (s *StubTransformer) Transform(_ context.Context, tc *engine.TransformerContext) (any, error) {
+func (s *StubTransformer) Transform(_ context.Context, tc *engine.InstrumentContext) (any, error) {
 	s.mu.Lock()
 	s.calls = append(s.calls, tc.NodeName)
 	err := s.errors[tc.NodeName]

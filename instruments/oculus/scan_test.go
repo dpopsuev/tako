@@ -30,7 +30,7 @@ func TestOculusScan_ReturnsTypedScanResult(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	result, err := tx.Transform(ctx, &engine.TransformerContext{})
+	result, err := tx.Transform(ctx, &engine.InstrumentContext{})
 	if err != nil {
 		t.Fatalf("Transform: %v", err)
 	}
@@ -50,11 +50,11 @@ func TestScanContract_OculusMatchesStub(t *testing.T) {
 	root := origamiRoot(t)
 
 	// Inline stub — avoids importing simulate/sdlc (import cycle).
-	stubScan := engine.TransformerFunc("scan", func(_ context.Context, _ *engine.TransformerContext) (any, error) {
+	stubScan := engine.InstrumentFunc("scan", func(_ context.Context, _ *engine.InstrumentContext) (any, error) {
 		return &sdlctype.ScanResult{Clean: true}, nil
 	})
 
-	transformers := map[string]engine.Transformer{
+	transformers := map[string]engine.Instrument{
 		"stub":   stubScan,
 		"oculus": NewScanTransformer(root),
 	}
@@ -64,7 +64,7 @@ func TestScanContract_OculusMatchesStub(t *testing.T) {
 
 	for name, tx := range transformers {
 		t.Run(name, func(t *testing.T) {
-			result, err := tx.Transform(ctx, &engine.TransformerContext{})
+			result, err := tx.Transform(ctx, &engine.InstrumentContext{})
 			if err != nil {
 				t.Fatalf("Transform: %v", err)
 			}
@@ -89,7 +89,7 @@ func TestOculusScan_OrigamiRepo(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	result, err := tx.Transform(ctx, &engine.TransformerContext{})
+	result, err := tx.Transform(ctx, &engine.InstrumentContext{})
 	if err != nil {
 		t.Fatalf("Transform: %v", err)
 	}

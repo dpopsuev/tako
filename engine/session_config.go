@@ -25,8 +25,8 @@ type SessionConfig struct {
 	// Cases are the batch cases to process.
 	Cases []BatchCase
 
-	// Transformers maps node names to their transformer implementations.
-	Transformers TransformerRegistry
+	// Instruments maps node names to their instrument implementations.
+	Instruments InstrumentRegistry
 
 	// Extractors maps node names to their extractor implementations.
 	Extractors ExtractorRegistry
@@ -44,7 +44,7 @@ type SessionConfig struct {
 	// RunFunc, when set, replaces the bridge's default BatchWalk execution.
 	// Used by calibration consumers that need the full calibrate.Run()
 	// pipeline (load → walk → collect → score → report). When nil,
-	// the bridge builds a RunFunc from Cases/Transformers/CircuitDef.
+	// the bridge builds a RunFunc from Cases/Instruments/CircuitDef.
 	RunFunc func(ctx context.Context) (any, error)
 
 	// Preflight validates session prerequisites before the run starts.
@@ -149,9 +149,9 @@ type SessionParams struct {
 	// instead of type-asserting from Extra. Nil when no tools are wired.
 	Tools *tool.Registry
 
-	// Instruments is the instrument registry from fold-generated code.
-	// Passed to GraphRegistries.Instruments for dispatch.
-	Instruments InstrumentRegistry
+	// Manifests is the instrument manifest registry from fold-generated code.
+	// Passed to GraphRegistries.Manifests for dispatch.
+	Manifests ManifestRegistry
 
 	// ApprovalStore enables gate: approval on circuit nodes. When set,
 	// the engine parks node output for human review via the approval MCP tool.

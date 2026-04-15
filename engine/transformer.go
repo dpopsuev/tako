@@ -14,14 +14,14 @@ import (
 	"github.com/dpopsuev/origami/engine/trace"
 )
 
-// Transformer, TransformerContext, TransformerRegistry are defined in engine/handler.
+// Instrument, InstrumentContext, InstrumentRegistry are defined in engine/handler.
 // This file contains the engine-internal implementation: transformerNode, builtins.
 
-// transformerNode is a Node that delegates to a Transformer.
+// transformerNode is a Node that delegates to an Instrument.
 // Created by BuildGraph when instrument is "transformer".
 type transformerNode struct {
 	baseNode
-	trans      Transformer
+	trans      Instrument
 	prompt     string              // from circuit.NodeDef.Prompt
 	input      string              // from circuit.NodeDef.Input (e.g. "${recall.output}")
 	provider   string              // from circuit.NodeDef.Provider (e.g. "cursor", "codex")
@@ -68,7 +68,7 @@ func (n *transformerNode) Process(ctx context.Context, nc circuit.NodeContext) (
 		prompt = rendered
 	}
 
-	tc := &TransformerContext{
+	tc := &InstrumentContext{
 		Input:       input,
 		Config:      n.config,
 		Prompt:      prompt,
@@ -108,8 +108,8 @@ func (n *transformerNode) Process(ctx context.Context, nc circuit.NodeContext) (
 	}, nil
 }
 
-func checkTransformerInputType(trans Transformer, tc *TransformerContext) error {
-	typed, ok := trans.(TypedTransformer)
+func checkTransformerInputType(trans Instrument, tc *InstrumentContext) error {
+	typed, ok := trans.(TypedInstrument)
 	if !ok {
 		return nil
 	}
@@ -142,7 +142,7 @@ func (a *transformerArtifact) Raw() any            { return a.raw }
 // StationLog returns the station log if the producing transformer was StationLoggable.
 func (a *transformerArtifact) StationLog() trace.StationLogger { return a.stationLog }
 
-// TransformerFunc is re-exported from handler/ via handler_reexport.go.
+// InstrumentFunc is re-exported from handler/ via handler_reexport.go.
 
 // Built-in transformer names recognized by resolveNode.
 const (
@@ -156,7 +156,7 @@ type goTemplateTransformer struct{}
 
 func (t *goTemplateTransformer) Name() string        { return BuiltinTransformerGoTemplate }
 func (t *goTemplateTransformer) Deterministic() bool { return true }
-func (t *goTemplateTransformer) Transform(_ context.Context, tc *TransformerContext) (any, error) {
+func (t *goTemplateTransformer) Transform(_ context.Context, tc *InstrumentContext) (any, error) {
 	return tc.Prompt, nil
 }
 
@@ -166,7 +166,7 @@ type passthroughTransformer struct{}
 
 func (t *passthroughTransformer) Name() string        { return BuiltinTransformerPassthrough }
 func (t *passthroughTransformer) Deterministic() bool { return true }
-func (t *passthroughTransformer) Transform(_ context.Context, tc *TransformerContext) (any, error) {
+func (t *passthroughTransformer) Transform(_ context.Context, tc *InstrumentContext) (any, error) {
 	return tc.Input, nil
 }
 

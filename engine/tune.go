@@ -12,7 +12,7 @@ import (
 
 // TuneAll is re-exported from engine/tune for backward compatibility.
 // All callers reference engine.TuneAll — this alias ensures they compile.
-func TuneAll(ctx context.Context, instruments InstrumentRegistry, workDir string) error {
+func TuneAll(ctx context.Context, instruments ManifestRegistry, workDir string) error {
 	return tune.All(ctx, tune.Registry(instruments), workDir)
 }
 

@@ -1,5 +1,5 @@
 // Package oculus provides the scan instrument backed by Oculus v3.10.0.
-// It wraps the Oculus engine as an engine.Transformer that returns typed
+// It wraps the Oculus engine as an engine.Instrument that returns typed
 // simulate/sdlctype.ScanResult — same contract as the stub scan.
 package oculus
 
@@ -65,7 +65,7 @@ func NewScanTransformer(repoPath string, opts ...ScanOption) *ScanTransformer {
 	return s
 }
 
-// Name implements engine.Transformer.
+// Name implements engine.Instrument.
 func (s *ScanTransformer) Name() string { return "oculus-scan" }
 
 // LastStationLog implements engine.StationLoggable.
@@ -75,9 +75,9 @@ func (s *ScanTransformer) LastStationLog() trace.StationLogger {
 	return s.lastStationLog
 }
 
-// Transform implements engine.Transformer. Scans the repository and returns
+// Transform implements engine.Instrument. Scans the repository and returns
 // a *sdlctype.ScanResult with findings mapped from Oculus analysis.
-func (s *ScanTransformer) Transform(ctx context.Context, _ *engine.TransformerContext) (any, error) {
+func (s *ScanTransformer) Transform(ctx context.Context, _ *engine.InstrumentContext) (any, error) {
 	store := s.store
 	if store == nil {
 		store = &NopStore{}
