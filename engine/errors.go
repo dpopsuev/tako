@@ -116,5 +116,4 @@ var (
 
 	// ErrOutputSchemaViolation is returned when instrument output doesn't match the declared schema.
 	ErrOutputSchemaViolation = errors.New("output schema violation")
-
 )

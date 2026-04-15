@@ -1,4 +1,4 @@
-package engine
+package tune
 
 import (
 	"context"
@@ -42,12 +42,12 @@ func bashChecksum(t *testing.T) string {
 }
 
 func TestTuneAll_AllPass(t *testing.T) {
-	reg := InstrumentRegistry{
+	reg := Registry{
 		"alpha": tuneManifest("alpha", "--version"),
 		"beta":  tuneManifest("beta", "--version"),
 	}
 
-	if err := TuneAll(t.Context(), reg, ""); err != nil {
+	if err := All(t.Context(), reg, ""); err != nil {
 		t.Fatalf("TuneAll: unexpected error: %v", err)
 	}
 }
@@ -59,12 +59,12 @@ func failManifest(name string) *circuit.InstrumentManifest {
 }
 
 func TestTuneAll_OneFails(t *testing.T) {
-	reg := InstrumentRegistry{
+	reg := Registry{
 		"good": tuneManifest("good", "--version"),
 		"bad":  failManifest("bad"),
 	}
 
-	err := TuneAll(t.Context(), reg, "")
+	err := All(t.Context(), reg, "")
 	if err == nil {
 		t.Fatal("TuneAll: expected error, got nil")
 	}
@@ -74,10 +74,10 @@ func TestTuneAll_OneFails(t *testing.T) {
 }
 
 func TestTuneAll_EmptyRegistry(t *testing.T) {
-	if err := TuneAll(t.Context(), InstrumentRegistry{}, ""); err != nil {
+	if err := All(t.Context(), Registry{}, ""); err != nil {
 		t.Fatalf("TuneAll empty: unexpected error: %v", err)
 	}
-	if err := TuneAll(t.Context(), nil, ""); err != nil {
+	if err := All(t.Context(), nil, ""); err != nil {
 		t.Fatalf("TuneAll nil: unexpected error: %v", err)
 	}
 }
@@ -86,11 +86,11 @@ func TestTuneAll_ContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
-	reg := InstrumentRegistry{
+	reg := Registry{
 		"slow": tuneManifest("slow", "-c 'sleep 10'"),
 	}
 
-	err := TuneAll(ctx, reg, "")
+	err := All(ctx, reg, "")
 	if err == nil {
 		t.Fatal("TuneAll: expected error on canceled context")
 	}
@@ -100,11 +100,11 @@ func TestTuneAll_ContextCancellation(t *testing.T) {
 }
 
 func TestTuneAll_StderrInError(t *testing.T) {
-	reg := InstrumentRegistry{
+	reg := Registry{
 		"noisy": tuneManifest("noisy", "-c 'echo boom >&2 && false'"),
 	}
 
-	err := TuneAll(t.Context(), reg, "")
+	err := All(t.Context(), reg, "")
 	if err == nil {
 		t.Fatal("TuneAll: expected error")
 	}
@@ -119,12 +119,12 @@ func TestTuneAll_StderrInError(t *testing.T) {
 
 func TestTuneAll_DeterministicOrder(t *testing.T) {
 	// "aaa" sorts before "zzz". If "aaa" fails, "zzz" should not be attempted.
-	reg := InstrumentRegistry{
+	reg := Registry{
 		"aaa": failManifest("aaa"),
 		"zzz": tuneManifest("zzz", "--version"),
 	}
 
-	err := TuneAll(t.Context(), reg, "")
+	err := All(t.Context(), reg, "")
 	if err == nil {
 		t.Fatal("TuneAll: expected error")
 	}
@@ -136,19 +136,19 @@ func TestTuneAll_DeterministicOrder(t *testing.T) {
 
 func TestTuneAll_ChecksumPass(t *testing.T) {
 	cs := bashChecksum(t)
-	reg := InstrumentRegistry{
+	reg := Registry{
 		"pinned": tuneManifestWithChecksum("pinned", cs),
 	}
-	if err := TuneAll(t.Context(), reg, ""); err != nil {
+	if err := All(t.Context(), reg, ""); err != nil {
 		t.Fatalf("TuneAll: unexpected error: %v", err)
 	}
 }
 
 func TestTuneAll_ChecksumMismatch(t *testing.T) {
-	reg := InstrumentRegistry{
+	reg := Registry{
 		"tampered": tuneManifestWithChecksum("tampered", "sha256:0000000000000000000000000000000000000000000000000000000000000000"),
 	}
-	err := TuneAll(t.Context(), reg, "")
+	err := All(t.Context(), reg, "")
 	if err == nil {
 		t.Fatal("TuneAll: expected error on checksum mismatch")
 	}
@@ -158,19 +158,19 @@ func TestTuneAll_ChecksumMismatch(t *testing.T) {
 }
 
 func TestTuneAll_ChecksumAbsent_Skipped(t *testing.T) {
-	reg := InstrumentRegistry{
+	reg := Registry{
 		"unpinned": tuneManifest("unpinned", "--version"), // no checksum → skip verification
 	}
-	if err := TuneAll(t.Context(), reg, ""); err != nil {
+	if err := All(t.Context(), reg, ""); err != nil {
 		t.Fatalf("TuneAll: unexpected error: %v", err)
 	}
 }
 
 func TestTuneAll_ChecksumBadFormat(t *testing.T) {
-	reg := InstrumentRegistry{
+	reg := Registry{
 		"bad": tuneManifestWithChecksum("bad", "md5:abc123"),
 	}
-	err := TuneAll(t.Context(), reg, "")
+	err := All(t.Context(), reg, "")
 	if err == nil {
 		t.Fatal("TuneAll: expected error on bad checksum format")
 	}
@@ -200,10 +200,10 @@ func TestTuneAll_ChecksumSingleBitFlip(t *testing.T) {
 	if flipped == cs {
 		flipped = cs[:len(cs)-1] + "1"
 	}
-	reg := InstrumentRegistry{
+	reg := Registry{
 		"flipped": tuneManifestWithChecksum("flipped", flipped),
 	}
-	err := TuneAll(t.Context(), reg, "")
+	err := All(t.Context(), reg, "")
 	if err == nil {
 		t.Fatal("single bit flip in checksum should fail")
 	}
