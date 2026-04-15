@@ -11,8 +11,6 @@ var OrigamiLayers = []string{
 	"toolkit",
 	"roster",
 	"budget",
-	"subprocess",
-	"subprocess/containertest",
 	"resource",
 	"prompt",
 	"report",
@@ -31,7 +29,6 @@ var OrigamiLayers = []string{
 	"fold",
 	"transformers",
 	// Adapters
-	"mediator",
 	"lsp",
 	"autodoc",
 	"domainserve",
@@ -58,5 +55,4 @@ var OrigamiLayers = []string{
 	"cmd/origami",
 	"cmd/operator",
 	"cmd/agent-worker",
-	"cmd/mediator",
 }

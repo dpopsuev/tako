@@ -7,7 +7,7 @@ build:
 	go build ./...
 
 install:
-	go install ./cmd/origami ./cmd/mediator ./cmd/agent-worker
+	go install ./cmd/origami ./cmd/operator ./cmd/agent-worker
 
 test:
 	go test ./... -count=1 -race -timeout 120s
