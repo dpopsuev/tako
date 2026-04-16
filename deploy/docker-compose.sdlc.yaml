@@ -31,12 +31,15 @@ services:
       - REPO_URL=${REPO_URL}
       - REPO_BRANCH=${REPO_BRANCH:-master}
       - SDLC_MODE=${SDLC_MODE:-real}
-      - SDLC_PROVIDER=${SDLC_PROVIDER:-anthropic}
+      - SDLC_PROVIDER=${SDLC_PROVIDER:-vertex-ai}
       - SDLC_MODEL=${SDLC_MODEL:-claude-sonnet-4-6}
       - SCRIBE_ENDPOINT=${SCRIBE_ENDPOINT:-http://host.containers.internal:8080/mcp}
       - LOCUS_ENDPOINT=${LOCUS_ENDPOINT:-http://host.containers.internal:8081/mcp}
       - CIRCUIT_SCOPE=${CIRCUIT_SCOPE:-origami}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - ANTHROPIC_VERTEX_PROJECT_ID=${ANTHROPIC_VERTEX_PROJECT_ID}
+      - CLOUD_ML_REGION=${CLOUD_ML_REGION}
+      - GOOGLE_CREDENTIALS_JSON=${GOOGLE_CREDENTIALS_JSON}
       - GIT_USER=${GIT_USER}
       - GIT_EMAIL=${GIT_EMAIL}
       - SSH_AUTH_SOCK=/ssh-agent

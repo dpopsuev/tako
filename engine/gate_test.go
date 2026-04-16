@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"strings"
 	"sync"
 	"testing"
 
@@ -204,6 +206,151 @@ func TestWalk_GatedNode_NotifiesSent(t *testing.T) {
 	if notifier.callCount() != 1 {
 		t.Errorf("notifier calls = %d, want 1", notifier.callCount())
 	}
+}
+
+func TestWalk_GatedNode_InDelegateSubWalk_Interrupts(t *testing.T) {
+	// A gate: approval node inside a delegated sub-circuit must propagate
+	// as ErrWalkInterrupted to the outer walk, not as a node failure.
+
+	innerDef := &circuit.CircuitDef{
+		Circuit: "publishing",
+		Start:   "diff-review",
+		Done:    "_done",
+		Nodes: []circuit.NodeDef{
+			{Name: "diff-review", Instrument: InstrumentTransformer, Action: "passthrough", Gate: gate.GateApproval},
+		},
+		Edges: []circuit.EdgeDef{
+			{ID: "review-done", From: "diff-review", To: "_done"},
+		},
+	}
+
+	outerDef := &circuit.CircuitDef{
+		Circuit: "main",
+		Start:   "code",
+		Done:    "_done",
+		Nodes: []circuit.NodeDef{
+			{Name: "code", Instrument: InstrumentTransformer, Action: "passthrough"},
+			{Name: "publish", Instrument: InstrumentCircuit, Action: "publishing"},
+		},
+		Edges: []circuit.EdgeDef{
+			{ID: "code-publish", From: "code", To: "publish"},
+			{ID: "publish-done", From: "publish", To: "_done"},
+		},
+	}
+
+	store := newTestApprovalStore()
+	reg := &GraphRegistries{
+		Instruments: InstrumentRegistry{
+			"passthrough": &passthroughTransformer{},
+		},
+		Circuits:      map[string]*circuit.CircuitDef{"publishing": innerDef},
+		ApprovalStore: store,
+	}
+
+	g, err := BuildGraph(outerDef, reg)
+	if err != nil {
+		t.Fatalf("BuildGraph: %v", err)
+	}
+
+	walker := circuit.NewProcessWalker("test")
+	walkErr := g.Walk(context.Background(), walker, "code")
+
+	if !errors.Is(walkErr, ErrWalkInterrupted) {
+		t.Fatalf("Walk: expected ErrWalkInterrupted, got %v", walkErr)
+	}
+
+	// Verify artifact was parked in the sub-walk's approval store.
+	pending, err := store.List(context.Background(), gate.ApprovalPending)
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if len(pending) != 1 {
+		t.Fatalf("pending = %d, want 1", len(pending))
+	}
+	if pending[0].NodeName != "diff-review" {
+		t.Errorf("NodeName = %q, want diff-review", pending[0].NodeName)
+	}
+}
+
+func TestWalk_GatedNode_InDelegateSubWalk_LogsGatePark(t *testing.T) {
+	// A gate interrupt in a delegate sub-walk must emit an INFO log so
+	// operators can see why the walk stopped.
+
+	innerDef := &circuit.CircuitDef{
+		Circuit: "publishing",
+		Start:   "diff-review",
+		Done:    "_done",
+		Nodes: []circuit.NodeDef{
+			{Name: "diff-review", Instrument: InstrumentTransformer, Action: "passthrough", Gate: gate.GateApproval},
+		},
+		Edges: []circuit.EdgeDef{
+			{ID: "review-done", From: "diff-review", To: "_done"},
+		},
+	}
+
+	outerDef := &circuit.CircuitDef{
+		Circuit: "main",
+		Start:   "publish",
+		Done:    "_done",
+		Nodes: []circuit.NodeDef{
+			{Name: "publish", Instrument: InstrumentCircuit, Action: "publishing"},
+		},
+		Edges: []circuit.EdgeDef{
+			{ID: "publish-done", From: "publish", To: "_done"},
+		},
+	}
+
+	store := newTestApprovalStore()
+	reg := &GraphRegistries{
+		Instruments: InstrumentRegistry{
+			"passthrough": &passthroughTransformer{},
+		},
+		Circuits:      map[string]*circuit.CircuitDef{"publishing": innerDef},
+		ApprovalStore: store,
+	}
+
+	g, err := BuildGraph(outerDef, reg)
+	if err != nil {
+		t.Fatalf("BuildGraph: %v", err)
+	}
+
+	// Capture logs.
+	var buf logBuffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelInfo})))
+	t.Cleanup(func() { slog.SetDefault(prev) })
+
+	walker := circuit.NewProcessWalker("test")
+	g.Walk(context.Background(), walker, "publish")
+
+	if !buf.contains("delegate sub-walk parked at gate") {
+		t.Errorf("expected log message %q, got:\n%s", "delegate sub-walk parked at gate", buf.String())
+	}
+}
+
+// logBuffer is a thread-safe bytes.Buffer for capturing slog output in tests.
+type logBuffer struct {
+	mu  sync.Mutex
+	buf []byte
+}
+
+func (b *logBuffer) Write(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.buf = append(b.buf, p...)
+	return len(p), nil
+}
+
+func (b *logBuffer) String() string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return string(b.buf)
+}
+
+func (b *logBuffer) contains(s string) bool {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return len(b.buf) > 0 && strings.Contains(string(b.buf), s)
 }
 
 func TestWalk_GatedNode_NotifierError_DoesNotBlockPark(t *testing.T) {

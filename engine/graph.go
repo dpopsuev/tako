@@ -700,6 +700,15 @@ func (g *DefaultGraph) walkDelegate(ctx context.Context, walker circuit.Walker, 
 	})
 
 	if walkErr != nil {
+		// Gate interrupt in sub-walk: propagate as typed Interrupt so the
+		// outer walk parks cleanly instead of treating it as a node failure.
+		if errors.Is(walkErr, ErrWalkInterrupted) {
+			slog.InfoContext(ctx, "delegate sub-walk parked at gate",
+				slog.String(circuit.LogKeyNode, dn.Name()),
+				slog.String(circuit.LogKeyComponent, "delegate"),
+			)
+			return da, Interrupt{Reason: "gate:approval:delegate:" + dn.Name()}
+		}
 		return da, fmt.Errorf("delegate %s: sub-walk: %w", dn.Name(), walkErr)
 	}
 	return da, nil

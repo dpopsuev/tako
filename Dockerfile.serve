@@ -36,6 +36,12 @@ cd "$WORKSPACE"
 git config user.name "${GIT_USER:-origami-circuit}"
 git config user.email "${GIT_EMAIL:-origami@localhost}"
 
+# Google ADC: write JSON from env var to file (Vertex AI).
+if [ -n "$GOOGLE_CREDENTIALS_JSON" ]; then
+  echo "$GOOGLE_CREDENTIALS_JSON" > /tmp/gcloud-adc.json
+  export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcloud-adc.json
+fi
+
 # Code lives at repo root; circuit YAML lives in simulate/sdlc/.
 export SDLC_REPO_PATH="$WORKSPACE"
 export SDLC_CIRCUIT_DIR="${SDLC_CIRCUIT_DIR:-$WORKSPACE/simulate/sdlc}"
