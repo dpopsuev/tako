@@ -134,12 +134,12 @@ func BuildGraph(def *circuit.CircuitDef, reg *GraphRegistries) (Graph, error) {
 			nodeNames[j] = string(nn)
 		}
 		fwZones = append(fwZones, Zone{
-			Name:            name,
-			NodeNames:       nodeNames,
-			Approach: elem,
-			Stickiness:      zd.Stickiness,
-			Domain:          strings.ToLower(zd.Domain),
-			ContextFilter:   zd.ContextFilter,
+			Name:          name,
+			NodeNames:     nodeNames,
+			Approach:      elem,
+			Stickiness:    zd.Stickiness,
+			Domain:        strings.ToLower(zd.Domain),
+			ContextFilter: zd.ContextFilter,
 		})
 	}
 

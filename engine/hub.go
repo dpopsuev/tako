@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/dpopsuev/battery/tool"
+	"github.com/dpopsuev/origami/tool"
 
 	"github.com/dpopsuev/origami/circuit"
 )

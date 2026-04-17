@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 
-	"github.com/dpopsuev/battery/tool"
+	"github.com/dpopsuev/origami/tool"
 	"github.com/dpopsuev/troupe"
 
 	"github.com/dpopsuev/origami/circuit"

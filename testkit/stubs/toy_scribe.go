@@ -7,9 +7,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/dpopsuev/battery/mcpserver"
-	"github.com/dpopsuev/battery/server"
-	"github.com/dpopsuev/battery/tool"
+	"github.com/dpopsuev/origami/tool"
+	mcpserver "github.com/dpopsuev/origami/tool/mcp"
+	"github.com/dpopsuev/origami/tool/server"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -266,7 +266,7 @@ func (s *ToyScribeStore) handleAttachSection(input ScribeToolInput) (any, error)
 func (s *ToyScribeStore) Serve(t *testing.T) sdkmcp.Transport {
 	t.Helper()
 
-	handler := server.Handler(func(ctx context.Context, raw json.RawMessage) (tool.Result, error) {
+	handler := mcpserver.Handler(func(ctx context.Context, raw json.RawMessage) (tool.Result, error) {
 		var input ScribeToolInput
 		if err := json.Unmarshal(raw, &input); err != nil {
 			return tool.Result{}, fmt.Errorf("unmarshal: %w", err)

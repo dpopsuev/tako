@@ -61,7 +61,7 @@ type contractNode struct {
 	name string
 }
 
-func (n *contractNode) Name() string                      { return n.name }
+func (n *contractNode) Name() string               { return n.name }
 func (n *contractNode) Approach() identity.Element { return "" }
 func (n *contractNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return &contractArt{typ: n.name}, nil

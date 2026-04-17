@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dpopsuev/battery/tool"
+	"github.com/dpopsuev/origami/tool"
 	anyllm "github.com/mozilla-ai/any-llm-go/providers"
 
 	"github.com/dpopsuev/origami/circuit"
@@ -129,9 +129,9 @@ func (f *sdlcFactory) CreateSession(_ context.Context, params *engine.SessionPar
 	}
 
 	return &engine.SessionConfig{
-		CircuitDef:   def,
+		CircuitDef:  def,
 		Instruments: transformers,
-		Cases:        cases,
+		Cases:       cases,
 	}, nil
 }
 

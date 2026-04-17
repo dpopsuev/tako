@@ -13,7 +13,7 @@ type affinityStubNode struct {
 	element identity.Element
 }
 
-func (n *affinityStubNode) Name() string                      { return n.name }
+func (n *affinityStubNode) Name() string               { return n.name }
 func (n *affinityStubNode) Approach() identity.Element { return n.element }
 func (n *affinityStubNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return nil, nil

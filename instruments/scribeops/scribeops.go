@@ -8,9 +8,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/dpopsuev/battery/tool"
 	"github.com/dpopsuev/origami/engine/handler"
 	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
+	"github.com/dpopsuev/origami/tool"
 )
 
 const scribeToolName = "scribe.artifact"

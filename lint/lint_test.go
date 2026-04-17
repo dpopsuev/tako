@@ -1316,7 +1316,6 @@ done: _done
 	}
 }
 
-
 func TestB10_NoArrowWithReferences(t *testing.T) {
 	yaml := []byte(`
 kind: StoreSchema

@@ -79,7 +79,7 @@ func TestHookingWalker_FiresHooks(t *testing.T) {
 
 	trans := &echoTransformer{}
 	def := &circuit.CircuitDef{
-		Circuit:     "test",
+		Circuit: "test",
 		Nodes: []circuit.NodeDef{
 			{Name: "a", Approach: "rapid", Instrument: "transformer", Action: "echo", After: []string{"h1", "h2"}},
 			{Name: "b", Approach: "analytical", Instrument: "transformer", Action: "echo", After: []string{"h1"}},
@@ -94,7 +94,7 @@ func TestHookingWalker_FiresHooks(t *testing.T) {
 
 	runner, err := NewRunnerWith(def, &GraphRegistries{
 		Instruments: InstrumentRegistry{"echo": trans},
-		Hooks:        hooks,
+		Hooks:       hooks,
 	})
 	if err != nil {
 		t.Fatalf("NewRunnerWith: %v", err)
@@ -120,7 +120,7 @@ func TestHookingWalker_MissingHookContinues(t *testing.T) {
 	hooks := HookRegistry{}
 	trans := &echoTransformer{}
 	def := &circuit.CircuitDef{
-		Circuit:     "test",
+		Circuit: "test",
 		Nodes: []circuit.NodeDef{
 			{Name: "a", Approach: "rapid", Instrument: "transformer", Action: "echo", After: []string{"nonexistent"}},
 		},
@@ -133,7 +133,7 @@ func TestHookingWalker_MissingHookContinues(t *testing.T) {
 
 	runner, err := NewRunnerWith(def, &GraphRegistries{
 		Instruments: InstrumentRegistry{"echo": trans},
-		Hooks:        hooks,
+		Hooks:       hooks,
 	})
 	if err != nil {
 		t.Fatalf("NewRunnerWith: %v", err)
@@ -150,7 +150,7 @@ func TestFileWriteHook_WritesArtifact(t *testing.T) {
 	outPath := filepath.Join(dir, "recall.json")
 
 	def := &circuit.CircuitDef{
-		Circuit:     "test",
+		Circuit: "test",
 		Nodes: []circuit.NodeDef{
 			{
 				Name:       "recall",
@@ -198,7 +198,7 @@ func TestFileWriteHook_TemplatedPath(t *testing.T) {
 	pathTmpl := filepath.Join(dir, "{{ .NodeName }}.json")
 
 	def := &circuit.CircuitDef{
-		Circuit:     "test",
+		Circuit: "test",
 		Nodes: []circuit.NodeDef{
 			{
 				Name:       "triage",
@@ -252,7 +252,7 @@ func TestFileWriteHook_AutoRegisteredByRunner(t *testing.T) {
 	outPath := filepath.Join(dir, "auto.json")
 
 	def := &circuit.CircuitDef{
-		Circuit:     "test",
+		Circuit: "test",
 		Nodes: []circuit.NodeDef{
 			{
 				Name:       "a",
@@ -303,7 +303,7 @@ func TestBeforeHooks_FireBeforeNodeProcessing(t *testing.T) {
 	}))
 
 	def := &circuit.CircuitDef{
-		Circuit:     "test",
+		Circuit: "test",
 		Nodes: []circuit.NodeDef{
 			{Name: "a", Approach: "rapid", Instrument: "transformer", Action: "echo", Before: []string{"before.inject"}, After: []string{"after.store"}},
 		},
@@ -316,7 +316,7 @@ func TestBeforeHooks_FireBeforeNodeProcessing(t *testing.T) {
 
 	runner, err := NewRunnerWith(def, &GraphRegistries{
 		Instruments: InstrumentRegistry{"echo": &echoTransformer{}},
-		Hooks:        hooks,
+		Hooks:       hooks,
 	})
 	if err != nil {
 		t.Fatalf("NewRunnerWith: %v", err)
@@ -359,7 +359,7 @@ func TestBeforeHooks_InjectIntoWalkerContext(t *testing.T) {
 	walker := circuit.NewProcessWalker("test")
 
 	def := &circuit.CircuitDef{
-		Circuit:     "test",
+		Circuit: "test",
 		Nodes: []circuit.NodeDef{
 			{Name: "a", Approach: "rapid", Instrument: "transformer", Action: "capture", Before: []string{"inject.data"}},
 		},
@@ -372,7 +372,7 @@ func TestBeforeHooks_InjectIntoWalkerContext(t *testing.T) {
 
 	runner, err := NewRunnerWith(def, &GraphRegistries{
 		Instruments: InstrumentRegistry{"capture": captureTrans},
-		Hooks:        hooks,
+		Hooks:       hooks,
 	})
 	if err != nil {
 		t.Fatalf("NewRunnerWith: %v", err)
@@ -400,7 +400,7 @@ func TestBeforeHooks_OnlyOnDeclaredNodes(t *testing.T) {
 	}))
 
 	def := &circuit.CircuitDef{
-		Circuit:     "test",
+		Circuit: "test",
 		Nodes: []circuit.NodeDef{
 			{Name: "a", Approach: "rapid", Instrument: "transformer", Action: "echo", Before: []string{"inject.data"}},
 			{Name: "b", Approach: "analytical", Instrument: "transformer", Action: "echo"},
@@ -415,7 +415,7 @@ func TestBeforeHooks_OnlyOnDeclaredNodes(t *testing.T) {
 
 	runner, err := NewRunnerWith(def, &GraphRegistries{
 		Instruments: InstrumentRegistry{"echo": &echoTransformer{}},
-		Hooks:        hooks,
+		Hooks:       hooks,
 	})
 	if err != nil {
 		t.Fatalf("NewRunnerWith: %v", err)
@@ -434,7 +434,7 @@ func TestBeforeHooks_OnlyOnDeclaredNodes(t *testing.T) {
 func TestBeforeHooks_MissingHookContinues(t *testing.T) {
 	hooks := HookRegistry{}
 	def := &circuit.CircuitDef{
-		Circuit:     "test",
+		Circuit: "test",
 		Nodes: []circuit.NodeDef{
 			{Name: "a", Approach: "rapid", Instrument: "transformer", Action: "echo", Before: []string{"nonexistent"}},
 		},
@@ -447,7 +447,7 @@ func TestBeforeHooks_MissingHookContinues(t *testing.T) {
 
 	runner, err := NewRunnerWith(def, &GraphRegistries{
 		Instruments: InstrumentRegistry{"echo": &echoTransformer{}},
-		Hooks:        hooks,
+		Hooks:       hooks,
 	})
 	if err != nil {
 		t.Fatalf("NewRunnerWith: %v", err)
@@ -496,11 +496,11 @@ done: _done
 func TestHookingWalker_NoHooksNoWrap(t *testing.T) {
 	trans := &echoTransformer{}
 	def := &circuit.CircuitDef{
-		Circuit:     "test",
-		Nodes:       []circuit.NodeDef{{Name: "a", Approach: "rapid", Instrument: "transformer", Action: "echo"}},
-		Edges:       []circuit.EdgeDef{{ID: "E1", From: "a", To: "_done", When: "true"}},
-		Start:       "a",
-		Done:        "_done",
+		Circuit: "test",
+		Nodes:   []circuit.NodeDef{{Name: "a", Approach: "rapid", Instrument: "transformer", Action: "echo"}},
+		Edges:   []circuit.EdgeDef{{ID: "E1", From: "a", To: "_done", When: "true"}},
+		Start:   "a",
+		Done:    "_done",
 	}
 
 	runner, err := NewRunnerWith(def, &GraphRegistries{

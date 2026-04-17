@@ -15,7 +15,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-
 // Manifest is the top-level origami.yaml schema.
 // YAML format follows K8s pattern: apiVersion/kind/metadata/spec.
 // Go struct keeps flat fields for internal convenience.

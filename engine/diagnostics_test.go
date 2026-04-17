@@ -91,8 +91,8 @@ func TestRunBuildDiagnostics_EmptyRegistries(t *testing.T) {
 
 func TestDiagCircuitMediatorFallback_NoEndpoint(t *testing.T) {
 	def := &circuit.CircuitDef{
-		Circuit:     "test",
-		Nodes:       []circuit.NodeDef{{Name: "sub", Instrument: "circuit", Action: "beta"}},
+		Circuit: "test",
+		Nodes:   []circuit.NodeDef{{Name: "sub", Instrument: "circuit", Action: "beta"}},
 	}
 	reg := &GraphRegistries{} // no mediator endpoint
 

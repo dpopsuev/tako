@@ -14,10 +14,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dpopsuev/battery/tool"
 	"github.com/dpopsuev/origami/engine/handler"
 	"github.com/dpopsuev/origami/engine/trace"
 	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
+	"github.com/dpopsuev/origami/tool"
 )
 
 // Sentinel errors.

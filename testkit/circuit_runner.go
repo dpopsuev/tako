@@ -95,9 +95,9 @@ func RunCircuit(ctx context.Context, def *circuit.CircuitDef, transformers engin
 
 	reg := &engine.GraphRegistries{
 		Instruments: transformers,
-		Extractors:   cfg.extractors,
-		Hooks:        cfg.hooks,
-		Circuits:     cfg.circuits,
+		Extractors:  cfg.extractors,
+		Hooks:       cfg.hooks,
+		Circuits:    cfg.circuits,
 	}
 
 	collector := &trace.TraceCollector{}

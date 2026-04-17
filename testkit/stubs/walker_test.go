@@ -121,7 +121,7 @@ type stubNode struct {
 	name string
 }
 
-func (n *stubNode) Name() string                      { return n.name }
+func (n *stubNode) Name() string               { return n.name }
 func (n *stubNode) Approach() identity.Element { return "" }
 func (n *stubNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return nil, nil

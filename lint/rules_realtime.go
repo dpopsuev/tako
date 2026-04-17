@@ -188,4 +188,3 @@ func checkHookRefs(ctx *LintContext, nodeName, phase string, hooks []string, all
 	}
 	return out
 }
-

@@ -5,11 +5,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/dpopsuev/battery/tool"
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/testkit/contracts"
 	"github.com/dpopsuev/origami/testkit/stubs"
+	"github.com/dpopsuev/origami/tool"
 )
 
 // Compile-time check: StubInstrumentDispatcher satisfies engine.InstrumentDispatcher.

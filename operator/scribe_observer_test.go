@@ -6,11 +6,10 @@ import (
 	"testing"
 	"time"
 
-	battmcp "github.com/dpopsuev/battery/mcp"
-	"github.com/dpopsuev/battery/mcpserver"
-	"github.com/dpopsuev/battery/server"
-	"github.com/dpopsuev/battery/tool"
 	"github.com/dpopsuev/origami/operator"
+	"github.com/dpopsuev/origami/tool"
+	battmcp "github.com/dpopsuev/origami/tool/mcp"
+	"github.com/dpopsuev/origami/tool/server"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -22,7 +21,7 @@ func TestScribeObserver_DetectsMatureTasks(t *testing.T) {
 	defer cancel()
 
 	// Stub Scribe server returns 2 mature tasks.
-	srv := mcpserver.NewServer("stub-scribe", "v0.0.1").
+	srv := battmcp.NewServer("stub-scribe", "v0.0.1").
 		Tool(server.ToolMeta{Name: "artifact", Description: "Stub artifact"}, func(_ context.Context, _ json.RawMessage) (tool.Result, error) {
 			return tool.TextResult(`[{"id":"TSK-1","title":"fix auth","status":"mature","priority":"high"},{"id":"TSK-2","title":"add tests","status":"mature","priority":"medium"}]`), nil
 		})
@@ -55,7 +54,7 @@ func TestScribeObserver_NoPendingTasks(t *testing.T) {
 	defer cancel()
 
 	// Stub Scribe returns empty list.
-	srv := mcpserver.NewServer("stub-scribe", "v0.0.1").
+	srv := battmcp.NewServer("stub-scribe", "v0.0.1").
 		Tool(server.ToolMeta{Name: "artifact", Description: "Stub artifact"}, func(_ context.Context, _ json.RawMessage) (tool.Result, error) {
 			return tool.TextResult(`[]`), nil
 		})

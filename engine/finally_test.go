@@ -16,10 +16,10 @@ func TestWalk_Finally_RunsOnSuccess(t *testing.T) {
 	})
 
 	def := &circuit.CircuitDef{
-		Circuit:     "test",
-		Start:       "step-a",
-		Done:        "done",
-		Finally:     "teardown",
+		Circuit: "test",
+		Start:   "step-a",
+		Done:    "done",
+		Finally: "teardown",
 		Nodes: []circuit.NodeDef{
 			{Name: "step-a", Instrument: "transformer", Action: "passthrough"},
 			{Name: "teardown", Instrument: "transformer", Action: "cleanup"},
@@ -66,10 +66,10 @@ func TestWalk_Finally_RunsOnError(t *testing.T) {
 	})
 
 	def := &circuit.CircuitDef{
-		Circuit:     "test",
-		Start:       "step-a",
-		Done:        "done",
-		Finally:     "teardown",
+		Circuit: "test",
+		Start:   "step-a",
+		Done:    "done",
+		Finally: "teardown",
 		Nodes: []circuit.NodeDef{
 			{Name: "step-a", Instrument: "transformer", Action: "fail"},
 			{Name: "teardown", Instrument: "transformer", Action: "cleanup"},
@@ -110,10 +110,10 @@ func TestWalk_Finally_RunsOnCanceledContext(t *testing.T) {
 	})
 
 	def := &circuit.CircuitDef{
-		Circuit:     "test",
-		Start:       "step-a",
-		Done:        "done",
-		Finally:     "teardown",
+		Circuit: "test",
+		Start:   "step-a",
+		Done:    "done",
+		Finally: "teardown",
 		Nodes: []circuit.NodeDef{
 			{Name: "step-a", Instrument: "transformer", Action: "slow"},
 			{Name: "teardown", Instrument: "transformer", Action: "cleanup"},
@@ -147,9 +147,9 @@ func TestWalk_NoFinally_SkipsCleanup(t *testing.T) {
 	pt := InstrumentFunc("passthrough", func(_ context.Context, tc *InstrumentContext) (any, error) { return tc.Input, nil })
 
 	def := &circuit.CircuitDef{
-		Circuit:     "test",
-		Start:       "step-a",
-		Done:        "done",
+		Circuit: "test",
+		Start:   "step-a",
+		Done:    "done",
 		// No Finally set
 		Nodes: []circuit.NodeDef{
 			{Name: "step-a", Instrument: "transformer", Action: "passthrough"},

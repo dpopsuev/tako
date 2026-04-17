@@ -421,7 +421,7 @@ import (
 {{ if .NeedsOrigami }}	origami "github.com/dpopsuev/origami/circuit"
 {{ end }}{{ if .NeedsFactory }}	fwmcp "github.com/dpopsuev/origami/mcp"
 	fwresource "github.com/dpopsuev/origami/resource"
-{{ end }}{{ if .NeedsTools }}	fwtool "github.com/dpopsuev/battery/tool"
+{{ end }}{{ if .NeedsTools }}	fwtool "github.com/dpopsuev/origami/tool"
 {{ end }}{{ if .NeedsInstruments }}	fwdef "github.com/dpopsuev/origami/circuit/def"
 	fwengine "github.com/dpopsuev/origami/engine"
 {{ end }}	"github.com/dpopsuev/origami/domainserve"

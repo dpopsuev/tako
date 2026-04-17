@@ -87,7 +87,7 @@ func TestSDLC_FullPipeline(t *testing.T) {
 	recorder := trace.NewFlightRecorder(1000)
 	result, err := Run(ctx, RunConfig{
 		Instruments: StubInstruments(true),
-		Recorder:     recorder,
+		Recorder:    recorder,
 	})
 	if err != nil {
 		recorder.Dump(t)
@@ -121,7 +121,7 @@ func TestSDLC_FlightRecorderCaptures(t *testing.T) {
 	recorder := trace.NewFlightRecorder(1000)
 	_, err := Run(ctx, RunConfig{
 		Instruments: StubInstruments(true),
-		Recorder:     recorder,
+		Recorder:    recorder,
 	})
 	if err != nil {
 		recorder.Dump(t)
@@ -181,7 +181,7 @@ func TestSDLCV2_SubCircuitDelegation(t *testing.T) {
 	// Build registries with all stubs + sub-circuits.
 	shared := &engine.GraphRegistries{
 		Instruments: StubInstruments(true),
-		Circuits:     subCircuits,
+		Circuits:    subCircuits,
 	}
 
 	cases := []engine.BatchCase{

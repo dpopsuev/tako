@@ -23,7 +23,7 @@ func runCircuit(ctx context.Context, transformers engine.InstrumentRegistry) ([]
 		Def: def,
 		Shared: &engine.GraphRegistries{
 			Instruments: transformers,
-			Circuits:     circuit.LoadSubCircuitsFromFS(domainFS, nil),
+			Circuits:    circuit.LoadSubCircuitsFromFS(domainFS, nil),
 		},
 		Cases:    []engine.BatchCase{{ID: "sdlc-run", Context: map[string]any{}}},
 		Parallel: 1,

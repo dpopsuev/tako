@@ -34,10 +34,10 @@ func CoreComponent(d dispatch.Dispatcher, opts ...CoreComponentOption) *engine.C
 	reg["match"] = NewMatch()
 
 	return &engine.Component{
-		Namespace:    "core",
-		Name:         "origami-core",
-		Version:      "1.0.0",
-		Description:  "Built-in transformers: llm, http, jq, file",
+		Namespace:   "core",
+		Name:        "origami-core",
+		Version:     "1.0.0",
+		Description: "Built-in transformers: llm, http, jq, file",
 		Instruments: reg,
 	}
 }

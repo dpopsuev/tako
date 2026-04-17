@@ -40,12 +40,12 @@ type Graph interface {
 
 // Zone is a meta-phase grouping of Nodes with shared characteristics.
 type Zone struct {
-	Name            string
-	NodeNames       []string
-	Approach identity.Element
-	Stickiness      int // 0-3 stickiness value for agents in this zone
-	Domain          string
-	ContextFilter   *circuit.ContextFilterDef
+	Name          string
+	NodeNames     []string
+	Approach      identity.Element
+	Stickiness    int // 0-3 stickiness value for agents in this zone
+	Domain        string
+	ContextFilter *circuit.ContextFilterDef
 }
 
 // circuit.ContextFilterDef configures which context keys survive a zone transition.

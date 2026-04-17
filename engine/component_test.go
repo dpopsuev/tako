@@ -21,7 +21,7 @@ func TestMergeComponents_SingleComponent(t *testing.T) {
 	// Given: empty base + one component with a transformer
 	base := &GraphRegistries{Instruments: InstrumentRegistry{}}
 	comp := &Component{
-		Namespace:    "alpha",
+		Namespace:   "alpha",
 		Instruments: InstrumentRegistry{"llm": stubTransformerFor("llm")},
 	}
 
@@ -46,7 +46,7 @@ func TestMergeComponents_NamespaceCollision(t *testing.T) {
 		Instruments: InstrumentRegistry{"alpha.llm": stubTransformerFor("llm")},
 	}
 	comp := &Component{
-		Namespace:    "alpha",
+		Namespace:   "alpha",
 		Instruments: InstrumentRegistry{"llm": stubTransformerFor("llm2")},
 	}
 
@@ -69,7 +69,7 @@ func TestMergeComponents_ShortNamePreservesFirst(t *testing.T) {
 		Instruments: InstrumentRegistry{"llm": existing},
 	}
 	comp := &Component{
-		Namespace:    "beta",
+		Namespace:   "beta",
 		Instruments: InstrumentRegistry{"llm": stubTransformerFor("new")},
 	}
 
@@ -129,7 +129,7 @@ func TestMergeComponents_NilBase(t *testing.T) {
 	// Given: base with nil registries
 	base := &GraphRegistries{}
 	comp := &Component{
-		Namespace:    "alpha",
+		Namespace:   "alpha",
 		Instruments: InstrumentRegistry{"llm": stubTransformerFor("llm")},
 	}
 

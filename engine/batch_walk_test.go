@@ -10,9 +10,9 @@ import (
 
 func batchTestDef() *circuit.CircuitDef {
 	return &circuit.CircuitDef{
-		Circuit:     "batch-test",
-		Start:       "step-a",
-		Done:        "_done",
+		Circuit: "batch-test",
+		Start:   "step-a",
+		Done:    "_done",
 		Nodes: []circuit.NodeDef{
 			{Name: "step-a", Instrument: "transformer", Action: "echo"},
 			{Name: "step-b", Instrument: "transformer", Action: "echo"},
@@ -117,9 +117,9 @@ func TestBatchWalk_Parallel(t *testing.T) {
 
 func TestBatchWalk_PerCaseComponents(t *testing.T) {
 	def := &circuit.CircuitDef{
-		Circuit:     "hook-test",
-		Start:       "step-a",
-		Done:        "_done",
+		Circuit: "hook-test",
+		Start:   "step-a",
+		Done:    "_done",
 		Nodes: []circuit.NodeDef{
 			{Name: "step-a", Instrument: "transformer", Action: "echo", After: []string{"track"}},
 		},
@@ -192,11 +192,11 @@ func TestBatchWalk_Empty(t *testing.T) {
 
 func TestBatchWalk_CaseError(t *testing.T) {
 	badDef := &circuit.CircuitDef{
-		Circuit:     "bad",
-		Start:       "missing-node",
-		Done:        "_done",
-		Nodes:       []circuit.NodeDef{{Name: "step-a", Instrument: "transformer", Action: "echo"}},
-		Edges:       []circuit.EdgeDef{{ID: "E1", From: "step-a", To: "_done", When: "true"}},
+		Circuit: "bad",
+		Start:   "missing-node",
+		Done:    "_done",
+		Nodes:   []circuit.NodeDef{{Name: "step-a", Instrument: "transformer", Action: "echo"}},
+		Edges:   []circuit.EdgeDef{{ID: "E1", From: "step-a", To: "_done", When: "true"}},
 	}
 
 	results := BatchWalk(context.Background(), BatchWalkConfig{

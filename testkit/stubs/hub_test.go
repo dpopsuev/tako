@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/dpopsuev/battery/tool"
+	"github.com/dpopsuev/origami/tool"
 
 	"github.com/dpopsuev/origami/engine"
 	"github.com/dpopsuev/origami/testkit/contracts"

@@ -24,7 +24,7 @@ func TestCreateWiredBuildModule_DefaultNoReplace(t *testing.T) {
 	tmpDir := t.TempDir()
 	resolver := &mockResolver{
 		paths: map[string]string{
-			origamiModule:                     "/home/user/Workspace/origami",
+			origamiModule:                    "/home/user/Workspace/origami",
 			"github.com/example/schematic-a": "/home/user/Workspace/schematic-a",
 		},
 	}
@@ -53,7 +53,7 @@ func TestCreateWiredBuildModule_LocalEnablesReplace(t *testing.T) {
 	tmpDir := t.TempDir()
 	resolver := &mockResolver{
 		paths: map[string]string{
-			origamiModule:                     "/home/user/Workspace/origami",
+			origamiModule:                    "/home/user/Workspace/origami",
 			"github.com/example/schematic-a": "/home/user/Workspace/schematic-a",
 		},
 	}

@@ -7,13 +7,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	battmcp "github.com/dpopsuev/battery/mcp"
-	"github.com/dpopsuev/battery/tool"
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine/handler"
 	"github.com/dpopsuev/origami/instruments/selfreview"
 	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
 	"github.com/dpopsuev/origami/testkit/stubs"
+	"github.com/dpopsuev/origami/tool"
+	battmcp "github.com/dpopsuev/origami/tool/mcp"
 )
 
 // testArtifact is a helper to create a walker state artifact wrapping a value.

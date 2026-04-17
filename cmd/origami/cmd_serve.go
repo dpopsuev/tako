@@ -13,8 +13,8 @@ import (
 	"strconv"
 	"time"
 
-	battmcp "github.com/dpopsuev/battery/mcp"
-	"github.com/dpopsuev/battery/tool"
+	"github.com/dpopsuev/origami/tool"
+	battmcp "github.com/dpopsuev/origami/tool/mcp"
 	"github.com/dpopsuev/troupe/execution"
 	"github.com/dpopsuev/troupe/resilience"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"

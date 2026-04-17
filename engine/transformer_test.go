@@ -115,7 +115,7 @@ func TestBuildGraphWith_MixedTransformerAndWalker(t *testing.T) {
 
 	reg := &GraphRegistries{
 		Instruments: InstrumentRegistry{"echo": trans},
-		Nodes:        NodeRegistry{"legacy": nodeFactory},
+		Nodes:       NodeRegistry{"legacy": nodeFactory},
 	}
 
 	graph, err := BuildGraph(def, reg)
@@ -139,7 +139,7 @@ type testNode struct {
 	name string
 }
 
-func (n *testNode) Name() string                      { return n.name }
+func (n *testNode) Name() string               { return n.name }
 func (n *testNode) Approach() identity.Element { return identity.ElementFire }
 func (n *testNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	return &stubArtifact{raw: map[string]any{"processed": true}}, nil

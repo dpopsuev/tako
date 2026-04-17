@@ -255,4 +255,3 @@ func instrumentPath(t *testing.T, rel string) string {
 	t.Helper()
 	return repoRoot() + "/testkit/instruments/" + rel
 }
-

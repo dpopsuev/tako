@@ -84,7 +84,7 @@ type CaseResultEntry struct {
 // validates it. Outputs the input as an artifact for downstream nodes.
 type LoadScenarioNode struct{}
 
-func (n *LoadScenarioNode) Name() string                      { return "load_scenario" }
+func (n *LoadScenarioNode) Name() string               { return "load_scenario" }
 func (n *LoadScenarioNode) Approach() identity.Element { return identity.ElementEarth }
 
 func (n *LoadScenarioNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
@@ -115,7 +115,7 @@ func (n *LoadScenarioNode) Process(_ context.Context, nc circuit.NodeContext) (c
 // in walker state for iteration by downstream nodes.
 type FanOutCasesNode struct{}
 
-func (n *FanOutCasesNode) Name() string                      { return "fan_out" }
+func (n *FanOutCasesNode) Name() string               { return "fan_out" }
 func (n *FanOutCasesNode) Approach() identity.Element { return identity.ElementWater }
 
 func (n *FanOutCasesNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
@@ -131,7 +131,7 @@ func (n *FanOutCasesNode) Process(_ context.Context, nc circuit.NodeContext) (ci
 // Supports parallel execution when CalibrationInput.Parallel > 1.
 type WalkCaseNode struct{}
 
-func (n *WalkCaseNode) Name() string                      { return "walk_case" }
+func (n *WalkCaseNode) Name() string               { return "walk_case" }
 func (n *WalkCaseNode) Approach() identity.Element { return identity.ElementFire }
 
 func (n *WalkCaseNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
@@ -176,7 +176,7 @@ func runOneCase(ctx context.Context, runner CaseRunner, c CaseInput) CaseResultE
 // ScoreCaseNode scores each case result against ground truth using CaseScorer.
 type ScoreCaseNode struct{}
 
-func (n *ScoreCaseNode) Name() string                      { return "score_case" }
+func (n *ScoreCaseNode) Name() string               { return "score_case" }
 func (n *ScoreCaseNode) Approach() identity.Element { return identity.ElementEarth }
 
 func (n *ScoreCaseNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
@@ -214,7 +214,7 @@ func (n *ScoreCaseNode) Process(_ context.Context, nc circuit.NodeContext) (circ
 // averages across all cases.
 type FanInResultsNode struct{}
 
-func (n *FanInResultsNode) Name() string                      { return "fan_in" }
+func (n *FanInResultsNode) Name() string               { return "fan_in" }
 func (n *FanInResultsNode) Approach() identity.Element { return identity.ElementWater }
 
 func (n *FanInResultsNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
@@ -254,7 +254,7 @@ func (n *FanInResultsNode) Process(_ context.Context, nc circuit.NodeContext) (c
 // aggregate metric.
 type AggregateNode struct{}
 
-func (n *AggregateNode) Name() string                      { return "aggregate" }
+func (n *AggregateNode) Name() string               { return "aggregate" }
 func (n *AggregateNode) Approach() identity.Element { return identity.ElementEarth }
 
 func (n *AggregateNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
@@ -287,7 +287,7 @@ func (n *AggregateNode) Process(_ context.Context, nc circuit.NodeContext) (circ
 // ReportNode produces the final CalibrationReport from the aggregated metrics.
 type ReportNode struct{}
 
-func (n *ReportNode) Name() string                      { return "report" }
+func (n *ReportNode) Name() string               { return "report" }
 func (n *ReportNode) Approach() identity.Element { return identity.ElementAir }
 
 func (n *ReportNode) Process(_ context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {

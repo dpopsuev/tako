@@ -8,9 +8,9 @@ import (
 	"encoding/json"
 	"log/slog"
 
-	"github.com/dpopsuev/battery/tool"
 	"github.com/dpopsuev/origami/engine/handler"
 	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
+	"github.com/dpopsuev/origami/tool"
 )
 
 const (

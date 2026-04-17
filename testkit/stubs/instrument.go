@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"sync"
 
-	"github.com/dpopsuev/battery/tool"
 	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/origami/tool"
 	"github.com/dpopsuev/troupe/identity"
 )
 
@@ -98,7 +98,7 @@ func NewStubInstrumentNode(tool *StubInstrumentTool) *StubInstrumentNode {
 	return &StubInstrumentNode{tool: tool}
 }
 
-func (n *StubInstrumentNode) Name() string                      { return n.tool.Name() }
+func (n *StubInstrumentNode) Name() string               { return n.tool.Name() }
 func (n *StubInstrumentNode) Approach() identity.Element { return n.element }
 
 func (n *StubInstrumentNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {

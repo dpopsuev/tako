@@ -27,7 +27,7 @@ type findingEnforcerNodeImpl struct {
 	finding   *circuit.Finding
 }
 
-func (n *findingEnforcerNodeImpl) Name() string                      { return n.name }
+func (n *findingEnforcerNodeImpl) Name() string               { return n.name }
 func (n *findingEnforcerNodeImpl) Approach() identity.Element { return "" }
 func (n *findingEnforcerNodeImpl) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	if n.finding != nil {

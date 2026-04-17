@@ -76,7 +76,7 @@ func Run(ctx context.Context, cfg RunConfig) (*RunResult, error) {
 
 	shared := &engine.GraphRegistries{
 		Instruments: cfg.Instruments,
-		Circuits:     circuit.LoadSubCircuitsFromFS(domainFS, nil),
+		Circuits:    circuit.LoadSubCircuitsFromFS(domainFS, nil),
 	}
 
 	// Single case — the SDLC circuit operates on one codebase per run.
