@@ -446,3 +446,93 @@ func TestGateE2E_RetryAfterRejection(t *testing.T) {
 	assertions.AssertApproved(t, store, parked2.ID)
 	assertions.AssertNoPending(t, store)
 }
+
+func TestGateE2E_CommentsInjectedOnRejection(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	capture := &feedbackCapture{}
+	captureTrans := engine.InstrumentFunc("capture-feedback", func(_ context.Context, tc *engine.InstrumentContext) (any, error) {
+		capture.mu.Lock()
+		ctxCopy := make(map[string]any)
+		if tc.WalkerState != nil {
+			for k, v := range tc.WalkerState.Context {
+				ctxCopy[k] = v
+			}
+		}
+		capture.contexts = append(capture.contexts, ctxCopy)
+		capture.mu.Unlock()
+		return "output", nil
+	})
+
+	def := &circuit.CircuitDef{
+		Circuit: "comment-gate",
+		Start:   "process",
+		Done:    "_done",
+		Nodes: []circuit.NodeDef{
+			{Name: "process", Instrument: "transformer", Action: "passthrough"},
+			{Name: "deploy", Instrument: "transformer", Action: "capture-feedback", Gate: gate.GateApproval},
+		},
+		Edges: []circuit.EdgeDef{
+			{ID: "process-deploy", From: "process", To: "deploy"},
+			{ID: "deploy-done", From: "deploy", To: "_done"},
+		},
+	}
+
+	store := stubs.NewMemoryApprovalStore()
+	reg := &engine.GraphRegistries{
+		ApprovalStore: store,
+		Instruments:   engine.InstrumentRegistry{"capture-feedback": captureTrans},
+	}
+	g, err := engine.BuildGraph(def, reg)
+	if err != nil {
+		t.Fatalf("BuildGraph: %v", err)
+	}
+
+	walker := circuit.NewProcessWalker("comment-test")
+	walkErr := g.Walk(ctx, walker, "process")
+	if !errors.Is(walkErr, engine.ErrWalkInterrupted) {
+		t.Fatalf("Walk 1: expected interrupt, got %v", walkErr)
+	}
+
+	parked := assertions.AssertParked(t, store, "deploy")
+
+	// Add comments while pending.
+	store.AddComment(ctx, parked.ID, gate.Comment{Text: "check the rollback plan", Operator: "alice"})
+	store.AddComment(ctx, parked.ID, gate.Comment{Text: "also verify the health check", Operator: "bob"})
+
+	// Reject with comment.
+	store.Resolve(ctx, parked.ID, gate.Decision{
+		Status: gate.ApprovalRejected, Comment: "needs work", Operator: "reviewer",
+	})
+
+	// Resume — should inject both rejection_feedback and gate_comments.
+	walkErr = engine.ResumeFromGate(ctx, g, walker, store)
+	if !errors.Is(walkErr, engine.ErrWalkInterrupted) {
+		t.Fatalf("ResumeFromGate: expected interrupt (re-parked), got %v", walkErr)
+	}
+
+	calls := capture.snapshot()
+	if len(calls) < 2 {
+		t.Fatalf("expected at least 2 capture calls, got %d", len(calls))
+	}
+
+	retryCtx := calls[1]
+	if retryCtx["rejection_feedback"] != "needs work" {
+		t.Errorf("rejection_feedback = %v, want %q", retryCtx["rejection_feedback"], "needs work")
+	}
+
+	comments, ok := retryCtx["gate_comments"].([]string)
+	if !ok {
+		t.Fatalf("gate_comments not found or wrong type: %T", retryCtx["gate_comments"])
+	}
+	if len(comments) != 2 {
+		t.Fatalf("gate_comments = %d, want 2", len(comments))
+	}
+	if comments[0] != "check the rollback plan" {
+		t.Errorf("gate_comments[0] = %q, want %q", comments[0], "check the rollback plan")
+	}
+	if comments[1] != "also verify the health check" {
+		t.Errorf("gate_comments[1] = %q, want %q", comments[1], "also verify the health check")
+	}
+}

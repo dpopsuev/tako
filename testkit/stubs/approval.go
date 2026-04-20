@@ -69,6 +69,20 @@ func (s *MemoryApprovalStore) Resolve(_ context.Context, id string, decision gat
 	return nil
 }
 
+func (s *MemoryApprovalStore) AddComment(_ context.Context, id string, comment gate.Comment) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	item, ok := s.items[id]
+	if !ok {
+		return fmt.Errorf("%w: %q", gate.ErrApprovalNotFound, id)
+	}
+	if item.Status != gate.ApprovalPending {
+		return fmt.Errorf("%w: %q", gate.ErrApprovalNotPending, id)
+	}
+	item.Comments = append(item.Comments, comment)
+	return nil
+}
+
 // StubNotifier records notification calls for testing.
 // Thread-safe, supports error injection.
 type StubNotifier struct {

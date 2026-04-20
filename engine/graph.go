@@ -67,6 +67,7 @@ type DefaultGraph struct {
 	observer         circuit.WalkObserver      // graph-level observer, used by Walk
 	registries       *GraphRegistries          // retained for DelegateNode sub-walk building
 	graphFactory     GraphFactory              // injected factory for delegate sub-graph construction
+	description      string                    // circuit description — injected into walker context as "circuit_mission"
 	hub              Hub                       // optional instrument hub — SetActiveNode on node entry
 	approvalStore    gate.ApprovalStore        // optional — parks output at gated nodes
 	approvalNotifier gate.Notifier             // optional — sends notifications when items are parked
@@ -115,6 +116,14 @@ func WithNodeTimeouts(m map[string]time.Duration) GraphOption {
 func WithRegistries(reg *GraphRegistries) GraphOption {
 	return func(g *DefaultGraph) {
 		g.registries = reg
+	}
+}
+
+// WithDescription sets the circuit description, injected into walker
+// context as "circuit_mission" at walk start.
+func WithDescription(s string) GraphOption {
+	return func(g *DefaultGraph) {
+		g.description = s
 	}
 }
 
@@ -347,6 +356,12 @@ func (g *DefaultGraph) walkInner(ctx context.Context, walker circuit.Walker, sta
 
 	state := walker.State()
 	state.CurrentNode = startNode
+	if g.description != "" {
+		if state.Context == nil {
+			state.Context = make(map[string]any)
+		}
+		state.Context["circuit_mission"] = g.description
+	}
 	var priorArtifact circuit.Artifact
 
 	for {

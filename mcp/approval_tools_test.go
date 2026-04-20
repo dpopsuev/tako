@@ -61,6 +61,17 @@ func (s *testStore) Resolve(_ context.Context, id string, d gate.Decision) error
 	item.Decision = &d
 	return nil
 }
+func (s *testStore) AddComment(_ context.Context, id string, c gate.Comment) error {
+	item, ok := s.items[id]
+	if !ok {
+		return gate.ErrApprovalNotFound
+	}
+	if item.Status != gate.ApprovalPending {
+		return gate.ErrApprovalNotPending
+	}
+	item.Comments = append(item.Comments, c)
+	return nil
+}
 
 func TestApprovalHandler_ListEmpty(t *testing.T) {
 	store := newTestStore()
@@ -172,5 +183,41 @@ func TestApprovalHandler_MissingID(t *testing.T) {
 	})
 	if res == nil || !res.IsError {
 		t.Error("approve without ID should return tool error")
+	}
+}
+
+func TestApprovalHandler_CommentStored(t *testing.T) {
+	store := newTestStore()
+	store.Park(t.Context(), gate.ApprovalItem{
+		ID: "test-001", NodeName: "diff-review", Status: gate.ApprovalPending,
+	})
+	srv := &CircuitServer{Config: &CircuitConfig{ApprovalStore: store}}
+
+	_, _, err := srv.handleApprovalDispatch(t.Context(), nil, approvalInput{
+		Action: "comment", ID: "test-001", Comment: "check the error handling", Operator: "alice",
+	})
+	if err != nil {
+		t.Fatalf("comment: %v", err)
+	}
+
+	_, _, err = srv.handleApprovalDispatch(t.Context(), nil, approvalInput{
+		Action: "comment", ID: "test-001", Comment: "also add a test", Operator: "bob",
+	})
+	if err != nil {
+		t.Fatalf("comment: %v", err)
+	}
+
+	item, _ := store.Get(t.Context(), "test-001")
+	if len(item.Comments) != 2 {
+		t.Fatalf("comments = %d, want 2", len(item.Comments))
+	}
+	if item.Comments[0].Text != "check the error handling" {
+		t.Errorf("comment[0] = %q, want %q", item.Comments[0].Text, "check the error handling")
+	}
+	if item.Comments[1].Operator != "bob" {
+		t.Errorf("comment[1].operator = %q, want bob", item.Comments[1].Operator)
+	}
+	if item.Status != gate.ApprovalPending {
+		t.Errorf("status = %q, want pending (comment should not resolve)", item.Status)
 	}
 }

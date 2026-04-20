@@ -144,4 +144,43 @@ func RunApprovalStoreContract(t *testing.T, factory func() gate.ApprovalStore) {
 			t.Error("Resolve nonexistent should return error")
 		}
 	})
+
+	t.Run("AddComment_Pending", func(t *testing.T) {
+		store := factory()
+		store.Park(context.Background(), item)
+
+		c := gate.Comment{Text: "check this", Operator: "alice", At: time.Now()}
+		if err := store.AddComment(context.Background(), item.ID, c); err != nil {
+			t.Fatalf("AddComment: %v", err)
+		}
+
+		got, _ := store.Get(context.Background(), item.ID)
+		if len(got.Comments) != 1 {
+			t.Fatalf("Comments = %d, want 1", len(got.Comments))
+		}
+		if got.Comments[0].Text != "check this" {
+			t.Errorf("Comment text = %q, want %q", got.Comments[0].Text, "check this")
+		}
+	})
+
+	t.Run("AddComment_Resolved_Fails", func(t *testing.T) {
+		store := factory()
+		store.Park(context.Background(), item)
+		store.Resolve(context.Background(), item.ID, gate.Decision{
+			Status: gate.ApprovalApproved, Operator: "alice",
+		})
+
+		err := store.AddComment(context.Background(), item.ID, gate.Comment{Text: "too late"})
+		if err == nil {
+			t.Error("AddComment on resolved item should fail")
+		}
+	})
+
+	t.Run("AddComment_NotFound", func(t *testing.T) {
+		store := factory()
+		err := store.AddComment(context.Background(), "nonexistent", gate.Comment{Text: "nope"})
+		if err == nil {
+			t.Error("AddComment nonexistent should return error")
+		}
+	})
 }

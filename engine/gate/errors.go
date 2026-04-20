@@ -14,4 +14,7 @@ var (
 
 	// ErrUnexpectedApprovalStatus is returned when an approval item has an unrecognized status.
 	ErrUnexpectedApprovalStatus = errors.New("unexpected approval status")
+
+	// ErrApprovalNotPending is returned when trying to comment on an already-resolved item.
+	ErrApprovalNotPending = errors.New("approval item is not pending")
 )

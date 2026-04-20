@@ -558,3 +558,50 @@ func TestWalk_SNRNotEmittedForNonCountable(t *testing.T) {
 		t.Error("non-CountableArtifact should not emit snr metadata")
 	}
 }
+
+func TestWalk_CircuitMission_InjectedIntoContext(t *testing.T) {
+	t.Parallel()
+
+	nodeA := &stubNode{name: "A", artifact: &stubArtifact{typ: "a", confidence: 1.0}}
+	edges := []circuit.Edge{&stubEdge{id: "A-done", from: "A", to: "_done"}}
+
+	g, err := NewGraph("mission-test", []circuit.Node{nodeA}, edges, nil,
+		WithDescription("Scan, fix, and deploy Go microservices"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	w := &visitTrackingWalker{state: circuit.NewWalkerState("w1")}
+	if err := g.Walk(context.Background(), w, "A"); err != nil {
+		t.Fatalf("Walk failed: %v", err)
+	}
+
+	got, ok := w.state.Context["circuit_mission"]
+	if !ok {
+		t.Fatal("circuit_mission not found in walker context")
+	}
+	if got != "Scan, fix, and deploy Go microservices" {
+		t.Errorf("circuit_mission = %q, want %q", got, "Scan, fix, and deploy Go microservices")
+	}
+}
+
+func TestWalk_CircuitMission_EmptyDescription_NotInjected(t *testing.T) {
+	t.Parallel()
+
+	nodeA := &stubNode{name: "A", artifact: &stubArtifact{typ: "a", confidence: 1.0}}
+	edges := []circuit.Edge{&stubEdge{id: "A-done", from: "A", to: "_done"}}
+
+	g, err := NewGraph("no-mission", []circuit.Node{nodeA}, edges, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	w := &visitTrackingWalker{state: circuit.NewWalkerState("w2")}
+	if err := g.Walk(context.Background(), w, "A"); err != nil {
+		t.Fatalf("Walk failed: %v", err)
+	}
+
+	if _, ok := w.state.Context["circuit_mission"]; ok {
+		t.Error("circuit_mission should not be set when description is empty")
+	}
+}

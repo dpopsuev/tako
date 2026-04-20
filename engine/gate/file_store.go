@@ -111,4 +111,20 @@ func (s *FileStore) flush() error {
 	return nil
 }
 
+// AddComment appends a comment to a pending item and persists to disk.
+func (s *FileStore) AddComment(_ context.Context, id string, comment Comment) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	item, ok := s.data[id]
+	if !ok {
+		return fmt.Errorf("%w: %q", ErrApprovalNotFound, id)
+	}
+	if item.Status != ApprovalPending {
+		return fmt.Errorf("%w: %q", ErrApprovalNotPending, id)
+	}
+	item.Comments = append(item.Comments, comment)
+	return s.flush()
+}
+
 var _ ApprovalStore = (*FileStore)(nil)

@@ -66,4 +66,19 @@ func (s *MemoryStore) Resolve(_ context.Context, id string, decision Decision) e
 	return nil
 }
 
+// AddComment appends a comment to a pending item.
+func (s *MemoryStore) AddComment(_ context.Context, id string, comment Comment) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	item, ok := s.items[id]
+	if !ok {
+		return fmt.Errorf("%w: %q", ErrApprovalNotFound, id)
+	}
+	if item.Status != ApprovalPending {
+		return fmt.Errorf("%w: %q", ErrApprovalNotPending, id)
+	}
+	item.Comments = append(item.Comments, comment)
+	return nil
+}
+
 var _ ApprovalStore = (*MemoryStore)(nil)

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/dpopsuev/origami/engine/gate"
 
@@ -145,14 +146,20 @@ func (s *CircuitServer) handleApprovalComment(ctx context.Context, input approva
 		return toolError(ErrApprovalIDRequired), approvalListOutput{}, nil
 	}
 
-	// For now, comments are stored as a resolve with the current status preserved.
-	// Future: separate comment log on ApprovalItem.
-	item, err := s.Config.ApprovalStore.Get(ctx, input.ID)
-	if err != nil {
-		return nil, approvalListOutput{}, err
+	operator := input.Operator
+	if operator == "" {
+		operator = "unknown"
 	}
 
-	_ = item // comment stored — future enhancement
+	comment := gate.Comment{
+		Text:     input.Comment,
+		Operator: operator,
+		At:       time.Now(),
+	}
+
+	if err := s.Config.ApprovalStore.AddComment(ctx, input.ID, comment); err != nil {
+		return nil, approvalListOutput{}, err
+	}
 
 	out := approvalCommentOutput{ID: input.ID, Comment: input.Comment}
 	data, _ := json.Marshal(out)

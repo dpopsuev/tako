@@ -167,13 +167,21 @@ func ResumeFromGate(ctx context.Context, g Graph, walker circuit.Walker, store g
 		if item.Decision != nil && item.Decision.Comment != "" {
 			state.Context[gate.ContextKeyRejectionFeedback] = item.Decision.Comment
 		}
+		if len(item.Comments) > 0 {
+			texts := make([]string, len(item.Comments))
+			for i, c := range item.Comments {
+				texts[i] = c.Text
+			}
+			state.Context[gate.ContextKeyGateComments] = texts
+		}
 		// Reset walker status so Walk can proceed.
 		state.Status = walkStatusRunning
 		return g.Walk(ctx, walker, gatedNode)
 
 	case gate.ApprovalApproved:
-		// Clear any prior rejection feedback.
+		// Clear any prior rejection feedback and gate comments.
 		delete(state.Context, gate.ContextKeyRejectionFeedback)
+		delete(state.Context, gate.ContextKeyGateComments)
 		state.Status = walkStatusRunning
 
 		// Find the successor node and resume from there.

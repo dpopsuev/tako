@@ -66,6 +66,17 @@ func (s *testApprovalStore) Resolve(_ context.Context, id string, decision gate.
 	return nil
 }
 
+func (s *testApprovalStore) AddComment(_ context.Context, id string, comment gate.Comment) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	item, ok := s.items[id]
+	if !ok {
+		return fmt.Errorf("%w: %q", gate.ErrApprovalNotFound, id)
+	}
+	item.Comments = append(item.Comments, comment)
+	return nil
+}
+
 // testNotifier records notification calls.
 type testNotifier struct {
 	mu    sync.Mutex

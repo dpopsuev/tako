@@ -22,6 +22,13 @@ const (
 	ApprovalRejected ApprovalStatus = "rejected"
 )
 
+// Comment is directional feedback added to a pending approval item.
+type Comment struct {
+	Text     string    `json:"text"`
+	Operator string    `json:"operator"`
+	At       time.Time `json:"at"`
+}
+
 // ApprovalItem represents a node output parked for human review.
 type ApprovalItem struct {
 	ID         string          `json:"id"`
@@ -34,6 +41,7 @@ type ApprovalItem struct {
 	ParkedAt   time.Time       `json:"parked_at"`
 	Status     ApprovalStatus  `json:"status"`
 	Decision   *Decision       `json:"decision,omitempty"`
+	Comments   []Comment       `json:"comments,omitempty"`
 }
 
 // Decision is the human's verdict on a parked approval item.
@@ -57,6 +65,9 @@ type ApprovalStore interface {
 
 	// Resolve records the human's decision on a pending item.
 	Resolve(ctx context.Context, id string, decision Decision) error
+
+	// AddComment appends directional feedback to a pending item.
+	AddComment(ctx context.Context, id string, comment Comment) error
 }
 
 // Notifier sends notifications when items are parked for approval.
@@ -68,3 +79,7 @@ type Notifier interface {
 // ContextKeyRejectionFeedback is the walker context key where rejection
 // comments are injected before retrying a gated node.
 const ContextKeyRejectionFeedback = "rejection_feedback"
+
+// ContextKeyGateComments is the walker context key where accumulated
+// gate comments are injected before retrying a gated node.
+const ContextKeyGateComments = "gate_comments"
