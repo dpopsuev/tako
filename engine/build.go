@@ -11,7 +11,7 @@ import (
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine/gate"
-	"github.com/dpopsuev/troupe/identity"
+	"github.com/dpopsuev/troupe/visual"
 )
 
 // Type aliases — definitions live in circuit/ sub-package.
@@ -128,7 +128,7 @@ func BuildGraph(def *circuit.CircuitDef, reg *GraphRegistries) (Graph, error) {
 
 	fwZones := make([]Zone, 0, len(def.Zones))
 	for name, zd := range def.Zones {
-		elem, _ := identity.ResolveApproach(strings.ToLower(zd.Approach))
+		elem, _ := resolveApproach(strings.ToLower(zd.Approach))
 		nodeNames := make([]string, len(zd.Nodes))
 		for j, nn := range zd.Nodes {
 			nodeNames[j] = string(nn)
@@ -245,13 +245,13 @@ func buildGraphShape(g *DefaultGraph, def *circuit.CircuitDef) circuit.GraphShap
 
 // resolveNode creates a Node from a circuit.NodeDef using instrument + action.
 func resolveNode(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries) (circuit.Node, error) {
-	elem, _ := identity.ResolveApproach(strings.ToLower(nd.Approach))
+	elem, _ := resolveApproach(strings.ToLower(nd.Approach))
 	return resolveByInstrument(def, nd, reg, elem)
 }
 
 // InprocResolver resolves a node definition into a concrete circuit.Node
 // for dispatch: inproc instruments (in-process Go handlers).
-type InprocResolver func(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem identity.Element) (circuit.Node, error)
+type InprocResolver func(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem visual.Element) (circuit.Node, error)
 
 // inprocResolvers maps inproc instrument names to their Go handler resolvers.
 // These are the built-in in-process instruments: transformer, extractor, etc.
@@ -264,7 +264,7 @@ var inprocResolvers = map[string]InprocResolver{
 	InstrumentCircuit:     resolveCircuitHandler,
 }
 
-func resolveByInstrument(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem identity.Element) (circuit.Node, error) {
+func resolveByInstrument(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem visual.Element) (circuit.Node, error) {
 	name := string(nd.Name)
 	instrument := nd.Instrument
 	if instrument == "" {
@@ -286,7 +286,7 @@ func resolveByInstrument(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *Grap
 	return resolver(def, nd, reg, elem)
 }
 
-func resolveTransformerHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem identity.Element) (circuit.Node, error) {
+func resolveTransformerHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem visual.Element) (circuit.Node, error) {
 	name := string(nd.Name)
 	action := nd.Action
 	if action == "" {
@@ -307,7 +307,7 @@ func resolveTransformerHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg
 	}, nil
 }
 
-func resolveExtractorHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem identity.Element) (circuit.Node, error) {
+func resolveExtractorHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem visual.Element) (circuit.Node, error) {
 	name := string(nd.Name)
 	action := nd.Action
 	if action == "" {
@@ -323,7 +323,7 @@ func resolveExtractorHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *
 	}, nil
 }
 
-func resolveRendererHandler(_ *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem identity.Element) (circuit.Node, error) {
+func resolveRendererHandler(_ *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem visual.Element) (circuit.Node, error) {
 	name := string(nd.Name)
 	action := nd.Action
 	if action == "" {
@@ -339,7 +339,7 @@ func resolveRendererHandler(_ *circuit.CircuitDef, nd *circuit.NodeDef, reg *Gra
 	}, nil
 }
 
-func resolveNodeHandler(_ *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem identity.Element) (circuit.Node, error) {
+func resolveNodeHandler(_ *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem visual.Element) (circuit.Node, error) {
 	name := string(nd.Name)
 	action := nd.Action
 	if action == "" {
@@ -355,7 +355,7 @@ func resolveNodeHandler(_ *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRe
 	return factory(*nd), nil
 }
 
-func resolveDelegateHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem identity.Element) (circuit.Node, error) {
+func resolveDelegateHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem visual.Element) (circuit.Node, error) {
 	name := string(nd.Name)
 	action := nd.Action
 	if action == "" {
@@ -376,7 +376,7 @@ func resolveDelegateHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *G
 	}, nil
 }
 
-func resolveCircuitHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem identity.Element) (circuit.Node, error) {
+func resolveCircuitHandler(def *circuit.CircuitDef, nd *circuit.NodeDef, reg *GraphRegistries, elem visual.Element) (circuit.Node, error) {
 	name := string(nd.Name)
 	action := nd.Action
 	if action == "" {

@@ -604,12 +604,12 @@ done: DONE`
 	traitHints := filterHintsByKind(hints, 1)
 	found := 0
 	for _, h := range traitHints {
-		if strings.Contains(h.Label, "fast") || strings.Contains(h.Label, "deep") {
+		if strings.Contains(h.Label, "rapid") || strings.Contains(h.Label, "analytical") {
 			found++
 		}
 	}
 	if found < 2 {
-		t.Errorf("expected at least 2 behavior profile hints (fast, deep), found %d", found)
+		t.Errorf("expected at least 2 behavior profile hints (rapid, analytical), found %d", found)
 	}
 }
 

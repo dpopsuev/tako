@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/troupe/identity"
+	"github.com/dpopsuev/troupe/visual"
 )
 
 type buildTestNode struct {
@@ -14,7 +14,7 @@ type buildTestNode struct {
 }
 
 func (n *buildTestNode) Name() string               { return n.name }
-func (n *buildTestNode) Approach() identity.Element { return "" }
+func (n *buildTestNode) Approach() visual.Element { return "" }
 func (n *buildTestNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return nil, nil
 }

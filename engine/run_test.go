@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/troupe/identity"
+	"github.com/dpopsuev/troupe/visual"
 )
 
 const testCircuitYAML = `
@@ -263,17 +263,17 @@ done: _done
 	path := writeTempCircuit(t, yaml)
 
 	herald := &stubWalker{
-		identity: identity.Archetype{
+		identity: circuit.AgentIdentity{
 			Name:         "Herald",
-			Element:      identity.ElementFire,
+			Element:      visual.ElementFire,
 			StepAffinity: map[string]float64{"classify": 0.9, "investigate": 0.1},
 		},
 		state: circuit.NewWalkerState("herald-1"),
 	}
 	seeker := &stubWalker{
-		identity: identity.Archetype{
+		identity: circuit.AgentIdentity{
 			Name:         "Seeker",
-			Element:      identity.ElementWater,
+			Element:      visual.ElementWater,
 			StepAffinity: map[string]float64{"classify": 0.1, "investigate": 0.9},
 		},
 		state: circuit.NewWalkerState("seeker-1"),
@@ -313,7 +313,7 @@ func TestRun_WithTeam_InputPropagated(t *testing.T) {
 	path := writeTempCircuit(t, testCircuitYAML)
 
 	w := &stubWalker{
-		identity: identity.Archetype{Name: "Solo"},
+		identity: circuit.AgentIdentity{Name: "Solo"},
 		state:    circuit.NewWalkerState("solo-1"),
 	}
 
@@ -511,7 +511,7 @@ func TestRun_ResumeWithInput_AfterInterrupt(t *testing.T) {
 
 	trace := &TraceCollector{}
 	w := &stubWalker{
-		identity: identity.Archetype{Name: "tester"},
+		identity: circuit.AgentIdentity{Name: "tester"},
 		state:    circuit.NewWalkerState("resumable"),
 	}
 

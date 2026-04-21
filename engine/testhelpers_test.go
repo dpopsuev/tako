@@ -5,20 +5,20 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/troupe/identity"
+	"github.com/dpopsuev/troupe/visual"
 )
 
 // --- Shared test helpers for engine/ test files ---
 
 type stubNode struct {
 	name     string
-	element  identity.Element
+	element  visual.Element
 	artifact circuit.Artifact
 	err      error
 }
 
 func (n *stubNode) Name() string               { return n.name }
-func (n *stubNode) Approach() identity.Element { return n.element }
+func (n *stubNode) Approach() visual.Element { return n.element }
 func (n *stubNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return n.artifact, n.err
 }
@@ -57,7 +57,7 @@ type slowNode struct {
 }
 
 func (n *slowNode) Name() string               { return n.name }
-func (n *slowNode) Approach() identity.Element { return "" }
+func (n *slowNode) Approach() visual.Element { return "" }
 func (n *slowNode) Process(ctx context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	select {
 	case <-time.After(n.duration):
@@ -75,13 +75,13 @@ func (t *echoTransformer) Transform(_ context.Context, tc *InstrumentContext) (a
 }
 
 type stubWalker struct {
-	identity identity.Archetype
+	identity circuit.AgentIdentity
 	state    *circuit.WalkerState
 	visited  []string
 }
 
-func (w *stubWalker) Identity() identity.Archetype       { return w.identity }
-func (w *stubWalker) SetIdentity(id *identity.Archetype) { w.identity = *id }
+func (w *stubWalker) Identity() circuit.AgentIdentity       { return w.identity }
+func (w *stubWalker) SetIdentity(id *circuit.AgentIdentity) { w.identity = *id }
 func (w *stubWalker) State() *circuit.WalkerState        { return w.state }
 func (w *stubWalker) Handle(_ context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
 	w.visited = append(w.visited, node.Name())

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/troupe/identity"
 )
 
 func TestCachingWalker_CacheHit(t *testing.T) {
@@ -126,7 +125,7 @@ func TestCachingWalker_InnerError_NotCached(t *testing.T) {
 
 func TestCachingWalker_DelegatesIdentityAndState(t *testing.T) {
 	inner := &runnerTestWalker{
-		identity: identity.Archetype{Name: "test-persona"},
+		identity: circuit.AgentIdentity{Name: "test-persona"},
 		state:    circuit.NewWalkerState("test-id"),
 	}
 	cw := &cachingWalker{
@@ -143,7 +142,7 @@ func TestCachingWalker_DelegatesIdentityAndState(t *testing.T) {
 		t.Errorf("State().ID = %q, want test-id", cw.State().ID)
 	}
 
-	newID := identity.Archetype{Name: "updated"}
+	newID := circuit.AgentIdentity{Name: "updated"}
 	cw.SetIdentity(&newID)
 	if inner.identity.Name != "updated" {
 		t.Errorf("SetIdentity not delegated: inner Name = %q", inner.identity.Name)

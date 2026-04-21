@@ -15,7 +15,7 @@ import (
 
 	"github.com/dpopsuev/origami/tool"
 	battmcp "github.com/dpopsuev/origami/tool/mcp"
-	"github.com/dpopsuev/troupe/execution"
+	"github.com/dpopsuev/troupe/providers"
 	"github.com/dpopsuev/troupe/resilience"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 
@@ -198,7 +198,7 @@ func injectLLMProvider(cfg *mcp.CircuitConfig) {
 		return
 	}
 
-	provider, err := execution.NewProviderWithConfig(providerName, execution.ProviderConfig{
+	provider, err := providers.NewProviderWithConfig(providerName, providers.ProviderConfig{
 		MaxTokens: sdlc.SDLCMaxTokens,
 	})
 	if err != nil {

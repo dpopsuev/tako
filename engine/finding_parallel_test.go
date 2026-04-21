@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/troupe/identity"
+	"github.com/dpopsuev/troupe/visual"
 )
 
 func findingTestNode(name string, confidence float64, raw any) func(circuit.NodeDef) circuit.Node {
@@ -28,7 +28,7 @@ type findingEnforcerNodeImpl struct {
 }
 
 func (n *findingEnforcerNodeImpl) Name() string               { return n.name }
-func (n *findingEnforcerNodeImpl) Approach() identity.Element { return "" }
+func (n *findingEnforcerNodeImpl) Approach() visual.Element { return "" }
 func (n *findingEnforcerNodeImpl) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	if n.finding != nil {
 		if c, ok := nc.WalkerState.Context[circuit.FindingCollectorKey].(circuit.FindingCollector); ok {

@@ -11,7 +11,7 @@ import (
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/circuit/def"
-	"github.com/dpopsuev/troupe/identity"
+	"github.com/dpopsuev/troupe/visual"
 )
 
 // ManifestRegistry maps instrument names to their loaded manifests.
@@ -220,7 +220,7 @@ func (a *instrumentArtifact) Confidence() float64 { return a.confidence }
 func (a *instrumentArtifact) Raw() any            { return a.raw }
 
 // resolveInstrumentNode creates an instrumentNode from a manifest and NodeDef.
-func resolveInstrumentNode(_ *circuit.CircuitDef, nd *circuit.NodeDef, manifest *circuit.InstrumentManifest, elem identity.Element, workDir string) (circuit.Node, error) {
+func resolveInstrumentNode(_ *circuit.CircuitDef, nd *circuit.NodeDef, manifest *circuit.InstrumentManifest, elem visual.Element, workDir string) (circuit.Node, error) {
 	name := string(nd.Name)
 	actionName := nd.Action
 	if actionName == "" {

@@ -5,13 +5,13 @@ import (
 	"math"
 	"time"
 
-	"github.com/dpopsuev/troupe/execution"
+	"github.com/dpopsuev/troupe/providers"
 )
 
-// QueueAdapter wraps a MuxDispatcher as a troupe/execution.Queue.
+// QueueAdapter wraps a MuxDispatcher as a troupe/providers.Queue.
 // This is the bridge between Origami's dispatch protocol and Troupe's
 // generic work distribution interface. Djinn and other consumers
-// import troupe/execution.Queue — Origami provides the implementation.
+// import troupe/providers.Queue — Origami provides the implementation.
 type QueueAdapter struct {
 	mux *MuxDispatcher
 }
@@ -21,7 +21,7 @@ func NewQueueAdapter(mux *MuxDispatcher) *QueueAdapter {
 	return &QueueAdapter{mux: mux}
 }
 
-// muxWorkItem wraps Context as execution.WorkItem.
+// muxWorkItem wraps Context as providers.WorkItem.
 type muxWorkItem struct {
 	dc Context
 }
@@ -32,7 +32,7 @@ func (w *muxWorkItem) Timeout() time.Duration { return w.dc.Timeout }
 
 // Enqueue dispatches work through the MuxDispatcher. Blocks until
 // result is submitted via Submit.
-func (a *QueueAdapter) Enqueue(ctx context.Context, item execution.WorkItem) error {
+func (a *QueueAdapter) Enqueue(ctx context.Context, item providers.WorkItem) error {
 	dc := Context{
 		DispatchID:    int64(min(item.ID(), uint64(math.MaxInt64))), //nolint:gosec // safe clamp
 		PromptContent: item.Input(),
@@ -43,7 +43,7 @@ func (a *QueueAdapter) Enqueue(ctx context.Context, item execution.WorkItem) err
 }
 
 // Pull returns the next available work item from the MuxDispatcher.
-func (a *QueueAdapter) Pull(ctx context.Context) (execution.WorkItem, error) {
+func (a *QueueAdapter) Pull(ctx context.Context) (providers.WorkItem, error) {
 	dc, err := a.mux.GetNextStep(ctx)
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func (a *QueueAdapter) Pull(ctx context.Context) (execution.WorkItem, error) {
 }
 
 // PullWithHints returns work matching the hints from the MuxDispatcher.
-func (a *QueueAdapter) PullWithHints(ctx context.Context, hints execution.WorkerHints) (execution.WorkItem, error) {
+func (a *QueueAdapter) PullWithHints(ctx context.Context, hints providers.WorkerHints) (providers.WorkItem, error) {
 	dc, err := a.mux.GetNextStepWithHints(ctx, PullHints{
 		PreferredCaseID:   hints.PreferredTag,
 		Stickiness:        hints.Stickiness,

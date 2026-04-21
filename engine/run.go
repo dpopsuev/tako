@@ -163,10 +163,10 @@ func WithResumeInput(walkerID string, input any) RunOption {
 	}
 }
 
-// WithOffsetCompensation prepends a corrective preamble to each walker's
-// PromptPreamble before the walk starts.
-func WithOffsetCompensation(preamble string) RunOption {
-	return func(c *runConfig) { c.offsetPreamble = preamble }
+// WithOffsetCompensation is a no-op — PromptPreamble was removed
+// in the AgentIdentity simplification. Kept for API compatibility.
+func WithOffsetCompensation(_ string) RunOption {
+	return func(_ *runConfig) {}
 }
 
 // Run loads a circuit YAML, builds a graph, and walks it.
@@ -424,14 +424,5 @@ func WithOutputCapture(capture circuit.WalkObserver) RunOption {
 	}
 }
 
-// applyOffsetPreamble appends a corrective preamble to a walker's
-// PromptPreamble via SetIdentity.
-func applyOffsetPreamble(w circuit.Walker, offset string) {
-	id := w.Identity()
-	if id.PromptPreamble == "" {
-		id.PromptPreamble = offset
-	} else {
-		id.PromptPreamble = id.PromptPreamble + "\n\n" + offset
-	}
-	w.SetIdentity(&id)
-}
+// applyOffsetPreamble is a no-op — PromptPreamble was removed.
+func applyOffsetPreamble(_ circuit.Walker, _ string) {}

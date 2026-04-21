@@ -7,22 +7,22 @@ import (
 	"strings"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/troupe/identity"
+	"github.com/dpopsuev/troupe/visual"
 )
 
 // validElements is the set of recognized element names for validation.
-var validElements = map[identity.Element]bool{
-	identity.ElementFire:      true,
-	identity.ElementLightning: true,
-	identity.ElementEarth:     true,
-	identity.ElementDiamond:   true,
-	identity.ElementWater:     true,
-	identity.ElementAir:       true,
+var validElements = map[visual.Element]bool{
+	visual.ElementFire:      true,
+	visual.ElementLightning: true,
+	visual.ElementEarth:     true,
+	visual.ElementDiamond:   true,
+	visual.ElementWater:     true,
+	visual.ElementAir:       true,
 }
 
 // ValidateElement checks that name is a recognized element and returns it.
-func ValidateElement(name string) (identity.Element, error) {
-	e := identity.Element(strings.ToLower(name))
+func ValidateElement(name string) (visual.Element, error) {
+	e := visual.Element(strings.ToLower(name))
 	if !validElements[e] {
 		return "", fmt.Errorf("%w: %q (valid: fire, lightning, earth, diamond, water, air)", ErrUnknownElement, name)
 	}
@@ -30,8 +30,6 @@ func ValidateElement(name string) (identity.Element, error) {
 }
 
 // BuildWalkersFromDef constructs Walker instances from YAML walker definitions.
-// Each WalkerDef is resolved into a ProcessWalker by looking up the persona
-// by name, overriding the element, and applying the preamble and step affinity.
 func BuildWalkersFromDef(defs []circuit.WalkerDef) ([]circuit.Walker, error) {
 	walkers := make([]circuit.Walker, 0, len(defs))
 	for i := range defs {
@@ -49,50 +47,24 @@ func buildWalker(d *circuit.WalkerDef) (*circuit.ProcessWalker, error) {
 		return nil, ErrWalkerNameIsRequired
 	}
 
-	id := identity.Archetype{}
-
-	if d.Persona != "" {
-		resolver := identity.DefaultArchetypeResolver
-		if resolver == nil {
-			return nil, fmt.Errorf("%w: %q requested but no persona resolver registered (import _ \"github.com/dpopsuev/origami/persona\")", ErrPersona, d.Persona)
-		}
-		p, ok := resolver(d.Persona)
-		if !ok {
-			return nil, fmt.Errorf("%w: %q", ErrUnknownPersona, d.Persona)
-		}
-		id = p
+	id := circuit.AgentIdentity{
+		Name: d.Name,
 	}
 
 	if d.Approach != "" {
-		elem, ok := identity.ResolveApproach(strings.ToLower(d.Approach))
+		elem, ok := resolveApproach(strings.ToLower(d.Approach))
 		if !ok {
 			return nil, fmt.Errorf("%w: %q", ErrUnknownApproach, d.Approach)
 		}
 		id.Element = elem
 	}
 
-	if d.Preamble != "" {
-		id.PromptPreamble = d.Preamble
-	}
-
-	if d.OffsetPreamble != "" {
-		if id.PromptPreamble == "" {
-			id.PromptPreamble = d.OffsetPreamble
-		} else {
-			id.PromptPreamble = id.PromptPreamble + "\n\n" + d.OffsetPreamble
-		}
+	if d.Role != "" {
+		id.Role = strings.ToLower(d.Role)
 	}
 
 	if len(d.StepAffinity) > 0 {
 		id.StepAffinity = d.StepAffinity
-	}
-
-	if d.Role != "" {
-		r := identity.Role(strings.ToLower(d.Role))
-		if !identity.ValidRoles[r] {
-			return nil, fmt.Errorf("%w: %q (valid: worker, manager, enforcer, broker)", ErrUnknownRole, d.Role)
-		}
-		id.Role = r
 	}
 
 	return circuit.NewProcessWalkerWithIdentity(&id, d.Name), nil

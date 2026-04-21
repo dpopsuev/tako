@@ -28,7 +28,7 @@ import (
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/tool"
-	"github.com/dpopsuev/troupe/identity"
+	"github.com/dpopsuev/troupe/visual"
 )
 
 // RunInstrumentNodeContract runs the circuit.Node compliance suite against
@@ -192,5 +192,5 @@ func RunInstrumentToolContract(t *testing.T, factory func() tool.Tool) {
 	})
 }
 
-// Ensure identity.Element is used (interface compliance — Approach returns it).
-var _ identity.Element = identity.Element("")
+// Ensure visual.Element is used (interface compliance — Approach returns it).
+var _ visual.Element = visual.Element("")

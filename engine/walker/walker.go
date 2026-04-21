@@ -3,33 +3,25 @@ package walker
 
 import (
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/troupe/identity"
+	"github.com/dpopsuev/troupe/visual"
 )
 
 // DefaultWalker returns a zero-config Walker suitable for consumers that
 // don't need persona or element customization. Uses Earth element
-// (stable, methodical) and Sentinel persona (observant, reliable).
-//
-// The identity is deterministic: calling DefaultWalker() twice produces
-// identical walkers, making circuit runs reproducible.
+// (stable, methodical).
 func DefaultWalker() circuit.Walker {
-	return defaultWalkerWith(identity.ElementEarth)
+	return defaultWalkerWith(visual.ElementEarth)
 }
 
 // DefaultWalkerWithElement returns a default Walker with a custom element.
-// The persona remains Sentinel; only the element changes.
-func DefaultWalkerWithElement(element identity.Element) circuit.Walker {
+func DefaultWalkerWithElement(element visual.Element) circuit.Walker {
 	return defaultWalkerWith(element)
 }
 
-func defaultWalkerWith(element identity.Element) *circuit.ProcessWalker {
-	var id identity.Archetype
-	resolver := identity.DefaultArchetypeResolver
-	if resolver != nil {
-		if p, ok := resolver("Sentinel"); ok {
-			id = p
-		}
+func defaultWalkerWith(element visual.Element) *circuit.ProcessWalker {
+	id := circuit.AgentIdentity{
+		Name:    "default",
+		Element: element,
 	}
-	id.Element = element
 	return circuit.NewProcessWalkerWithIdentity(&id, "default")
 }

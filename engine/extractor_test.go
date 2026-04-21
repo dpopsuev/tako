@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/troupe/identity"
+	"github.com/dpopsuev/troupe/visual"
 )
 
 // stubExtractor is a minimal Extractor for testing.
@@ -422,7 +422,7 @@ type extTestNode struct {
 }
 
 func (n *extTestNode) Name() string               { return n.name }
-func (n *extTestNode) Approach() identity.Element { return "" }
+func (n *extTestNode) Approach() visual.Element { return "" }
 func (n *extTestNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return nil, nil
 }

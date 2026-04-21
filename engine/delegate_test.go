@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/troupe/identity"
+	"github.com/dpopsuev/troupe/visual"
 )
 
 func TestDelegateArtifact_Interface(t *testing.T) {
@@ -129,7 +129,7 @@ func TestWalk_DelegateNode_SubWalk(t *testing.T) {
 	})
 
 	walker := &stubWalker{
-		identity: identity.Archetype{Name: "test"},
+		identity: circuit.AgentIdentity{Name: "test"},
 		state:    circuit.NewWalkerState("w1"),
 	}
 
@@ -209,7 +209,7 @@ func TestWalk_DelegateNode_ContextCancellation(t *testing.T) {
 	}
 
 	walker := &stubWalker{
-		identity: identity.Archetype{Name: "test"},
+		identity: circuit.AgentIdentity{Name: "test"},
 		state:    circuit.NewWalkerState("w1"),
 	}
 
@@ -237,7 +237,7 @@ func TestWalk_DelegateNode_GenerateError(t *testing.T) {
 	}
 
 	walker := &stubWalker{
-		identity: identity.Archetype{Name: "test"},
+		identity: circuit.AgentIdentity{Name: "test"},
 		state:    circuit.NewWalkerState("w1"),
 	}
 
@@ -352,7 +352,7 @@ type testDelegateNode struct {
 }
 
 func (n *testDelegateNode) Name() string               { return n.name }
-func (n *testDelegateNode) Approach() identity.Element { return "" }
+func (n *testDelegateNode) Approach() visual.Element { return "" }
 func (n *testDelegateNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return nil, nil
 }

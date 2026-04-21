@@ -12,7 +12,7 @@ import (
 
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine/gate"
-	"github.com/dpopsuev/troupe/identity"
+	"github.com/dpopsuev/troupe/visual"
 )
 
 const (
@@ -42,7 +42,7 @@ type Graph interface {
 type Zone struct {
 	Name          string
 	NodeNames     []string
-	Approach      identity.Element
+	Approach      visual.Element
 	Stickiness    int // 0-3 stickiness value for agents in this zone
 	Domain        string
 	ContextFilter *circuit.ContextFilterDef

@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/troupe/identity"
+	"github.com/dpopsuev/troupe/visual"
 )
 
 func TestTransformerNode_Process(t *testing.T) {
 	trans := &echoTransformer{}
 	node := &transformerNode{
-		baseNode: baseNode{name: "test-node", element: identity.ElementFire},
+		baseNode: baseNode{name: "test-node", element: visual.ElementFire},
 		trans:    trans,
 		config:   map[string]any{"key": "val"},
 	}
@@ -23,7 +23,7 @@ func TestTransformerNode_Process(t *testing.T) {
 	if node.Name() != "test-node" {
 		t.Errorf("Name() = %q", node.Name())
 	}
-	if node.Approach() != identity.ElementFire {
+	if node.Approach() != visual.ElementFire {
 		t.Errorf("Element = %q", node.Approach())
 	}
 
@@ -140,7 +140,7 @@ type testNode struct {
 }
 
 func (n *testNode) Name() string               { return n.name }
-func (n *testNode) Approach() identity.Element { return identity.ElementFire }
+func (n *testNode) Approach() visual.Element { return visual.ElementFire }
 func (n *testNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit.Artifact, error) {
 	return &stubArtifact{raw: map[string]any{"processed": true}}, nil
 }
@@ -148,7 +148,7 @@ func (n *testNode) Process(ctx context.Context, nc circuit.NodeContext) (circuit
 func TestTransformerNode_ResolveInput(t *testing.T) {
 	trans := &echoTransformer{}
 	node := &transformerNode{
-		baseNode: baseNode{name: "triage", element: identity.ElementFire},
+		baseNode: baseNode{name: "triage", element: visual.ElementFire},
 		trans:    trans,
 		input:    "${recall.output}",
 		config:   map[string]any{"key": "val"},
@@ -183,7 +183,7 @@ func TestTransformerNode_ResolveInput(t *testing.T) {
 
 func TestTransformerNode_RenderPrompt(t *testing.T) {
 	captureNode := &transformerNode{
-		baseNode: baseNode{name: "triage", element: identity.ElementFire},
+		baseNode: baseNode{name: "triage", element: visual.ElementFire},
 		trans: InstrumentFunc("capture", func(_ context.Context, tc *InstrumentContext) (any, error) {
 			return map[string]any{"prompt": tc.Prompt}, nil
 		}),
@@ -243,7 +243,7 @@ func TestTransformerNode_NodeConfigReachesTransformer(t *testing.T) {
 		}, nil
 	})
 	node := &transformerNode{
-		baseNode:   baseNode{name: "test-node", element: identity.ElementFire},
+		baseNode:   baseNode{name: "test-node", element: visual.ElementFire},
 		trans:      captureConfig,
 		nodeConfig: &circuit.NodeConfig{OutputPath: "recall.json", MaxRetries: 3},
 	}

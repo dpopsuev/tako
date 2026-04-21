@@ -9,7 +9,6 @@ import (
 	"log/slog"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/troupe/identity"
 )
 
 // Interrupt signals that a walk should pause at the current node for
@@ -211,8 +210,8 @@ type validatingWalker struct {
 	log     *slog.Logger
 }
 
-func (vw *validatingWalker) Identity() identity.Archetype       { return vw.inner.Identity() }
-func (vw *validatingWalker) SetIdentity(id *identity.Archetype) { vw.inner.SetIdentity(id) }
+func (vw *validatingWalker) Identity() circuit.AgentIdentity       { return vw.inner.Identity() }
+func (vw *validatingWalker) SetIdentity(id *circuit.AgentIdentity) { vw.inner.SetIdentity(id) }
 func (vw *validatingWalker) State() *circuit.WalkerState        { return vw.inner.State() }
 
 func (vw *validatingWalker) Handle(ctx context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
@@ -253,8 +252,8 @@ type hookingWalker struct {
 	onHookEvent func(name, phase string, err error)
 }
 
-func (hw *hookingWalker) Identity() identity.Archetype       { return hw.inner.Identity() }
-func (hw *hookingWalker) SetIdentity(id *identity.Archetype) { hw.inner.SetIdentity(id) }
+func (hw *hookingWalker) Identity() circuit.AgentIdentity       { return hw.inner.Identity() }
+func (hw *hookingWalker) SetIdentity(id *circuit.AgentIdentity) { hw.inner.SetIdentity(id) }
 func (hw *hookingWalker) State() *circuit.WalkerState        { return hw.inner.State() }
 
 func (hw *hookingWalker) Handle(ctx context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {
@@ -326,8 +325,8 @@ type checkpointingWalker struct {
 	observer circuit.WalkObserver
 }
 
-func (cw *checkpointingWalker) Identity() identity.Archetype       { return cw.inner.Identity() }
-func (cw *checkpointingWalker) SetIdentity(id *identity.Archetype) { cw.inner.SetIdentity(id) }
+func (cw *checkpointingWalker) Identity() circuit.AgentIdentity       { return cw.inner.Identity() }
+func (cw *checkpointingWalker) SetIdentity(id *circuit.AgentIdentity) { cw.inner.SetIdentity(id) }
 func (cw *checkpointingWalker) State() *circuit.WalkerState        { return cw.inner.State() }
 
 func (cw *checkpointingWalker) Handle(ctx context.Context, node circuit.Node, nc circuit.NodeContext) (circuit.Artifact, error) {

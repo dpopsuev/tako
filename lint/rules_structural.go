@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/dpopsuev/origami/circuit/def"
-	"github.com/dpopsuev/troupe/identity"
 )
 
 const (
@@ -35,12 +34,10 @@ func isValidValue(registry def.FieldRegistry, field, value string) bool {
 }
 
 func knownPersonas() map[string]bool {
-	all := identity.All()
-	m := make(map[string]bool)
-	for i := range all {
-		m[strings.ToLower(all[i].Name)] = true
+	return map[string]bool{
+		"sorter": true, "analyst": true, "reviewer": true,
+		"builder": true, "sentinel": true,
 	}
-	return m
 }
 
 func approachSuggestion(val string) string {

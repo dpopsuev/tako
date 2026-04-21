@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/troupe/identity"
+	"github.com/dpopsuev/troupe/visual"
 )
 
 const testNodeName = "test"
@@ -62,7 +62,7 @@ type contractNode struct {
 }
 
 func (n *contractNode) Name() string               { return n.name }
-func (n *contractNode) Approach() identity.Element { return "" }
+func (n *contractNode) Approach() visual.Element { return "" }
 func (n *contractNode) Process(_ context.Context, _ circuit.NodeContext) (circuit.Artifact, error) {
 	return &contractArt{typ: n.name}, nil
 }

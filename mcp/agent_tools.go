@@ -24,9 +24,15 @@ type agentInput struct {
 	Model  string `json:"model,omitempty" jsonschema:"model preference (delegate)"`
 }
 
+type agentCardInfo struct {
+	Name   string   `json:"name"`
+	Role   string   `json:"role"`
+	Skills []string `json:"skills,omitempty"`
+}
+
 type agentDiscoverOutput struct {
-	Agents []troupe.AgentInfo `json:"agents"`
-	Count  int                `json:"count"`
+	Agents []agentCardInfo `json:"agents"`
+	Count  int             `json:"count"`
 }
 
 type agentDelegateOutput struct {
@@ -35,10 +41,16 @@ type agentDelegateOutput struct {
 }
 
 type agentStatusOutput struct {
-	Agents  []troupe.AgentInfo `json:"agents"`
-	Total   int                `json:"total"`
-	Ready   int                `json:"ready"`
-	Healthy int                `json:"healthy"`
+	Agents []agentCardInfo `json:"agents"`
+	Total  int             `json:"total"`
+}
+
+func cardsToInfo(cards []troupe.AgentCard) []agentCardInfo {
+	out := make([]agentCardInfo, len(cards))
+	for i, c := range cards {
+		out[i] = agentCardInfo{Name: c.Name(), Role: c.Role(), Skills: c.Skills()}
+	}
+	return out
 }
 
 // registerAgentTool adds the "agent" MCP tool if a Broker is configured.
@@ -68,10 +80,10 @@ func (s *CircuitServer) handleAgentDispatch(ctx context.Context, req *sdkmcp.Cal
 }
 
 func (s *CircuitServer) handleAgentDiscover(_ context.Context, input agentInput) (*sdkmcp.CallToolResult, agentDiscoverOutput, error) {
-	agents := s.Config.Broker.Discover(input.Role)
+	cards := s.Config.Broker.Discover(input.Role)
 	out := agentDiscoverOutput{
-		Agents: agents,
-		Count:  len(agents),
+		Agents: cardsToInfo(cards),
+		Count:  len(cards),
 	}
 	return nil, out, nil
 }
@@ -113,23 +125,11 @@ func (s *CircuitServer) handleAgentDelegate(ctx context.Context, input agentInpu
 }
 
 func (s *CircuitServer) handleAgentStatus(_ context.Context, input agentInput) (*sdkmcp.CallToolResult, agentDiscoverOutput, error) {
-	agents := s.Config.Broker.Discover(input.Role)
-
-	var readyCount, healthyCount int
-	for _, a := range agents {
-		if a.Ready {
-			readyCount++
-		}
-		if a.Healthy {
-			healthyCount++
-		}
-	}
+	cards := s.Config.Broker.Discover(input.Role)
 
 	out := agentStatusOutput{
-		Agents:  agents,
-		Total:   len(agents),
-		Ready:   readyCount,
-		Healthy: healthyCount,
+		Agents: cardsToInfo(cards),
+		Total:  len(cards),
 	}
 	res, marshalErr := marshalToolResult(out)
 	if marshalErr != nil {

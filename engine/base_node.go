@@ -1,12 +1,12 @@
 package engine
 
-import "github.com/dpopsuev/troupe/identity"
+import "github.com/dpopsuev/troupe/visual"
 
 // baseNode provides the shared Name/Approach implementation for all engine node types.
 type baseNode struct {
 	name    string
-	element identity.Element
+	element visual.Element
 }
 
 func (n *baseNode) Name() string               { return n.name }
-func (n *baseNode) Approach() identity.Element { return n.element }
+func (n *baseNode) Approach() visual.Element { return n.element }

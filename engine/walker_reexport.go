@@ -5,7 +5,7 @@ package engine
 import (
 	"github.com/dpopsuev/origami/circuit"
 	"github.com/dpopsuev/origami/engine/walker"
-	"github.com/dpopsuev/troupe/identity"
+	"github.com/dpopsuev/troupe/visual"
 )
 
 // DefaultWalker is re-exported from engine/walker.
@@ -14,6 +14,6 @@ func DefaultWalker() circuit.Walker {
 }
 
 // DefaultWalkerWithElement is re-exported from engine/walker.
-func DefaultWalkerWithElement(element identity.Element) circuit.Walker {
+func DefaultWalkerWithElement(element visual.Element) circuit.Walker {
 	return walker.DefaultWalkerWithElement(element)
 }
