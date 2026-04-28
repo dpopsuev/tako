@@ -3,7 +3,7 @@ package engine
 import (
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 func TestCollectReferencedHooks_BeforeAndAfter(t *testing.T) {

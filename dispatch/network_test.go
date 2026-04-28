@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/troupe/signal"
+	"github.com/dpopsuev/tangle/signal"
 )
 
 func startTestServer(t *testing.T, mux *MuxDispatcher, opts ...NetworkServerOption) (string, context.CancelFunc) {

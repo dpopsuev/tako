@@ -18,7 +18,7 @@ type FileStore struct {
 
 // NewFileStore creates a FileStore from an fs.FS.
 // The optional nameMap provides explicit name→path mappings (as declared in
-// origami.yaml assets.prompts). When nil, prompts are discovered by walking.
+// tako.yaml assets.prompts). When nil, prompts are discovered by walking.
 func NewFileStore(fsys fs.FS, nameMap map[string]string) *FileStore {
 	return &FileStore{fsys: fsys, nameMap: nameMap}
 }

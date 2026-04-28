@@ -166,7 +166,7 @@ func TestGenerateDomainServe_HealthzFlag(t *testing.T) {
 }
 
 func TestGenerateWiredBinary_DataDirFlag(t *testing.T) {
-	root := origamiRoot(t)
+	root := takoRoot(t)
 	m := &Manifest{
 		Name:    "consumer",
 		Version: "1.0",
@@ -215,7 +215,7 @@ func TestGenerateWiredBinary_DataDirFlag(t *testing.T) {
 }
 
 func TestGenerateWiredBinary(t *testing.T) {
-	root := origamiRoot(t)
+	root := takoRoot(t)
 
 	m := &Manifest{
 		Name:    "consumer",

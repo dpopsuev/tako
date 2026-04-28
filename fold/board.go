@@ -5,14 +5,14 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/circuit/def"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/circuit/def"
 	"gopkg.in/yaml.v3"
 )
 
 // BoardManifest is the parsed representation of a board YAML file.
 // Flat structure — no K8s metadata/spec nesting. The board file IS the
-// entry point: `origami fold boards/ci-analysis.yaml`.
+// entry point: `tako assemble boards/ci-analysis.yaml`.
 type BoardManifest struct {
 	Kind        circuit.Kind      `yaml:"kind"`
 	Name        string            `yaml:"name"`

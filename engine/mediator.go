@@ -9,7 +9,7 @@ import (
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // PromptRelayer is a type alias for circuit.PromptRelayer.
@@ -23,7 +23,7 @@ type PromptRelayContext = circuit.PromptRelayContext
 const ContextKeyPromptRelayer = circuit.ContextKeyPromptRelayer
 
 // MCPCircuitTransformer implements Transformer by delegating to a remote
-// schematic via the Papercup protocol through the Origami Mediator.
+// schematic via the Papercup protocol through the Tako Mediator.
 // Exported for test backward compatibility; canonical usage is through
 // BuildGraph with instrument: circuit.
 type MCPCircuitTransformer struct {

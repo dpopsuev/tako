@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit/def"
+	"github.com/dpopsuev/tako/circuit/def"
 )
 
 func writeGoFile(t *testing.T, dir, content string) {
@@ -27,7 +27,7 @@ func TestValidateExports_MissingOptionFunc(t *testing.T) {
 	cm := &def.ComponentManifest{
 		Module: "github.com/test/alpha",
 		Needs: struct {
-			Origami    string          `yaml:"origami,omitempty"`
+			Tako    string          `yaml:"origami,omitempty"`
 			Transports []def.SocketDef `yaml:"transports,omitempty"`
 			Sources    []def.SocketDef `yaml:"sources,omitempty"`
 			Storage    []def.SocketDef `yaml:"storage,omitempty"`
@@ -100,7 +100,7 @@ func WithSourceReader() {}
 		SessionFactory: "Factory()",
 		Resolver:       "SchematicResolver",
 		Needs: struct {
-			Origami    string          `yaml:"origami,omitempty"`
+			Tako    string          `yaml:"origami,omitempty"`
 			Transports []def.SocketDef `yaml:"transports,omitempty"`
 			Sources    []def.SocketDef `yaml:"sources,omitempty"`
 			Storage    []def.SocketDef `yaml:"storage,omitempty"`
@@ -124,7 +124,7 @@ func TestValidateExports_OptionalSocketSkipped(t *testing.T) {
 	cm := &def.ComponentManifest{
 		Module: "github.com/test/alpha",
 		Needs: struct {
-			Origami    string          `yaml:"origami,omitempty"`
+			Tako    string          `yaml:"origami,omitempty"`
 			Transports []def.SocketDef `yaml:"transports,omitempty"`
 			Sources    []def.SocketDef `yaml:"sources,omitempty"`
 			Storage    []def.SocketDef `yaml:"storage,omitempty"`

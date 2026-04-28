@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // Extractor, ExtractorRegistry are defined in engine/handler.

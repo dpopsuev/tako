@@ -8,7 +8,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/dpopsuev/origami/tool"
+	"github.com/dpopsuev/tako/tool"
 )
 
 // StubTool implements tool.Tool. Returns configured values, records Execute calls.

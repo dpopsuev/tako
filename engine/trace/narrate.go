@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // NarrationSink receives a single human-readable narration line.

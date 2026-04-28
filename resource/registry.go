@@ -5,7 +5,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // KindRegistry maps kind strings to their handlers.

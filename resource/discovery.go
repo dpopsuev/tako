@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // ResourceIndex holds discovered resources indexed by kind and name.

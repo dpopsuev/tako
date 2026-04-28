@@ -1,6 +1,6 @@
 package fab
 
-import "github.com/dpopsuev/origami/artifact"
+import "github.com/dpopsuev/tako/artifact"
 
 // AlwaysPass is a ContractEvaluator that always returns true.
 type AlwaysPass struct{}

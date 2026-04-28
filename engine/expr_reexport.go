@@ -3,8 +3,8 @@ package engine
 // Re-exports from engine/expr sub-package for backward compatibility.
 
 import (
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine/expr"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/engine/expr"
 )
 
 // Type aliases for expression types.

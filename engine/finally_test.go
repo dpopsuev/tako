@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 func TestWalk_Finally_RunsOnSuccess(t *testing.T) {

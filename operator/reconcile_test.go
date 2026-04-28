@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/engine/trace"
+	"github.com/dpopsuev/tako/engine/trace"
 )
 
 // stubObserver returns drift on first call, then converged.
@@ -54,7 +54,7 @@ func TestLoop_DetectsDrift_RunsCircuit_Converges(t *testing.T) {
 
 	runs := Loop(ctx, Config{
 		Desired: DesiredState{
-			Manifest: "origami-sdlc.yaml",
+			Manifest: "tako-sdlc.yaml",
 			RepoPath: "/workspace",
 			Scan:     "clean",
 			Build:    "passing",

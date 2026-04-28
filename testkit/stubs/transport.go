@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/dpopsuev/origami/testkit"
+	"github.com/dpopsuev/tako/testkit"
 )
 
 // StubTransport implements testkit.Transport with call tracking.

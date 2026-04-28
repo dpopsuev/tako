@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/dpopsuev/origami/engine/gate"
+	"github.com/dpopsuev/tako/engine/gate"
 )
 
 // compile-time checks.

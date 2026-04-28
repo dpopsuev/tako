@@ -1,5 +1,5 @@
 // Package transformers provides built-in Transformer implementations for the
-// Origami DSL. These are the "batteries included" that require zero custom code.
+// Tako DSL. These are the "batteries included" that require zero custom code.
 package core
 
 import (
@@ -9,8 +9,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dpopsuev/origami/dispatch"
-	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/tako/dispatch"
+	"github.com/dpopsuev/tako/engine"
 )
 
 // LLMTransformer sends a prompt to an external agent via a Dispatcher and

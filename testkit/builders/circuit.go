@@ -5,7 +5,7 @@ package builders
 import (
 	"fmt"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // CircuitDefBuilder constructs a CircuitDef incrementally for tests.

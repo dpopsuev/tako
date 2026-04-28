@@ -3,7 +3,7 @@ package lsp
 import (
 	"go.lsp.dev/protocol"
 
-	"github.com/dpopsuev/origami/lint"
+	"github.com/dpopsuev/tako/lint"
 )
 
 func computeDiagnostics(doc *document) []protocol.Diagnostic {
@@ -17,7 +17,7 @@ func computeDiagnostics(doc *document) []protocol.Diagnostic {
 		return []protocol.Diagnostic{{
 			Range:    zeroRange(),
 			Severity: protocol.DiagnosticSeverityError,
-			Source:   "origami-lint",
+			Source:   "tako-lint",
 			Message:  "Failed to parse circuit YAML: " + err.Error(),
 		}}
 	}
@@ -45,7 +45,7 @@ func findingToDiagnostic(f *lint.Finding) protocol.Diagnostic {
 			End:   protocol.Position{Line: safeUint32(line), Character: safeUint32(col + 20)},
 		},
 		Severity: severityToLSP(f.Severity),
-		Source:   "origami-lint",
+		Source:   "tako-lint",
 		Code:     f.RuleID,
 		Message:  f.Message,
 	}

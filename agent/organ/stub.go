@@ -3,7 +3,7 @@ package organ
 import (
 	"sync"
 
-	"github.com/dpopsuev/origami/artifact"
+	"github.com/dpopsuev/tako/artifact"
 )
 
 // StubOrgan is a test organ that records received wires.

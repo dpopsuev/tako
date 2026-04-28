@@ -3,8 +3,8 @@ package dispatch
 import (
 	"fmt"
 
-	"github.com/dpopsuev/origami/budget"
-	"github.com/dpopsuev/origami/report"
+	"github.com/dpopsuev/tako/budget"
+	"github.com/dpopsuev/tako/report"
 )
 
 // FormatTokenSummary returns a human-readable token and cost section.

@@ -6,7 +6,7 @@ compose:
   base: ./board-compose-base.yaml
 
 uses:
-  tuner: github.com/dpopsuev/origami-auto-tuning
+  tuner: github.com/dpopsuev/tako-auto-tuning
 
 serve:
   port: 9400

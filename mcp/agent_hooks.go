@@ -6,12 +6,12 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/dpopsuev/troupe"
-	"github.com/dpopsuev/troupe/broker"
-	"github.com/dpopsuev/troupe/signal"
+	"github.com/dpopsuev/tangle"
+	"github.com/dpopsuev/tangle/broker"
+	"github.com/dpopsuev/tangle/signal"
 )
 
-const hookName = "origami-observability"
+const hookName = "tako-observability"
 
 // observabilityHook implements broker.SpawnHook and broker.PerformHook.
 // Emits lifecycle signals on the circuit's signal.Bus so consumers get

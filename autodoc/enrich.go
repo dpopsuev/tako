@@ -43,7 +43,7 @@ func EnrichDocs(ctx context.Context, cfg EnrichConfig) error {
 		}
 
 		prompt := fmt.Sprintf(
-			"You are a technical writer for the %s project (built on Origami circuit framework). "+
+			"You are a technical writer for the %s project (built on Tako circuit framework). "+
 				"Below is an auto-generated circuit documentation page. Add a brief introductory paragraph "+
 				"explaining what this circuit does and why the topology is designed this way. "+
 				"Keep the existing Mermaid diagram and node table intact. "+

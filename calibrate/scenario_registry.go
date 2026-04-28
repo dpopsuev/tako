@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/tako/engine"
 )
 
 // ScenarioRegistry maps scenario names to loaders. When registered,

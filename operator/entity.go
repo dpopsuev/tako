@@ -3,7 +3,7 @@ package operator
 import (
 	"time"
 
-	"github.com/dpopsuev/troupe/world"
+	"github.com/dpopsuev/tangle/world"
 )
 
 // OperatorRole is the canonical role for the human operator entity.

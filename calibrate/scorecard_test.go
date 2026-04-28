@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dpopsuev/origami/calibrate"
+	"github.com/dpopsuev/tako/calibrate"
 )
 
 // --- MetricDef ---

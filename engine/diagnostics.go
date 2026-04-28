@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // runBuildDiagnostics performs post-build static analysis on the circuit graph.

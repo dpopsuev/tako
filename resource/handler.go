@@ -1,7 +1,7 @@
 package resource
 
 import (
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // KindHandler defines the operations available for a registered kind.

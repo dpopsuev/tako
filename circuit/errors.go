@@ -5,7 +5,7 @@ package circuit
 import (
 	"errors"
 
-	"github.com/dpopsuev/origami/circuit/def"
+	"github.com/dpopsuev/tako/circuit/def"
 )
 
 // Framework sentinel errors — used by the runtime walker, observer, and engine.

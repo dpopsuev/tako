@@ -3,7 +3,7 @@ package stubs_test
 import (
 	"testing"
 
-	"github.com/dpopsuev/origami/testkit/stubs"
+	"github.com/dpopsuev/tako/testkit/stubs"
 )
 
 func TestToyScribeStore_CreateAndGet(t *testing.T) {

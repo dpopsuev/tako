@@ -14,7 +14,7 @@ var instrumentBinDir string
 
 func TestMain(m *testing.M) {
 	var err error
-	instrumentBinDir, err = os.MkdirTemp("", "origami-test-instruments-*")
+	instrumentBinDir, err = os.MkdirTemp("", "tako-test-instruments-*")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "TestMain: create temp dir: %v\n", err)
 		os.Exit(1)

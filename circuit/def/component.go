@@ -56,7 +56,7 @@ type ComponentManifest struct {
 		Hooks        []string `yaml:"hooks,omitempty"`
 	} `yaml:"provides"`
 	Needs struct {
-		Origami    string      `yaml:"origami,omitempty"`
+		Tako    string      `yaml:"origami,omitempty"`
 		Transports []SocketDef `yaml:"transports,omitempty"` // Transport, Trigger
 		Sources    []SocketDef `yaml:"sources,omitempty"`    // SourceReader, SourceCatalog
 		Storage    []SocketDef `yaml:"storage,omitempty"`    // Driver
@@ -141,7 +141,7 @@ type componentManifestYAML struct {
 			Hooks        []string `yaml:"hooks,omitempty"`
 		} `yaml:"provides,omitempty"`
 		Needs struct {
-			Origami    string      `yaml:"origami,omitempty"`
+			Tako    string      `yaml:"origami,omitempty"`
 			Transports []SocketDef `yaml:"transports,omitempty"`
 			Sources    []SocketDef `yaml:"sources,omitempty"`
 			Storage    []SocketDef `yaml:"storage,omitempty"`

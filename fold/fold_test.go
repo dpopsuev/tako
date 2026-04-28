@@ -36,9 +36,9 @@ func TestRun_IntegrationBuild_Assets(t *testing.T) {
 	writeFile("prompts/recall.md", "You are a recall judge.")
 	writeFile("vocabulary.yaml", "defects:\n  pb001: product bug\n")
 
-	manifest := filepath.Join(tmpDir, "origami.yaml")
+	manifest := filepath.Join(tmpDir, "tako.yaml")
 	if err := os.WriteFile(manifest, []byte(`
-apiVersion: origami/v1
+apiVersion: tako/v1
 kind: Board
 metadata:
   name: test-assets
@@ -74,9 +74,9 @@ spec:
 }
 
 func TestRun_MissingDomainServe(t *testing.T) {
-	manifest := filepath.Join(t.TempDir(), "origami.yaml")
+	manifest := filepath.Join(t.TempDir(), "tako.yaml")
 	if err := os.WriteFile(manifest, []byte(`
-apiVersion: origami/v1
+apiVersion: tako/v1
 kind: Board
 metadata:
   name: test-no-serve
@@ -185,10 +185,10 @@ func TestContainerImageName_Default(t *testing.T) {
 
 	imgName := opts.ImageName
 	if imgName == "" {
-		imgName = "origami-" + m.Name + "-domain"
+		imgName = "tako-" + m.Name + "-domain"
 	}
-	if imgName != "origami-consumer-domain" {
-		t.Errorf("default image name = %q, want origami-consumer-domain", imgName)
+	if imgName != "tako-consumer-domain" {
+		t.Errorf("default image name = %q, want tako-consumer-domain", imgName)
 	}
 }
 
@@ -362,9 +362,9 @@ func TestRun_IntegrationBuild_WithDomains(t *testing.T) {
 	writeFile("domains/ocp/ptp/scenarios/ptp-mock.yaml", "kind: Scenario\nscenario: ptp-mock\n")
 	writeFile("domains/ocp/ptp/sources/ptp.yaml", "kind: SourcePack\nsource: ptp\n")
 
-	manifest := filepath.Join(tmpDir, "origami.yaml")
+	manifest := filepath.Join(tmpDir, "tako.yaml")
 	os.WriteFile(manifest, []byte(`
-apiVersion: origami/v1
+apiVersion: tako/v1
 kind: Board
 metadata:
   name: test-domains
@@ -415,9 +415,9 @@ func TestExportDataDir_MatchesEmbedLayout(t *testing.T) {
 	writeFile("domains/ocp/ptp/scenarios/ptp.yaml", "kind: Scenario\nscenario: ptp\ncases: []\n")
 	writeFile("domains/ocp/ptp/offline/rp/12345.json", `{"id": 12345}`)
 
-	manifest := filepath.Join(tmpDir, "origami.yaml")
+	manifest := filepath.Join(tmpDir, "tako.yaml")
 	os.WriteFile(manifest, []byte(`
-apiVersion: origami/v1
+apiVersion: tako/v1
 kind: Board
 metadata:
   name: test-export
@@ -479,9 +479,9 @@ func TestExportDataDir_OverwritesStaleFiles(t *testing.T) {
 	writeFile("prompts/recall/judge.md", "version: 1\n")
 	writeFile("vocabulary.yaml", "old vocab\n")
 
-	manifest := filepath.Join(tmpDir, "origami.yaml")
+	manifest := filepath.Join(tmpDir, "tako.yaml")
 	os.WriteFile(manifest, []byte(`
-apiVersion: origami/v1
+apiVersion: tako/v1
 kind: Board
 metadata:
   name: test-overwrite
@@ -795,9 +795,9 @@ func TestRun_DomainOnly_SkipsBindings(t *testing.T) {
 	writeFile("circuits/alpha.yaml", "circuit: alpha\ntopology: cascade\nnodes:\n  - name: a\n    approach: analytical\n")
 	writeFile("vocabulary.yaml", "metrics:\n  M1: accuracy\n")
 
-	manifest := filepath.Join(tmpDir, "origami.yaml")
+	manifest := filepath.Join(tmpDir, "tako.yaml")
 	os.WriteFile(manifest, []byte(`
-apiVersion: origami/v1
+apiVersion: tako/v1
 kind: Board
 metadata:
   name: test-domain-only

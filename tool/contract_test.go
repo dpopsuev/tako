@@ -6,8 +6,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/dpopsuev/origami/tool"
-	"github.com/dpopsuev/origami/tool/testkit"
+	"github.com/dpopsuev/tako/tool"
+	"github.com/dpopsuev/tako/tool/testkit"
 )
 
 // ExecutorContract runs the Executor contract suite against any implementation.

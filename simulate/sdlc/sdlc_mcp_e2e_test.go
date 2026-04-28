@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/mcp"
-	"github.com/dpopsuev/origami/simulate/sdlc"
+	"github.com/dpopsuev/tako/mcp"
+	"github.com/dpopsuev/tako/simulate/sdlc"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -172,7 +172,7 @@ func TestSDLC_MCP_E2E_FoldPathExists(t *testing.T) {
 	t.Parallel()
 
 	// Board manifest.
-	if _, err := os.Stat("origami-sdlc.yaml"); err != nil {
+	if _, err := os.Stat("tako-sdlc.yaml"); err != nil {
 		t.Errorf("board manifest: %v", err)
 	}
 

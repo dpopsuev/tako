@@ -3,7 +3,7 @@ package dispatch
 import (
 	"context"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // MuxRelayer wraps a MuxDispatcher as a circuit.PromptRelayer.

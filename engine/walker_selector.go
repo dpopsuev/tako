@@ -1,6 +1,6 @@
 package engine
 
-import "github.com/dpopsuev/origami/circuit"
+import "github.com/dpopsuev/tako/circuit"
 
 // WalkerSelector picks which walker handles a given node.
 type WalkerSelector interface {

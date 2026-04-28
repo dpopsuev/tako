@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 const (
@@ -70,7 +70,7 @@ func writeReadme(cfg *ScaffoldConfig) error {
 	name := cfg.Manifest.Name
 	desc := cfg.Manifest.Description
 	if desc == "" {
-		desc = name + " — an Origami circuit project"
+		desc = name + " — an Tako circuit project"
 	}
 
 	var b strings.Builder
@@ -79,11 +79,11 @@ func writeReadme(cfg *ScaffoldConfig) error {
 
 	b.WriteString("## Prerequisites\n\n")
 	b.WriteString("- Go 1.22+\n")
-	b.WriteString("- [Origami CLI](https://github.com/dpopsuev/origami) (`go install github.com/dpopsuev/origami/cmd/origami@latest`)\n\n")
+	b.WriteString("- [Tako CLI](https://github.com/dpopsuev/tako) (`go install github.com/dpopsuev/tako/cmd/origami@latest`)\n\n")
 
 	b.WriteString("## Quick Start\n\n")
-	b.WriteString("```bash\norigami validate circuits/<circuit>.yaml\n")
-	b.WriteString("origami run circuits/<circuit>.yaml\n```\n\n")
+	b.WriteString("```bash\ntako validate circuits/<circuit>.yaml\n")
+	b.WriteString("tako run circuits/<circuit>.yaml\n```\n\n")
 
 	b.WriteString(markerBegin + "\n")
 	b.WriteString("## Documentation Index\n\n")
@@ -146,7 +146,7 @@ func writeStubs(cfg *ScaffoldConfig) error {
 		filepath.Join(cfg.OutputDir, "concepts", "pipeline-stages.md"):      "# Pipeline Stages\n\n*TODO: Explain the pipeline stages.*\n",
 		filepath.Join(cfg.OutputDir, "getting-started", "installation.md"):  fmt.Sprintf("# Installation\n\n*TODO: Prerequisites and installation steps for %s.*\n", cfg.Manifest.Name),
 		filepath.Join(cfg.OutputDir, "getting-started", "quick-start.md"):   fmt.Sprintf("# Quick Start\n\n*TODO: First analysis in N minutes with %s.*\n", cfg.Manifest.Name),
-		filepath.Join(cfg.OutputDir, "getting-started", "configuration.md"): "# Configuration\n\n*TODO: origami.yaml, credentials, workspace setup.*\n",
+		filepath.Join(cfg.OutputDir, "getting-started", "configuration.md"): "# Configuration\n\n*TODO: tako.yaml, credentials, workspace setup.*\n",
 		filepath.Join(cfg.OutputDir, "contributing", "development.md"):      "# Development\n\n*TODO: How to modify circuits, run calibration.*\n",
 		filepath.Join(cfg.OutputDir, "contributing", "conventions.md"):      "# Conventions\n\n*TODO: Project conventions.*\n",
 		filepath.Join(cfg.OutputDir, "reference", "cli.md"):                 fmt.Sprintf("# CLI Reference\n\n*TODO: Command reference for %s.*\n", cfg.Manifest.Name),

@@ -10,7 +10,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // defaultCacheTTL is used when a node declares caching but specifies no TTL.

@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/engine/gate"
-	"github.com/dpopsuev/origami/operator"
-	"github.com/dpopsuev/origami/testkit/stubs"
-	"github.com/dpopsuev/troupe/signal"
+	"github.com/dpopsuev/tako/engine/gate"
+	"github.com/dpopsuev/tako/operator"
+	"github.com/dpopsuev/tako/testkit/stubs"
+	"github.com/dpopsuev/tangle/signal"
 )
 
 func TestCLIGatekeeper_Approve(t *testing.T) {

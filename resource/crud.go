@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 
 	"gopkg.in/yaml.v3"
 )

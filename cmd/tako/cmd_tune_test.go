@@ -140,7 +140,7 @@ instruments:
 // --- helpers ---
 
 func repoRootFromCmd() string {
-	// cmd/origami/ is two levels deep from repo root.
+	// cmd/tako/ is two levels deep from repo root.
 	wd, _ := os.Getwd()
 	return filepath.Join(wd, "..", "..")
 }

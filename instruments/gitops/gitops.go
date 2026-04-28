@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dpopsuev/origami/engine/handler"
-	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
+	"github.com/dpopsuev/tako/engine/handler"
+	"github.com/dpopsuev/tako/simulate/sdlc/sdlctype"
 )
 
 // CreateWorktree creates an isolated git worktree branch for code changes.

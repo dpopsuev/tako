@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/troupe/visual"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tangle/visual"
 )
 
 func TestTransformerNode_Process(t *testing.T) {

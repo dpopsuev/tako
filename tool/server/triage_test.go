@@ -3,7 +3,7 @@ package server_test
 import (
 	"testing"
 
-	"github.com/dpopsuev/origami/tool/server"
+	"github.com/dpopsuev/tako/tool/server"
 )
 
 func newTestTriageRegistry() *server.TriageRegistry {

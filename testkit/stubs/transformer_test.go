@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/testkit/stubs"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/engine"
+	"github.com/dpopsuev/tako/testkit/stubs"
 )
 
 func TestStubTransformer_CannedArtifact(t *testing.T) {

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/tako/engine"
 )
 
 // HTTPTransformer makes HTTP requests and returns the JSON response body.

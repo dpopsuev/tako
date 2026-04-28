@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dpopsuev/origami/engine/gate"
-	"github.com/dpopsuev/origami/testkit/assertions"
-	"github.com/dpopsuev/origami/testkit/stubs"
+	"github.com/dpopsuev/tako/engine/gate"
+	"github.com/dpopsuev/tako/testkit/assertions"
+	"github.com/dpopsuev/tako/testkit/stubs"
 )
 
 func parkItem(store *stubs.MemoryApprovalStore, node string) {

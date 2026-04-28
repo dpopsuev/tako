@@ -12,7 +12,7 @@ import (
 
 func reportCmd(w io.Writer, args []string) error {
 	fs := flag.NewFlagSet("report", flag.ContinueOnError)
-	stateDir := fs.String("state-dir", "", "state directory (default: .origami/state or $ORIGAMI_STATE_DIR)")
+	stateDir := fs.String("state-dir", "", "state directory (default: .tako/state or $TAKO_STATE_DIR)")
 	runID := fs.String("run", "", "run ID (default: most recent)")
 	format := fs.String("format", "text", "output format: text, json")
 	if err := fs.Parse(args); err != nil {
@@ -52,7 +52,7 @@ func resolveReportPath(stateDir, runID, fileArg string) (string, error) {
 // it selects the most recent run by modification time.
 func resolveRunFile(stateDir, runID, filename string) (string, error) {
 	if stateDir == "" {
-		stateDir = os.Getenv("ORIGAMI_STATE_DIR")
+		stateDir = os.Getenv("TAKO_STATE_DIR")
 	}
 	if stateDir == "" {
 		stateDir = defaultStateDir

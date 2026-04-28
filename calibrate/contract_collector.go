@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/tako/engine"
 )
 
 // ContractCollector is a generic CaseCollector that uses a CalibrationContract

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/mcp"
+	"github.com/dpopsuev/tako/mcp"
 )
 
 func TestOnStepDispatched_Called(t *testing.T) {

@@ -3,8 +3,8 @@ package assertions_test
 import (
 	"testing"
 
-	"github.com/dpopsuev/origami/calibrate"
-	"github.com/dpopsuev/origami/testkit/assertions"
+	"github.com/dpopsuev/tako/calibrate"
+	"github.com/dpopsuev/tako/testkit/assertions"
 )
 
 func buildReport(metrics ...calibrate.Metric) *calibrate.CalibrationReport {

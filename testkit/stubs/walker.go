@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // StubWalker implements circuit.Walker with canned artifacts per node.

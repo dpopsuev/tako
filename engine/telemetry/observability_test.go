@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"go.opentelemetry.io/otel/attribute"

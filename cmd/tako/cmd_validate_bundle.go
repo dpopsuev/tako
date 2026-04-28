@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/dpopsuev/origami/calibrate"
+	"github.com/dpopsuev/tako/calibrate"
 )
 
 func validateBundleCmd(args []string) error {
@@ -17,7 +17,7 @@ func validateBundleCmd(args []string) error {
 	}
 
 	if *path == "" {
-		return ErrUsageOrigamiValidateBundlePathDirCheckSha
+		return ErrUsageTakoValidateBundlePathDirCheckSha
 	}
 
 	bundleFS := os.DirFS(*path)

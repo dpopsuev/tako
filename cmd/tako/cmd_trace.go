@@ -10,15 +10,15 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/engine"
 )
 
 const labelUnknown = "unknown"
 
 func traceCmd(w io.Writer, args []string) error {
 	fs := flag.NewFlagSet("trace", flag.ContinueOnError)
-	stateDir := fs.String("state-dir", "", "state directory (default: .origami/state or $ORIGAMI_STATE_DIR)")
+	stateDir := fs.String("state-dir", "", "state directory (default: .tako/state or $TAKO_STATE_DIR)")
 	runID := fs.String("run", "", "run ID (default: most recent)")
 	v := fs.Bool("v", false, "include debug events")
 	vv := fs.Bool("vv", false, "include debug and trace events")
@@ -33,7 +33,7 @@ func traceCmd(w io.Writer, args []string) error {
 
 	sd := *stateDir
 	if sd == "" {
-		sd = os.Getenv("ORIGAMI_STATE_DIR")
+		sd = os.Getenv("TAKO_STATE_DIR")
 	}
 	if sd == "" {
 		sd = defaultStateDir

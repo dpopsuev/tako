@@ -3,8 +3,8 @@ package builders_test
 import (
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/testkit/builders"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/testkit/builders"
 )
 
 func TestCircuitDefBuilder_Basic(t *testing.T) {

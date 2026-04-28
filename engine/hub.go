@@ -7,9 +7,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/dpopsuev/origami/tool"
+	"github.com/dpopsuev/tako/tool"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // Hub is a node-bound tool router for instrument dispatch.

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // --- test helpers ---

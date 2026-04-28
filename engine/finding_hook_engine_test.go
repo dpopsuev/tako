@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 func TestVetoHook_FindingError_ReturnsVeto(t *testing.T) {

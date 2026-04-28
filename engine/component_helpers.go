@@ -1,6 +1,6 @@
 package engine
 
-import "github.com/dpopsuev/origami/circuit"
+import "github.com/dpopsuev/tako/circuit"
 
 // InstrumentForAllNodes registers a single Instrument under every node name
 // in the given list. Useful for monolithic instruments that dispatch internally

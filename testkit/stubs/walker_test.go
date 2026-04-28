@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/testkit/stubs"
-	"github.com/dpopsuev/troupe/visual"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/testkit/stubs"
+	"github.com/dpopsuev/tangle/visual"
 )
 
 func TestStubWalker_CannedArtifact(t *testing.T) {

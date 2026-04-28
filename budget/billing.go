@@ -1,7 +1,7 @@
 // Package budget re-exports token billing types from troupe/billing.
 package budget
 
-import "github.com/dpopsuev/troupe/billing"
+import "github.com/dpopsuev/tangle/billing"
 
 // Type aliases — definitions live in troupe/billing.
 type (

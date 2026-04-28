@@ -3,8 +3,8 @@ package operator_test
 import (
 	"testing"
 
-	"github.com/dpopsuev/origami/operator"
-	"github.com/dpopsuev/troupe/world"
+	"github.com/dpopsuev/tako/operator"
+	"github.com/dpopsuev/tangle/world"
 )
 
 func TestRegisterOperator_SpawnsEntityWithComponents(t *testing.T) {

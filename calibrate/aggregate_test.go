@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/dpopsuev/origami/calibrate"
+	"github.com/dpopsuev/tako/calibrate"
 )
 
 func TestAggregateRunMetrics_Empty(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/troupe/signal"
+	"github.com/dpopsuev/tangle/signal"
 )
 
 // StubSignalBus wraps signal.MemBus with assertion and wait helpers.

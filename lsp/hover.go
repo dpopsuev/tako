@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 )

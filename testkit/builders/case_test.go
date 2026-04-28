@@ -3,7 +3,7 @@ package builders_test
 import (
 	"testing"
 
-	"github.com/dpopsuev/origami/testkit/builders"
+	"github.com/dpopsuev/tako/testkit/builders"
 )
 
 func TestBatchCaseBuilder_Basic(t *testing.T) {

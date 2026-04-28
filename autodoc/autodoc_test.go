@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 func testManifest() *Manifest {
@@ -116,7 +116,7 @@ func contextFilterCircuit() *circuit.CircuitDef {
 
 func TestLoadManifest(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "origami.yaml")
+	path := filepath.Join(dir, "tako.yaml")
 	os.WriteFile(path, []byte("name: myproject\ndescription: My project\nversion: \"1.0\"\n"), 0o644)
 
 	m, err := LoadManifest(path)
@@ -133,7 +133,7 @@ func TestLoadManifest(t *testing.T) {
 
 func TestLoadManifest_MissingName(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "origami.yaml")
+	path := filepath.Join(dir, "tako.yaml")
 	os.WriteFile(path, []byte("description: no name\n"), 0o644)
 
 	_, err := LoadManifest(path)

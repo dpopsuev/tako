@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/dispatch"
-	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/dispatch"
+	"github.com/dpopsuev/tako/engine"
 )
 
 type stubDispatcher struct{}

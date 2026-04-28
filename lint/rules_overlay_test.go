@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 func TestImportOverlay_EmptyImport(t *testing.T) {

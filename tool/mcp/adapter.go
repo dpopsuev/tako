@@ -11,8 +11,8 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/dpopsuev/origami/tool"
-	"github.com/dpopsuev/origami/tool/harness"
+	"github.com/dpopsuev/tako/tool"
+	"github.com/dpopsuev/tako/tool/harness"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 

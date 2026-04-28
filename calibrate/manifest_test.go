@@ -7,7 +7,7 @@ import (
 	"testing/fstest"
 	"time"
 
-	"github.com/dpopsuev/origami/calibrate"
+	"github.com/dpopsuev/tako/calibrate"
 )
 
 func TestWriteAndReadManifest(t *testing.T) {

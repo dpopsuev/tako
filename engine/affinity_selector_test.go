@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/troupe/visual"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tangle/visual"
 )
 
 type affinityStubNode struct {

@@ -5,7 +5,7 @@ package finding
 import (
 	"context"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 const hookNameFindingVeto = "finding-veto"

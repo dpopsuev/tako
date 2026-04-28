@@ -3,7 +3,7 @@ package tool_test
 import (
 	"testing"
 
-	"github.com/dpopsuev/origami/tool"
+	"github.com/dpopsuev/tako/tool"
 )
 
 // GaugedContract validates any Gauged implementation.

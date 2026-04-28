@@ -6,9 +6,9 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/dispatch"
-	"github.com/dpopsuev/troupe/signal"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/dispatch"
+	"github.com/dpopsuev/tangle/signal"
 )
 
 // CircuitType defines a named circuit type that can be registered with

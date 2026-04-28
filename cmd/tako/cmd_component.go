@@ -7,14 +7,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 const subCmdValidate = "validate"
 
 func componentCmd(args []string) error {
 	if len(args) == 0 {
-		return ErrUsageOrigamiComponentListInspectValidateFlags
+		return ErrUsageTakoComponentListInspectValidateFlags
 	}
 	switch args[0] {
 	case "list":
@@ -77,7 +77,7 @@ func componentInspect(args []string) error {
 		return err
 	}
 	if fs.NArg() == 0 {
-		return ErrUsageOrigamiComponentInspectComponentYaml
+		return ErrUsageTakoComponentInspectComponentYaml
 	}
 
 	m, err := circuit.LoadComponentManifest(fs.Arg(0))
@@ -91,8 +91,8 @@ func componentInspect(args []string) error {
 	if m.Description != "" {
 		fmt.Printf("Description: %s\n", m.Description)
 	}
-	if m.Needs.Origami != "" {
-		fmt.Printf("Needs:       origami %s\n", m.Needs.Origami)
+	if m.Needs.Tako != "" {
+		fmt.Printf("Needs:       tako %s\n", m.Needs.Tako)
 	}
 	if len(m.Provides.Transformers) > 0 {
 		fmt.Printf("Transformers: %s\n", strings.Join(m.Provides.Transformers, ", "))
@@ -112,7 +112,7 @@ func componentValidate(args []string) error {
 		return err
 	}
 	if fs.NArg() == 0 {
-		return ErrUsageOrigamiComponentValidateComponentYaml
+		return ErrUsageTakoComponentValidateComponentYaml
 	}
 
 	path := fs.Arg(0)

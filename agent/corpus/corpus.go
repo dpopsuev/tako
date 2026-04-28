@@ -4,8 +4,8 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/dpopsuev/origami/agent/organ"
-	"github.com/dpopsuev/origami/artifact"
+	"github.com/dpopsuev/tako/agent/organ"
+	"github.com/dpopsuev/tako/artifact"
 )
 
 var (

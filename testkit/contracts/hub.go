@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/tako/engine"
 )
 
 // RunHubRoutingContract verifies that a Hub implementation correctly routes

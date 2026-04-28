@@ -3,9 +3,9 @@ package stubs_test
 import (
 	"testing"
 
-	"github.com/dpopsuev/origami/engine/gate"
-	"github.com/dpopsuev/origami/testkit/contracts"
-	"github.com/dpopsuev/origami/testkit/stubs"
+	"github.com/dpopsuev/tako/engine/gate"
+	"github.com/dpopsuev/tako/testkit/contracts"
+	"github.com/dpopsuev/tako/testkit/stubs"
 )
 
 func TestMemoryApprovalStore_Contract(t *testing.T) {

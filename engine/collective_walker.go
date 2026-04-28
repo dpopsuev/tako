@@ -3,7 +3,7 @@ package engine
 import (
 	"context"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // CollectiveWalker delegates node processing to one of several inner walkers,

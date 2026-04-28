@@ -12,11 +12,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/instruments/core"
-	"github.com/dpopsuev/origami/lint"
-	originamilsp "github.com/dpopsuev/origami/lsp"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/engine"
+	"github.com/dpopsuev/tako/instruments/core"
+	"github.com/dpopsuev/tako/lint"
+	originamilsp "github.com/dpopsuev/tako/lsp"
 )
 
 // Build-time variables injected via -ldflags.
@@ -75,7 +75,7 @@ func main() {
 	case "orchestrate":
 		err = errOrchestrateRemoved
 	case "version", "--version":
-		fmt.Printf("origami %s (%s, %s)\n", version, commit, date)
+		fmt.Printf("tako %s (%s, %s)\n", version, commit, date)
 	default:
 		fmt.Fprintf(os.Stderr, "unknown command: %s\n", os.Args[1])
 		printUsage()
@@ -89,10 +89,10 @@ func main() {
 }
 
 func printUsage() {
-	fmt.Fprintln(os.Stderr, `Usage: origami <command> [flags]
+	fmt.Fprintln(os.Stderr, `Usage: tako <command> [flags]
 
 Commands:
-  serve      Start HTTP MCP server for a circuit (e.g. origami serve --circuit sdlc)
+  serve      Start HTTP MCP server for a circuit (e.g. tako serve --circuit sdlc)
   run        Execute a circuit YAML
   validate   Validate a circuit YAML without executing
   lint       Static analysis for circuit YAML (rules, profiles, auto-fix)
@@ -130,7 +130,7 @@ func runCmd(args []string) error {
 	_ = fs.Parse(args)
 
 	if fs.NArg() < 1 {
-		return ErrUsageOrigamiRunVSetKeyValueCircuitYaml
+		return ErrUsageTakoRunVSetKeyValueCircuitYaml
 	}
 	circuitPath := fs.Arg(0)
 
@@ -168,7 +168,7 @@ func validateCmd(args []string) error {
 	_ = fs.Parse(args)
 
 	if fs.NArg() < 1 {
-		return ErrUsageOrigamiValidateCircuitYaml
+		return ErrUsageTakoValidateCircuitYaml
 	}
 	circuitPath := fs.Arg(0)
 
@@ -189,7 +189,7 @@ func lintCmd(args []string) error {
 		return err
 	}
 	if fs.NArg() == 0 {
-		return ErrUsageOrigamiLintProfileNameFormatTextJsonFixFileYaml
+		return ErrUsageTakoLintProfileNameFormatTextJsonFixFileYaml
 	}
 
 	p := lint.Profile(*profile)

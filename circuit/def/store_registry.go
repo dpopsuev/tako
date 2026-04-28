@@ -61,7 +61,7 @@ func (r *StoreRegistry) Resolve(storeName string) (StoreEngine, error) {
 
 	engineName := r.resolveEngineName(storeName)
 	if engineName == "" {
-		return nil, fmt.Errorf("%w: %q (check store_wiring in origami.yaml)", ErrNoEngineConfiguredForStore, storeName)
+		return nil, fmt.Errorf("%w: %q (check store_wiring in tako.yaml)", ErrNoEngineConfiguredForStore, storeName)
 	}
 
 	factory, ok := r.engines[engineName]

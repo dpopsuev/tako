@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // collector gathers narration lines for assertion.

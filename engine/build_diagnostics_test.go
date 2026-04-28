@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // captureDiagLogs runs fn with a log handler that captures output, returns log text.

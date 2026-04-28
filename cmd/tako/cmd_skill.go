@@ -8,12 +8,12 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 func skillCmd(args []string) error {
 	if len(args) == 0 {
-		return ErrUsageOrigamiSkillScaffoldFlags
+		return ErrUsageTakoSkillScaffoldFlags
 	}
 	switch args[0] {
 	case "scaffold":
@@ -32,7 +32,7 @@ func skillScaffold(args []string) error {
 	}
 
 	if fs.NArg() < 1 {
-		return ErrUsageOrigamiSkillScaffoldToolNAMEOutDIRCircuitYaml
+		return ErrUsageTakoSkillScaffoldToolNAMEOutDIRCircuitYaml
 	}
 	circuitPath := fs.Arg(0)
 

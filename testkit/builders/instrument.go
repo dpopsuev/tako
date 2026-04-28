@@ -1,7 +1,7 @@
 package builders
 
 import (
-	"github.com/dpopsuev/origami/circuit/def"
+	"github.com/dpopsuev/tako/circuit/def"
 )
 
 // InstrumentManifestBuilder constructs InstrumentManifest incrementally for tests.

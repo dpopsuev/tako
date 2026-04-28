@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/operator"
-	"github.com/dpopsuev/origami/tool"
-	battmcp "github.com/dpopsuev/origami/tool/mcp"
-	"github.com/dpopsuev/origami/tool/server"
+	"github.com/dpopsuev/tako/operator"
+	"github.com/dpopsuev/tako/tool"
+	battmcp "github.com/dpopsuev/tako/tool/mcp"
+	"github.com/dpopsuev/tako/tool/server"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )

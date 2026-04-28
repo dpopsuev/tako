@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/testkit/stubs"
-	"github.com/dpopsuev/origami/tool"
-	battmcp "github.com/dpopsuev/origami/tool/mcp"
+	"github.com/dpopsuev/tako/testkit/stubs"
+	"github.com/dpopsuev/tako/tool"
+	battmcp "github.com/dpopsuev/tako/tool/mcp"
 )
 
 // TestMCPEnrichment_E2E proves the wiring: Scribe + Lex + Locus

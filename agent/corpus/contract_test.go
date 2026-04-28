@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/dpopsuev/origami/agent/organ"
-	"github.com/dpopsuev/origami/artifact"
+	"github.com/dpopsuev/tako/agent/organ"
+	"github.com/dpopsuev/tako/artifact"
 )
 
 func TestCorpusAttachAndRetrieve(t *testing.T) {

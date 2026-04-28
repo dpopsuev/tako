@@ -5,20 +5,20 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 )
 
-// Origami element token types registered with the LSP client.
+// Tako element token types registered with the LSP client.
 // The index in this slice is the token type ID used in the encoded data.
 var semanticTokenTypes = []string{
-	"origami-fire",
-	"origami-water",
-	"origami-earth",
-	"origami-air",
-	"origami-diamond",
-	"origami-lightning",
+	"tako-fire",
+	"tako-water",
+	"tako-earth",
+	"tako-air",
+	"tako-diamond",
+	"tako-lightning",
 }
 
 var approachTokenIndex = map[string]uint32{

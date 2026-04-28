@@ -7,7 +7,7 @@ uses:
   beta: github.com/example/schematic-b
 
 bind:
-  alpha.source: github.com/dpopsuev/origami-components/rp
+  alpha.source: github.com/dpopsuev/tako-components/rp
 
 serve:
   port: 9300

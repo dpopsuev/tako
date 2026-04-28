@@ -3,20 +3,20 @@ kind: Deployment
 metadata:
   name: rca
   labels:
-    app: origami-rca
+    app: tako-rca
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: origami-rca
+      app: tako-rca
   template:
     metadata:
       labels:
-        app: origami-rca
+        app: tako-rca
     spec:
       containers:
         - name: rca
-          image: origami-rca:latest
+          image: tako-rca:latest
           args:
             - "--port"
             - "9200"
@@ -28,7 +28,7 @@ spec:
             - containerPort: 9200
           envFrom:
             - configMapRef:
-                name: origami-config
+                name: tako-config
           livenessProbe:
             httpGet:
               path: /healthz
@@ -48,7 +48,7 @@ metadata:
   name: rca
 spec:
   selector:
-    app: origami-rca
+    app: tako-rca
   ports:
     - port: 9200
       targetPort: 9200

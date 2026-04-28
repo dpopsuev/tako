@@ -1,6 +1,6 @@
 package sleep
 
-import "github.com/dpopsuev/origami/memory"
+import "github.com/dpopsuev/tako/memory"
 
 // StubDrain is a noop — accepts mesh, does nothing.
 type StubDrain struct {

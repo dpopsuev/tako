@@ -16,9 +16,9 @@ import (
 
 	anyllm "github.com/mozilla-ai/any-llm-go/providers"
 
-	"github.com/dpopsuev/origami/engine/handler"
-	"github.com/dpopsuev/origami/engine/trace"
-	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
+	"github.com/dpopsuev/tako/engine/handler"
+	"github.com/dpopsuev/tako/engine/trace"
+	"github.com/dpopsuev/tako/simulate/sdlc/sdlctype"
 )
 
 var errNoChoices = errors.New("tdd: LLM returned no choices")

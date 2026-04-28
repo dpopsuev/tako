@@ -8,12 +8,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/engine/gate"
-	"github.com/dpopsuev/origami/prompt"
-	"github.com/dpopsuev/origami/testkit/assertions"
-	"github.com/dpopsuev/origami/testkit/stubs"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/engine"
+	"github.com/dpopsuev/tako/engine/gate"
+	"github.com/dpopsuev/tako/prompt"
+	"github.com/dpopsuev/tako/testkit/assertions"
+	"github.com/dpopsuev/tako/testkit/stubs"
 )
 
 // ---------------------------------------------------------------------------

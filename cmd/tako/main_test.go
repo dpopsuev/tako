@@ -10,12 +10,12 @@ import (
 
 func buildBinary(t *testing.T) string {
 	t.Helper()
-	bin := filepath.Join(t.TempDir(), "origami")
+	bin := filepath.Join(t.TempDir(), "tako")
 	cmd := exec.Command("go", "build", "-o", bin, ".")
-	cmd.Dir = filepath.Join(getModuleRoot(t), "cmd", "origami")
+	cmd.Dir = filepath.Join(getModuleRoot(t), "cmd", "tako")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("build origami binary: %v\n%s", err, out)
+		t.Fatalf("build tako binary: %v\n%s", err, out)
 	}
 	return bin
 }
@@ -75,7 +75,7 @@ func TestCLI_Validate(t *testing.T) {
 	cmd := exec.Command(bin, "validate", circuitPath)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("origami validate failed: %v\n%s", err, out)
+		t.Fatalf("tako validate failed: %v\n%s", err, out)
 	}
 	if len(out) == 0 {
 		t.Error("expected output from validate")
@@ -102,7 +102,7 @@ func TestCLI_Version(t *testing.T) {
 	cmd := exec.Command(bin, "version")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("origami version failed: %v\n%s", err, out)
+		t.Fatalf("tako version failed: %v\n%s", err, out)
 	}
 	if len(out) == 0 {
 		t.Error("expected version output")
@@ -165,7 +165,7 @@ done: _done
 	cmd := exec.Command(bin, "run", circuitPath)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("origami run failed: %v\n%s", err, out)
+		t.Fatalf("tako run failed: %v\n%s", err, out)
 	}
 }
 
@@ -208,7 +208,7 @@ done: _done
 	cmd := exec.Command(bin, "skill", "scaffold", "--tool", "mytest", "--out", outDir, circuitPath)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("origami skill scaffold failed: %v\n%s", err, out)
+		t.Fatalf("tako skill scaffold failed: %v\n%s", err, out)
 	}
 
 	skillPath := filepath.Join(outDir, "SKILL.md")
@@ -262,7 +262,7 @@ done: _done
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("origami skill scaffold failed: %v\n%s", err, out)
+		t.Fatalf("tako skill scaffold failed: %v\n%s", err, out)
 	}
 
 	skillPath := filepath.Join(dir, ".cursor", "skills", "myapp-calibrate", "SKILL.md")

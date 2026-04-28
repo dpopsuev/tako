@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/engine"
 )
 
 // PreflightReport captures structured diagnostics from a preflight check.

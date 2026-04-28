@@ -9,11 +9,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/dispatch"
-	"github.com/dpopsuev/troupe"
-	"github.com/dpopsuev/troupe/broker"
-	"github.com/dpopsuev/troupe/signal"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/dispatch"
+	"github.com/dpopsuev/tangle"
+	"github.com/dpopsuev/tangle/broker"
+	"github.com/dpopsuev/tangle/signal"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )

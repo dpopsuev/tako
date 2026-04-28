@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dpopsuev/origami/autodoc"
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/autodoc"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 func autodocCmd(args []string) error {
@@ -27,7 +27,7 @@ func autodocCmd(args []string) error {
 	}
 	projectRoot, _ = filepath.Abs(projectRoot)
 
-	manifestPath := filepath.Join(projectRoot, "origami.yaml")
+	manifestPath := filepath.Join(projectRoot, "tako.yaml")
 	manifest, err := autodoc.LoadManifest(manifestPath)
 	if err != nil {
 		return fmt.Errorf("load manifest: %w", err)

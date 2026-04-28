@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // mockEmbedder returns deterministic vectors for testing.

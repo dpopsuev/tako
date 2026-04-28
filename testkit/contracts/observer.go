@@ -3,7 +3,7 @@ package contracts
 import (
 	"testing"
 
-	"github.com/dpopsuev/origami/mcp"
+	"github.com/dpopsuev/tako/mcp"
 )
 
 // RunSessionObserverContract runs the SessionObserver compliance suite.

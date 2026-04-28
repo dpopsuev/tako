@@ -3,7 +3,7 @@ package sdlc
 import (
 	"testing"
 
-	"github.com/dpopsuev/origami/engine/trace"
+	"github.com/dpopsuev/tako/engine/trace"
 )
 
 func TestHarness_CleanPath(t *testing.T) {

@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/engine"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -396,7 +396,7 @@ func fetchRemoteTrace(endpoint, traceID string) []engine.TraceEvent {
 
 	transport := &sdkmcp.StreamableClientTransport{Endpoint: endpoint}
 	client := sdkmcp.NewClient(
-		&sdkmcp.Implementation{Name: "origami-trace-merge", Version: "v0.1.0"},
+		&sdkmcp.Implementation{Name: "tako-trace-merge", Version: "v0.1.0"},
 		nil,
 	)
 	session, err := client.Connect(ctx, transport, nil)

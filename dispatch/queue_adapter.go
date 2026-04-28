@@ -5,13 +5,13 @@ import (
 	"math"
 	"time"
 
-	"github.com/dpopsuev/troupe/providers"
+	"github.com/dpopsuev/tangle/providers"
 )
 
 // QueueAdapter wraps a MuxDispatcher as a troupe/providers.Queue.
 // This is the bridge between Origami's dispatch protocol and Troupe's
 // generic work distribution interface. Djinn and other consumers
-// import troupe/providers.Queue — Origami provides the implementation.
+// import troupe/providers.Queue — Tako provides the implementation.
 type QueueAdapter struct {
 	mux *MuxDispatcher
 }

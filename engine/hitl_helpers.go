@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine/gate"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/engine/gate"
 )
 
 // HITLResult is returned after a HITL walk step completes. It indicates

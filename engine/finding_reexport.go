@@ -2,7 +2,7 @@ package engine
 
 // Re-exports from engine/finding sub-package for backward compatibility.
 
-import "github.com/dpopsuev/origami/engine/finding"
+import "github.com/dpopsuev/tako/engine/finding"
 
 // Type aliases for finding types.
 type (

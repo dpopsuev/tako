@@ -1,9 +1,9 @@
 kind: Component
-component: origami-core
+component: tako-core
 namespace: core
 version: "1.0.0"
 description: Built-in transformers for the Origami circuit framework
 provides:
   transformers: [llm, http, jq, file]
 requires:
-  origami: ">=1.0.0"
+  tako: ">=1.0.0"

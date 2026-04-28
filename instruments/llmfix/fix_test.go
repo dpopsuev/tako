@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
+	"github.com/dpopsuev/tako/engine"
+	"github.com/dpopsuev/tako/simulate/sdlc/sdlctype"
 )
 
 // Contract: extractFindings handles typed ScanResult.

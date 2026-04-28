@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/mcp"
+	"github.com/dpopsuev/tako/mcp"
 )
 
 func TestWatchStdin_StopsWhenContextCanceled(t *testing.T) {

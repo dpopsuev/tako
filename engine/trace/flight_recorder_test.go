@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 func TestFlightRecorder_Record_And_Events(t *testing.T) {

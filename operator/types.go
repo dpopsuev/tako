@@ -7,7 +7,7 @@ import "time"
 
 // DesiredState declares what the operator reconciles toward.
 type DesiredState struct {
-	Manifest        string `yaml:"manifest"`        // board manifest path (e.g. "origami-sdlc.yaml")
+	Manifest        string `yaml:"manifest"`        // board manifest path (e.g. "tako-sdlc.yaml")
 	RepoPath        string `yaml:"repo_path"`       // repository root to operate on
 	Scan            string `yaml:"scan"`            // "clean" or max findings count as string
 	Build           string `yaml:"build"`           // "passing"

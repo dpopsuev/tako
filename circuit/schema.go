@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dpopsuev/origami/circuit/def"
+	"github.com/dpopsuev/tako/circuit/def"
 )
 
 // ArtifactSchema is a type alias for def.ArtifactSchema.

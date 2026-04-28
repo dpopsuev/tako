@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func origamiRoot(t *testing.T) string {
+func takoRoot(t *testing.T) string {
 	t.Helper()
 	wd, err := os.Getwd()
 	if err != nil {
@@ -15,17 +15,17 @@ func origamiRoot(t *testing.T) string {
 	}
 	root := filepath.Dir(wd)
 	if _, err := os.Stat(filepath.Join(root, "go.mod")); err != nil {
-		t.Skipf("origami root not found at %s", root)
+		t.Skipf("tako root not found at %s", root)
 	}
-	// Skip when sibling origami-rca repo isn't available (e.g. CI).
-	if _, err := os.Stat(filepath.Join(root, "origami-rca")); err != nil {
-		t.Skipf("origami-rca sibling repo not found — skipping (CI)")
+	// Skip when sibling tako-rca repo isn't available (e.g. CI).
+	if _, err := os.Stat(filepath.Join(root, "tako-rca")); err != nil {
+		t.Skipf("tako-rca sibling repo not found — skipping (CI)")
 	}
 	return root
 }
 
 func TestResolve_ConsumerLike(t *testing.T) {
-	root := origamiRoot(t)
+	root := takoRoot(t)
 
 	m := &Manifest{
 		Name:    "consumer",
@@ -69,7 +69,7 @@ func TestResolve_ConsumerLike(t *testing.T) {
 func TestResolve_MissingBinding(t *testing.T) {
 	// Sockets are all optional: true, so empty bindings
 	// are accepted. Verify Resolve succeeds.
-	root := origamiRoot(t)
+	root := takoRoot(t)
 
 	m := &Manifest{
 		Name: "test",
@@ -205,7 +205,7 @@ func TestImportAlias(t *testing.T) {
 		want string
 	}{
 		{"github.com/example/schematic-a/connectors/rp", "rp"},
-		{"github.com/dpopsuev/origami/instruments/github", "github"},
+		{"github.com/dpopsuev/tako/instruments/github", "github"},
 		{"github.com/example/schematic-b", "schematicb"},
 		{"github.com/example/schematic-a/mcpconfig", "mcpconfig"},
 	}

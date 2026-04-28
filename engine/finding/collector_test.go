@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 func TestInMemoryFindingCollector_Report(t *testing.T) {

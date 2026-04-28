@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/dispatch"
-	"github.com/dpopsuev/origami/mcp"
-	"github.com/dpopsuev/troupe/signal"
+	"github.com/dpopsuev/tako/dispatch"
+	"github.com/dpopsuev/tako/mcp"
+	"github.com/dpopsuev/tangle/signal"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )

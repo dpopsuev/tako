@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/tool"
-	mcpserver "github.com/dpopsuev/origami/tool/mcp"
-	"github.com/dpopsuev/origami/tool/server"
+	"github.com/dpopsuev/tako/engine"
+	"github.com/dpopsuev/tako/tool"
+	mcpserver "github.com/dpopsuev/tako/tool/mcp"
+	"github.com/dpopsuev/tako/tool/server"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 

@@ -3,7 +3,7 @@ package fold
 // E2E acceptance tests for the fold pipeline.
 // Verify generated code properties that unit tests miss:
 // - Correct import paths after hex migration
-// - Conditional origami import (NeedsOrigami)
+// - Conditional origami import (NeedsTako)
 // - err variable declaration in ListenAndServe
 // - Port wiring validation with realistic circuits
 // - Domain-serve binary generation with all asset types
@@ -24,7 +24,7 @@ func TestE2E_WiredBinary_NoOrigamiImportWithoutResolvers(t *testing.T) {
 	//   Then the origami/circuit import is NOT present
 	//   (Regression test for ORG-BUG-15: unused import broke compilation)
 
-	root := origamiRootE2E(t)
+	root := takoRootE2E(t)
 	m := &Manifest{
 		Name:    "no-resolver",
 		Version: "1.0",
@@ -54,8 +54,8 @@ func TestE2E_WiredBinary_NoOrigamiImportWithoutResolvers(t *testing.T) {
 	}
 	code := string(src)
 
-	if strings.Contains(code, `origami "github.com/dpopsuev/origami/circuit"`) {
-		t.Errorf("origami import should be EXCLUDED when no sub-circuit resolvers are present")
+	if strings.Contains(code, `tako "github.com/dpopsuev/tako/circuit"`) {
+		t.Errorf("tako import should be EXCLUDED when no sub-circuit resolvers are present")
 	}
 }
 
@@ -65,7 +65,7 @@ func TestE2E_WiredBinary_OrigamiImportWithResolvers(t *testing.T) {
 	//   When GenerateWiredBinary produces code
 	//   Then the origami/circuit import IS present
 
-	root := origamiRootE2E(t)
+	root := takoRootE2E(t)
 	m := &Manifest{
 		Name:    "with-resolver",
 		Version: "1.0",
@@ -89,7 +89,7 @@ func TestE2E_WiredBinary_OrigamiImportWithResolvers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Add a sub-schematic with a resolver to trigger NeedsOrigami
+	// Add a sub-schematic with a resolver to trigger NeedsTako
 	g.Schematics = append(g.Schematics, ResolvedSchematic{
 		Name:     "beta",
 		Module:   "github.com/example/schematic-b",
@@ -118,7 +118,7 @@ func TestE2E_WiredBinary_ErrVariableDeclared(t *testing.T) {
 	//   When code is produced
 	//   Then err is declared with := (regression for undeclared err bug)
 
-	root := origamiRootE2E(t)
+	root := takoRootE2E(t)
 	m := &Manifest{
 		Name:    "err-check",
 		Version: "1.0",
@@ -419,16 +419,16 @@ done: _done
 
 // --- Helpers ---
 
-func origamiRootE2E(t *testing.T) string {
+func takoRootE2E(t *testing.T) string {
 	t.Helper()
 	wd, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
 	}
 	root := filepath.Dir(wd)
-	// Skip when sibling origami-rca repo isn't available (e.g. CI).
-	if _, err := os.Stat(filepath.Join(root, "origami-rca")); err != nil {
-		t.Skipf("origami-rca sibling repo not found — skipping (CI)")
+	// Skip when sibling tako-rca repo isn't available (e.g. CI).
+	if _, err := os.Stat(filepath.Join(root, "tako-rca")); err != nil {
+		t.Skipf("tako-rca sibling repo not found — skipping (CI)")
 	}
 	return root
 }

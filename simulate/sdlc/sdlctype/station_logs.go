@@ -1,6 +1,6 @@
 package sdlctype
 
-import "github.com/dpopsuev/origami/engine/trace"
+import "github.com/dpopsuev/tako/engine/trace"
 
 // Station log type names.
 const (

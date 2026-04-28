@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/dpopsuev/origami/tool"
+	"github.com/dpopsuev/tako/tool"
 
-	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/tako/engine"
 )
 
 // compile-time check.

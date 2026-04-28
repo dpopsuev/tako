@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/tako/engine"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )

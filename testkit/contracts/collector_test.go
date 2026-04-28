@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dpopsuev/origami/calibrate"
-	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/testkit/contracts"
+	"github.com/dpopsuev/tako/calibrate"
+	"github.com/dpopsuev/tako/engine"
+	"github.com/dpopsuev/tako/testkit/contracts"
 )
 
 // stubCollector is a minimal CaseCollector for contract testing.

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 func TestLevelRouter_PerComponentFiltering(t *testing.T) {

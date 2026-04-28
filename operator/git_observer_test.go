@@ -12,7 +12,7 @@ func origamiRoot(t *testing.T) string {
 	_, f, _, _ := runtime.Caller(0)
 	root := filepath.Join(filepath.Dir(f), "..")
 	if _, err := os.Stat(filepath.Join(root, "go.mod")); err != nil {
-		t.Skipf("origami root not found at %s", root)
+		t.Skipf("tako root not found at %s", root)
 	}
 	return root
 }

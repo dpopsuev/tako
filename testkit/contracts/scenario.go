@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dpopsuev/origami/calibrate"
+	"github.com/dpopsuev/tako/calibrate"
 )
 
 // RunScenarioLoaderContract runs the ScenarioLoader compliance suite.

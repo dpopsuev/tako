@@ -36,8 +36,8 @@ var (
 	// ErrAssetPath is returned for: asset path
 	ErrAssetPath = errors.New("asset path")
 
-	// ErrCannotFindOrigamiModuleOnLocalFilesystem is returned for: cannot find origami module on local filesystem
-	ErrCannotFindOrigamiModuleOnLocalFilesystem = errors.New("cannot find origami module on local filesystem")
+	// ErrCannotFindTakoModuleOnLocalFilesystem is returned for: cannot find tako module on local filesystem
+	ErrCannotFindTakoModuleOnLocalFilesystem = errors.New("cannot find tako module on local filesystem")
 
 	// ErrCircuit is returned for: circuit
 	ErrCircuit = errors.New("circuit")
@@ -48,8 +48,8 @@ var (
 	// ErrPortWiring is returned for: port wiring
 	ErrPortWiring = errors.New("port wiring")
 
-	// ErrManifestApiVersionMustBeOrigamiV1Got is returned for: manifest: apiVersion must be 'origami/v1', got
-	ErrManifestApiVersionMustBeOrigamiV1Got = errors.New("manifest: apiVersion must be 'origami/v1', got")
+	// ErrManifestApiVersionMustBeTakoV1Got is returned for: manifest: apiVersion must be 'tako/v1', got
+	ErrManifestApiVersionMustBeTakoV1Got = errors.New("manifest: apiVersion must be 'tako/v1', got")
 
 	// ErrManifestKindMustBeBoardGot is returned for: manifest: kind must be 'Board', got
 	ErrManifestKindMustBeBoardGot = errors.New("manifest: kind must be 'Board', got")

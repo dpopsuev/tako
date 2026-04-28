@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/engine/trace"
+	"github.com/dpopsuev/tako/engine"
+	"github.com/dpopsuev/tako/engine/trace"
 )
 
 // Harness provides a fluent API for running SDLC circuit simulations.

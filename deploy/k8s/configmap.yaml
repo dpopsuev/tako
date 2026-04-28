@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: origami-config
+  name: tako-config
 data:
   GND_ENDPOINT: "http://gnd:9100/mcp"
   ASTERISK_DOMAIN_ENDPOINT: "http://asterisk:9300/mcp"

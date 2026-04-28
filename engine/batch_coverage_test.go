@@ -3,7 +3,7 @@ package engine
 import (
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 func TestDiagnoseNodeCoverage_AllVisited(t *testing.T) {

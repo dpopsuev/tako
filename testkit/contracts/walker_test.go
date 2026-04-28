@@ -3,8 +3,8 @@ package contracts_test
 import (
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/testkit/contracts"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/testkit/contracts"
 )
 
 func TestProcessWalker_PassesContract(t *testing.T) {

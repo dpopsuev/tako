@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/engine/gate"
+	"github.com/dpopsuev/tako/engine/gate"
 )
 
 // AssertParked verifies that a pending approval item exists for the given node.

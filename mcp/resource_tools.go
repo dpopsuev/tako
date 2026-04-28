@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io/fs"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/resource"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/resource"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -28,7 +28,7 @@ const (
 func (s *CircuitServer) registerResourceTool() {
 	s.MCPServer.AddTool(&sdkmcp.Tool{
 		Name:        "resource",
-		Description: "Origami resource API. Actions: kinds (list registered), list (discover all resources), get (load by kind/name), validate (check correctness), diff (compare two resources).",
+		Description: "Tako resource API. Actions: kinds (list registered), list (discover all resources), get (load by kind/name), validate (check correctness), diff (compare two resources).",
 		InputSchema: map[string]any{"type": "object"},
 	}, rawHandler(s.handleResourceDispatch))
 }

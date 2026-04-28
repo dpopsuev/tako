@@ -2,14 +2,14 @@ package circuit
 
 // Category: Core Primitives
 
-import "github.com/dpopsuev/troupe/visual"
+import "github.com/dpopsuev/tangle/visual"
 
 // Element is the behavioral archetype tag for nodes and zones.
 type Element = visual.Element
 
 // AgentIdentity is the local walker identity type. Replaces the deleted
 // troupe/identity.Archetype with a minimal struct carrying only the
-// fields Origami actually uses.
+// fields Tako actually uses.
 type AgentIdentity struct {
 	Name            string             `json:"name"`
 	Role            string             `json:"role,omitempty"`

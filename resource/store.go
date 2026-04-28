@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // Store errors.

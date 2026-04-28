@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/origami/artifact"
+	"github.com/dpopsuev/tako/artifact"
 )
 
 var (

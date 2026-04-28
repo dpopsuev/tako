@@ -3,7 +3,7 @@ package engine
 import (
 	"context"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // NewContextInjector creates a before-hook that extracts the walker context

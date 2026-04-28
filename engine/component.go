@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // Manifest type aliases — definitions live in circuit/ sub-package.

@@ -221,7 +221,7 @@ const (
 	// CLI commands
 	LogRunningCircuit = "running circuit"
 	LogCircuitDone    = "circuit completed"
-	LogLSPStarted     = "origami-lsp started"
+	LogLSPStarted     = "tako-lsp started"
 	LogConnected      = "connected"
 	LogCircuitStarted = "circuit started"
 	LogWorkerFailed   = "worker failed"

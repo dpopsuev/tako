@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // ArtifactStoreKey is the well-known key for a shared ArtifactStore

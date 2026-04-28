@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/dpopsuev/origami/fab"
+	"github.com/dpopsuev/tako/fab"
 )
 
 func TestStubBoardClaimAndRelease(t *testing.T) {

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // StationLogger provides structured logging for instrument internals.

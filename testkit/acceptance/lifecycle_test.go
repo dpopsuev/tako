@@ -9,8 +9,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/engine"
 )
 
 func TestLifecycle_LinearCircuitCompletesStartToDone(t *testing.T) {

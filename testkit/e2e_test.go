@@ -9,13 +9,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/calibrate"
-	"github.com/dpopsuev/origami/dispatch"
-	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/mcp"
-	"github.com/dpopsuev/origami/testkit/builders"
-	"github.com/dpopsuev/origami/testkit/stubs"
-	"github.com/dpopsuev/troupe/signal"
+	"github.com/dpopsuev/tako/calibrate"
+	"github.com/dpopsuev/tako/dispatch"
+	"github.com/dpopsuev/tako/engine"
+	"github.com/dpopsuev/tako/mcp"
+	"github.com/dpopsuev/tako/testkit/builders"
+	"github.com/dpopsuev/tako/testkit/stubs"
+	"github.com/dpopsuev/tangle/signal"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )

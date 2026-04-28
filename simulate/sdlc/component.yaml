@@ -1,8 +1,8 @@
-apiVersion: origami/v1
+apiVersion: tako/v1
 kind: Schematic
 metadata:
-  name: origami-sdlc
-  module: github.com/dpopsuev/origami/simulate/sdlc
+  name: tako-sdlc
+  module: github.com/dpopsuev/tako/simulate/sdlc
   namespace: sdlc
   description: "SDLC self-reinforcing circuit — scans, fixes, builds, tests, hardens, releases"
 spec:

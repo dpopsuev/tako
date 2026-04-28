@@ -14,10 +14,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dpopsuev/origami/engine/handler"
-	"github.com/dpopsuev/origami/engine/trace"
-	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
-	"github.com/dpopsuev/origami/tool"
+	"github.com/dpopsuev/tako/engine/handler"
+	"github.com/dpopsuev/tako/engine/trace"
+	"github.com/dpopsuev/tako/simulate/sdlc/sdlctype"
+	"github.com/dpopsuev/tako/tool"
 )
 
 // Sentinel errors.

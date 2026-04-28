@@ -16,7 +16,7 @@ func TestParseManifest_Board_ValidUsesAndBind(t *testing.T) {
 	if m.Uses["alpha"].Kind != "Schematic" {
 		t.Errorf("Uses[alpha].Kind = %q, want Schematic", m.Uses["alpha"].Kind)
 	}
-	if m.Uses["datasource"].Module != "github.com/dpopsuev/origami-components/rp" {
+	if m.Uses["datasource"].Module != "github.com/dpopsuev/tako-components/rp" {
 		t.Errorf("Uses[datasource].Module = %q", m.Uses["datasource"].Module)
 	}
 	if m.Bind["alpha"]["data"] != "datasource" {

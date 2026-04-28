@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 func TestPreflight_ValidCircuit(t *testing.T) {

@@ -7,13 +7,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine/handler"
-	"github.com/dpopsuev/origami/instruments/selfreview"
-	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
-	"github.com/dpopsuev/origami/testkit/stubs"
-	"github.com/dpopsuev/origami/tool"
-	battmcp "github.com/dpopsuev/origami/tool/mcp"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/engine/handler"
+	"github.com/dpopsuev/tako/instruments/selfreview"
+	"github.com/dpopsuev/tako/simulate/sdlc/sdlctype"
+	"github.com/dpopsuev/tako/testkit/stubs"
+	"github.com/dpopsuev/tako/tool"
+	battmcp "github.com/dpopsuev/tako/tool/mcp"
 )
 
 // testArtifact is a helper to create a walker state artifact wrapping a value.

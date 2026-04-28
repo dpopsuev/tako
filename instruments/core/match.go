@@ -3,7 +3,7 @@ package core
 import (
 	"context"
 
-	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/tako/engine"
 )
 
 // matchTransformer wraps a MatchEvaluator as a engine.Instrument.

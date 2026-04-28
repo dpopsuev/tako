@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -40,7 +40,7 @@ func calibrateCmd(args []string) error {
 	// Connect to the MCP server.
 	transport := &sdkmcp.StreamableClientTransport{Endpoint: *endpoint}
 	client := sdkmcp.NewClient(
-		&sdkmcp.Implementation{Name: "origami-calibrate", Version: "v0.1.0"},
+		&sdkmcp.Implementation{Name: "tako-calibrate", Version: "v0.1.0"},
 		nil,
 	)
 	session, err := client.Connect(ctx, transport, nil)

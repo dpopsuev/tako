@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dpopsuev/origami/calibrate"
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/tako/calibrate"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/engine"
 )
 
 // RunCaseCollectorContract runs the CaseCollector compliance suite.

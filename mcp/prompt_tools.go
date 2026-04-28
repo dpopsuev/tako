@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dpopsuev/origami/prompt"
+	"github.com/dpopsuev/tako/prompt"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )

@@ -12,7 +12,7 @@ import (
 // ErrMissingName is returned when a manifest is missing the required name field.
 var ErrMissingName = errors.New("manifest missing required field: name")
 
-// Manifest represents an origami.yaml project manifest.
+// Manifest represents an tako.yaml project manifest.
 type Manifest struct {
 	Name        string   `yaml:"name"`
 	Description string   `yaml:"description"`
@@ -20,7 +20,7 @@ type Manifest struct {
 	Imports     []string `yaml:"imports,omitempty"`
 }
 
-// LoadManifest reads and parses an origami.yaml file.
+// LoadManifest reads and parses an tako.yaml file.
 func LoadManifest(path string) (*Manifest, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {

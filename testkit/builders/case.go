@@ -1,7 +1,7 @@
 package builders
 
 import (
-	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/tako/engine"
 )
 
 // BatchCaseBuilder constructs a engine.BatchCase incrementally for tests.

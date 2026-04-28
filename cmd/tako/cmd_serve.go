@@ -13,20 +13,20 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dpopsuev/origami/tool"
-	battmcp "github.com/dpopsuev/origami/tool/mcp"
-	"github.com/dpopsuev/troupe/providers"
-	"github.com/dpopsuev/troupe/resilience"
+	"github.com/dpopsuev/tako/tool"
+	battmcp "github.com/dpopsuev/tako/tool/mcp"
+	"github.com/dpopsuev/tangle/providers"
+	"github.com/dpopsuev/tangle/resilience"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/dispatch"
-	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/engine/gate"
-	"github.com/dpopsuev/origami/engine/telemetry"
-	"github.com/dpopsuev/origami/mcp"
-	"github.com/dpopsuev/origami/simulate/sdlc"
-	troupesignal "github.com/dpopsuev/troupe/signal"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/dispatch"
+	"github.com/dpopsuev/tako/engine"
+	"github.com/dpopsuev/tako/engine/gate"
+	"github.com/dpopsuev/tako/engine/telemetry"
+	"github.com/dpopsuev/tako/mcp"
+	"github.com/dpopsuev/tako/simulate/sdlc"
+	troupesignal "github.com/dpopsuev/tangle/signal"
 )
 
 var errUnknownCircuit = errors.New("unknown circuit")
@@ -75,7 +75,7 @@ func serveCmd(args []string) error {
 	// 3. Wire state directory + durable stores.
 	stateBase := *stateDir
 	if stateBase == "" {
-		stateBase = "/tmp/origami-state"
+		stateBase = "/tmp/tako-state"
 	}
 	cfg.StateDir = stateBase
 

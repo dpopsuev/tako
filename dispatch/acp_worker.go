@@ -6,11 +6,11 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/troupe"
-	"github.com/dpopsuev/troupe/broker"
-	"github.com/dpopsuev/troupe/collective"
-	"github.com/dpopsuev/troupe/signal"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tangle"
+	"github.com/dpopsuev/tangle/broker"
+	"github.com/dpopsuev/tangle/collective"
+	"github.com/dpopsuev/tangle/signal"
 )
 
 var errNoActors = fmt.Errorf("no actors available")

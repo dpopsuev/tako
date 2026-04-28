@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dpopsuev/origami/dispatch"
-	"github.com/dpopsuev/origami/report"
+	"github.com/dpopsuev/tako/dispatch"
+	"github.com/dpopsuev/tako/report"
 )
 
 const (

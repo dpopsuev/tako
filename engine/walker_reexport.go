@@ -3,9 +3,9 @@ package engine
 // Re-exports from engine/walker sub-package for backward compatibility.
 
 import (
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine/walker"
-	"github.com/dpopsuev/troupe/visual"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/engine/walker"
+	"github.com/dpopsuev/tangle/visual"
 )
 
 // DefaultWalker is re-exported from engine/walker.

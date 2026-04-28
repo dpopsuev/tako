@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/fold"
+	"github.com/dpopsuev/tako/engine"
+	"github.com/dpopsuev/tako/fold"
 	"gopkg.in/yaml.v3"
 )
 
@@ -20,7 +20,7 @@ func tuneCmd(args []string) error {
 		return err
 	}
 
-	manifest := "origami.yaml"
+	manifest := "tako.yaml"
 	if fs.NArg() > 0 {
 		manifest = fs.Arg(0)
 	}

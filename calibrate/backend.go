@@ -3,7 +3,7 @@ package calibrate
 import (
 	"encoding/json"
 
-	"github.com/dpopsuev/troupe/arsenal"
+	"github.com/dpopsuev/tangle/arsenal"
 )
 
 // ModelBackend is the interface for sending prompts and receiving responses

@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/tool"
-	battmcp "github.com/dpopsuev/origami/tool/mcp"
-	"github.com/dpopsuev/origami/tool/testkit"
+	"github.com/dpopsuev/tako/tool"
+	battmcp "github.com/dpopsuev/tako/tool/mcp"
+	"github.com/dpopsuev/tako/tool/testkit"
 )
 
 func TestMCPAdapter_RegisterDiscoverExecute(t *testing.T) {

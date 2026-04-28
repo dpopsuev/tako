@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/dpopsuev/origami/engine/trace"
+	"github.com/dpopsuev/tako/engine/trace"
 )
 
 // Log keys.

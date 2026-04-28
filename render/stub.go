@@ -2,42 +2,59 @@ package render
 
 import "sync"
 
-// StubCanvas is a headless canvas — accepts damage, renders to buffer.
+// StubCanvas is a headless Canvas — accepts posts, no rendering.
 type StubCanvas struct {
-	mu      sync.Mutex
-	root    *Node
-	damaged []DamageRegion
-	buf     []byte
+	mu     sync.Mutex
+	panels []Panel
+	events chan Event
 }
 
 var _ Canvas = (*StubCanvas)(nil)
 
-func (c *StubCanvas) Mount(node *Node) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.root = node
+func NewStubCanvas() *StubCanvas {
+	return &StubCanvas{events: make(chan Event, 64)}
 }
 
-func (c *StubCanvas) Damage(region DamageRegion) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.damaged = append(c.damaged, region)
-}
-
-func (c *StubCanvas) Render() []byte {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if c.root == nil {
-		return nil
+func (b *StubCanvas) Post(panel Panel) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	for i, p := range b.panels {
+		if p.ID == panel.ID {
+			b.panels[i] = panel
+			b.events <- Event{Type: Updated, PanelID: panel.ID}
+			return
+		}
 	}
-	c.buf = c.root.Data
-	c.damaged = nil
-	return c.buf
+	b.panels = append(b.panels, panel)
+	b.events <- Event{Type: Posted, PanelID: panel.ID}
 }
 
-// DamageCount returns how many damage notifications were received.
-func (c *StubCanvas) DamageCount() int {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return len(c.damaged)
+func (b *StubCanvas) Retract(id string) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	for i, p := range b.panels {
+		if p.ID == id {
+			b.panels = append(b.panels[:i], b.panels[i+1:]...)
+			b.events <- Event{Type: Retracted, PanelID: id}
+			return
+		}
+	}
+}
+
+func (b *StubCanvas) Panels() []Panel {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	out := make([]Panel, len(b.panels))
+	copy(out, b.panels)
+	return out
+}
+
+func (b *StubCanvas) Subscribe() <-chan Event {
+	return b.events
+}
+
+func (b *StubCanvas) PanelCount() int {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return len(b.panels)
 }

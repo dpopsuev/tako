@@ -3,20 +3,20 @@ kind: Deployment
 metadata:
   name: gateway
   labels:
-    app: origami-gateway
+    app: tako-gateway
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: origami-gateway
+      app: tako-gateway
   template:
     metadata:
       labels:
-        app: origami-gateway
+        app: tako-gateway
     spec:
       containers:
         - name: gateway
-          image: origami-gateway:latest
+          image: tako-gateway:latest
           args:
             - "--port"
             - "9000"
@@ -47,7 +47,7 @@ metadata:
   name: gateway
 spec:
   selector:
-    app: origami-gateway
+    app: tako-gateway
   ports:
     - port: 9000
       targetPort: 9000

@@ -3,7 +3,7 @@ package assertions
 import (
 	"testing"
 
-	"github.com/dpopsuev/origami/calibrate"
+	"github.com/dpopsuev/tako/calibrate"
 )
 
 // AssertMetricPassed verifies that the metric with the given ID in the

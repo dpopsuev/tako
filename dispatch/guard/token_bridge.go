@@ -5,9 +5,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/dpopsuev/origami/dispatch"
+	"github.com/dpopsuev/tako/dispatch"
 
-	"github.com/dpopsuev/troupe/billing"
+	"github.com/dpopsuev/tangle/billing"
 )
 
 // Hook is called after each dispatch with timing and error info.

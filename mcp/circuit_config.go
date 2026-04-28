@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"io/fs"
 
-	"github.com/dpopsuev/origami/tool"
-	"github.com/dpopsuev/troupe"
+	"github.com/dpopsuev/tako/tool"
+	"github.com/dpopsuev/tangle"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/dispatch"
-	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/engine/gate"
-	"github.com/dpopsuev/origami/prompt"
-	"github.com/dpopsuev/origami/resource"
-	"github.com/dpopsuev/troupe/signal"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/dispatch"
+	"github.com/dpopsuev/tako/engine"
+	"github.com/dpopsuev/tako/engine/gate"
+	"github.com/dpopsuev/tako/prompt"
+	"github.com/dpopsuev/tako/resource"
+	"github.com/dpopsuev/tangle/signal"
 )
 
 // FieldDef, StepSchema, ExtraParamDef — canonical definitions in circuit/.

@@ -1,6 +1,6 @@
 package engine
 
-import "github.com/dpopsuev/origami/circuit"
+import "github.com/dpopsuev/tako/circuit"
 
 // IsCircuitDeterministic returns true if every node in the circuit that
 // references an instrument resolves to a deterministic instrument.

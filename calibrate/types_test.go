@@ -3,7 +3,7 @@ package calibrate_test
 import (
 	"testing"
 
-	"github.com/dpopsuev/origami/calibrate"
+	"github.com/dpopsuev/tako/calibrate"
 )
 
 func sampleMetricSet() calibrate.MetricSet {

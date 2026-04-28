@@ -69,7 +69,7 @@ func TestResolveCircuitPath_EnvVar(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Setenv("ORIGAMI_CIRCUITS", dir)
+	t.Setenv("TAKO_CIRCUITS", dir)
 
 	got, err := ResolveCircuitPath("envpipe")
 	if err != nil {

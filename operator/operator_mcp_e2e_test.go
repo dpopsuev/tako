@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/operator"
-	"github.com/dpopsuev/origami/simulate/sdlc"
+	"github.com/dpopsuev/tako/operator"
+	"github.com/dpopsuev/tako/simulate/sdlc"
 )
 
 // stubObserver returns drift on first call, clean on subsequent calls.

@@ -1,4 +1,4 @@
-apiVersion: origami/v1
+apiVersion: tako/v1
 kind: Instrument
 metadata:
   name: dummy-upper

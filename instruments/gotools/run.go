@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
+	"github.com/dpopsuev/tako/simulate/sdlc/sdlctype"
 )
 
 // cmdResult holds the result of running a shell command.

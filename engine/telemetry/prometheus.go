@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	fw "github.com/dpopsuev/origami/circuit"
+	fw "github.com/dpopsuev/tako/circuit"
 	"github.com/prometheus/client_golang/prometheus"
 )
 

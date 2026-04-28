@@ -9,9 +9,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/circuit/def"
-	"github.com/dpopsuev/troupe/visual"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/circuit/def"
+	"github.com/dpopsuev/tangle/visual"
 )
 
 // ManifestRegistry maps instrument names to their loaded manifests.

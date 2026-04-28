@@ -3,7 +3,7 @@ package contracts_test
 import (
 	"testing"
 
-	"github.com/dpopsuev/origami/testkit/contracts"
+	"github.com/dpopsuev/tako/testkit/contracts"
 )
 
 func TestDispatcherContract(t *testing.T) {

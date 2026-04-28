@@ -8,9 +8,9 @@ import (
 )
 
 func TestResolveSecrets_EnvVar(t *testing.T) {
-	t.Setenv("ORIGAMI_TEST_SECRET", "hunter2")
+	t.Setenv("TAKO_TEST_SECRET", "hunter2")
 
-	in := map[string]any{"token": "${ORIGAMI_TEST_SECRET}"}
+	in := map[string]any{"token": "${TAKO_TEST_SECRET}"}
 	out, err := ResolveSecrets(in)
 	if err != nil {
 		t.Fatalf("ResolveSecrets: %v", err)
@@ -21,10 +21,10 @@ func TestResolveSecrets_EnvVar(t *testing.T) {
 }
 
 func TestResolveSecrets_EnvVarWithDefault(t *testing.T) {
-	t.Setenv("ORIGAMI_TEST_UNSET_GUARD", "")
-	os.Unsetenv("ORIGAMI_TEST_UNSET_GUARD")
+	t.Setenv("TAKO_TEST_UNSET_GUARD", "")
+	os.Unsetenv("TAKO_TEST_UNSET_GUARD")
 
-	in := map[string]any{"region": "${ORIGAMI_TEST_UNSET_GUARD:-us-east-1}"}
+	in := map[string]any{"region": "${TAKO_TEST_UNSET_GUARD:-us-east-1}"}
 	out, err := ResolveSecrets(in)
 	if err != nil {
 		t.Fatalf("ResolveSecrets: %v", err)
@@ -35,9 +35,9 @@ func TestResolveSecrets_EnvVarWithDefault(t *testing.T) {
 }
 
 func TestResolveSecrets_EnvVarSetOverridesDefault(t *testing.T) {
-	t.Setenv("ORIGAMI_TEST_REGION", "eu-west-1")
+	t.Setenv("TAKO_TEST_REGION", "eu-west-1")
 
-	in := map[string]any{"region": "${ORIGAMI_TEST_REGION:-us-east-1}"}
+	in := map[string]any{"region": "${TAKO_TEST_REGION:-us-east-1}"}
 	out, err := ResolveSecrets(in)
 	if err != nil {
 		t.Fatalf("ResolveSecrets: %v", err)
@@ -65,11 +65,11 @@ func TestResolveSecrets_FileRef(t *testing.T) {
 }
 
 func TestResolveSecrets_NestedMap(t *testing.T) {
-	t.Setenv("ORIGAMI_TEST_NESTED", "deep-value")
+	t.Setenv("TAKO_TEST_NESTED", "deep-value")
 
 	in := map[string]any{
 		"outer": map[string]any{
-			"inner": "${ORIGAMI_TEST_NESTED}",
+			"inner": "${TAKO_TEST_NESTED}",
 		},
 	}
 	out, err := ResolveSecrets(in)
@@ -86,11 +86,11 @@ func TestResolveSecrets_NestedMap(t *testing.T) {
 }
 
 func TestResolveSecrets_SliceValues(t *testing.T) {
-	t.Setenv("ORIGAMI_TEST_SLICE_A", "alpha")
-	t.Setenv("ORIGAMI_TEST_SLICE_B", "beta")
+	t.Setenv("TAKO_TEST_SLICE_A", "alpha")
+	t.Setenv("TAKO_TEST_SLICE_B", "beta")
 
 	in := map[string]any{
-		"items": []any{"${ORIGAMI_TEST_SLICE_A}", "${ORIGAMI_TEST_SLICE_B}", 42},
+		"items": []any{"${TAKO_TEST_SLICE_A}", "${TAKO_TEST_SLICE_B}", 42},
 	}
 	out, err := ResolveSecrets(in)
 	if err != nil {
@@ -137,9 +137,9 @@ func TestResolveSecrets_NonStringPassthrough(t *testing.T) {
 }
 
 func TestResolveSecrets_MissingEnvVarError(t *testing.T) {
-	os.Unsetenv("ORIGAMI_TEST_MISSING_VAR_XYZ")
+	os.Unsetenv("TAKO_TEST_MISSING_VAR_XYZ")
 
-	in := map[string]any{"secret": "${ORIGAMI_TEST_MISSING_VAR_XYZ}"}
+	in := map[string]any{"secret": "${TAKO_TEST_MISSING_VAR_XYZ}"}
 	_, err := ResolveSecrets(in)
 	if err == nil {
 		t.Fatal("expected error for missing env var")
@@ -150,14 +150,14 @@ func TestResolveSecrets_MissingEnvVarError(t *testing.T) {
 }
 
 func TestResolveSecrets_DoesNotMutateInput(t *testing.T) {
-	t.Setenv("ORIGAMI_TEST_MUTATE", "resolved")
+	t.Setenv("TAKO_TEST_MUTATE", "resolved")
 
-	in := map[string]any{"key": "${ORIGAMI_TEST_MUTATE}"}
+	in := map[string]any{"key": "${TAKO_TEST_MUTATE}"}
 	_, err := ResolveSecrets(in)
 	if err != nil {
 		t.Fatalf("ResolveSecrets: %v", err)
 	}
-	if in["key"] != "${ORIGAMI_TEST_MUTATE}" {
+	if in["key"] != "${TAKO_TEST_MUTATE}" {
 		t.Errorf("input mutated: key = %v", in["key"])
 	}
 }
@@ -171,10 +171,10 @@ func TestResolveSecrets_FileNotFound(t *testing.T) {
 }
 
 func TestResolveSecrets_MultipleRefsInOneString(t *testing.T) {
-	t.Setenv("ORIGAMI_TEST_HOST", "localhost")
-	t.Setenv("ORIGAMI_TEST_PORT", "5432")
+	t.Setenv("TAKO_TEST_HOST", "localhost")
+	t.Setenv("TAKO_TEST_PORT", "5432")
 
-	in := map[string]any{"dsn": "postgres://${ORIGAMI_TEST_HOST}:${ORIGAMI_TEST_PORT}/db"}
+	in := map[string]any{"dsn": "postgres://${TAKO_TEST_HOST}:${TAKO_TEST_PORT}/db"}
 	out, err := ResolveSecrets(in)
 	if err != nil {
 		t.Fatalf("ResolveSecrets: %v", err)

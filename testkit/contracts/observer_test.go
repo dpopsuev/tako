@@ -3,8 +3,8 @@ package contracts_test
 import (
 	"testing"
 
-	"github.com/dpopsuev/origami/mcp"
-	"github.com/dpopsuev/origami/testkit/contracts"
+	"github.com/dpopsuev/tako/mcp"
+	"github.com/dpopsuev/tako/testkit/contracts"
 )
 
 // stubObserver is a minimal SessionObserver for contract testing.

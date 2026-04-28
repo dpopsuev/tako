@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/troupe/visual"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tangle/visual"
 )
 
 func findingTestNode(name string, confidence float64, raw any) func(circuit.NodeDef) circuit.Node {

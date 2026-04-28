@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // Interrupt signals that a walk should pause at the current node for

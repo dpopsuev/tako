@@ -3,8 +3,8 @@ package contracts
 import (
 	"testing"
 
-	"github.com/dpopsuev/origami/testkit"
-	"github.com/dpopsuev/origami/testkit/stubs"
+	"github.com/dpopsuev/tako/testkit"
+	"github.com/dpopsuev/tako/testkit/stubs"
 )
 
 func TestStubTransport_PassesContract(t *testing.T) {

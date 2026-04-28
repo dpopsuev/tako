@@ -1,4 +1,4 @@
-// Package lsp implements a Language Server for Origami circuit YAML.
+// Package lsp implements a Language Server for Tako circuit YAML.
 // It embeds the origami-lint engine for diagnostics and provides
 // completion, hover, and go-to-definition for the circuit DSL.
 package lsp
@@ -16,11 +16,11 @@ import (
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/lint"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/lint"
 )
 
-// Server is the Origami LSP server.
+// Server is the Tako LSP server.
 type Server struct {
 	conn jsonrpc2.Conn
 
@@ -117,7 +117,7 @@ func (s *Server) handleInitialize(ctx context.Context, reply jsonrpc2.Replier, _
 			InlayHintProvider: true,
 		},
 		ServerInfo: &protocol.ServerInfo{
-			Name:    "origami-lsp",
+			Name:    "tako-lsp",
 			Version: "0.1.0",
 		},
 	}
@@ -243,15 +243,15 @@ func (s *Server) handleDidChangeConfiguration(ctx context.Context, reply jsonrpc
 	}
 
 	var settings struct {
-		Origami struct {
+		Tako struct {
 			Kami struct {
 				Enabled bool `json:"enabled"`
 				Port    int  `json:"port"`
 			} `json:"kami"`
-		} `json:"origami"`
+		} `json:"tako"`
 	}
-	if json.Unmarshal(params.Settings, &settings) == nil && settings.Origami.Kami.Port > 0 {
-		s.configureKami(settings.Origami.Kami.Enabled, settings.Origami.Kami.Port)
+	if json.Unmarshal(params.Settings, &settings) == nil && settings.Tako.Kami.Port > 0 {
+		s.configureKami(settings.Tako.Kami.Enabled, settings.Tako.Kami.Port)
 	}
 
 	return reply(ctx, nil, nil)

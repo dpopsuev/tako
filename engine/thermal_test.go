@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 func TestThermalObserver_WarningEmitted(t *testing.T) {

@@ -1,4 +1,4 @@
-apiVersion: origami/v1
+apiVersion: tako/v1
 kind: Board
 metadata:
   name: consumer
@@ -9,10 +9,10 @@ spec:
       module: github.com/example/schematic-a
     datasource:
       kind: Component
-      module: github.com/dpopsuev/origami-components/rp
+      module: github.com/dpopsuev/tako-components/rp
     mcp:
       kind: Component
-      module: github.com/dpopsuev/origami/instruments/mcp
+      module: github.com/dpopsuev/tako/instruments/mcp
   bind:
     alpha:
       data: datasource

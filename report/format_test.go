@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/report"
+	"github.com/dpopsuev/tako/report"
 )
 
 func TestASCII_BasicTable(t *testing.T) {

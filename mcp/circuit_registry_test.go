@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dpopsuev/origami/dispatch"
-	"github.com/dpopsuev/troupe/signal"
+	"github.com/dpopsuev/tako/dispatch"
+	"github.com/dpopsuev/tangle/signal"
 )
 
 func makeTestType(name string) *CircuitType {

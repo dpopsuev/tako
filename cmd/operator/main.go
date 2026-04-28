@@ -5,7 +5,7 @@
 // Usage:
 //
 //	operator --repo /path/to/origami --mode in-process
-//	operator --repo /path/to/origami --mode container --image origami-sdlc:latest
+//	operator --repo /path/to/origami --mode container --image tako-sdlc:latest
 package main
 
 import (
@@ -18,9 +18,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dpopsuev/origami/engine/trace"
-	"github.com/dpopsuev/origami/operator"
-	"github.com/dpopsuev/origami/simulate/sdlc"
+	"github.com/dpopsuev/tako/engine/trace"
+	"github.com/dpopsuev/tako/operator"
+	"github.com/dpopsuev/tako/simulate/sdlc"
 )
 
 const (
@@ -33,7 +33,7 @@ const (
 func main() {
 	repoPath := flag.String("repo", ".", "repository path to watch")
 	mode := flag.String("mode", "in-process", "actor mode: in-process, mcp, or container")
-	image := flag.String("image", "origami-sdlc:latest", "container image for circuit runner")
+	image := flag.String("image", "tako-sdlc:latest", "container image for circuit runner")
 	runtime := flag.String("runtime", "docker", "container runtime: docker or podman")
 	interval := flag.Duration("interval", 30*time.Second, "poll interval")
 	maxRuns := flag.Int("max-runs", 0, "max circuit runs (0 = unlimited)")
@@ -45,7 +45,7 @@ func main() {
 	}
 
 	desired := operator.DesiredState{
-		Manifest: "origami-sdlc.yaml",
+		Manifest: "tako-sdlc.yaml",
 		RepoPath: *repoPath,
 		Scan:     "clean",
 		Build:    "passing",

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dpopsuev/origami/circuit/def"
+	"github.com/dpopsuev/tako/circuit/def"
 )
 
 // ApplyFixes runs all fixable rules and returns both the modified YAML bytes

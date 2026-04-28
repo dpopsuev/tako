@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-const validInstrumentYAML = `apiVersion: origami/v1
+const validInstrumentYAML = `apiVersion: tako/v1
 kind: Instrument
 metadata:
   name: test-tool
@@ -73,7 +73,7 @@ done: _done
 }
 
 func TestInstrumentLint_I1_MissingTune(t *testing.T) {
-	yaml := `apiVersion: origami/v1
+	yaml := `apiVersion: tako/v1
 kind: Instrument
 metadata:
   name: bad-tool
@@ -96,7 +96,7 @@ spec:
 }
 
 func TestInstrumentLint_I2_MissingDispatch(t *testing.T) {
-	yaml := `apiVersion: origami/v1
+	yaml := `apiVersion: tako/v1
 kind: Instrument
 metadata:
   name: bad-tool
@@ -114,7 +114,7 @@ spec:
 }
 
 func TestInstrumentLint_I2_InvalidDispatch(t *testing.T) {
-	yaml := `apiVersion: origami/v1
+	yaml := `apiVersion: tako/v1
 kind: Instrument
 metadata:
   name: bad-tool
@@ -136,7 +136,7 @@ spec:
 }
 
 func TestInstrumentLint_I3_MissingNamespace(t *testing.T) {
-	yaml := `apiVersion: origami/v1
+	yaml := `apiVersion: tako/v1
 kind: Instrument
 metadata:
   name: bad-tool
@@ -154,7 +154,7 @@ spec:
 }
 
 func TestInstrumentLint_I4_MalformedInputSchema(t *testing.T) {
-	yaml := `apiVersion: origami/v1
+	yaml := `apiVersion: tako/v1
 kind: Instrument
 metadata:
   name: bad-tool
@@ -174,7 +174,7 @@ spec:
 }
 
 func TestInstrumentLint_I4_MalformedOutputSchema(t *testing.T) {
-	yaml := `apiVersion: origami/v1
+	yaml := `apiVersion: tako/v1
 kind: Instrument
 metadata:
   name: bad-tool
@@ -202,7 +202,7 @@ func TestInstrumentLint_I4_ValidSchema_NoFinding(t *testing.T) {
 }
 
 func TestInstrumentLint_I5_MissingSchema(t *testing.T) {
-	yaml := `apiVersion: origami/v1
+	yaml := `apiVersion: tako/v1
 kind: Instrument
 metadata:
   name: bare-tool

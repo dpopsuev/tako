@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // stubArtifact defined in testhelpers_test.go

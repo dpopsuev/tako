@@ -1,7 +1,7 @@
 package mcp
 
 import (
-	"github.com/dpopsuev/origami/tool"
+	"github.com/dpopsuev/tako/tool"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 

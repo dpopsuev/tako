@@ -155,7 +155,7 @@ func runBoard(ctx context.Context, data []byte, opts *Options) error {
 	return buildDomainServe(ctx, m, opts)
 }
 
-// runLegacy handles the K8s-style origami.yaml manifest format.
+// runLegacy handles the K8s-style tako.yaml manifest format.
 func runLegacy(ctx context.Context, data []byte, opts *Options) error {
 	m, err := ParseManifest(data)
 	if err != nil {
@@ -193,7 +193,7 @@ func runLegacy(ctx context.Context, data []byte, opts *Options) error {
 // so existing codegen (buildWiredBinary, buildDomainServe) works unchanged.
 func boardToManifest(bm *BoardManifest) *Manifest {
 	m := &Manifest{
-		APIVersion:  "origami/v1",
+		APIVersion:  "tako/v1",
 		Kind:        "Board",
 		Name:        bm.Name,
 		Description: bm.Description,
@@ -356,7 +356,7 @@ func validateAssetPaths(m *Manifest, manifestDir string) error {
 }
 
 const (
-	origamiModule = "github.com/dpopsuev/origami"
+	takoModule = "github.com/dpopsuev/tako"
 	mcpSDKModule  = "github.com/modelcontextprotocol/go-sdk"
 )
 
@@ -366,9 +366,9 @@ func buildWiredBinary(ctx context.Context, m *Manifest, opts *Options) error {
 		resolver = &DefaultModuleResolver{}
 	}
 
-	origamiRoot := resolver.FindLocalModule(origamiModule)
-	if origamiRoot == "" {
-		return ErrCannotFindOrigamiModuleOnLocalFilesystem
+	takoRoot := resolver.FindLocalModule(takoModule)
+	if takoRoot == "" {
+		return ErrCannotFindTakoModuleOnLocalFilesystem
 	}
 
 	manifestDir := filepath.Dir(opts.ManifestPath)
@@ -376,7 +376,7 @@ func buildWiredBinary(ctx context.Context, m *Manifest, opts *Options) error {
 		return fmt.Errorf("discover domain assets: %w", err)
 	}
 
-	g, err := Resolve(m, origamiRoot, resolver)
+	g, err := Resolve(m, takoRoot, resolver)
 	if err != nil {
 		return fmt.Errorf("resolve bindings: %w", err)
 	}
@@ -386,7 +386,7 @@ func buildWiredBinary(ctx context.Context, m *Manifest, opts *Options) error {
 		return err
 	}
 
-	tmpDir, err := os.MkdirTemp("", "origami-fold-wired-*")
+	tmpDir, err := os.MkdirTemp("", "tako-assemble-wired-*")
 	if err != nil {
 		return fmt.Errorf("create temp dir: %w", err)
 	}
@@ -461,13 +461,13 @@ func createWiredBuildModule(tmpDir, name string, resolver ModuleResolver, g *Res
 	var buf strings.Builder
 	buf.WriteString(fmt.Sprintf("module %s-build\n\ngo 1.24\n\nrequire (\n", name))
 
-	origamiVersion := resolveModuleVersion(resolver, origamiModule)
+	takoVersion := resolveModuleVersion(resolver, takoModule)
 	mcpVersion := resolveModuleVersion(resolver, mcpSDKModule)
-	buf.WriteString(fmt.Sprintf("\t%s %s\n", origamiModule, origamiVersion))
+	buf.WriteString(fmt.Sprintf("\t%s %s\n", takoModule, takoVersion))
 	buf.WriteString(fmt.Sprintf("\t%s %s\n", mcpSDKModule, mcpVersion))
 
 	// Collect unique external module roots from resolved imports.
-	seen := map[string]bool{origamiModule: true, mcpSDKModule: true}
+	seen := map[string]bool{takoModule: true, mcpSDKModule: true}
 	var externalModules []string
 	if g != nil {
 		for _, imp := range g.Imports {
@@ -484,9 +484,9 @@ func createWiredBuildModule(tmpDir, name string, resolver ModuleResolver, g *Res
 
 	// Add replace directives only when explicitly requested (--local flag).
 	if local {
-		if localPath := resolver.FindLocalModule(origamiModule); localPath != "" {
-			fmt.Fprintf(os.Stderr, "WARNING: using local module %s => %s\n", origamiModule, localPath)
-			buf.WriteString(fmt.Sprintf("replace %s => %s\n", origamiModule, localPath))
+		if localPath := resolver.FindLocalModule(takoModule); localPath != "" {
+			fmt.Fprintf(os.Stderr, "WARNING: using local module %s => %s\n", takoModule, localPath)
+			buf.WriteString(fmt.Sprintf("replace %s => %s\n", takoModule, localPath))
 		}
 		for _, mod := range externalModules {
 			if localPath := resolver.FindLocalModule(mod); localPath != "" {
@@ -504,11 +504,11 @@ const fallbackVersion = "v0.0.0"
 // resolveModuleVersion reads the version of a dependency from origami's own go.mod.
 // Falls back to fallbackVersion if not found (e.g., when origami IS the module).
 func resolveModuleVersion(resolver ModuleResolver, modPath string) string {
-	origamiRoot := resolver.FindLocalModule(origamiModule)
-	if origamiRoot == "" {
+	takoRoot := resolver.FindLocalModule(takoModule)
+	if takoRoot == "" {
 		return fallbackVersion
 	}
-	goModPath := filepath.Join(origamiRoot, "go.mod")
+	goModPath := filepath.Join(takoRoot, "go.mod")
 	data, err := os.ReadFile(goModPath)
 	if err != nil {
 		return fallbackVersion
@@ -572,7 +572,7 @@ func buildDomainServe(ctx context.Context, m *Manifest, opts *Options) error {
 		return err
 	}
 
-	tmpDir, err := os.MkdirTemp("", "origami-fold-domain-*")
+	tmpDir, err := os.MkdirTemp("", "tako-assemble-domain-*")
 	if err != nil {
 		return fmt.Errorf("create temp dir: %w", err)
 	}
@@ -670,10 +670,10 @@ func buildContainerImage(ctx context.Context, m *Manifest, binaryPath string, op
 
 	imgName := opts.ImageName
 	if imgName == "" {
-		imgName = "origami-" + m.Name + "-domain"
+		imgName = "tako-" + m.Name + "-domain"
 	}
 
-	imgDir, err := os.MkdirTemp("", "origami-fold-image-*")
+	imgDir, err := os.MkdirTemp("", "tako-assemble-image-*")
 	if err != nil {
 		return fmt.Errorf("create image dir: %w", err)
 	}
@@ -720,13 +720,13 @@ func buildContainerImage(ctx context.Context, m *Manifest, binaryPath string, op
 func createDomainServeBuildModule(tmpDir, name string, resolver ModuleResolver, local bool) error {
 	var buf strings.Builder
 	buf.WriteString(fmt.Sprintf("module %s-domain-serve-build\n\ngo 1.24\n\nrequire (\n", name))
-	buf.WriteString(fmt.Sprintf("\t%s v0.0.0\n", origamiModule))
+	buf.WriteString(fmt.Sprintf("\t%s v0.0.0\n", takoModule))
 	buf.WriteString(")\n\n")
 
 	if local {
-		if localPath := resolver.FindLocalModule(origamiModule); localPath != "" {
-			fmt.Fprintf(os.Stderr, "WARNING: using local module %s => %s\n", origamiModule, localPath)
-			buf.WriteString(fmt.Sprintf("replace %s => %s\n", origamiModule, localPath))
+		if localPath := resolver.FindLocalModule(takoModule); localPath != "" {
+			fmt.Fprintf(os.Stderr, "WARNING: using local module %s => %s\n", takoModule, localPath)
+			buf.WriteString(fmt.Sprintf("replace %s => %s\n", takoModule, localPath))
 		}
 	}
 

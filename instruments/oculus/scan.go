@@ -17,12 +17,12 @@ import (
 	oculusengine "github.com/dpopsuev/oculus/v3/engine"
 	"github.com/dpopsuev/oculus/v3/port"
 
-	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/engine/trace"
-	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
+	"github.com/dpopsuev/tako/engine"
+	"github.com/dpopsuev/tako/engine/trace"
+	"github.com/dpopsuev/tako/simulate/sdlc/sdlctype"
 )
 
-// ScanTransformer wraps the Oculus analysis engine as an Origami transformer.
+// ScanTransformer wraps the Oculus analysis engine as an Tako transformer.
 // Scans the target repository and returns a typed ScanResult.
 type ScanTransformer struct {
 	repoPath string

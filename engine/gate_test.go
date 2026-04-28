@@ -9,8 +9,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine/gate"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/engine/gate"
 )
 
 // testApprovalStore is a minimal in-memory ApprovalStore for engine-internal tests.

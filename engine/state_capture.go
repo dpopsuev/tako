@@ -5,7 +5,7 @@ package engine
 import (
 	"sync"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // OutputCapture collects artifacts produced at each node during a walk.

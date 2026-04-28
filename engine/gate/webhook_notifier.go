@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // ErrWebhookFailed is returned when the webhook HTTP POST fails.

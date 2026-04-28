@@ -3,7 +3,7 @@ package builders
 import (
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit/def"
+	"github.com/dpopsuev/tako/circuit/def"
 )
 
 func TestInstrumentManifestBuilder_Defaults(t *testing.T) {

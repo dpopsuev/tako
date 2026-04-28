@@ -3,7 +3,7 @@ package agent
 import (
 	"context"
 
-	"github.com/dpopsuev/origami/agent/corpus"
+	"github.com/dpopsuev/tako/agent/corpus"
 )
 
 // Agent is the runtime representation of an agent inside a Fab.

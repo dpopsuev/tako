@@ -1,7 +1,7 @@
 package fab
 
 import (
-	"github.com/dpopsuev/origami/artifact"
+	"github.com/dpopsuev/tako/artifact"
 )
 
 // Contract defines the transition condition between two Stations.

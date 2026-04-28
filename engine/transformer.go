@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine/trace"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/engine/trace"
 )
 
 // Instrument, InstrumentContext, InstrumentRegistry are defined in engine/handler.

@@ -1,4 +1,4 @@
-apiVersion: origami/v1
+apiVersion: tako/v1
 kind: Board
 metadata:
   name: test
@@ -6,7 +6,7 @@ spec:
   uses:
     mcp:
       kind: Component
-      module: github.com/dpopsuev/origami/instruments/mcp
+      module: github.com/dpopsuev/tako/instruments/mcp
   bind:
     nonexistent:
       transport: mcp

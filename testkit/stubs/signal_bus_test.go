@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/testkit/stubs"
+	"github.com/dpopsuev/tako/testkit/stubs"
 )
 
 func TestStubSignalBus_AssertEventEmitted(t *testing.T) {

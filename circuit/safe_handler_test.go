@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 func newTestHandler(buf *bytes.Buffer, opts ...circuit.SafeHandlerOption) *circuit.SafeHandler {

@@ -2,7 +2,7 @@
 // Existing engine.Instrument references continue to work.
 package engine
 
-import "github.com/dpopsuev/origami/engine/handler"
+import "github.com/dpopsuev/tako/engine/handler"
 
 // Handler types — definitions live in engine/handler.
 type (

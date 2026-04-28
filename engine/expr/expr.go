@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 	"github.com/expr-lang/expr"
 	"github.com/expr-lang/expr/vm"
 )

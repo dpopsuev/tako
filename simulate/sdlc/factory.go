@@ -11,20 +11,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dpopsuev/origami/tool"
+	"github.com/dpopsuev/tako/tool"
 	anyllm "github.com/mozilla-ai/any-llm-go/providers"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/instruments/enrichment"
-	"github.com/dpopsuev/origami/instruments/gitops"
-	"github.com/dpopsuev/origami/instruments/gotools"
-	"github.com/dpopsuev/origami/instruments/llmfix"
-	oculusinst "github.com/dpopsuev/origami/instruments/oculus"
-	"github.com/dpopsuev/origami/instruments/scribeops"
-	"github.com/dpopsuev/origami/instruments/selfreview"
-	"github.com/dpopsuev/origami/instruments/tdd"
-	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/engine"
+	"github.com/dpopsuev/tako/instruments/enrichment"
+	"github.com/dpopsuev/tako/instruments/gitops"
+	"github.com/dpopsuev/tako/instruments/gotools"
+	"github.com/dpopsuev/tako/instruments/llmfix"
+	oculusinst "github.com/dpopsuev/tako/instruments/oculus"
+	"github.com/dpopsuev/tako/instruments/scribeops"
+	"github.com/dpopsuev/tako/instruments/selfreview"
+	"github.com/dpopsuev/tako/instruments/tdd"
+	"github.com/dpopsuev/tako/simulate/sdlc/sdlctype"
 )
 
 var errUnknownCircuit = errors.New("unknown circuit")
@@ -54,7 +54,7 @@ const (
 	// EnvCircuitDir is the directory containing circuit YAML (used by serve command).
 	// When different from EnvRepoPath (e.g., origami dogfooding itself).
 	EnvCircuitDir = "SDLC_CIRCUIT_DIR"
-	// EnvScope is the Scribe scope for this circuit (e.g., "origami", "asterisk").
+	// EnvScope is the Scribe scope for this circuit (e.g., "tako", "asterisk").
 	EnvScope = "CIRCUIT_SCOPE"
 
 	// ExtraKeyProvider is the Extra map key for the injected anyllm.Provider.

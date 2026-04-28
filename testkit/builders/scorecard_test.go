@@ -3,8 +3,8 @@ package builders_test
 import (
 	"testing"
 
-	"github.com/dpopsuev/origami/calibrate"
-	"github.com/dpopsuev/origami/testkit/builders"
+	"github.com/dpopsuev/tako/calibrate"
+	"github.com/dpopsuev/tako/testkit/builders"
 )
 
 func TestScoreCardBuilder_Basic(t *testing.T) {

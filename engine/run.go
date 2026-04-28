@@ -10,7 +10,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // RunOption configures a Run invocation.
@@ -170,7 +170,7 @@ func WithOffsetCompensation(_ string) RunOption {
 }
 
 // Run loads a circuit YAML, builds a graph, and walks it.
-// This is the primary Go API for executing Origami circuits.
+// This is the primary Go API for executing Tako circuits.
 //
 //nolint:gocyclo,funlen // top-level orchestrator applies all RunOption combinations
 func Run(ctx context.Context, circuitPath string, input any, opts ...RunOption) error {

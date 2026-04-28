@@ -5,7 +5,7 @@
 # own repos). Origami connects to them via SCRIBE_ENDPOINT and LOCUS_ENDPOINT.
 #
 # Prerequisites:
-#   make serve-image                          # builds origami-serve:latest
+#   make serve-image                          # builds tako-serve:latest
 #   Scribe running at $SCRIBE_ENDPOINT        # e.g. http://localhost:8080/mcp
 #   Locus running at $LOCUS_ENDPOINT          # e.g. http://localhost:8081/mcp
 #
@@ -14,11 +14,11 @@
 #   curl http://localhost:9100/healthz
 #
 # Claude Code MCP config:
-#   { "origami-circuit": { "type": "http", "url": "http://localhost:9100/mcp" } }
+#   { "tako-circuit": { "type": "http", "url": "http://localhost:9100/mcp" } }
 
 services:
   circuit:
-    image: origami-serve:latest
+    image: tako-serve:latest
     mem_limit: 4g
     restart: "no"
     ports:
@@ -35,7 +35,7 @@ services:
       - SDLC_MODEL=${SDLC_MODEL:-claude-sonnet-4-6}
       - SCRIBE_ENDPOINT=${SCRIBE_ENDPOINT:-http://host.containers.internal:8080/mcp}
       - LOCUS_ENDPOINT=${LOCUS_ENDPOINT:-http://host.containers.internal:8081/mcp}
-      - CIRCUIT_SCOPE=${CIRCUIT_SCOPE:-origami}
+      - CIRCUIT_SCOPE=${CIRCUIT_SCOPE:-tako}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - ANTHROPIC_VERTEX_PROJECT_ID=${ANTHROPIC_VERTEX_PROJECT_ID}
       - CLOUD_ML_REGION=${CLOUD_ML_REGION}

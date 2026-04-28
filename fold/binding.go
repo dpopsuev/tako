@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 const (
@@ -98,7 +98,7 @@ type ImportEntry struct {
 // Resolve reads component.yaml files for all declared schematics and
 // connectors, matches socket bindings, validates completeness, detects
 // cycles, and returns a topologically ordered instantiation plan.
-func Resolve(m *Manifest, origamiRoot string, resolver ModuleResolver) (*ResolvedGraph, error) {
+func Resolve(m *Manifest, takoRoot string, resolver ModuleResolver) (*ResolvedGraph, error) {
 	if !m.HasBindings() {
 		return nil, ErrManifestHasNoSchematicsOrUsesSection
 	}
@@ -113,7 +113,7 @@ func Resolve(m *Manifest, origamiRoot string, resolver ModuleResolver) (*Resolve
 	schemManifests := make(map[string]*circuit.ComponentManifest)
 
 	for name, ref := range m.Connectors {
-		cmPath := resolveComponentPath(ref.Path, origamiRoot, resolver)
+		cmPath := resolveComponentPath(ref.Path, takoRoot, resolver)
 		cm, err := circuit.LoadComponentManifest(cmPath)
 		if err != nil {
 			return nil, fmt.Errorf("connector %q: %w", name, err)
@@ -122,7 +122,7 @@ func Resolve(m *Manifest, origamiRoot string, resolver ModuleResolver) (*Resolve
 	}
 
 	for name, ref := range m.Schematics {
-		cmPath := resolveComponentPath(ref.Path, origamiRoot, resolver)
+		cmPath := resolveComponentPath(ref.Path, takoRoot, resolver)
 		cm, err := circuit.LoadComponentManifest(cmPath)
 		if err != nil {
 			return nil, fmt.Errorf("schematic %q: %w", name, err)
@@ -507,7 +507,7 @@ func sanitize(s string) string {
 // filesystem location of component.yaml. Supports both relative paths
 // (e.g. "schematics/alpha") and module-qualified paths
 // (e.g. "github.com/example/schematic-a").
-func resolveComponentPath(refPath, origamiRoot string, resolver ModuleResolver) string {
+func resolveComponentPath(refPath, takoRoot string, resolver ModuleResolver) string {
 	// Module path: first segment contains a dot (e.g. "github.com").
 	if parts := strings.SplitN(refPath, "/", 2); strings.Contains(parts[0], ".") && resolver != nil {
 		// Try the full path as a module, then walk up to find the module root.
@@ -526,6 +526,6 @@ func resolveComponentPath(refPath, origamiRoot string, resolver ModuleResolver) 
 			}
 		}
 	}
-	// Relative path: join with origamiRoot (backward compatible).
-	return filepath.Join(origamiRoot, refPath, "component.yaml")
+	// Relative path: join with takoRoot (backward compatible).
+	return filepath.Join(takoRoot, refPath, "component.yaml")
 }

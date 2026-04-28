@@ -6,19 +6,19 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dpopsuev/origami/agent"
-	"github.com/dpopsuev/origami/agent/corpus"
-	"github.com/dpopsuev/origami/agent/organ"
-	"github.com/dpopsuev/origami/artifact"
-	"github.com/dpopsuev/origami/discourse"
-	"github.com/dpopsuev/origami/ergograph"
-	"github.com/dpopsuev/origami/fab"
-	"github.com/dpopsuev/origami/memory"
-	"github.com/dpopsuev/origami/render"
-	"github.com/dpopsuev/origami/service/andon"
-	"github.com/dpopsuev/origami/service/depo"
-	"github.com/dpopsuev/origami/service/kanban"
-	"github.com/dpopsuev/origami/workstation"
+	"github.com/dpopsuev/tako/agent"
+	"github.com/dpopsuev/tako/agent/corpus"
+	"github.com/dpopsuev/tako/agent/organ"
+	"github.com/dpopsuev/tako/artifact"
+	"github.com/dpopsuev/tako/discourse"
+	"github.com/dpopsuev/tako/ergograph"
+	"github.com/dpopsuev/tako/fab"
+	"github.com/dpopsuev/tako/memory"
+	"github.com/dpopsuev/tako/render"
+	"github.com/dpopsuev/tako/service/andon"
+	"github.com/dpopsuev/tako/service/depo"
+	"github.com/dpopsuev/tako/service/kanban"
+	"github.com/dpopsuev/tako/workstation"
 )
 
 var (
@@ -178,7 +178,11 @@ func (fc *FabCollective) Run(ctx context.Context) error {
 		CreatedAt: time.Now(),
 	})
 
-	fc.Canvas.Damage(render.DamageRegion{NodeID: intake.Name})
+	fc.Canvas.Post(render.Panel{
+		ID:     "station:" + intake.Name,
+		Source: "fab",
+		Data:   result.Content,
+	})
 
 	if err := fc.runner.Run(ctx, a); err != nil {
 		return fmt.Errorf("tako: agent run: %w", err)

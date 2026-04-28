@@ -9,7 +9,7 @@ import (
 )
 
 // StoreWiring declares how store engines are wired to schematics.
-// Consumers declare this in origami.yaml to assign engines per schematic
+// Consumers declare this in tako.yaml to assign engines per schematic
 // or per named store.
 type StoreWiring struct {
 	Default string                  `yaml:"default,omitempty"` // default engine (e.g. "sqlite")

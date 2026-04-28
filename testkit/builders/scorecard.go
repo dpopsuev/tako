@@ -1,6 +1,6 @@
 package builders
 
-import "github.com/dpopsuev/origami/calibrate"
+import "github.com/dpopsuev/tako/calibrate"
 
 // ScoreCardBuilder constructs a calibrate.ScoreCard incrementally for tests.
 // This is a test-oriented builder that provides a simpler API than the

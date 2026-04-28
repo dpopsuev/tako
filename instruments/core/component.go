@@ -1,8 +1,8 @@
 package core
 
 import (
-	"github.com/dpopsuev/origami/dispatch"
-	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/tako/dispatch"
+	"github.com/dpopsuev/tako/engine"
 )
 
 // CoreComponent returns a Component bundling the four built-in transformers

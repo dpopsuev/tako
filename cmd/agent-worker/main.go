@@ -5,7 +5,7 @@
 // Usage:
 //
 //	agent-worker --gateway http://localhost:9000/mcp --agent cursor
-//	ORIGAMI_AGENT=cursor GATEWAY_ENDPOINT=http://localhost:9000/mcp agent-worker
+//	TAKO_AGENT=cursor GATEWAY_ENDPOINT=http://localhost:9000/mcp agent-worker
 package main
 
 import (
@@ -17,21 +17,21 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/troupe"
-	"github.com/dpopsuev/troupe/broker"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tangle"
+	"github.com/dpopsuev/tangle/broker"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 func main() {
 	gateway := flag.String("gateway", envOr("GATEWAY_ENDPOINT", "http://localhost:9000/mcp"), "MCP gateway endpoint")
-	agent := flag.String("agent", envOr("ORIGAMI_AGENT", "cursor"), "ACP agent name (CLI command)")
-	sessionID := flag.String("session", envOr("ORIGAMI_SESSION", ""), "session ID to join (required)")
+	agent := flag.String("agent", envOr("TAKO_AGENT", "cursor"), "ACP agent name (CLI command)")
+	sessionID := flag.String("session", envOr("TAKO_SESSION", ""), "session ID to join (required)")
 	flag.Parse()
 
 	if *sessionID == "" {
-		slog.ErrorContext(context.Background(), "session ID required: set --session or ORIGAMI_SESSION")
+		slog.ErrorContext(context.Background(), "session ID required: set --session or TAKO_SESSION")
 		os.Exit(1)
 	}
 
@@ -60,7 +60,7 @@ func run(gateway, agentName, sessionID string) error {
 	// Connect to MCP gateway.
 	transport := &sdkmcp.StreamableClientTransport{Endpoint: gateway}
 	client := sdkmcp.NewClient(
-		&sdkmcp.Implementation{Name: "origami-agent-worker", Version: "v0.1.0"},
+		&sdkmcp.Implementation{Name: "tako-agent-worker", Version: "v0.1.0"},
 		nil,
 	)
 	session, err := client.Connect(ctx, transport, nil)

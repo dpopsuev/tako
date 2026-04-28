@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // InMemoryFindingCollector is a thread-safe, slice-backed FindingCollector.

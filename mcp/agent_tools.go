@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dpopsuev/troupe"
+	"github.com/dpopsuev/tangle"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )

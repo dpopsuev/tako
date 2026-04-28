@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/engine/trace"
-	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
+	"github.com/dpopsuev/tako/engine"
+	"github.com/dpopsuev/tako/engine/trace"
+	"github.com/dpopsuev/tako/simulate/sdlc/sdlctype"
 )
 
 // TestTransformer runs `go test ./... -short -count=1` on the target repository.

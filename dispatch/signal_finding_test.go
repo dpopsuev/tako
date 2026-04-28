@@ -3,8 +3,8 @@ package dispatch
 import (
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/troupe/signal"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tangle/signal"
 )
 
 func TestEmitFinding_RoundTrip(t *testing.T) {

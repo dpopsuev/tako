@@ -14,7 +14,7 @@ import (
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/dpopsuev/origami/domainserve"
+	"github.com/dpopsuev/tako/domainserve"
 )
 
 func setup(t *testing.T, fsys fstest.MapFS) *sdkmcp.ClientSession {

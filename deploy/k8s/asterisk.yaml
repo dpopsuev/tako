@@ -3,20 +3,20 @@ kind: Deployment
 metadata:
   name: asterisk
   labels:
-    app: origami-asterisk-domain
+    app: tako-asterisk-domain
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: origami-asterisk-domain
+      app: tako-asterisk-domain
   template:
     metadata:
       labels:
-        app: origami-asterisk-domain
+        app: tako-asterisk-domain
     spec:
       containers:
         - name: asterisk
-          image: origami-asterisk-domain:latest
+          image: tako-asterisk-domain:latest
           ports:
             - containerPort: 9300
           livenessProbe:
@@ -38,7 +38,7 @@ metadata:
   name: asterisk
 spec:
   selector:
-    app: origami-asterisk-domain
+    app: tako-asterisk-domain
   ports:
     - port: 9300
       targetPort: 9300

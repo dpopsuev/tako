@@ -26,9 +26,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/tool"
-	"github.com/dpopsuev/troupe/visual"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/tool"
+	"github.com/dpopsuev/tangle/visual"
 )
 
 // RunInstrumentNodeContract runs the circuit.Node compliance suite against

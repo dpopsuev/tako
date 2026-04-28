@@ -11,7 +11,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 type walkerStateCtxKey struct{}

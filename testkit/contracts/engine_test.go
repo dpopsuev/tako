@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/testkit/contracts"
-	"github.com/dpopsuev/origami/testkit/stubs"
+	"github.com/dpopsuev/tako/engine"
+	"github.com/dpopsuev/tako/testkit/contracts"
+	"github.com/dpopsuev/tako/testkit/stubs"
 )
 
 func TestBatchWalkContract_Real(t *testing.T) {

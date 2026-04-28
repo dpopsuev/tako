@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/troupe/signal"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tangle/signal"
 )
 
 // discardLogger returns a logger that discards all output.

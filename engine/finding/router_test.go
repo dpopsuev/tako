@@ -5,7 +5,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 func TestFindingRouter_DefaultRouting(t *testing.T) {

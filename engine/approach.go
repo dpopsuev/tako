@@ -1,6 +1,6 @@
 package engine
 
-import "github.com/dpopsuev/troupe/visual"
+import "github.com/dpopsuev/tangle/visual"
 
 var approachToElement = map[string]visual.Element{
 	"rapid":      visual.ElementFire,

@@ -3,7 +3,7 @@ package engine
 import (
 	"context"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // Executor abstracts node execution, decoupling the processing logic from

@@ -3,20 +3,20 @@ kind: Deployment
 metadata:
   name: gnd
   labels:
-    app: origami-gnd
+    app: tako-gnd
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: origami-gnd
+      app: tako-gnd
   template:
     metadata:
       labels:
-        app: origami-gnd
+        app: tako-gnd
     spec:
       containers:
         - name: gnd
-          image: origami-gnd:latest
+          image: tako-gnd:latest
           args: ["--port", "9100", "--drivers", "git,docs"]
           ports:
             - containerPort: 9100
@@ -39,7 +39,7 @@ metadata:
   name: gnd
 spec:
   selector:
-    app: origami-gnd
+    app: tako-gnd
   ports:
     - port: 9100
       targetPort: 9100

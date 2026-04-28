@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/dispatch"
-	"github.com/dpopsuev/troupe/signal"
+	"github.com/dpopsuev/tako/dispatch"
+	"github.com/dpopsuev/tangle/signal"
 )
 
 func TestMux_SingleRoundTrip(t *testing.T) {

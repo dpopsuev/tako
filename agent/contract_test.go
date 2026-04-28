@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dpopsuev/origami/agent/corpus"
+	"github.com/dpopsuev/tako/agent/corpus"
 )
 
 func TestStubReactivityCycle(t *testing.T) {

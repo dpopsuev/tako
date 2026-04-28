@@ -1,14 +1,14 @@
-// Package resource provides a unified Resource API for all Origami YAML
+// Package resource provides a unified Resource API for all Tako YAML
 // artifacts. Every YAML file with a kind: field can be loaded, validated,
 // merged, and discovered through a single KindRegistry. This is the K8s
 // CRD pattern applied to circuit DSL artifacts.
 package resource
 
 import (
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
-// Resource is the universal envelope for all Origami YAML artifacts.
+// Resource is the universal envelope for all Tako YAML artifacts.
 // Extends circuit.Envelope with spec and source tracking.
 type Resource struct {
 	APIVersion string         `yaml:"apiVersion,omitempty" json:"apiVersion,omitempty"`

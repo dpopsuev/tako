@@ -8,17 +8,17 @@ import (
 	"sort"
 	"time"
 
-	"github.com/dpopsuev/origami/budget"
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/circuit/def"
-	"github.com/dpopsuev/origami/dispatch"
-	"github.com/dpopsuev/origami/dispatch/guard"
-	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/engine/trace"
-	"github.com/dpopsuev/troupe"
-	"github.com/dpopsuev/troupe/broker"
-	"github.com/dpopsuev/troupe/collective"
-	"github.com/dpopsuev/troupe/signal"
+	"github.com/dpopsuev/tako/budget"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/circuit/def"
+	"github.com/dpopsuev/tako/dispatch"
+	"github.com/dpopsuev/tako/dispatch/guard"
+	"github.com/dpopsuev/tako/engine"
+	"github.com/dpopsuev/tako/engine/trace"
+	"github.com/dpopsuev/tangle"
+	"github.com/dpopsuev/tangle/broker"
+	"github.com/dpopsuev/tangle/collective"
+	"github.com/dpopsuev/tangle/signal"
 )
 
 // Log event names specific to session bridge observability.

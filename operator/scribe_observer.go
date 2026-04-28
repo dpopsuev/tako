@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dpopsuev/origami/tool"
+	"github.com/dpopsuev/tako/tool"
 )
 
 // ScribeObserver implements Observer by polling Scribe for mature tasks.

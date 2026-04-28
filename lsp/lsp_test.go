@@ -9,7 +9,7 @@ import (
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
-	"github.com/dpopsuev/origami/lint"
+	"github.com/dpopsuev/tako/lint"
 )
 
 func newLintContextForTest(raw []byte, file string) (*lint.LintContext, error) {

@@ -1,6 +1,6 @@
 package sdlc
 
-// OrigamiLayers is the explicit layer ordering for the Origami codebase.
+// OrigamiLayers is the explicit layer ordering for the Tako codebase.
 // Set via Locus desired state. Bottom (foundation) to top (consumers).
 // Violations are imports from a lower layer to a higher layer.
 var OrigamiLayers = []string{

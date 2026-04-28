@@ -8,7 +8,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/dpopsuev/origami/calibrate"
+	"github.com/dpopsuev/tako/calibrate"
 )
 
 func captureCmd(args []string) error {
@@ -23,7 +23,7 @@ func captureCmd(args []string) error {
 	}
 
 	if *schematic == "" || *sourcePack == "" || *output == "" {
-		return ErrUsageOrigamiCaptureSchematicNameSourcePackPathOutput
+		return ErrUsageTakoCaptureSchematicNameSourcePackPathOutput
 	}
 
 	level := slog.LevelInfo

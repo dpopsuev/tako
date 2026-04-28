@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/engine/trace"
-	"github.com/dpopsuev/origami/simulate/sdlc"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/engine"
+	"github.com/dpopsuev/tako/engine/trace"
+	"github.com/dpopsuev/tako/simulate/sdlc"
 )
 
 // runCircuit is a test helper that runs the SDLC circuit via engine.BatchWalk directly.
@@ -99,5 +99,5 @@ func TestInProcessActor_ViaOperatorLoop(t *testing.T) {
 }
 
 func TestContainerActor_Interface(t *testing.T) {
-	var _ Actor = NewContainerActor("origami-sdlc:latest", "/workspace")
+	var _ Actor = NewContainerActor("tako-sdlc:latest", "/workspace")
 }

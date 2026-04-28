@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/origami/tool"
-	"github.com/dpopsuev/origami/tool/harness"
-	"github.com/dpopsuev/origami/tool/server"
+	"github.com/dpopsuev/tako/tool"
+	"github.com/dpopsuev/tako/tool/harness"
+	"github.com/dpopsuev/tako/tool/server"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 

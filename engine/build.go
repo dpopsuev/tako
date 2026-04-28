@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine/gate"
-	"github.com/dpopsuev/troupe/visual"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/engine/gate"
+	"github.com/dpopsuev/tangle/visual"
 )
 
 // Type aliases — definitions live in circuit/ sub-package.

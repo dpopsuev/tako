@@ -1,8 +1,8 @@
 package workstation
 
 import (
-	"github.com/dpopsuev/origami/fab"
-	"github.com/dpopsuev/origami/instrument"
+	"github.com/dpopsuev/tako/fab"
+	"github.com/dpopsuev/tako/instrument"
 )
 
 // Workstation is the execution environment for one agent at one station.

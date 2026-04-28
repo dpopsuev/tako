@@ -1,7 +1,7 @@
 package calibrate
 
 import (
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // CalibrationContract declares how a circuit's inputs and outputs map to

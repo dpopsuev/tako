@@ -10,12 +10,12 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/circuit/def"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/circuit/def"
 	"gopkg.in/yaml.v3"
 )
 
-// Manifest is the top-level origami.yaml schema.
+// Manifest is the top-level tako.yaml schema.
 // YAML format follows K8s pattern: apiVersion/kind/metadata/spec.
 // Go struct keeps flat fields for internal convenience.
 type Manifest struct {
@@ -176,7 +176,7 @@ func (a *AssetMap) allSections() []map[string]string {
 	}
 }
 
-// LoadManifest reads and parses an origami.yaml manifest file.
+// LoadManifest reads and parses an tako.yaml manifest file.
 func LoadManifest(path string) (*Manifest, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -191,8 +191,8 @@ func ParseManifest(data []byte) (*Manifest, error) {
 	if err := yaml.Unmarshal(data, &raw); err != nil {
 		return nil, fmt.Errorf("parse manifest: %w", err)
 	}
-	if raw.APIVersion != "origami/v1" {
-		return nil, fmt.Errorf("%w: %q", ErrManifestApiVersionMustBeOrigamiV1Got, raw.APIVersion)
+	if raw.APIVersion != "tako/v1" {
+		return nil, fmt.Errorf("%w: %q", ErrManifestApiVersionMustBeTakoV1Got, raw.APIVersion)
 	}
 	kind, err := def.ParseKind(data)
 	if err != nil {

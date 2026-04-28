@@ -101,7 +101,7 @@ func TestLoadInstrumentManifest_FileNotFound(t *testing.T) {
 }
 
 func TestParseInstrumentManifest_ExecMissingCommand(t *testing.T) {
-	data := []byte(`apiVersion: origami/v1
+	data := []byte(`apiVersion: tako/v1
 kind: Instrument
 metadata:
   name: test
@@ -123,7 +123,7 @@ spec:
 }
 
 func TestParseInstrumentManifest_MCPMissingEndpoint(t *testing.T) {
-	data := []byte(`apiVersion: origami/v1
+	data := []byte(`apiVersion: tako/v1
 kind: Instrument
 metadata:
   name: test
@@ -142,7 +142,7 @@ spec:
 }
 
 func TestParseInstrumentManifest_DockerMissingImage(t *testing.T) {
-	data := []byte(`apiVersion: origami/v1
+	data := []byte(`apiVersion: tako/v1
 kind: Instrument
 metadata:
   name: test
@@ -161,7 +161,7 @@ spec:
 }
 
 func TestParseInstrumentManifest_GoMissingGoFunc(t *testing.T) {
-	data := []byte(`apiVersion: origami/v1
+	data := []byte(`apiVersion: tako/v1
 kind: Instrument
 metadata:
   name: test
@@ -179,7 +179,7 @@ spec:
 }
 
 func TestParseInstrumentManifest_NoActions(t *testing.T) {
-	data := []byte(`apiVersion: origami/v1
+	data := []byte(`apiVersion: tako/v1
 kind: Instrument
 metadata:
   name: test
@@ -215,7 +215,7 @@ spec:
 }
 
 func TestParseInstrumentManifest_MissingName(t *testing.T) {
-	data := []byte(`apiVersion: origami/v1
+	data := []byte(`apiVersion: tako/v1
 kind: Instrument
 metadata:
   namespace: instruments
@@ -234,7 +234,7 @@ spec:
 }
 
 func TestParseInstrumentManifest_UnknownKind(t *testing.T) {
-	data := []byte(`apiVersion: origami/v1
+	data := []byte(`apiVersion: tako/v1
 kind: Bogus
 metadata:
   name: test
@@ -254,7 +254,7 @@ spec:
 }
 
 func TestParseInstrumentManifest_GoDispatch(t *testing.T) {
-	data := []byte(`apiVersion: origami/v1
+	data := []byte(`apiVersion: tako/v1
 kind: Instrument
 metadata:
   name: core-transformers
@@ -285,7 +285,7 @@ spec:
 }
 
 func TestInstrumentManifest_HasAction(t *testing.T) {
-	data := []byte(`apiVersion: origami/v1
+	data := []byte(`apiVersion: tako/v1
 kind: Instrument
 metadata:
   name: test
@@ -313,7 +313,7 @@ spec:
 }
 
 func TestInstrumentManifest_Action(t *testing.T) {
-	data := []byte(`apiVersion: origami/v1
+	data := []byte(`apiVersion: tako/v1
 kind: Instrument
 metadata:
   name: test

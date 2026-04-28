@@ -2,17 +2,22 @@ package framework
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
-	"github.com/dpopsuev/origami/agent"
-	"github.com/dpopsuev/origami/ergograph"
-	"github.com/dpopsuev/origami/fab"
-	"github.com/dpopsuev/origami/memory"
-	"github.com/dpopsuev/origami/render"
-	"github.com/dpopsuev/origami/service/andon"
-	"github.com/dpopsuev/origami/service/depo"
-	"github.com/dpopsuev/origami/service/kanban"
-	"github.com/dpopsuev/origami/workstation"
+	"github.com/dpopsuev/tako/agent"
+	"github.com/dpopsuev/tako/ergograph"
+	"github.com/dpopsuev/tako/fab"
+	"github.com/dpopsuev/tako/memory"
+	"github.com/dpopsuev/tako/observe"
+	"github.com/dpopsuev/tako/render"
+	"github.com/dpopsuev/tako/service/andon"
+	"github.com/dpopsuev/tako/service/depo"
+	"github.com/dpopsuev/tako/service/kanban"
+	"github.com/dpopsuev/tako/store"
+	"github.com/dpopsuev/tako/workstation"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 )
 
 func TestWalkingSkeleton(t *testing.T) {
@@ -21,7 +26,7 @@ func TestWalkingSkeleton(t *testing.T) {
 	an := &andon.StubSignal{}
 	pool := &ergograph.StubPool{}
 	inspector := ergograph.StubInspector{}
-	canvas := &render.StubCanvas{}
+	canvas := render.NewStubCanvas()
 	mesh := memory.NewStubMesh()
 	ws := workstation.NewStubWorkstation()
 	dp := depo.NewStubDepo("test")
@@ -118,9 +123,9 @@ func TestWalkingSkeleton(t *testing.T) {
 		t.Errorf("expected 1 monologue letter, got %d", len(letters))
 	}
 
-	// 10. Canvas received damage notification
-	if canvas.DamageCount() != 1 {
-		t.Errorf("expected 1 canvas damage, got %d", canvas.DamageCount())
+	// 10. Canvas received panel post
+	if canvas.PanelCount() != 1 {
+		t.Errorf("expected 1 canvas panel, got %d", canvas.PanelCount())
 	}
 
 	// 11. Andon stayed green
@@ -132,7 +137,84 @@ func TestWalkingSkeleton(t *testing.T) {
 	assertDepoShelf(t, dp, "terminus", 1)
 }
 
-func assertDepoShelf(t *testing.T, dp *depo.StubDepo, shelfName string, expectedCount int) {
+func TestWalkingSkeletonDolt(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "takodb")
+	db, err := store.Open(dir)
+	if err != nil {
+		t.Fatalf("store.Open: %v", err)
+	}
+	defer db.Close()
+	if err := db.Migrate(); err != nil {
+		t.Fatalf("Migrate: %v", err)
+	}
+
+	exporter := tracetest.NewInMemoryExporter()
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
+	t.Cleanup(func() { _ = tp.Shutdown(context.Background()) })
+	tracer := tp.Tracer("tako-test")
+
+	assembly := fab.StubAssembly()
+	kb := kanban.NewStubBoard(assembly)
+	an := &andon.StubSignal{}
+
+	doltPool := ergograph.NewDoltPool(db.DB)
+	pool := observe.NewPool(doltPool, tracer, "main")
+
+	inspector := ergograph.StubInspector{}
+	canvas := render.NewStubCanvas()
+	mesh := memory.NewStubMesh()
+	ws := workstation.NewStubWorkstation()
+	dp := depo.NewDoltDepo(db.DB, "test")
+	lobby := agent.StubLobby{}
+	runner := &agent.StubRunner{}
+
+	fc := NewFabCollective(FabCollectiveConfig{
+		Assembly:    assembly,
+		Kanban:      kb,
+		Andon:       an,
+		Pool:        pool,
+		Inspector:   inspector,
+		Canvas:      canvas,
+		Depo:        dp,
+		Lobby:       lobby,
+		Mesh:        mesh,
+		Workstation: ws,
+		Runner:      runner,
+	})
+
+	ctx := context.Background()
+	if err := fc.Run(ctx); err != nil {
+		t.Fatalf("FabCollective.Run() with Dolt failed: %v", err)
+	}
+
+	// Ergograph records persisted in Dolt
+	if doltPool.Len() < 1 {
+		t.Errorf("expected ergograph records in Dolt, got %d", doltPool.Len())
+	}
+	if err := doltPool.VerifyChain(); err != nil {
+		t.Errorf("Dolt ergograph chain broken: %v", err)
+	}
+
+	// Depo has envelope on terminus shelf (Dolt-backed)
+	assertDepoShelf(t, dp, "terminus", 1)
+
+	// OTel spans were emitted
+	spans := exporter.GetSpans()
+	if len(spans) == 0 {
+		t.Error("expected OTel spans from observe/ decorators")
+	}
+
+	// Inspector still scores from Dolt pool
+	oae, err := inspector.Score(doltPool)
+	if err != nil {
+		t.Fatalf("inspector.Score: %v", err)
+	}
+	if oae.Score() != 1.0 {
+		t.Errorf("expected OAE 1.0, got %f", oae.Score())
+	}
+}
+
+func assertDepoShelf(t *testing.T, dp depo.Depo, shelfName string, expectedCount int) {
 	t.Helper()
 	shelf := dp.Shelf(shelfName)
 	items := shelf.Peek()

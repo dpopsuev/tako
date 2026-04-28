@@ -46,7 +46,7 @@ func WithSearchDirs(dirs ...string) ResolveOption {
 // ResolveCircuitPath resolves a circuit by name, returning the YAML content.
 // Resolution order:
 //  1. Embedded registry (RegisterEmbeddedCircuit)
-//  2. $ORIGAMI_CIRCUITS directory
+//  2. $TAKO_CIRCUITS directory
 //  3. Additional search dirs (from WithSearchDirs)
 //  4. Current working directory
 //
@@ -73,7 +73,7 @@ func ResolveCircuitPath(name string, opts ...ResolveOption) ([]byte, error) {
 
 	searched := make([]string, 0, len(candidates)*2)
 
-	if envDir := os.Getenv("ORIGAMI_CIRCUITS"); envDir != "" {
+	if envDir := os.Getenv("TAKO_CIRCUITS"); envDir != "" {
 		for _, c := range candidates {
 			p := filepath.Join(envDir, c)
 			searched = append(searched, p)

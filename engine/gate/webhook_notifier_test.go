@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/engine/gate"
+	"github.com/dpopsuev/tako/engine/gate"
 )
 
 func TestWebhookNotifier_SendsCloudEvent(t *testing.T) {

@@ -6,8 +6,8 @@ package engine
 import (
 	"context"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine/tune"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/engine/tune"
 )
 
 // TuneAll is re-exported from engine/tune for backward compatibility.

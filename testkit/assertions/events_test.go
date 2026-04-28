@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/testkit/assertions"
-	"github.com/dpopsuev/troupe/signal"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/testkit/assertions"
+	"github.com/dpopsuev/tangle/signal"
 )
 
 func TestAssertEventOrder_Pass(t *testing.T) {

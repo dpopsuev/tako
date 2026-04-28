@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/testkit"
+	"github.com/dpopsuev/tako/testkit"
 )
 
 // RunTransportContract runs the Transport compliance suite against

@@ -8,11 +8,11 @@ import (
 
 // Category: DSL & Build — YAML envelope (self-identification header).
 
-// Kind is a typed identifier for Origami YAML document kinds.
+// Kind is a typed identifier for Tako YAML document kinds.
 // Provides compile-time safety for kind comparisons and map keys.
 type Kind string
 
-// Kind constants for all recognized Origami YAML document types.
+// Kind constants for all recognized Tako YAML document types.
 const (
 	KindSchematic      Kind = "Schematic"
 	KindComponent      Kind = "Component"
@@ -32,7 +32,7 @@ const (
 	KindPrompt         Kind = "Prompt"
 )
 
-// Envelope is the standard header for all Origami YAML files.
+// Envelope is the standard header for all Tako YAML files.
 // It provides self-identification (kind, version) and human-readable
 // metadata so a parser can route by kind without knowing the file path.
 //
@@ -84,8 +84,8 @@ func ParseEnvelope(data []byte) (*Envelope, error) {
 	return &env, nil
 }
 
-// KnownKinds enumerates the recognized kind values for Origami YAML files.
-// Framework kinds (circuit, store-schema) are parsed by Origami directly.
+// KnownKinds enumerates the recognized kind values for Tako YAML files.
+// Framework kinds (circuit, store-schema) are parsed by Tako directly.
 // Domain kinds (scenario, vocabulary, etc.) are defined by consumers but
 // listed here so lint rules and tooling can recognize them.
 var KnownKinds = map[Kind]bool{

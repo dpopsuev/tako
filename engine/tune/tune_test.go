@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/circuit/def"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/circuit/def"
 )
 
 func tuneManifest(name, tuneArgs string) *circuit.InstrumentManifest {

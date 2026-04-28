@@ -6,10 +6,10 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/dpopsuev/origami/dispatch"
-	"github.com/dpopsuev/origami/mcp"
-	"github.com/dpopsuev/origami/resource"
-	"github.com/dpopsuev/troupe/signal"
+	"github.com/dpopsuev/tako/dispatch"
+	"github.com/dpopsuev/tako/mcp"
+	"github.com/dpopsuev/tako/resource"
+	"github.com/dpopsuev/tangle/signal"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )

@@ -10,8 +10,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/dpopsuev/origami/tool"
-	battmcp "github.com/dpopsuev/origami/tool/mcp"
+	"github.com/dpopsuev/tako/tool"
+	battmcp "github.com/dpopsuev/tako/tool/mcp"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 

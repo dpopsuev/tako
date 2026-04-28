@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // Resolution defines a calibration scope level.

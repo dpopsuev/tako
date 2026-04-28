@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // RouteTarget identifies the authority that receives a routed finding.

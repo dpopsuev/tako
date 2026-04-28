@@ -3,7 +3,7 @@ package kanban
 import (
 	"sync"
 
-	"github.com/dpopsuev/origami/fab"
+	"github.com/dpopsuev/tako/fab"
 )
 
 // StubBoard is a static Kanban projection from a Fab Assembly.

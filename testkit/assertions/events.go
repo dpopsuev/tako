@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/troupe/signal"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tangle/signal"
 )
 
 // AssertEventOrder verifies that the given events contain the expected event

@@ -1,4 +1,4 @@
-// Package framework is the core of the Origami agentic circuit framework.
+// Package framework is the core of the Tako agentic circuit framework.
 //
 // This package provides graph-based circuit orchestration: define circuits
 // in YAML, build typed node/edge graphs, walk them with AI-powered agents,

@@ -1,6 +1,6 @@
 package sleep
 
-import "github.com/dpopsuev/origami/memory"
+import "github.com/dpopsuev/tako/memory"
 
 // Drain performs the two-sweep memory lifecycle.
 // Sweep 1: append working memory to saved memory.

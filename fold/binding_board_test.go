@@ -5,7 +5,7 @@ import (
 )
 
 func TestResolve_BoardUsesAndBind(t *testing.T) {
-	root := origamiRoot(t)
+	root := takoRoot(t)
 
 	m := &Manifest{
 		Kind:    "Board",

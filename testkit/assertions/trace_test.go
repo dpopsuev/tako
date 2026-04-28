@@ -3,9 +3,9 @@ package assertions_test
 import (
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/testkit/assertions"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/engine"
+	"github.com/dpopsuev/tako/testkit/assertions"
 )
 
 func TestAssertTraceContains_Found(t *testing.T) {

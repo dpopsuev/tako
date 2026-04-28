@@ -4,7 +4,7 @@
 // shared types, aggregation, and report formatting.
 package calibrate
 
-import "github.com/dpopsuev/origami/budget"
+import "github.com/dpopsuev/tako/budget"
 
 // CostTier classifies a metric by what it measures. Tiers are ordered by
 // importance: outcome metrics dominate; efficiency metrics are health checks.

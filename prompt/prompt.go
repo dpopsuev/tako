@@ -1,5 +1,5 @@
 // Package prompt provides first-class prompt types, storage, and versioning
-// for Origami circuits. Prompts are Go text/template markdown files with
+// for Tako circuits. Prompts are Go text/template markdown files with
 // named sections. Two store implementations exist: FilePromptStore (read-only,
 // backed by fs.FS) and LivePromptStore (in-memory, editable, versioned).
 package prompt

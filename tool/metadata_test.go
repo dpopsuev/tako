@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/dpopsuev/origami/tool"
+	"github.com/dpopsuev/tako/tool"
 )
 
 // CapabilityDeclarerContract validates any CapabilityDeclarer implementation.

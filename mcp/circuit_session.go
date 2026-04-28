@@ -13,10 +13,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/dispatch"
-	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/troupe/signal"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/dispatch"
+	"github.com/dpopsuev/tako/engine"
+	"github.com/dpopsuev/tangle/signal"
 )
 
 // SessionState tracks the lifecycle of a circuit session.

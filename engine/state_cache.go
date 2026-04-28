@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // InMemoryCache is a thread-safe in-memory NodeCache with TTL-based lazy eviction.

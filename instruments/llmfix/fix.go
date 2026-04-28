@@ -21,9 +21,9 @@ import (
 
 	anyllm "github.com/mozilla-ai/any-llm-go/providers"
 
-	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/engine/trace"
-	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
+	"github.com/dpopsuev/tako/engine"
+	"github.com/dpopsuev/tako/engine/trace"
+	"github.com/dpopsuev/tako/simulate/sdlc/sdlctype"
 )
 
 var (
@@ -236,10 +236,10 @@ func worktreeStateDir() string {
 		home, _ := os.UserHomeDir()
 		xdg = filepath.Join(home, ".local", "state")
 	}
-	return filepath.Join(xdg, "origami", "worktrees")
+	return filepath.Join(xdg, "tako", "worktrees")
 }
 
-// createWorktree creates a git worktree in $XDG_STATE_HOME/origami/worktrees/
+// createWorktree creates a git worktree in $XDG_STATE_HOME/tako/worktrees/
 // on a new branch. Strips replace directives from the worktree's go.mod so
 // it builds against published module versions.
 func (f *FixTransformer) createWorktree(ctx context.Context) (wtDir, branch string, err error) {

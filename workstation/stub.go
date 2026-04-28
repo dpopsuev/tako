@@ -1,8 +1,8 @@
 package workstation
 
 import (
-	"github.com/dpopsuev/origami/fab"
-	"github.com/dpopsuev/origami/instrument"
+	"github.com/dpopsuev/tako/fab"
+	"github.com/dpopsuev/tako/instrument"
 )
 
 // StubWorkstation provisions a StubShell from the station's instrument manifest.

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 

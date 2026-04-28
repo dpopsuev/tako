@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/dispatch"
-	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/instruments/core"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/dispatch"
+	"github.com/dpopsuev/tako/engine"
+	"github.com/dpopsuev/tako/instruments/core"
 )
 
 // TestCalibrateWithCLI proves the generic calibration path:

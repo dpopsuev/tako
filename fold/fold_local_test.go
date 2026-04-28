@@ -24,7 +24,7 @@ func TestCreateWiredBuildModule_DefaultNoReplace(t *testing.T) {
 	tmpDir := t.TempDir()
 	resolver := &mockResolver{
 		paths: map[string]string{
-			origamiModule:                    "/home/user/Workspace/origami",
+			takoModule:                    "/home/user/Workspace/tako",
 			"github.com/example/schematic-a": "/home/user/Workspace/schematic-a",
 		},
 	}
@@ -53,7 +53,7 @@ func TestCreateWiredBuildModule_LocalEnablesReplace(t *testing.T) {
 	tmpDir := t.TempDir()
 	resolver := &mockResolver{
 		paths: map[string]string{
-			origamiModule:                    "/home/user/Workspace/origami",
+			takoModule:                    "/home/user/Workspace/tako",
 			"github.com/example/schematic-a": "/home/user/Workspace/schematic-a",
 		},
 	}
@@ -72,8 +72,8 @@ func TestCreateWiredBuildModule_LocalEnablesReplace(t *testing.T) {
 	}
 	content := string(data)
 
-	if !strings.Contains(content, "replace "+origamiModule) {
-		t.Errorf("--local should inject origami replace, got:\n%s", content)
+	if !strings.Contains(content, "replace "+takoModule) {
+		t.Errorf("--local should inject tako replace, got:\n%s", content)
 	}
 	if !strings.Contains(content, "replace github.com/example/schematic-a") {
 		t.Errorf("--local should inject schematic-a replace, got:\n%s", content)
@@ -84,7 +84,7 @@ func TestCreateWiredBuildModule_NoReplaceWithoutLocal(t *testing.T) {
 	// Resolver is called for version resolution, but no replace directives added.
 	tmpDir := t.TempDir()
 	resolver := &mockResolver{
-		paths: map[string]string{origamiModule: "/somewhere"},
+		paths: map[string]string{takoModule: "/somewhere"},
 	}
 
 	err := createWiredBuildModule(tmpDir, "test", resolver, nil, false)
@@ -105,7 +105,7 @@ func TestCreateDomainServeBuildModule_DefaultNoReplace(t *testing.T) {
 	// RED: Domain-serve path must also respect local flag.
 	tmpDir := t.TempDir()
 	resolver := &mockResolver{
-		paths: map[string]string{origamiModule: "/home/user/Workspace/origami"},
+		paths: map[string]string{takoModule: "/home/user/Workspace/tako"},
 	}
 
 	err := createDomainServeBuildModule(tmpDir, "test", resolver, false)
@@ -128,7 +128,7 @@ func TestCreateDomainServeBuildModule_LocalEnablesReplace(t *testing.T) {
 	// RED: --local on domain-serve must inject replace.
 	tmpDir := t.TempDir()
 	resolver := &mockResolver{
-		paths: map[string]string{origamiModule: "/home/user/Workspace/origami"},
+		paths: map[string]string{takoModule: "/home/user/Workspace/tako"},
 	}
 
 	err := createDomainServeBuildModule(tmpDir, "test", resolver, true)
@@ -142,8 +142,8 @@ func TestCreateDomainServeBuildModule_LocalEnablesReplace(t *testing.T) {
 	}
 	content := string(data)
 
-	if !strings.Contains(content, "replace "+origamiModule) {
-		t.Errorf("--local should inject origami replace, got:\n%s", content)
+	if !strings.Contains(content, "replace "+takoModule) {
+		t.Errorf("--local should inject tako replace, got:\n%s", content)
 	}
 }
 
@@ -152,7 +152,7 @@ func TestCreateWiredBuildModule_LocalPrintsWarning(t *testing.T) {
 	tmpDir := t.TempDir()
 	resolver := &mockResolver{
 		paths: map[string]string{
-			origamiModule: "/home/user/Workspace/origami",
+			takoModule: "/home/user/Workspace/tako",
 		},
 	}
 
@@ -175,7 +175,7 @@ func TestCreateWiredBuildModule_LocalPrintsWarning(t *testing.T) {
 	if !strings.Contains(stderr, "WARNING: using local module") {
 		t.Errorf("expected WARNING on stderr, got: %q", stderr)
 	}
-	if !strings.Contains(stderr, origamiModule) {
+	if !strings.Contains(stderr, takoModule) {
 		t.Errorf("WARNING should mention module path, got: %q", stderr)
 	}
 }
@@ -185,7 +185,7 @@ func TestCreateWiredBuildModule_NoWarningWithoutLocal(t *testing.T) {
 	tmpDir := t.TempDir()
 	resolver := &mockResolver{
 		paths: map[string]string{
-			origamiModule: "/home/user/Workspace/origami",
+			takoModule: "/home/user/Workspace/tako",
 		},
 	}
 
@@ -212,7 +212,7 @@ func TestCreateDomainServeBuildModule_LocalPrintsWarning(t *testing.T) {
 	tmpDir := t.TempDir()
 	resolver := &mockResolver{
 		paths: map[string]string{
-			origamiModule: "/home/user/Workspace/origami",
+			takoModule: "/home/user/Workspace/tako",
 		},
 	}
 
@@ -248,7 +248,7 @@ func TestLocalFlag_SimulatedRemoteFailure(t *testing.T) {
 	tmpDir1 := t.TempDir()
 	resolver := &mockResolver{
 		paths: map[string]string{
-			origamiModule: "/home/user/Workspace/origami",
+			takoModule: "/home/user/Workspace/tako",
 			fakeModule:    "/home/user/Workspace/fake-schematic",
 		},
 	}

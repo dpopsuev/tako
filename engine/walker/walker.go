@@ -2,8 +2,8 @@
 package walker
 
 import (
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/troupe/visual"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tangle/visual"
 )
 
 // DefaultWalker returns a zero-config Walker suitable for consumers that

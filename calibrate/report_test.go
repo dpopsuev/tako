@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dpopsuev/origami/budget"
-	"github.com/dpopsuev/origami/calibrate"
+	"github.com/dpopsuev/tako/budget"
+	"github.com/dpopsuev/tako/calibrate"
 )
 
 func testReport() *calibrate.CalibrationReport {

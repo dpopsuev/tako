@@ -4,10 +4,10 @@ import (
 	"context"
 	"io/fs"
 
-	"github.com/dpopsuev/origami/tool"
+	"github.com/dpopsuev/tako/tool"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine/gate"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/engine/gate"
 )
 
 // SessionConfig is the domain-specific configuration returned by a

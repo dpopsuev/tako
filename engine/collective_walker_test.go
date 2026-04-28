@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/troupe/visual"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tangle/visual"
 )
 
 func TestCollectiveWalker_LinearWithTwoWalkers(t *testing.T) {

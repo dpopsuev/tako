@@ -38,9 +38,9 @@ func TestRuntime_DomainServeBinary_Starts(t *testing.T) {
 	writeFile("circuits/test.yaml", "kind: Schematic\ncircuit: test\nnodes:\n  - name: a\n    handler: transformer:passthrough\nedges: []\nstart: a\ndone: a\n")
 	writeFile("prompts/recall.md", "You are a test prompt.")
 
-	manifest := filepath.Join(tmpDir, "origami.yaml")
+	manifest := filepath.Join(tmpDir, "tako.yaml")
 	if err := os.WriteFile(manifest, []byte(`
-apiVersion: origami/v1
+apiVersion: tako/v1
 kind: Board
 metadata:
   name: runtime-test
@@ -105,7 +105,7 @@ spec:
 // TestRuntime_GeneratedCode_ContainsResourceRegistry verifies the fold-generated
 // code for wired binaries includes ResourceRegistry wiring.
 func TestRuntime_GeneratedCode_ContainsResourceRegistry(t *testing.T) {
-	root := origamiRootE2E(t)
+	root := takoRootE2E(t)
 	m := &Manifest{
 		Name:    "resource-test",
 		Version: "1.0",

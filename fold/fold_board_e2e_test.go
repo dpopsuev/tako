@@ -8,7 +8,7 @@ import (
 // E2E gate test: board manifest with uses/bind resolves and generates
 // valid wired binary code. This must pass before consumer migration.
 func TestE2E_BoardManifest_ResolvesAndGenerates(t *testing.T) {
-	root := origamiRoot(t)
+	root := takoRoot(t)
 
 	m := &Manifest{
 		Kind:    "board",
@@ -71,7 +71,7 @@ func TestE2E_BoardManifest_NegativeRejectsUnboundSocket(t *testing.T) {
 	// Sockets are all optional: true, so missing bindings
 	// are accepted. This test verifies Resolve succeeds (not errors)
 	// when a factory-mode schematic has no bindings.
-	root := origamiRoot(t)
+	root := takoRoot(t)
 
 	m := &Manifest{
 		Kind:    "board",

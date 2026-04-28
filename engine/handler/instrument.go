@@ -1,5 +1,5 @@
 // Package handler defines the processing interfaces that consumers implement
-// to plug into the Origami engine. Instrument, Extractor, Renderer, Hook.
+// to plug into the Tako engine. Instrument, Extractor, Renderer, Hook.
 package handler
 
 import (
@@ -8,8 +8,8 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine/trace"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/engine/trace"
 )
 
 // Instrument processes input data and produces structured output.

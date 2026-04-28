@@ -13,9 +13,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/troupe"
-	"github.com/dpopsuev/troupe/broker"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tangle"
+	"github.com/dpopsuev/tangle/broker"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -29,8 +29,8 @@ var (
 func workersCmd(args []string) error {
 	fs := flag.NewFlagSet("workers", flag.ContinueOnError)
 	gateway := fs.String("gateway", envOr("GATEWAY_ENDPOINT", "http://localhost:9000/mcp"), "MCP gateway endpoint")
-	sessionID := fs.String("session", envOr("ORIGAMI_SESSION", ""), "session ID or alias (required)")
-	agentName := fs.String("agent", envOr("ORIGAMI_AGENT", "claude"), "agent CLI name")
+	sessionID := fs.String("session", envOr("TAKO_SESSION", ""), "session ID or alias (required)")
+	agentName := fs.String("agent", envOr("TAKO_AGENT", "claude"), "agent CLI name")
 	count := fs.Int("count", 4, "number of workers to spawn")
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -105,7 +105,7 @@ func runWorker(ctx context.Context, gateway, agentName, sessionID, workerName st
 
 	transport := &sdkmcp.StreamableClientTransport{Endpoint: gateway}
 	client := sdkmcp.NewClient(
-		&sdkmcp.Implementation{Name: "origami-" + workerName, Version: "v0.1.0"},
+		&sdkmcp.Implementation{Name: "tako-" + workerName, Version: "v0.1.0"},
 		nil,
 	)
 	session, err := client.Connect(ctx, transport, nil)

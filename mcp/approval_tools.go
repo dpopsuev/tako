@@ -7,7 +7,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/dpopsuev/origami/engine/gate"
+	"github.com/dpopsuev/tako/engine/gate"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )

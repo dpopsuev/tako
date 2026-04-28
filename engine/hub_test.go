@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/dpopsuev/origami/tool"
+	"github.com/dpopsuev/tako/tool"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/circuit/def"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/circuit/def"
 )
 
 func TestLocalHub_SetActiveNode_ToolsRotate(t *testing.T) {

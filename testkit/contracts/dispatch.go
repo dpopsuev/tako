@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/origami/dispatch"
+	"github.com/dpopsuev/tako/dispatch"
 )
 
 // RunDispatcherContract verifies the Dispatch → GetNextStep → SubmitArtifact

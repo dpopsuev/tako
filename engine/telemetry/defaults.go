@@ -3,7 +3,7 @@ package telemetry
 import (
 	"os"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel"
 )
@@ -12,7 +12,7 @@ import (
 // OTel tracing uses the global tracer provider (configure OTEL_EXPORTER_OTLP_ENDPOINT
 // for real export; noop otherwise). Prometheus uses the default registry.
 func DefaultObservability() []circuit.WalkObserver {
-	tracer := otel.Tracer("origami")
+	tracer := otel.Tracer("tako")
 	otelObs := NewOTelObserver(tracer)
 	promObs := NewPrometheusCollector(prometheus.DefaultRegisterer.(*prometheus.Registry))
 	return []circuit.WalkObserver{otelObs, promObs}
@@ -20,7 +20,7 @@ func DefaultObservability() []circuit.WalkObserver {
 
 // DefaultObservabilityWithRegistry returns observers using a custom Prometheus registry.
 func DefaultObservabilityWithRegistry(reg *prometheus.Registry) []circuit.WalkObserver {
-	tracer := otel.Tracer("origami")
+	tracer := otel.Tracer("tako")
 	otelObs := NewOTelObserver(tracer)
 	promObs := NewPrometheusCollector(reg)
 	return []circuit.WalkObserver{otelObs, promObs}

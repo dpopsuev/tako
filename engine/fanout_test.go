@@ -3,7 +3,7 @@ package engine
 import (
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 type stubMergeArtifact struct{ val string }

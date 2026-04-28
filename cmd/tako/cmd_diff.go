@@ -13,19 +13,19 @@ import (
 const (
 	formatJSON      = "json"
 	formatText      = "text"
-	defaultStateDir = ".origami/state"
+	defaultStateDir = ".tako/state"
 )
 
 func diffCmd(w io.Writer, args []string) error {
 	fs := flag.NewFlagSet("diff", flag.ContinueOnError)
-	stateDir := fs.String("state-dir", "", "state directory (default: .origami/state or $ORIGAMI_STATE_DIR)")
+	stateDir := fs.String("state-dir", "", "state directory (default: .tako/state or $TAKO_STATE_DIR)")
 	format := fs.String("format", "text", "output format: text, json")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 
 	if fs.NArg() < 2 {
-		return ErrUsageOrigamiDiffStateDirDIRRunARunBFormatTextJson
+		return ErrUsageTakoDiffStateDirDIRRunARunBFormatTextJson
 	}
 
 	dirA, err := resolveRunDir(*stateDir, fs.Arg(0))
@@ -69,7 +69,7 @@ func resolveRunDir(stateDir, runRef string) (string, error) {
 
 	// Treat as run ID under state dir.
 	if stateDir == "" {
-		stateDir = os.Getenv("ORIGAMI_STATE_DIR")
+		stateDir = os.Getenv("TAKO_STATE_DIR")
 	}
 	if stateDir == "" {
 		stateDir = defaultStateDir

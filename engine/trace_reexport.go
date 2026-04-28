@@ -3,7 +3,7 @@
 // for backward compatibility.
 package engine
 
-import "github.com/dpopsuev/origami/engine/trace"
+import "github.com/dpopsuev/tako/engine/trace"
 
 // Trace types — definitions live in engine/trace.
 type (

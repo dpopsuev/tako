@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"sync"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/tool"
-	"github.com/dpopsuev/troupe/visual"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/tool"
+	"github.com/dpopsuev/tangle/visual"
 )
 
 // StubInstrumentTool implements battery.Tool with canned responses.

@@ -1,6 +1,6 @@
 package stubs
 
-import "github.com/dpopsuev/origami/circuit"
+import "github.com/dpopsuev/tako/circuit"
 
 // PortStub is a test double for circuit port I/O.
 type PortStub struct {

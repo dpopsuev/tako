@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // Renderer converts structured data into human-readable output.

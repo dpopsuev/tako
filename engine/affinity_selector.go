@@ -1,6 +1,6 @@
 package engine
 
-import "github.com/dpopsuev/origami/circuit"
+import "github.com/dpopsuev/tako/circuit"
 
 // AffinitySelector picks the walker whose StepAffinity for the current node
 // is highest, with Approach as a tiebreaker.

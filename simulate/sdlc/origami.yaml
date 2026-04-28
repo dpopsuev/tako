@@ -1,13 +1,13 @@
-apiVersion: origami/v1
+apiVersion: tako/v1
 kind: Board
 metadata:
-  name: origami-sdlc
+  name: tako-sdlc
   description: "Self-reinforcing SDLC circuit for the Origami framework"
 spec:
   uses:
     sdlc:
       kind: Schematic
-      module: github.com/dpopsuev/origami/simulate/sdlc
+      module: github.com/dpopsuev/tako/simulate/sdlc
       entry: true
   domain_serve:
     port: 9400

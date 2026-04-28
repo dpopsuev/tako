@@ -8,9 +8,9 @@ package acceptance
 import (
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/troupe/visual"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/engine"
+	"github.com/dpopsuev/tangle/visual"
 )
 
 func TestCollective_TwoWalkersScheduleByAffinity(t *testing.T) {

@@ -3,8 +3,8 @@ package contracts_test
 import (
 	"testing"
 
-	"github.com/dpopsuev/origami/calibrate"
-	"github.com/dpopsuev/origami/testkit/contracts"
+	"github.com/dpopsuev/tako/calibrate"
+	"github.com/dpopsuev/tako/testkit/contracts"
 )
 
 func TestScenarioLoaderContract_GenericScenarioLoader(t *testing.T) {

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/mcp"
+	"github.com/dpopsuev/tako/engine"
+	"github.com/dpopsuev/tako/mcp"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )

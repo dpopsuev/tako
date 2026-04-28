@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/dpopsuev/origami/tool"
+	"github.com/dpopsuev/tako/tool"
 )
 
 func TestResult_Text(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 // logObserver writes walk events as structured slog lines.

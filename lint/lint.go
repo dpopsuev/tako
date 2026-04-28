@@ -1,4 +1,4 @@
-// Package lint provides rule-based static analysis for Origami circuit YAML.
+// Package lint provides rule-based static analysis for Tako circuit YAML.
 // It catches structural, semantic, and best-practice issues before runtime.
 //
 // The linter is designed for embedding: lint.Run() works without CLI, filesystem,
@@ -11,8 +11,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/engine"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/engine"
 	"gopkg.in/yaml.v3"
 )
 

@@ -10,8 +10,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/circuit/def"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/circuit/def"
 )
 
 // ValidateExports checks that every symbol declared in a ComponentManifest

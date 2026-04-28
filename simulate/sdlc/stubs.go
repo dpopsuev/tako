@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync/atomic"
 
-	"github.com/dpopsuev/origami/engine"
-	"github.com/dpopsuev/origami/simulate/sdlc/sdlctype"
+	"github.com/dpopsuev/tako/engine"
+	"github.com/dpopsuev/tako/simulate/sdlc/sdlctype"
 )
 
 // StubInstruments returns a transformer registry with stubs for every

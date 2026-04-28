@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/dpopsuev/origami/artifact"
+	"github.com/dpopsuev/tako/artifact"
 )
 
 func TestStubShelfPushAndPull(t *testing.T) {

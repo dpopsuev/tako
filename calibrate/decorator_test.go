@@ -3,7 +3,7 @@ package calibrate
 import (
 	"testing"
 
-	"github.com/dpopsuev/origami/circuit"
+	"github.com/dpopsuev/tako/circuit"
 )
 
 func TestWrap_PreservesTopology(t *testing.T) {

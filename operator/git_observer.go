@@ -8,7 +8,7 @@ import (
 	"time"
 
 	oculusengine "github.com/dpopsuev/oculus/v3/engine"
-	oculusstore "github.com/dpopsuev/origami/instruments/oculus"
+	oculusstore "github.com/dpopsuev/tako/instruments/oculus"
 )
 
 // GitObserver implements Observer by polling git HEAD and running an

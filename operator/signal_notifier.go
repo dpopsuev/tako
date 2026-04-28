@@ -3,8 +3,8 @@ package operator
 import (
 	"context"
 
-	"github.com/dpopsuev/origami/engine/gate"
-	"github.com/dpopsuev/troupe/signal"
+	"github.com/dpopsuev/tako/engine/gate"
+	"github.com/dpopsuev/tangle/signal"
 )
 
 // Gate signal event names.

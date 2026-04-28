@@ -1,12 +1,12 @@
 package resource
 
 import (
-	"github.com/dpopsuev/origami/circuit"
-	"github.com/dpopsuev/origami/prompt"
+	"github.com/dpopsuev/tako/circuit"
+	"github.com/dpopsuev/tako/prompt"
 )
 
 // DefaultRegistry returns a KindRegistry pre-loaded with all known
-// Origami kinds. Framework kinds use typed parsers from circuit/ and fold/.
+// Tako kinds. Framework kinds use typed parsers from circuit/ and fold/.
 // Domain kinds use passthrough handlers; consumers can override with
 // typed handlers via Register().
 func DefaultRegistry() *KindRegistry {

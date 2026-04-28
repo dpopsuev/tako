@@ -1,6 +1,6 @@
 package engine
 
-import "github.com/dpopsuev/troupe/visual"
+import "github.com/dpopsuev/tangle/visual"
 
 // baseNode provides the shared Name/Approach implementation for all engine node types.
 type baseNode struct {

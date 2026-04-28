@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dpopsuev/origami/engine/gate"
-	"github.com/dpopsuev/troupe/signal"
+	"github.com/dpopsuev/tako/engine/gate"
+	"github.com/dpopsuev/tangle/signal"
 )
 
 // CLIGatekeeper implements collective.Gatekeeper by parking items in

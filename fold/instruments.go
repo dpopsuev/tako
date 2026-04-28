@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/dpopsuev/origami/circuit/def"
+	"github.com/dpopsuev/tako/circuit/def"
 )
 
 // LoadedInstrument holds a parsed instrument manifest alongside its source path.

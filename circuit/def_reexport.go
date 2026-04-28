@@ -3,7 +3,7 @@ package circuit
 // Re-exports from circuit/def — maintains backward compatibility.
 // New code should import circuit/def directly.
 
-import "github.com/dpopsuev/origami/circuit/def"
+import "github.com/dpopsuev/tako/circuit/def"
 
 // Type aliases for all definition types.
 type (

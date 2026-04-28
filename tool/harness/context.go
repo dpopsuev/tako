@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/dpopsuev/origami/tool"
+	"github.com/dpopsuev/tako/tool"
 )
 
 // ErrTTLExceeded is returned when the call depth budget is exhausted.
