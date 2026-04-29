@@ -23,3 +23,23 @@ func WithMonolog(m discourse.Monolog) Option {
 func WithMaxTurns(n int) Option {
 	return func(cb *Cerebrum) { cb.maxTurns = n }
 }
+
+func WithClassifier(c Classifier) Option {
+	return func(cb *Cerebrum) { cb.classifier = c }
+}
+
+func WithPromptBuilder(p PromptBuilder) Option {
+	return func(cb *Cerebrum) { cb.promptBuilder = p }
+}
+
+func WithParser(p ResponseParser) Option {
+	return func(cb *Cerebrum) { cb.parser = p }
+}
+
+func WithRecollector(r Recollector) Option {
+	return func(cb *Cerebrum) { cb.recollector = r }
+}
+
+func WithDispatcher(d Dispatcher) Option {
+	return func(cb *Cerebrum) { cb.dispatcher = d }
+}

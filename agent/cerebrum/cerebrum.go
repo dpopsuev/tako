@@ -21,14 +21,25 @@ type Cerebrum struct {
 	mesh    memory.Mesh
 	monolog discourse.Monolog
 
+	classifier    Classifier
+	promptBuilder PromptBuilder
+	parser        ResponseParser
+	recollector   Recollector
+	dispatcher    Dispatcher
+
 	molecule *reactivity.Molecule
 }
 
 func New(circuit *reactivity.Circuit, completer troupe.Completer, opts ...Option) *Cerebrum {
 	cb := &Cerebrum{
-		circuit:   circuit,
-		completer: completer,
-		maxTurns:  100,
+		circuit:       circuit,
+		completer:     completer,
+		maxTurns:      100,
+		classifier:    DefaultClassifier,
+		promptBuilder: DefaultPromptBuilder,
+		parser:        DefaultParser,
+		recollector:   DefaultRecollector,
+		dispatcher:    DefaultDispatcher,
 	}
 	for _, opt := range opts {
 		opt(cb)
@@ -54,7 +65,7 @@ func (cb *Cerebrum) think(ctx context.Context, need []byte) (*reactivity.Molecul
 
 	var recollected []reactivity.Atom
 	if cb.mesh != nil {
-		recollected = recollect(cb.mesh, need)
+		recollected = cb.recollector.Recollect(cb.mesh, need)
 		for _, atom := range recollected {
 			cb.circuit.Add(m, atom)
 		}
@@ -63,8 +74,8 @@ func (cb *Cerebrum) think(ctx context.Context, need []byte) (*reactivity.Molecul
 	toolBudget := 10
 
 	for turn := 0; turn < cb.maxTurns && !m.Sealed(); turn++ {
-		domain := Classify(m)
-		prompt := buildPrompt(m, need, domain, cb.shell, recollected)
+		domain := cb.classifier.Classify(m)
+		prompt := cb.promptBuilder.Build(m, need, domain, cb.shell, recollected)
 
 		response, err := cb.completer.Complete(ctx, prompt)
 		if err != nil {
@@ -78,7 +89,7 @@ func (cb *Cerebrum) think(ctx context.Context, need []byte) (*reactivity.Molecul
 			return m, nil
 		}
 
-		atoms, toolCall, _ := ParseResponse(response, m.Phase(), turn)
+		atoms, toolCall, _ := cb.parser.Parse(response, m.Phase(), turn)
 
 		for _, atom := range atoms {
 			result, fortune := cb.circuit.Add(m, atom)
@@ -95,7 +106,7 @@ func (cb *Cerebrum) think(ctx context.Context, need []byte) (*reactivity.Molecul
 		}
 
 		if toolCall != nil && cb.shell != nil && m.Phase() == reactivity.ExecutionAtom && toolBudget > 0 {
-			instrumentAtom, err := dispatch(ctx, cb.shell, toolCall)
+			instrumentAtom, err := cb.dispatcher.Dispatch(ctx, cb.shell, toolCall)
 			if err == nil {
 				cb.circuit.Add(m, instrumentAtom)
 				toolBudget--
@@ -117,7 +128,7 @@ func (cb *Cerebrum) think(ctx context.Context, need []byte) (*reactivity.Molecul
 		cb.monolog.Write(discourse.Letter{
 			From:      "cerebrum",
 			Subject:   "think-complete",
-			Body:      fmt.Sprintf("sealed molecule %s: %d atoms, domain=%s", m.ID, m.TotalMass(), Classify(m)),
+			Body:      fmt.Sprintf("sealed molecule %s: %d atoms, domain=%s", m.ID, m.TotalMass(), cb.classifier.Classify(m)),
 			CreatedAt: time.Now(),
 		})
 	}
