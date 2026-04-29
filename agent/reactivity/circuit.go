@@ -1,9 +1,14 @@
 package reactivity
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
+
+	"github.com/dpopsuev/tako/ergograph"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Circuit is the inner thinking loop — a Fab inside the agent's head.
@@ -19,11 +24,26 @@ type Circuit struct {
 	phase       AtomType
 	sealed      bool
 	createdAt   time.Time
+	pool        ergograph.Pool
+	tracer      trace.Tracer
+}
+
+// CircuitOption configures a Circuit.
+type CircuitOption func(*Circuit)
+
+// WithPool attaches an Ergograph Pool for recording.
+func WithPool(pool ergograph.Pool) CircuitOption {
+	return func(c *Circuit) { c.pool = pool }
+}
+
+// WithTracer attaches an OTel Tracer for spans.
+func WithTracer(tracer trace.Tracer) CircuitOption {
+	return func(c *Circuit) { c.tracer = tracer }
 }
 
 // NewCircuit creates a ReActivity Circuit starting at Intent phase.
-func NewCircuit(id string) *Circuit {
-	return &Circuit{
+func NewCircuit(id string, opts ...CircuitOption) *Circuit {
+	c := &Circuit{
 		id:          id,
 		atoms:       make(map[string]*Atom),
 		edges:       make(map[string][]string),
@@ -35,6 +55,10 @@ func NewCircuit(id string) *Circuit {
 		phase:       IntentAtom,
 		createdAt:   time.Now(),
 	}
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c
 }
 
 // Phase returns the current phase.
@@ -86,6 +110,8 @@ func (c *Circuit) UnsealTriad(t Triad) {
 	case ActTriad:
 		c.triadSealed[ActTriad] = false
 	}
+	c.record("circuit.triad.unseal", map[string]string{"triad": t.String()})
+	c.span("circuit.triad.unseal")
 }
 
 // TotalMass returns total atom count.
@@ -164,6 +190,13 @@ func (c *Circuit) Add(atom Atom) (AssertResult, Fortune) {
 	if result == Pass {
 		c.advancePhase()
 	}
+	c.record("circuit.add", map[string]string{
+		"atom":     atom.ID,
+		"type":     atom.Type.String(),
+		"taxonomy": atom.Taxonomy,
+		"result":   result.String(),
+	})
+	c.span("circuit.add")
 	return result, fortune
 }
 
@@ -177,6 +210,12 @@ func (c *Circuit) Seal(wish Atom) {
 		c.taxonomy[wish.Taxonomy] = append(c.taxonomy[wish.Taxonomy], wish.ID)
 	}
 	c.sealed = true
+	c.record("circuit.seal", map[string]string{
+		"wish":       wish.ID,
+		"depth":      c.CurrentTriad().String(),
+		"total_mass": fmt.Sprintf("%d", c.TotalMass()),
+	})
+	c.span("circuit.seal")
 }
 
 // Contradict checks if an atom contradicts an existing atom about the same concern.
@@ -255,9 +294,13 @@ func (c *Circuit) advancePhase() {
 		c.phase = AssessmentAtom
 	case AssessmentAtom:
 		c.triadSealed[ReasonTriad] = true
+		c.record("circuit.triad.seal", map[string]string{"triad": ReasonTriad.String()})
+		c.span("circuit.triad.seal")
 		c.phase = PlanAtom
 	case PlanAtom:
 		c.triadSealed[PlanTriad] = true
+		c.record("circuit.triad.seal", map[string]string{"triad": PlanTriad.String()})
+		c.span("circuit.triad.seal")
 		c.phase = ExecutionAtom
 	case ExecutionAtom:
 		c.phase = RetrospectionAtom
@@ -265,4 +308,37 @@ func (c *Circuit) advancePhase() {
 		c.triadSealed[ActTriad] = true
 	}
 	_ = prevTriad
+}
+
+const (
+	labelAtom     = "atom"
+	labelType     = "type"
+	labelTaxonomy = "taxonomy"
+	labelResult   = "result"
+	labelTriad    = "triad"
+	labelWish     = "wish"
+	labelDepth    = "depth"
+	labelMass     = "total_mass"
+	labelError    = "error"
+)
+
+func (c *Circuit) record(action string, labels map[string]string) {
+	if c.pool == nil {
+		return
+	}
+	if err := c.pool.Append(ergograph.Record{
+		Action:    action,
+		Timestamp: time.Now(),
+		Labels:    labels,
+	}); err != nil {
+		slog.WarnContext(context.Background(), "reactivity: record failed", slog.String(labelAtom, action), slog.Any(labelError, err))
+	}
+}
+
+func (c *Circuit) span(name string) {
+	if c.tracer == nil {
+		return
+	}
+	_, span := c.tracer.Start(context.Background(), name)
+	span.End()
 }

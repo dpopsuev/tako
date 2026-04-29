@@ -20,7 +20,7 @@ func (t AtomType) String() string {
 	case AssessmentAtom:
 		return "assessment"
 	case PlanAtom:
-		return "plan"
+		return "plan" //nolint:goconst // same word, different semantic (AtomType vs Triad)
 	case ExecutionAtom:
 		return "execution"
 	case RetrospectionAtom:
