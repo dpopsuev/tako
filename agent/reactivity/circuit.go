@@ -8,30 +8,32 @@ import (
 
 // Circuit is the inner thinking loop — a Fab inside the agent's head.
 type Circuit struct {
-	id         string
-	atoms      map[string]*Atom
-	edges      map[string][]string
-	subgraphs  map[AtomType][]string
-	taxonomy   map[string][]string
-	mass       map[AtomType]int
-	sourceMass map[AtomSource]int
-	phase      AtomType
-	sealed     bool
-	createdAt  time.Time
+	id          string
+	atoms       map[string]*Atom
+	edges       map[string][]string
+	subgraphs   map[AtomType][]string
+	taxonomy    map[string][]string
+	mass        map[AtomType]int
+	sourceMass  map[AtomSource]int
+	triadSealed map[Triad]bool
+	phase       AtomType
+	sealed      bool
+	createdAt   time.Time
 }
 
 // NewCircuit creates a ReActivity Circuit starting at Intent phase.
 func NewCircuit(id string) *Circuit {
 	return &Circuit{
-		id:         id,
-		atoms:      make(map[string]*Atom),
-		edges:      make(map[string][]string),
-		subgraphs:  make(map[AtomType][]string),
-		taxonomy:   make(map[string][]string),
-		mass:       make(map[AtomType]int),
-		sourceMass: make(map[AtomSource]int),
-		phase:      IntentAtom,
-		createdAt:  time.Now(),
+		id:          id,
+		atoms:       make(map[string]*Atom),
+		edges:       make(map[string][]string),
+		subgraphs:   make(map[AtomType][]string),
+		taxonomy:    make(map[string][]string),
+		mass:        make(map[AtomType]int),
+		sourceMass:  make(map[AtomSource]int),
+		triadSealed: make(map[Triad]bool),
+		phase:       IntentAtom,
+		createdAt:   time.Now(),
 	}
 }
 
@@ -53,6 +55,37 @@ func (c *Circuit) Mass(t AtomType) int {
 // SourceMass returns atom count by source.
 func (c *Circuit) SourceMass(s AtomSource) int {
 	return c.sourceMass[s]
+}
+
+// CurrentTriad returns which triad the circuit is in.
+func (c *Circuit) CurrentTriad() Triad {
+	return TriadOf(c.phase)
+}
+
+// TriadSealed returns whether a triad is sealed.
+func (c *Circuit) TriadSealed(t Triad) bool {
+	return c.triadSealed[t]
+}
+
+// AllTriadsSealed returns true when Reason, Plan, and Act are all sealed.
+func (c *Circuit) AllTriadsSealed() bool {
+	return c.triadSealed[ReasonTriad] && c.triadSealed[PlanTriad] && c.triadSealed[ActTriad]
+}
+
+// UnsealTriad unseals a triad and all lower triads (cascade down).
+// Adapt never unseals Reason (caller enforces — North Star is fixed).
+func (c *Circuit) UnsealTriad(t Triad) {
+	switch t {
+	case ReasonTriad:
+		c.triadSealed[ReasonTriad] = false
+		c.triadSealed[PlanTriad] = false
+		c.triadSealed[ActTriad] = false
+	case PlanTriad:
+		c.triadSealed[PlanTriad] = false
+		c.triadSealed[ActTriad] = false
+	case ActTriad:
+		c.triadSealed[ActTriad] = false
+	}
 }
 
 // TotalMass returns total atom count.
@@ -216,14 +249,20 @@ func (c *Circuit) assertPhase() (AssertResult, Fortune) {
 }
 
 func (c *Circuit) advancePhase() {
+	prevTriad := TriadOf(c.phase)
 	switch c.phase {
 	case IntentAtom:
 		c.phase = AssessmentAtom
 	case AssessmentAtom:
+		c.triadSealed[ReasonTriad] = true
 		c.phase = PlanAtom
 	case PlanAtom:
+		c.triadSealed[PlanTriad] = true
 		c.phase = ExecutionAtom
 	case ExecutionAtom:
 		c.phase = RetrospectionAtom
+	case RetrospectionAtom:
+		c.triadSealed[ActTriad] = true
 	}
+	_ = prevTriad
 }
