@@ -2,6 +2,7 @@ package framework
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -128,12 +129,12 @@ func (fc *FabCollective) Run(ctx context.Context) error {
 		return fmt.Errorf("%w: %s", ErrNoInstruments, intake.Name)
 	}
 
-	result, err := shell.Exec(ctx, names[0], []byte("walking-skeleton"))
+	result, err := shell.Exec(ctx, names[0], json.RawMessage(`"walking-skeleton"`))
 	if err != nil {
 		return fmt.Errorf("tako: instrument exec: %w", err)
 	}
 
-	envelope := artifact.NewEnvelope(intake.Name, result.Content)
+	envelope := artifact.NewEnvelope(intake.Name, result.Text())
 	envelope.ID = "env-0"
 	envelope.Labels["station"] = intake.Name
 	envelope.Seal()
@@ -156,14 +157,14 @@ func (fc *FabCollective) Run(ctx context.Context) error {
 		Action:    "instrument.exec",
 		Timestamp: time.Now(),
 		Labels:    map[string]string{"station": intake.Name, "instrument": names[0]},
-		Payload:   result.Content,
+		Payload:   result.Text(),
 	}); err != nil {
 		return fmt.Errorf("tako: ergograph append: %w", err)
 	}
 
 	if err := fc.mesh.AddNode(memory.KnowledgeNode{
 		ID:        "exec-0",
-		Content:   string(result.Content),
+		Content:   string(result.Text()),
 		Tier:      memory.Knowledge,
 		CreatedAt: time.Now(),
 	}); err != nil {
@@ -181,12 +182,25 @@ func (fc *FabCollective) Run(ctx context.Context) error {
 	fc.Canvas.Post(render.Panel{
 		ID:     "station:" + intake.Name,
 		Source: "fab",
-		Data:   result.Content,
+		Data:   result.Text(),
 	})
 
 	if err := fc.runner.Run(ctx, a); err != nil {
 		return fmt.Errorf("tako: agent run: %w", err)
 	}
+
+	if err := fc.Inspector.Verify(fc.Pool); err != nil {
+		return fmt.Errorf("tako: ergograph verify: %w", err)
+	}
+	oae, err := fc.Inspector.Score(fc.Pool)
+	if err != nil {
+		return fmt.Errorf("tako: inspector score: %w", err)
+	}
+	fc.Canvas.Post(render.Panel{
+		ID:     "oae",
+		Source: "inspector",
+		Data:   []byte(fmt.Sprintf("OAE: %.2f (A=%.2f P=%.2f Q=%.2f)", oae.Score(), oae.Availability, oae.Performance, oae.Quality)),
+	})
 
 	return nil
 }

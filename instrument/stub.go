@@ -2,67 +2,74 @@ package instrument
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
-	"time"
 )
 
 var ErrNotFound = errors.New("instrument: not found")
 
-// EchoTool is a stub instrument that returns its input as output.
-type EchoTool struct{}
+// EchoFunction is a stub instrument that returns its input as text output.
+type EchoFunction struct{}
 
-var _ Tool = EchoTool{}
+var _ Function = EchoFunction{}
 
-func (EchoTool) Name() string      { return "echo" }
-func (EchoTool) Signature() string { return "echo(input []byte) -> Result" }
-func (EchoTool) Manual() string    { return "Returns input unchanged." }
+func (EchoFunction) Name() string              { return "echo" }
+func (EchoFunction) Description() string       { return "Returns input unchanged." }
+func (EchoFunction) InputSchema() json.RawMessage { return json.RawMessage(`{"type":"object","properties":{"input":{"type":"string"}}}`) }
 
-// StubShell is an in-memory shell with a single echo instrument.
+func (EchoFunction) Execute(_ context.Context, input json.RawMessage) (Result, error) {
+	return TextResult(string(input)), nil
+}
+
+// StubShell is an in-memory shell backed by registered Functions.
 type StubShell struct {
-	tools map[string]Tool
+	functions map[string]Function
 }
 
 var _ Shell = (*StubShell)(nil)
 
-// NewStubShell creates a shell pre-loaded with the echo instrument.
 func NewStubShell() *StubShell {
 	return &StubShell{
-		tools: map[string]Tool{"echo": EchoTool{}},
+		functions: map[string]Function{"echo": EchoFunction{}},
 	}
 }
 
+func NewShellWith(fns ...Function) *StubShell {
+	s := &StubShell{functions: make(map[string]Function, len(fns))}
+	for _, fn := range fns {
+		s.functions[fn.Name()] = fn
+	}
+	return s
+}
+
 func (s *StubShell) Names() []string {
-	out := make([]string, 0, len(s.tools))
-	for name := range s.tools {
+	out := make([]string, 0, len(s.functions))
+	for name := range s.functions {
 		out = append(out, name)
 	}
 	return out
 }
 
-func (s *StubShell) Signature(name string) (string, error) {
-	t, ok := s.tools[name]
+func (s *StubShell) Describe(name string) (string, error) {
+	fn, ok := s.functions[name]
 	if !ok {
 		return "", ErrNotFound
 	}
-	return t.Signature(), nil
+	return fn.Description(), nil
 }
 
-func (s *StubShell) Manual(name string) (string, error) {
-	t, ok := s.tools[name]
+func (s *StubShell) Schema(name string) (json.RawMessage, error) {
+	fn, ok := s.functions[name]
 	if !ok {
-		return "", ErrNotFound
+		return nil, ErrNotFound
 	}
-	return t.Manual(), nil
+	return fn.InputSchema(), nil
 }
 
-func (s *StubShell) Exec(_ context.Context, name string, input []byte) (Result, error) {
-	if _, ok := s.tools[name]; !ok {
+func (s *StubShell) Exec(ctx context.Context, name string, input json.RawMessage) (Result, error) {
+	fn, ok := s.functions[name]
+	if !ok {
 		return Result{}, ErrNotFound
 	}
-	return Result{
-		Content:   input,
-		Structure: Blob,
-		ExitCode:  0,
-		Duration:  time.Millisecond,
-	}, nil
+	return fn.Execute(ctx, input)
 }

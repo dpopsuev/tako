@@ -6,35 +6,67 @@ import (
 	"time"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
+	"github.com/dpopsuev/tako/discourse"
+	"github.com/dpopsuev/tako/instrument"
+	"github.com/dpopsuev/tako/memory"
 	troupe "github.com/dpopsuev/tangle"
 )
 
-// Cerebrum is the agent's mind. Circuit + Monolog + Completer.
-// Think(need) runs the ReActivity loop: Need → Molecule → Wish.
 type Cerebrum struct {
 	circuit   *reactivity.Circuit
 	completer troupe.Completer
 	maxTurns  int
+
+	shell   instrument.Shell
+	mesh    memory.Mesh
+	monolog discourse.Monolog
+
+	molecule *reactivity.Molecule
 }
 
-// New creates a Cerebrum.
-func New(circuit *reactivity.Circuit, completer troupe.Completer) *Cerebrum {
-	return &Cerebrum{
+func New(circuit *reactivity.Circuit, completer troupe.Completer, opts ...Option) *Cerebrum {
+	cb := &Cerebrum{
 		circuit:   circuit,
 		completer: completer,
 		maxTurns:  100,
 	}
+	for _, opt := range opts {
+		opt(cb)
+	}
+	return cb
 }
 
-// Think processes a Need through the ReActivity Circuit.
-// Returns the sealed Molecule or an error.
-func (cb *Cerebrum) Think(ctx context.Context, need []byte) (*reactivity.Molecule, error) {
+func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
+	m, err := cb.think(ctx, need)
+	if err != nil {
+		return err
+	}
+	cb.molecule = m
+	return nil
+}
+
+func (cb *Cerebrum) Result() *reactivity.Molecule {
+	return cb.molecule
+}
+
+func (cb *Cerebrum) think(ctx context.Context, need []byte) (*reactivity.Molecule, error) {
 	m := reactivity.NewMolecule(fmt.Sprintf("mol-%d", time.Now().UnixNano()))
 
-	for turn := 0; turn < cb.maxTurns && !m.Sealed(); turn++ {
-		prompt := cb.buildPrompt(m, need)
+	var recollected []reactivity.Atom
+	if cb.mesh != nil {
+		recollected = recollect(cb.mesh, need)
+		for _, atom := range recollected {
+			cb.circuit.Add(m, atom)
+		}
+	}
 
-		response, err := cb.completer.Complete(ctx, string(prompt))
+	toolBudget := 10
+
+	for turn := 0; turn < cb.maxTurns && !m.Sealed(); turn++ {
+		domain := Classify(m)
+		prompt := buildPrompt(m, need, domain, cb.shell, recollected)
+
+		response, err := cb.completer.Complete(ctx, prompt)
 		if err != nil {
 			cb.circuit.Seal(m, reactivity.Atom{
 				ID:        fmt.Sprintf("wish-error-%d", turn),
@@ -46,19 +78,28 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) (*reactivity.Molecul
 			return m, nil
 		}
 
-		atom := cb.parseAtom(m, response, turn)
+		atoms, toolCall, _ := ParseResponse(response, m.Phase(), turn)
 
-		result, fortune := cb.circuit.Add(m, atom)
+		for _, atom := range atoms {
+			result, fortune := cb.circuit.Add(m, atom)
+			if result == reactivity.Unresolvable {
+				cb.circuit.Seal(m, reactivity.Atom{
+					ID:        fmt.Sprintf("wish-unresolvable-%d", turn),
+					Type:      reactivity.RetrospectionAtom,
+					Taxonomy:  "retrospection.wish.unresolvable",
+					Content:   []byte(fortune.Message),
+					CreatedAt: time.Now(),
+				})
+				return m, nil
+			}
+		}
 
-		if result == reactivity.Unresolvable {
-			cb.circuit.Seal(m, reactivity.Atom{
-				ID:        fmt.Sprintf("wish-unresolvable-%d", turn),
-				Type:      reactivity.RetrospectionAtom,
-				Taxonomy:  "retrospection.wish.unresolvable",
-				Content:   []byte(fortune.Message),
-				CreatedAt: time.Now(),
-			})
-			return m, nil
+		if toolCall != nil && cb.shell != nil && m.Phase() == reactivity.ExecutionAtom && toolBudget > 0 {
+			instrumentAtom, err := dispatch(ctx, cb.shell, toolCall)
+			if err == nil {
+				cb.circuit.Add(m, instrumentAtom)
+				toolBudget--
+			}
 		}
 	}
 
@@ -72,25 +113,14 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) (*reactivity.Molecul
 		})
 	}
 
-	return m, nil
-}
-
-func (cb *Cerebrum) buildPrompt(m *reactivity.Molecule, need []byte) string {
-	phase := m.Phase()
-	mass := m.Mass(phase)
-
-	prompt := fmt.Sprintf("phase:%s mass:%d need:%s", phase, mass, string(need))
-	return prompt
-}
-
-func (cb *Cerebrum) parseAtom(m *reactivity.Molecule, response string, turn int) reactivity.Atom {
-	phase := m.Phase()
-	return reactivity.Atom{
-		ID:        fmt.Sprintf("atom-%s-%d", phase, turn),
-		Type:      phase,
-		Source:    reactivity.Fresh,
-		Taxonomy:  fmt.Sprintf("%s.response.turn-%d", phase, turn),
-		Content:   []byte(response),
-		CreatedAt: time.Now(),
+	if cb.monolog != nil {
+		cb.monolog.Write(discourse.Letter{
+			From:      "cerebrum",
+			Subject:   "think-complete",
+			Body:      fmt.Sprintf("sealed molecule %s: %d atoms, domain=%s", m.ID, m.TotalMass(), Classify(m)),
+			CreatedAt: time.Now(),
+		})
 	}
+
+	return m, nil
 }

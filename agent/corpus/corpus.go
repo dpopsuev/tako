@@ -1,6 +1,7 @@
 package corpus
 
 import (
+	"context"
 	"errors"
 	"sync"
 
@@ -15,7 +16,7 @@ var (
 
 // Cerebrum is the agent's mind — thinking, memory, LLM access.
 type Cerebrum interface {
-	Think(need []byte) error
+	Think(ctx context.Context, need []byte) error
 }
 
 // Corpus is the composition root — wires Cerebrum (mind) and Organs (body).

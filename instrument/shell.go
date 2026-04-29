@@ -1,12 +1,15 @@
 package instrument
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+)
 
 // Shell is the Workstation's workbench — instruments are the tools on the bench.
-// Three levels of awareness: Names (L0), Signature (L1), Manual (L2).
+// Three levels of awareness: Names (L0), Describe (L1), Schema (L2).
 type Shell interface {
 	Names() []string
-	Signature(name string) (string, error)
-	Manual(name string) (string, error)
-	Exec(ctx context.Context, name string, input []byte) (Result, error)
+	Describe(name string) (string, error)
+	Schema(name string) (json.RawMessage, error)
+	Exec(ctx context.Context, name string, input json.RawMessage) (Result, error)
 }

@@ -123,9 +123,9 @@ func TestWalkingSkeleton(t *testing.T) {
 		t.Errorf("expected 1 monolog letter, got %d", len(letters))
 	}
 
-	// 10. Canvas received panel post
-	if canvas.PanelCount() != 1 {
-		t.Errorf("expected 1 canvas panel, got %d", canvas.PanelCount())
+	// 10. Canvas received panel posts (station + OAE)
+	if canvas.PanelCount() < 2 {
+		t.Errorf("expected at least 2 canvas panels (station + OAE), got %d", canvas.PanelCount())
 	}
 
 	// 11. Andon stayed green

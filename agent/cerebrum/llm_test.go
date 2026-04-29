@@ -47,13 +47,12 @@ func TestThink_RealLLM_Vertex(t *testing.T) {
 
 	// Cerebrum thinks
 	circuit := reactivity.NewCircuit()
-	cb := New(circuit, completer)
-	cb.maxTurns = 10
+	cb := New(circuit, completer, WithMaxTurns(10))
 
-	m, err := cb.Think(ctx, []byte("What is 2+2? Answer in one word."))
-	if err != nil {
+	if err := cb.Think(ctx, []byte("What is 2+2? Answer in one word.")); err != nil {
 		t.Fatalf("Think: %v", err)
 	}
+	m := cb.Result()
 
 	if !m.Sealed() {
 		t.Error("Molecule should be sealed")

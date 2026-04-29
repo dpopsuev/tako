@@ -2,6 +2,7 @@ package observe
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/dpopsuev/tako/ergograph"
 	"github.com/dpopsuev/tako/instrument"
@@ -21,7 +22,7 @@ func NewShell(inner instrument.Shell, pool ergograph.Pool, tracer trace.Tracer, 
 	return &Shell{inner: inner, pool: pool, tracer: tracer, name: name}
 }
 
-func (s *Shell) Exec(ctx context.Context, name string, input []byte) (instrument.Result, error) {
+func (s *Shell) Exec(ctx context.Context, name string, input json.RawMessage) (instrument.Result, error) {
 	ctx, span := s.tracer.Start(ctx, "shell.exec")
 	defer span.End()
 	result, err := s.inner.Exec(ctx, name, input)
@@ -36,18 +37,18 @@ func (s *Shell) Names() []string {
 	return s.inner.Names()
 }
 
-func (s *Shell) Signature(name string) (string, error) {
-	_, span := s.tracer.Start(context.Background(), "shell.signature")
+func (s *Shell) Describe(name string) (string, error) {
+	_, span := s.tracer.Start(context.Background(), "shell.describe")
 	defer span.End()
-	sig, err := s.inner.Signature(name)
+	desc, err := s.inner.Describe(name)
 	spanError(span, err)
-	return sig, err
+	return desc, err
 }
 
-func (s *Shell) Manual(name string) (string, error) {
-	_, span := s.tracer.Start(context.Background(), "shell.manual")
+func (s *Shell) Schema(name string) (json.RawMessage, error) {
+	_, span := s.tracer.Start(context.Background(), "shell.schema")
 	defer span.End()
-	man, err := s.inner.Manual(name)
+	schema, err := s.inner.Schema(name)
 	spanError(span, err)
-	return man, err
+	return schema, err
 }

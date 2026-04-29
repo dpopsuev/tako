@@ -7,7 +7,6 @@ import (
 
 	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/discourse"
-	
 	"github.com/dpopsuev/tako/memory"
 	"github.com/dpopsuev/tako/service/sleep"
 	"github.com/dpopsuev/tako/store"
@@ -26,12 +25,13 @@ func TestThink_FullVerticalSlice(t *testing.T) {
 
 	completer := &stubCompleter{response: "done"}
 	circuit := reactivity.NewCircuit()
-	cb := New(circuit, completer)
+	monolog := &discourse.StubMonolog{}
+	cb := New(circuit, completer, WithMonolog(monolog))
 
-	m, err := cb.Think(context.Background(), []byte("investigate PTP failure"))
-	if err != nil {
+	if err := cb.Think(context.Background(), []byte("investigate PTP failure")); err != nil {
 		t.Fatalf("Think: %v", err)
 	}
+	m := cb.Result()
 
 	if !m.Sealed() {
 		t.Fatal("Molecule should be sealed")
@@ -44,12 +44,10 @@ func TestThink_FullVerticalSlice(t *testing.T) {
 		t.Error("missing Retrospection atoms (Wish)")
 	}
 
-	monolog := &discourse.StubMonolog{}
-	monolog.Write(discourse.Letter{
-		From:    "cerebrum",
-		Subject: "think-complete",
-		Body:    string(m.Atoms(reactivity.RetrospectionAtom)[0].Content),
-	})
+	letters := monolog.Letters()
+	if len(letters) == 0 {
+		t.Error("Monolog should have letters after Think")
+	}
 
 	mesh := memory.NewDoltMesh(db.DB)
 	drain := sleep.NewDoltDrain(monolog)
