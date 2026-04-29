@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/instrument"
+	
 )
 
 func TestThink_FullLoop(t *testing.T) {
-	completer := &instrument.StubCompleter{Response: []byte("response")}
+	completer := &stubCompleter{response: "response"}
 	circuit := reactivity.NewCircuit()
 	cb := New(circuit, completer)
 
@@ -28,7 +28,7 @@ func TestThink_FullLoop(t *testing.T) {
 }
 
 func TestThink_SealOnCompleterError(t *testing.T) {
-	completer := &instrument.StubCompleter{Err: context.DeadlineExceeded}
+	completer := &stubCompleter{err: context.DeadlineExceeded}
 	circuit := reactivity.NewCircuit()
 	cb := New(circuit, completer)
 
@@ -54,7 +54,7 @@ func TestThink_SealOnCompleterError(t *testing.T) {
 }
 
 func TestThink_MoleculeHasAllPhases(t *testing.T) {
-	completer := &instrument.StubCompleter{Response: []byte("ok")}
+	completer := &stubCompleter{response: "ok"}
 	circuit := reactivity.NewCircuit()
 	cb := New(circuit, completer)
 
@@ -78,7 +78,7 @@ func TestThink_MoleculeHasAllPhases(t *testing.T) {
 }
 
 func TestThink_MaxTurnsAbort(t *testing.T) {
-	completer := &instrument.StubCompleter{Response: []byte("stuck")}
+	completer := &stubCompleter{response: "stuck"}
 	circuit := reactivity.NewCircuit()
 	cb := New(circuit, completer)
 	cb.maxTurns = 3

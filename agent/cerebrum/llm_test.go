@@ -9,34 +9,9 @@ import (
 	"time"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/instrument"
+	"github.com/dpopsuev/tangle/arsenal"
 	"github.com/dpopsuev/tangle/providers"
 )
-
-// VertexCompleter wraps the Vertex provider directly into Completer.
-// Bypasses full Tangle broker machinery for testing.
-// In production, TangleCompleter wraps Agent.Perform instead.
-type VertexCompleter struct {
-	provider *providers.VertexProvider
-	model    string
-}
-
-func (vc *VertexCompleter) Complete(ctx context.Context, prompt []byte) ([]byte, error) {
-	resp, err := vc.provider.Completion(ctx, providers.CompletionParams{
-		Model: vc.model,
-		Messages: []providers.Message{
-			{Role: "user", Content: string(prompt)},
-		},
-		MaxTokens: 256,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if len(resp.Choices) == 0 {
-		return []byte(""), nil
-	}
-	return []byte(resp.Choices[0].Content), nil
-}
 
 func TestThink_RealLLM_Vertex(t *testing.T) {
 	region := os.Getenv("CLOUD_ML_REGION")
@@ -48,15 +23,29 @@ func TestThink_RealLLM_Vertex(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
+	// Arsenal picks the model — no hardcoded names
+	ars, err := arsenal.NewArsenal("")
+	if err != nil {
+		t.Fatalf("NewArsenal: %v", err)
+	}
+
+	resolved, err := ars.Pick("claude-sonnet-4-6", "vertex-ai")
+	if err != nil {
+		t.Fatalf("Pick: %v", err)
+	}
+	model := resolved.Model
+	t.Logf("Arsenal picked: model=%s provider=%s", model, resolved.Provider)
+
+	// Provider connects to Vertex
 	provider, err := providers.NewVertexProvider(ctx, region, project)
 	if err != nil {
 		t.Fatalf("NewVertexProvider: %v", err)
 	}
 
-	completer := &VertexCompleter{provider: provider, model: "claude-sonnet-4-20250514"}
+	// NewCompleter bridges provider + model into troupe.Completer
+	completer := providers.NewCompleter(provider, model, nil)
 
-	var _ instrument.Completer = completer
-
+	// Cerebrum thinks
 	circuit := reactivity.NewCircuit()
 	cb := New(circuit, completer)
 	cb.maxTurns = 10
@@ -70,7 +59,8 @@ func TestThink_RealLLM_Vertex(t *testing.T) {
 		t.Error("Molecule should be sealed")
 	}
 
-	t.Logf("Real LLM test complete:")
+	t.Logf("Real LLM test:")
+	t.Logf("  Model: %s", model)
 	t.Logf("  Total atoms: %d", m.TotalMass())
 	t.Logf("  Intent: %d", m.Mass(reactivity.IntentAtom))
 	t.Logf("  Assessment: %d", m.Mass(reactivity.AssessmentAtom))
@@ -80,9 +70,9 @@ func TestThink_RealLLM_Vertex(t *testing.T) {
 
 	for _, a := range m.Atoms(reactivity.IntentAtom) {
 		content := string(a.Content)
-		if len(content) > 100 {
-			content = content[:100]
+		if len(content) > 200 {
+			content = content[:200]
 		}
-		t.Logf("  Intent atom: %s", content)
+		t.Logf("  Intent: %s", content)
 	}
 }

@@ -6,19 +6,19 @@ import (
 	"time"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/instrument"
+	troupe "github.com/dpopsuev/tangle"
 )
 
 // Cerebrum is the agent's mind. Circuit + Monolog + Completer.
 // Think(need) runs the ReActivity loop: Need → Molecule → Wish.
 type Cerebrum struct {
 	circuit   *reactivity.Circuit
-	completer instrument.Completer
+	completer troupe.Completer
 	maxTurns  int
 }
 
 // New creates a Cerebrum.
-func New(circuit *reactivity.Circuit, completer instrument.Completer) *Cerebrum {
+func New(circuit *reactivity.Circuit, completer troupe.Completer) *Cerebrum {
 	return &Cerebrum{
 		circuit:   circuit,
 		completer: completer,
@@ -34,7 +34,7 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) (*reactivity.Molecul
 	for turn := 0; turn < cb.maxTurns && !m.Sealed(); turn++ {
 		prompt := cb.buildPrompt(m, need)
 
-		response, err := cb.completer.Complete(ctx, prompt)
+		response, err := cb.completer.Complete(ctx, string(prompt))
 		if err != nil {
 			cb.circuit.Seal(m, reactivity.Atom{
 				ID:        fmt.Sprintf("wish-error-%d", turn),
@@ -75,22 +75,22 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) (*reactivity.Molecul
 	return m, nil
 }
 
-func (cb *Cerebrum) buildPrompt(m *reactivity.Molecule, need []byte) []byte {
+func (cb *Cerebrum) buildPrompt(m *reactivity.Molecule, need []byte) string {
 	phase := m.Phase()
 	mass := m.Mass(phase)
 
 	prompt := fmt.Sprintf("phase:%s mass:%d need:%s", phase, mass, string(need))
-	return []byte(prompt)
+	return prompt
 }
 
-func (cb *Cerebrum) parseAtom(m *reactivity.Molecule, response []byte, turn int) reactivity.Atom {
+func (cb *Cerebrum) parseAtom(m *reactivity.Molecule, response string, turn int) reactivity.Atom {
 	phase := m.Phase()
 	return reactivity.Atom{
 		ID:        fmt.Sprintf("atom-%s-%d", phase, turn),
 		Type:      phase,
 		Source:    reactivity.Fresh,
 		Taxonomy:  fmt.Sprintf("%s.response.turn-%d", phase, turn),
-		Content:   response,
+		Content:   []byte(response),
 		CreatedAt: time.Now(),
 	}
 }

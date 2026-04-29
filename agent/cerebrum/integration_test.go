@@ -7,7 +7,7 @@ import (
 
 	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/discourse"
-	"github.com/dpopsuev/tako/instrument"
+	
 	"github.com/dpopsuev/tako/memory"
 	"github.com/dpopsuev/tako/service/sleep"
 	"github.com/dpopsuev/tako/store"
@@ -24,7 +24,7 @@ func TestThink_FullVerticalSlice(t *testing.T) {
 		t.Fatalf("Migrate: %v", err)
 	}
 
-	completer := &instrument.StubCompleter{Response: []byte("done")}
+	completer := &stubCompleter{response: "done"}
 	circuit := reactivity.NewCircuit()
 	cb := New(circuit, completer)
 
