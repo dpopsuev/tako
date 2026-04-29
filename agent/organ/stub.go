@@ -9,17 +9,17 @@ import (
 // StubOrgan is a test organ that records received wires.
 type StubOrgan struct {
 	mu       sync.Mutex
-	name     string
+	name     OrganName
 	received []artifact.Wire
 }
 
 var _ Organ = (*StubOrgan)(nil)
 
-func NewStubOrgan(name string) *StubOrgan {
+func NewStubOrgan(name OrganName) *StubOrgan {
 	return &StubOrgan{name: name}
 }
 
-func (o *StubOrgan) Name() string { return o.name }
+func (o *StubOrgan) Name() OrganName { return o.name }
 
 func (o *StubOrgan) Receive(wire artifact.Wire) error {
 	o.mu.Lock()

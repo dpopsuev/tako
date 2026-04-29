@@ -13,16 +13,36 @@ var (
 	ErrNotAssembled  = errors.New("corpus: not assembled")
 )
 
-// Corpus is the agent's body — a collection of Organs assembled from AAI.Capability.
-// Tangled builds the Corpus. Agent never self-assembles.
-type Corpus struct {
-	mu     sync.RWMutex
-	organs map[string]organ.Organ
+// Cerebrum is the agent's mind — thinking, memory, LLM access.
+type Cerebrum interface {
+	Think(need []byte) error
 }
 
-// New creates an empty Corpus. Organs are attached via Attach.
+// Corpus is the composition root — wires Cerebrum (mind) and Organs (body).
+// Tangled builds the Corpus. Agent never self-assembles. SOLID DIP.
+type Corpus struct {
+	mu       sync.RWMutex
+	cerebrum Cerebrum
+	organs   map[organ.OrganName]organ.Organ
+}
+
+// New creates an empty Corpus. Cerebrum and Organs attached via setters.
 func New() *Corpus {
-	return &Corpus{organs: make(map[string]organ.Organ)}
+	return &Corpus{organs: make(map[organ.OrganName]organ.Organ)}
+}
+
+// SetCerebrum attaches the mind.
+func (c *Corpus) SetCerebrum(cerebrum Cerebrum) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.cerebrum = cerebrum
+}
+
+// Cerebrum returns the mind.
+func (c *Corpus) GetCerebrum() Cerebrum {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.cerebrum
 }
 
 // Attach adds an Organ to the Corpus.
@@ -33,7 +53,7 @@ func (c *Corpus) Attach(o organ.Organ) {
 }
 
 // Organ returns a named Organ.
-func (c *Corpus) Organ(name string) (organ.Organ, error) {
+func (c *Corpus) Organ(name organ.OrganName) (organ.Organ, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	o, ok := c.organs[name]
@@ -44,10 +64,10 @@ func (c *Corpus) Organ(name string) (organ.Organ, error) {
 }
 
 // Organs returns all attached Organ names.
-func (c *Corpus) Organs() []string {
+func (c *Corpus) Organs() []organ.OrganName {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	out := make([]string, 0, len(c.organs))
+	out := make([]organ.OrganName, 0, len(c.organs))
 	for name := range c.organs {
 		out = append(out, name)
 	}
@@ -58,7 +78,7 @@ func (c *Corpus) Organs() []string {
 func (c *Corpus) Route(wire artifact.Wire) error {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	o, ok := c.organs[wire.Kind]
+	o, ok := c.organs[organ.OrganName(wire.Kind)]
 	if !ok {
 		return ErrOrganNotFound
 	}

@@ -63,8 +63,8 @@ func TestWalkingSkeleton(t *testing.T) {
 
 	// 2. Corpus has Organs
 	organs := agents[0].Corpus.Organs()
-	if len(organs) < 5 {
-		t.Errorf("expected at least 5 organs, got %d", len(organs))
+	if len(organs) < 4 {
+		t.Errorf("expected at least 4 organs, got %d", len(organs))
 	}
 
 	// 3. Reactivity completed (runner executed)
