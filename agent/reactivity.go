@@ -26,4 +26,7 @@ type Reactivity interface {
 	Phase() Phase
 	Advance() Phase
 	Reset()
+	IsIdle() bool
+	IsBusy() bool
+	IsTerminal() bool
 }

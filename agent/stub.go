@@ -29,7 +29,10 @@ func (r *StubReactivity) Advance() Phase {
 	return r.phase
 }
 
-func (r *StubReactivity) Reset() { r.phase = Intent }
+func (r *StubReactivity) Reset()        { r.phase = Intent }
+func (r *StubReactivity) IsIdle() bool   { return r.phase == Intent || r.phase == Done }
+func (r *StubReactivity) IsBusy() bool   { return !r.IsIdle() && !r.IsTerminal() }
+func (r *StubReactivity) IsTerminal() bool { return false }
 
 // StubRunner executes a single reactivity cycle — walks through all phases.
 type StubRunner struct {

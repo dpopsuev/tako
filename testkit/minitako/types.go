@@ -128,6 +128,7 @@ type GameState struct {
 	LastAction    Action
 	ConsecutiveOf int
 	GuidesRead    map[string]bool
+	DeathCause    string
 	CreatedAt     time.Time
 }
 
