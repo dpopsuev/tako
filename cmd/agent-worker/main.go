@@ -48,7 +48,7 @@ func run(gateway, agentName, sessionID string) error {
 	// Spawn ACP agent via Bugle.
 	// ACP launcher absorbed into Broker
 	broker := broker.New("")
-	actor, err := broker.Spawn(ctx, troupe.ActorConfig{
+	actor, err := broker.Spawn(ctx, troupe.AgentConfig{
 		Model: agentName,
 		Role:  "worker",
 	})

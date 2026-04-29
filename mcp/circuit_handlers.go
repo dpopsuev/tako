@@ -287,7 +287,7 @@ func (s *CircuitServer) spawnACPWorkers(
 	hook := newObservabilityHook(bus)
 	broker := broker.New("", broker.WithHook(hook))
 	for range workerCount {
-		if _, spawnErr := broker.Spawn(runCtx, troupe.ActorConfig{
+		if _, spawnErr := broker.Spawn(runCtx, troupe.AgentConfig{
 			Model: input.Agent,
 			Role:  "worker",
 		}); spawnErr != nil {

@@ -38,7 +38,7 @@ const (
 )
 
 // PreSpawn logs the spawn attempt.
-func (h *observabilityHook) PreSpawn(ctx context.Context, config troupe.ActorConfig) error {
+func (h *observabilityHook) PreSpawn(ctx context.Context, config troupe.AgentConfig) error {
 	h.log.InfoContext(ctx, "agent spawn requested",
 		slog.String(logKeyRole, config.Role),
 		slog.String(logKeyModel, config.Model),
@@ -47,7 +47,7 @@ func (h *observabilityHook) PreSpawn(ctx context.Context, config troupe.ActorCon
 }
 
 // PostSpawn emits a signal on spawn success or failure.
-func (h *observabilityHook) PostSpawn(_ context.Context, config troupe.ActorConfig, _ troupe.Actor, err error) {
+func (h *observabilityHook) PostSpawn(_ context.Context, config troupe.AgentConfig, _ troupe.Agent, err error) {
 	if err != nil {
 		h.emit(signal.EventWorkerError, map[string]string{
 			"role":  config.Role,

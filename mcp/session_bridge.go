@@ -338,7 +338,7 @@ func wrapWithACPWorkers(inner RunFunc, params StartParams, disp *dispatch.MuxDis
 		)
 
 		for range workers {
-			_, spawnErr := broker.Spawn(ctx, troupe.ActorConfig{
+			_, spawnErr := broker.Spawn(ctx, troupe.AgentConfig{
 				Model: agentCmd,
 				Role:  defaultACPRole,
 			})

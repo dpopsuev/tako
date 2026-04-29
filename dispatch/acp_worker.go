@@ -35,7 +35,7 @@ type ACPWorkerDispatcher struct {
 	bus        signal.Bus
 	role       string
 	workers    int
-	collective troupe.Actor
+	collective troupe.Agent
 	strategies map[string]collective.CollectiveStrategy // step → strategy (scatter, race, etc.)
 	hooks      []broker.Hook
 	log        *slog.Logger
@@ -56,7 +56,7 @@ func WithACPWorkerBus(bus signal.Bus) ACPWorkerOption {
 
 // WithACPWorkerCollective routes hard steps (investigate, review) through
 // a dialectic collective instead of a single agent.
-func WithACPWorkerCollective(c troupe.Actor) ACPWorkerOption {
+func WithACPWorkerCollective(c troupe.Agent) ACPWorkerOption {
 	return func(d *ACPWorkerDispatcher) { d.collective = c }
 }
 
@@ -109,7 +109,7 @@ func (d *ACPWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 	defer d.emit(signal.EventWorkerStopped, "", "", map[string]string{signal.MetaKeyWorkerID: workerID})
 
 	// Actor pool: spawn once, reuse across steps.
-	var actor troupe.Actor
+	var actor troupe.Agent
 
 	for {
 		dc, err := d.mux.GetNextStep(ctx)
@@ -181,7 +181,7 @@ func (d *ACPWorkerDispatcher) workerLoop(ctx context.Context, workerID string) e
 }
 
 // ensureActor returns a healthy actor, spawning or respawning as needed.
-func (d *ACPWorkerDispatcher) ensureActor(ctx context.Context, current troupe.Actor, workerID string) (troupe.Actor, error) {
+func (d *ACPWorkerDispatcher) ensureActor(ctx context.Context, current troupe.Agent, workerID string) (troupe.Agent, error) {
 	// Reuse if alive and ready.
 	if current != nil && current.Ready() {
 		return current, nil

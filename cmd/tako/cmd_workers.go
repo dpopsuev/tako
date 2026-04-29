@@ -90,7 +90,7 @@ func workersCmd(args []string) error {
 func runWorker(ctx context.Context, gateway, agentName, sessionID, workerName string) error {
 	// ACP launcher absorbed into Broker
 	broker := broker.New("")
-	actor, err := broker.Spawn(ctx, troupe.ActorConfig{
+	actor, err := broker.Spawn(ctx, troupe.AgentConfig{
 		Model: agentName,
 		Role:  "worker",
 	})

@@ -85,19 +85,19 @@ type ollamaBroker struct {
 	model    string
 }
 
-func (b *ollamaBroker) Pick(_ context.Context, prefs troupe.Preferences) ([]troupe.ActorConfig, error) {
+func (b *ollamaBroker) Pick(_ context.Context, prefs troupe.Preferences) ([]troupe.AgentConfig, error) {
 	count := prefs.Count
 	if count <= 0 {
 		count = 1
 	}
-	configs := make([]troupe.ActorConfig, count)
+	configs := make([]troupe.AgentConfig, count)
 	for i := range count {
-		configs[i] = troupe.ActorConfig{Model: b.model, Role: prefs.Role}
+		configs[i] = troupe.AgentConfig{Model: b.model, Role: prefs.Role}
 	}
 	return configs, nil
 }
 
-func (b *ollamaBroker) Spawn(_ context.Context, cfg troupe.ActorConfig) (troupe.Actor, error) {
+func (b *ollamaBroker) Spawn(_ context.Context, cfg troupe.AgentConfig) (troupe.Agent, error) {
 	return &ollamaActor{endpoint: b.endpoint, model: cfg.Model}, nil
 }
 
