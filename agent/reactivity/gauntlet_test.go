@@ -2,19 +2,7 @@ package reactivity
 
 import (
 	"testing"
-	"time"
 )
-
-func atom(id string, t AtomType, taxonomy string, targets ...string) Atom {
-	return Atom{
-		ID:        id,
-		Type:      t,
-		Taxonomy:  taxonomy,
-		Content:   []byte(id),
-		Targets:   targets,
-		CreatedAt: time.Now(),
-	}
-}
 
 // Gauntlet Test 1: Dirty Shoes (contradiction detection)
 //
@@ -22,33 +10,34 @@ func atom(id string, t AtomType, taxonomy string, targets ...string) Atom {
 // Executes all three. New assessment: floor dirty again (dirty shoes).
 // Expected: contradiction detected between "floor swept" and "floor dirty again".
 func TestGauntlet_DirtyShoes(t *testing.T) {
-	c := NewCircuit("dirty-shoes")
+	c := NewCircuit()
+	m := NewMolecule("dirty-shoes")
 
 	// Intent
-	c.Add(atom("intent-clean", IntentAtom, "intent.desire.clean-room"))
+	c.Add(m, mkAtom("intent-clean", IntentAtom, "intent.desire.clean-room", Fresh))
 
 	// Assessment: what's dirty
-	c.Add(atom("assess-bed", AssessmentAtom, "assessment.state.bed"))
-	c.Add(atom("assess-floor", AssessmentAtom, "assessment.state.floor"))
-	c.Add(atom("assess-window", AssessmentAtom, "assessment.state.window"))
+	c.Add(m, mkAtom("assess-bed", AssessmentAtom, "assessment.state.bed", Fresh))
+	c.Add(m, mkAtom("assess-floor", AssessmentAtom, "assessment.state.floor", Fresh))
+	c.Add(m, mkAtom("assess-window", AssessmentAtom, "assessment.state.window", Fresh))
 
 	// Plan: address each finding
-	c.Add(atom("plan-bed", PlanAtom, "plan.task.bed", "assess-bed"))
-	c.Add(atom("plan-floor", PlanAtom, "plan.task.floor", "assess-floor"))
-	c.Add(atom("plan-window", PlanAtom, "plan.task.window", "assess-window"))
+	c.Add(m, mkAtom("plan-bed", PlanAtom, "plan.task.bed", Fresh, "assess-bed"))
+	c.Add(m, mkAtom("plan-floor", PlanAtom, "plan.task.floor", Fresh, "assess-floor"))
+	c.Add(m, mkAtom("plan-window", PlanAtom, "plan.task.window", Fresh, "assess-window"))
 
 	// Execute: complete each task
-	c.Add(atom("exec-bed", ExecutionAtom, "execution.result.bed", "plan-bed"))
-	c.Add(atom("exec-floor", ExecutionAtom, "execution.result.floor", "plan-floor"))
-	c.Add(atom("exec-window", ExecutionAtom, "execution.result.window", "plan-window"))
+	c.Add(m, mkAtom("exec-bed", ExecutionAtom, "execution.result.bed", Fresh, "plan-bed"))
+	c.Add(m, mkAtom("exec-floor", ExecutionAtom, "execution.result.floor", Fresh, "plan-floor"))
+	c.Add(m, mkAtom("exec-window", ExecutionAtom, "execution.result.window", Fresh, "plan-window"))
 
 	// New assessment: floor is dirty again (dirty shoes!)
-	dirtyAgain := atom("assess-floor-dirty-again", AssessmentAtom, "assessment.state.floor", "exec-floor")
+	dirtyAgain := mkAtom("assess-floor-dirty-again", AssessmentAtom, "assessment.state.floor", Fresh, "exec-floor")
 
 	// The circuit should detect a contradiction:
 	// "exec-floor" says floor is done, but new assessment says floor is dirty.
 	// Both target the same concern (floor).
-	contradicts, existing := c.Contradict(dirtyAgain)
+	contradicts, existing := c.Contradict(m, dirtyAgain)
 	if !contradicts {
 		t.Fatal("expected contradiction: 'floor done' vs 'floor dirty again'")
 	}
@@ -58,13 +47,13 @@ func TestGauntlet_DirtyShoes(t *testing.T) {
 
 	// Add the contradicting assessment anyway — the circuit accepts it
 	// but the agent should now re-plan
-	result, _ := c.Add(dirtyAgain)
+	result, _ := c.Add(m, dirtyAgain)
 	if result != Pass && result != Insufficient {
 		t.Errorf("expected assessment to be accepted, got %s", result)
 	}
 
 	// After adding contradicting assessment, we should have more assessment mass than execution
-	if c.Mass(AssessmentAtom) <= c.Mass(ExecutionAtom) {
+	if m.Mass(AssessmentAtom) <= m.Mass(ExecutionAtom) {
 		t.Error("contradicting assessment should increase assessment mass, signaling re-plan needed")
 	}
 }
@@ -75,15 +64,16 @@ func TestGauntlet_DirtyShoes(t *testing.T) {
 // Expected: recollected atoms shift mass toward known, Cynefin toward Clear.
 func TestGauntlet_Recollection(t *testing.T) {
 	// First investigation: full work
-	first := NewCircuit("rca-first")
-	first.Add(atom("intent-rca", IntentAtom, "intent.desire.investigate-failure"))
-	first.Add(atom("assess-logs", AssessmentAtom, "assessment.state.logs"))
-	first.Add(atom("assess-commits", AssessmentAtom, "assessment.state.commits"))
-	first.Add(atom("assess-jira", AssessmentAtom, "assessment.state.jira-match"))
-	first.Add(atom("plan-classify", PlanAtom, "plan.task.classify"))
-	first.Add(atom("exec-classify", ExecutionAtom, "execution.result.product-bug"))
-	first.Add(atom("retro-83551", RetrospectionAtom, "retrospection.learning.ocpbugs-83551"))
-	first.Seal(atom("wish-done", RetrospectionAtom, "retrospection.wish.done"))
+	c1 := NewCircuit()
+	first := NewMolecule("rca-first")
+	c1.Add(first, mkAtom("intent-rca", IntentAtom, "intent.desire.investigate-failure", Fresh))
+	c1.Add(first, mkAtom("assess-logs", AssessmentAtom, "assessment.state.logs", Fresh))
+	c1.Add(first, mkAtom("assess-commits", AssessmentAtom, "assessment.state.commits", Fresh))
+	c1.Add(first, mkAtom("assess-jira", AssessmentAtom, "assessment.state.jira-match", Fresh))
+	c1.Add(first, mkAtom("plan-classify", PlanAtom, "plan.task.classify", Fresh))
+	c1.Add(first, mkAtom("exec-classify", ExecutionAtom, "execution.result.product-bug", Fresh))
+	c1.Add(first, mkAtom("retro-83551", RetrospectionAtom, "retrospection.learning.ocpbugs-83551", Fresh))
+	c1.Seal(first, mkAtom("wish-done", RetrospectionAtom, "retrospection.wish.done", Fresh))
 
 	if !first.Sealed() {
 		t.Fatal("first circuit should be sealed")
@@ -91,26 +81,27 @@ func TestGauntlet_Recollection(t *testing.T) {
 	firstMass := first.TotalMass()
 
 	// Fifth investigation: recollect from first
-	fifth := NewCircuit("rca-fifth")
-	fifth.Add(atom("intent-rca", IntentAtom, "intent.desire.investigate-failure"))
+	c5 := NewCircuit()
+	fifth := NewMolecule("rca-fifth")
+	c5.Add(fifth, mkAtom("intent-rca", IntentAtom, "intent.desire.investigate-failure", Fresh))
 
 	// Recollected atoms from first investigation (same taxonomy, Source=Recollected)
-	recollectLogs := atom("recollect-logs", AssessmentAtom, "assessment.state.logs")
+	recollectLogs := mkAtom("recollect-logs", AssessmentAtom, "assessment.state.logs", Fresh)
 	recollectLogs.Source = Recollected
-	fifth.Add(recollectLogs)
+	c5.Add(fifth, recollectLogs)
 
-	recollectJira := atom("recollect-jira", AssessmentAtom, "assessment.state.jira-match")
+	recollectJira := mkAtom("recollect-jira", AssessmentAtom, "assessment.state.jira-match", Fresh)
 	recollectJira.Source = Recollected
-	fifth.Add(recollectJira)
+	c5.Add(fifth, recollectJira)
 
-	recollectResult := atom("recollect-result", AssessmentAtom, "assessment.state.known-bug-83551")
+	recollectResult := mkAtom("recollect-result", AssessmentAtom, "assessment.state.known-bug-83551", Fresh)
 	recollectResult.Source = Recollected
-	fifth.Add(recollectResult)
+	c5.Add(fifth, recollectResult)
 
 	// With recollected knowledge, planning is immediate
-	fifth.Add(atom("plan-link", PlanAtom, "plan.task.link-existing-jira"))
-	fifth.Add(atom("exec-link", ExecutionAtom, "execution.result.linked"))
-	fifth.Add(atom("retro-same", RetrospectionAtom, "retrospection.learning.same-as-before"))
+	c5.Add(fifth, mkAtom("plan-link", PlanAtom, "plan.task.link-existing-jira", Fresh))
+	c5.Add(fifth, mkAtom("exec-link", ExecutionAtom, "execution.result.linked", Fresh))
+	c5.Add(fifth, mkAtom("retro-same", RetrospectionAtom, "retrospection.learning.same-as-before", Fresh))
 
 	// Both complete the full chain
 	if fifth.Phase() != RetrospectionAtom {
@@ -150,23 +141,24 @@ func TestGauntlet_Recollection(t *testing.T) {
 // "I'm hungry." Assessment has availability but intent has no target.
 // Expected: circuit structurally blocks advancement to Plan.
 func TestGauntlet_Hungry(t *testing.T) {
-	c := NewCircuit("hungry")
+	c := NewCircuit()
+	m := NewMolecule("hungry")
 
 	// Intent: desire only, no target
-	c.Add(atom("intent-hungry", IntentAtom, "intent.desire.eat"))
+	c.Add(m, mkAtom("intent-hungry", IntentAtom, "intent.desire.eat", Fresh))
 
 	// Assessment: what's available
-	c.Add(atom("assess-fridge", AssessmentAtom, "assessment.availability.chicken"))
-	c.Add(atom("assess-rice", AssessmentAtom, "assessment.availability.rice"))
-	c.Add(atom("assess-time", AssessmentAtom, "assessment.state.time-8pm"))
+	c.Add(m, mkAtom("assess-fridge", AssessmentAtom, "assessment.availability.chicken", Fresh))
+	c.Add(m, mkAtom("assess-rice", AssessmentAtom, "assessment.availability.rice", Fresh))
+	c.Add(m, mkAtom("assess-time", AssessmentAtom, "assessment.state.time-8pm", Fresh))
 
 	// Try to add a plan without intent.target — should be in Plan phase now
-	if c.Phase() != PlanAtom {
-		t.Fatalf("expected Plan phase after assessments, got %s", c.Phase())
+	if m.Phase() != PlanAtom {
+		t.Fatalf("expected Plan phase after assessments, got %s", m.Phase())
 	}
 
 	// But we have no intent.target taxonomy — check by querying
-	targets := c.ByTaxonomy("intent.target")
+	targets := m.ByTaxonomy("intent.target")
 	if len(targets) != 0 {
 		t.Fatal("should have no intent.target atoms")
 	}
@@ -174,7 +166,7 @@ func TestGauntlet_Hungry(t *testing.T) {
 	// The structure tells us what's missing: intent.target
 	// A deterministic rule engine can check: "Plan requires intent.target, none found"
 	// This IS the back-pressure — the data structure reveals the gap
-	intents := c.Atoms(IntentAtom)
+	intents := m.Atoms(IntentAtom)
 	hasTarget := false
 	for _, a := range intents {
 		if a.Taxonomy == "intent.target.food" {
@@ -186,20 +178,20 @@ func TestGauntlet_Hungry(t *testing.T) {
 	}
 
 	// Human provides target
-	c.Add(atom("intent-target", IntentAtom, "intent.target.chicken-rice"))
+	c.Add(m, mkAtom("intent-target", IntentAtom, "intent.target.chicken-rice", Fresh))
 
 	// Now check: we have both desire and target
-	targets = c.ByTaxonomy("intent.target")
+	targets = m.ByTaxonomy("intent.target")
 	if len(targets) != 1 {
 		t.Fatalf("expected 1 intent.target after human input, got %d", len(targets))
 	}
 
 	// Continue: plan, execute, retrospect
-	c.Add(atom("plan-cook", PlanAtom, "plan.task.cook-chicken-rice"))
-	c.Add(atom("exec-cook", ExecutionAtom, "execution.result.cooked"))
-	c.Add(atom("retro-eat", RetrospectionAtom, "retrospection.learning.chicken-rice-good"))
+	c.Add(m, mkAtom("plan-cook", PlanAtom, "plan.task.cook-chicken-rice", Fresh))
+	c.Add(m, mkAtom("exec-cook", ExecutionAtom, "execution.result.cooked", Fresh))
+	c.Add(m, mkAtom("retro-eat", RetrospectionAtom, "retrospection.learning.chicken-rice-good", Fresh))
 
-	if c.Phase() != RetrospectionAtom {
-		t.Errorf("should reach retrospection, got %s", c.Phase())
+	if m.Phase() != RetrospectionAtom {
+		t.Errorf("should reach retrospection, got %s", m.Phase())
 	}
 }

@@ -11,227 +11,129 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// Circuit is the inner thinking loop — a Fab inside the agent's head.
+// Circuit is the molecular machine. Stateless. Processes Molecules.
 type Circuit struct {
-	id          string
-	atoms       map[string]*Atom
-	edges       map[string][]string
-	subgraphs   map[AtomType][]string
-	taxonomy    map[string][]string
-	mass        map[AtomType]int
-	sourceMass  map[AtomSource]int
-	triadSealed map[Triad]bool
-	phase       AtomType
-	sealed      bool
-	createdAt   time.Time
-	pool        ergograph.Pool
-	tracer      trace.Tracer
+	pool   ergograph.Pool
+	tracer trace.Tracer
 }
 
-// CircuitOption configures a Circuit.
-type CircuitOption func(*Circuit)
-
-// WithPool attaches an Ergograph Pool for recording.
-func WithPool(pool ergograph.Pool) CircuitOption {
-	return func(c *Circuit) { c.pool = pool }
-}
-
-// WithTracer attaches an OTel Tracer for spans.
-func WithTracer(tracer trace.Tracer) CircuitOption {
-	return func(c *Circuit) { c.tracer = tracer }
-}
-
-// NewCircuit creates a ReActivity Circuit starting at Intent phase.
-func NewCircuit(id string, opts ...CircuitOption) *Circuit {
-	c := &Circuit{
-		id:          id,
-		atoms:       make(map[string]*Atom),
-		edges:       make(map[string][]string),
-		subgraphs:   make(map[AtomType][]string),
-		taxonomy:    make(map[string][]string),
-		mass:        make(map[AtomType]int),
-		sourceMass:  make(map[AtomSource]int),
-		triadSealed: make(map[Triad]bool),
-		phase:       IntentAtom,
-		createdAt:   time.Now(),
-	}
+// NewCircuit creates a Circuit (the machine).
+func NewCircuit(opts ...CircuitOption) *Circuit {
+	c := &Circuit{}
 	for _, opt := range opts {
 		opt(c)
 	}
 	return c
 }
 
-// Phase returns the current phase.
-func (c *Circuit) Phase() AtomType {
-	return c.phase
+// CircuitOption configures a Circuit.
+type CircuitOption func(*Circuit)
+
+func WithPool(pool ergograph.Pool) CircuitOption {
+	return func(c *Circuit) { c.pool = pool }
 }
 
-// Sealed returns true if the circuit has been sealed by a Wish.
-func (c *Circuit) Sealed() bool {
-	return c.sealed
+func WithTracer(tracer trace.Tracer) CircuitOption {
+	return func(c *Circuit) { c.tracer = tracer }
 }
 
-// Mass returns atom count for a given phase.
-func (c *Circuit) Mass(t AtomType) int {
-	return c.mass[t]
-}
-
-// SourceMass returns atom count by source.
-func (c *Circuit) SourceMass(s AtomSource) int {
-	return c.sourceMass[s]
-}
-
-// CurrentTriad returns which triad the circuit is in.
-func (c *Circuit) CurrentTriad() Triad {
-	return TriadOf(c.phase)
-}
-
-// TriadSealed returns whether a triad is sealed.
-func (c *Circuit) TriadSealed(t Triad) bool {
-	return c.triadSealed[t]
-}
-
-// AllTriadsSealed returns true when Reason, Plan, and Act are all sealed.
-func (c *Circuit) AllTriadsSealed() bool {
-	return c.triadSealed[ReasonTriad] && c.triadSealed[PlanTriad] && c.triadSealed[ActTriad]
-}
-
-// UnsealTriad unseals a triad and all lower triads (cascade down).
-// Adapt never unseals Reason (caller enforces — North Star is fixed).
-func (c *Circuit) UnsealTriad(t Triad) {
-	switch t {
-	case ReasonTriad:
-		c.triadSealed[ReasonTriad] = false
-		c.triadSealed[PlanTriad] = false
-		c.triadSealed[ActTriad] = false
-	case PlanTriad:
-		c.triadSealed[PlanTriad] = false
-		c.triadSealed[ActTriad] = false
-	case ActTriad:
-		c.triadSealed[ActTriad] = false
-	}
-	c.record("circuit.triad.unseal", map[string]string{"triad": t.String()})
-	c.span("circuit.triad.unseal")
-}
-
-// TotalMass returns total atom count.
-func (c *Circuit) TotalMass() int {
-	total := 0
-	for _, v := range c.mass {
-		total += v
-	}
-	return total
-}
-
-// Atoms returns all atoms of a given type.
-func (c *Circuit) Atoms(t AtomType) []*Atom {
-	ids := c.subgraphs[t]
-	out := make([]*Atom, 0, len(ids))
-	for _, id := range ids {
-		if a, ok := c.atoms[id]; ok {
-			out = append(out, a)
-		}
-	}
-	return out
-}
-
-// Atom returns a single atom by ID.
-func (c *Circuit) Atom(id string) (*Atom, bool) {
-	a, ok := c.atoms[id]
-	return a, ok
-}
-
-// ByTaxonomy returns atoms matching a taxonomy prefix.
-func (c *Circuit) ByTaxonomy(prefix string) []*Atom {
-	var out []*Atom
-	for key, ids := range c.taxonomy {
-		if strings.HasPrefix(key, prefix) {
-			for _, id := range ids {
-				if a, ok := c.atoms[id]; ok {
-					out = append(out, a)
-				}
-			}
-		}
-	}
-	return out
-}
-
-// EdgesFrom returns atom IDs that this atom targets.
-func (c *Circuit) EdgesFrom(atomID string) []string {
-	return c.edges[atomID]
-}
-
-// Add inserts an atom into the circuit, creates edges, updates indexes, runs Assert.
-func (c *Circuit) Add(atom Atom) (AssertResult, Fortune) {
-	if c.sealed {
-		return Unresolvable, Fortune{Result: Unresolvable, Message: "circuit is sealed"}
+// Add inserts an atom into the molecule, creates edges, updates indexes, runs Assert.
+func (c *Circuit) Add(m *Molecule, atom Atom) (AssertResult, Fortune) {
+	if m.sealed {
+		return Unresolvable, Fortune{Result: Unresolvable, Message: "molecule is sealed"}
 	}
 
-	if atom.Type > c.phase && atom.Type != AssessmentAtom {
+	if atom.Type > m.phase && atom.Type != AssessmentAtom {
 		return Incompatible, Fortune{
 			Result:  Incompatible,
-			Message: fmt.Sprintf("circuit is in %s phase, cannot accept future %s atom", c.phase, atom.Type),
-			Phase:   c.phase,
+			Message: fmt.Sprintf("molecule is in %s phase, cannot accept future %s atom", m.phase, atom.Type),
+			Phase:   m.phase,
 		}
 	}
 
-	c.atoms[atom.ID] = &atom
-	c.subgraphs[atom.Type] = append(c.subgraphs[atom.Type], atom.ID)
-	c.mass[atom.Type]++
-	c.sourceMass[atom.Source]++
+	m.atoms[atom.ID] = &atom
+	m.subgraphs[atom.Type] = append(m.subgraphs[atom.Type], atom.ID)
+	m.mass[atom.Type]++
+	m.sourceMass[atom.Source]++
 
 	if atom.Taxonomy != "" {
-		c.taxonomy[atom.Taxonomy] = append(c.taxonomy[atom.Taxonomy], atom.ID)
+		m.taxonomy[atom.Taxonomy] = append(m.taxonomy[atom.Taxonomy], atom.ID)
 	}
 
-	c.edges[atom.ID] = append(c.edges[atom.ID], atom.Targets...)
+	m.edges[atom.ID] = append(m.edges[atom.ID], atom.Targets...)
 
-	result, fortune := c.assertPhase()
+	result, fortune := c.assertPhase(m)
 	if result == Pass {
-		c.advancePhase()
+		c.advancePhase(m)
 	}
 	c.record("circuit.add", map[string]string{
-		"atom":     atom.ID,
-		"type":     atom.Type.String(),
-		"taxonomy": atom.Taxonomy,
-		"result":   result.String(),
+		labelAtom:     atom.ID,
+		labelType:     atom.Type.String(),
+		labelTaxonomy: atom.Taxonomy,
+		labelResult:   result.String(),
 	})
 	c.span("circuit.add")
 	return result, fortune
 }
 
-// Seal marks the circuit as complete with a Wish atom.
-func (c *Circuit) Seal(wish Atom) {
+// Seal marks the molecule as complete with a Wish atom.
+func (c *Circuit) Seal(m *Molecule, wish Atom) {
 	wish.Type = RetrospectionAtom
-	c.atoms[wish.ID] = &wish
-	c.subgraphs[RetrospectionAtom] = append(c.subgraphs[RetrospectionAtom], wish.ID)
-	c.mass[RetrospectionAtom]++
+	m.atoms[wish.ID] = &wish
+	m.subgraphs[RetrospectionAtom] = append(m.subgraphs[RetrospectionAtom], wish.ID)
+	m.mass[RetrospectionAtom]++
 	if wish.Taxonomy != "" {
-		c.taxonomy[wish.Taxonomy] = append(c.taxonomy[wish.Taxonomy], wish.ID)
+		m.taxonomy[wish.Taxonomy] = append(m.taxonomy[wish.Taxonomy], wish.ID)
 	}
-	c.sealed = true
+	m.sealed = true
 	c.record("circuit.seal", map[string]string{
-		"wish":       wish.ID,
-		"depth":      c.CurrentTriad().String(),
-		"total_mass": fmt.Sprintf("%d", c.TotalMass()),
+		labelWish:  wish.ID,
+		labelDepth: m.CurrentTriad().String(),
+		labelMass:  fmt.Sprintf("%d", m.TotalMass()),
 	})
 	c.span("circuit.seal")
 }
 
 // Contradict checks if an atom contradicts an existing atom about the same concern.
-// Uses taxonomy domain (last segment) to match: "assessment.state.floor-dusty"
-// contradicts "execution.result.floor-done" because both concern "floor".
-func (c *Circuit) Contradict(atom Atom) (bool, *Atom) {
+func (c *Circuit) Contradict(m *Molecule, atom Atom) (bool, *Atom) {
 	domain := taxonomyDomain(atom.Taxonomy)
 	if domain == "" {
 		return false, nil
 	}
-	for _, existing := range c.atomsByDomain(domain) {
+	for _, existing := range m.atomsByDomain(domain) {
 		if existing.ID != atom.ID && existing.Type != atom.Type {
 			return true, existing
 		}
 	}
 	return false, nil
+}
+
+// UnsealTriad unseals a triad and all lower triads (cascade down).
+func (c *Circuit) UnsealTriad(m *Molecule, t Triad) {
+	switch t {
+	case ReasonTriad:
+		m.triadSealed[ReasonTriad] = false
+		m.triadSealed[PlanTriad] = false
+		m.triadSealed[ActTriad] = false
+	case PlanTriad:
+		m.triadSealed[PlanTriad] = false
+		m.triadSealed[ActTriad] = false
+	case ActTriad:
+		m.triadSealed[ActTriad] = false
+	}
+	m.unsealCount++
+	c.record("circuit.triad.unseal", map[string]string{labelTriad: t.String()})
+	c.span("circuit.triad.unseal")
+}
+
+func (m *Molecule) atomsByDomain(domain string) []*Atom {
+	var out []*Atom
+	for _, a := range m.atoms {
+		if taxonomyDomain(a.Taxonomy) == domain {
+			out = append(out, a)
+		}
+	}
+	return out
 }
 
 func taxonomyDomain(taxonomy string) string {
@@ -242,44 +144,30 @@ func taxonomyDomain(taxonomy string) string {
 	return parts[len(parts)-1]
 }
 
-func (c *Circuit) atomsByDomain(domain string) []*Atom {
-	var out []*Atom
-	for _, a := range c.atoms {
-		if taxonomyDomain(a.Taxonomy) == domain {
-			out = append(out, a)
-		}
-	}
-	return out
-}
-
-func (c *Circuit) assertPhase() (AssertResult, Fortune) {
-	switch c.phase {
+func (c *Circuit) assertPhase(m *Molecule) (AssertResult, Fortune) {
+	switch m.phase {
 	case IntentAtom:
-		if c.mass[IntentAtom] > 0 {
+		if m.mass[IntentAtom] > 0 {
 			return Pass, Fortune{}
 		}
 		return Insufficient, Fortune{Result: Insufficient, Message: "need intent atoms", Phase: IntentAtom}
-
 	case AssessmentAtom:
-		if c.mass[AssessmentAtom] > 0 {
+		if m.mass[AssessmentAtom] > 0 {
 			return Pass, Fortune{}
 		}
 		return Insufficient, Fortune{Result: Insufficient, Message: "need assessment atoms", Phase: AssessmentAtom}
-
 	case PlanAtom:
-		if c.mass[PlanAtom] > 0 {
+		if m.mass[PlanAtom] > 0 {
 			return Pass, Fortune{}
 		}
 		return Insufficient, Fortune{Result: Insufficient, Message: "need plan atoms", Phase: PlanAtom}
-
 	case ExecutionAtom:
-		if c.mass[ExecutionAtom] > 0 {
+		if m.mass[ExecutionAtom] > 0 {
 			return Pass, Fortune{}
 		}
 		return Insufficient, Fortune{Result: Insufficient, Message: "need execution atoms", Phase: ExecutionAtom}
-
 	case RetrospectionAtom:
-		if c.mass[RetrospectionAtom] > 0 {
+		if m.mass[RetrospectionAtom] > 0 {
 			return Pass, Fortune{}
 		}
 		return Insufficient, Fortune{Result: Insufficient, Message: "need retrospection atoms", Phase: RetrospectionAtom}
@@ -287,27 +175,25 @@ func (c *Circuit) assertPhase() (AssertResult, Fortune) {
 	return Unresolvable, Fortune{Result: Unresolvable, Message: "unknown phase"}
 }
 
-func (c *Circuit) advancePhase() {
-	prevTriad := TriadOf(c.phase)
-	switch c.phase {
+func (c *Circuit) advancePhase(m *Molecule) {
+	switch m.phase {
 	case IntentAtom:
-		c.phase = AssessmentAtom
+		m.phase = AssessmentAtom
 	case AssessmentAtom:
-		c.triadSealed[ReasonTriad] = true
-		c.record("circuit.triad.seal", map[string]string{"triad": ReasonTriad.String()})
+		m.triadSealed[ReasonTriad] = true
+		c.record("circuit.triad.seal", map[string]string{labelTriad: ReasonTriad.String()})
 		c.span("circuit.triad.seal")
-		c.phase = PlanAtom
+		m.phase = PlanAtom
 	case PlanAtom:
-		c.triadSealed[PlanTriad] = true
-		c.record("circuit.triad.seal", map[string]string{"triad": PlanTriad.String()})
+		m.triadSealed[PlanTriad] = true
+		c.record("circuit.triad.seal", map[string]string{labelTriad: PlanTriad.String()})
 		c.span("circuit.triad.seal")
-		c.phase = ExecutionAtom
+		m.phase = ExecutionAtom
 	case ExecutionAtom:
-		c.phase = RetrospectionAtom
+		m.phase = RetrospectionAtom
 	case RetrospectionAtom:
-		c.triadSealed[ActTriad] = true
+		m.triadSealed[ActTriad] = true
 	}
-	_ = prevTriad
 }
 
 const (
@@ -339,6 +225,6 @@ func (c *Circuit) span(name string) {
 	if c.tracer == nil {
 		return
 	}
-	_, span := c.tracer.Start(context.Background(), name)
-	span.End()
+	_, s := c.tracer.Start(context.Background(), name)
+	s.End()
 }

@@ -3,54 +3,57 @@ package reactivity
 import "testing"
 
 func TestTriad_ReasonSeals(t *testing.T) {
-	c := NewCircuit("test")
-	c.Add(mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
+	c := NewCircuit()
+	m := NewMolecule("test")
+	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
 
-	if c.TriadSealed(ReasonTriad) {
+	if m.TriadSealed(ReasonTriad) {
 		t.Error("Reason should not seal after Intent only")
 	}
 
-	c.Add(mkAtom("finding", AssessmentAtom, "assessment.availability.fridge", Fresh))
+	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.availability.fridge", Fresh))
 
-	if !c.TriadSealed(ReasonTriad) {
+	if !m.TriadSealed(ReasonTriad) {
 		t.Error("Reason should seal after Intent + Assessment")
 	}
-	if c.CurrentTriad() != PlanTriad {
-		t.Errorf("should advance to Plan triad, got %s", c.CurrentTriad())
+	if m.CurrentTriad() != PlanTriad {
+		t.Errorf("should advance to Plan triad, got %s", m.CurrentTriad())
 	}
 }
 
 func TestTriad_PlanSeals(t *testing.T) {
-	c := NewCircuit("test")
-	c.Add(mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
-	c.Add(mkAtom("finding", AssessmentAtom, "assessment.availability.fridge", Fresh))
+	c := NewCircuit()
+	m := NewMolecule("test")
+	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
+	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.availability.fridge", Fresh))
 
-	if c.TriadSealed(PlanTriad) {
+	if m.TriadSealed(PlanTriad) {
 		t.Error("Plan should not seal before any plan atoms")
 	}
 
-	c.Add(mkAtom("option", PlanAtom, "plan.option.cook", Fresh))
+	c.Add(m, mkAtom("option", PlanAtom, "plan.option.cook", Fresh))
 
-	if !c.TriadSealed(PlanTriad) {
+	if !m.TriadSealed(PlanTriad) {
 		t.Error("Plan should seal after plan atom")
 	}
-	if c.CurrentTriad() != ActTriad {
-		t.Errorf("should advance to Act triad, got %s", c.CurrentTriad())
+	if m.CurrentTriad() != ActTriad {
+		t.Errorf("should advance to Act triad, got %s", m.CurrentTriad())
 	}
 }
 
 func TestTriad_ActSeals(t *testing.T) {
-	c := NewCircuit("test")
-	c.Add(mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
-	c.Add(mkAtom("finding", AssessmentAtom, "assessment.state.dirty", Fresh))
-	c.Add(mkAtom("task", PlanAtom, "plan.task.sweep", Fresh))
-	c.Add(mkAtom("done", ExecutionAtom, "execution.result.swept", Fresh))
-	c.Add(mkAtom("learning", RetrospectionAtom, "retrospection.learning.done", Fresh))
+	c := NewCircuit()
+	m := NewMolecule("test")
+	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
+	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.state.dirty", Fresh))
+	c.Add(m, mkAtom("task", PlanAtom, "plan.task.sweep", Fresh))
+	c.Add(m, mkAtom("done", ExecutionAtom, "execution.result.swept", Fresh))
+	c.Add(m, mkAtom("learning", RetrospectionAtom, "retrospection.learning.done", Fresh))
 
-	if !c.TriadSealed(ActTriad) {
+	if !m.TriadSealed(ActTriad) {
 		t.Error("Act should seal after Execution + Retrospection")
 	}
-	if !c.AllTriadsSealed() {
+	if !m.AllTriadsSealed() {
 		t.Error("all triads should be sealed after full chain")
 	}
 }
@@ -75,15 +78,16 @@ func TestTriad_TriadOfMapping(t *testing.T) {
 }
 
 func TestTriad_AssessmentAcceptedInPlanTriad(t *testing.T) {
-	c := NewCircuit("test")
-	c.Add(mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
-	c.Add(mkAtom("finding", AssessmentAtom, "assessment.availability.fridge", Fresh))
+	c := NewCircuit()
+	m := NewMolecule("test")
+	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
+	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.availability.fridge", Fresh))
 
-	if c.CurrentTriad() != PlanTriad {
-		t.Fatalf("expected Plan triad, got %s", c.CurrentTriad())
+	if m.CurrentTriad() != PlanTriad {
+		t.Fatalf("expected Plan triad, got %s", m.CurrentTriad())
 	}
 
-	result, _ := c.Add(mkAtom("late-finding", AssessmentAtom, "assessment.state.time-late", Fresh))
+	result, _ := c.Add(m, mkAtom("late-finding", AssessmentAtom, "assessment.state.time-late", Fresh))
 	if result == Incompatible {
 		t.Error("Assessment should be accepted even in Plan triad (promiscuous)")
 	}
