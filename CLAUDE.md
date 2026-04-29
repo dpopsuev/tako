@@ -195,7 +195,7 @@ Complex is thin (refs + wiring + topology). Fab has the substance. Rehearsal val
 - **No sandbox (as concept)**: use "Agent Space". Sandbox is one implementation strategy.
 - **No Terminal/TerminalMux**: use "Corpus" (agent body) and "Organ" (functional part). Workstation is an Organ, not a separate system.
 - **No FAR**: use "FAR" (Federated Agent Runtime). Three letters, not four.
-- **Persona not role**: Worker/Foreman/Director/Avatar are Personas. Uniforms are the permission sets they wear. Organs are the limbs they get.
+- **Persona not role**: Worker/Foreman/Director/Coordinator/Consul/Avatar are Personas. Spiral Dynamics color coded (TAK-DOC-28). Uniforms are the permission sets they wear. Organs are the limbs they get. Avatar is outside the command chain (human proxy, no color).
 - **Dolt is the backend**: services talk to Dolt directly through their own interfaces. Reliquary deferred until an interface layer proves necessary.
 - **Artifact vs Relic**: same type. Relic = `certified:human` label + anchor weight. NOT a type distinction — a quality gate.
 - **Switchboard**: TangleD is the Switchboard (routing hub). Not "hub."
