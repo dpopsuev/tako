@@ -117,10 +117,10 @@ func TestWalkingSkeleton(t *testing.T) {
 		t.Errorf("expected 1 memory node, got %d", len(meshNodes))
 	}
 
-	// 9. Monologue has a letter
-	letters := fc.Monologue().Letters()
+	// 9. Monolog has a letter
+	letters := fc.Monolog().Letters()
 	if len(letters) != 1 {
-		t.Errorf("expected 1 monologue letter, got %d", len(letters))
+		t.Errorf("expected 1 monolog letter, got %d", len(letters))
 	}
 
 	// 10. Canvas received panel post

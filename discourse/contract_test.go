@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-func TestStubMonologue(t *testing.T) {
-	m := &StubMonologue{}
+func TestStubMonolog(t *testing.T) {
+	m := &StubMonolog{}
 	m.Pin("work")
 	m.Focus("planning")
 	m.Write(Letter{From: "self", To: "self", Subject: "thinking", Body: "what next?", CreatedAt: time.Now()})

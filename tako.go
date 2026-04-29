@@ -41,7 +41,7 @@ type FabCollective struct {
 	runner      agent.Runner
 	mesh        memory.Mesh
 	workstation workstation.Workstation
-	monologue   discourse.Monologue
+	monolog   discourse.Monolog
 }
 
 // Middleware processes an Envelope as it flows through the Fab graph.
@@ -108,7 +108,7 @@ func (fc *FabCollective) Run(ctx context.Context) error {
 		c.Attach(organ.NewStubOrgan(organName))
 	}
 
-	fc.monologue = &discourse.StubMonologue{}
+	fc.monolog = &discourse.StubMonolog{}
 
 	a := &agent.Agent{
 		Identity:   capability.Identity,
@@ -170,7 +170,7 @@ func (fc *FabCollective) Run(ctx context.Context) error {
 		return fmt.Errorf("tako: memory add node: %w", err)
 	}
 
-	fc.monologue.Write(discourse.Letter{
+	fc.monolog.Write(discourse.Letter{
 		From:      a.Identity,
 		To:        a.Identity,
 		Subject:   "executed " + names[0],
@@ -214,7 +214,7 @@ func (fc *FabCollective) Agents() []*agent.Agent {
 	return fc.agents
 }
 
-// Monologue returns the monologue used during Run.
-func (fc *FabCollective) Monologue() discourse.Monologue {
-	return fc.monologue
+// Monolog returns the monolog used during Run.
+func (fc *FabCollective) Monolog() discourse.Monolog {
+	return fc.monolog
 }

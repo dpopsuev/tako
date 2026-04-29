@@ -2,35 +2,35 @@ package discourse
 
 import "sync"
 
-// StubMonologue is an in-memory monologue — appends letters, no pressure model.
-type StubMonologue struct {
+// StubMonolog is an in-memory monolog — appends letters, no pressure model.
+type StubMonolog struct {
 	mu      sync.Mutex
 	pinned  string
 	focused string
 	letters []Letter
 }
 
-var _ Monologue = (*StubMonologue)(nil)
+var _ Monolog = (*StubMonolog)(nil)
 
-func (m *StubMonologue) Pin(topic string) {
+func (m *StubMonolog) Pin(topic string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.pinned = topic
 }
 
-func (m *StubMonologue) Focus(topic string) {
+func (m *StubMonolog) Focus(topic string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.focused = topic
 }
 
-func (m *StubMonologue) Write(letter Letter) {
+func (m *StubMonolog) Write(letter Letter) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.letters = append(m.letters, letter)
 }
 
-func (m *StubMonologue) Letters() []Letter {
+func (m *StubMonolog) Letters() []Letter {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return append([]Letter(nil), m.letters...)

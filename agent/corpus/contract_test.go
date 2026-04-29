@@ -10,15 +10,15 @@ import (
 
 func TestCorpusAttachAndRetrieve(t *testing.T) {
 	c := New()
-	c.Attach(organ.NewStubOrgan("monologue"))
+	c.Attach(organ.NewStubOrgan("monolog"))
 	c.Attach(organ.NewStubOrgan("workstation"))
 
-	o, err := c.Organ("monologue")
+	o, err := c.Organ("monolog")
 	if err != nil {
 		t.Fatalf("Organ failed: %v", err)
 	}
-	if o.Name() != "monologue" {
-		t.Errorf("expected monologue, got %s", o.Name())
+	if o.Name() != "monolog" {
+		t.Errorf("expected monolog, got %s", o.Name())
 	}
 
 	organs := c.Organs()

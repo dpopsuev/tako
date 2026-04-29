@@ -6,8 +6,8 @@ type Board struct {
 	Topics []Topic
 }
 
-// Monologue is the agent's internal discourse (letters to self).
-type Monologue interface {
+// Monolog is the agent's internal discourse (letters to self).
+type Monolog interface {
 	Pin(topic string)
 	Focus(topic string)
 	Write(letter Letter)
