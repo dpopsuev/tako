@@ -15,7 +15,7 @@ func TestObserve_AddEmitsRecordAndSpan(t *testing.T) {
 	tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
 	t.Cleanup(func() { _ = tp.Shutdown(context.Background()) })
 
-	c := NewCircuit(WithPool(pool), WithTracer(tp.Tracer("test")))
+	c := NewReactor(WithPool(pool), WithTracer(tp.Tracer("test")))
 	m := NewMolecule("observed")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
 
@@ -51,7 +51,7 @@ func TestObserve_AddEmitsRecordAndSpan(t *testing.T) {
 
 func TestObserve_TriadSealEmitsRecord(t *testing.T) {
 	pool := &ergograph.StubPool{}
-	c := NewCircuit(WithPool(pool))
+	c := NewReactor(WithPool(pool))
 	m := NewMolecule("observed")
 
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
@@ -70,7 +70,7 @@ func TestObserve_TriadSealEmitsRecord(t *testing.T) {
 
 func TestObserve_UnsealEmitsRecord(t *testing.T) {
 	pool := &ergograph.StubPool{}
-	c := NewCircuit(WithPool(pool))
+	c := NewReactor(WithPool(pool))
 	m := NewMolecule("observed")
 
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
@@ -92,7 +92,7 @@ func TestObserve_UnsealEmitsRecord(t *testing.T) {
 
 func TestObserve_SealEmitsRecord(t *testing.T) {
 	pool := &ergograph.StubPool{}
-	c := NewCircuit(WithPool(pool))
+	c := NewReactor(WithPool(pool))
 	m := NewMolecule("observed")
 
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
@@ -113,7 +113,7 @@ func TestObserve_SealEmitsRecord(t *testing.T) {
 }
 
 func TestObserve_NoPoolNoError(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("no-pool")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
 	c.Seal(m, mkAtom("wish", RetrospectionAtom, "retrospection.wish.done", Fresh))

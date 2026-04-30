@@ -2,8 +2,8 @@ package reactivity
 
 import "time"
 
-// Molecule is the substrate the Circuit operates on.
-// Circuit = CPU. Molecule = RAM. Focus switch = swap Molecule.
+// Molecule is the substrate the Reactor operates on.
+// Reactor = CPU. Molecule = RAM. Focus switch = swap Molecule.
 type Molecule struct {
 	ID          string
 	atoms       map[string]*Atom

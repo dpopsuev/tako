@@ -46,7 +46,7 @@ func TestThink_RealLLM_Vertex(t *testing.T) {
 	completer := providers.NewCompleter(provider, model, nil)
 
 	// Cerebrum thinks
-	circuit := reactivity.NewCircuit()
+	circuit := reactivity.NewReactor()
 	cb := New(circuit, completer, WithMaxTurns(10))
 
 	if err := cb.Think(ctx, []byte("What is 2+2? Answer in one word.")); err != nil {

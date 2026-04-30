@@ -24,7 +24,7 @@ func TestThink_FullVerticalSlice(t *testing.T) {
 	}
 
 	completer := &stubCompleter{response: "done"}
-	circuit := reactivity.NewCircuit()
+	circuit := reactivity.NewReactor()
 	monolog := &discourse.StubMonolog{}
 	cb := New(circuit, completer, WithMonolog(monolog))
 

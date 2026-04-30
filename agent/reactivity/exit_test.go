@@ -6,7 +6,7 @@ import (
 )
 
 func TestExit_WishFromReason(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("unreasonable")
 	c.Add(m, mkAtom("desire-fly", IntentAtom, "intent.desire.fly", Fresh))
 	c.Add(m, mkAtom("assess-no-wings", AssessmentAtom, "assessment.state.no-wings", Fresh))
@@ -22,7 +22,7 @@ func TestExit_WishFromReason(t *testing.T) {
 }
 
 func TestExit_WishFromPlan(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("no-path")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
 	c.Add(m, mkAtom("assess-empty", AssessmentAtom, "assessment.state.fridge-empty", Fresh))
@@ -36,7 +36,7 @@ func TestExit_WishFromPlan(t *testing.T) {
 }
 
 func TestExit_WishFromAct(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("unrecoverable")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
 	c.Add(m, mkAtom("assess", AssessmentAtom, "assessment.state.dirty", Fresh))
@@ -51,7 +51,7 @@ func TestExit_WishFromAct(t *testing.T) {
 }
 
 func TestExit_SealedRejectsNewAtoms(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("done")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
 	c.Seal(m, mkAtom("wish", RetrospectionAtom, "retrospection.wish.done", Fresh))
@@ -63,7 +63,7 @@ func TestExit_SealedRejectsNewAtoms(t *testing.T) {
 }
 
 func TestExit_DraftNotSealed(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("draft")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
 	c.Add(m, mkAtom("assess", AssessmentAtom, "assessment.availability.fridge", Fresh))
@@ -78,7 +78,7 @@ func TestExit_DraftNotSealed(t *testing.T) {
 }
 
 func TestExit_AbortPreservesPartialWork(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("abort")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
 	c.Add(m, mkAtom("assess", AssessmentAtom, "assessment.state.dirty", Fresh))
@@ -100,7 +100,7 @@ func TestExit_AbortPreservesPartialWork(t *testing.T) {
 }
 
 func TestExit_TerminateRecovery(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("crash")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
 	c.Add(m, mkAtom("assess", AssessmentAtom, "assessment.state.dirty", Fresh))

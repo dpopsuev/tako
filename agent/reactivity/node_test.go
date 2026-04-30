@@ -7,7 +7,7 @@ import (
 // --- Spark node ---
 
 func TestNode_Spark_ProducesDesire(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("test")
 	result, _ := c.Add(m, mkAtom("desire-eat", IntentAtom, "intent.desire.eat", Fresh))
 	if result != Pass {
@@ -19,7 +19,7 @@ func TestNode_Spark_ProducesDesire(t *testing.T) {
 }
 
 func TestNode_Spark_MultipleDesires(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire-eat", IntentAtom, "intent.desire.eat", Fresh))
 	c.Add(m, mkAtom("desire-rest", IntentAtom, "intent.desire.rest", Fresh))
@@ -29,7 +29,7 @@ func TestNode_Spark_MultipleDesires(t *testing.T) {
 }
 
 func TestNode_Spark_SealsOnExhaustion(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire-eat", IntentAtom, "intent.desire.eat", Fresh))
 	if m.Phase() != AssessmentAtom {
@@ -40,7 +40,7 @@ func TestNode_Spark_SealsOnExhaustion(t *testing.T) {
 // --- Assess node ---
 
 func TestNode_Assess_ProducesFindings(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
 	result, _ := c.Add(m, mkAtom("finding-fridge", AssessmentAtom, "assessment.availability.fridge", Fresh))
@@ -53,7 +53,7 @@ func TestNode_Assess_ProducesFindings(t *testing.T) {
 }
 
 func TestNode_Assess_AcceptedInAnyPhase(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
 	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.state.kitchen", Fresh))
@@ -66,7 +66,7 @@ func TestNode_Assess_AcceptedInAnyPhase(t *testing.T) {
 }
 
 func TestNode_Assess_RecollectedSource(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.investigate", Fresh))
 	c.Add(m, mkAtom("recollect-logs", AssessmentAtom, "assessment.state.logs", Recollected))
@@ -79,7 +79,7 @@ func TestNode_Assess_RecollectedSource(t *testing.T) {
 // --- Expand node ---
 
 func TestNode_Expand_ProducesOptions(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
 	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.availability.fridge", Fresh))
@@ -91,7 +91,7 @@ func TestNode_Expand_ProducesOptions(t *testing.T) {
 }
 
 func TestNode_Expand_MultipleOptions(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
 	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.availability.fridge", Fresh))
@@ -108,7 +108,7 @@ func TestNode_Expand_MultipleOptions(t *testing.T) {
 // --- Drive node ---
 
 func TestNode_Drive_ProducesResults(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
 	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.state.dirty", Fresh))
@@ -121,7 +121,7 @@ func TestNode_Drive_ProducesResults(t *testing.T) {
 }
 
 func TestNode_Drive_RejectsWithoutPlan(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
 
@@ -134,7 +134,7 @@ func TestNode_Drive_RejectsWithoutPlan(t *testing.T) {
 // --- Reflect node ---
 
 func TestNode_Reflect_ProducesWish(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
 	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.state.dirty", Fresh))
@@ -145,14 +145,14 @@ func TestNode_Reflect_ProducesWish(t *testing.T) {
 	c.Seal(m, mkAtom("wish", RetrospectionAtom, "retrospection.wish.be-cleaner", Fresh))
 
 	if !m.Sealed() {
-		t.Error("Circuit should be sealed after Wish")
+		t.Error("Reactor should be sealed after Wish")
 	}
 }
 
 // --- Contradiction ---
 
 func TestNode_Contradict_CrossType(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
 	c.Add(m, mkAtom("assess-floor", AssessmentAtom, "assessment.state.floor", Fresh))
@@ -173,7 +173,7 @@ func TestNode_Contradict_CrossType(t *testing.T) {
 // --- Taxonomy lookup ---
 
 func TestNode_TaxonomyLookup(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
 	c.Add(m, mkAtom("f1", AssessmentAtom, "assessment.availability.chicken", Fresh))

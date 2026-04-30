@@ -10,15 +10,15 @@ import (
 	"github.com/dpopsuev/tako/testkit/minitako"
 )
 
-type CircuitPlayer struct {
+type ReactorPlayer struct {
 	cerebrum *cerebrum.Cerebrum
 }
 
-func NewCircuitPlayer(cb *cerebrum.Cerebrum) *CircuitPlayer {
-	return &CircuitPlayer{cerebrum: cb}
+func NewReactorPlayer(cb *cerebrum.Cerebrum) *ReactorPlayer {
+	return &ReactorPlayer{cerebrum: cb}
 }
 
-func (p *CircuitPlayer) Act(state minitako.GameState) minitako.Action {
+func (p *ReactorPlayer) Act(state minitako.GameState) minitako.Action {
 	stateJSON, _ := json.Marshal(state)
 	need := append([]byte("Minitako game state: "), stateJSON...)
 

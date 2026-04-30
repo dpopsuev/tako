@@ -3,7 +3,7 @@ package reactivity
 import "testing"
 
 func TestCascade_UnsealPlanDoesNotUnsealReason(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
 	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.state.dirty", Fresh))
@@ -30,7 +30,7 @@ func TestCascade_UnsealPlanDoesNotUnsealReason(t *testing.T) {
 }
 
 func TestCascade_UnsealReasonCascadesAll(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
 	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.state.dirty", Fresh))
@@ -56,7 +56,7 @@ func TestCascade_UnsealReasonCascadesAll(t *testing.T) {
 }
 
 func TestCascade_UnsealActOnlyAffectsAct(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
 	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.state.dirty", Fresh))
@@ -78,7 +78,7 @@ func TestCascade_UnsealActOnlyAffectsAct(t *testing.T) {
 }
 
 func TestCascade_AdaptNeverUnsealsReason(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
 	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.state.floor", Fresh))

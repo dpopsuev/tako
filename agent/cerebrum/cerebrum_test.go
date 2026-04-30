@@ -9,7 +9,7 @@ import (
 
 func TestThink_FullLoop(t *testing.T) {
 	completer := &stubCompleter{response: "response"}
-	circuit := reactivity.NewCircuit()
+	circuit := reactivity.NewReactor()
 	cb := New(circuit, completer)
 
 	if err := cb.Think(context.Background(), []byte("clean the room")); err != nil {
@@ -28,7 +28,7 @@ func TestThink_FullLoop(t *testing.T) {
 
 func TestThink_SealOnCompleterError(t *testing.T) {
 	completer := &stubCompleter{err: context.DeadlineExceeded}
-	circuit := reactivity.NewCircuit()
+	circuit := reactivity.NewReactor()
 	cb := New(circuit, completer)
 
 	if err := cb.Think(context.Background(), []byte("anything")); err != nil {
@@ -54,7 +54,7 @@ func TestThink_SealOnCompleterError(t *testing.T) {
 
 func TestThink_MoleculeHasAllPhases(t *testing.T) {
 	completer := &stubCompleter{response: "ok"}
-	circuit := reactivity.NewCircuit()
+	circuit := reactivity.NewReactor()
 	cb := New(circuit, completer)
 
 	cb.Think(context.Background(), []byte("investigate failure"))
@@ -79,7 +79,7 @@ func TestThink_MoleculeHasAllPhases(t *testing.T) {
 
 func TestThink_MaxTurnsAbort(t *testing.T) {
 	completer := &stubCompleter{response: "stuck"}
-	circuit := reactivity.NewCircuit()
+	circuit := reactivity.NewReactor()
 	cb := New(circuit, completer, WithMaxTurns(3))
 
 	cb.Think(context.Background(), []byte("impossible"))
@@ -103,7 +103,7 @@ func TestThink_MaxTurnsAbort(t *testing.T) {
 
 func TestThink_BackwardCompatible(t *testing.T) {
 	completer := &stubCompleter{response: "done"}
-	circuit := reactivity.NewCircuit()
+	circuit := reactivity.NewReactor()
 	cb := New(circuit, completer)
 
 	if err := cb.Think(context.Background(), []byte("test")); err != nil {
@@ -117,7 +117,7 @@ func TestThink_BackwardCompatible(t *testing.T) {
 
 func TestThink_WithRecollection(t *testing.T) {
 	completer := &stubCompleter{response: "analyzed"}
-	circuit := reactivity.NewCircuit()
+	circuit := reactivity.NewReactor()
 	mesh := &stubMesh{nodes: []string{"prior knowledge about PTP"}}
 	cb := New(circuit, completer, WithMesh(mesh))
 

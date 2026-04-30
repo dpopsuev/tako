@@ -3,7 +3,7 @@ package reactivity
 import "testing"
 
 func TestTriad_ReasonSeals(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
 
@@ -22,7 +22,7 @@ func TestTriad_ReasonSeals(t *testing.T) {
 }
 
 func TestTriad_PlanSeals(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
 	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.availability.fridge", Fresh))
@@ -42,7 +42,7 @@ func TestTriad_PlanSeals(t *testing.T) {
 }
 
 func TestTriad_ActSeals(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
 	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.state.dirty", Fresh))
@@ -78,7 +78,7 @@ func TestTriad_TriadOfMapping(t *testing.T) {
 }
 
 func TestTriad_AssessmentAcceptedInPlanTriad(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
 	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.availability.fridge", Fresh))

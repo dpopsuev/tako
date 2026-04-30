@@ -11,34 +11,34 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// Circuit is the molecular machine. Stateless. Processes Molecules.
-type Circuit struct {
+// Reactor is the molecular machine. Stateless. Processes Molecules.
+type Reactor struct {
 	pool   ergograph.Pool
 	tracer trace.Tracer
 }
 
-// NewCircuit creates a Circuit (the machine).
-func NewCircuit(opts ...CircuitOption) *Circuit {
-	c := &Circuit{}
+// NewReactor creates a Reactor (the machine).
+func NewReactor(opts ...ReactorOption) *Reactor {
+	c := &Reactor{}
 	for _, opt := range opts {
 		opt(c)
 	}
 	return c
 }
 
-// CircuitOption configures a Circuit.
-type CircuitOption func(*Circuit)
+// ReactorOption configures a Reactor.
+type ReactorOption func(*Reactor)
 
-func WithPool(pool ergograph.Pool) CircuitOption {
-	return func(c *Circuit) { c.pool = pool }
+func WithPool(pool ergograph.Pool) ReactorOption {
+	return func(c *Reactor) { c.pool = pool }
 }
 
-func WithTracer(tracer trace.Tracer) CircuitOption {
-	return func(c *Circuit) { c.tracer = tracer }
+func WithTracer(tracer trace.Tracer) ReactorOption {
+	return func(c *Reactor) { c.tracer = tracer }
 }
 
 // Add inserts an atom into the molecule, creates edges, updates indexes, runs Assert.
-func (c *Circuit) Add(m *Molecule, atom Atom) (AssertResult, Fortune) {
+func (c *Reactor) Add(m *Molecule, atom Atom) (AssertResult, Fortune) {
 	if m.sealed {
 		return Unresolvable, Fortune{Result: Unresolvable, Message: "molecule is sealed"}
 	}
@@ -77,7 +77,7 @@ func (c *Circuit) Add(m *Molecule, atom Atom) (AssertResult, Fortune) {
 }
 
 // Seal marks the molecule as complete with a Wish atom.
-func (c *Circuit) Seal(m *Molecule, wish Atom) {
+func (c *Reactor) Seal(m *Molecule, wish Atom) {
 	wish.Type = RetrospectionAtom
 	m.atoms[wish.ID] = &wish
 	m.subgraphs[RetrospectionAtom] = append(m.subgraphs[RetrospectionAtom], wish.ID)
@@ -95,7 +95,7 @@ func (c *Circuit) Seal(m *Molecule, wish Atom) {
 }
 
 // Contradict checks if an atom contradicts an existing atom about the same concern.
-func (c *Circuit) Contradict(m *Molecule, atom Atom) (bool, *Atom) {
+func (c *Reactor) Contradict(m *Molecule, atom Atom) (bool, *Atom) {
 	domain := taxonomyDomain(atom.Taxonomy)
 	if domain == "" {
 		return false, nil
@@ -109,7 +109,7 @@ func (c *Circuit) Contradict(m *Molecule, atom Atom) (bool, *Atom) {
 }
 
 // UnsealTriad unseals a triad and all lower triads (cascade down).
-func (c *Circuit) UnsealTriad(m *Molecule, t Triad) {
+func (c *Reactor) UnsealTriad(m *Molecule, t Triad) {
 	switch t {
 	case ReasonTriad:
 		m.triadSealed[ReasonTriad] = false
@@ -144,7 +144,7 @@ func taxonomyDomain(taxonomy string) string {
 	return parts[len(parts)-1]
 }
 
-func (c *Circuit) assertPhase(m *Molecule) (AssertResult, Fortune) {
+func (c *Reactor) assertPhase(m *Molecule) (AssertResult, Fortune) {
 	switch m.phase {
 	case IntentAtom:
 		if m.mass[IntentAtom] > 0 {
@@ -175,7 +175,7 @@ func (c *Circuit) assertPhase(m *Molecule) (AssertResult, Fortune) {
 	return Unresolvable, Fortune{Result: Unresolvable, Message: "unknown phase"}
 }
 
-func (c *Circuit) advancePhase(m *Molecule) {
+func (c *Reactor) advancePhase(m *Molecule) {
 	switch m.phase {
 	case IntentAtom:
 		m.phase = AssessmentAtom
@@ -208,7 +208,7 @@ const (
 	labelError    = "error"
 )
 
-func (c *Circuit) record(action string, labels map[string]string) {
+func (c *Reactor) record(action string, labels map[string]string) {
 	if c.pool == nil {
 		return
 	}
@@ -221,7 +221,7 @@ func (c *Circuit) record(action string, labels map[string]string) {
 	}
 }
 
-func (c *Circuit) span(name string) {
+func (c *Reactor) span(name string) {
 	if c.tracer == nil {
 		return
 	}

@@ -10,7 +10,7 @@ import (
 // Executes all three. New assessment: floor dirty again (dirty shoes).
 // Expected: contradiction detected between "floor swept" and "floor dirty again".
 func TestGauntlet_DirtyShoes(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("dirty-shoes")
 
 	// Intent
@@ -64,7 +64,7 @@ func TestGauntlet_DirtyShoes(t *testing.T) {
 // Expected: recollected atoms shift mass toward known, Cynefin toward Clear.
 func TestGauntlet_Recollection(t *testing.T) {
 	// First investigation: full work
-	c1 := NewCircuit()
+	c1 := NewReactor()
 	first := NewMolecule("rca-first")
 	c1.Add(first, mkAtom("intent-rca", IntentAtom, "intent.desire.investigate-failure", Fresh))
 	c1.Add(first, mkAtom("assess-logs", AssessmentAtom, "assessment.state.logs", Fresh))
@@ -81,7 +81,7 @@ func TestGauntlet_Recollection(t *testing.T) {
 	firstMass := first.TotalMass()
 
 	// Fifth investigation: recollect from first
-	c5 := NewCircuit()
+	c5 := NewReactor()
 	fifth := NewMolecule("rca-fifth")
 	c5.Add(fifth, mkAtom("intent-rca", IntentAtom, "intent.desire.investigate-failure", Fresh))
 
@@ -141,7 +141,7 @@ func TestGauntlet_Recollection(t *testing.T) {
 // "I'm hungry." Assessment has availability but intent has no target.
 // Expected: circuit structurally blocks advancement to Plan.
 func TestGauntlet_Hungry(t *testing.T) {
-	c := NewCircuit()
+	c := NewReactor()
 	m := NewMolecule("hungry")
 
 	// Intent: desire only, no target
