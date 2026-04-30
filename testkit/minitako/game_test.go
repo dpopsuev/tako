@@ -1,10 +1,6 @@
 package minitako
 
-import (
-	"testing"
-
-	"github.com/dpopsuev/tako/fab"
-)
+import "testing"
 
 func TestRunGame_RandomPlayerSurvives(t *testing.T) {
 	result := RunGame(RandomPlayer{}, StubInspector{})
@@ -102,32 +98,3 @@ func TestNightTransition_AdvancesDay(t *testing.T) {
 	}
 }
 
-func TestNightContractEvaluator_PassesOnTickerZero(t *testing.T) {
-	gs := NewGameState()
-	gs.ActionTicker = 0
-	env := PackState(&gs)
-
-	nc := NightContractEvaluator{}
-	ok, err := nc.Evaluate(fab.Contract{}, env)
-	if err != nil {
-		t.Fatalf("Evaluate: %v", err)
-	}
-	if !ok {
-		t.Error("should pass when ticker is 0")
-	}
-}
-
-func TestNightContractEvaluator_FailsWhenTickerRemains(t *testing.T) {
-	gs := NewGameState()
-	gs.ActionTicker = 5
-	env := PackState(&gs)
-
-	nc := NightContractEvaluator{}
-	ok, err := nc.Evaluate(fab.Contract{}, env)
-	if err != nil {
-		t.Fatalf("Evaluate: %v", err)
-	}
-	if ok {
-		t.Error("should not pass when ticker > 0")
-	}
-}

@@ -23,7 +23,7 @@ func ArcadeAssembly() fab.Assembly {
 		Contracts: []fab.Contract{{
 			From:      station.Name,
 			To:        station.Name,
-			Evaluator: NewDayContract(),
+			Evaluator: DayDone,
 		}},
 	}
 }
@@ -70,18 +70,6 @@ func NightTransition(env artifact.Envelope) (artifact.Envelope, error) {
 	return PackState(&gs), nil
 }
 
-type NightContractEvaluator struct{}
-
-func (NightContractEvaluator) Evaluate(_ fab.Contract, env artifact.Envelope) (bool, error) {
-	gs, err := UnpackState(env)
-	if err != nil {
-		return false, err
-	}
-	if !gs.Alive {
-		return true, nil
-	}
-	return gs.ActionTicker <= 0, nil
-}
 
 func RunGame(player Player, inspector GameInspector) RunResult {
 	gs := NewGameState()

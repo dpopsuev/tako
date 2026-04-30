@@ -6,45 +6,58 @@ import (
 	"github.com/dpopsuev/tako/fab"
 )
 
-func TestDayContract_NotDoneBeforeMax(t *testing.T) {
+func TestDayDone_PassesOnTickerZero(t *testing.T) {
+	gs := NewGameState()
+	gs.ActionTicker = 0
+	env := PackState(&gs)
+
+	ok, err := DayDone.Evaluate(fab.Contract{}, env)
+	if err != nil {
+		t.Fatalf("Evaluate: %v", err)
+	}
+	if !ok {
+		t.Error("should pass when ticker is 0")
+	}
+}
+
+func TestDayDone_FailsWhenTickerRemains(t *testing.T) {
 	gs := NewGameState()
 	gs.ActionTicker = 5
 	env := PackState(&gs)
 
-	dc := NewDayContract()
-	done, err := dc.Evaluate(fab.Contract{}, env)
+	ok, err := DayDone.Evaluate(fab.Contract{}, env)
 	if err != nil {
 		t.Fatalf("Evaluate: %v", err)
 	}
-	if done {
-		t.Error("should not be done at 5 actions")
+	if ok {
+		t.Error("should not pass when ticker > 0")
 	}
 }
 
-func TestDayContract_DoneAtMax(t *testing.T) {
+func TestPetDied_PassesOnDeath(t *testing.T) {
 	gs := NewGameState()
-	gs.ActionTicker = 14
+	gs.Alive = false
 	env := PackState(&gs)
 
-	dc := NewDayContract()
-	done, err := dc.Evaluate(fab.Contract{}, env)
+	ok, err := PetDied.Evaluate(fab.Contract{}, env)
 	if err != nil {
 		t.Fatalf("Evaluate: %v", err)
 	}
-	if !done {
-		t.Error("should be done at 14 actions")
+	if !ok {
+		t.Error("should pass when pet is dead")
 	}
 }
 
-func TestNightContract_AlwaysDone(t *testing.T) {
-	env := PackState(&GameState{})
-	nc := NewNightContract()
-	done, err := nc.Evaluate(fab.Contract{}, env)
+func TestPetDied_FailsWhenAlive(t *testing.T) {
+	gs := NewGameState()
+	env := PackState(&gs)
+
+	ok, err := PetDied.Evaluate(fab.Contract{}, env)
 	if err != nil {
 		t.Fatalf("Evaluate: %v", err)
 	}
-	if !done {
-		t.Error("night contract should always pass")
+	if ok {
+		t.Error("should not pass when pet is alive")
 	}
 }
 
