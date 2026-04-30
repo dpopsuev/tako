@@ -2,16 +2,16 @@ package cerebrum
 
 import "github.com/dpopsuev/tako/agent/reactivity"
 
-// TriageVerdict classifies an incoming atom's relationship to existing molecules.
-type TriageVerdict int
+// RouteVerdict classifies an incoming atom's relationship to existing molecules.
+type RouteVerdict int
 
 const (
-	Inception     TriageVerdict = iota // new molecule — no existing molecule handles this domain
+	Inception     RouteVerdict = iota // new molecule — no existing molecule handles this domain
 	Continuation                       // existing molecule — atom extends current work
 	Contradiction                      // conflict — atom contradicts an existing atom
 )
 
-func (v TriageVerdict) String() string {
+func (v RouteVerdict) String() string {
 	switch v {
 	case Inception:
 		return "inception"
@@ -24,9 +24,9 @@ func (v TriageVerdict) String() string {
 	}
 }
 
-// TriageResult pairs a verdict with the target molecule ID.
-type TriageResult struct {
-	Verdict    TriageVerdict
+// RouteResult pairs a verdict with the target molecule ID.
+type RouteResult struct {
+	Verdict    RouteVerdict
 	MoleculeID string
 	Conflict   *reactivity.Atom
 }
@@ -34,9 +34,9 @@ type TriageResult struct {
 // Triage classifies an atom against the MoleculeStore and Reactor.
 // Drains the unsorted shelf, classifies each atom, and adds it to
 // the appropriate molecule in the store.
-func Moderate(store *MoleculeStore, reactor *reactivity.Core) []TriageResult {
+func Route(store *MoleculeStore, reactor *reactivity.Core) []RouteResult {
 	atoms := store.Drain()
-	results := make([]TriageResult, 0, len(atoms))
+	results := make([]RouteResult, 0, len(atoms))
 
 	for _, atom := range atoms {
 		result := classify(store, reactor, atom)
@@ -49,7 +49,7 @@ func Moderate(store *MoleculeStore, reactor *reactivity.Core) []TriageResult {
 	return results
 }
 
-func classify(store *MoleculeStore, reactor *reactivity.Core, atom reactivity.Atom) TriageResult {
+func classify(store *MoleculeStore, reactor *reactivity.Core, atom reactivity.Atom) RouteResult {
 	for _, id := range store.Molecules() {
 		m, ok := store.Molecule(id)
 		if !ok || m.Sealed() {
@@ -62,20 +62,20 @@ func classify(store *MoleculeStore, reactor *reactivity.Core, atom reactivity.At
 
 		contradicts, conflicting := sameTypeConflict(m, atom)
 		if contradicts {
-			return TriageResult{
+			return RouteResult{
 				Verdict:    Contradiction,
 				MoleculeID: id,
 				Conflict:   conflicting,
 			}
 		}
 
-		return TriageResult{
+		return RouteResult{
 			Verdict:    Continuation,
 			MoleculeID: id,
 		}
 	}
 
-	return TriageResult{
+	return RouteResult{
 		Verdict:    Inception,
 		MoleculeID: atom.ID + "-mol",
 	}
