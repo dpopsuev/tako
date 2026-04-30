@@ -2,7 +2,6 @@ package cerebrum
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -17,7 +16,7 @@ type Cerebrum struct {
 	completer troupe.Completer
 	maxTurns  int
 
-	sensory SensoryBus
+	sensory chan reactivity.Atom
 	motor   MotorBus
 
 	classifier    Classifier
@@ -37,6 +36,7 @@ func New(reactor *reactivity.Core, completer troupe.Completer, opts ...Option) *
 		promptBuilder: DefaultPromptBuilder,
 		parser:        DefaultParser,
 		store:         NewMoleculeStore(),
+		sensory:       make(chan reactivity.Atom, 64),
 	}
 	for _, opt := range opts {
 		opt(cb)
@@ -49,15 +49,93 @@ var _ organ.Organ = (*Cerebrum)(nil)
 func (cb *Cerebrum) Name() organ.OrganName { return organ.CerebrumOrgan }
 
 func (cb *Cerebrum) Receive(wire artifact.Wire) error {
-	return cb.Think(context.Background(), wire.Payload)
+	cb.sensory <- reactivity.Atom{
+		ID:        fmt.Sprintf("wire-%d", time.Now().UnixNano()),
+		Type:      reactivity.IntentAtom,
+		Source:    reactivity.Received,
+		Taxonomy:  "intent.wire." + wire.Kind,
+		Content:   wire.Payload,
+		CreatedAt: time.Now(),
+	}
+	return nil
+}
+
+func (cb *Cerebrum) Run(ctx context.Context) {
+	for {
+		select {
+		case atom := <-cb.sensory:
+			molecule := cb.cognize(atom)
+			cb.reactor.React(molecule, atom)
+			cb.dispatch(ctx, molecule)
+
+			if molecule.Sealed() {
+				cb.molecule = molecule
+				cb.store.Park()
+			}
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
 func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
-	m, err := cb.think(ctx, need)
-	if err != nil {
-		return err
+	molecule := cb.cognize(reactivity.Atom{
+		ID:        fmt.Sprintf("need-%d", time.Now().UnixNano()),
+		Type:      reactivity.IntentAtom,
+		Taxonomy:  "intent.need",
+		Content:   need,
+		CreatedAt: time.Now(),
+	})
+
+	for turn := 0; turn < cb.maxTurns && !molecule.Sealed(); turn++ {
+		domain := cb.classifier.Classify(molecule)
+		directives := cb.reactor.Directives(molecule.Phase())
+		prompt := cb.promptBuilder.Build(molecule, need, domain)
+		for _, d := range directives {
+			prompt += "\n> " + string(d)
+		}
+
+		response, err := cb.completer.Complete(ctx, prompt)
+		if err != nil {
+			cb.reactor.Seal(molecule, reactivity.Atom{
+				ID:        fmt.Sprintf("wish-error-%d", turn),
+				Type:      reactivity.RetrospectionAtom,
+				Taxonomy:  "retrospection.wish.completer-error",
+				Content:   []byte(err.Error()),
+				CreatedAt: time.Now(),
+			})
+			break
+		}
+
+		atoms, _, _ := cb.parser.Parse(response, molecule.Phase(), turn)
+		for _, atom := range atoms {
+			result, fortune := cb.reactor.Add(molecule, atom)
+			if result == reactivity.Unresolvable {
+				cb.reactor.Seal(molecule, reactivity.Atom{
+					ID:        fmt.Sprintf("wish-unresolvable-%d", turn),
+					Type:      reactivity.RetrospectionAtom,
+					Taxonomy:  "retrospection.wish.unresolvable",
+					Content:   []byte(fortune.Message),
+					CreatedAt: time.Now(),
+				})
+				break
+			}
+			cb.dispatch(ctx, molecule)
+		}
 	}
-	cb.molecule = m
+
+	if !molecule.Sealed() {
+		cb.reactor.Seal(molecule, reactivity.Atom{
+			ID:        "wish-max-turns",
+			Type:      reactivity.RetrospectionAtom,
+			Taxonomy:  "retrospection.wish.max-turns-exceeded",
+			Content:   []byte("exceeded max turns"),
+			CreatedAt: time.Now(),
+		})
+	}
+
+	cb.molecule = molecule
+	cb.store.Park()
 	return nil
 }
 
@@ -69,91 +147,52 @@ func (cb *Cerebrum) Store() *MoleculeStore {
 	return cb.store
 }
 
-func (cb *Cerebrum) think(ctx context.Context, need []byte) (*reactivity.Molecule, error) {
+func (cb *Cerebrum) Sensory() chan<- reactivity.Atom {
+	return cb.sensory
+}
+
+func (cb *Cerebrum) cognize(seed reactivity.Atom) *reactivity.Molecule {
+	for _, id := range cb.store.Molecules() {
+		m, ok := cb.store.Molecule(id)
+		if !ok || m.Sealed() {
+			continue
+		}
+		if matchesMolecule(m, seed) {
+			return cb.store.Focus(id)
+		}
+	}
 	molID := fmt.Sprintf("mol-%d", time.Now().UnixNano())
 	m := cb.store.Focus(molID)
+	cb.reactor.React(m, seed)
+	cb.dispatch(context.Background(), m)
+	return m
+}
 
-	toolBudget := 10
-
-	for turn := 0; turn < cb.maxTurns && !m.Sealed(); turn++ {
-		domain := cb.classifier.Classify(m)
-		directives := cb.reactor.Directives(m.Phase())
-		prompt := cb.promptBuilder.Build(m, need, domain)
-		for _, d := range directives {
-			prompt += "\n> " + string(d)
-		}
-
-		response, err := cb.completer.Complete(ctx, prompt)
-		if err != nil {
-			cb.reactor.Seal(m, reactivity.Atom{
-				ID:        fmt.Sprintf("wish-error-%d", turn),
-				Type:      reactivity.RetrospectionAtom,
-				Taxonomy:  "retrospection.wish.completer-error",
-				Content:   []byte(err.Error()),
-				CreatedAt: time.Now(),
-			})
-			return m, nil
-		}
-
-		atoms, toolCall, _ := cb.parser.Parse(response, m.Phase(), turn)
-
-		for _, atom := range atoms {
-			result, fortune := cb.reactor.Add(m, atom)
-			if result == reactivity.Unresolvable {
-				cb.reactor.Seal(m, reactivity.Atom{
-					ID:        fmt.Sprintf("wish-unresolvable-%d", turn),
-					Type:      reactivity.RetrospectionAtom,
-					Taxonomy:  "retrospection.wish.unresolvable",
-					Content:   []byte(fortune.Message),
-					CreatedAt: time.Now(),
-				})
-				return m, nil
-			}
-
-			cb.dispatch(ctx, m)
-		}
-
-		if toolCall != nil && cb.motor != nil && m.Phase() == reactivity.ExecutionAtom && toolBudget > 0 {
-			payload, _ := json.Marshal(toolCall)
-			cb.motor.Send(ctx, Command{Kind: "instrument", Target: toolCall.Name, Payload: payload})
-
-			if cb.sensory != nil {
-				if sig, ok := cb.sensory.Receive(ctx); ok {
-					instrumentAtom := reactivity.Atom{
-						ID:        fmt.Sprintf("instrument-%s-%d", toolCall.Name, turn),
-						Type:      reactivity.ExecutionAtom,
-						Source:    reactivity.Instrument,
-						Taxonomy:  fmt.Sprintf("execution.instrument.%s", toolCall.Name),
-						Content:   sig.Content,
-						CreatedAt: time.Now(),
-					}
-					cb.reactor.Add(m, instrumentAtom)
-					toolBudget--
-				}
+func matchesMolecule(m *reactivity.Molecule, atom reactivity.Atom) bool {
+	if atom.Taxonomy == "" {
+		return false
+	}
+	domain := taxonomyDomain(atom.Taxonomy)
+	if domain == "" {
+		return false
+	}
+	for _, at := range reactivity.AllAtomTypes() {
+		for _, existing := range m.Atoms(at) {
+			if taxonomyDomain(existing.Taxonomy) == domain {
+				return true
 			}
 		}
 	}
+	return false
+}
 
-	if !m.Sealed() {
-		cb.reactor.Seal(m, reactivity.Atom{
-			ID:        "wish-max-turns",
-			Type:      reactivity.RetrospectionAtom,
-			Taxonomy:  "retrospection.wish.max-turns-exceeded",
-			Content:   []byte("exceeded max turns"),
-			CreatedAt: time.Now(),
-		})
+func taxonomyDomain(taxonomy string) string {
+	for i := len(taxonomy) - 1; i >= 0; i-- {
+		if taxonomy[i] == '.' {
+			return taxonomy[i+1:]
+		}
 	}
-
-	if cb.motor != nil {
-		cb.motor.Send(ctx, Command{
-			Kind:    "wish",
-			Target:  "monolog",
-			Payload: []byte(fmt.Sprintf("sealed %s: %d atoms, domain=%s", m.ID, m.TotalMass(), cb.classifier.Classify(m))),
-		})
-	}
-
-	cb.store.Park()
-	return m, nil
+	return ""
 }
 
 func (cb *Cerebrum) dispatch(ctx context.Context, m *reactivity.Molecule) {

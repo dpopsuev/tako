@@ -6,22 +6,23 @@ import (
 	"sync"
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
+	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/instrument"
+
+	"fmt"
+	"time"
 )
 
-// InstrumentAdapter bridges instrument.Shell to the Motor/Sensory bus protocol.
-// Receives Command{Kind:"instrument"}, calls Shell.Exec(), sends Signal back.
 type InstrumentAdapter struct {
-	shell instrument.Shell
-	mu    sync.Mutex
-	inbox []cerebrum.Signal
+	shell   instrument.Shell
+	sensory chan<- reactivity.Atom
+	mu      sync.Mutex
 }
 
 var _ cerebrum.MotorBus = (*InstrumentAdapter)(nil)
-var _ cerebrum.SensoryBus = (*InstrumentAdapter)(nil)
 
-func NewInstrumentAdapter(shell instrument.Shell) *InstrumentAdapter {
-	return &InstrumentAdapter{shell: shell}
+func NewInstrumentAdapter(shell instrument.Shell, sensory chan<- reactivity.Atom) *InstrumentAdapter {
+	return &InstrumentAdapter{shell: shell, sensory: sensory}
 }
 
 func (a *InstrumentAdapter) Send(ctx context.Context, cmd cerebrum.Command) error {
@@ -31,33 +32,30 @@ func (a *InstrumentAdapter) Send(ctx context.Context, cmd cerebrum.Command) erro
 
 	result, err := a.shell.Exec(ctx, cmd.Target, json.RawMessage(cmd.Payload))
 
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
+	var atom reactivity.Atom
 	if err != nil {
-		a.inbox = append(a.inbox, cerebrum.Signal{
-			Kind:    "error",
-			Topic:   cmd.Target,
-			Content: []byte(err.Error()),
-		})
-		return nil
+		atom = reactivity.Atom{
+			ID:        fmt.Sprintf("instrument-error-%s-%d", cmd.Target, time.Now().UnixNano()),
+			Type:      reactivity.ExecutionAtom,
+			Source:    reactivity.Instrument,
+			Taxonomy:  fmt.Sprintf("execution.instrument-error.%s", cmd.Target),
+			Content:   []byte(err.Error()),
+			CreatedAt: time.Now(),
+		}
+	} else {
+		atom = reactivity.Atom{
+			ID:        fmt.Sprintf("instrument-%s-%d", cmd.Target, time.Now().UnixNano()),
+			Type:      reactivity.ExecutionAtom,
+			Source:    reactivity.Instrument,
+			Taxonomy:  fmt.Sprintf("execution.instrument.%s", cmd.Target),
+			Content:   []byte(result.Text()),
+			CreatedAt: time.Now(),
+		}
 	}
 
-	a.inbox = append(a.inbox, cerebrum.Signal{
-		Kind:    "result",
-		Topic:   cmd.Target,
-		Content: []byte(result.Text()),
-	})
+	select {
+	case a.sensory <- atom:
+	case <-ctx.Done():
+	}
 	return nil
-}
-
-func (a *InstrumentAdapter) Receive(_ context.Context) (cerebrum.Signal, bool) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	if len(a.inbox) == 0 {
-		return cerebrum.Signal{}, false
-	}
-	sig := a.inbox[0]
-	a.inbox = a.inbox[1:]
-	return sig, true
 }

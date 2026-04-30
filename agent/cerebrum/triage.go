@@ -105,11 +105,3 @@ func matchesDomain(m *reactivity.Molecule, atom reactivity.Atom) bool {
 	return false
 }
 
-func taxonomyDomain(taxonomy string) string {
-	for i := len(taxonomy) - 1; i >= 0; i-- {
-		if taxonomy[i] == '.' {
-			return taxonomy[i+1:]
-		}
-	}
-	return ""
-}

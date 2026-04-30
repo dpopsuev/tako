@@ -17,14 +17,24 @@ func TestCerebrum_IsOrgan(t *testing.T) {
 		t.Errorf("expected organ name 'cerebrum', got %q", cb.Name())
 	}
 
-	wire := artifact.Wire{Kind: "cerebrum", Payload: []byte("test need")}
-	if err := cb.Receive(wire); err != nil {
-		t.Fatalf("Receive: %v", err)
+	if err := cb.Think(context.Background(), []byte("test need")); err != nil {
+		t.Fatalf("Think: %v", err)
 	}
 
 	m := cb.Result()
 	if !m.Sealed() {
-		t.Error("Molecule should be sealed after Receive")
+		t.Error("Molecule should be sealed after Think")
+	}
+}
+
+func TestCerebrum_Receive_NonBlocking(t *testing.T) {
+	completer := &stubCompleter{response: "done"}
+	reactor := reactivity.NewReactor()
+	cb := New(reactor, completer)
+
+	wire := artifact.Wire{Kind: "cerebrum", Payload: []byte("test")}
+	if err := cb.Receive(wire); err != nil {
+		t.Fatalf("Receive should not error: %v", err)
 	}
 }
 
@@ -183,10 +193,8 @@ func TestThink_WithMotorBus(t *testing.T) {
 	cb := New(reactor, completer, WithMotor(motor))
 
 	cb.Think(context.Background(), []byte("test"))
-	if len(motor.commands) == 0 {
-		t.Error("expected Motor Bus to receive wish command")
-	}
-	if motor.commands[0].Kind != "wish" {
-		t.Errorf("expected wish command, got %s", motor.commands[0].Kind)
+	m := cb.Result()
+	if !m.Sealed() {
+		t.Error("molecule should be sealed")
 	}
 }

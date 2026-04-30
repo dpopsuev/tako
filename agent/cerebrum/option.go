@@ -2,10 +2,6 @@ package cerebrum
 
 type Option func(*Cerebrum)
 
-func WithSensory(s SensoryBus) Option {
-	return func(cb *Cerebrum) { cb.sensory = s }
-}
-
 func WithMotor(m MotorBus) Option {
 	return func(cb *Cerebrum) { cb.motor = m }
 }

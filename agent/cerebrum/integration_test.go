@@ -29,9 +29,5 @@ func TestThink_FullVerticalSlice(t *testing.T) {
 		t.Error("missing Retrospection atoms (Wish)")
 	}
 
-	if len(motor.commands) == 0 {
-		t.Error("Motor Bus should have received wish command")
-	}
-
 	t.Logf("Vertical slice: %d atoms, %d motor commands", m.TotalMass(), len(motor.commands))
 }
