@@ -2,7 +2,7 @@ package reactivity
 
 // Node is a Reactor with Directives. Directive[0] is the default.
 // Empty directives = gimped (pass through, no processing).
-// A Node without directives IS a Damper.
+// A Node without directives is gimped (pass through).
 type Node struct {
 	phase      AtomType
 	label      string

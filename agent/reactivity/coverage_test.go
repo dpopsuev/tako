@@ -100,9 +100,9 @@ func TestTriadReactor_Accessors(t *testing.T) {
 	}
 }
 
-func TestCore_WithSink(t *testing.T) {
+func TestCore_WithReflect(t *testing.T) {
 	custom := &customSink{fired: false}
-	c := NewReactor(WithSink(custom))
+	c := NewReactor(WithReflect(custom))
 	m := NewMolecule("sink-test")
 	addFullChain(c, m, "test")
 	if !custom.fired {

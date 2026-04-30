@@ -83,7 +83,7 @@ func (t *TriadReactor) React(m *Molecule, atom Atom) (YieldKind, Yield) {
 	return Insufficient, Yield{Result: Insufficient, Message: fmt.Sprintf("need %s atoms", t.triad), Phase: m.phase}
 }
 
-// Reflection is the Retrospect sink's node. Seals the molecule.
+// Reflection is the Retrospect egress's node. Seals the molecule.
 type Reflection struct{}
 
 func (Reflection) React(m *Molecule, _ Atom) (YieldKind, Yield) {
@@ -98,7 +98,7 @@ func (Reflection) React(m *Molecule, _ Atom) (YieldKind, Yield) {
 // Cognize (ingress) → Think → Compose → Implement → Reflect (egress).
 type Core struct {
 	floors map[Triad]Reactor
-	sink   Reactor
+	egress   Reactor
 	pool   ergograph.Pool
 	tracer trace.Tracer
 }
@@ -117,8 +117,8 @@ func WithTriad(t Triad, r Reactor) ReactorOption {
 	return func(c *Core) { c.floors[t] = r }
 }
 
-func WithSink(r Reactor) ReactorOption {
-	return func(c *Core) { c.sink = r }
+func WithReflect(r Reactor) ReactorOption {
+	return func(c *Core) { c.egress = r }
 }
 
 func WithDirective(phase AtomType, directive Directive) ReactorOption {
@@ -136,7 +136,7 @@ func NewReactor(opts ...ReactorOption) *Core {
 			ComposeTriad:   NewTriadReactor(ComposeTriad, AtomType{ImplementTriad, ThesisPosition}),
 			ImplementTriad: NewTriadReactor(ImplementTriad, RetrospectionAtom),
 		},
-		sink: Reflection{},
+		egress: Reflection{},
 	}
 	for _, opt := range opts {
 		opt(c)
@@ -174,7 +174,7 @@ func (c *Core) node(phase AtomType) *Node {
 	return tr.Node(phase.Position)
 }
 
-// React is the Cognizer — ingress node of Core. Routes atom to the right floor or sink.
+// React is the Cognizer — ingress node of Core. Routes atom to the right floor or egress.
 func (c *Core) React(m *Molecule, atom Atom) (YieldKind, Yield) {
 	if m.sealed {
 		return Unresolvable, Yield{Result: Unresolvable, Message: "molecule is sealed"}
@@ -193,7 +193,7 @@ func (c *Core) React(m *Molecule, atom Atom) (YieldKind, Yield) {
 	triad := atom.Type.Triad
 	var r Reactor
 	if triad == ReflectTriad {
-		r = c.sink
+		r = c.egress
 	} else {
 		r = c.floors[triad]
 	}

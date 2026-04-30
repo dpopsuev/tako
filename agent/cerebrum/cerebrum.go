@@ -110,7 +110,7 @@ func (cb *Cerebrum) think(ctx context.Context, need []byte) (*reactivity.Molecul
 				return m, nil
 			}
 
-			cb.cooldown(ctx, m)
+			cb.dispatch(ctx, m)
 		}
 
 		if toolCall != nil && cb.motor != nil && m.Phase() == reactivity.ExecutionAtom && toolBudget > 0 {
@@ -156,7 +156,7 @@ func (cb *Cerebrum) think(ctx context.Context, need []byte) (*reactivity.Molecul
 	return m, nil
 }
 
-func (cb *Cerebrum) cooldown(ctx context.Context, m *reactivity.Molecule) {
+func (cb *Cerebrum) dispatch(ctx context.Context, m *reactivity.Molecule) {
 	if cb.motor == nil {
 		m.DrainEmissions()
 		return
