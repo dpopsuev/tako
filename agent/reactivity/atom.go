@@ -6,10 +6,22 @@ import "time"
 type AtomType int
 
 const (
-	IntentAtom AtomType = iota
-	AssessmentAtom
-	PlanAtom
-	ExecutionAtom
+	// Reason triad
+	IntentAtom        AtomType = iota // thesis
+	AssessmentAtom                     // antithesis
+	UnderstandingAtom                  // synthesis
+
+	// Formation triad
+	PlanAtom     // thesis
+	RiskAtom     // antithesis
+	StrategyAtom // synthesis
+
+	// Action triad
+	ExecutionAtom   // thesis
+	ObservationAtom // antithesis
+	AdaptationAtom  // synthesis
+
+	// Retrospect sink
 	RetrospectionAtom
 )
 
@@ -19,10 +31,20 @@ func (t AtomType) String() string {
 		return "intent"
 	case AssessmentAtom:
 		return "assessment"
+	case UnderstandingAtom:
+		return "understanding"
 	case PlanAtom:
 		return "plan" //nolint:goconst // same word, different semantic (AtomType vs Triad)
+	case RiskAtom:
+		return "risk"
+	case StrategyAtom:
+		return "strategy"
 	case ExecutionAtom:
 		return "execution"
+	case ObservationAtom:
+		return "observation"
+	case AdaptationAtom:
+		return "adaptation"
 	case RetrospectionAtom:
 		return "retrospection"
 	default:

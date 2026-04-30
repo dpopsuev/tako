@@ -5,9 +5,8 @@ import "testing"
 func TestCascade_UnsealPlanDoesNotUnsealReason(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("test")
-	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
-	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.state.dirty", Fresh))
-	c.Add(m, mkAtom("task", PlanAtom, "plan.task.sweep", Fresh))
+	addReasonAtoms(c, m, "clean")
+	addFormationAtoms(c, m, "clean")
 
 	if !m.TriadSealed(ReasonTriad) {
 		t.Fatal("Reason should be sealed")
@@ -19,7 +18,7 @@ func TestCascade_UnsealPlanDoesNotUnsealReason(t *testing.T) {
 	c.UnsealTriad(m, PlanTriad)
 
 	if !m.TriadSealed(ReasonTriad) {
-		t.Error("Reason should STAY sealed when Plan unseals (North Star fixed)")
+		t.Error("Reason should STAY sealed when Plan unseals")
 	}
 	if m.TriadSealed(PlanTriad) {
 		t.Error("Plan should be unsealed")
@@ -32,11 +31,7 @@ func TestCascade_UnsealPlanDoesNotUnsealReason(t *testing.T) {
 func TestCascade_UnsealReasonCascadesAll(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("test")
-	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
-	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.state.dirty", Fresh))
-	c.Add(m, mkAtom("task", PlanAtom, "plan.task.sweep", Fresh))
-	c.Add(m, mkAtom("done", ExecutionAtom, "execution.result.swept", Fresh))
-	c.Add(m, mkAtom("retro", RetrospectionAtom, "retrospection.learning.done", Fresh))
+	addFullChain(c, m, "clean")
 
 	if !m.AllTriadsSealed() {
 		t.Fatal("all triads should be sealed after full chain")
@@ -58,11 +53,7 @@ func TestCascade_UnsealReasonCascadesAll(t *testing.T) {
 func TestCascade_UnsealActOnlyAffectsAct(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("test")
-	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
-	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.state.dirty", Fresh))
-	c.Add(m, mkAtom("task", PlanAtom, "plan.task.sweep", Fresh))
-	c.Add(m, mkAtom("done", ExecutionAtom, "execution.result.swept", Fresh))
-	c.Add(m, mkAtom("retro", RetrospectionAtom, "retrospection.learning.done", Fresh))
+	addFullChain(c, m, "clean")
 
 	c.UnsealTriad(m, ActTriad)
 
@@ -80,11 +71,7 @@ func TestCascade_UnsealActOnlyAffectsAct(t *testing.T) {
 func TestCascade_RetrospectOrthogonal(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("test")
-	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
-	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.state.dirty", Fresh))
-	c.Add(m, mkAtom("task", PlanAtom, "plan.task.sweep", Fresh))
-	c.Add(m, mkAtom("done", ExecutionAtom, "execution.result.swept", Fresh))
-	c.Add(m, mkAtom("retro", RetrospectionAtom, "retrospection.learning.done", Fresh))
+	addFullChain(c, m, "clean")
 
 	if !m.AllTriadsSealed() {
 		t.Fatal("all 4 triads should be sealed")
@@ -103,12 +90,11 @@ func TestCascade_RetrospectOrthogonal(t *testing.T) {
 func TestCascade_AdaptNeverUnsealsReason(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("test")
-	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
-	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.state.floor", Fresh))
-	c.Add(m, mkAtom("task", PlanAtom, "plan.task.floor", Fresh))
+	addReasonAtoms(c, m, "floor")
+	addFormationAtoms(c, m, "floor")
 	c.Add(m, mkAtom("done", ExecutionAtom, "execution.result.floor", Fresh))
 
-	dirty := mkAtom("dirty-again", AssessmentAtom, "assessment.state.floor", Fresh)
+	dirty := mkAtom("dirty-again", ObservationAtom, "observation.state.floor", Fresh)
 	contradicts, _ := c.Contradict(m, dirty)
 	if contradicts {
 		c.UnsealTriad(m, PlanTriad)

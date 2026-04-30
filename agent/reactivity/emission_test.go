@@ -45,9 +45,8 @@ func TestReactor_React_CanEmit(t *testing.T) {
 	c := NewReactor(WithTriad(ActTriad, emitting))
 
 	m := NewMolecule("reactor-emit")
-	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.test", Fresh))
-	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.state.test", Fresh))
-	c.Add(m, mkAtom("task", PlanAtom, "plan.task.test", Fresh))
+	addReasonAtoms(c, m, "test")
+	addFormationAtoms(c, m, "test")
 	c.Add(m, mkAtom("exec", ExecutionAtom, "execution.result.test", Fresh))
 
 	emissions := m.DrainEmissions()
@@ -63,10 +62,10 @@ type emittingReactor struct{}
 
 func (emittingReactor) React(m *Molecule, atom Atom) (YieldKind, Yield) {
 	m.Emit(Emission{Kind: "instrument", Target: "test-tool", Payload: atom.Content})
-	if m.mass[ExecutionAtom] > 0 {
+	if m.mass[AdaptationAtom] > 0 {
 		m.SealTriad(ActTriad)
 		m.SetPhase(RetrospectionAtom)
 		return Pass, Yield{}
 	}
-	return Insufficient, Yield{Result: Insufficient, Message: "need execution atoms", Phase: ExecutionAtom}
+	return Insufficient, Yield{Result: Insufficient, Message: "need adaptation atom", Phase: ExecutionAtom}
 }

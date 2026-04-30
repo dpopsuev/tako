@@ -25,14 +25,23 @@ func (t Triad) String() string {
 	}
 }
 
+// DialecticPosition is the role of a node within a triad.
+type DialecticPosition int
+
+const (
+	ThesisPosition     DialecticPosition = 0
+	AntithesisPosition DialecticPosition = 1
+	SynthesisPosition  DialecticPosition = 2
+)
+
 // TriadOf returns which triad an AtomType belongs to.
 func TriadOf(t AtomType) Triad {
 	switch t {
-	case IntentAtom, AssessmentAtom:
+	case IntentAtom, AssessmentAtom, UnderstandingAtom:
 		return ReasonTriad
-	case PlanAtom:
+	case PlanAtom, RiskAtom, StrategyAtom:
 		return PlanTriad
-	case ExecutionAtom:
+	case ExecutionAtom, ObservationAtom, AdaptationAtom:
 		return ActTriad
 	case RetrospectionAtom:
 		return RetrospectTriad
@@ -45,14 +54,28 @@ func TriadOf(t AtomType) Triad {
 func TriadNodes(t Triad) []AtomType {
 	switch t {
 	case ReasonTriad:
-		return []AtomType{IntentAtom, AssessmentAtom}
+		return []AtomType{IntentAtom, AssessmentAtom, UnderstandingAtom}
 	case PlanTriad:
-		return []AtomType{PlanAtom}
+		return []AtomType{PlanAtom, RiskAtom, StrategyAtom}
 	case ActTriad:
-		return []AtomType{ExecutionAtom}
+		return []AtomType{ExecutionAtom, ObservationAtom, AdaptationAtom}
 	case RetrospectTriad:
 		return []AtomType{RetrospectionAtom}
 	default:
 		return nil
+	}
+}
+
+// PositionOf returns the dialectic position of an AtomType within its triad.
+func PositionOf(t AtomType) DialecticPosition {
+	switch t {
+	case IntentAtom, PlanAtom, ExecutionAtom:
+		return ThesisPosition
+	case AssessmentAtom, RiskAtom, ObservationAtom:
+		return AntithesisPosition
+	case UnderstandingAtom, StrategyAtom, AdaptationAtom:
+		return SynthesisPosition
+	default:
+		return ThesisPosition
 	}
 }

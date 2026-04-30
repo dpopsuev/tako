@@ -16,17 +16,18 @@ func TestComposite_WithTriad_Ablation(t *testing.T) {
 	c := NewReactor(WithTriad(PlanTriad, Damper{}))
 	m := NewMolecule("ablation")
 
-	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
-	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.availability.fridge", Fresh))
+	addReasonAtoms(c, m, "eat")
 
 	if !m.TriadSealed(ReasonTriad) {
-		t.Error("Reason should seal normally")
+		t.Error("reason triad should seal normally")
 	}
 
 	c.Add(m, mkAtom("task", PlanAtom, "plan.task.cook", Fresh))
+	c.Add(m, mkAtom("risk", RiskAtom, "risk.eval.burn", Fresh))
+	c.Add(m, mkAtom("strat", StrategyAtom, "strategy.synth.cook", Fresh))
 
 	if m.TriadSealed(PlanTriad) {
-		t.Error("Plan triad should NOT seal — Damper reactor doesn't advance")
+		t.Error("plan triad should NOT seal — Damper reactor does not advance")
 	}
 }
 
@@ -34,10 +35,9 @@ func TestComposite_NestedReactors(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("nested")
 
-	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
-	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.state.dirty", Fresh))
-	c.Add(m, mkAtom("task", PlanAtom, "plan.task.sweep", Fresh))
-	c.Add(m, mkAtom("done", ExecutionAtom, "execution.result.swept", Fresh))
+	addReasonAtoms(c, m, "clean")
+	addFormationAtoms(c, m, "clean")
+	addActionAtoms(c, m, "clean")
 	c.Add(m, mkAtom("retro", RetrospectionAtom, "retrospection.learning.done", Fresh))
 
 	if !m.AllTriadsSealed() {
@@ -54,8 +54,8 @@ func TestComposite_Damper_PassesThrough(t *testing.T) {
 	if result != Pass {
 		t.Errorf("Damper should always pass, got %s", result)
 	}
-	if m.Mass(IntentAtom) != 1 {
-		t.Error("Damper should still insert the atom")
+	if m.Mass(IntentAtom) != 0 {
+		t.Error("Damper should not insert atoms — Core.React does InsertAtom before delegating")
 	}
 }
 

@@ -4,21 +4,19 @@ import (
 	"testing"
 )
 
-// --- Spark node ---
-
-func TestNode_Spark_ProducesDesire(t *testing.T) {
+func TestNode_Intent_ProducesDesire(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("test")
 	result, _ := c.Add(m, mkAtom("desire-eat", IntentAtom, "intent.desire.eat", Fresh))
 	if result != Pass {
-		t.Fatalf("Spark should accept desire atom, got %s", result)
+		t.Fatalf("should accept intent atom, got %s", result)
 	}
 	if m.Mass(IntentAtom) != 1 {
 		t.Errorf("expected 1 intent atom, got %d", m.Mass(IntentAtom))
 	}
 }
 
-func TestNode_Spark_MultipleDesires(t *testing.T) {
+func TestNode_Intent_MultipleDesires(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire-eat", IntentAtom, "intent.desire.eat", Fresh))
@@ -28,7 +26,7 @@ func TestNode_Spark_MultipleDesires(t *testing.T) {
 	}
 }
 
-func TestNode_Spark_SealsOnExhaustion(t *testing.T) {
+func TestNode_Intent_AdvancesToAssessment(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire-eat", IntentAtom, "intent.desire.eat", Fresh))
@@ -37,35 +35,42 @@ func TestNode_Spark_SealsOnExhaustion(t *testing.T) {
 	}
 }
 
-// --- Assess node ---
-
-func TestNode_Assess_ProducesFindings(t *testing.T) {
+func TestNode_Assessment_ProducesFindings(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
 	result, _ := c.Add(m, mkAtom("finding-fridge", AssessmentAtom, "assessment.availability.fridge", Fresh))
 	if result != Pass {
-		t.Fatalf("Assess should accept finding atom, got %s", result)
+		t.Fatalf("should accept assessment atom, got %s", result)
 	}
 	if m.Mass(AssessmentAtom) != 1 {
 		t.Errorf("expected 1 assessment atom, got %d", m.Mass(AssessmentAtom))
 	}
 }
 
-func TestNode_Assess_AcceptedInAnyPhase(t *testing.T) {
+func TestNode_Assessment_AdvancesToUnderstanding(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
 	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.state.kitchen", Fresh))
-	c.Add(m, mkAtom("task", PlanAtom, "plan.option.cook", Fresh))
-
-	result, _ := c.Add(m, mkAtom("late-finding", AssessmentAtom, "assessment.state.window", Fresh))
-	if result == Incompatible {
-		t.Error("Assessment atoms should be accepted in any phase")
+	if m.Phase() != UnderstandingAtom {
+		t.Errorf("after assessment, should advance to understanding phase, got %s", m.Phase())
 	}
 }
 
-func TestNode_Assess_RecollectedSource(t *testing.T) {
+func TestNode_Assessment_AcceptedInAnyPhase(t *testing.T) {
+	c := NewReactor()
+	m := NewMolecule("test")
+	addReasonAtoms(c, m, "eat")
+	addFormationAtoms(c, m, "eat")
+
+	result, _ := c.Add(m, mkAtom("late-finding", AssessmentAtom, "assessment.state.window", Fresh))
+	if result == Incompatible {
+		t.Error("assessment atoms should be accepted in any phase")
+	}
+}
+
+func TestNode_Assessment_RecollectedSource(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.investigate", Fresh))
@@ -76,25 +81,36 @@ func TestNode_Assess_RecollectedSource(t *testing.T) {
 	}
 }
 
-// --- Expand node ---
-
-func TestNode_Expand_ProducesOptions(t *testing.T) {
+func TestNode_Understanding_SealsReasonTriad(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
 	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.availability.fridge", Fresh))
+	c.Add(m, mkAtom("synth", UnderstandingAtom, "understanding.synth.eat", Fresh))
 
-	result, _ := c.Add(m, mkAtom("option-rice", PlanAtom, "plan.option.rice", Fresh))
-	if result != Pass {
-		t.Fatalf("Expand should accept option atom, got %s", result)
+	if !m.TriadSealed(ReasonTriad) {
+		t.Error("reason triad should seal after understanding atom")
+	}
+	if m.Phase() != PlanAtom {
+		t.Errorf("after understanding, should advance to plan phase, got %s", m.Phase())
 	}
 }
 
-func TestNode_Expand_MultipleOptions(t *testing.T) {
+func TestNode_Plan_ProducesOptions(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("test")
-	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
-	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.availability.fridge", Fresh))
+	addReasonAtoms(c, m, "eat")
+
+	result, _ := c.Add(m, mkAtom("option-rice", PlanAtom, "plan.option.rice", Fresh))
+	if result != Pass {
+		t.Fatalf("should accept plan atom, got %s", result)
+	}
+}
+
+func TestNode_Plan_MultipleOptions(t *testing.T) {
+	c := NewReactor()
+	m := NewMolecule("test")
+	addReasonAtoms(c, m, "eat")
 
 	c.Add(m, mkAtom("opt-rice", PlanAtom, "plan.option.rice", Fresh))
 	c.Add(m, mkAtom("opt-eggs", PlanAtom, "plan.option.eggs", Fresh))
@@ -105,58 +121,107 @@ func TestNode_Expand_MultipleOptions(t *testing.T) {
 	}
 }
 
-// --- Drive node ---
-
-func TestNode_Drive_ProducesResults(t *testing.T) {
+func TestNode_Risk_AdvancesToStrategy(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("test")
-	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
-	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.state.dirty", Fresh))
-	c.Add(m, mkAtom("task", PlanAtom, "plan.task.sweep", Fresh))
+	addReasonAtoms(c, m, "eat")
+	c.Add(m, mkAtom("task", PlanAtom, "plan.task.cook", Fresh))
+	c.Add(m, mkAtom("risk", RiskAtom, "risk.eval.burn", Fresh))
 
-	result, _ := c.Add(m, mkAtom("done", ExecutionAtom, "execution.result.swept", Fresh, "task"))
-	if result != Pass {
-		t.Fatalf("Drive should accept execution atom, got %s", result)
+	if m.Phase() != StrategyAtom {
+		t.Errorf("after risk, should advance to strategy phase, got %s", m.Phase())
 	}
 }
 
-func TestNode_Drive_RejectsWithoutPlan(t *testing.T) {
+func TestNode_Strategy_SealsPlanTriad(t *testing.T) {
+	c := NewReactor()
+	m := NewMolecule("test")
+	addReasonAtoms(c, m, "eat")
+	addFormationAtoms(c, m, "eat")
+
+	if !m.TriadSealed(PlanTriad) {
+		t.Error("plan triad should seal after strategy atom")
+	}
+	if m.Phase() != ExecutionAtom {
+		t.Errorf("after strategy, should advance to execution phase, got %s", m.Phase())
+	}
+}
+
+func TestNode_Execution_ProducesResults(t *testing.T) {
+	c := NewReactor()
+	m := NewMolecule("test")
+	addReasonAtoms(c, m, "clean")
+	addFormationAtoms(c, m, "clean")
+
+	result, _ := c.Add(m, mkAtom("done", ExecutionAtom, "execution.result.swept", Fresh))
+	if result != Pass {
+		t.Fatalf("should accept execution atom, got %s", result)
+	}
+}
+
+func TestNode_Execution_RejectsWithoutFormation(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
 
 	result, _ := c.Add(m, mkAtom("premature", ExecutionAtom, "execution.result.swept", Fresh))
 	if result != Incompatible {
-		t.Errorf("Drive should reject execution without plan, got %s", result)
+		t.Errorf("should reject execution without formation, got %s", result)
 	}
 }
 
-// --- Reflect node ---
-
-func TestNode_Reflect_ProducesWish(t *testing.T) {
+func TestNode_Observation_AdvancesToAdaptation(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("test")
-	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
-	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.state.dirty", Fresh))
-	c.Add(m, mkAtom("task", PlanAtom, "plan.task.sweep", Fresh))
-	c.Add(m, mkAtom("done", ExecutionAtom, "execution.result.swept", Fresh))
+	addReasonAtoms(c, m, "clean")
+	addFormationAtoms(c, m, "clean")
+	c.Add(m, mkAtom("exec", ExecutionAtom, "execution.result.swept", Fresh))
+	c.Add(m, mkAtom("obs", ObservationAtom, "observation.eval.swept", Fresh))
+
+	if m.Phase() != AdaptationAtom {
+		t.Errorf("after observation, should advance to adaptation phase, got %s", m.Phase())
+	}
+}
+
+func TestNode_Adaptation_SealsActTriad(t *testing.T) {
+	c := NewReactor()
+	m := NewMolecule("test")
+	addReasonAtoms(c, m, "clean")
+	addFormationAtoms(c, m, "clean")
+	addActionAtoms(c, m, "clean")
+
+	if !m.TriadSealed(ActTriad) {
+		t.Error("act triad should seal after adaptation atom")
+	}
+	if m.Phase() != RetrospectionAtom {
+		t.Errorf("after adaptation, should advance to retrospection phase, got %s", m.Phase())
+	}
+}
+
+func TestNode_Retrospection_ProducesLearning(t *testing.T) {
+	c := NewReactor()
+	m := NewMolecule("test")
+	addReasonAtoms(c, m, "clean")
+	addFormationAtoms(c, m, "clean")
+	addActionAtoms(c, m, "clean")
 	c.Add(m, mkAtom("learning", RetrospectionAtom, "retrospection.learning.done", Fresh))
 
 	c.Seal(m, mkAtom("wish", RetrospectionAtom, "retrospection.wish.be-cleaner", Fresh))
 
 	if !m.Sealed() {
-		t.Error("Reactor should be sealed after Wish")
+		t.Error("should be sealed after wish")
 	}
 }
-
-// --- Contradiction ---
 
 func TestNode_Contradict_CrossType(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
 	c.Add(m, mkAtom("assess-floor", AssessmentAtom, "assessment.state.floor", Fresh))
+	c.Add(m, mkAtom("understand", UnderstandingAtom, "understanding.synth.clean", Fresh))
 	c.Add(m, mkAtom("task-floor", PlanAtom, "plan.task.floor", Fresh, "assess-floor"))
+	c.Add(m, mkAtom("risk-floor", RiskAtom, "risk.eval.floor", Fresh))
+	c.Add(m, mkAtom("strat-floor", StrategyAtom, "strategy.synth.floor", Fresh))
 	c.Add(m, mkAtom("exec-floor", ExecutionAtom, "execution.result.floor", Fresh, "task-floor"))
 
 	dirty := mkAtom("floor-dirty-again", AssessmentAtom, "assessment.state.floor", Fresh, "exec-floor")
@@ -169,8 +234,6 @@ func TestNode_Contradict_CrossType(t *testing.T) {
 		t.Error("expected conflicting atom")
 	}
 }
-
-// --- Taxonomy lookup ---
 
 func TestNode_TaxonomyLookup(t *testing.T) {
 	c := NewReactor()

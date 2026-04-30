@@ -2,7 +2,6 @@ package reactivity
 
 import (
 	"testing"
-	"time"
 )
 
 func TestExit_WishFromReason(t *testing.T) {
@@ -14,39 +13,38 @@ func TestExit_WishFromReason(t *testing.T) {
 	c.Seal(m, mkAtom("wish-need-wings", RetrospectionAtom, "retrospection.wish.need-wings", Fresh))
 
 	if !m.Sealed() {
-		t.Error("should be sealed after Wish from Reason")
+		t.Error("should be sealed after wish from reason")
 	}
 	if m.TotalMass() != 3 {
-		t.Errorf("should preserve 3 atoms (desire + assessment + wish), got %d", m.TotalMass())
+		t.Errorf("should preserve 3 atoms (intent + assessment + wish), got %d", m.TotalMass())
 	}
 }
 
-func TestExit_WishFromPlan(t *testing.T) {
+func TestExit_WishFromFormation(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("no-path")
-	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
-	c.Add(m, mkAtom("assess-empty", AssessmentAtom, "assessment.state.fridge-empty", Fresh))
+	addReasonAtoms(c, m, "eat")
 	c.Add(m, mkAtom("opt-cook", PlanAtom, "plan.option.cook", Fresh))
+	c.Add(m, mkAtom("risk-burn", RiskAtom, "risk.eval.burn", Fresh))
 
 	c.Seal(m, mkAtom("wish-buy-food", RetrospectionAtom, "retrospection.wish.buy-food", Fresh))
 
 	if !m.Sealed() {
-		t.Error("should be sealed after Wish from Plan")
+		t.Error("should be sealed after wish from formation")
 	}
 }
 
-func TestExit_WishFromAct(t *testing.T) {
+func TestExit_WishFromAction(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("unrecoverable")
-	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
-	c.Add(m, mkAtom("assess", AssessmentAtom, "assessment.state.dirty", Fresh))
-	c.Add(m, mkAtom("task", PlanAtom, "plan.task.sweep", Fresh))
+	addReasonAtoms(c, m, "clean")
+	addFormationAtoms(c, m, "clean")
 	c.Add(m, mkAtom("exec-fail", ExecutionAtom, "execution.result.broom-broke", Fresh))
 
 	c.Seal(m, mkAtom("wish-new-broom", RetrospectionAtom, "retrospection.wish.need-broom", Fresh))
 
 	if !m.Sealed() {
-		t.Error("should be sealed after Wish from Act")
+		t.Error("should be sealed after wish from action")
 	}
 }
 
@@ -58,60 +56,54 @@ func TestExit_SealedRejectsNewAtoms(t *testing.T) {
 
 	result, _ := c.Add(m, mkAtom("late", AssessmentAtom, "assessment.state.late", Fresh))
 	if result != Unresolvable {
-		t.Errorf("sealed circuit should reject atoms with Unresolvable, got %s", result)
+		t.Errorf("sealed molecule should reject atoms with Unresolvable, got %s", result)
 	}
 }
 
 func TestExit_DraftNotSealed(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("draft")
-	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
-	c.Add(m, mkAtom("assess", AssessmentAtom, "assessment.availability.fridge", Fresh))
+	addReasonAtoms(c, m, "eat")
 	c.Add(m, mkAtom("plan", PlanAtom, "plan.option.cook", Fresh))
 
 	if m.Sealed() {
-		t.Error("circuit with plan but no Wish should not be sealed")
+		t.Error("molecule with plan but no wish should not be sealed")
 	}
-	if m.TotalMass() != 3 {
-		t.Errorf("expected 3 atoms in draft, got %d", m.TotalMass())
+	if m.TotalMass() != 4 {
+		t.Errorf("expected 4 atoms in draft, got %d", m.TotalMass())
 	}
 }
 
 func TestExit_AbortPreservesPartialWork(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("abort")
-	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
-	c.Add(m, mkAtom("assess", AssessmentAtom, "assessment.state.dirty", Fresh))
-	c.Add(m, mkAtom("task1", PlanAtom, "plan.task.bed", Fresh))
-	c.Add(m, mkAtom("task2", PlanAtom, "plan.task.floor", Fresh))
-	c.Add(m, mkAtom("exec1", ExecutionAtom, "execution.result.bed", Fresh, "task1"))
+	addReasonAtoms(c, m, "clean")
+	addFormationAtoms(c, m, "clean")
+	c.Add(m, mkAtom("exec1", ExecutionAtom, "execution.result.bed", Fresh))
 
 	c.Seal(m, mkAtom("wish-budget", RetrospectionAtom, "retrospection.wish.budget-exceeded", Fresh))
 
 	if !m.Sealed() {
-		t.Error("aborted circuit should be sealed")
+		t.Error("aborted molecule should be sealed")
 	}
 	if m.Mass(ExecutionAtom) != 1 {
-		t.Errorf("should preserve partial execution (1 of 2 tasks), got %d", m.Mass(ExecutionAtom))
+		t.Errorf("should preserve partial execution, got %d", m.Mass(ExecutionAtom))
 	}
-	if m.Mass(PlanAtom) != 2 {
-		t.Errorf("should preserve full plan (2 tasks), got %d", m.Mass(PlanAtom))
+	if m.Mass(StrategyAtom) != 1 {
+		t.Errorf("should preserve strategy from formation, got %d", m.Mass(StrategyAtom))
 	}
 }
 
 func TestExit_TerminateRecovery(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("crash")
-	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
-	c.Add(m, mkAtom("assess", AssessmentAtom, "assessment.state.dirty", Fresh))
+	addReasonAtoms(c, m, "clean")
 	c.Add(m, mkAtom("task", PlanAtom, "plan.task.sweep", Fresh))
 
 	if m.Sealed() {
-		t.Error("crashed circuit is NOT sealed (nobody called Seal)")
+		t.Error("crashed molecule is NOT sealed (nobody called Seal)")
 	}
-	if m.TotalMass() != 3 {
+	if m.TotalMass() != 4 {
 		t.Errorf("atoms should be preserved after crash, got %d", m.TotalMass())
 	}
-
-	_ = time.Now()
 }

@@ -10,59 +10,79 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// Reactor is the processing interface. Same at every level — leaf or composite.
+// Reactor is the processing interface. Same at every level — leaf, triad, or core.
 type Reactor interface {
 	React(m *Molecule, atom Atom) (YieldKind, Yield)
 }
 
-// Damper passes the atom through without processing. Ablation baseline.
+// Damper passes the atom through without processing. Ablation baseline (control rod).
 type Damper struct{}
 
-func (Damper) React(m *Molecule, atom Atom) (YieldKind, Yield) {
-	m.InsertAtom(atom)
+func (Damper) React(m *Molecule, _ Atom) (YieldKind, Yield) {
 	return Pass, Yield{}
 }
 
-type reasonReactor struct{}
-
-func (reasonReactor) React(m *Molecule, atom Atom) (YieldKind, Yield) {
-	if m.mass[AssessmentAtom] > 0 {
-		m.SealTriad(ReasonTriad)
-		m.SetPhase(PlanAtom)
-		return Pass, Yield{}
-	}
-	if m.phase == IntentAtom && m.mass[IntentAtom] > 0 {
-		m.SetPhase(AssessmentAtom)
-		return Pass, Yield{}
-	}
-	return Insufficient, Yield{Result: Insufficient, Message: "need reason atoms", Phase: m.phase}
+// TriadReactor composes 3 node Reactors — thesis, antithesis, synthesis.
+// Same Reactor interface. Each floor of the Core is a TriadReactor.
+type TriadReactor struct {
+	triad      Triad
+	thesis     Reactor
+	antithesis Reactor
+	synthesis  Reactor
+	nodes      [3]AtomType
+	nextPhase  AtomType
 }
 
-type planReactor struct{}
-
-func (planReactor) React(m *Molecule, atom Atom) (YieldKind, Yield) {
-	if m.mass[PlanAtom] > 0 {
-		m.SealTriad(PlanTriad)
-		m.SetPhase(ExecutionAtom)
-		return Pass, Yield{}
+func NewTriadReactor(triad Triad, nodes [3]AtomType, nextPhase AtomType) *TriadReactor {
+	return &TriadReactor{
+		triad:      triad,
+		thesis:     Damper{},
+		antithesis: Damper{},
+		synthesis:  Damper{},
+		nodes:      nodes,
+		nextPhase:  nextPhase,
 	}
-	return Insufficient, Yield{Result: Insufficient, Message: "need plan atoms", Phase: PlanAtom}
 }
 
-type actReactor struct{}
+func (t *TriadReactor) WithThesis(r Reactor) *TriadReactor     { t.thesis = r; return t }
+func (t *TriadReactor) WithAntithesis(r Reactor) *TriadReactor { t.antithesis = r; return t }
+func (t *TriadReactor) WithSynthesis(r Reactor) *TriadReactor  { t.synthesis = r; return t }
 
-func (actReactor) React(m *Molecule, atom Atom) (YieldKind, Yield) {
-	if m.mass[ExecutionAtom] > 0 {
-		m.SealTriad(ActTriad)
-		m.SetPhase(RetrospectionAtom)
+func (t *TriadReactor) React(m *Molecule, atom Atom) (YieldKind, Yield) {
+	pos := PositionOf(atom.Type)
+	switch pos {
+	case ThesisPosition:
+		t.thesis.React(m, atom)
+	case AntithesisPosition:
+		t.antithesis.React(m, atom)
+	case SynthesisPosition:
+		t.synthesis.React(m, atom)
+	}
+
+	if m.mass[t.nodes[SynthesisPosition]] > 0 {
+		m.SealTriad(t.triad)
+		m.SetPhase(t.nextPhase)
 		return Pass, Yield{}
 	}
-	return Insufficient, Yield{Result: Insufficient, Message: "need execution atoms", Phase: ExecutionAtom}
+	if m.mass[t.nodes[AntithesisPosition]] > 0 && m.phase == t.nodes[ThesisPosition] {
+		m.SetPhase(t.nodes[AntithesisPosition])
+		return Pass, Yield{}
+	}
+	if m.mass[t.nodes[AntithesisPosition]] > 0 && m.phase == t.nodes[AntithesisPosition] {
+		m.SetPhase(t.nodes[SynthesisPosition])
+		return Pass, Yield{}
+	}
+	if m.mass[t.nodes[ThesisPosition]] > 0 && m.phase == t.nodes[ThesisPosition] {
+		m.SetPhase(t.nodes[AntithesisPosition])
+		return Pass, Yield{}
+	}
+	return Insufficient, Yield{Result: Insufficient, Message: fmt.Sprintf("need %s atoms", t.triad), Phase: m.phase}
 }
 
-type retrospectReactor struct{}
+// Reflection is the Retrospect sink's node. Seals the molecule.
+type Reflection struct{}
 
-func (retrospectReactor) React(m *Molecule, atom Atom) (YieldKind, Yield) {
+func (Reflection) React(m *Molecule, _ Atom) (YieldKind, Yield) {
 	if m.mass[RetrospectionAtom] > 0 {
 		m.SealTriad(RetrospectTriad)
 		return Pass, Yield{}
@@ -70,10 +90,11 @@ func (retrospectReactor) React(m *Molecule, atom Atom) (YieldKind, Yield) {
 	return Insufficient, Yield{Result: Insufficient, Message: "need retrospection atoms", Phase: RetrospectionAtom}
 }
 
-// Core composes 4 nested Reactors — one per triad.
-// Same Reactor interface. Adds observability + lifecycle helpers.
+// Core composes 3 floor TriadReactors + Retrospect sink.
+// Router (ingress) → Reason → Formation → Action → Reflection (egress).
 type Core struct {
-	triads map[Triad]Reactor
+	floors map[Triad]Reactor
+	sink   Reactor
 	pool   ergograph.Pool
 	tracer trace.Tracer
 }
@@ -89,17 +110,30 @@ func WithTracer(tracer trace.Tracer) ReactorOption {
 }
 
 func WithTriad(t Triad, r Reactor) ReactorOption {
-	return func(c *Core) { c.triads[t] = r }
+	return func(c *Core) { c.floors[t] = r }
+}
+
+func WithSink(r Reactor) ReactorOption {
+	return func(c *Core) { c.sink = r }
 }
 
 func NewReactor(opts ...ReactorOption) *Core {
 	c := &Core{
-		triads: map[Triad]Reactor{
-			ReasonTriad:    reasonReactor{},
-			PlanTriad:      planReactor{},
-			ActTriad:       actReactor{},
-			RetrospectTriad: retrospectReactor{},
+		floors: map[Triad]Reactor{
+			ReasonTriad: NewTriadReactor(ReasonTriad,
+				[3]AtomType{IntentAtom, AssessmentAtom, UnderstandingAtom},
+				PlanAtom,
+			),
+			PlanTriad: NewTriadReactor(PlanTriad,
+				[3]AtomType{PlanAtom, RiskAtom, StrategyAtom},
+				ExecutionAtom,
+			),
+			ActTriad: NewTriadReactor(ActTriad,
+				[3]AtomType{ExecutionAtom, ObservationAtom, AdaptationAtom},
+				RetrospectionAtom,
+			),
 		},
+		sink: Reflection{},
 	}
 	for _, opt := range opts {
 		opt(c)
@@ -107,7 +141,7 @@ func NewReactor(opts ...ReactorOption) *Core {
 	return c
 }
 
-// React inserts an atom and delegates to the appropriate triad reactor.
+// React is the Router — ingress node of Core. Routes atom to the right floor or sink.
 func (c *Core) React(m *Molecule, atom Atom) (YieldKind, Yield) {
 	if m.sealed {
 		return Unresolvable, Yield{Result: Unresolvable, Message: "molecule is sealed"}
@@ -124,8 +158,13 @@ func (c *Core) React(m *Molecule, atom Atom) (YieldKind, Yield) {
 	m.InsertAtom(atom)
 
 	triad := TriadOf(atom.Type)
-	r := c.triads[triad]
-	result, fortune := r.React(m, atom)
+	var r Reactor
+	if triad == RetrospectTriad {
+		r = c.sink
+	} else {
+		r = c.floors[triad]
+	}
+	result, yield := r.React(m, atom)
 
 	c.record("reactor.react", map[string]string{
 		labelAtom:     atom.ID,
@@ -135,7 +174,7 @@ func (c *Core) React(m *Molecule, atom Atom) (YieldKind, Yield) {
 		labelTriad:    triad.String(),
 	})
 	c.span("reactor.react")
-	return result, fortune
+	return result, yield
 }
 
 // Add is an alias for React — backward compatibility.
@@ -147,7 +186,7 @@ func (c *Core) Add(m *Molecule, atom Atom) (YieldKind, Yield) {
 func (c *Core) Seal(m *Molecule, wish Atom) {
 	m.Seal(wish)
 	c.record("reactor.seal", map[string]string{
-		labelWish: wish.ID,
+		labelWish:  wish.ID,
 		labelDepth: m.CurrentTriad().String(),
 		labelMass:  fmt.Sprintf("%d", m.TotalMass()),
 	})
