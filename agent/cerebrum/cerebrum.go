@@ -2,44 +2,37 @@ package cerebrum
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/discourse"
-	"github.com/dpopsuev/tako/instrument"
-	"github.com/dpopsuev/tako/memory"
 	troupe "github.com/dpopsuev/tangle"
 )
 
 type Cerebrum struct {
-	circuit   *reactivity.Reactor
+	reactor   *reactivity.Reactor
 	completer troupe.Completer
 	maxTurns  int
 
-	shell   instrument.Shell
-	mesh    memory.Mesh
-	monolog discourse.Monolog
+	sensory SensoryBus
+	motor   MotorBus
 
 	classifier    Classifier
 	promptBuilder PromptBuilder
 	parser        ResponseParser
-	recollector   Recollector
-	dispatcher    Dispatcher
 
 	molecule *reactivity.Molecule
 }
 
-func New(circuit *reactivity.Reactor, completer troupe.Completer, opts ...Option) *Cerebrum {
+func New(reactor *reactivity.Reactor, completer troupe.Completer, opts ...Option) *Cerebrum {
 	cb := &Cerebrum{
-		circuit:       circuit,
+		reactor:       reactor,
 		completer:     completer,
 		maxTurns:      100,
 		classifier:    DefaultClassifier,
 		promptBuilder: DefaultPromptBuilder,
 		parser:        DefaultParser,
-		recollector:   DefaultRecollector,
-		dispatcher:    DefaultDispatcher,
 	}
 	for _, opt := range opts {
 		opt(cb)
@@ -63,23 +56,15 @@ func (cb *Cerebrum) Result() *reactivity.Molecule {
 func (cb *Cerebrum) think(ctx context.Context, need []byte) (*reactivity.Molecule, error) {
 	m := reactivity.NewMolecule(fmt.Sprintf("mol-%d", time.Now().UnixNano()))
 
-	var recollected []reactivity.Atom
-	if cb.mesh != nil {
-		recollected = cb.recollector.Recollect(cb.mesh, need)
-		for _, atom := range recollected {
-			cb.circuit.Add(m, atom)
-		}
-	}
-
 	toolBudget := 10
 
 	for turn := 0; turn < cb.maxTurns && !m.Sealed(); turn++ {
 		domain := cb.classifier.Classify(m)
-		prompt := cb.promptBuilder.Build(m, need, domain, cb.shell, recollected)
+		prompt := cb.promptBuilder.Build(m, need, domain)
 
 		response, err := cb.completer.Complete(ctx, prompt)
 		if err != nil {
-			cb.circuit.Seal(m, reactivity.Atom{
+			cb.reactor.Seal(m, reactivity.Atom{
 				ID:        fmt.Sprintf("wish-error-%d", turn),
 				Type:      reactivity.RetrospectionAtom,
 				Taxonomy:  "retrospection.wish.completer-error",
@@ -92,9 +77,9 @@ func (cb *Cerebrum) think(ctx context.Context, need []byte) (*reactivity.Molecul
 		atoms, toolCall, _ := cb.parser.Parse(response, m.Phase(), turn)
 
 		for _, atom := range atoms {
-			result, fortune := cb.circuit.Add(m, atom)
+			result, fortune := cb.reactor.Add(m, atom)
 			if result == reactivity.Unresolvable {
-				cb.circuit.Seal(m, reactivity.Atom{
+				cb.reactor.Seal(m, reactivity.Atom{
 					ID:        fmt.Sprintf("wish-unresolvable-%d", turn),
 					Type:      reactivity.RetrospectionAtom,
 					Taxonomy:  "retrospection.wish.unresolvable",
@@ -105,17 +90,29 @@ func (cb *Cerebrum) think(ctx context.Context, need []byte) (*reactivity.Molecul
 			}
 		}
 
-		if toolCall != nil && cb.shell != nil && m.Phase() == reactivity.ExecutionAtom && toolBudget > 0 {
-			instrumentAtom, err := cb.dispatcher.Dispatch(ctx, cb.shell, toolCall)
-			if err == nil {
-				cb.circuit.Add(m, instrumentAtom)
-				toolBudget--
+		if toolCall != nil && cb.motor != nil && m.Phase() == reactivity.ExecutionAtom && toolBudget > 0 {
+			payload, _ := json.Marshal(toolCall)
+			cb.motor.Send(ctx, Command{Kind: "instrument", Target: toolCall.Name, Payload: payload})
+
+			if cb.sensory != nil {
+				if sig, ok := cb.sensory.Receive(ctx); ok {
+					instrumentAtom := reactivity.Atom{
+						ID:        fmt.Sprintf("instrument-%s-%d", toolCall.Name, turn),
+						Type:      reactivity.ExecutionAtom,
+						Source:    reactivity.Instrument,
+						Taxonomy:  fmt.Sprintf("execution.instrument.%s", toolCall.Name),
+						Content:   sig.Content,
+						CreatedAt: time.Now(),
+					}
+					cb.reactor.Add(m, instrumentAtom)
+					toolBudget--
+				}
 			}
 		}
 	}
 
 	if !m.Sealed() {
-		cb.circuit.Seal(m, reactivity.Atom{
+		cb.reactor.Seal(m, reactivity.Atom{
 			ID:        "wish-max-turns",
 			Type:      reactivity.RetrospectionAtom,
 			Taxonomy:  "retrospection.wish.max-turns-exceeded",
@@ -124,12 +121,11 @@ func (cb *Cerebrum) think(ctx context.Context, need []byte) (*reactivity.Molecul
 		})
 	}
 
-	if cb.monolog != nil {
-		cb.monolog.Write(discourse.Letter{
-			From:      "cerebrum",
-			Subject:   "think-complete",
-			Body:      fmt.Sprintf("sealed molecule %s: %d atoms, domain=%s", m.ID, m.TotalMass(), cb.classifier.Classify(m)),
-			CreatedAt: time.Now(),
+	if cb.motor != nil {
+		cb.motor.Send(ctx, Command{
+			Kind:    "wish",
+			Target:  "monolog",
+			Payload: []byte(fmt.Sprintf("sealed %s: %d atoms, domain=%s", m.ID, m.TotalMass(), cb.classifier.Classify(m))),
 		})
 	}
 

@@ -115,16 +115,17 @@ func TestThink_BackwardCompatible(t *testing.T) {
 	}
 }
 
-func TestThink_WithRecollection(t *testing.T) {
-	completer := &stubCompleter{response: "analyzed"}
-	circuit := reactivity.NewReactor()
-	mesh := &stubMesh{nodes: []string{"prior knowledge about PTP"}}
-	cb := New(circuit, completer, WithMesh(mesh))
+func TestThink_WithMotorBus(t *testing.T) {
+	completer := &stubCompleter{response: "done"}
+	reactor := reactivity.NewReactor()
+	motor := &stubMotorBus{}
+	cb := New(reactor, completer, WithMotor(motor))
 
-	cb.Think(context.Background(), []byte("investigate PTP failure"))
-	m := cb.Result()
-
-	if m.SourceMass(reactivity.Recollected) == 0 {
-		t.Error("expected Recollected atoms from Mesh")
+	cb.Think(context.Background(), []byte("test"))
+	if len(motor.commands) == 0 {
+		t.Error("expected Motor Bus to receive wish command")
+	}
+	if motor.commands[0].Kind != "wish" {
+		t.Errorf("expected wish command, got %s", motor.commands[0].Kind)
 	}
 }

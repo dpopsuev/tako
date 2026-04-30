@@ -1,12 +1,9 @@
 package cerebrum
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/instrument"
-	"github.com/dpopsuev/tako/memory"
 )
 
 type Classifier interface {
@@ -18,13 +15,13 @@ type ClassifierFunc func(m *reactivity.Molecule) Domain
 func (f ClassifierFunc) Classify(m *reactivity.Molecule) Domain { return f(m) }
 
 type PromptBuilder interface {
-	Build(m *reactivity.Molecule, need []byte, domain Domain, shell instrument.Shell, recollected []reactivity.Atom) string
+	Build(m *reactivity.Molecule, need []byte, domain Domain) string
 }
 
-type PromptBuilderFunc func(m *reactivity.Molecule, need []byte, domain Domain, shell instrument.Shell, recollected []reactivity.Atom) string
+type PromptBuilderFunc func(m *reactivity.Molecule, need []byte, domain Domain) string
 
-func (f PromptBuilderFunc) Build(m *reactivity.Molecule, need []byte, domain Domain, shell instrument.Shell, recollected []reactivity.Atom) string {
-	return f(m, need, domain, shell, recollected)
+func (f PromptBuilderFunc) Build(m *reactivity.Molecule, need []byte, domain Domain) string {
+	return f(m, need, domain)
 }
 
 type ResponseParser interface {
@@ -37,40 +34,17 @@ func (f ResponseParserFunc) Parse(raw string, phase reactivity.AtomType, turn in
 	return f(raw, phase, turn)
 }
 
-type Recollector interface {
-	Recollect(mesh memory.Mesh, need []byte) []reactivity.Atom
-}
-
-type RecollectorFunc func(mesh memory.Mesh, need []byte) []reactivity.Atom
-
-func (f RecollectorFunc) Recollect(mesh memory.Mesh, need []byte) []reactivity.Atom {
-	return f(mesh, need)
-}
-
-type Dispatcher interface {
-	Dispatch(ctx context.Context, shell instrument.Shell, tc *ToolCall) (reactivity.Atom, error)
-}
-
-type DispatcherFunc func(ctx context.Context, shell instrument.Shell, tc *ToolCall) (reactivity.Atom, error)
-
-func (f DispatcherFunc) Dispatch(ctx context.Context, shell instrument.Shell, tc *ToolCall) (reactivity.Atom, error) {
-	return f(ctx, shell, tc)
-}
-
 var (
-	DefaultClassifier    Classifier    = ClassifierFunc(Classify)
-	DefaultPromptBuilder PromptBuilder = PromptBuilderFunc(buildPrompt)
+	DefaultClassifier    Classifier     = ClassifierFunc(Classify)
+	DefaultPromptBuilder PromptBuilder  = PromptBuilderFunc(naivePrompt)
 	DefaultParser        ResponseParser = ResponseParserFunc(ParseResponse)
-	DefaultRecollector   Recollector   = RecollectorFunc(recollect)
-	DefaultDispatcher    Dispatcher    = DispatcherFunc(dispatch)
 
-	BasicPromptBuilder PromptBuilder = PromptBuilderFunc(naivePrompt)
-	NoRecollection     Recollector   = RecollectorFunc(func(_ memory.Mesh, _ []byte) []reactivity.Atom { return nil })
+	BasicPromptBuilder PromptBuilder  = PromptBuilderFunc(naivePrompt)
 	PlainTextParser    ResponseParser = ResponseParserFunc(rawParse)
-	StaticClassifier   Classifier    = ClassifierFunc(func(_ *reactivity.Molecule) Domain { return Complicated })
+	StaticClassifier   Classifier     = ClassifierFunc(func(_ *reactivity.Molecule) Domain { return Complicated })
 )
 
-func naivePrompt(m *reactivity.Molecule, need []byte, _ Domain, _ instrument.Shell, _ []reactivity.Atom) string {
+func naivePrompt(m *reactivity.Molecule, need []byte, _ Domain) string {
 	return fmt.Sprintf("phase:%s mass:%d need:%s", m.Phase(), m.Mass(m.Phase()), string(need))
 }
 

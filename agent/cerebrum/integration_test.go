@@ -2,31 +2,16 @@ package cerebrum
 
 import (
 	"context"
-	"path/filepath"
 	"testing"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/discourse"
-	"github.com/dpopsuev/tako/memory"
-	"github.com/dpopsuev/tako/service/sleep"
-	"github.com/dpopsuev/tako/store"
 )
 
 func TestThink_FullVerticalSlice(t *testing.T) {
-	dir := filepath.Join(t.TempDir(), "testdb")
-	db, err := store.Open(dir)
-	if err != nil {
-		t.Fatalf("store.Open: %v", err)
-	}
-	defer db.Close()
-	if err := db.Migrate(); err != nil {
-		t.Fatalf("Migrate: %v", err)
-	}
-
 	completer := &stubCompleter{response: "done"}
-	circuit := reactivity.NewReactor()
-	monolog := &discourse.StubMonolog{}
-	cb := New(circuit, completer, WithMonolog(monolog))
+	reactor := reactivity.NewReactor()
+	motor := &stubMotorBus{}
+	cb := New(reactor, completer, WithMotor(motor))
 
 	if err := cb.Think(context.Background(), []byte("investigate PTP failure")); err != nil {
 		t.Fatalf("Think: %v", err)
@@ -44,22 +29,9 @@ func TestThink_FullVerticalSlice(t *testing.T) {
 		t.Error("missing Retrospection atoms (Wish)")
 	}
 
-	letters := monolog.Letters()
-	if len(letters) == 0 {
-		t.Error("Monolog should have letters after Think")
+	if len(motor.commands) == 0 {
+		t.Error("Motor Bus should have received wish command")
 	}
 
-	mesh := memory.NewDoltMesh(db.DB)
-	drain := sleep.NewDoltDrain(monolog)
-
-	if err := drain.Sweep(mesh); err != nil {
-		t.Fatalf("Sweep: %v", err)
-	}
-
-	nodes := mesh.Nodes()
-	if len(nodes) == 0 {
-		t.Fatal("DoltMesh should have knowledge after drain")
-	}
-
-	t.Logf("Vertical slice complete: %d atoms in Molecule, %d nodes in Mesh", m.TotalMass(), len(nodes))
+	t.Logf("Vertical slice: %d atoms, %d motor commands", m.TotalMass(), len(motor.commands))
 }

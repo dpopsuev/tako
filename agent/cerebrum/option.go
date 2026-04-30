@@ -1,23 +1,13 @@
 package cerebrum
 
-import (
-	"github.com/dpopsuev/tako/discourse"
-	"github.com/dpopsuev/tako/instrument"
-	"github.com/dpopsuev/tako/memory"
-)
-
 type Option func(*Cerebrum)
 
-func WithShell(s instrument.Shell) Option {
-	return func(cb *Cerebrum) { cb.shell = s }
+func WithSensory(s SensoryBus) Option {
+	return func(cb *Cerebrum) { cb.sensory = s }
 }
 
-func WithMesh(m memory.Mesh) Option {
-	return func(cb *Cerebrum) { cb.mesh = m }
-}
-
-func WithMonolog(m discourse.Monolog) Option {
-	return func(cb *Cerebrum) { cb.monolog = m }
+func WithMotor(m MotorBus) Option {
+	return func(cb *Cerebrum) { cb.motor = m }
 }
 
 func WithMaxTurns(n int) Option {
@@ -34,12 +24,4 @@ func WithPromptBuilder(p PromptBuilder) Option {
 
 func WithParser(p ResponseParser) Option {
 	return func(cb *Cerebrum) { cb.parser = p }
-}
-
-func WithRecollector(r Recollector) Option {
-	return func(cb *Cerebrum) { cb.recollector = r }
-}
-
-func WithDispatcher(d Dispatcher) Option {
-	return func(cb *Cerebrum) { cb.dispatcher = d }
 }
