@@ -105,6 +105,8 @@ func (cb *Cerebrum) think(ctx context.Context, need []byte) (*reactivity.Molecul
 				})
 				return m, nil
 			}
+
+			cb.dispatchEmissions(ctx, m)
 		}
 
 		if toolCall != nil && cb.motor != nil && m.Phase() == reactivity.ExecutionAtom && toolBudget > 0 {
@@ -148,4 +150,14 @@ func (cb *Cerebrum) think(ctx context.Context, need []byte) (*reactivity.Molecul
 
 	cb.store.Park()
 	return m, nil
+}
+
+func (cb *Cerebrum) dispatchEmissions(ctx context.Context, m *reactivity.Molecule) {
+	if cb.motor == nil {
+		m.DrainEmissions()
+		return
+	}
+	for _, e := range m.DrainEmissions() {
+		cb.motor.Send(ctx, Command{Kind: e.Kind, Target: e.Target, Payload: e.Payload})
+	}
 }

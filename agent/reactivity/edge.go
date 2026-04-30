@@ -31,3 +31,12 @@ type Edge struct {
 	To   string
 	Kind EdgeKind
 }
+
+// Emission is a Motor Bus command queued by a Reactor during processing.
+// The Reactor writes emissions to the Molecule. The Cerebrum drains
+// and dispatches them via Motor Bus. Zero coupling.
+type Emission struct {
+	Kind    string
+	Target  string
+	Payload []byte
+}

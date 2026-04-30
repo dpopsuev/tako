@@ -155,6 +155,27 @@ func TestThink_StoreIntegration(t *testing.T) {
 	}
 }
 
+func TestThink_EmissionsDispatchedViaMotor(t *testing.T) {
+	completer := &stubCompleter{response: `{"atoms":[{"type":"intent","taxonomy":"intent.goal.test","content":"go"}]}`}
+	reactor := reactivity.NewReactor(
+		reactivity.WithTriad(reactivity.ReasonTriad, &emittingTriadReactor{}),
+	)
+	motor := &stubMotorBus{}
+	cb := New(reactor, completer, WithMotor(motor))
+
+	cb.Think(context.Background(), []byte("test emission"))
+
+	found := false
+	for _, cmd := range motor.commands {
+		if cmd.Kind == "instrument" && cmd.Target == "emitted-tool" {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("expected Motor Bus to receive emission from triad reactor")
+	}
+}
+
 func TestThink_WithMotorBus(t *testing.T) {
 	completer := &stubCompleter{response: "done"}
 	reactor := reactivity.NewReactor()
