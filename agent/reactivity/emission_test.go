@@ -61,12 +61,12 @@ func TestReactor_React_CanEmit(t *testing.T) {
 
 type emittingReactor struct{}
 
-func (emittingReactor) React(m *Molecule, atom Atom) (AssertResult, Fortune) {
+func (emittingReactor) React(m *Molecule, atom Atom) (YieldKind, Yield) {
 	m.Emit(Emission{Kind: "instrument", Target: "test-tool", Payload: atom.Content})
 	if m.mass[ExecutionAtom] > 0 {
 		m.SealTriad(ActTriad)
 		m.SetPhase(RetrospectionAtom)
-		return Pass, Fortune{}
+		return Pass, Yield{}
 	}
-	return Insufficient, Fortune{Result: Insufficient, Message: "need execution atoms", Phase: ExecutionAtom}
+	return Insufficient, Yield{Result: Insufficient, Message: "need execution atoms", Phase: ExecutionAtom}
 }

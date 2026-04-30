@@ -13,7 +13,7 @@ import (
 )
 
 type Cerebrum struct {
-	reactor   *reactivity.CompositeReactor
+	reactor   *reactivity.Core
 	completer troupe.Completer
 	maxTurns  int
 
@@ -28,7 +28,7 @@ type Cerebrum struct {
 	molecule *reactivity.Molecule
 }
 
-func New(reactor *reactivity.CompositeReactor, completer troupe.Completer, opts ...Option) *Cerebrum {
+func New(reactor *reactivity.Core, completer troupe.Completer, opts ...Option) *Cerebrum {
 	cb := &Cerebrum{
 		reactor:       reactor,
 		completer:     completer,
@@ -106,7 +106,7 @@ func (cb *Cerebrum) think(ctx context.Context, need []byte) (*reactivity.Molecul
 				return m, nil
 			}
 
-			cb.dispatchEmissions(ctx, m)
+			cb.cooldown(ctx, m)
 		}
 
 		if toolCall != nil && cb.motor != nil && m.Phase() == reactivity.ExecutionAtom && toolBudget > 0 {
@@ -152,7 +152,7 @@ func (cb *Cerebrum) think(ctx context.Context, need []byte) (*reactivity.Molecul
 	return m, nil
 }
 
-func (cb *Cerebrum) dispatchEmissions(ctx context.Context, m *reactivity.Molecule) {
+func (cb *Cerebrum) cooldown(ctx context.Context, m *reactivity.Molecule) {
 	if cb.motor == nil {
 		m.DrainEmissions()
 		return

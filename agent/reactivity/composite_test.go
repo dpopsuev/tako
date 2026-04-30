@@ -13,7 +13,7 @@ func TestComposite_ReactInterface(t *testing.T) {
 }
 
 func TestComposite_WithTriad_Ablation(t *testing.T) {
-	c := NewReactor(WithTriad(PlanTriad, NoOp{}))
+	c := NewReactor(WithTriad(PlanTriad, Damper{}))
 	m := NewMolecule("ablation")
 
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
@@ -26,7 +26,7 @@ func TestComposite_WithTriad_Ablation(t *testing.T) {
 	c.Add(m, mkAtom("task", PlanAtom, "plan.task.cook", Fresh))
 
 	if m.TriadSealed(PlanTriad) {
-		t.Error("Plan triad should NOT seal — NoOp reactor doesn't advance")
+		t.Error("Plan triad should NOT seal — Damper reactor doesn't advance")
 	}
 }
 
@@ -45,17 +45,17 @@ func TestComposite_NestedReactors(t *testing.T) {
 	}
 }
 
-func TestComposite_NoOp_PassesThrough(t *testing.T) {
-	noop := NoOp{}
+func TestComposite_Damper_PassesThrough(t *testing.T) {
+	noop := Damper{}
 	m := NewMolecule("noop-test")
 	atom := mkAtom("a1", IntentAtom, "intent.test.noop", Fresh)
 
 	result, _ := noop.React(m, atom)
 	if result != Pass {
-		t.Errorf("NoOp should always pass, got %s", result)
+		t.Errorf("Damper should always pass, got %s", result)
 	}
 	if m.Mass(IntentAtom) != 1 {
-		t.Error("NoOp should still insert the atom")
+		t.Error("Damper should still insert the atom")
 	}
 }
 

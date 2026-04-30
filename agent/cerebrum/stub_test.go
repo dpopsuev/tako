@@ -26,16 +26,16 @@ func (s *stubMotorBus) Send(_ context.Context, cmd Command) error {
 
 type emittingTriadReactor struct{}
 
-func (emittingTriadReactor) React(m *reactivity.Molecule, atom reactivity.Atom) (reactivity.AssertResult, reactivity.Fortune) {
+func (emittingTriadReactor) React(m *reactivity.Molecule, atom reactivity.Atom) (reactivity.YieldKind, reactivity.Yield) {
 	m.Emit(reactivity.Emission{Kind: "instrument", Target: "emitted-tool", Payload: atom.Content})
 	if m.Mass(reactivity.AssessmentAtom) > 0 {
 		m.SealTriad(reactivity.ReasonTriad)
 		m.SetPhase(reactivity.PlanAtom)
-		return reactivity.Pass, reactivity.Fortune{}
+		return reactivity.Pass, reactivity.Yield{}
 	}
 	if m.Phase() == reactivity.IntentAtom && m.Mass(reactivity.IntentAtom) > 0 {
 		m.SetPhase(reactivity.AssessmentAtom)
-		return reactivity.Pass, reactivity.Fortune{}
+		return reactivity.Pass, reactivity.Yield{}
 	}
-	return reactivity.Insufficient, reactivity.Fortune{Result: reactivity.Insufficient}
+	return reactivity.Insufficient, reactivity.Yield{Result: reactivity.Insufficient}
 }

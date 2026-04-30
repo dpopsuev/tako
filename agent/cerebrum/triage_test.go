@@ -19,7 +19,7 @@ func TestTriage_Inception_NewDomain(t *testing.T) {
 		CreatedAt: time.Now(),
 	})
 
-	results := Triage(store, reactor)
+	results := Moderate(store, reactor)
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
 	}
@@ -50,7 +50,7 @@ func TestTriage_Continuation_SameDomain(t *testing.T) {
 		CreatedAt: time.Now(),
 	})
 
-	results := Triage(store, reactor)
+	results := Moderate(store, reactor)
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
 	}
@@ -84,7 +84,7 @@ func TestTriage_Contradiction_ConflictingAtom(t *testing.T) {
 		CreatedAt: time.Now(),
 	})
 
-	results := Triage(store, reactor)
+	results := Moderate(store, reactor)
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
 	}
@@ -109,7 +109,7 @@ func TestTriage_MultiplAtoms_MixedVerdicts(t *testing.T) {
 		Taxonomy: "intent.goal.beta", Content: []byte("beta"), CreatedAt: time.Now(),
 	})
 
-	results := Triage(store, reactor)
+	results := Moderate(store, reactor)
 	if len(results) != 2 {
 		t.Fatalf("expected 2 results, got %d", len(results))
 	}
@@ -130,7 +130,7 @@ func TestTriage_DrainsUnsorted(t *testing.T) {
 		Taxonomy: "intent.goal.test", Content: []byte("t"), CreatedAt: time.Now(),
 	})
 
-	Triage(store, reactor)
+	Moderate(store, reactor)
 
 	if len(store.Unsorted()) != 0 {
 		t.Error("unsorted should be empty after triage")

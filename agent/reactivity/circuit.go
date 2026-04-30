@@ -12,88 +12,88 @@ import (
 
 // Reactor is the processing interface. Same at every level — leaf or composite.
 type Reactor interface {
-	React(m *Molecule, atom Atom) (AssertResult, Fortune)
+	React(m *Molecule, atom Atom) (YieldKind, Yield)
 }
 
-// NoOp passes the atom through without processing. Ablation baseline.
-type NoOp struct{}
+// Damper passes the atom through without processing. Ablation baseline.
+type Damper struct{}
 
-func (NoOp) React(m *Molecule, atom Atom) (AssertResult, Fortune) {
+func (Damper) React(m *Molecule, atom Atom) (YieldKind, Yield) {
 	m.InsertAtom(atom)
-	return Pass, Fortune{}
+	return Pass, Yield{}
 }
 
 type reasonReactor struct{}
 
-func (reasonReactor) React(m *Molecule, atom Atom) (AssertResult, Fortune) {
+func (reasonReactor) React(m *Molecule, atom Atom) (YieldKind, Yield) {
 	if m.mass[AssessmentAtom] > 0 {
 		m.SealTriad(ReasonTriad)
 		m.SetPhase(PlanAtom)
-		return Pass, Fortune{}
+		return Pass, Yield{}
 	}
 	if m.phase == IntentAtom && m.mass[IntentAtom] > 0 {
 		m.SetPhase(AssessmentAtom)
-		return Pass, Fortune{}
+		return Pass, Yield{}
 	}
-	return Insufficient, Fortune{Result: Insufficient, Message: "need reason atoms", Phase: m.phase}
+	return Insufficient, Yield{Result: Insufficient, Message: "need reason atoms", Phase: m.phase}
 }
 
 type planReactor struct{}
 
-func (planReactor) React(m *Molecule, atom Atom) (AssertResult, Fortune) {
+func (planReactor) React(m *Molecule, atom Atom) (YieldKind, Yield) {
 	if m.mass[PlanAtom] > 0 {
 		m.SealTriad(PlanTriad)
 		m.SetPhase(ExecutionAtom)
-		return Pass, Fortune{}
+		return Pass, Yield{}
 	}
-	return Insufficient, Fortune{Result: Insufficient, Message: "need plan atoms", Phase: PlanAtom}
+	return Insufficient, Yield{Result: Insufficient, Message: "need plan atoms", Phase: PlanAtom}
 }
 
 type actReactor struct{}
 
-func (actReactor) React(m *Molecule, atom Atom) (AssertResult, Fortune) {
+func (actReactor) React(m *Molecule, atom Atom) (YieldKind, Yield) {
 	if m.mass[ExecutionAtom] > 0 {
 		m.SealTriad(ActTriad)
 		m.SetPhase(RetrospectionAtom)
-		return Pass, Fortune{}
+		return Pass, Yield{}
 	}
-	return Insufficient, Fortune{Result: Insufficient, Message: "need execution atoms", Phase: ExecutionAtom}
+	return Insufficient, Yield{Result: Insufficient, Message: "need execution atoms", Phase: ExecutionAtom}
 }
 
 type retrospectReactor struct{}
 
-func (retrospectReactor) React(m *Molecule, atom Atom) (AssertResult, Fortune) {
+func (retrospectReactor) React(m *Molecule, atom Atom) (YieldKind, Yield) {
 	if m.mass[RetrospectionAtom] > 0 {
 		m.SealTriad(RetrospectTriad)
-		return Pass, Fortune{}
+		return Pass, Yield{}
 	}
-	return Insufficient, Fortune{Result: Insufficient, Message: "need retrospection atoms", Phase: RetrospectionAtom}
+	return Insufficient, Yield{Result: Insufficient, Message: "need retrospection atoms", Phase: RetrospectionAtom}
 }
 
-// CompositeReactor composes 4 nested Reactors — one per triad.
+// Core composes 4 nested Reactors — one per triad.
 // Same Reactor interface. Adds observability + lifecycle helpers.
-type CompositeReactor struct {
+type Core struct {
 	triads map[Triad]Reactor
 	pool   ergograph.Pool
 	tracer trace.Tracer
 }
 
-type ReactorOption func(*CompositeReactor)
+type ReactorOption func(*Core)
 
 func WithPool(pool ergograph.Pool) ReactorOption {
-	return func(c *CompositeReactor) { c.pool = pool }
+	return func(c *Core) { c.pool = pool }
 }
 
 func WithTracer(tracer trace.Tracer) ReactorOption {
-	return func(c *CompositeReactor) { c.tracer = tracer }
+	return func(c *Core) { c.tracer = tracer }
 }
 
 func WithTriad(t Triad, r Reactor) ReactorOption {
-	return func(c *CompositeReactor) { c.triads[t] = r }
+	return func(c *Core) { c.triads[t] = r }
 }
 
-func NewReactor(opts ...ReactorOption) *CompositeReactor {
-	c := &CompositeReactor{
+func NewReactor(opts ...ReactorOption) *Core {
+	c := &Core{
 		triads: map[Triad]Reactor{
 			ReasonTriad:    reasonReactor{},
 			PlanTriad:      planReactor{},
@@ -108,13 +108,13 @@ func NewReactor(opts ...ReactorOption) *CompositeReactor {
 }
 
 // React inserts an atom and delegates to the appropriate triad reactor.
-func (c *CompositeReactor) React(m *Molecule, atom Atom) (AssertResult, Fortune) {
+func (c *Core) React(m *Molecule, atom Atom) (YieldKind, Yield) {
 	if m.sealed {
-		return Unresolvable, Fortune{Result: Unresolvable, Message: "molecule is sealed"}
+		return Unresolvable, Yield{Result: Unresolvable, Message: "molecule is sealed"}
 	}
 
 	if atom.Type > m.phase && atom.Type != AssessmentAtom {
-		return Incompatible, Fortune{
+		return Incompatible, Yield{
 			Result:  Incompatible,
 			Message: fmt.Sprintf("molecule is in %s phase, cannot accept future %s atom", m.phase, atom.Type),
 			Phase:   m.phase,
@@ -139,12 +139,12 @@ func (c *CompositeReactor) React(m *Molecule, atom Atom) (AssertResult, Fortune)
 }
 
 // Add is an alias for React — backward compatibility.
-func (c *CompositeReactor) Add(m *Molecule, atom Atom) (AssertResult, Fortune) {
+func (c *Core) Add(m *Molecule, atom Atom) (YieldKind, Yield) {
 	return c.React(m, atom)
 }
 
 // Seal marks the molecule as complete with a Wish atom.
-func (c *CompositeReactor) Seal(m *Molecule, wish Atom) {
+func (c *Core) Seal(m *Molecule, wish Atom) {
 	m.Seal(wish)
 	c.record("reactor.seal", map[string]string{
 		labelWish: wish.ID,
@@ -155,12 +155,12 @@ func (c *CompositeReactor) Seal(m *Molecule, wish Atom) {
 }
 
 // Contradict checks if an atom contradicts existing atoms.
-func (c *CompositeReactor) Contradict(m *Molecule, atom Atom) (bool, *Atom) {
+func (c *Core) Contradict(m *Molecule, atom Atom) (bool, *Atom) {
 	return m.Contradict(atom)
 }
 
 // UnsealTriad unseals a triad with cascade.
-func (c *CompositeReactor) UnsealTriad(m *Molecule, t Triad) {
+func (c *Core) UnsealTriad(m *Molecule, t Triad) {
 	m.UnsealTriad(t)
 	c.record("reactor.triad.unseal", map[string]string{labelTriad: t.String()})
 	c.span("reactor.triad.unseal")
@@ -178,7 +178,7 @@ const (
 	labelError    = "error"
 )
 
-func (c *CompositeReactor) record(action string, labels map[string]string) {
+func (c *Core) record(action string, labels map[string]string) {
 	if c.pool == nil {
 		return
 	}
@@ -191,7 +191,7 @@ func (c *CompositeReactor) record(action string, labels map[string]string) {
 	}
 }
 
-func (c *CompositeReactor) span(name string) {
+func (c *Core) span(name string) {
 	if c.tracer == nil {
 		return
 	}

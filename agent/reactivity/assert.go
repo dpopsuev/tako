@@ -1,17 +1,17 @@
 package reactivity
 
-// AssertResult is the typed outcome of a bond check.
-type AssertResult int
+// YieldKind is the typed outcome of a bond check.
+type YieldKind int
 
 const (
-	Pass AssertResult = iota
+	Pass YieldKind = iota
 	Insufficient
 	Incompatible
 	Unresolvable
 	Contradiction
 )
 
-func (r AssertResult) String() string {
+func (r YieldKind) String() string {
 	switch r {
 	case Pass:
 		return "PASS"
@@ -28,9 +28,9 @@ func (r AssertResult) String() string {
 	}
 }
 
-// Fortune is the directive produced by Assert.
-type Fortune struct {
-	Result  AssertResult
+// Yield is the directive produced by Assert.
+type Yield struct {
+	Result  YieldKind
 	Message string
 	Phase   AtomType
 }
