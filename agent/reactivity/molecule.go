@@ -41,7 +41,7 @@ func (m *Molecule) Phase() AtomType             { return m.phase }
 func (m *Molecule) Sealed() bool                { return m.sealed }
 func (m *Molecule) Mass(t AtomType) int         { return m.mass[t] }
 func (m *Molecule) SourceMass(s AtomSource) int { return m.sourceMass[s] }
-func (m *Molecule) CurrentTriad() Triad         { return TriadOf(m.phase) }
+func (m *Molecule) CurrentTriad() Triad         { return m.phase.Triad }
 func (m *Molecule) TriadSealed(t Triad) bool    { return m.triadSealed[t] }
 func (m *Molecule) UnsealCount() int            { return m.unsealCount }
 

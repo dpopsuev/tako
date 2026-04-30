@@ -48,12 +48,7 @@ func buildPrompt(m *reactivity.Molecule, need []byte, domain Domain) string {
 	}
 
 	ctx.Atoms = make(map[string]int)
-	for _, at := range []reactivity.AtomType{
-		reactivity.IntentAtom, reactivity.AssessmentAtom, reactivity.KnowledgeAtom,
-		reactivity.ExpansionAtom, reactivity.ReductionAtom, reactivity.SelectionAtom,
-		reactivity.ExecutionAtom, reactivity.AcclimationAtom, reactivity.RefinementAtom,
-		reactivity.RetrospectionAtom,
-	} {
+	for _, at := range reactivity.AllAtomTypes() {
 		if mass := m.Mass(at); mass > 0 {
 			ctx.Atoms[at.String()] = mass
 		}

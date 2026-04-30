@@ -2,65 +2,81 @@ package reactivity
 
 import "time"
 
-// AtomType is the phase that produced this Atom.
-type AtomType int
+// AtomType identifies an atom's position in the Reactor.
+// Composed of Triad (which floor) and DialecticPosition (which role).
+type AtomType struct {
+	Triad    Triad
+	Position DialecticPosition
+}
 
-const (
+func (a AtomType) Sequence() int {
+	return int(a.Triad)*3 + int(a.Position)
+}
+
+func (a AtomType) String() string {
+	for _, named := range namedAtoms {
+		if named.atom == a {
+			return named.label
+		}
+	}
+	return a.Triad.String() + "." + a.Position.String()
+}
+
+type namedAtom struct {
+	atom  AtomType
+	label string
+}
+
+var namedAtoms = []namedAtom{
+	{IntentAtom, "intent"},
+	{AssessmentAtom, "assessment"},
+	{KnowledgeAtom, "knowledge"},
+	{ExpansionAtom, "expansion"},
+	{ReductionAtom, "reduction"},
+	{SelectionAtom, "selection"},
+	{ExecutionAtom, "execution"},
+	{AcclimationAtom, "acclimation"},
+	{RefinementAtom, "refinement"},
+	{RetrospectionAtom, "retrospection"},
+}
+
+var (
 	// Think triad
-	IntentAtom     AtomType = iota // thesis
-	AssessmentAtom                  // antithesis
-	KnowledgeAtom                   // synthesis (Recall else Consolidate)
+	IntentAtom     = AtomType{ThinkTriad, ThesisPosition}
+	AssessmentAtom = AtomType{ThinkTriad, AntithesisPosition}
+	KnowledgeAtom  = AtomType{ThinkTriad, SynthesisPosition}
 
 	// Compose triad
-	ExpansionAtom // thesis
-	ReductionAtom // antithesis
-	SelectionAtom // synthesis
+	ExpansionAtom = AtomType{ComposeTriad, ThesisPosition}
+	ReductionAtom = AtomType{ComposeTriad, AntithesisPosition}
+	SelectionAtom = AtomType{ComposeTriad, SynthesisPosition}
 
-	// Action triad
-	ExecutionAtom   // thesis
-	AcclimationAtom // antithesis
-	RefinementAtom  // synthesis
+	// Implement triad
+	ExecutionAtom   = AtomType{ImplementTriad, ThesisPosition}
+	AcclimationAtom = AtomType{ImplementTriad, AntithesisPosition}
+	RefinementAtom  = AtomType{ImplementTriad, SynthesisPosition}
 
 	// Reflect egress
-	RetrospectionAtom
+	RetrospectionAtom = AtomType{ReflectTriad, SynthesisPosition}
 )
 
-func (t AtomType) String() string {
-	switch t {
-	case KnowledgeAtom:
-		return "knowledge"
-	case IntentAtom:
-		return "intent"
-	case AssessmentAtom:
-		return "assessment"
-	case SelectionAtom:
-		return "selection"
-	case ExpansionAtom:
-		return "expansion"
-	case ReductionAtom:
-		return "reduction"
-	case RefinementAtom:
-		return "refinement"
-	case ExecutionAtom:
-		return "execution"
-	case AcclimationAtom:
-		return "acclimation"
-	case RetrospectionAtom:
-		return "retrospection"
-	default:
-		return "unknown"
+func AllAtomTypes() []AtomType {
+	out := make([]AtomType, len(namedAtoms))
+	for i, n := range namedAtoms {
+		out[i] = n.atom
 	}
+	return out
 }
 
 // AtomSource indicates where this atom came from.
 type AtomSource int
 
 const (
-	Fresh       AtomSource = iota // produced by LLM or instrument this cycle
-	Recollected                   // pulled from Memory Mesh (prior knowledge)
-	Received                      // from another agent via Discourse
-	Instrument                    // from instrument execution result
-	Human                         // from HITL response
+	Fresh       AtomSource = iota
+	Recollected
+	Received
+	Instrument
+	Human
 )
 
 // Atom is a single knowledge node in the Molecule graph.

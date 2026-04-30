@@ -13,10 +13,7 @@ func TestComposite_ReactInterface(t *testing.T) {
 }
 
 func TestComposite_WithTriad_GimpedNodes(t *testing.T) {
-	gimped := NewTriadReactor(ComposeTriad,
-		[3]AtomType{ExpansionAtom, ReductionAtom, SelectionAtom},
-		ExecutionAtom,
-	)
+	gimped := NewTriadReactor(ComposeTriad, ExecutionAtom)
 	c := NewReactor(WithTriad(ComposeTriad, gimped))
 	m := NewMolecule("ablation")
 
@@ -60,7 +57,7 @@ func TestComposite_GimpedNode_PassesThrough(t *testing.T) {
 }
 
 func TestComposite_NodeWithDirective_NotGimped(t *testing.T) {
-	node := NewNode(IntentAtom, "Focus on explicit request")
+	node := NewNode(IntentAtom, "intent", "Focus on explicit request")
 	if node.Gimped() {
 		t.Error("node with directive[0] should not be gimped")
 	}
@@ -70,7 +67,7 @@ func TestComposite_NodeWithDirective_NotGimped(t *testing.T) {
 }
 
 func TestComposite_NodeRemoveDirective_Gimps(t *testing.T) {
-	node := NewNode(IntentAtom, "default")
+	node := NewNode(IntentAtom, "intent", "default")
 	node.AddDirective("extra")
 
 	if len(node.Directives()) != 2 {

@@ -63,7 +63,7 @@ func TestTriad_ActSeals(t *testing.T) {
 	}
 }
 
-func TestTriad_TriadOfMapping(t *testing.T) {
+func TestAtomType_TriadField(t *testing.T) {
 	tests := []struct {
 		atomType AtomType
 		triad    Triad
@@ -80,14 +80,13 @@ func TestTriad_TriadOfMapping(t *testing.T) {
 		{RetrospectionAtom, ReflectTriad},
 	}
 	for _, tt := range tests {
-		got := TriadOf(tt.atomType)
-		if got != tt.triad {
-			t.Errorf("TriadOf(%s) = %s, want %s", tt.atomType, got, tt.triad)
+		if tt.atomType.Triad != tt.triad {
+			t.Errorf("%s.Triad = %s, want %s", tt.atomType, tt.atomType.Triad, tt.triad)
 		}
 	}
 }
 
-func TestTriad_PositionOfMapping(t *testing.T) {
+func TestAtomType_PositionField(t *testing.T) {
 	tests := []struct {
 		atomType AtomType
 		pos      DialecticPosition
@@ -103,9 +102,8 @@ func TestTriad_PositionOfMapping(t *testing.T) {
 		{RefinementAtom, SynthesisPosition},
 	}
 	for _, tt := range tests {
-		got := PositionOf(tt.atomType)
-		if got != tt.pos {
-			t.Errorf("PositionOf(%s) = %d, want %d", tt.atomType, got, tt.pos)
+		if tt.atomType.Position != tt.pos {
+			t.Errorf("%s.Position = %d, want %d", tt.atomType, tt.atomType.Position, tt.pos)
 		}
 	}
 }

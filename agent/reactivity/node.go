@@ -5,21 +5,25 @@ package reactivity
 // A Node without directives IS a Damper.
 type Node struct {
 	phase      AtomType
+	label      string
 	directives []Directive
 }
 
 var _ Reactor = (*Node)(nil)
 
-func NewNode(phase AtomType, defaultDirective Directive) *Node {
+func NewNode(phase AtomType, label string, defaultDirective Directive) *Node {
 	return &Node{
 		phase:      phase,
+		label:      label,
 		directives: []Directive{defaultDirective},
 	}
 }
 
 func GimpedNode(phase AtomType) *Node {
-	return &Node{phase: phase}
+	return &Node{phase: phase, label: phase.String()}
 }
+
+func (n *Node) Label() string { return n.label }
 
 func (n *Node) React(m *Molecule, _ Atom) (YieldKind, Yield) {
 	return Pass, Yield{}

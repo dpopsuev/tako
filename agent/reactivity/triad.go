@@ -34,49 +34,25 @@ const (
 	SynthesisPosition  DialecticPosition = 2
 )
 
-// TriadOf returns which triad an AtomType belongs to.
-func TriadOf(t AtomType) Triad {
-	switch t {
-	case KnowledgeAtom, IntentAtom, AssessmentAtom:
-		return ThinkTriad
-	case SelectionAtom, ExpansionAtom, ReductionAtom:
-		return ComposeTriad
-	case RefinementAtom, ExecutionAtom, AcclimationAtom:
-		return ImplementTriad
-	case RetrospectionAtom:
-		return ReflectTriad
+func (p DialecticPosition) String() string {
+	switch p {
+	case ThesisPosition:
+		return "thesis"
+	case AntithesisPosition:
+		return "antithesis"
+	case SynthesisPosition:
+		return "synthesis"
 	default:
-		return ThinkTriad
+		return "unknown"
 	}
 }
 
 // TriadNodes returns the AtomTypes that belong to a triad.
 func TriadNodes(t Triad) []AtomType {
-	switch t {
-	case ThinkTriad:
-		return []AtomType{KnowledgeAtom, IntentAtom, AssessmentAtom}
-	case ComposeTriad:
-		return []AtomType{SelectionAtom, ExpansionAtom, ReductionAtom}
-	case ImplementTriad:
-		return []AtomType{RefinementAtom, ExecutionAtom, AcclimationAtom}
-	case ReflectTriad:
-		return []AtomType{RetrospectionAtom}
-	default:
-		return nil
-	}
-}
-
-// PositionOf returns the dialectic position of an AtomType within its triad.
-func PositionOf(t AtomType) DialecticPosition {
-	switch t {
-	case KnowledgeAtom, SelectionAtom, RefinementAtom:
-		return SynthesisPosition
-	case IntentAtom, ExpansionAtom, ExecutionAtom:
-		return ThesisPosition
-	case AssessmentAtom, ReductionAtom, AcclimationAtom:
-		return AntithesisPosition
-	default:
-		return SynthesisPosition
+	return []AtomType{
+		{t, ThesisPosition},
+		{t, AntithesisPosition},
+		{t, SynthesisPosition},
 	}
 }
 
@@ -84,10 +60,10 @@ func PositionOf(t AtomType) DialecticPosition {
 type UnsealKind int
 
 const (
-	Recognize  UnsealKind = iota // Cognize was wrong, re-cognize to different Molecule
-	Rethink                      // Selection was wrong, resynthesize from Knowledge
-	Recompose                    // Refinement was wrong, resynthesize from Selection
-	Reaction                     // Reflection incomplete, resynthesize from Refinement
+	Recognize  UnsealKind = iota
+	Rethink
+	Recompose
+	Reaction
 )
 
 func (u UnsealKind) String() string {

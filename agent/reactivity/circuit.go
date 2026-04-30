@@ -25,17 +25,15 @@ type TriadReactor struct {
 	thesis    *Node
 	antithesis *Node
 	synthesis  *Node
-	phases    [3]AtomType
 	nextPhase AtomType
 }
 
-func NewTriadReactor(triad Triad, phases [3]AtomType, nextPhase AtomType) *TriadReactor {
+func NewTriadReactor(triad Triad, nextPhase AtomType) *TriadReactor {
 	return &TriadReactor{
 		triad:      triad,
-		thesis:     GimpedNode(phases[ThesisPosition]),
-		antithesis: GimpedNode(phases[AntithesisPosition]),
-		synthesis:  GimpedNode(phases[SynthesisPosition]),
-		phases:     phases,
+		thesis:     GimpedNode(AtomType{triad, ThesisPosition}),
+		antithesis: GimpedNode(AtomType{triad, AntithesisPosition}),
+		synthesis:  GimpedNode(AtomType{triad, SynthesisPosition}),
 		nextPhase:  nextPhase,
 	}
 }
@@ -57,26 +55,29 @@ func (t *TriadReactor) Node(pos DialecticPosition) *Node {
 	}
 }
 
+func (t *TriadReactor) phase(pos DialecticPosition) AtomType {
+	return AtomType{t.triad, pos}
+}
+
 func (t *TriadReactor) React(m *Molecule, atom Atom) (YieldKind, Yield) {
-	pos := PositionOf(atom.Type)
-	node := t.Node(pos)
+	node := t.Node(atom.Type.Position)
 	node.React(m, atom)
 
-	if m.mass[t.phases[SynthesisPosition]] > 0 {
+	if m.mass[t.phase(SynthesisPosition)] > 0 {
 		m.SealTriad(t.triad)
 		m.SetPhase(t.nextPhase)
 		return Pass, Yield{}
 	}
-	if m.mass[t.phases[AntithesisPosition]] > 0 && m.phase == t.phases[ThesisPosition] {
-		m.SetPhase(t.phases[AntithesisPosition])
+	if m.mass[t.phase(AntithesisPosition)] > 0 && m.phase == t.phase(ThesisPosition) {
+		m.SetPhase(t.phase(AntithesisPosition))
 		return Pass, Yield{}
 	}
-	if m.mass[t.phases[AntithesisPosition]] > 0 && m.phase == t.phases[AntithesisPosition] {
-		m.SetPhase(t.phases[SynthesisPosition])
+	if m.mass[t.phase(AntithesisPosition)] > 0 && m.phase == t.phase(AntithesisPosition) {
+		m.SetPhase(t.phase(SynthesisPosition))
 		return Pass, Yield{}
 	}
-	if m.mass[t.phases[ThesisPosition]] > 0 && m.phase == t.phases[ThesisPosition] {
-		m.SetPhase(t.phases[AntithesisPosition])
+	if m.mass[t.phase(ThesisPosition)] > 0 && m.phase == t.phase(ThesisPosition) {
+		m.SetPhase(t.phase(AntithesisPosition))
 		return Pass, Yield{}
 	}
 	return Insufficient, Yield{Result: Insufficient, Message: fmt.Sprintf("need %s atoms", t.triad), Phase: m.phase}
@@ -131,18 +132,9 @@ func WithDirective(phase AtomType, directive Directive) ReactorOption {
 func NewReactor(opts ...ReactorOption) *Core {
 	c := &Core{
 		floors: map[Triad]Reactor{
-			ThinkTriad: NewTriadReactor(ThinkTriad,
-				[3]AtomType{IntentAtom, AssessmentAtom, KnowledgeAtom},
-				ExpansionAtom,
-			),
-			ComposeTriad: NewTriadReactor(ComposeTriad,
-				[3]AtomType{ExpansionAtom, ReductionAtom, SelectionAtom},
-				ExecutionAtom,
-			),
-			ImplementTriad: NewTriadReactor(ImplementTriad,
-				[3]AtomType{ExecutionAtom, AcclimationAtom, RefinementAtom},
-				RetrospectionAtom,
-			),
+			ThinkTriad:     NewTriadReactor(ThinkTriad, AtomType{ComposeTriad, ThesisPosition}),
+			ComposeTriad:   NewTriadReactor(ComposeTriad, AtomType{ImplementTriad, ThesisPosition}),
+			ImplementTriad: NewTriadReactor(ImplementTriad, RetrospectionAtom),
 		},
 		sink: Reflection{},
 	}
@@ -170,7 +162,7 @@ func (c *Core) Node(phase AtomType) *Node {
 }
 
 func (c *Core) node(phase AtomType) *Node {
-	triad := TriadOf(phase)
+	triad := phase.Triad
 	floor, ok := c.floors[triad]
 	if !ok {
 		return nil
@@ -179,7 +171,7 @@ func (c *Core) node(phase AtomType) *Node {
 	if !ok {
 		return nil
 	}
-	return tr.Node(PositionOf(phase))
+	return tr.Node(phase.Position)
 }
 
 // React is the Cognizer — ingress node of Core. Routes atom to the right floor or sink.
@@ -188,7 +180,7 @@ func (c *Core) React(m *Molecule, atom Atom) (YieldKind, Yield) {
 		return Unresolvable, Yield{Result: Unresolvable, Message: "molecule is sealed"}
 	}
 
-	if atom.Type > m.phase && atom.Type != AssessmentAtom {
+	if atom.Type.Sequence() > m.phase.Sequence() && atom.Type != AssessmentAtom {
 		return Incompatible, Yield{
 			Result:  Incompatible,
 			Message: fmt.Sprintf("molecule is in %s phase, cannot accept future %s atom", m.phase, atom.Type),
@@ -198,7 +190,7 @@ func (c *Core) React(m *Molecule, atom Atom) (YieldKind, Yield) {
 
 	m.InsertAtom(atom)
 
-	triad := TriadOf(atom.Type)
+	triad := atom.Type.Triad
 	var r Reactor
 	if triad == ReflectTriad {
 		r = c.sink
