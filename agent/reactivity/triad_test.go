@@ -8,16 +8,16 @@ func TestTriad_ReasonSeals(t *testing.T) {
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
 	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.availability.fridge", Fresh))
 
-	if m.TriadSealed(ReasonTriad) {
+	if m.TriadSealed(ThinkTriad) {
 		t.Error("Reason should not seal before synthesis")
 	}
 
-	c.Add(m, mkAtom("understood", UnderstandingAtom, "understanding.synth.eat", Fresh))
+	c.Add(m, mkAtom("understood", KnowledgeAtom, "understanding.synth.eat", Fresh))
 
-	if !m.TriadSealed(ReasonTriad) {
+	if !m.TriadSealed(ThinkTriad) {
 		t.Error("Reason should seal after thesis + antithesis + synthesis")
 	}
-	if m.CurrentTriad() != PlanTriad {
+	if m.CurrentTriad() != ComposeTriad {
 		t.Errorf("should advance to Plan triad, got %s", m.CurrentTriad())
 	}
 }
@@ -27,14 +27,14 @@ func TestTriad_PlanSeals(t *testing.T) {
 	m := NewMolecule("test")
 	addReasonAtoms(c, m, "eat")
 
-	c.Add(m, mkAtom("option", PlanAtom, "plan.option.cook", Fresh))
-	c.Add(m, mkAtom("danger", RiskAtom, "risk.eval.cook", Fresh))
-	c.Add(m, mkAtom("approach", StrategyAtom, "strategy.synth.cook", Fresh))
+	c.Add(m, mkAtom("option", ExpansionAtom, "plan.option.cook", Fresh))
+	c.Add(m, mkAtom("danger", ReductionAtom, "risk.eval.cook", Fresh))
+	c.Add(m, mkAtom("approach", SelectionAtom, "strategy.synth.cook", Fresh))
 
-	if !m.TriadSealed(PlanTriad) {
+	if !m.TriadSealed(ComposeTriad) {
 		t.Error("Plan should seal after thesis + antithesis + synthesis")
 	}
-	if m.CurrentTriad() != ActTriad {
+	if m.CurrentTriad() != ActionTriad {
 		t.Errorf("should advance to Act triad, got %s", m.CurrentTriad())
 	}
 }
@@ -46,16 +46,16 @@ func TestTriad_ActSeals(t *testing.T) {
 	addFormationAtoms(c, m, "clean")
 
 	c.Add(m, mkAtom("done", ExecutionAtom, "execution.result.swept", Fresh))
-	c.Add(m, mkAtom("saw", ObservationAtom, "observation.eval.swept", Fresh))
-	c.Add(m, mkAtom("adjusted", AdaptationAtom, "adaptation.synth.swept", Fresh))
+	c.Add(m, mkAtom("saw", AcclimationAtom, "observation.eval.swept", Fresh))
+	c.Add(m, mkAtom("adjusted", RefinementAtom, "adaptation.synth.swept", Fresh))
 
-	if !m.TriadSealed(ActTriad) {
+	if !m.TriadSealed(ActionTriad) {
 		t.Error("Act should seal after thesis + antithesis + synthesis")
 	}
 
 	c.Add(m, mkAtom("learning", RetrospectionAtom, "retrospection.reflect.done", Fresh))
 
-	if !m.TriadSealed(RetrospectTriad) {
+	if !m.TriadSealed(ReflectTriad) {
 		t.Error("Retrospect should seal after Reflection")
 	}
 	if !m.AllTriadsSealed() {
@@ -68,16 +68,16 @@ func TestTriad_TriadOfMapping(t *testing.T) {
 		atomType AtomType
 		triad    Triad
 	}{
-		{IntentAtom, ReasonTriad},
-		{AssessmentAtom, ReasonTriad},
-		{UnderstandingAtom, ReasonTriad},
-		{PlanAtom, PlanTriad},
-		{RiskAtom, PlanTriad},
-		{StrategyAtom, PlanTriad},
-		{ExecutionAtom, ActTriad},
-		{ObservationAtom, ActTriad},
-		{AdaptationAtom, ActTriad},
-		{RetrospectionAtom, RetrospectTriad},
+		{IntentAtom, ThinkTriad},
+		{AssessmentAtom, ThinkTriad},
+		{KnowledgeAtom, ThinkTriad},
+		{ExpansionAtom, ComposeTriad},
+		{ReductionAtom, ComposeTriad},
+		{SelectionAtom, ComposeTriad},
+		{ExecutionAtom, ActionTriad},
+		{AcclimationAtom, ActionTriad},
+		{RefinementAtom, ActionTriad},
+		{RetrospectionAtom, ReflectTriad},
 	}
 	for _, tt := range tests {
 		got := TriadOf(tt.atomType)
@@ -94,13 +94,13 @@ func TestTriad_PositionOfMapping(t *testing.T) {
 	}{
 		{IntentAtom, ThesisPosition},
 		{AssessmentAtom, AntithesisPosition},
-		{UnderstandingAtom, SynthesisPosition},
-		{PlanAtom, ThesisPosition},
-		{RiskAtom, AntithesisPosition},
-		{StrategyAtom, SynthesisPosition},
+		{KnowledgeAtom, SynthesisPosition},
+		{ExpansionAtom, ThesisPosition},
+		{ReductionAtom, AntithesisPosition},
+		{SelectionAtom, SynthesisPosition},
 		{ExecutionAtom, ThesisPosition},
-		{ObservationAtom, AntithesisPosition},
-		{AdaptationAtom, SynthesisPosition},
+		{AcclimationAtom, AntithesisPosition},
+		{RefinementAtom, SynthesisPosition},
 	}
 	for _, tt := range tests {
 		got := PositionOf(tt.atomType)
@@ -110,12 +110,12 @@ func TestTriad_PositionOfMapping(t *testing.T) {
 	}
 }
 
-func TestTriad_AssessmentAcceptedInPlanTriad(t *testing.T) {
+func TestTriad_AssessmentAcceptedInComposeTriad(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("test")
 	addReasonAtoms(c, m, "eat")
 
-	if m.CurrentTriad() != PlanTriad {
+	if m.CurrentTriad() != ComposeTriad {
 		t.Fatalf("expected Plan triad, got %s", m.CurrentTriad())
 	}
 

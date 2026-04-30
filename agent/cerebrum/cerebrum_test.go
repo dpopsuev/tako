@@ -87,7 +87,7 @@ func TestThink_MoleculeHasAllPhases(t *testing.T) {
 	if m.Mass(reactivity.AssessmentAtom) == 0 {
 		t.Error("expected Assessment atoms")
 	}
-	if m.Mass(reactivity.PlanAtom) == 0 {
+	if m.Mass(reactivity.ExpansionAtom) == 0 {
 		t.Error("expected Plan atoms")
 	}
 	if m.Mass(reactivity.ExecutionAtom) == 0 {
@@ -158,7 +158,7 @@ func TestThink_StoreIntegration(t *testing.T) {
 func TestThink_EmissionsDispatchedViaMotor(t *testing.T) {
 	completer := &stubCompleter{response: `{"atoms":[{"type":"intent","taxonomy":"intent.goal.test","content":"go"}]}`}
 	reactor := reactivity.NewReactor(
-		reactivity.WithTriad(reactivity.ReasonTriad, &emittingTriadReactor{}),
+		reactivity.WithTriad(reactivity.ThinkTriad, &emittingTriadReactor{}),
 	)
 	motor := &stubMotorBus{}
 	cb := New(reactor, completer, WithMotor(motor))

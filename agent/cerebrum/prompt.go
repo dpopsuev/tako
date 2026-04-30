@@ -43,7 +43,7 @@ var compiledTemplate = template.Must(
 var phaseGuides = map[reactivity.AtomType]string{
 	reactivity.IntentAtom:        "Determine what needs to be done. Identify the goal, constraints, and desired outcome.",
 	reactivity.AssessmentAtom:    "Assess the situation. What do you know? What don't you know? What resources are available?",
-	reactivity.PlanAtom:          "Create a plan. What steps are needed? In what order? What could go wrong?",
+	reactivity.ExpansionAtom:          "Create a plan. What steps are needed? In what order? What could go wrong?",
 	reactivity.ExecutionAtom:     "Execute the plan. Use tool_call to invoke instruments. Report results.",
 	reactivity.RetrospectionAtom: "Reflect on what happened. What worked? What didn't? What would you do differently?",
 }
@@ -61,7 +61,7 @@ func buildPrompt(m *reactivity.Molecule, need []byte, domain Domain) string {
 
 	ctx.Atoms = make(map[string]int)
 	for _, at := range []reactivity.AtomType{
-		reactivity.IntentAtom, reactivity.AssessmentAtom, reactivity.PlanAtom,
+		reactivity.IntentAtom, reactivity.AssessmentAtom, reactivity.ExpansionAtom,
 		reactivity.ExecutionAtom, reactivity.RetrospectionAtom,
 	} {
 		if mass := m.Mass(at); mass > 0 {

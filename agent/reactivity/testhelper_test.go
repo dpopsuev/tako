@@ -17,19 +17,19 @@ func mkAtom(id string, t AtomType, taxonomy string, source AtomSource, targets .
 func addReasonAtoms(c *Core, m *Molecule, domain string) {
 	c.Add(m, mkAtom("intent-"+domain, IntentAtom, "intent.goal."+domain, Fresh))
 	c.Add(m, mkAtom("assess-"+domain, AssessmentAtom, "assessment.eval."+domain, Fresh))
-	c.Add(m, mkAtom("understand-"+domain, UnderstandingAtom, "understanding.synth."+domain, Fresh))
+	c.Add(m, mkAtom("understand-"+domain, KnowledgeAtom, "understanding.synth."+domain, Fresh))
 }
 
 func addFormationAtoms(c *Core, m *Molecule, domain string) {
-	c.Add(m, mkAtom("plan-"+domain, PlanAtom, "plan.task."+domain, Fresh))
-	c.Add(m, mkAtom("risk-"+domain, RiskAtom, "risk.eval."+domain, Fresh))
-	c.Add(m, mkAtom("strategy-"+domain, StrategyAtom, "strategy.synth."+domain, Fresh))
+	c.Add(m, mkAtom("plan-"+domain, ExpansionAtom, "plan.task."+domain, Fresh))
+	c.Add(m, mkAtom("risk-"+domain, ReductionAtom, "risk.eval."+domain, Fresh))
+	c.Add(m, mkAtom("strategy-"+domain, SelectionAtom, "strategy.synth."+domain, Fresh))
 }
 
 func addActionAtoms(c *Core, m *Molecule, domain string) {
 	c.Add(m, mkAtom("exec-"+domain, ExecutionAtom, "execution.result."+domain, Fresh))
-	c.Add(m, mkAtom("observe-"+domain, ObservationAtom, "observation.eval."+domain, Fresh))
-	c.Add(m, mkAtom("adapt-"+domain, AdaptationAtom, "adaptation.synth."+domain, Fresh))
+	c.Add(m, mkAtom("observe-"+domain, AcclimationAtom, "observation.eval."+domain, Fresh))
+	c.Add(m, mkAtom("adapt-"+domain, RefinementAtom, "adaptation.synth."+domain, Fresh))
 }
 
 func addFullChain(c *Core, m *Molecule, domain string) {

@@ -44,7 +44,7 @@ func extractAction(m *reactivity.Molecule, state *minitako.GameState) minitako.A
 		}
 	}
 
-	for _, a := range m.Atoms(reactivity.PlanAtom) {
+	for _, a := range m.Atoms(reactivity.ExpansionAtom) {
 		content := strings.ToLower(string(a.Content))
 		for _, action := range minitako.AvailableActions(state) {
 			if strings.Contains(content, action.String()) {

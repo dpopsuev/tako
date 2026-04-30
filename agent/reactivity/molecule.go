@@ -46,8 +46,8 @@ func (m *Molecule) TriadSealed(t Triad) bool    { return m.triadSealed[t] }
 func (m *Molecule) UnsealCount() int            { return m.unsealCount }
 
 func (m *Molecule) AllTriadsSealed() bool {
-	return m.triadSealed[ReasonTriad] && m.triadSealed[PlanTriad] &&
-		m.triadSealed[ActTriad] && m.triadSealed[RetrospectTriad]
+	return m.triadSealed[ThinkTriad] && m.triadSealed[ComposeTriad] &&
+		m.triadSealed[ActionTriad] && m.triadSealed[ReflectTriad]
 }
 
 func (m *Molecule) TotalMass() int {
@@ -152,15 +152,15 @@ func (m *Molecule) Contradict(atom Atom) (bool, *Atom) {
 
 func (m *Molecule) UnsealTriad(t Triad) {
 	switch t {
-	case ReasonTriad:
-		m.triadSealed[ReasonTriad] = false
-		m.triadSealed[PlanTriad] = false
-		m.triadSealed[ActTriad] = false
-	case PlanTriad:
-		m.triadSealed[PlanTriad] = false
-		m.triadSealed[ActTriad] = false
-	case ActTriad:
-		m.triadSealed[ActTriad] = false
+	case ThinkTriad:
+		m.triadSealed[ThinkTriad] = false
+		m.triadSealed[ComposeTriad] = false
+		m.triadSealed[ActionTriad] = false
+	case ComposeTriad:
+		m.triadSealed[ComposeTriad] = false
+		m.triadSealed[ActionTriad] = false
+	case ActionTriad:
+		m.triadSealed[ActionTriad] = false
 	}
 	m.unsealCount++
 }

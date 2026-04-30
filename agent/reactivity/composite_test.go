@@ -13,20 +13,20 @@ func TestComposite_ReactInterface(t *testing.T) {
 }
 
 func TestComposite_WithTriad_Ablation(t *testing.T) {
-	c := NewReactor(WithTriad(PlanTriad, Damper{}))
+	c := NewReactor(WithTriad(ComposeTriad, Damper{}))
 	m := NewMolecule("ablation")
 
 	addReasonAtoms(c, m, "eat")
 
-	if !m.TriadSealed(ReasonTriad) {
+	if !m.TriadSealed(ThinkTriad) {
 		t.Error("reason triad should seal normally")
 	}
 
-	c.Add(m, mkAtom("task", PlanAtom, "plan.task.cook", Fresh))
-	c.Add(m, mkAtom("risk", RiskAtom, "risk.eval.burn", Fresh))
-	c.Add(m, mkAtom("strat", StrategyAtom, "strategy.synth.cook", Fresh))
+	c.Add(m, mkAtom("task", ExpansionAtom, "plan.task.cook", Fresh))
+	c.Add(m, mkAtom("risk", ReductionAtom, "risk.eval.burn", Fresh))
+	c.Add(m, mkAtom("strat", SelectionAtom, "strategy.synth.cook", Fresh))
 
-	if m.TriadSealed(PlanTriad) {
+	if m.TriadSealed(ComposeTriad) {
 		t.Error("plan triad should NOT seal — Damper reactor does not advance")
 	}
 }

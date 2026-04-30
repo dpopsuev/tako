@@ -53,7 +53,7 @@ func TestNode_Assessment_AdvancesToUnderstanding(t *testing.T) {
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
 	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.state.kitchen", Fresh))
-	if m.Phase() != UnderstandingAtom {
+	if m.Phase() != KnowledgeAtom {
 		t.Errorf("after assessment, should advance to understanding phase, got %s", m.Phase())
 	}
 }
@@ -81,17 +81,17 @@ func TestNode_Assessment_RecollectedSource(t *testing.T) {
 	}
 }
 
-func TestNode_Understanding_SealsReasonTriad(t *testing.T) {
+func TestNode_Understanding_SealsThinkTriad(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
 	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.availability.fridge", Fresh))
-	c.Add(m, mkAtom("synth", UnderstandingAtom, "understanding.synth.eat", Fresh))
+	c.Add(m, mkAtom("synth", KnowledgeAtom, "understanding.synth.eat", Fresh))
 
-	if !m.TriadSealed(ReasonTriad) {
+	if !m.TriadSealed(ThinkTriad) {
 		t.Error("reason triad should seal after understanding atom")
 	}
-	if m.Phase() != PlanAtom {
+	if m.Phase() != ExpansionAtom {
 		t.Errorf("after understanding, should advance to plan phase, got %s", m.Phase())
 	}
 }
@@ -101,7 +101,7 @@ func TestNode_Plan_ProducesOptions(t *testing.T) {
 	m := NewMolecule("test")
 	addReasonAtoms(c, m, "eat")
 
-	result, _ := c.Add(m, mkAtom("option-rice", PlanAtom, "plan.option.rice", Fresh))
+	result, _ := c.Add(m, mkAtom("option-rice", ExpansionAtom, "plan.option.rice", Fresh))
 	if result != Pass {
 		t.Fatalf("should accept plan atom, got %s", result)
 	}
@@ -112,12 +112,12 @@ func TestNode_Plan_MultipleOptions(t *testing.T) {
 	m := NewMolecule("test")
 	addReasonAtoms(c, m, "eat")
 
-	c.Add(m, mkAtom("opt-rice", PlanAtom, "plan.option.rice", Fresh))
-	c.Add(m, mkAtom("opt-eggs", PlanAtom, "plan.option.eggs", Fresh))
-	c.Add(m, mkAtom("opt-salad", PlanAtom, "plan.option.salad", Fresh))
+	c.Add(m, mkAtom("opt-rice", ExpansionAtom, "plan.option.rice", Fresh))
+	c.Add(m, mkAtom("opt-eggs", ExpansionAtom, "plan.option.eggs", Fresh))
+	c.Add(m, mkAtom("opt-salad", ExpansionAtom, "plan.option.salad", Fresh))
 
-	if m.Mass(PlanAtom) != 3 {
-		t.Errorf("expected 3 plan atoms, got %d", m.Mass(PlanAtom))
+	if m.Mass(ExpansionAtom) != 3 {
+		t.Errorf("expected 3 plan atoms, got %d", m.Mass(ExpansionAtom))
 	}
 }
 
@@ -125,21 +125,21 @@ func TestNode_Risk_AdvancesToStrategy(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("test")
 	addReasonAtoms(c, m, "eat")
-	c.Add(m, mkAtom("task", PlanAtom, "plan.task.cook", Fresh))
-	c.Add(m, mkAtom("risk", RiskAtom, "risk.eval.burn", Fresh))
+	c.Add(m, mkAtom("task", ExpansionAtom, "plan.task.cook", Fresh))
+	c.Add(m, mkAtom("risk", ReductionAtom, "risk.eval.burn", Fresh))
 
-	if m.Phase() != StrategyAtom {
+	if m.Phase() != SelectionAtom {
 		t.Errorf("after risk, should advance to strategy phase, got %s", m.Phase())
 	}
 }
 
-func TestNode_Strategy_SealsPlanTriad(t *testing.T) {
+func TestNode_Strategy_SealsComposeTriad(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("test")
 	addReasonAtoms(c, m, "eat")
 	addFormationAtoms(c, m, "eat")
 
-	if !m.TriadSealed(PlanTriad) {
+	if !m.TriadSealed(ComposeTriad) {
 		t.Error("plan triad should seal after strategy atom")
 	}
 	if m.Phase() != ExecutionAtom {
@@ -176,21 +176,21 @@ func TestNode_Observation_AdvancesToAdaptation(t *testing.T) {
 	addReasonAtoms(c, m, "clean")
 	addFormationAtoms(c, m, "clean")
 	c.Add(m, mkAtom("exec", ExecutionAtom, "execution.result.swept", Fresh))
-	c.Add(m, mkAtom("obs", ObservationAtom, "observation.eval.swept", Fresh))
+	c.Add(m, mkAtom("obs", AcclimationAtom, "observation.eval.swept", Fresh))
 
-	if m.Phase() != AdaptationAtom {
+	if m.Phase() != RefinementAtom {
 		t.Errorf("after observation, should advance to adaptation phase, got %s", m.Phase())
 	}
 }
 
-func TestNode_Adaptation_SealsActTriad(t *testing.T) {
+func TestNode_Adaptation_SealsActionTriad(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("test")
 	addReasonAtoms(c, m, "clean")
 	addFormationAtoms(c, m, "clean")
 	addActionAtoms(c, m, "clean")
 
-	if !m.TriadSealed(ActTriad) {
+	if !m.TriadSealed(ActionTriad) {
 		t.Error("act triad should seal after adaptation atom")
 	}
 	if m.Phase() != RetrospectionAtom {
@@ -218,10 +218,10 @@ func TestNode_Contradict_CrossType(t *testing.T) {
 	m := NewMolecule("test")
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
 	c.Add(m, mkAtom("assess-floor", AssessmentAtom, "assessment.state.floor", Fresh))
-	c.Add(m, mkAtom("understand", UnderstandingAtom, "understanding.synth.clean", Fresh))
-	c.Add(m, mkAtom("task-floor", PlanAtom, "plan.task.floor", Fresh, "assess-floor"))
-	c.Add(m, mkAtom("risk-floor", RiskAtom, "risk.eval.floor", Fresh))
-	c.Add(m, mkAtom("strat-floor", StrategyAtom, "strategy.synth.floor", Fresh))
+	c.Add(m, mkAtom("understand", KnowledgeAtom, "understanding.synth.clean", Fresh))
+	c.Add(m, mkAtom("task-floor", ExpansionAtom, "plan.task.floor", Fresh, "assess-floor"))
+	c.Add(m, mkAtom("risk-floor", ReductionAtom, "risk.eval.floor", Fresh))
+	c.Add(m, mkAtom("strat-floor", SelectionAtom, "strategy.synth.floor", Fresh))
 	c.Add(m, mkAtom("exec-floor", ExecutionAtom, "execution.result.floor", Fresh, "task-floor"))
 
 	dirty := mkAtom("floor-dirty-again", AssessmentAtom, "assessment.state.floor", Fresh, "exec-floor")

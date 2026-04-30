@@ -54,12 +54,11 @@ func TestObserve_TriadSealEmitsRecord(t *testing.T) {
 	c := NewReactor(WithPool(pool))
 	m := NewMolecule("observed")
 
-	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.eat", Fresh))
-	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.availability.fridge", Fresh))
+	addReasonAtoms(c, m, "eat")
 
 	found := false
 	for _, r := range pool.Records() {
-		if r.Action == "reactor.react" && r.Labels[labelTriad] == "reason" {
+		if r.Action == "reactor.react" && r.Labels[labelTriad] == "think" {
 			found = true
 		}
 	}
@@ -75,13 +74,13 @@ func TestObserve_UnsealEmitsRecord(t *testing.T) {
 
 	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
 	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.state.dirty", Fresh))
-	c.Add(m, mkAtom("task", PlanAtom, "plan.task.sweep", Fresh))
+	c.Add(m, mkAtom("task", ExpansionAtom, "plan.task.sweep", Fresh))
 
-	c.UnsealTriad(m, PlanTriad)
+	c.UnsealTriad(m, ComposeTriad)
 
 	found := false
 	for _, r := range pool.Records() {
-		if r.Action == "reactor.triad.unseal" && r.Labels[labelTriad] == "plan" {
+		if r.Action == "reactor.triad.unseal" && r.Labels[labelTriad] == "compose" {
 			found = true
 		}
 	}

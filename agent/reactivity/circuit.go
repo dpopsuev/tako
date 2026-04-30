@@ -84,14 +84,14 @@ type Reflection struct{}
 
 func (Reflection) React(m *Molecule, _ Atom) (YieldKind, Yield) {
 	if m.mass[RetrospectionAtom] > 0 {
-		m.SealTriad(RetrospectTriad)
+		m.SealTriad(ReflectTriad)
 		return Pass, Yield{}
 	}
 	return Insufficient, Yield{Result: Insufficient, Message: "need retrospection atoms", Phase: RetrospectionAtom}
 }
 
-// Core composes 3 floor TriadReactors + Retrospect sink.
-// Router (ingress) → Reason → Formation → Action → Reflection (egress).
+// Core composes 3 floor TriadReactors + Reflect egress.
+// Cognize (ingress) → Think → Compose → Action → Reflect (egress).
 type Core struct {
 	floors map[Triad]Reactor
 	sink   Reactor
@@ -120,16 +120,16 @@ func WithSink(r Reactor) ReactorOption {
 func NewReactor(opts ...ReactorOption) *Core {
 	c := &Core{
 		floors: map[Triad]Reactor{
-			ReasonTriad: NewTriadReactor(ReasonTriad,
-				[3]AtomType{IntentAtom, AssessmentAtom, UnderstandingAtom},
-				PlanAtom,
+			ThinkTriad: NewTriadReactor(ThinkTriad,
+				[3]AtomType{IntentAtom, AssessmentAtom, KnowledgeAtom},
+				ExpansionAtom,
 			),
-			PlanTriad: NewTriadReactor(PlanTriad,
-				[3]AtomType{PlanAtom, RiskAtom, StrategyAtom},
+			ComposeTriad: NewTriadReactor(ComposeTriad,
+				[3]AtomType{ExpansionAtom, ReductionAtom, SelectionAtom},
 				ExecutionAtom,
 			),
-			ActTriad: NewTriadReactor(ActTriad,
-				[3]AtomType{ExecutionAtom, ObservationAtom, AdaptationAtom},
+			ActionTriad: NewTriadReactor(ActionTriad,
+				[3]AtomType{ExecutionAtom, AcclimationAtom, RefinementAtom},
 				RetrospectionAtom,
 			),
 		},
@@ -159,7 +159,7 @@ func (c *Core) React(m *Molecule, atom Atom) (YieldKind, Yield) {
 
 	triad := TriadOf(atom.Type)
 	var r Reactor
-	if triad == RetrospectTriad {
+	if triad == ReflectTriad {
 		r = c.sink
 	} else {
 		r = c.floors[triad]

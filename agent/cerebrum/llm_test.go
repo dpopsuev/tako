@@ -63,7 +63,7 @@ func TestThink_RealLLM_Vertex(t *testing.T) {
 	t.Logf("  Total atoms: %d", m.TotalMass())
 	t.Logf("  Intent: %d", m.Mass(reactivity.IntentAtom))
 	t.Logf("  Assessment: %d", m.Mass(reactivity.AssessmentAtom))
-	t.Logf("  Plan: %d", m.Mass(reactivity.PlanAtom))
+	t.Logf("  Plan: %d", m.Mass(reactivity.ExpansionAtom))
 	t.Logf("  Execution: %d", m.Mass(reactivity.ExecutionAtom))
 	t.Logf("  Retrospection: %d", m.Mass(reactivity.RetrospectionAtom))
 

@@ -96,7 +96,7 @@ func matchesDomain(m *reactivity.Molecule, atom reactivity.Atom) bool {
 		return false
 	}
 	for _, phase := range []reactivity.AtomType{
-		reactivity.IntentAtom, reactivity.AssessmentAtom, reactivity.PlanAtom,
+		reactivity.IntentAtom, reactivity.AssessmentAtom, reactivity.ExpansionAtom,
 		reactivity.ExecutionAtom, reactivity.RetrospectionAtom,
 	} {
 		for _, existing := range m.Atoms(phase) {

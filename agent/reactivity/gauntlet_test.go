@@ -13,13 +13,13 @@ func TestGauntlet_DirtyShoes(t *testing.T) {
 	c.Add(m, mkAtom("assess-bed", AssessmentAtom, "assessment.state.bed", Fresh))
 	c.Add(m, mkAtom("assess-floor", AssessmentAtom, "assessment.state.floor", Fresh))
 	c.Add(m, mkAtom("assess-window", AssessmentAtom, "assessment.state.window", Fresh))
-	c.Add(m, mkAtom("understand-clean", UnderstandingAtom, "understanding.synth.clean-room", Fresh))
+	c.Add(m, mkAtom("understand-clean", KnowledgeAtom, "understanding.synth.clean-room", Fresh))
 
-	c.Add(m, mkAtom("plan-bed", PlanAtom, "plan.task.bed", Fresh, "assess-bed"))
-	c.Add(m, mkAtom("plan-floor", PlanAtom, "plan.task.floor", Fresh, "assess-floor"))
-	c.Add(m, mkAtom("plan-window", PlanAtom, "plan.task.window", Fresh, "assess-window"))
-	c.Add(m, mkAtom("risk-clean", RiskAtom, "risk.eval.clean-room", Fresh))
-	c.Add(m, mkAtom("strat-clean", StrategyAtom, "strategy.synth.clean-room", Fresh))
+	c.Add(m, mkAtom("plan-bed", ExpansionAtom, "plan.task.bed", Fresh, "assess-bed"))
+	c.Add(m, mkAtom("plan-floor", ExpansionAtom, "plan.task.floor", Fresh, "assess-floor"))
+	c.Add(m, mkAtom("plan-window", ExpansionAtom, "plan.task.window", Fresh, "assess-window"))
+	c.Add(m, mkAtom("risk-clean", ReductionAtom, "risk.eval.clean-room", Fresh))
+	c.Add(m, mkAtom("strat-clean", SelectionAtom, "strategy.synth.clean-room", Fresh))
 
 	c.Add(m, mkAtom("exec-bed", ExecutionAtom, "execution.result.bed", Fresh, "plan-bed"))
 	c.Add(m, mkAtom("exec-floor", ExecutionAtom, "execution.result.floor", Fresh, "plan-floor"))
@@ -52,13 +52,13 @@ func TestGauntlet_Recollection(t *testing.T) {
 	c1.Add(first, mkAtom("assess-logs", AssessmentAtom, "assessment.state.logs", Fresh))
 	c1.Add(first, mkAtom("assess-commits", AssessmentAtom, "assessment.state.commits", Fresh))
 	c1.Add(first, mkAtom("assess-jira", AssessmentAtom, "assessment.state.jira-match", Fresh))
-	c1.Add(first, mkAtom("understand-rca", UnderstandingAtom, "understanding.synth.rca", Fresh))
-	c1.Add(first, mkAtom("plan-classify", PlanAtom, "plan.task.classify", Fresh))
-	c1.Add(first, mkAtom("risk-classify", RiskAtom, "risk.eval.classify", Fresh))
-	c1.Add(first, mkAtom("strat-classify", StrategyAtom, "strategy.synth.classify", Fresh))
+	c1.Add(first, mkAtom("understand-rca", KnowledgeAtom, "understanding.synth.rca", Fresh))
+	c1.Add(first, mkAtom("plan-classify", ExpansionAtom, "plan.task.classify", Fresh))
+	c1.Add(first, mkAtom("risk-classify", ReductionAtom, "risk.eval.classify", Fresh))
+	c1.Add(first, mkAtom("strat-classify", SelectionAtom, "strategy.synth.classify", Fresh))
 	c1.Add(first, mkAtom("exec-classify", ExecutionAtom, "execution.result.product-bug", Fresh))
-	c1.Add(first, mkAtom("obs-classify", ObservationAtom, "observation.eval.classify", Fresh))
-	c1.Add(first, mkAtom("adapt-classify", AdaptationAtom, "adaptation.synth.classify", Fresh))
+	c1.Add(first, mkAtom("obs-classify", AcclimationAtom, "observation.eval.classify", Fresh))
+	c1.Add(first, mkAtom("adapt-classify", RefinementAtom, "adaptation.synth.classify", Fresh))
 	c1.Add(first, mkAtom("retro-83551", RetrospectionAtom, "retrospection.learning.ocpbugs-83551", Fresh))
 	c1.Seal(first, mkAtom("wish-done", RetrospectionAtom, "retrospection.wish.done", Fresh))
 
@@ -83,13 +83,13 @@ func TestGauntlet_Recollection(t *testing.T) {
 	recollectResult.Source = Recollected
 	c5.Add(fifth, recollectResult)
 
-	c5.Add(fifth, mkAtom("understand-known", UnderstandingAtom, "understanding.synth.known-bug", Fresh))
-	c5.Add(fifth, mkAtom("plan-link", PlanAtom, "plan.task.link-existing-jira", Fresh))
-	c5.Add(fifth, mkAtom("risk-link", RiskAtom, "risk.eval.link", Fresh))
-	c5.Add(fifth, mkAtom("strat-link", StrategyAtom, "strategy.synth.link", Fresh))
+	c5.Add(fifth, mkAtom("understand-known", KnowledgeAtom, "understanding.synth.known-bug", Fresh))
+	c5.Add(fifth, mkAtom("plan-link", ExpansionAtom, "plan.task.link-existing-jira", Fresh))
+	c5.Add(fifth, mkAtom("risk-link", ReductionAtom, "risk.eval.link", Fresh))
+	c5.Add(fifth, mkAtom("strat-link", SelectionAtom, "strategy.synth.link", Fresh))
 	c5.Add(fifth, mkAtom("exec-link", ExecutionAtom, "execution.result.linked", Fresh))
-	c5.Add(fifth, mkAtom("obs-link", ObservationAtom, "observation.eval.linked", Fresh))
-	c5.Add(fifth, mkAtom("adapt-link", AdaptationAtom, "adaptation.synth.linked", Fresh))
+	c5.Add(fifth, mkAtom("obs-link", AcclimationAtom, "observation.eval.linked", Fresh))
+	c5.Add(fifth, mkAtom("adapt-link", RefinementAtom, "adaptation.synth.linked", Fresh))
 	c5.Add(fifth, mkAtom("retro-same", RetrospectionAtom, "retrospection.learning.same-as-before", Fresh))
 
 	if fifth.Phase() != RetrospectionAtom {
@@ -124,7 +124,7 @@ func TestGauntlet_Hungry(t *testing.T) {
 	c.Add(m, mkAtom("assess-rice", AssessmentAtom, "assessment.availability.rice", Fresh))
 	c.Add(m, mkAtom("assess-time", AssessmentAtom, "assessment.state.time-8pm", Fresh))
 
-	if m.Phase() != UnderstandingAtom {
+	if m.Phase() != KnowledgeAtom {
 		t.Fatalf("expected understanding phase after assessments, got %s", m.Phase())
 	}
 
@@ -151,13 +151,13 @@ func TestGauntlet_Hungry(t *testing.T) {
 		t.Fatalf("expected 1 intent.target after human input, got %d", len(targets))
 	}
 
-	c.Add(m, mkAtom("understand-hungry", UnderstandingAtom, "understanding.synth.chicken-rice", Fresh))
-	c.Add(m, mkAtom("plan-cook", PlanAtom, "plan.task.cook-chicken-rice", Fresh))
-	c.Add(m, mkAtom("risk-cook", RiskAtom, "risk.eval.cook", Fresh))
-	c.Add(m, mkAtom("strat-cook", StrategyAtom, "strategy.synth.cook", Fresh))
+	c.Add(m, mkAtom("understand-hungry", KnowledgeAtom, "understanding.synth.chicken-rice", Fresh))
+	c.Add(m, mkAtom("plan-cook", ExpansionAtom, "plan.task.cook-chicken-rice", Fresh))
+	c.Add(m, mkAtom("risk-cook", ReductionAtom, "risk.eval.cook", Fresh))
+	c.Add(m, mkAtom("strat-cook", SelectionAtom, "strategy.synth.cook", Fresh))
 	c.Add(m, mkAtom("exec-cook", ExecutionAtom, "execution.result.cooked", Fresh))
-	c.Add(m, mkAtom("obs-cook", ObservationAtom, "observation.eval.cooked", Fresh))
-	c.Add(m, mkAtom("adapt-cook", AdaptationAtom, "adaptation.synth.cooked", Fresh))
+	c.Add(m, mkAtom("obs-cook", AcclimationAtom, "observation.eval.cooked", Fresh))
+	c.Add(m, mkAtom("adapt-cook", RefinementAtom, "adaptation.synth.cooked", Fresh))
 	c.Add(m, mkAtom("retro-eat", RetrospectionAtom, "retrospection.learning.chicken-rice-good", Fresh))
 
 	if m.Phase() != RetrospectionAtom {

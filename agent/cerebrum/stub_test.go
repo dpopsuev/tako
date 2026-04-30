@@ -29,8 +29,8 @@ type emittingTriadReactor struct{}
 func (emittingTriadReactor) React(m *reactivity.Molecule, atom reactivity.Atom) (reactivity.YieldKind, reactivity.Yield) {
 	m.Emit(reactivity.Emission{Kind: "instrument", Target: "emitted-tool", Payload: atom.Content})
 	if m.Mass(reactivity.AssessmentAtom) > 0 {
-		m.SealTriad(reactivity.ReasonTriad)
-		m.SetPhase(reactivity.PlanAtom)
+		m.SealTriad(reactivity.ThinkTriad)
+		m.SetPhase(reactivity.ExpansionAtom)
 		return reactivity.Pass, reactivity.Yield{}
 	}
 	if m.Phase() == reactivity.IntentAtom && m.Mass(reactivity.IntentAtom) > 0 {

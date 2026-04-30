@@ -24,8 +24,8 @@ func TestExit_WishFromFormation(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("no-path")
 	addReasonAtoms(c, m, "eat")
-	c.Add(m, mkAtom("opt-cook", PlanAtom, "plan.option.cook", Fresh))
-	c.Add(m, mkAtom("risk-burn", RiskAtom, "risk.eval.burn", Fresh))
+	c.Add(m, mkAtom("opt-cook", ExpansionAtom, "plan.option.cook", Fresh))
+	c.Add(m, mkAtom("risk-burn", ReductionAtom, "risk.eval.burn", Fresh))
 
 	c.Seal(m, mkAtom("wish-buy-food", RetrospectionAtom, "retrospection.wish.buy-food", Fresh))
 
@@ -64,7 +64,7 @@ func TestExit_DraftNotSealed(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("draft")
 	addReasonAtoms(c, m, "eat")
-	c.Add(m, mkAtom("plan", PlanAtom, "plan.option.cook", Fresh))
+	c.Add(m, mkAtom("plan", ExpansionAtom, "plan.option.cook", Fresh))
 
 	if m.Sealed() {
 		t.Error("molecule with plan but no wish should not be sealed")
@@ -89,8 +89,8 @@ func TestExit_AbortPreservesPartialWork(t *testing.T) {
 	if m.Mass(ExecutionAtom) != 1 {
 		t.Errorf("should preserve partial execution, got %d", m.Mass(ExecutionAtom))
 	}
-	if m.Mass(StrategyAtom) != 1 {
-		t.Errorf("should preserve strategy from formation, got %d", m.Mass(StrategyAtom))
+	if m.Mass(SelectionAtom) != 1 {
+		t.Errorf("should preserve strategy from formation, got %d", m.Mass(SelectionAtom))
 	}
 }
 
@@ -98,7 +98,7 @@ func TestExit_TerminateRecovery(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("crash")
 	addReasonAtoms(c, m, "clean")
-	c.Add(m, mkAtom("task", PlanAtom, "plan.task.sweep", Fresh))
+	c.Add(m, mkAtom("task", ExpansionAtom, "plan.task.sweep", Fresh))
 
 	if m.Sealed() {
 		t.Error("crashed molecule is NOT sealed (nobody called Seal)")
