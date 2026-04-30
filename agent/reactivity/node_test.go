@@ -183,14 +183,14 @@ func TestNode_Observation_AdvancesToAdaptation(t *testing.T) {
 	}
 }
 
-func TestNode_Adaptation_SealsActionTriad(t *testing.T) {
+func TestNode_Adaptation_SealsImplementTriad(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("test")
 	addReasonAtoms(c, m, "clean")
 	addFormationAtoms(c, m, "clean")
 	addActionAtoms(c, m, "clean")
 
-	if !m.TriadSealed(ActionTriad) {
+	if !m.TriadSealed(ImplementTriad) {
 		t.Error("act triad should seal after adaptation atom")
 	}
 	if m.Phase() != RetrospectionAtom {

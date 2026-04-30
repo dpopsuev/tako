@@ -34,7 +34,7 @@ func TestTriad_PlanSeals(t *testing.T) {
 	if !m.TriadSealed(ComposeTriad) {
 		t.Error("Plan should seal after thesis + antithesis + synthesis")
 	}
-	if m.CurrentTriad() != ActionTriad {
+	if m.CurrentTriad() != ImplementTriad {
 		t.Errorf("should advance to Act triad, got %s", m.CurrentTriad())
 	}
 }
@@ -49,7 +49,7 @@ func TestTriad_ActSeals(t *testing.T) {
 	c.Add(m, mkAtom("saw", AcclimationAtom, "observation.eval.swept", Fresh))
 	c.Add(m, mkAtom("adjusted", RefinementAtom, "adaptation.synth.swept", Fresh))
 
-	if !m.TriadSealed(ActionTriad) {
+	if !m.TriadSealed(ImplementTriad) {
 		t.Error("Act should seal after thesis + antithesis + synthesis")
 	}
 
@@ -74,9 +74,9 @@ func TestTriad_TriadOfMapping(t *testing.T) {
 		{ExpansionAtom, ComposeTriad},
 		{ReductionAtom, ComposeTriad},
 		{SelectionAtom, ComposeTriad},
-		{ExecutionAtom, ActionTriad},
-		{AcclimationAtom, ActionTriad},
-		{RefinementAtom, ActionTriad},
+		{ExecutionAtom, ImplementTriad},
+		{AcclimationAtom, ImplementTriad},
+		{RefinementAtom, ImplementTriad},
 		{RetrospectionAtom, ReflectTriad},
 	}
 	for _, tt := range tests {

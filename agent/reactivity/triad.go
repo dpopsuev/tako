@@ -1,12 +1,12 @@
 package reactivity
 
-// Triad groups nodes into Think, Compose, Action.
+// Triad groups nodes into Think, Compose, Implement.
 type Triad int
 
 const (
 	ThinkTriad   Triad = iota
 	ComposeTriad
-	ActionTriad
+	ImplementTriad
 	ReflectTriad
 )
 
@@ -16,8 +16,8 @@ func (t Triad) String() string {
 		return "think"
 	case ComposeTriad:
 		return "compose"
-	case ActionTriad:
-		return "action"
+	case ImplementTriad:
+		return "implement"
 	case ReflectTriad:
 		return "reflect"
 	default:
@@ -42,7 +42,7 @@ func TriadOf(t AtomType) Triad {
 	case SelectionAtom, ExpansionAtom, ReductionAtom:
 		return ComposeTriad
 	case RefinementAtom, ExecutionAtom, AcclimationAtom:
-		return ActionTriad
+		return ImplementTriad
 	case RetrospectionAtom:
 		return ReflectTriad
 	default:
@@ -57,7 +57,7 @@ func TriadNodes(t Triad) []AtomType {
 		return []AtomType{KnowledgeAtom, IntentAtom, AssessmentAtom}
 	case ComposeTriad:
 		return []AtomType{SelectionAtom, ExpansionAtom, ReductionAtom}
-	case ActionTriad:
+	case ImplementTriad:
 		return []AtomType{RefinementAtom, ExecutionAtom, AcclimationAtom}
 	case ReflectTriad:
 		return []AtomType{RetrospectionAtom}

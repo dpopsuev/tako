@@ -23,7 +23,7 @@ func TestCascade_UnsealPlanDoesNotUnsealReason(t *testing.T) {
 	if m.TriadSealed(ComposeTriad) {
 		t.Error("Plan should be unsealed")
 	}
-	if m.TriadSealed(ActionTriad) {
+	if m.TriadSealed(ImplementTriad) {
 		t.Error("Act should be unsealed (cascade down from Plan)")
 	}
 }
@@ -45,7 +45,7 @@ func TestCascade_UnsealReasonCascadesAll(t *testing.T) {
 	if m.TriadSealed(ComposeTriad) {
 		t.Error("Plan should be unsealed (cascade from Reason)")
 	}
-	if m.TriadSealed(ActionTriad) {
+	if m.TriadSealed(ImplementTriad) {
 		t.Error("Act should be unsealed (cascade from Reason)")
 	}
 }
@@ -55,7 +55,7 @@ func TestCascade_UnsealActOnlyAffectsAct(t *testing.T) {
 	m := NewMolecule("test")
 	addFullChain(c, m, "clean")
 
-	c.UnsealTriad(m, ActionTriad)
+	c.UnsealTriad(m, ImplementTriad)
 
 	if !m.TriadSealed(ThinkTriad) {
 		t.Error("Reason should stay sealed")
@@ -63,7 +63,7 @@ func TestCascade_UnsealActOnlyAffectsAct(t *testing.T) {
 	if !m.TriadSealed(ComposeTriad) {
 		t.Error("Plan should stay sealed")
 	}
-	if m.TriadSealed(ActionTriad) {
+	if m.TriadSealed(ImplementTriad) {
 		t.Error("Act should be unsealed")
 	}
 }
@@ -79,7 +79,7 @@ func TestCascade_RetrospectOrthogonal(t *testing.T) {
 
 	c.UnsealTriad(m, ThinkTriad)
 
-	if m.TriadSealed(ThinkTriad) || m.TriadSealed(ComposeTriad) || m.TriadSealed(ActionTriad) {
+	if m.TriadSealed(ThinkTriad) || m.TriadSealed(ComposeTriad) || m.TriadSealed(ImplementTriad) {
 		t.Error("Reason/Plan/Act should be unsealed by cascade")
 	}
 	if !m.TriadSealed(ReflectTriad) {

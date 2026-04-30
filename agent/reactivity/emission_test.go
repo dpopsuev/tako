@@ -42,7 +42,7 @@ func TestMolecule_Emit_EmptyByDefault(t *testing.T) {
 
 func TestReactor_React_CanEmit(t *testing.T) {
 	emitting := &emittingReactor{}
-	c := NewReactor(WithTriad(ActionTriad, emitting))
+	c := NewReactor(WithTriad(ImplementTriad, emitting))
 
 	m := NewMolecule("reactor-emit")
 	addReasonAtoms(c, m, "test")
@@ -63,7 +63,7 @@ type emittingReactor struct{}
 func (emittingReactor) React(m *Molecule, atom Atom) (YieldKind, Yield) {
 	m.Emit(Emission{Kind: "instrument", Target: "test-tool", Payload: atom.Content})
 	if m.mass[RefinementAtom] > 0 {
-		m.SealTriad(ActionTriad)
+		m.SealTriad(ImplementTriad)
 		m.SetPhase(RetrospectionAtom)
 		return Pass, Yield{}
 	}

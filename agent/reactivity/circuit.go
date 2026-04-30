@@ -94,7 +94,7 @@ func (Reflection) React(m *Molecule, _ Atom) (YieldKind, Yield) {
 }
 
 // Core composes 3 floor TriadReactors + Reflect egress.
-// Cognize (ingress) → Think → Compose → Action → Reflect (egress).
+// Cognize (ingress) → Think → Compose → Implement → Reflect (egress).
 type Core struct {
 	floors map[Triad]Reactor
 	sink   Reactor
@@ -139,7 +139,7 @@ func NewReactor(opts ...ReactorOption) *Core {
 				[3]AtomType{ExpansionAtom, ReductionAtom, SelectionAtom},
 				ExecutionAtom,
 			),
-			ActionTriad: NewTriadReactor(ActionTriad,
+			ImplementTriad: NewTriadReactor(ImplementTriad,
 				[3]AtomType{ExecutionAtom, AcclimationAtom, RefinementAtom},
 				RetrospectionAtom,
 			),
