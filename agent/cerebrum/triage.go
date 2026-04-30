@@ -96,8 +96,10 @@ func matchesDomain(m *reactivity.Molecule, atom reactivity.Atom) bool {
 		return false
 	}
 	for _, phase := range []reactivity.AtomType{
-		reactivity.IntentAtom, reactivity.AssessmentAtom, reactivity.ExpansionAtom,
-		reactivity.ExecutionAtom, reactivity.RetrospectionAtom,
+		reactivity.IntentAtom, reactivity.AssessmentAtom, reactivity.KnowledgeAtom,
+		reactivity.ExpansionAtom, reactivity.ReductionAtom, reactivity.SelectionAtom,
+		reactivity.ExecutionAtom, reactivity.AcclimationAtom, reactivity.RefinementAtom,
+		reactivity.RetrospectionAtom,
 	} {
 		for _, existing := range m.Atoms(phase) {
 			if taxonomyDomain(existing.Taxonomy) == domain {

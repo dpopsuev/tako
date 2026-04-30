@@ -74,10 +74,20 @@ func parseAtomType(s string, fallback reactivity.AtomType) reactivity.AtomType {
 		return reactivity.IntentAtom
 	case "assessment":
 		return reactivity.AssessmentAtom
-	case "plan":
+	case "knowledge":
+		return reactivity.KnowledgeAtom
+	case "expansion":
 		return reactivity.ExpansionAtom
+	case "reduction":
+		return reactivity.ReductionAtom
+	case "selection":
+		return reactivity.SelectionAtom
 	case "execution":
 		return reactivity.ExecutionAtom
+	case "acclimation":
+		return reactivity.AcclimationAtom
+	case "refinement":
+		return reactivity.RefinementAtom
 	case "retrospection":
 		return reactivity.RetrospectionAtom
 	default:

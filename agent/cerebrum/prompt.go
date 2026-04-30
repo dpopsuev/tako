@@ -41,11 +41,16 @@ var compiledTemplate = template.Must(
 )
 
 var phaseGuides = map[reactivity.AtomType]string{
-	reactivity.IntentAtom:        "Determine what needs to be done. Identify the goal, constraints, and desired outcome.",
-	reactivity.AssessmentAtom:    "Assess the situation. What do you know? What don't you know? What resources are available?",
-	reactivity.ExpansionAtom:          "Create a plan. What steps are needed? In what order? What could go wrong?",
-	reactivity.ExecutionAtom:     "Execute the plan. Use tool_call to invoke instruments. Report results.",
-	reactivity.RetrospectionAtom: "Reflect on what happened. What worked? What didn't? What would you do differently?",
+	reactivity.IntentAtom:       "Determine what needs to be done. Identify the goal, constraints, and desired outcome.",
+	reactivity.AssessmentAtom:   "Assess the situation. What do you know? What don't you know? What resources are available?",
+	reactivity.KnowledgeAtom:    "Recall what you already know about this domain. If nothing, consolidate understanding from intent and assessment.",
+	reactivity.ExpansionAtom:    "Expand all possible approaches. What are the options? Brainstorm without filtering.",
+	reactivity.ReductionAtom:    "Reduce by identifying risks and problems for each approach. What could go wrong?",
+	reactivity.SelectionAtom:    "Select the best approach based on ROI. Produce a plan graph.",
+	reactivity.ExecutionAtom:    "Execute the plan. Use tool_call to invoke instruments. Report results.",
+	reactivity.AcclimationAtom:  "Step back. Did we make the right decision? Is the result what we expected?",
+	reactivity.RefinementAtom:   "Refine the approach based on observation. What adjustments improve the outcome?",
+	reactivity.RetrospectionAtom: "Reflect on the full cycle. What worked? What didn't? What stabilizers carry forward?",
 }
 
 func buildPrompt(m *reactivity.Molecule, need []byte, domain Domain) string {
@@ -61,8 +66,10 @@ func buildPrompt(m *reactivity.Molecule, need []byte, domain Domain) string {
 
 	ctx.Atoms = make(map[string]int)
 	for _, at := range []reactivity.AtomType{
-		reactivity.IntentAtom, reactivity.AssessmentAtom, reactivity.ExpansionAtom,
-		reactivity.ExecutionAtom, reactivity.RetrospectionAtom,
+		reactivity.IntentAtom, reactivity.AssessmentAtom, reactivity.KnowledgeAtom,
+		reactivity.ExpansionAtom, reactivity.ReductionAtom, reactivity.SelectionAtom,
+		reactivity.ExecutionAtom, reactivity.AcclimationAtom, reactivity.RefinementAtom,
+		reactivity.RetrospectionAtom,
 	} {
 		if mass := m.Mass(at); mass > 0 {
 			ctx.Atoms[at.String()] = mass
