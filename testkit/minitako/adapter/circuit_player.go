@@ -35,23 +35,20 @@ func (p *ReactorPlayer) Act(state minitako.GameState) minitako.Action {
 }
 
 func extractAction(m *reactivity.Molecule, state *minitako.GameState) minitako.Action {
-	for _, a := range m.Atoms(reactivity.ExecutionAtom) {
-		content := strings.ToLower(string(a.Content))
-		for _, action := range minitako.AvailableActions(state) {
-			if strings.Contains(content, action.String()) {
-				return action
+	for _, phase := range []reactivity.AtomType{
+		reactivity.ExecutionAtom,
+		reactivity.SelectionAtom,
+		reactivity.ExpansionAtom,
+		reactivity.RefinementAtom,
+	} {
+		for _, a := range m.Atoms(phase) {
+			content := strings.ToLower(string(a.Content))
+			for _, action := range minitako.AvailableActions(state) {
+				if strings.Contains(content, action.String()) {
+					return action
+				}
 			}
 		}
 	}
-
-	for _, a := range m.Atoms(reactivity.ExpansionAtom) {
-		content := strings.ToLower(string(a.Content))
-		for _, action := range minitako.AvailableActions(state) {
-			if strings.Contains(content, action.String()) {
-				return action
-			}
-		}
-	}
-
 	return minitako.Feed
 }
