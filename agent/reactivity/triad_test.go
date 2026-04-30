@@ -48,13 +48,18 @@ func TestTriad_ActSeals(t *testing.T) {
 	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.state.dirty", Fresh))
 	c.Add(m, mkAtom("task", PlanAtom, "plan.task.sweep", Fresh))
 	c.Add(m, mkAtom("done", ExecutionAtom, "execution.result.swept", Fresh))
-	c.Add(m, mkAtom("learning", RetrospectionAtom, "retrospection.learning.done", Fresh))
 
 	if !m.TriadSealed(ActTriad) {
-		t.Error("Act should seal after Execution + Retrospection")
+		t.Error("Act should seal after Execution")
+	}
+
+	c.Add(m, mkAtom("learning", RetrospectionAtom, "retrospection.learning.done", Fresh))
+
+	if !m.TriadSealed(RetrospectTriad) {
+		t.Error("Retrospect should seal after Retrospection atom")
 	}
 	if !m.AllTriadsSealed() {
-		t.Error("all triads should be sealed after full chain")
+		t.Error("all 4 triads should be sealed after full chain")
 	}
 }
 
@@ -67,7 +72,7 @@ func TestTriad_TriadOfMapping(t *testing.T) {
 		{AssessmentAtom, ReasonTriad},
 		{PlanAtom, PlanTriad},
 		{ExecutionAtom, ActTriad},
-		{RetrospectionAtom, ActTriad},
+		{RetrospectionAtom, RetrospectTriad},
 	}
 	for _, tt := range tests {
 		got := TriadOf(tt.atomType)

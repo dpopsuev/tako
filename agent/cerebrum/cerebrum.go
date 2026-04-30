@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/dpopsuev/tako/agent/organ"
 	"github.com/dpopsuev/tako/agent/reactivity"
+	"github.com/dpopsuev/tako/artifact"
 	troupe "github.com/dpopsuev/tangle"
 )
 
@@ -22,6 +24,7 @@ type Cerebrum struct {
 	promptBuilder PromptBuilder
 	parser        ResponseParser
 
+	store    *MoleculeStore
 	molecule *reactivity.Molecule
 }
 
@@ -33,11 +36,20 @@ func New(reactor *reactivity.Reactor, completer troupe.Completer, opts ...Option
 		classifier:    DefaultClassifier,
 		promptBuilder: DefaultPromptBuilder,
 		parser:        DefaultParser,
+		store:         NewMoleculeStore(),
 	}
 	for _, opt := range opts {
 		opt(cb)
 	}
 	return cb
+}
+
+var _ organ.Organ = (*Cerebrum)(nil)
+
+func (cb *Cerebrum) Name() organ.OrganName { return organ.CerebrumOrgan }
+
+func (cb *Cerebrum) Receive(wire artifact.Wire) error {
+	return cb.Think(context.Background(), wire.Payload)
 }
 
 func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
@@ -53,8 +65,13 @@ func (cb *Cerebrum) Result() *reactivity.Molecule {
 	return cb.molecule
 }
 
+func (cb *Cerebrum) Store() *MoleculeStore {
+	return cb.store
+}
+
 func (cb *Cerebrum) think(ctx context.Context, need []byte) (*reactivity.Molecule, error) {
-	m := reactivity.NewMolecule(fmt.Sprintf("mol-%d", time.Now().UnixNano()))
+	molID := fmt.Sprintf("mol-%d", time.Now().UnixNano())
+	m := cb.store.Focus(molID)
 
 	toolBudget := 10
 
@@ -129,5 +146,6 @@ func (cb *Cerebrum) think(ctx context.Context, need []byte) (*reactivity.Molecul
 		})
 	}
 
+	cb.store.Park()
 	return m, nil
 }

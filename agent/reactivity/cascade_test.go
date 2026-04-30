@@ -77,6 +77,29 @@ func TestCascade_UnsealActOnlyAffectsAct(t *testing.T) {
 	}
 }
 
+func TestCascade_RetrospectOrthogonal(t *testing.T) {
+	c := NewReactor()
+	m := NewMolecule("test")
+	c.Add(m, mkAtom("desire", IntentAtom, "intent.desire.clean", Fresh))
+	c.Add(m, mkAtom("finding", AssessmentAtom, "assessment.state.dirty", Fresh))
+	c.Add(m, mkAtom("task", PlanAtom, "plan.task.sweep", Fresh))
+	c.Add(m, mkAtom("done", ExecutionAtom, "execution.result.swept", Fresh))
+	c.Add(m, mkAtom("retro", RetrospectionAtom, "retrospection.learning.done", Fresh))
+
+	if !m.AllTriadsSealed() {
+		t.Fatal("all 4 triads should be sealed")
+	}
+
+	c.UnsealTriad(m, ReasonTriad)
+
+	if m.TriadSealed(ReasonTriad) || m.TriadSealed(PlanTriad) || m.TriadSealed(ActTriad) {
+		t.Error("Reason/Plan/Act should be unsealed by cascade")
+	}
+	if !m.TriadSealed(RetrospectTriad) {
+		t.Error("Retrospect should remain sealed — orthogonal to cascade")
+	}
+}
+
 func TestCascade_AdaptNeverUnsealsReason(t *testing.T) {
 	c := NewReactor()
 	m := NewMolecule("test")

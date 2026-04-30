@@ -6,10 +6,11 @@ import "github.com/dpopsuev/tako/artifact"
 type OrganName string
 
 const (
-	Dialog      OrganName = "dialog"
-	Kanban      OrganName = "kanban"
-	Andon       OrganName = "andon"
-	Workstation OrganName = "workstation"
+	CerebrumOrgan OrganName = "cerebrum"
+	Dialog        OrganName = "dialog"
+	Kanban        OrganName = "kanban"
+	Andon         OrganName = "andon"
+	Workstation   OrganName = "workstation"
 )
 
 // Organ is a functional part attached to an agent's Corpus.

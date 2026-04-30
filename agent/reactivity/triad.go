@@ -4,9 +4,10 @@ package reactivity
 type Triad int
 
 const (
-	ReasonTriad Triad = iota
+	ReasonTriad    Triad = iota
 	PlanTriad
 	ActTriad
+	RetrospectTriad
 )
 
 func (t Triad) String() string {
@@ -17,6 +18,8 @@ func (t Triad) String() string {
 		return "plan"
 	case ActTriad:
 		return "act"
+	case RetrospectTriad:
+		return "retrospect"
 	default:
 		return "unknown"
 	}
@@ -29,8 +32,10 @@ func TriadOf(t AtomType) Triad {
 		return ReasonTriad
 	case PlanAtom:
 		return PlanTriad
-	case ExecutionAtom, RetrospectionAtom:
+	case ExecutionAtom:
 		return ActTriad
+	case RetrospectionAtom:
+		return RetrospectTriad
 	default:
 		return ReasonTriad
 	}
@@ -44,7 +49,9 @@ func TriadNodes(t Triad) []AtomType {
 	case PlanTriad:
 		return []AtomType{PlanAtom}
 	case ActTriad:
-		return []AtomType{ExecutionAtom, RetrospectionAtom}
+		return []AtomType{ExecutionAtom}
+	case RetrospectTriad:
+		return []AtomType{RetrospectionAtom}
 	default:
 		return nil
 	}

@@ -60,7 +60,9 @@ func (c *Reactor) Add(m *Molecule, atom Atom) (AssertResult, Fortune) {
 		m.taxonomy[atom.Taxonomy] = append(m.taxonomy[atom.Taxonomy], atom.ID)
 	}
 
-	m.edges[atom.ID] = append(m.edges[atom.ID], atom.Targets...)
+	for _, target := range atom.Targets {
+		m.AddEdge(atom.ID, target, Reference)
+	}
 
 	result, fortune := c.assertPhase(m)
 	if result == Pass {
@@ -190,9 +192,14 @@ func (c *Reactor) advancePhase(m *Molecule) {
 		c.span("circuit.triad.seal")
 		m.phase = ExecutionAtom
 	case ExecutionAtom:
+		m.triadSealed[ActTriad] = true
+		c.record("circuit.triad.seal", map[string]string{labelTriad: ActTriad.String()})
+		c.span("circuit.triad.seal")
 		m.phase = RetrospectionAtom
 	case RetrospectionAtom:
-		m.triadSealed[ActTriad] = true
+		m.triadSealed[RetrospectTriad] = true
+		c.record("circuit.triad.seal", map[string]string{labelTriad: RetrospectTriad.String()})
+		c.span("circuit.triad.seal")
 	}
 }
 

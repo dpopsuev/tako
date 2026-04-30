@@ -5,7 +5,28 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
+	"github.com/dpopsuev/tako/artifact"
 )
+
+func TestCerebrum_IsOrgan(t *testing.T) {
+	completer := &stubCompleter{response: "done"}
+	reactor := reactivity.NewReactor()
+	cb := New(reactor, completer)
+
+	if cb.Name() != "cerebrum" {
+		t.Errorf("expected organ name 'cerebrum', got %q", cb.Name())
+	}
+
+	wire := artifact.Wire{Kind: "cerebrum", Payload: []byte("test need")}
+	if err := cb.Receive(wire); err != nil {
+		t.Fatalf("Receive: %v", err)
+	}
+
+	m := cb.Result()
+	if !m.Sealed() {
+		t.Error("Molecule should be sealed after Receive")
+	}
+}
 
 func TestThink_FullLoop(t *testing.T) {
 	completer := &stubCompleter{response: "response"}
@@ -112,6 +133,25 @@ func TestThink_BackwardCompatible(t *testing.T) {
 	m := cb.Result()
 	if !m.Sealed() {
 		t.Error("should seal")
+	}
+}
+
+func TestThink_StoreIntegration(t *testing.T) {
+	completer := &stubCompleter{response: "done"}
+	reactor := reactivity.NewReactor()
+	cb := New(reactor, completer)
+
+	cb.Think(context.Background(), []byte("first need"))
+	cb.Think(context.Background(), []byte("second need"))
+
+	store := cb.Store()
+	molecules := store.Molecules()
+	if len(molecules) != 2 {
+		t.Errorf("expected 2 molecules in store, got %d", len(molecules))
+	}
+
+	if store.FocusedID() != "" {
+		t.Error("no molecule should be focused after Think completes (parked)")
 	}
 }
 

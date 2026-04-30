@@ -1,7 +1,6 @@
 package corpus
 
 import (
-	"context"
 	"errors"
 	"sync"
 
@@ -14,36 +13,21 @@ var (
 	ErrNotAssembled  = errors.New("corpus: not assembled")
 )
 
-// Cerebrum is the agent's mind — thinking, memory, LLM access.
-type Cerebrum interface {
-	Think(ctx context.Context, need []byte) error
-}
-
-// Corpus is the composition root — wires Cerebrum (mind) and Organs (body).
+// Corpus is the composition root — wires Organs (body + mind).
+// Cerebrum IS an Organ — same interface, attached via Attach().
 // Tangled builds the Corpus. Agent never self-assembles. SOLID DIP.
 type Corpus struct {
-	mu       sync.RWMutex
-	cerebrum Cerebrum
-	organs   map[organ.OrganName]organ.Organ
+	mu            sync.RWMutex
+	organs        map[organ.OrganName]organ.Organ
+	subscriptions map[string][]organ.OrganName
 }
 
 // New creates an empty Corpus. Cerebrum and Organs attached via setters.
 func New() *Corpus {
-	return &Corpus{organs: make(map[organ.OrganName]organ.Organ)}
-}
-
-// SetCerebrum attaches the mind.
-func (c *Corpus) SetCerebrum(cerebrum Cerebrum) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.cerebrum = cerebrum
-}
-
-// Cerebrum returns the mind.
-func (c *Corpus) GetCerebrum() Cerebrum {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return c.cerebrum
+	return &Corpus{
+		organs:        make(map[organ.OrganName]organ.Organ),
+		subscriptions: make(map[string][]organ.OrganName),
+	}
 }
 
 // Attach adds an Organ to the Corpus.
@@ -75,10 +59,32 @@ func (c *Corpus) Organs() []organ.OrganName {
 	return out
 }
 
-// Route dispatches a Wire to the Organ matching Wire.Kind.
+// Subscribe registers an Organ to receive Wires of a given kind.
+func (c *Corpus) Subscribe(kind string, name organ.OrganName) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.subscriptions[kind] = append(c.subscriptions[kind], name)
+}
+
+// Route dispatches a Wire to all Organs subscribed to Wire.Kind.
+// Falls back to OrganName matching if no subscriptions exist.
 func (c *Corpus) Route(wire artifact.Wire) error {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
+
+	subs := c.subscriptions[wire.Kind]
+	if len(subs) > 0 {
+		var firstErr error
+		for _, name := range subs {
+			if o, ok := c.organs[name]; ok {
+				if err := o.Receive(wire); err != nil && firstErr == nil {
+					firstErr = err
+				}
+			}
+		}
+		return firstErr
+	}
+
 	o, ok := c.organs[organ.OrganName(wire.Kind)]
 	if !ok {
 		return ErrOrganNotFound

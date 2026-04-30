@@ -7,7 +7,8 @@ import "time"
 type Molecule struct {
 	ID          string
 	atoms       map[string]*Atom
-	edges       map[string][]string
+	edges       []Edge
+	edgeIndex   map[string][]int
 	subgraphs   map[AtomType][]string
 	taxonomy    map[string][]string
 	mass        map[AtomType]int
@@ -24,7 +25,7 @@ func NewMolecule(id string) *Molecule {
 	return &Molecule{
 		ID:          id,
 		atoms:       make(map[string]*Atom),
-		edges:       make(map[string][]string),
+		edgeIndex:   make(map[string][]int),
 		subgraphs:   make(map[AtomType][]string),
 		taxonomy:    make(map[string][]string),
 		mass:        make(map[AtomType]int),
@@ -44,7 +45,8 @@ func (m *Molecule) TriadSealed(t Triad) bool    { return m.triadSealed[t] }
 func (m *Molecule) UnsealCount() int            { return m.unsealCount }
 
 func (m *Molecule) AllTriadsSealed() bool {
-	return m.triadSealed[ReasonTriad] && m.triadSealed[PlanTriad] && m.triadSealed[ActTriad]
+	return m.triadSealed[ReasonTriad] && m.triadSealed[PlanTriad] &&
+		m.triadSealed[ActTriad] && m.triadSealed[RetrospectTriad]
 }
 
 func (m *Molecule) TotalMass() int {
@@ -85,6 +87,40 @@ func (m *Molecule) ByTaxonomy(prefix string) []*Atom {
 	return out
 }
 
+func (m *Molecule) AddEdge(from, to string, kind EdgeKind) {
+	idx := len(m.edges)
+	m.edges = append(m.edges, Edge{From: from, To: to, Kind: kind})
+	m.edgeIndex[from] = append(m.edgeIndex[from], idx)
+}
+
 func (m *Molecule) EdgesFrom(atomID string) []string {
-	return m.edges[atomID]
+	indices := m.edgeIndex[atomID]
+	out := make([]string, 0, len(indices))
+	for _, i := range indices {
+		out = append(out, m.edges[i].To)
+	}
+	return out
+}
+
+func (m *Molecule) TypedEdgesFrom(atomID string) []Edge {
+	indices := m.edgeIndex[atomID]
+	out := make([]Edge, 0, len(indices))
+	for _, i := range indices {
+		out = append(out, m.edges[i])
+	}
+	return out
+}
+
+func (m *Molecule) Edges() []Edge {
+	return append([]Edge(nil), m.edges...)
+}
+
+func (m *Molecule) EdgesByKind(kind EdgeKind) []Edge {
+	var out []Edge
+	for _, e := range m.edges {
+		if e.Kind == kind {
+			out = append(out, e)
+		}
+	}
+	return out
 }
