@@ -43,7 +43,7 @@ var compiledTemplate = template.Must(
 var phaseGuides = map[reactivity.AtomType]string{
 	reactivity.IntentAtom:       "Determine what needs to be done. Identify the goal, constraints, and desired outcome.",
 	reactivity.AssessmentAtom:   "Assess the situation. What do you know? What don't you know? What resources are available?",
-	reactivity.KnowledgeAtom:    "Recall what you already know about this domain. If nothing, consolidate understanding from intent and assessment.",
+	reactivity.KnowledgeAtom:    "", // deterministic: Recall (cache hit → mix intent+assessment+recalled) or Spill (cache miss → mix intent+assessment as-is)
 	reactivity.ExpansionAtom:    "Expand all possible approaches. What are the options? Brainstorm without filtering.",
 	reactivity.ReductionAtom:    "Reduce by identifying risks and problems for each approach. What could go wrong?",
 	reactivity.SelectionAtom:    "Select the best approach based on ROI. Produce a plan graph.",
