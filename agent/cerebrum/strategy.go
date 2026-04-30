@@ -64,10 +64,10 @@ var (
 	DefaultRecollector   Recollector   = RecollectorFunc(recollect)
 	DefaultDispatcher    Dispatcher    = DispatcherFunc(dispatch)
 
-	NaivePromptBuilder PromptBuilder = PromptBuilderFunc(naivePrompt)
-	NullRecollector    Recollector   = RecollectorFunc(func(_ memory.Mesh, _ []byte) []reactivity.Atom { return nil })
-	RawParser          ResponseParser = ResponseParserFunc(rawParse)
-	FixedClassifier    Classifier    = ClassifierFunc(func(_ *reactivity.Molecule) Domain { return Complicated })
+	BasicPromptBuilder PromptBuilder = PromptBuilderFunc(naivePrompt)
+	NoRecollection     Recollector   = RecollectorFunc(func(_ memory.Mesh, _ []byte) []reactivity.Atom { return nil })
+	PlainTextParser    ResponseParser = ResponseParserFunc(rawParse)
+	StaticClassifier   Classifier    = ClassifierFunc(func(_ *reactivity.Molecule) Domain { return Complicated })
 )
 
 func naivePrompt(m *reactivity.Molecule, need []byte, _ Domain, _ instrument.Shell, _ []reactivity.Atom) string {
