@@ -15,6 +15,9 @@ type Reactor interface {
 	React(m *Molecule, atom Atom) (YieldKind, Yield)
 }
 
+// Directive is a tuning prompt attached to a Reactor node.
+type Directive string
+
 // Damper passes the atom through without processing. Ablation baseline (control rod).
 type Damper struct{}
 
@@ -93,10 +96,11 @@ func (Reflection) React(m *Molecule, _ Atom) (YieldKind, Yield) {
 // Core composes 3 floor TriadReactors + Reflect egress.
 // Cognize (ingress) → Think → Compose → Action → Reflect (egress).
 type Core struct {
-	floors map[Triad]Reactor
-	sink   Reactor
-	pool   ergograph.Pool
-	tracer trace.Tracer
+	floors     map[Triad]Reactor
+	sink       Reactor
+	directives map[AtomType][]Directive
+	pool       ergograph.Pool
+	tracer     trace.Tracer
 }
 
 type ReactorOption func(*Core)
@@ -117,8 +121,15 @@ func WithSink(r Reactor) ReactorOption {
 	return func(c *Core) { c.sink = r }
 }
 
+func WithDirective(phase AtomType, directive Directive) ReactorOption {
+	return func(c *Core) {
+		c.directives[phase] = append(c.directives[phase], directive)
+	}
+}
+
 func NewReactor(opts ...ReactorOption) *Core {
 	c := &Core{
+		directives: make(map[AtomType][]Directive),
 		floors: map[Triad]Reactor{
 			ThinkTriad: NewTriadReactor(ThinkTriad,
 				[3]AtomType{IntentAtom, AssessmentAtom, KnowledgeAtom},
@@ -141,7 +152,11 @@ func NewReactor(opts ...ReactorOption) *Core {
 	return c
 }
 
-// React is the Router — ingress node of Core. Routes atom to the right floor or sink.
+func (c *Core) Directives(phase AtomType) []Directive {
+	return c.directives[phase]
+}
+
+// React is the Cognizer — ingress node of Core. Routes atom to the right floor or sink.
 func (c *Core) React(m *Molecule, atom Atom) (YieldKind, Yield) {
 	if m.sealed {
 		return Unresolvable, Yield{Result: Unresolvable, Message: "molecule is sealed"}

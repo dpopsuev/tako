@@ -77,7 +77,11 @@ func (cb *Cerebrum) think(ctx context.Context, need []byte) (*reactivity.Molecul
 
 	for turn := 0; turn < cb.maxTurns && !m.Sealed(); turn++ {
 		domain := cb.classifier.Classify(m)
+		directives := cb.reactor.Directives(m.Phase())
 		prompt := cb.promptBuilder.Build(m, need, domain)
+		for _, d := range directives {
+			prompt += "\n> " + string(d)
+		}
 
 		response, err := cb.completer.Complete(ctx, prompt)
 		if err != nil {
