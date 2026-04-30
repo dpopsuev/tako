@@ -152,6 +152,10 @@ func NewReactor(opts ...ReactorOption) *Core {
 	return c
 }
 
+func (c *Core) AddDirective(phase AtomType, directive Directive) {
+	c.directives[phase] = append(c.directives[phase], directive)
+}
+
 func (c *Core) Directives(phase AtomType) []Directive {
 	return c.directives[phase]
 }

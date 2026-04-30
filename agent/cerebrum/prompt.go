@@ -9,18 +9,15 @@ import (
 )
 
 type PromptContext struct {
-	Phase      string
-	PhaseGuide string
-	Domain     string
-	Need       string
-	Atoms      map[string]int
-	TotalMass  int
+	Phase     string
+	Domain    string
+	Need      string
+	Atoms     map[string]int
+	TotalMass int
 }
 
 const promptTemplate = `# Phase: {{.Phase}}
 Domain: {{.Domain}}
-
-{{.PhaseGuide}}
 
 ## Need
 {{.Need}}
@@ -40,25 +37,11 @@ var compiledTemplate = template.Must(
 	template.New("prompt").Option("missingkey=zero").Parse(promptTemplate),
 )
 
-var phaseGuides = map[reactivity.AtomType]string{
-	reactivity.IntentAtom:       "Determine what needs to be done. Identify the goal, constraints, and desired outcome.",
-	reactivity.AssessmentAtom:   "Assess the situation. What do you know? What don't you know? What resources are available?",
-	reactivity.KnowledgeAtom:    "", // deterministic: Recall (cache hit → mix intent+assessment+recalled) or Spill (cache miss → mix intent+assessment as-is)
-	reactivity.ExpansionAtom:    "Expand all possible approaches. What are the options? Brainstorm without filtering.",
-	reactivity.ReductionAtom:    "Reduce by identifying risks and problems for each approach. What could go wrong?",
-	reactivity.SelectionAtom:    "Select the best approach based on ROI. Produce a plan graph.",
-	reactivity.ExecutionAtom:    "Execute the plan. Use tool_call to invoke instruments. Report results.",
-	reactivity.AcclimationAtom:  "Step back. Did we make the right decision? Is the result what we expected?",
-	reactivity.RefinementAtom:   "Refine the approach based on observation. What adjustments improve the outcome?",
-	reactivity.RetrospectionAtom: "Reflect on the full cycle. What worked? What didn't? What stabilizers carry forward?",
-}
-
 func buildPrompt(m *reactivity.Molecule, need []byte, domain Domain) string {
 	phase := m.Phase()
 
 	ctx := PromptContext{
 		Phase:     phase.String(),
-		PhaseGuide: phaseGuides[phase],
 		Domain:    domain.String(),
 		Need:      string(need),
 		TotalMass: m.TotalMass(),
