@@ -26,7 +26,7 @@ func TestObserve_AddEmitsRecordAndSpan(t *testing.T) {
 	recs := pool.Records()
 	found := false
 	for _, r := range recs {
-		if r.Action == "circuit.add" {
+		if r.Action == "reactor.react" {
 			found = true
 			if r.Labels[labelType] != "intent" {
 				t.Errorf("expected label type=intent, got %q", r.Labels[labelType])
@@ -34,18 +34,18 @@ func TestObserve_AddEmitsRecordAndSpan(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Error("expected record with action 'circuit.add'")
+		t.Error("expected record with action 'reactor.react' action")
 	}
 
 	spans := exporter.GetSpans()
 	spanFound := false
 	for _, s := range spans {
-		if s.Name == "circuit.add" {
+		if s.Name == "reactor.react" {
 			spanFound = true
 		}
 	}
 	if !spanFound {
-		t.Error("expected OTel span named 'circuit.add'")
+		t.Error("expected OTel span named 'reactor.react' action")
 	}
 }
 
@@ -59,7 +59,7 @@ func TestObserve_TriadSealEmitsRecord(t *testing.T) {
 
 	found := false
 	for _, r := range pool.Records() {
-		if r.Action == "circuit.triad.seal" && r.Labels[labelTriad] == "reason" {
+		if r.Action == "reactor.react" && r.Labels[labelTriad] == "reason" {
 			found = true
 		}
 	}
@@ -81,7 +81,7 @@ func TestObserve_UnsealEmitsRecord(t *testing.T) {
 
 	found := false
 	for _, r := range pool.Records() {
-		if r.Action == "circuit.triad.unseal" && r.Labels[labelTriad] == "plan" {
+		if r.Action == "reactor.triad.unseal" && r.Labels[labelTriad] == "plan" {
 			found = true
 		}
 	}
@@ -100,7 +100,7 @@ func TestObserve_SealEmitsRecord(t *testing.T) {
 
 	found := false
 	for _, r := range pool.Records() {
-		if r.Action == "circuit.seal" {
+		if r.Action == "reactor.seal" {
 			found = true
 			if r.Labels[labelWish] != "wish" {
 				t.Errorf("expected wish label, got %q", r.Labels[labelWish])

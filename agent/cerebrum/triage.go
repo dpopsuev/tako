@@ -34,7 +34,7 @@ type TriageResult struct {
 // Triage classifies an atom against the MoleculeStore and Reactor.
 // Drains the unsorted shelf, classifies each atom, and adds it to
 // the appropriate molecule in the store.
-func Triage(store *MoleculeStore, reactor *reactivity.Reactor) []TriageResult {
+func Triage(store *MoleculeStore, reactor *reactivity.CompositeReactor) []TriageResult {
 	atoms := store.Drain()
 	results := make([]TriageResult, 0, len(atoms))
 
@@ -49,7 +49,7 @@ func Triage(store *MoleculeStore, reactor *reactivity.Reactor) []TriageResult {
 	return results
 }
 
-func classify(store *MoleculeStore, reactor *reactivity.Reactor, atom reactivity.Atom) TriageResult {
+func classify(store *MoleculeStore, reactor *reactivity.CompositeReactor, atom reactivity.Atom) TriageResult {
 	for _, id := range store.Molecules() {
 		m, ok := store.Molecule(id)
 		if !ok || m.Sealed() {

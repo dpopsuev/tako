@@ -4,41 +4,111 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
 	"github.com/dpopsuev/tako/ergograph"
 	"go.opentelemetry.io/otel/trace"
 )
 
-// Reactor is the molecular machine. Stateless. Processes Molecules.
-type Reactor struct {
+// Reactor is the processing interface. Same at every level — leaf or composite.
+type Reactor interface {
+	React(m *Molecule, atom Atom) (AssertResult, Fortune)
+}
+
+// NoOp passes the atom through without processing. Ablation baseline.
+type NoOp struct{}
+
+func (NoOp) React(m *Molecule, atom Atom) (AssertResult, Fortune) {
+	m.InsertAtom(atom)
+	return Pass, Fortune{}
+}
+
+type reasonReactor struct{}
+
+func (reasonReactor) React(m *Molecule, atom Atom) (AssertResult, Fortune) {
+	if m.mass[AssessmentAtom] > 0 {
+		m.SealTriad(ReasonTriad)
+		m.SetPhase(PlanAtom)
+		return Pass, Fortune{}
+	}
+	if m.phase == IntentAtom && m.mass[IntentAtom] > 0 {
+		m.SetPhase(AssessmentAtom)
+		return Pass, Fortune{}
+	}
+	return Insufficient, Fortune{Result: Insufficient, Message: "need reason atoms", Phase: m.phase}
+}
+
+type planReactor struct{}
+
+func (planReactor) React(m *Molecule, atom Atom) (AssertResult, Fortune) {
+	if m.mass[PlanAtom] > 0 {
+		m.SealTriad(PlanTriad)
+		m.SetPhase(ExecutionAtom)
+		return Pass, Fortune{}
+	}
+	return Insufficient, Fortune{Result: Insufficient, Message: "need plan atoms", Phase: PlanAtom}
+}
+
+type actReactor struct{}
+
+func (actReactor) React(m *Molecule, atom Atom) (AssertResult, Fortune) {
+	if m.mass[ExecutionAtom] > 0 {
+		m.SealTriad(ActTriad)
+		m.SetPhase(RetrospectionAtom)
+		return Pass, Fortune{}
+	}
+	return Insufficient, Fortune{Result: Insufficient, Message: "need execution atoms", Phase: ExecutionAtom}
+}
+
+type retrospectReactor struct{}
+
+func (retrospectReactor) React(m *Molecule, atom Atom) (AssertResult, Fortune) {
+	if m.mass[RetrospectionAtom] > 0 {
+		m.SealTriad(RetrospectTriad)
+		return Pass, Fortune{}
+	}
+	return Insufficient, Fortune{Result: Insufficient, Message: "need retrospection atoms", Phase: RetrospectionAtom}
+}
+
+// CompositeReactor composes 4 nested Reactors — one per triad.
+// Same Reactor interface. Adds observability + lifecycle helpers.
+type CompositeReactor struct {
+	triads map[Triad]Reactor
 	pool   ergograph.Pool
 	tracer trace.Tracer
 }
 
-// NewReactor creates a Reactor (the machine).
-func NewReactor(opts ...ReactorOption) *Reactor {
-	c := &Reactor{}
+type ReactorOption func(*CompositeReactor)
+
+func WithPool(pool ergograph.Pool) ReactorOption {
+	return func(c *CompositeReactor) { c.pool = pool }
+}
+
+func WithTracer(tracer trace.Tracer) ReactorOption {
+	return func(c *CompositeReactor) { c.tracer = tracer }
+}
+
+func WithTriad(t Triad, r Reactor) ReactorOption {
+	return func(c *CompositeReactor) { c.triads[t] = r }
+}
+
+func NewReactor(opts ...ReactorOption) *CompositeReactor {
+	c := &CompositeReactor{
+		triads: map[Triad]Reactor{
+			ReasonTriad:    reasonReactor{},
+			PlanTriad:      planReactor{},
+			ActTriad:       actReactor{},
+			RetrospectTriad: retrospectReactor{},
+		},
+	}
 	for _, opt := range opts {
 		opt(c)
 	}
 	return c
 }
 
-// ReactorOption configures a Reactor.
-type ReactorOption func(*Reactor)
-
-func WithPool(pool ergograph.Pool) ReactorOption {
-	return func(c *Reactor) { c.pool = pool }
-}
-
-func WithTracer(tracer trace.Tracer) ReactorOption {
-	return func(c *Reactor) { c.tracer = tracer }
-}
-
-// Add inserts an atom into the molecule, creates edges, updates indexes, runs Assert.
-func (c *Reactor) Add(m *Molecule, atom Atom) (AssertResult, Fortune) {
+// React inserts an atom and delegates to the appropriate triad reactor.
+func (c *CompositeReactor) React(m *Molecule, atom Atom) (AssertResult, Fortune) {
 	if m.sealed {
 		return Unresolvable, Fortune{Result: Unresolvable, Message: "molecule is sealed"}
 	}
@@ -51,156 +121,49 @@ func (c *Reactor) Add(m *Molecule, atom Atom) (AssertResult, Fortune) {
 		}
 	}
 
-	m.atoms[atom.ID] = &atom
-	m.subgraphs[atom.Type] = append(m.subgraphs[atom.Type], atom.ID)
-	m.mass[atom.Type]++
-	m.sourceMass[atom.Source]++
+	m.InsertAtom(atom)
 
-	if atom.Taxonomy != "" {
-		m.taxonomy[atom.Taxonomy] = append(m.taxonomy[atom.Taxonomy], atom.ID)
-	}
+	triad := TriadOf(atom.Type)
+	r := c.triads[triad]
+	result, fortune := r.React(m, atom)
 
-	for _, target := range atom.Targets {
-		m.AddEdge(atom.ID, target, Reference)
-	}
-
-	result, fortune := c.assertPhase(m)
-	if result == Pass {
-		c.advancePhase(m)
-	}
-	c.record("circuit.add", map[string]string{
+	c.record("reactor.react", map[string]string{
 		labelAtom:     atom.ID,
 		labelType:     atom.Type.String(),
 		labelTaxonomy: atom.Taxonomy,
 		labelResult:   result.String(),
+		labelTriad:    triad.String(),
 	})
-	c.span("circuit.add")
+	c.span("reactor.react")
 	return result, fortune
 }
 
+// Add is an alias for React — backward compatibility.
+func (c *CompositeReactor) Add(m *Molecule, atom Atom) (AssertResult, Fortune) {
+	return c.React(m, atom)
+}
+
 // Seal marks the molecule as complete with a Wish atom.
-func (c *Reactor) Seal(m *Molecule, wish Atom) {
-	wish.Type = RetrospectionAtom
-	m.atoms[wish.ID] = &wish
-	m.subgraphs[RetrospectionAtom] = append(m.subgraphs[RetrospectionAtom], wish.ID)
-	m.mass[RetrospectionAtom]++
-	if wish.Taxonomy != "" {
-		m.taxonomy[wish.Taxonomy] = append(m.taxonomy[wish.Taxonomy], wish.ID)
-	}
-	m.sealed = true
-	c.record("circuit.seal", map[string]string{
-		labelWish:  wish.ID,
+func (c *CompositeReactor) Seal(m *Molecule, wish Atom) {
+	m.Seal(wish)
+	c.record("reactor.seal", map[string]string{
+		labelWish: wish.ID,
 		labelDepth: m.CurrentTriad().String(),
 		labelMass:  fmt.Sprintf("%d", m.TotalMass()),
 	})
-	c.span("circuit.seal")
+	c.span("reactor.seal")
 }
 
-// Contradict checks if an atom contradicts an existing atom about the same concern.
-func (c *Reactor) Contradict(m *Molecule, atom Atom) (bool, *Atom) {
-	domain := taxonomyDomain(atom.Taxonomy)
-	if domain == "" {
-		return false, nil
-	}
-	for _, existing := range m.atomsByDomain(domain) {
-		if existing.ID != atom.ID && existing.Type != atom.Type {
-			return true, existing
-		}
-	}
-	return false, nil
+// Contradict checks if an atom contradicts existing atoms.
+func (c *CompositeReactor) Contradict(m *Molecule, atom Atom) (bool, *Atom) {
+	return m.Contradict(atom)
 }
 
-// UnsealTriad unseals a triad and all lower triads (cascade down).
-func (c *Reactor) UnsealTriad(m *Molecule, t Triad) {
-	switch t {
-	case ReasonTriad:
-		m.triadSealed[ReasonTriad] = false
-		m.triadSealed[PlanTriad] = false
-		m.triadSealed[ActTriad] = false
-	case PlanTriad:
-		m.triadSealed[PlanTriad] = false
-		m.triadSealed[ActTriad] = false
-	case ActTriad:
-		m.triadSealed[ActTriad] = false
-	}
-	m.unsealCount++
-	c.record("circuit.triad.unseal", map[string]string{labelTriad: t.String()})
-	c.span("circuit.triad.unseal")
-}
-
-func (m *Molecule) atomsByDomain(domain string) []*Atom {
-	var out []*Atom
-	for _, a := range m.atoms {
-		if taxonomyDomain(a.Taxonomy) == domain {
-			out = append(out, a)
-		}
-	}
-	return out
-}
-
-func taxonomyDomain(taxonomy string) string {
-	parts := strings.Split(taxonomy, ".")
-	if len(parts) < 2 {
-		return ""
-	}
-	return parts[len(parts)-1]
-}
-
-func (c *Reactor) assertPhase(m *Molecule) (AssertResult, Fortune) {
-	switch m.phase {
-	case IntentAtom:
-		if m.mass[IntentAtom] > 0 {
-			return Pass, Fortune{}
-		}
-		return Insufficient, Fortune{Result: Insufficient, Message: "need intent atoms", Phase: IntentAtom}
-	case AssessmentAtom:
-		if m.mass[AssessmentAtom] > 0 {
-			return Pass, Fortune{}
-		}
-		return Insufficient, Fortune{Result: Insufficient, Message: "need assessment atoms", Phase: AssessmentAtom}
-	case PlanAtom:
-		if m.mass[PlanAtom] > 0 {
-			return Pass, Fortune{}
-		}
-		return Insufficient, Fortune{Result: Insufficient, Message: "need plan atoms", Phase: PlanAtom}
-	case ExecutionAtom:
-		if m.mass[ExecutionAtom] > 0 {
-			return Pass, Fortune{}
-		}
-		return Insufficient, Fortune{Result: Insufficient, Message: "need execution atoms", Phase: ExecutionAtom}
-	case RetrospectionAtom:
-		if m.mass[RetrospectionAtom] > 0 {
-			return Pass, Fortune{}
-		}
-		return Insufficient, Fortune{Result: Insufficient, Message: "need retrospection atoms", Phase: RetrospectionAtom}
-	}
-	return Unresolvable, Fortune{Result: Unresolvable, Message: "unknown phase"}
-}
-
-func (c *Reactor) advancePhase(m *Molecule) {
-	switch m.phase {
-	case IntentAtom:
-		m.phase = AssessmentAtom
-	case AssessmentAtom:
-		m.triadSealed[ReasonTriad] = true
-		c.record("circuit.triad.seal", map[string]string{labelTriad: ReasonTriad.String()})
-		c.span("circuit.triad.seal")
-		m.phase = PlanAtom
-	case PlanAtom:
-		m.triadSealed[PlanTriad] = true
-		c.record("circuit.triad.seal", map[string]string{labelTriad: PlanTriad.String()})
-		c.span("circuit.triad.seal")
-		m.phase = ExecutionAtom
-	case ExecutionAtom:
-		m.triadSealed[ActTriad] = true
-		c.record("circuit.triad.seal", map[string]string{labelTriad: ActTriad.String()})
-		c.span("circuit.triad.seal")
-		m.phase = RetrospectionAtom
-	case RetrospectionAtom:
-		m.triadSealed[RetrospectTriad] = true
-		c.record("circuit.triad.seal", map[string]string{labelTriad: RetrospectTriad.String()})
-		c.span("circuit.triad.seal")
-	}
+// UnsealTriad unseals a triad with cascade.
+func (c *CompositeReactor) UnsealTriad(m *Molecule, t Triad) {
+	m.UnsealTriad(t)
+	c.record("reactor.triad.unseal", map[string]string{labelTriad: t.String()})
+	c.span("reactor.triad.unseal")
 }
 
 const (
@@ -215,7 +178,7 @@ const (
 	labelError    = "error"
 )
 
-func (c *Reactor) record(action string, labels map[string]string) {
+func (c *CompositeReactor) record(action string, labels map[string]string) {
 	if c.pool == nil {
 		return
 	}
@@ -228,7 +191,7 @@ func (c *Reactor) record(action string, labels map[string]string) {
 	}
 }
 
-func (c *Reactor) span(name string) {
+func (c *CompositeReactor) span(name string) {
 	if c.tracer == nil {
 		return
 	}

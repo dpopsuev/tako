@@ -124,3 +124,78 @@ func (m *Molecule) EdgesByKind(kind EdgeKind) []Edge {
 	}
 	return out
 }
+
+func (m *Molecule) Seal(wish Atom) {
+	wish.Type = RetrospectionAtom
+	m.atoms[wish.ID] = &wish
+	m.subgraphs[RetrospectionAtom] = append(m.subgraphs[RetrospectionAtom], wish.ID)
+	m.mass[RetrospectionAtom]++
+	if wish.Taxonomy != "" {
+		m.taxonomy[wish.Taxonomy] = append(m.taxonomy[wish.Taxonomy], wish.ID)
+	}
+	m.sealed = true
+}
+
+func (m *Molecule) Contradict(atom Atom) (bool, *Atom) {
+	domain := atomDomain(atom.Taxonomy)
+	if domain == "" {
+		return false, nil
+	}
+	for _, existing := range m.atomsByDomain(domain) {
+		if existing.ID != atom.ID && existing.Type != atom.Type {
+			return true, existing
+		}
+	}
+	return false, nil
+}
+
+func (m *Molecule) UnsealTriad(t Triad) {
+	switch t {
+	case ReasonTriad:
+		m.triadSealed[ReasonTriad] = false
+		m.triadSealed[PlanTriad] = false
+		m.triadSealed[ActTriad] = false
+	case PlanTriad:
+		m.triadSealed[PlanTriad] = false
+		m.triadSealed[ActTriad] = false
+	case ActTriad:
+		m.triadSealed[ActTriad] = false
+	}
+	m.unsealCount++
+}
+
+func (m *Molecule) InsertAtom(atom Atom) {
+	m.atoms[atom.ID] = &atom
+	m.subgraphs[atom.Type] = append(m.subgraphs[atom.Type], atom.ID)
+	m.mass[atom.Type]++
+	m.sourceMass[atom.Source]++
+	if atom.Taxonomy != "" {
+		m.taxonomy[atom.Taxonomy] = append(m.taxonomy[atom.Taxonomy], atom.ID)
+	}
+	for _, target := range atom.Targets {
+		m.AddEdge(atom.ID, target, Reference)
+	}
+}
+
+func (m *Molecule) SetPhase(p AtomType)    { m.phase = p }
+func (m *Molecule) SealTriad(t Triad)      { m.triadSealed[t] = true }
+func (m *Molecule) IsSealed() bool         { return m.sealed }
+
+func (m *Molecule) atomsByDomain(domain string) []*Atom {
+	var out []*Atom
+	for _, a := range m.atoms {
+		if atomDomain(a.Taxonomy) == domain {
+			out = append(out, a)
+		}
+	}
+	return out
+}
+
+func atomDomain(taxonomy string) string {
+	for i := len(taxonomy) - 1; i >= 0; i-- {
+		if taxonomy[i] == '.' {
+			return taxonomy[i+1:]
+		}
+	}
+	return ""
+}

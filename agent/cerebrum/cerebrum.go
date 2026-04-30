@@ -13,7 +13,7 @@ import (
 )
 
 type Cerebrum struct {
-	reactor   *reactivity.Reactor
+	reactor   *reactivity.CompositeReactor
 	completer troupe.Completer
 	maxTurns  int
 
@@ -28,7 +28,7 @@ type Cerebrum struct {
 	molecule *reactivity.Molecule
 }
 
-func New(reactor *reactivity.Reactor, completer troupe.Completer, opts ...Option) *Cerebrum {
+func New(reactor *reactivity.CompositeReactor, completer troupe.Completer, opts ...Option) *Cerebrum {
 	cb := &Cerebrum{
 		reactor:       reactor,
 		completer:     completer,
