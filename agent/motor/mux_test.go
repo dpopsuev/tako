@@ -8,20 +8,20 @@ import (
 )
 
 func TestMux_RoutesToCorrectAdapter(t *testing.T) {
-	completer := NewCompleterAdapter(&stubCompleter{response: "hello"})
+	instrument := NewInstrumentAdapter(&stubShell{})
 
 	mux := NewMux()
-	mux.Register("complete", completer, completer)
+	mux.Register("instrument", instrument, instrument)
 
 	ctx := context.Background()
-	mux.Send(ctx, cerebrum.Command{Kind: "complete", Payload: []byte("prompt")})
+	mux.Send(ctx, cerebrum.Command{Kind: "instrument", Target: "grep", Payload: []byte(`"test"`)})
 
 	sig, ok := mux.Receive(ctx)
 	if !ok {
 		t.Fatal("expected signal from mux")
 	}
-	if sig.Kind != "response" {
-		t.Errorf("expected response, got %s", sig.Kind)
+	if sig.Topic != "grep" {
+		t.Errorf("expected topic grep, got %s", sig.Topic)
 	}
 }
 
