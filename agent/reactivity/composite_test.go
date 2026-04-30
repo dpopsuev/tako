@@ -12,22 +12,22 @@ func TestComposite_ReactInterface(t *testing.T) {
 	}
 }
 
-func TestComposite_WithTriad_Ablation(t *testing.T) {
-	c := NewReactor(WithTriad(ComposeTriad, Damper{}))
+func TestComposite_WithTriad_GimpedNodes(t *testing.T) {
+	gimped := NewTriadReactor(ComposeTriad,
+		[3]AtomType{ExpansionAtom, ReductionAtom, SelectionAtom},
+		ExecutionAtom,
+	)
+	c := NewReactor(WithTriad(ComposeTriad, gimped))
 	m := NewMolecule("ablation")
 
 	addReasonAtoms(c, m, "eat")
 
 	if !m.TriadSealed(ThinkTriad) {
-		t.Error("reason triad should seal normally")
+		t.Error("think triad should seal normally")
 	}
 
-	c.Add(m, mkAtom("task", ExpansionAtom, "plan.task.cook", Fresh))
-	c.Add(m, mkAtom("risk", ReductionAtom, "risk.eval.burn", Fresh))
-	c.Add(m, mkAtom("strat", SelectionAtom, "strategy.synth.cook", Fresh))
-
-	if m.TriadSealed(ComposeTriad) {
-		t.Error("plan triad should NOT seal — Damper reactor does not advance")
+	if !gimped.Thesis().Gimped() {
+		t.Error("thesis node should be gimped (no directives)")
 	}
 }
 
@@ -45,17 +45,43 @@ func TestComposite_NestedReactors(t *testing.T) {
 	}
 }
 
-func TestComposite_Damper_PassesThrough(t *testing.T) {
-	noop := Damper{}
-	m := NewMolecule("noop-test")
-	atom := mkAtom("a1", IntentAtom, "intent.test.noop", Fresh)
+func TestComposite_GimpedNode_PassesThrough(t *testing.T) {
+	node := GimpedNode(IntentAtom)
+	m := NewMolecule("gimped-test")
+	atom := mkAtom("a1", IntentAtom, "intent.test.gimped", Fresh)
 
-	result, _ := noop.React(m, atom)
+	result, _ := node.React(m, atom)
 	if result != Pass {
-		t.Errorf("Damper should always pass, got %s", result)
+		t.Errorf("gimped node should always pass, got %s", result)
 	}
-	if m.Mass(IntentAtom) != 0 {
-		t.Error("Damper should not insert atoms — Core.React does InsertAtom before delegating")
+	if !node.Gimped() {
+		t.Error("node without directives should be gimped")
+	}
+}
+
+func TestComposite_NodeWithDirective_NotGimped(t *testing.T) {
+	node := NewNode(IntentAtom, "Focus on explicit request")
+	if node.Gimped() {
+		t.Error("node with directive[0] should not be gimped")
+	}
+	if len(node.Directives()) != 1 {
+		t.Errorf("expected 1 directive, got %d", len(node.Directives()))
+	}
+}
+
+func TestComposite_NodeRemoveDirective_Gimps(t *testing.T) {
+	node := NewNode(IntentAtom, "default")
+	node.AddDirective("extra")
+
+	if len(node.Directives()) != 2 {
+		t.Fatalf("expected 2 directives, got %d", len(node.Directives()))
+	}
+
+	node.RemoveDirective(0)
+	node.RemoveDirective(0)
+
+	if !node.Gimped() {
+		t.Error("removing all directives should gimp the node")
 	}
 }
 
@@ -77,5 +103,20 @@ func TestComposite_SealDelegatesToMolecule(t *testing.T) {
 	c.Seal(m, mkAtom("wish", RetrospectionAtom, "retrospection.wish.done", Fresh))
 	if !m.Sealed() {
 		t.Error("Seal should mark molecule as sealed")
+	}
+}
+
+func TestCore_WithDirective_DelegatesToNode(t *testing.T) {
+	c := NewReactor(
+		WithDirective(IntentAtom, "Focus on explicit request"),
+		WithDirective(IntentAtom, "Ask for clarification"),
+	)
+
+	node := c.Node(IntentAtom)
+	if node == nil {
+		t.Fatal("Node(IntentAtom) should not be nil")
+	}
+	if len(node.Directives()) != 2 {
+		t.Errorf("expected 2 directives on Intent node, got %d", len(node.Directives()))
 	}
 }

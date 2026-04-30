@@ -18,65 +18,65 @@ type Reactor interface {
 // Directive is a tuning prompt attached to a Reactor node.
 type Directive string
 
-// Damper passes the atom through without processing. Ablation baseline (control rod).
-type Damper struct{}
-
-func (Damper) React(m *Molecule, _ Atom) (YieldKind, Yield) {
-	return Pass, Yield{}
-}
-
-// TriadReactor composes 3 node Reactors — thesis, antithesis, synthesis.
+// TriadReactor composes 3 Nodes — thesis, antithesis, synthesis.
 // Same Reactor interface. Each floor of the Core is a TriadReactor.
 type TriadReactor struct {
-	triad      Triad
-	thesis     Reactor
-	antithesis Reactor
-	synthesis  Reactor
-	nodes      [3]AtomType
-	nextPhase  AtomType
+	triad     Triad
+	thesis    *Node
+	antithesis *Node
+	synthesis  *Node
+	phases    [3]AtomType
+	nextPhase AtomType
 }
 
-func NewTriadReactor(triad Triad, nodes [3]AtomType, nextPhase AtomType) *TriadReactor {
+func NewTriadReactor(triad Triad, phases [3]AtomType, nextPhase AtomType) *TriadReactor {
 	return &TriadReactor{
 		triad:      triad,
-		thesis:     Damper{},
-		antithesis: Damper{},
-		synthesis:  Damper{},
-		nodes:      nodes,
+		thesis:     GimpedNode(phases[ThesisPosition]),
+		antithesis: GimpedNode(phases[AntithesisPosition]),
+		synthesis:  GimpedNode(phases[SynthesisPosition]),
+		phases:     phases,
 		nextPhase:  nextPhase,
 	}
 }
 
-func (t *TriadReactor) WithThesis(r Reactor) *TriadReactor     { t.thesis = r; return t }
-func (t *TriadReactor) WithAntithesis(r Reactor) *TriadReactor { t.antithesis = r; return t }
-func (t *TriadReactor) WithSynthesis(r Reactor) *TriadReactor  { t.synthesis = r; return t }
+func (t *TriadReactor) Thesis() *Node     { return t.thesis }
+func (t *TriadReactor) Antithesis() *Node  { return t.antithesis }
+func (t *TriadReactor) Synthesis() *Node   { return t.synthesis }
+
+func (t *TriadReactor) Node(pos DialecticPosition) *Node {
+	switch pos {
+	case ThesisPosition:
+		return t.thesis
+	case AntithesisPosition:
+		return t.antithesis
+	case SynthesisPosition:
+		return t.synthesis
+	default:
+		return t.thesis
+	}
+}
 
 func (t *TriadReactor) React(m *Molecule, atom Atom) (YieldKind, Yield) {
 	pos := PositionOf(atom.Type)
-	switch pos {
-	case ThesisPosition:
-		t.thesis.React(m, atom)
-	case AntithesisPosition:
-		t.antithesis.React(m, atom)
-	case SynthesisPosition:
-		t.synthesis.React(m, atom)
-	}
+	node := t.Node(pos)
+	node.React(m, atom)
 
-	if m.mass[t.nodes[SynthesisPosition]] > 0 {
+	if m.mass[t.phases[SynthesisPosition]] > 0 {
 		m.SealTriad(t.triad)
 		m.SetPhase(t.nextPhase)
 		return Pass, Yield{}
 	}
-	if m.mass[t.nodes[AntithesisPosition]] > 0 && m.phase == t.nodes[ThesisPosition] {
-		m.SetPhase(t.nodes[AntithesisPosition])
+	if m.mass[t.phases[AntithesisPosition]] > 0 && m.phase == t.phases[ThesisPosition] {
+		m.SetPhase(t.phases[AntithesisPosition])
 		return Pass, Yield{}
 	}
-	if m.mass[t.nodes[AntithesisPosition]] > 0 && m.phase == t.nodes[AntithesisPosition] {
-		m.SetPhase(t.nodes[SynthesisPosition])
+	if m.mass[t.phases[AntithesisPosition]] > 0 && m.phase == t.phases[AntithesisPosition] {
+		m.SetPhase(t.phases[SynthesisPosition])
 		return Pass, Yield{}
 	}
-	if m.mass[t.nodes[ThesisPosition]] > 0 && m.phase == t.nodes[ThesisPosition] {
-		m.SetPhase(t.nodes[AntithesisPosition])
+	if m.mass[t.phases[ThesisPosition]] > 0 && m.phase == t.phases[ThesisPosition] {
+		m.SetPhase(t.phases[AntithesisPosition])
 		return Pass, Yield{}
 	}
 	return Insufficient, Yield{Result: Insufficient, Message: fmt.Sprintf("need %s atoms", t.triad), Phase: m.phase}
@@ -96,11 +96,10 @@ func (Reflection) React(m *Molecule, _ Atom) (YieldKind, Yield) {
 // Core composes 3 floor TriadReactors + Reflect egress.
 // Cognize (ingress) → Think → Compose → Action → Reflect (egress).
 type Core struct {
-	floors     map[Triad]Reactor
-	sink       Reactor
-	directives map[AtomType][]Directive
-	pool       ergograph.Pool
-	tracer     trace.Tracer
+	floors map[Triad]Reactor
+	sink   Reactor
+	pool   ergograph.Pool
+	tracer trace.Tracer
 }
 
 type ReactorOption func(*Core)
@@ -123,13 +122,14 @@ func WithSink(r Reactor) ReactorOption {
 
 func WithDirective(phase AtomType, directive Directive) ReactorOption {
 	return func(c *Core) {
-		c.directives[phase] = append(c.directives[phase], directive)
+		if n := c.node(phase); n != nil {
+			n.AddDirective(directive)
+		}
 	}
 }
 
 func NewReactor(opts ...ReactorOption) *Core {
 	c := &Core{
-		directives: make(map[AtomType][]Directive),
 		floors: map[Triad]Reactor{
 			ThinkTriad: NewTriadReactor(ThinkTriad,
 				[3]AtomType{IntentAtom, AssessmentAtom, KnowledgeAtom},
@@ -153,11 +153,33 @@ func NewReactor(opts ...ReactorOption) *Core {
 }
 
 func (c *Core) AddDirective(phase AtomType, directive Directive) {
-	c.directives[phase] = append(c.directives[phase], directive)
+	if n := c.node(phase); n != nil {
+		n.AddDirective(directive)
+	}
 }
 
 func (c *Core) Directives(phase AtomType) []Directive {
-	return c.directives[phase]
+	if n := c.node(phase); n != nil {
+		return n.Directives()
+	}
+	return nil
+}
+
+func (c *Core) Node(phase AtomType) *Node {
+	return c.node(phase)
+}
+
+func (c *Core) node(phase AtomType) *Node {
+	triad := TriadOf(phase)
+	floor, ok := c.floors[triad]
+	if !ok {
+		return nil
+	}
+	tr, ok := floor.(*TriadReactor)
+	if !ok {
+		return nil
+	}
+	return tr.Node(PositionOf(phase))
 }
 
 // React is the Cognizer — ingress node of Core. Routes atom to the right floor or sink.
