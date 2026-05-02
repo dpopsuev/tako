@@ -157,7 +157,7 @@ func (cb *Cerebrum) cognize(seed reactivity.Atom) *reactivity.Molecule {
 		if !ok || m.Sealed() {
 			continue
 		}
-		if matchesMolecule(m, seed) {
+		if matchesDomain(m, seed) {
 			return cb.store.Focus(id)
 		}
 	}
@@ -166,24 +166,6 @@ func (cb *Cerebrum) cognize(seed reactivity.Atom) *reactivity.Molecule {
 	cb.reactor.React(m, seed)
 	cb.dispatch(context.Background(), m)
 	return m
-}
-
-func matchesMolecule(m *reactivity.Molecule, atom reactivity.Atom) bool {
-	if atom.Taxonomy == "" {
-		return false
-	}
-	domain := taxonomyDomain(atom.Taxonomy)
-	if domain == "" {
-		return false
-	}
-	for _, at := range reactivity.AllAtomTypes() {
-		for _, existing := range m.Atoms(at) {
-			if taxonomyDomain(existing.Taxonomy) == domain {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 func taxonomyDomain(taxonomy string) string {

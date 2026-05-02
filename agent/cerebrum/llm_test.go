@@ -61,17 +61,19 @@ func TestThink_RealLLM_Vertex(t *testing.T) {
 	t.Logf("Real LLM test:")
 	t.Logf("  Model: %s", model)
 	t.Logf("  Total atoms: %d", m.TotalMass())
-	t.Logf("  Intent: %d", m.Mass(reactivity.IntentAtom))
-	t.Logf("  Assessment: %d", m.Mass(reactivity.AssessmentAtom))
-	t.Logf("  Plan: %d", m.Mass(reactivity.ExpansionAtom))
-	t.Logf("  Execution: %d", m.Mass(reactivity.ExecutionAtom))
-	t.Logf("  Retrospection: %d", m.Mass(reactivity.RetrospectionAtom))
-
-	for _, a := range m.Atoms(reactivity.IntentAtom) {
-		content := string(a.Content)
-		if len(content) > 200 {
-			content = content[:200]
+	for _, at := range reactivity.AllAtomTypes() {
+		if mass := m.Mass(at); mass > 0 {
+			t.Logf("  %s: %d", at, mass)
 		}
-		t.Logf("  Intent: %s", content)
+	}
+
+	for _, at := range reactivity.AllAtomTypes() {
+		for _, a := range m.Atoms(at) {
+			content := string(a.Content)
+			if len(content) > 200 {
+				content = content[:200]
+			}
+			t.Logf("  [%s] %s", at, content)
+		}
 	}
 }
