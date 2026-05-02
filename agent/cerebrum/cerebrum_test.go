@@ -170,14 +170,14 @@ func TestThink_EmissionsDispatchedViaMotor(t *testing.T) {
 	reactor := reactivity.NewReactor(
 		reactivity.WithTriad(reactivity.ThinkTriad, &emittingTriadReactor{}),
 	)
-	motor := &stubMotorBus{}
+	motor := &stubBus{}
 	cb := New(reactor, completer, WithMotor(motor))
 
 	cb.Think(context.Background(), []byte("test emission"))
 
 	found := false
-	for _, cmd := range motor.commands {
-		if cmd.Kind == "instrument" && cmd.Target == "emitted-tool" {
+	for _, cmd := range motor.events {
+		if cmd.Kind == "instrument" && cmd.Source == "emitted-tool" {
 			found = true
 		}
 	}
@@ -189,7 +189,7 @@ func TestThink_EmissionsDispatchedViaMotor(t *testing.T) {
 func TestThink_WithMotorBus(t *testing.T) {
 	completer := &stubCompleter{response: "done"}
 	reactor := reactivity.NewReactor()
-	motor := &stubMotorBus{}
+	motor := &stubBus{}
 	cb := New(reactor, completer, WithMotor(motor))
 
 	cb.Think(context.Background(), []byte("test"))

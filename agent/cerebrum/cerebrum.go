@@ -16,8 +16,9 @@ type Cerebrum struct {
 	completer troupe.Completer
 	maxTurns  int
 
-	sensory chan reactivity.Atom
-	motor   MotorBus
+	sensory Bus
+	motor   Bus
+	signal  Bus
 
 	classifier    Classifier
 	promptBuilder PromptBuilder
@@ -36,7 +37,7 @@ func New(reactor *reactivity.Core, completer troupe.Completer, opts ...Option) *
 		promptBuilder: DefaultPromptBuilder,
 		parser:        DefaultParser,
 		store:         NewMoleculeStore(),
-		sensory:       make(chan reactivity.Atom, 64),
+		sensory:       NewChannelBus(64),
 	}
 	for _, opt := range opts {
 		opt(cb)
@@ -49,31 +50,29 @@ var _ organ.Organ = (*Cerebrum)(nil)
 func (cb *Cerebrum) Name() organ.OrganName { return organ.CerebrumOrgan }
 
 func (cb *Cerebrum) Receive(wire artifact.Wire) error {
-	cb.sensory <- reactivity.Atom{
+	return cb.sensory.Send(context.Background(), Event{
 		ID:        fmt.Sprintf("wire-%d", time.Now().UnixNano()),
-		Type:      reactivity.IntentAtom,
-		Source:    reactivity.Received,
-		Taxonomy:  "intent.wire." + wire.Kind,
-		Content:   wire.Payload,
+		Kind:      wire.Kind,
+		Source:    "wire",
+		Payload:   wire.Payload,
 		CreatedAt: time.Now(),
-	}
-	return nil
+	})
 }
 
 func (cb *Cerebrum) Run(ctx context.Context) {
 	for {
-		select {
-		case atom := <-cb.sensory:
-			molecule := cb.cognize(atom)
-			cb.reactor.React(molecule, atom)
-			cb.dispatch(ctx, molecule)
-
-			if molecule.Sealed() {
-				cb.molecule = molecule
-				cb.store.Park()
-			}
-		case <-ctx.Done():
+		event, ok := cb.sensory.Receive(ctx)
+		if !ok {
 			return
+		}
+		atom := eventToAtom(event)
+		molecule := cb.cognize(atom)
+		cb.reactor.React(molecule, atom)
+		cb.dispatch(ctx, molecule)
+
+		if molecule.Sealed() {
+			cb.molecule = molecule
+			cb.store.Park()
 		}
 	}
 }
@@ -147,7 +146,7 @@ func (cb *Cerebrum) Store() *MoleculeStore {
 	return cb.store
 }
 
-func (cb *Cerebrum) Sensory() chan<- reactivity.Atom {
+func (cb *Cerebrum) SensoryBus() Bus {
 	return cb.sensory
 }
 
@@ -168,6 +167,17 @@ func (cb *Cerebrum) cognize(seed reactivity.Atom) *reactivity.Molecule {
 	return m
 }
 
+func eventToAtom(e Event) reactivity.Atom {
+	return reactivity.Atom{
+		ID:        e.ID,
+		Type:      reactivity.IntentAtom,
+		Source:    reactivity.Received,
+		Taxonomy:  "intent." + e.Kind,
+		Content:   e.Payload,
+		CreatedAt: e.CreatedAt,
+	}
+}
+
 func taxonomyDomain(taxonomy string) string {
 	for i := len(taxonomy) - 1; i >= 0; i-- {
 		if taxonomy[i] == '.' {
@@ -178,11 +188,16 @@ func taxonomyDomain(taxonomy string) string {
 }
 
 func (cb *Cerebrum) dispatch(ctx context.Context, m *reactivity.Molecule) {
-	if cb.motor == nil {
-		m.DrainEmissions()
-		return
-	}
 	for _, e := range m.DrainEmissions() {
-		cb.motor.Send(ctx, Command{Kind: e.Kind, Target: e.Target, Payload: e.Payload})
+		event := Event{
+			ID:        fmt.Sprintf("emission-%d", time.Now().UnixNano()),
+			Kind:      e.Kind,
+			Source:    e.Target,
+			Payload:   e.Payload,
+			CreatedAt: time.Now(),
+		}
+		if cb.motor != nil {
+			cb.motor.Send(ctx, event)
+		}
 	}
 }

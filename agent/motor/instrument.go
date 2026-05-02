@@ -3,59 +3,53 @@ package motor
 import (
 	"context"
 	"encoding/json"
-	"sync"
-
-	"github.com/dpopsuev/tako/agent/cerebrum"
-	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/instrument"
-
 	"fmt"
 	"time"
+
+	"github.com/dpopsuev/tako/agent/cerebrum"
+	"github.com/dpopsuev/tako/instrument"
 )
 
 type InstrumentAdapter struct {
 	shell   instrument.Shell
-	sensory chan<- reactivity.Atom
-	mu      sync.Mutex
+	sensory cerebrum.Bus
 }
 
-var _ cerebrum.MotorBus = (*InstrumentAdapter)(nil)
+var _ cerebrum.Bus = (*InstrumentAdapter)(nil)
 
-func NewInstrumentAdapter(shell instrument.Shell, sensory chan<- reactivity.Atom) *InstrumentAdapter {
+func NewInstrumentAdapter(shell instrument.Shell, sensory cerebrum.Bus) *InstrumentAdapter {
 	return &InstrumentAdapter{shell: shell, sensory: sensory}
 }
 
-func (a *InstrumentAdapter) Send(ctx context.Context, cmd cerebrum.Command) error {
-	if cmd.Kind != "instrument" {
+func (a *InstrumentAdapter) Send(ctx context.Context, event cerebrum.Event) error {
+	if event.Kind != "instrument" {
 		return nil
 	}
 
-	result, err := a.shell.Exec(ctx, cmd.Target, json.RawMessage(cmd.Payload))
+	result, err := a.shell.Exec(ctx, event.Source, json.RawMessage(event.Payload))
 
-	var atom reactivity.Atom
+	var response cerebrum.Event
 	if err != nil {
-		atom = reactivity.Atom{
-			ID:        fmt.Sprintf("instrument-error-%s-%d", cmd.Target, time.Now().UnixNano()),
-			Type:      reactivity.ExecutionAtom,
-			Source:    reactivity.Instrument,
-			Taxonomy:  fmt.Sprintf("execution.instrument-error.%s", cmd.Target),
-			Content:   []byte(err.Error()),
+		response = cerebrum.Event{
+			ID:        fmt.Sprintf("instrument-error-%s-%d", event.Source, time.Now().UnixNano()),
+			Kind:      "instrument.error",
+			Source:    event.Source,
+			Payload:   []byte(err.Error()),
 			CreatedAt: time.Now(),
 		}
 	} else {
-		atom = reactivity.Atom{
-			ID:        fmt.Sprintf("instrument-%s-%d", cmd.Target, time.Now().UnixNano()),
-			Type:      reactivity.ExecutionAtom,
-			Source:    reactivity.Instrument,
-			Taxonomy:  fmt.Sprintf("execution.instrument.%s", cmd.Target),
-			Content:   []byte(result.Text()),
+		response = cerebrum.Event{
+			ID:        fmt.Sprintf("instrument-%s-%d", event.Source, time.Now().UnixNano()),
+			Kind:      "instrument.result",
+			Source:    event.Source,
+			Payload:   []byte(result.Text()),
 			CreatedAt: time.Now(),
 		}
 	}
 
-	select {
-	case a.sensory <- atom:
-	case <-ctx.Done():
-	}
-	return nil
+	return a.sensory.Send(ctx, response)
+}
+
+func (a *InstrumentAdapter) Receive(_ context.Context) (cerebrum.Event, bool) {
+	return cerebrum.Event{}, false
 }

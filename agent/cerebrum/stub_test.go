@@ -15,13 +15,19 @@ func (s *stubCompleter) Complete(_ context.Context, _ string) (string, error) {
 	return s.response, s.err
 }
 
-type stubMotorBus struct {
-	commands []Command
+type stubBus struct {
+	events []Event
 }
 
-func (s *stubMotorBus) Send(_ context.Context, cmd Command) error {
-	s.commands = append(s.commands, cmd)
+var _ Bus = (*stubBus)(nil)
+
+func (s *stubBus) Send(_ context.Context, event Event) error {
+	s.events = append(s.events, event)
 	return nil
+}
+
+func (s *stubBus) Receive(_ context.Context) (Event, bool) {
+	return Event{}, false
 }
 
 type emittingTriadReactor struct{}

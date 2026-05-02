@@ -10,7 +10,7 @@ import (
 func TestThink_FullVerticalSlice(t *testing.T) {
 	completer := &stubCompleter{response: "done"}
 	reactor := reactivity.NewReactor()
-	motor := &stubMotorBus{}
+	motor := &stubBus{}
 	cb := New(reactor, completer, WithMotor(motor))
 
 	if err := cb.Think(context.Background(), []byte("investigate PTP failure")); err != nil {
@@ -29,5 +29,5 @@ func TestThink_FullVerticalSlice(t *testing.T) {
 		t.Error("missing Retrospection atoms (Wish)")
 	}
 
-	t.Logf("Vertical slice: %d atoms, %d motor commands", m.TotalMass(), len(motor.commands))
+	t.Logf("Vertical slice: %d atoms, %d motor commands", m.TotalMass(), len(motor.events))
 }

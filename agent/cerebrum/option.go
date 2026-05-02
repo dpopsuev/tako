@@ -2,8 +2,12 @@ package cerebrum
 
 type Option func(*Cerebrum)
 
-func WithMotor(m MotorBus) Option {
-	return func(cb *Cerebrum) { cb.motor = m }
+func WithMotor(b Bus) Option {
+	return func(cb *Cerebrum) { cb.motor = b }
+}
+
+func WithSignal(b Bus) Option {
+	return func(cb *Cerebrum) { cb.signal = b }
 }
 
 func WithMaxTurns(n int) Option {

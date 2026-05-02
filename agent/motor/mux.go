@@ -9,29 +9,31 @@ import (
 
 type Mux struct {
 	mu     sync.Mutex
-	motors map[string]cerebrum.MotorBus
+	routes map[string]cerebrum.Bus
 }
-
-var _ cerebrum.MotorBus = (*Mux)(nil)
 
 func NewMux() *Mux {
 	return &Mux{
-		motors: make(map[string]cerebrum.MotorBus),
+		routes: make(map[string]cerebrum.Bus),
 	}
 }
 
-func (m *Mux) Register(kind string, motor cerebrum.MotorBus) {
+func (m *Mux) Register(kind string, bus cerebrum.Bus) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.motors[kind] = motor
+	m.routes[kind] = bus
 }
 
-func (m *Mux) Send(ctx context.Context, cmd cerebrum.Command) error {
+func (m *Mux) Send(ctx context.Context, event cerebrum.Event) error {
 	m.mu.Lock()
-	adapter, ok := m.motors[cmd.Kind]
+	bus, ok := m.routes[event.Kind]
 	m.mu.Unlock()
 	if !ok {
 		return nil
 	}
-	return adapter.Send(ctx, cmd)
+	return bus.Send(ctx, event)
+}
+
+func (m *Mux) Receive(_ context.Context) (cerebrum.Event, bool) {
+	return cerebrum.Event{}, false
 }
