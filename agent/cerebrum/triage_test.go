@@ -8,7 +8,7 @@ import (
 )
 
 func TestTriage_Inception_NewDomain(t *testing.T) {
-	store := NewMoleculeStore()
+	store := reactivity.NewMoleculeStore()
 	reactor := reactivity.NewReactor()
 
 	store.Receive(reactivity.Atom{
@@ -29,7 +29,7 @@ func TestTriage_Inception_NewDomain(t *testing.T) {
 }
 
 func TestTriage_Continuation_SameDomain(t *testing.T) {
-	store := NewMoleculeStore()
+	store := reactivity.NewMoleculeStore()
 	reactor := reactivity.NewReactor()
 
 	m := store.Focus("mol-ptp")
@@ -63,7 +63,7 @@ func TestTriage_Continuation_SameDomain(t *testing.T) {
 }
 
 func TestTriage_Contradiction_ConflictingAtom(t *testing.T) {
-	store := NewMoleculeStore()
+	store := reactivity.NewMoleculeStore()
 	reactor := reactivity.NewReactor()
 
 	m := store.Focus("mol-test")
@@ -97,7 +97,7 @@ func TestTriage_Contradiction_ConflictingAtom(t *testing.T) {
 }
 
 func TestTriage_MultiplAtoms_MixedVerdicts(t *testing.T) {
-	store := NewMoleculeStore()
+	store := reactivity.NewMoleculeStore()
 	reactor := reactivity.NewReactor()
 
 	store.Receive(reactivity.Atom{
@@ -122,7 +122,7 @@ func TestTriage_MultiplAtoms_MixedVerdicts(t *testing.T) {
 }
 
 func TestTriage_DrainsUnsorted(t *testing.T) {
-	store := NewMoleculeStore()
+	store := reactivity.NewMoleculeStore()
 	reactor := reactivity.NewReactor()
 
 	store.Receive(reactivity.Atom{

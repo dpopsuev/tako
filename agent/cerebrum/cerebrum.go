@@ -24,7 +24,6 @@ type Cerebrum struct {
 	promptBuilder PromptBuilder
 	parser        ResponseParser
 
-	store    *MoleculeStore
 	molecule *reactivity.Molecule
 }
 
@@ -36,7 +35,6 @@ func New(reactor *reactivity.Core, completer troupe.Completer, opts ...Option) *
 		classifier:    DefaultClassifier,
 		promptBuilder: DefaultPromptBuilder,
 		parser:        DefaultParser,
-		store:         NewMoleculeStore(),
 		sensory:       NewChannelBus(64),
 	}
 	for _, opt := range opts {
@@ -66,19 +64,18 @@ func (cb *Cerebrum) Run(ctx context.Context) {
 			return
 		}
 		atom := eventToAtom(event)
-		molecule := cb.cognize(atom)
-		cb.reactor.React(molecule, atom)
+		molecule := cb.reactor.Cognize(atom)
 		cb.dispatch(ctx, molecule)
 
 		if molecule.Sealed() {
 			cb.molecule = molecule
-			cb.store.Park()
+			cb.reactor.Monolog().Park()
 		}
 	}
 }
 
 func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
-	molecule := cb.cognize(reactivity.Atom{
+	molecule := cb.reactor.Cognize(reactivity.Atom{
 		ID:        fmt.Sprintf("need-%d", time.Now().UnixNano()),
 		Type:      reactivity.IntentAtom,
 		Taxonomy:  "intent.need",
@@ -134,7 +131,7 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 	}
 
 	cb.molecule = molecule
-	cb.store.Park()
+	cb.reactor.Monolog().Park()
 	return nil
 }
 
@@ -142,29 +139,12 @@ func (cb *Cerebrum) Result() *reactivity.Molecule {
 	return cb.molecule
 }
 
-func (cb *Cerebrum) Store() *MoleculeStore {
-	return cb.store
+func (cb *Cerebrum) Store() *reactivity.MoleculeStore {
+	return cb.reactor.Monolog()
 }
 
 func (cb *Cerebrum) SensoryBus() Bus {
 	return cb.sensory
-}
-
-func (cb *Cerebrum) cognize(seed reactivity.Atom) *reactivity.Molecule {
-	for _, id := range cb.store.Molecules() {
-		m, ok := cb.store.Molecule(id)
-		if !ok || m.Sealed() {
-			continue
-		}
-		if matchesDomain(m, seed) {
-			return cb.store.Focus(id)
-		}
-	}
-	molID := fmt.Sprintf("mol-%d", time.Now().UnixNano())
-	m := cb.store.Focus(molID)
-	cb.reactor.React(m, seed)
-	cb.dispatch(context.Background(), m)
-	return m
 }
 
 func eventToAtom(e Event) reactivity.Atom {
@@ -176,15 +156,6 @@ func eventToAtom(e Event) reactivity.Atom {
 		Content:   e.Payload,
 		CreatedAt: e.CreatedAt,
 	}
-}
-
-func taxonomyDomain(taxonomy string) string {
-	for i := len(taxonomy) - 1; i >= 0; i-- {
-		if taxonomy[i] == '.' {
-			return taxonomy[i+1:]
-		}
-	}
-	return ""
 }
 
 func (cb *Cerebrum) dispatch(ctx context.Context, m *reactivity.Molecule) {

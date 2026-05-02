@@ -34,7 +34,7 @@ type RouteResult struct {
 // Triage classifies an atom against the MoleculeStore and Reactor.
 // Drains the unsorted shelf, classifies each atom, and adds it to
 // the appropriate molecule in the store.
-func Route(store *MoleculeStore, reactor *reactivity.Core) []RouteResult {
+func Route(store *reactivity.MoleculeStore, reactor *reactivity.Core) []RouteResult {
 	atoms := store.Drain()
 	results := make([]RouteResult, 0, len(atoms))
 
@@ -49,7 +49,7 @@ func Route(store *MoleculeStore, reactor *reactivity.Core) []RouteResult {
 	return results
 }
 
-func classify(store *MoleculeStore, reactor *reactivity.Core, atom reactivity.Atom) RouteResult {
+func classify(store *reactivity.MoleculeStore, reactor *reactivity.Core, atom reactivity.Atom) RouteResult {
 	for _, id := range store.Molecules() {
 		m, ok := store.Molecule(id)
 		if !ok || m.Sealed() {
@@ -83,7 +83,7 @@ func classify(store *MoleculeStore, reactor *reactivity.Core, atom reactivity.At
 
 func sameTypeConflict(m *reactivity.Molecule, atom reactivity.Atom) (bool, *reactivity.Atom) {
 	for _, existing := range m.Atoms(atom.Type) {
-		if existing.ID != atom.ID && taxonomyDomain(existing.Taxonomy) == taxonomyDomain(atom.Taxonomy) {
+		if existing.ID != atom.ID && reactivity.AtomTaxonomyDomain(existing.Taxonomy) == reactivity.AtomTaxonomyDomain(atom.Taxonomy) {
 			return true, existing
 		}
 	}
@@ -91,13 +91,13 @@ func sameTypeConflict(m *reactivity.Molecule, atom reactivity.Atom) (bool, *reac
 }
 
 func matchesDomain(m *reactivity.Molecule, atom reactivity.Atom) bool {
-	domain := taxonomyDomain(atom.Taxonomy)
+	domain := reactivity.AtomTaxonomyDomain(atom.Taxonomy)
 	if domain == "" {
 		return false
 	}
 	for _, phase := range reactivity.AllAtomTypes() {
 		for _, existing := range m.Atoms(phase) {
-			if taxonomyDomain(existing.Taxonomy) == domain {
+			if reactivity.AtomTaxonomyDomain(existing.Taxonomy) == domain {
 				return true
 			}
 		}

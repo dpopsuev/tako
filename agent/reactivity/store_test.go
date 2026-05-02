@@ -1,17 +1,16 @@
-package cerebrum
+package reactivity
 
 import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/tako/agent/reactivity"
 )
 
 func TestStore_ReceiveAtom_LandsInUnsorted(t *testing.T) {
 	s := NewMoleculeStore()
-	atom := reactivity.Atom{
+	atom := Atom{
 		ID:        "a1",
-		Type:      reactivity.IntentAtom,
+		Type:      IntentAtom,
 		Taxonomy:  "intent.goal.test",
 		Content:   []byte("test"),
 		CreatedAt: time.Now(),
@@ -94,8 +93,8 @@ func TestStore_Molecules_ListsAll(t *testing.T) {
 
 func TestStore_Drain_RemovesUnsorted(t *testing.T) {
 	s := NewMoleculeStore()
-	s.Receive(reactivity.Atom{ID: "a1", Type: reactivity.IntentAtom, CreatedAt: time.Now()})
-	s.Receive(reactivity.Atom{ID: "a2", Type: reactivity.IntentAtom, CreatedAt: time.Now()})
+	s.Receive(Atom{ID: "a1", Type: IntentAtom, CreatedAt: time.Now()})
+	s.Receive(Atom{ID: "a2", Type: IntentAtom, CreatedAt: time.Now()})
 
 	drained := s.Drain()
 	if len(drained) != 2 {

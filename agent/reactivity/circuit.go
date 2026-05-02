@@ -97,10 +97,11 @@ func (Reflection) React(m *Molecule, _ Atom) (YieldKind, Yield) {
 // Core composes 3 floor TriadReactors + Reflect egress.
 // Cognize (ingress) → Think → Compose → Implement → Reflect (egress).
 type Core struct {
-	floors map[Triad]Reactor
-	egress   Reactor
-	pool   ergograph.Pool
-	tracer trace.Tracer
+	floors  map[Triad]Reactor
+	egress  Reactor
+	monolog *MoleculeStore
+	pool    ergograph.Pool
+	tracer  trace.Tracer
 }
 
 type ReactorOption func(*Core)
@@ -131,6 +132,7 @@ func WithDirective(phase AtomType, directive Directive) ReactorOption {
 
 func NewReactor(opts ...ReactorOption) *Core {
 	c := &Core{
+		monolog: NewMoleculeStore(),
 		floors: map[Triad]Reactor{
 			ThinkTriad:     NewTriadReactor(ThinkTriad, AtomType{ComposeTriad, ThesisPosition}),
 			ComposeTriad:   NewTriadReactor(ComposeTriad, AtomType{ImplementTriad, ThesisPosition}),
@@ -142,6 +144,51 @@ func NewReactor(opts ...ReactorOption) *Core {
 		opt(c)
 	}
 	return c
+}
+
+func (c *Core) Monolog() *MoleculeStore { return c.monolog }
+
+func (c *Core) Cognize(atom Atom) *Molecule {
+	for _, id := range c.monolog.Molecules() {
+		m, ok := c.monolog.Molecule(id)
+		if !ok || m.Sealed() {
+			continue
+		}
+		if atomMatchesMolecule(m, atom) {
+			return c.monolog.Focus(id)
+		}
+	}
+	molID := fmt.Sprintf("mol-%d", time.Now().UnixNano())
+	m := c.monolog.Focus(molID)
+	c.React(m, atom)
+	return m
+}
+
+func atomMatchesMolecule(m *Molecule, atom Atom) bool {
+	if atom.Taxonomy == "" {
+		return false
+	}
+	domain := AtomTaxonomyDomain(atom.Taxonomy)
+	if domain == "" {
+		return false
+	}
+	for _, at := range AllAtomTypes() {
+		for _, existing := range m.Atoms(at) {
+			if AtomTaxonomyDomain(existing.Taxonomy) == domain {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func AtomTaxonomyDomain(taxonomy string) string {
+	for i := len(taxonomy) - 1; i >= 0; i-- {
+		if taxonomy[i] == '.' {
+			return taxonomy[i+1:]
+		}
+	}
+	return ""
 }
 
 func (c *Core) AddDirective(phase AtomType, directive Directive) {

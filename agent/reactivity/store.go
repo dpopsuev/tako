@@ -1,9 +1,8 @@
-package cerebrum
+package reactivity
 
 import (
 	"sync"
 
-	"github.com/dpopsuev/tako/agent/reactivity"
 )
 
 // MoleculeStore is the Cerebrum's internal Depo — Molecules are stored,
@@ -15,30 +14,30 @@ import (
 // Park:     push the focused Molecule back to storage.
 type MoleculeStore struct {
 	mu        sync.Mutex
-	unsorted  []reactivity.Atom
-	molecules map[string]*reactivity.Molecule
+	unsorted  []Atom
+	molecules map[string]*Molecule
 	focusedID string
 }
 
 func NewMoleculeStore() *MoleculeStore {
 	return &MoleculeStore{
-		molecules: make(map[string]*reactivity.Molecule),
+		molecules: make(map[string]*Molecule),
 	}
 }
 
-func (s *MoleculeStore) Receive(atom reactivity.Atom) {
+func (s *MoleculeStore) Receive(atom Atom) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.unsorted = append(s.unsorted, atom)
 }
 
-func (s *MoleculeStore) Unsorted() []reactivity.Atom {
+func (s *MoleculeStore) Unsorted() []Atom {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return append([]reactivity.Atom(nil), s.unsorted...)
+	return append([]Atom(nil), s.unsorted...)
 }
 
-func (s *MoleculeStore) Drain() []reactivity.Atom {
+func (s *MoleculeStore) Drain() []Atom {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	drained := s.unsorted
@@ -46,19 +45,19 @@ func (s *MoleculeStore) Drain() []reactivity.Atom {
 	return drained
 }
 
-func (s *MoleculeStore) Focus(moleculeID string) *reactivity.Molecule {
+func (s *MoleculeStore) Focus(moleculeID string) *Molecule {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	m, ok := s.molecules[moleculeID]
 	if !ok {
-		m = reactivity.NewMolecule(moleculeID)
+		m = NewMolecule(moleculeID)
 		s.molecules[moleculeID] = m
 	}
 	s.focusedID = moleculeID
 	return m
 }
 
-func (s *MoleculeStore) Focused() *reactivity.Molecule {
+func (s *MoleculeStore) Focused() *Molecule {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.focusedID == "" {
@@ -89,7 +88,7 @@ func (s *MoleculeStore) Molecules() []string {
 	return out
 }
 
-func (s *MoleculeStore) Molecule(id string) (*reactivity.Molecule, bool) {
+func (s *MoleculeStore) Molecule(id string) (*Molecule, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	m, ok := s.molecules[id]
