@@ -149,6 +149,15 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 		slog.Duration("turn_timeout", cb.budget.TurnTimeout))
 
 	history, _ := molecule.Context().([]tangle.Message)
+	staleTurns := 0
+	lastPhase := molecule.Phase()
+	staleLimit := 0
+	if cb.budget.MinOAE > 0 {
+		staleLimit = int(1.0 / cb.budget.MinOAE)
+		if staleLimit < 2 {
+			staleLimit = 2
+		}
+	}
 
 	for turn := 0; turn < cb.budget.MaxTurns && !molecule.Sealed(); turn++ {
 		domain := cb.classifier.Classify(molecule)
@@ -280,6 +289,29 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 			cb.dispatch(ctx, molecule)
 		}
 		molecule.SetContext(history)
+
+		currentPhase := molecule.Phase()
+		if currentPhase != lastPhase {
+			staleTurns = 0
+			lastPhase = currentPhase
+		} else {
+			staleTurns++
+		}
+		if staleLimit > 0 && staleTurns >= staleLimit {
+			slog.WarnContext(ctx, "cerebrum.think.oae_bail",
+				slog.Int("turn", turn),
+				slog.Int("stale_turns", staleTurns),
+				slog.Int("stale_limit", staleLimit),
+				slog.Float64("min_oae", cb.budget.MinOAE))
+			cb.reactor.Seal(molecule, reactivity.Atom{
+				ID:        fmt.Sprintf("wish-oae-bail-%d", turn),
+				Type:      reactivity.RetrospectionAtom,
+				Taxonomy:  "retrospection.wish.oae-below-threshold",
+				Content:   []byte(fmt.Sprintf("no progress for %d turns, MinOAE=%.2f", staleTurns, cb.budget.MinOAE)),
+				CreatedAt: time.Now(),
+			})
+			break
+		}
 	}
 
 	if !molecule.Sealed() {

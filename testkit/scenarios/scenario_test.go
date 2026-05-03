@@ -100,8 +100,11 @@ func runScenario(t *testing.T, scenario Scenario) {
 		cerebrum.WithSensory(sensory),
 		cerebrum.WithMotor(motor),
 		cerebrum.WithSignal(signal),
-		cerebrum.WithMaxTurns(30),
-		cerebrum.WithTurnTimeout(30*time.Second),
+		cerebrum.WithBudget(cerebrum.Budget{
+			MaxTurns:    30,
+			TurnTimeout: 30 * time.Second,
+			MinOAE:      0.3,
+		}),
 		cerebrum.WithTools(instrumentTools(scenario.Adventure)),
 	)
 
