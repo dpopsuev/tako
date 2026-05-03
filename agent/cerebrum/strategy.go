@@ -25,12 +25,12 @@ func (f PromptBuilderFunc) Build(m *reactivity.Molecule, need []byte, domain Dom
 }
 
 type ResponseParser interface {
-	Parse(raw string, phase reactivity.AtomType, turn int) ([]reactivity.Atom, *ToolCall, error)
+	Parse(raw string, phase reactivity.AtomType, turn int) ([]reactivity.Atom, *InstrumentCall, error)
 }
 
-type ResponseParserFunc func(raw string, phase reactivity.AtomType, turn int) ([]reactivity.Atom, *ToolCall, error)
+type ResponseParserFunc func(raw string, phase reactivity.AtomType, turn int) ([]reactivity.Atom, *InstrumentCall, error)
 
-func (f ResponseParserFunc) Parse(raw string, phase reactivity.AtomType, turn int) ([]reactivity.Atom, *ToolCall, error) {
+func (f ResponseParserFunc) Parse(raw string, phase reactivity.AtomType, turn int) ([]reactivity.Atom, *InstrumentCall, error) {
 	return f(raw, phase, turn)
 }
 
@@ -48,6 +48,6 @@ func naivePrompt(m *reactivity.Molecule, need []byte, _ Domain) string {
 	return fmt.Sprintf("phase:%s mass:%d need:%s", m.Phase(), m.Mass(m.Phase()), string(need))
 }
 
-func rawParse(raw string, phase reactivity.AtomType, turn int) ([]reactivity.Atom, *ToolCall, error) {
+func rawParse(raw string, phase reactivity.AtomType, turn int) ([]reactivity.Atom, *InstrumentCall, error) {
 	return fallbackParse(raw, phase, turn), nil, nil
 }

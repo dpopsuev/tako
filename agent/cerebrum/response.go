@@ -15,24 +15,24 @@ type ParsedAtom struct {
 	Targets  []string `json:"targets,omitempty"`
 }
 
-type ToolCall struct {
+type InstrumentCall struct {
 	Name  string          `json:"name"`
 	Input json.RawMessage `json:"input"`
 }
 
 type Response struct {
 	Atoms    []ParsedAtom `json:"atoms"`
-	ToolCall *ToolCall    `json:"tool_call,omitempty"`
+	InstrumentCall *InstrumentCall    `json:"instrument_call,omitempty"`
 	Done     bool         `json:"done"`
 }
 
-func ParseResponse(raw string, currentPhase reactivity.AtomType, turn int) ([]reactivity.Atom, *ToolCall, error) {
+func ParseResponse(raw string, currentPhase reactivity.AtomType, turn int) ([]reactivity.Atom, *InstrumentCall, error) {
 	var resp Response
 	if err := json.Unmarshal([]byte(raw), &resp); err != nil {
 		return fallbackParse(raw, currentPhase, turn), nil, nil
 	}
 
-	if len(resp.Atoms) == 0 && resp.ToolCall == nil {
+	if len(resp.Atoms) == 0 && resp.InstrumentCall == nil {
 		return fallbackParse(raw, currentPhase, turn), nil, nil
 	}
 
@@ -54,7 +54,7 @@ func ParseResponse(raw string, currentPhase reactivity.AtomType, turn int) ([]re
 		})
 	}
 
-	return atoms, resp.ToolCall, nil
+	return atoms, resp.InstrumentCall, nil
 }
 
 func fallbackParse(raw string, phase reactivity.AtomType, turn int) []reactivity.Atom {

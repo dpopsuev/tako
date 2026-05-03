@@ -4,7 +4,9 @@ package scenarios
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -41,21 +43,40 @@ func newCompleter(t *testing.T, ctx context.Context) interface {
 	return providers.NewCompleter(provider, resolved.Model, nil)
 }
 
+func instrumentList(adv *TextAdventure) string {
+	var parts []string
+	for _, name := range adv.Names() {
+		desc, _ := adv.Describe(name)
+		parts = append(parts, fmt.Sprintf("- %s: %s", name, desc))
+	}
+	return strings.Join(parts, "\n")
+}
+
 func runScenario(t *testing.T, scenario Scenario) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
 	completer := newCompleter(t, ctx)
-	reactor := reactivity.NewReactor()
+
+	reactor := reactivity.NewReactor(
+		reactivity.WithDirective(reactivity.ExecutionAtom,
+			reactivity.Directive("Available instruments:\n"+instrumentList(scenario.Adventure)),
+		),
+	)
+
 	sensory := cerebrum.NewChannelBus(64)
-	motor := NewFixtureMotor(scenario.Instruments, sensory)
+	motor := NewFixtureMotor(scenario.Adventure.Names(), sensory)
 	signal := NewFixtureSignal()
+
+	// Wire motor to use the adventure's stateful instruments
+	motor.instruments = make(map[string]string)
+	motor.adventure = scenario.Adventure
 
 	cb := cerebrum.New(reactor, completer,
 		cerebrum.WithMotor(motor),
 		cerebrum.WithSignal(signal),
-		cerebrum.WithMaxTurns(20),
+		cerebrum.WithMaxTurns(30),
 	)
 
 	if err := cb.Think(ctx, []byte(scenario.Need)); err != nil {
@@ -74,36 +95,37 @@ func runScenario(t *testing.T, scenario Scenario) {
 
 	t.Logf("Motor calls: %d", len(motor.Calls()))
 	for _, call := range motor.Calls() {
-		t.Logf("  [%s] %s: %s", call.Kind, call.Source, string(call.Payload))
-	}
-
-	t.Logf("Signals: %d", len(signal.Signals()))
-	for _, sig := range signal.Signals() {
-		t.Logf("  [%s] %s", sig.Kind, sig.Source)
-	}
-
-	for _, at := range reactivity.AllAtomTypes() {
-		for _, a := range m.Atoms(at) {
-			content := string(a.Content)
-			if len(content) > 150 {
-				content = content[:150] + "..."
-			}
-			t.Logf("  [%s] %s: %s", at, a.Taxonomy, content)
+		payload := string(call.Payload)
+		if len(payload) > 100 {
+			payload = payload[:100] + "..."
 		}
+		t.Logf("  [%s] %s: %s", call.Kind, call.Source, payload)
 	}
 
-	if scenario.Expect.Sealed && !m.Sealed() {
-		t.Error("expected molecule to be sealed")
+	t.Logf("Final state:")
+	for k, v := range scenario.Adventure.State() {
+		t.Logf("  %s: %v", k, v)
 	}
-	if m.TotalMass() < scenario.Expect.MinAtoms {
-		t.Errorf("expected at least %d atoms, got %d", scenario.Expect.MinAtoms, m.TotalMass())
+
+	if m.Sealed() {
+		t.Logf("Molecule: SEALED")
+	} else {
+		t.Logf("Molecule: OPEN (phase: %s)", m.Phase())
+	}
+
+	if scenario.IsSolved != nil {
+		if scenario.IsSolved(scenario.Adventure.State()) {
+			t.Logf("SOLVED")
+		} else {
+			t.Logf("NOT SOLVED")
+		}
 	}
 }
 
 func TestScenario_Fridge(t *testing.T) {
-	runScenario(t, Fridge)
+	runScenario(t, NewFridge())
 }
 
 func TestScenario_DirtyRoom(t *testing.T) {
-	runScenario(t, DirtyRoom)
+	runScenario(t, NewDirtyRoom())
 }

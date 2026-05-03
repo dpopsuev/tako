@@ -2,6 +2,7 @@ package scenarios
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -12,13 +13,14 @@ import (
 type FixtureMotor struct {
 	mu          sync.Mutex
 	instruments map[string]string
+	adventure   *TextAdventure
 	sensory     cerebrum.Bus
 	calls       []cerebrum.Event
 }
 
-func NewFixtureMotor(instruments map[string]string, sensory cerebrum.Bus) *FixtureMotor {
+func NewFixtureMotor(instrumentNames []string, sensory cerebrum.Bus) *FixtureMotor {
 	return &FixtureMotor{
-		instruments: instruments,
+		instruments: make(map[string]string),
 		sensory:     sensory,
 	}
 }
@@ -28,16 +30,13 @@ func (f *FixtureMotor) Send(ctx context.Context, event cerebrum.Event) error {
 	f.calls = append(f.calls, event)
 	f.mu.Unlock()
 
-	if event.Kind == "instrument" {
-		result, ok := f.instruments[event.Source]
-		if !ok {
-			result = fmt.Sprintf("unknown instrument: %s", event.Source)
-		}
+	if event.Kind == "instrument" && f.adventure != nil {
+		result, _ := f.adventure.Exec(ctx, event.Source, json.RawMessage(event.Payload))
 		f.sensory.Send(ctx, cerebrum.Event{
 			ID:        fmt.Sprintf("fixture-%s-%d", event.Source, time.Now().UnixNano()),
 			Kind:      "instrument.result",
 			Source:    event.Source,
-			Payload:   []byte(result),
+			Payload:   []byte(result.Text()),
 			CreatedAt: time.Now(),
 		})
 	}

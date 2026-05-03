@@ -30,7 +30,7 @@ Domain: {{.Domain}}
 {{- end}}
 
 ## Response Format
-Respond with JSON: {"atoms": [{"type": "<phase>", "taxonomy": "<phase.facet.domain>", "content": "<your response>"}], "tool_call": {"name": "<instrument>", "input": <json>}}
+Respond with JSON: {"atoms": [{"type": "<phase>", "taxonomy": "<phase.facet.domain>", "content": "<your response>"}], "instrument_call": {"name": "<instrument>", "input": <json>}}
 `
 
 var compiledTemplate = template.Must(
