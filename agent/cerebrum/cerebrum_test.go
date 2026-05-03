@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/artifact"
@@ -210,7 +211,8 @@ func TestThink_ToolCallDispatchedToMotor(t *testing.T) {
 	}
 	reactor := reactivity.NewReactor()
 	motor := &stubBus{}
-	cb := New(reactor, completer, WithMotor(motor), WithMaxTurns(3))
+	cb := New(reactor, completer, WithMotor(motor), WithMaxTurns(3),
+		WithTurnTimeout(100*time.Millisecond))
 
 	cb.Think(context.Background(), []byte("find food"))
 
@@ -235,7 +237,8 @@ func TestThink_MultipleToolCalls(t *testing.T) {
 	}
 	reactor := reactivity.NewReactor()
 	motor := &stubBus{}
-	cb := New(reactor, completer, WithMotor(motor), WithMaxTurns(3))
+	cb := New(reactor, completer, WithMotor(motor), WithMaxTurns(3),
+		WithTurnTimeout(100*time.Millisecond))
 
 	cb.Think(context.Background(), []byte("cook"))
 

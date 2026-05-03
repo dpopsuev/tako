@@ -148,6 +148,8 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 		slog.Int("max_turns", cb.budget.MaxTurns),
 		slog.Duration("turn_timeout", cb.budget.TurnTimeout))
 
+	var history []troupe.Message
+
 	for turn := 0; turn < cb.budget.MaxTurns && !molecule.Sealed(); turn++ {
 		domain := cb.classifier.Classify(molecule)
 		directives := cb.reactor.Directives(molecule.Phase())
@@ -160,15 +162,20 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 			slog.Int("turn", turn),
 			slog.String("phase", molecule.Phase().String()),
 			slog.Int("mass", molecule.TotalMass()),
+			slog.Int("history_len", len(history)),
 			slog.String("domain", domain.String()))
 		slog.DebugContext(ctx, "cerebrum.think.prompt",
 			slog.Int("turn", turn),
 			slog.String("content", prompt))
 
+		messages := make([]troupe.Message, 0, len(history)+1)
+		messages = append(messages, history...)
+		messages = append(messages, troupe.Message{Role: "user", Content: prompt})
+
 		turnCtx, turnCancel := context.WithTimeout(ctx, cb.budget.TurnTimeout)
 		start := time.Now()
 		completion, err := cb.completer.Complete(turnCtx, troupe.CompletionParams{
-			Prompt:    prompt,
+			Messages:  messages,
 			Tools:     cb.tools(molecule.Phase()),
 			MaxTokens: cb.budget.MaxTokens,
 		})
@@ -201,6 +208,13 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 			slog.Int("turn", turn),
 			slog.String("content", completion.Content))
 
+		history = append(history, troupe.Message{Role: "user", Content: prompt})
+		history = append(history, troupe.Message{
+			Role:      "assistant",
+			Content:   completion.Content,
+			ToolCalls: completion.ToolCalls,
+		})
+
 		for _, tc := range completion.ToolCalls {
 			slog.InfoContext(ctx, "cerebrum.think.tool_call",
 				slog.Int("turn", turn),
@@ -212,8 +226,25 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 				Payload: tc.Input,
 			})
 		}
+
 		if len(completion.ToolCalls) > 0 {
 			cb.dispatch(ctx, molecule)
+
+			toolCtx, toolCancel := context.WithTimeout(ctx, cb.budget.TurnTimeout)
+			for _, tc := range completion.ToolCalls {
+				result := cb.waitToolResult(toolCtx, tc)
+				history = append(history, troupe.Message{
+					Role:       "tool",
+					Content:    result,
+					ToolCallID: tc.ID,
+				})
+				slog.InfoContext(ctx, "cerebrum.think.tool_result",
+					slog.Int("turn", turn),
+					slog.String("name", tc.Name),
+					slog.Int("result_len", len(result)))
+			}
+			toolCancel()
+			continue
 		}
 
 		atoms, _, _ := cb.parser.Parse(completion.Content, molecule.Phase(), turn)
@@ -286,6 +317,14 @@ func (cb *Cerebrum) SensoryBus() Bus {
 
 func (cb *Cerebrum) tools(phase reactivity.AtomType) []troupe.Tool {
 	return cb.toolDefs
+}
+
+func (cb *Cerebrum) waitToolResult(ctx context.Context, tc troupe.ToolCall) string {
+	event, ok := cb.sensory.Receive(ctx)
+	if !ok {
+		return "tool call timed out"
+	}
+	return string(event.Payload)
 }
 
 func (cb *Cerebrum) dispatch(ctx context.Context, m *reactivity.Molecule) {
