@@ -13,6 +13,8 @@ import (
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
 	"github.com/dpopsuev/tako/agent/reactivity"
+	"github.com/dpopsuev/tako/ergograph"
+	"github.com/dpopsuev/tako/service/andon"
 	tangle "github.com/dpopsuev/tangle"
 	"github.com/dpopsuev/tangle/arsenal"
 	"github.com/dpopsuev/tangle/providers"
@@ -96,10 +98,15 @@ func runScenario(t *testing.T, scenario Scenario) {
 	motor.instruments = make(map[string]string)
 	motor.adventure = scenario.Adventure
 
+	pool := &ergograph.StubPool{}
+	cord := &andon.StubSignal{}
+
 	cb := cerebrum.New(reactor, completer,
 		cerebrum.WithSensory(sensory),
 		cerebrum.WithMotor(motor),
 		cerebrum.WithSignal(signal),
+		cerebrum.WithPool(pool),
+		cerebrum.WithAndon(cord),
 		cerebrum.WithBudget(cerebrum.Budget{
 			MaxTurns:    30,
 			TurnTimeout: 30 * time.Second,
@@ -144,6 +151,11 @@ func runScenario(t *testing.T, scenario Scenario) {
 	t.Logf("Final state:")
 	for k, v := range scenario.Adventure.State() {
 		t.Logf("  %s: %v", k, v)
+	}
+
+	t.Logf("Ergograph: %d records | Andon: %s", pool.Len(), cord.Status())
+	for _, rec := range pool.Records() {
+		t.Logf("  [%s] %v", rec.Action, rec.Labels)
 	}
 
 	if !solved {

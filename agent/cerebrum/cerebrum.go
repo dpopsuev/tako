@@ -10,6 +10,8 @@ import (
 	"github.com/dpopsuev/tako/agent/organ"
 	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/artifact"
+	"github.com/dpopsuev/tako/ergograph"
+	"github.com/dpopsuev/tako/service/andon"
 	tangle "github.com/dpopsuev/tangle"
 )
 
@@ -40,6 +42,9 @@ type Cerebrum struct {
 	promptBuilder PromptBuilder
 	parser        ResponseParser
 	toolDefs      []tangle.Tool
+
+	pool  ergograph.Pool
+	andon andon.Signal
 
 	molecule *reactivity.Molecule
 }
@@ -213,6 +218,16 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 			slog.Int("tool_calls", len(completion.ToolCalls)),
 			slog.Int("tokens_in", completion.Tokens.Input),
 			slog.Int("tokens_out", completion.Tokens.Output))
+
+		cb.emit("cerebrum.turn", map[string]string{
+			"molecule":   molecule.ID,
+			"turn":       fmt.Sprintf("%d", turn),
+			"phase":      molecule.Phase().String(),
+			"tool_calls": fmt.Sprintf("%d", len(completion.ToolCalls)),
+			"tokens_in":  fmt.Sprintf("%d", completion.Tokens.Input),
+			"tokens_out": fmt.Sprintf("%d", completion.Tokens.Output),
+			"elapsed_ms": fmt.Sprintf("%d", elapsed.Milliseconds()),
+		})
 		slog.DebugContext(ctx, "cerebrum.think.response_content",
 			slog.Int("turn", turn),
 			slog.String("content", completion.Content))
@@ -229,6 +244,11 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 				slog.Int("turn", turn),
 				slog.String("name", tc.Name),
 				slog.Int("input_len", len(tc.Input)))
+			cb.emit("cerebrum.tool_call", map[string]string{
+				"molecule": molecule.ID,
+				"turn":     fmt.Sprintf("%d", turn),
+				"tool":     tc.Name,
+			})
 			molecule.Emit(reactivity.Emission{
 				Kind:    "instrument",
 				Target:  tc.Name,
@@ -251,6 +271,12 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 					slog.Int("turn", turn),
 					slog.String("name", tc.Name),
 					slog.Int("result_len", len(result)))
+				cb.emit("cerebrum.tool_result", map[string]string{
+					"molecule":   molecule.ID,
+					"turn":       fmt.Sprintf("%d", turn),
+					"tool":       tc.Name,
+					"result_len": fmt.Sprintf("%d", len(result)),
+				})
 			}
 			toolCancel()
 			molecule.SetContext(history)
@@ -303,6 +329,13 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 				slog.Int("stale_turns", staleTurns),
 				slog.Int("stale_limit", staleLimit),
 				slog.Float64("min_oae", cb.budget.MinOAE))
+			cb.pull(molecule.ID)
+			cb.emit("cerebrum.oae_bail", map[string]string{
+				"molecule":    molecule.ID,
+				"turn":        fmt.Sprintf("%d", turn),
+				"stale_turns": fmt.Sprintf("%d", staleTurns),
+				"min_oae":     fmt.Sprintf("%.2f", cb.budget.MinOAE),
+			})
 			cb.reactor.Seal(molecule, reactivity.Atom{
 				ID:        fmt.Sprintf("wish-oae-bail-%d", turn),
 				Type:      reactivity.RetrospectionAtom,
@@ -332,6 +365,13 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 		slog.Bool("sealed", molecule.Sealed()),
 		slog.Int("mass", molecule.TotalMass()))
 
+	cb.emit("cerebrum.sealed", map[string]string{
+		"molecule": molecule.ID,
+		"mass":     fmt.Sprintf("%d", molecule.TotalMass()),
+		"phase":    molecule.Phase().String(),
+		"sealed":   fmt.Sprintf("%v", molecule.Sealed()),
+	})
+
 	cb.molecule = molecule
 	cb.reactor.Monolog().Park()
 	return nil
@@ -351,6 +391,24 @@ func (cb *Cerebrum) SensoryBus() Bus {
 
 func (cb *Cerebrum) tools(phase reactivity.AtomType) []tangle.Tool {
 	return cb.toolDefs
+}
+
+func (cb *Cerebrum) emit(action string, labels map[string]string) {
+	if cb.pool == nil {
+		return
+	}
+	cb.pool.Append(ergograph.Record{
+		Action:    action,
+		Timestamp: time.Now(),
+		Labels:    labels,
+	})
+}
+
+func (cb *Cerebrum) pull(agentID string) {
+	if cb.andon == nil {
+		return
+	}
+	cb.andon.Pull(agentID)
 }
 
 func (cb *Cerebrum) waitToolResult(ctx context.Context, tc tangle.ToolCall) string {

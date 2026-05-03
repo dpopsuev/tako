@@ -4,6 +4,8 @@ import (
 	"time"
 
 	tangle "github.com/dpopsuev/tangle"
+	"github.com/dpopsuev/tako/ergograph"
+	"github.com/dpopsuev/tako/service/andon"
 )
 
 type Option func(*Cerebrum)
@@ -54,4 +56,12 @@ func WithSynapse(s Synapse) Option {
 
 func WithTools(tools []tangle.Tool) Option {
 	return func(cb *Cerebrum) { cb.toolDefs = tools }
+}
+
+func WithPool(pool ergograph.Pool) Option {
+	return func(cb *Cerebrum) { cb.pool = pool }
+}
+
+func WithAndon(signal andon.Signal) Option {
+	return func(cb *Cerebrum) { cb.andon = signal }
 }
