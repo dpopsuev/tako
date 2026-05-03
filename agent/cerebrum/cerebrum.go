@@ -166,8 +166,9 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 
 	for turn := 0; turn < cb.budget.MaxTurns && !molecule.Sealed(); turn++ {
 		domain := cb.classifier.Classify(molecule)
+		contracts := cb.reactor.Contracts()
 		directives := cb.reactor.Directives(molecule.Phase())
-		prompt := cb.promptBuilder.Build(molecule, need, domain)
+		prompt := buildContractPrompt(molecule, need, domain, contracts)
 		for _, d := range directives {
 			prompt += "\n> " + string(d)
 		}

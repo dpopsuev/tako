@@ -8,57 +8,120 @@ import (
 	"github.com/dpopsuev/tako/agent/reactivity"
 )
 
-type PromptContext struct {
-	Phase     string
-	Domain    string
-	Need      string
-	Atoms     map[string]int
-	TotalMass int
+type ContractView struct {
+	Phase    string
+	Contract string
+	Active   bool
+	Filled   bool
+	Summary  string
 }
 
-const promptTemplate = `# Phase: {{.Phase}}
-Domain: {{.Domain}}
+type ContractPromptContext struct {
+	Need            string
+	Domain          string
+	Contracts       []ContractView
+	ActivePhase     string
+	ActiveContract  string
+	Instructions    string
+	FilledContracts []ContractView
+}
 
-## Need
+const contractPromptTemplate = `# Need
 {{.Need}}
 
-{{- if gt .TotalMass 0}}
-
-## Current State
-{{range $phase, $mass := .Atoms}}{{if gt $mass 0}}- {{$phase}}: {{$mass}} atoms
+# Thinking Tree
+{{range .Contracts}}{{if .Active}}>> {{.Phase}}: {{.Contract}}
+{{else if .Filled}}   {{.Phase}}: [DONE] {{.Summary}}
+{{else}}   {{.Phase}}: {{.Contract}}
 {{end}}{{end}}
-{{- end}}
+## Active: {{.ActivePhase}}
+{{.ActiveContract}}
+
+{{.Instructions}}
+
+{{- if gt (len .FilledContracts) 0}}
+
+## Completed Contracts
+{{range .FilledContracts}}- **{{.Phase}}**: {{.Summary}}
+{{end}}{{end}}
 
 ## Response Format
-Respond with JSON: {"atoms": [{"type": "<phase>", "taxonomy": "<phase.facet.domain>", "content": "<your response>"}], "instrument_call": {"name": "<instrument>", "input": <json>}}
+Respond with JSON: {"atoms": [{"type": "<phase>", "taxonomy": "<phase.domain>", "content": "<your answer to the contract>"}]}
 `
 
-var compiledTemplate = template.Must(
-	template.New("prompt").Option("missingkey=zero").Parse(promptTemplate),
+var contractTemplate = template.Must(
+	template.New("contract").Option("missingkey=zero").Parse(contractPromptTemplate),
 )
 
-func buildPrompt(m *reactivity.Molecule, need []byte, domain Domain) string {
+func buildContractPrompt(m *reactivity.Molecule, need []byte, domain Domain, contracts []reactivity.ContractInfo) string {
 	phase := m.Phase()
 
-	ctx := PromptContext{
-		Phase:     phase.String(),
-		Domain:    domain.String(),
-		Need:      string(need),
-		TotalMass: m.TotalMass(),
+	ctx := ContractPromptContext{
+		Need:   string(need),
+		Domain: domain.String(),
 	}
 
-	ctx.Atoms = make(map[string]int)
-	for _, at := range reactivity.AllAtomTypes() {
-		if mass := m.Mass(at); mass > 0 {
-			ctx.Atoms[at.String()] = mass
+	for _, c := range contracts {
+		filled := m.Mass(c.Phase) > 0
+		active := c.Phase == phase
+		var summary string
+		if filled {
+			atoms := m.Atoms(c.Phase)
+			if len(atoms) > 0 {
+				summary = truncate(string(atoms[0].Content), 120)
+			}
+		}
+		cv := ContractView{
+			Phase:    c.Phase.String(),
+			Contract: c.Contract,
+			Active:   active,
+			Filled:   filled,
+			Summary:  summary,
+		}
+		ctx.Contracts = append(ctx.Contracts, cv)
+		if active {
+			ctx.ActivePhase = c.Phase.String()
+			ctx.ActiveContract = c.Contract
+		}
+		if filled {
+			ctx.FilledContracts = append(ctx.FilledContracts, cv)
 		}
 	}
 
+	ctx.Instructions = instructionsForPhase(phase)
+
 	var buf strings.Builder
-	if err := compiledTemplate.Execute(&buf, ctx); err != nil {
-		return fmt.Sprintf("phase:%s mass:%d need:%s", phase, m.Mass(phase), string(need))
+	if err := contractTemplate.Execute(&buf, ctx); err != nil {
+		return fmt.Sprintf("phase:%s need:%s", phase, string(need))
 	}
 	return buf.String()
+}
+
+func instructionsForPhase(phase reactivity.AtomType) string {
+	switch phase.Triad {
+	case reactivity.ThinkTriad:
+		return "Fill this contract with reasoning. You may call observation instruments (look, status, check) to gather information. Do NOT call action instruments yet."
+	case reactivity.ComposeTriad:
+		return "Fill this contract with strategic analysis. Do NOT call any instruments. Pure reasoning only."
+	case reactivity.ImplementTriad:
+		if phase.Position == reactivity.ThesisPosition {
+			return "Execute the committed plan NOW. Call ALL required instruments in this single response. Batch your tool calls."
+		}
+		return "Evaluate the execution results. Did the instruments respond as expected?"
+	default:
+		return "Evaluate the outcome. Was the need fulfilled?"
+	}
+}
+
+func truncate(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	return s[:n] + "..."
+}
+
+func buildPrompt(m *reactivity.Molecule, need []byte, domain Domain) string {
+	return buildContractPrompt(m, need, domain, nil)
 }
 
 func mergeVars(base, overrides map[string]any) map[string]any {

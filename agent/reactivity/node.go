@@ -6,6 +6,7 @@ package reactivity
 type Node struct {
 	phase      AtomType
 	label      string
+	contract   string
 	directives []Directive
 }
 
@@ -23,7 +24,8 @@ func GimpedNode(phase AtomType) *Node {
 	return &Node{phase: phase, label: phase.String()}
 }
 
-func (n *Node) Label() string { return n.label }
+func (n *Node) Label() string    { return n.label }
+func (n *Node) Contract() string { return n.contract }
 
 func (n *Node) React(m *Molecule, _ Atom) (YieldKind, Yield) {
 	return Pass, Yield{}

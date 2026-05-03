@@ -131,6 +131,14 @@ func WithDirective(phase AtomType, directive Directive) ReactorOption {
 	}
 }
 
+func WithContract(phase AtomType, contract string) ReactorOption {
+	return func(c *Core) {
+		if n := c.node(phase); n != nil {
+			n.contract = contract
+		}
+	}
+}
+
 func NewReactor(opts ...ReactorOption) *Core {
 	c := &Core{
 		monolog: NewMoleculeStore(),
@@ -141,6 +149,22 @@ func NewReactor(opts ...ReactorOption) *Core {
 		},
 		egress: Reflection{},
 	}
+
+	defaults := []ReactorOption{
+		WithContract(IntentAtom, "What do you want to achieve?"),
+		WithContract(AssessmentAtom, "What constraints and risks exist?"),
+		WithContract(KnowledgeAtom, "What do you know that is relevant?"),
+		WithContract(ExpansionAtom, "What are all possible approaches?"),
+		WithContract(ReductionAtom, "Which approaches survive scrutiny?"),
+		WithContract(SelectionAtom, "Which approach are you committing to and why?"),
+		WithContract(ExecutionAtom, "Execute the plan. Call the instruments."),
+		WithContract(AcclimationAtom, "What happened? Did instruments respond as expected?"),
+		WithContract(RefinementAtom, "What would you do differently?"),
+		WithContract(RetrospectionAtom, "Was the need fulfilled? What is the wish?"),
+	}
+	for _, opt := range defaults {
+		opt(c)
+	}
 	for _, opt := range opts {
 		opt(c)
 	}
@@ -148,6 +172,26 @@ func NewReactor(opts ...ReactorOption) *Core {
 }
 
 func (c *Core) Monolog() *MoleculeStore { return c.monolog }
+
+type ContractInfo struct {
+	Phase    AtomType
+	Label    string
+	Contract string
+}
+
+func (c *Core) Contracts() []ContractInfo {
+	var out []ContractInfo
+	for _, at := range AllAtomTypes() {
+		if n := c.node(at); n != nil {
+			out = append(out, ContractInfo{
+				Phase:    at,
+				Label:    n.Label(),
+				Contract: n.Contract(),
+			})
+		}
+	}
+	return out
+}
 
 func (c *Core) Cognize(atom Atom) *Molecule {
 	for _, id := range c.monolog.Molecules() {
