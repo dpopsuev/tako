@@ -36,7 +36,7 @@ func (f ResponseParserFunc) Parse(raw string, phase reactivity.AtomType, turn in
 
 var (
 	DefaultClassifier    Classifier     = ClassifierFunc(Classify)
-	DefaultPromptBuilder PromptBuilder  = PromptBuilderFunc(naivePrompt)
+	DefaultPromptBuilder PromptBuilder  = PromptBuilderFunc(buildPrompt)
 	DefaultParser        ResponseParser = ResponseParserFunc(ParseResponse)
 
 	BasicPromptBuilder PromptBuilder  = PromptBuilderFunc(naivePrompt)

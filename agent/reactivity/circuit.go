@@ -89,6 +89,7 @@ type Reflection struct{}
 func (Reflection) React(m *Molecule, _ Atom) (YieldKind, Yield) {
 	if m.mass[RetrospectionAtom] > 0 {
 		m.SealTriad(ReflectTriad)
+		m.sealed = true
 		return Pass, Yield{}
 	}
 	return Insufficient, Yield{Result: Insufficient, Message: "need retrospection atoms", Phase: RetrospectionAtom}

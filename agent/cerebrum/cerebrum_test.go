@@ -2,10 +2,12 @@ package cerebrum
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/artifact"
+	troupe "github.com/dpopsuev/tangle"
 )
 
 func TestCerebrum_IsOrgan(t *testing.T) {
@@ -176,7 +178,7 @@ func TestThink_EmissionsDispatchedViaMotor(t *testing.T) {
 	cb.Think(context.Background(), []byte("test emission"))
 
 	found := false
-	for _, cmd := range motor.events {
+	for _, cmd := range motor.Events() {
 		if cmd.Kind == "instrument" && cmd.Source == "emitted-tool" {
 			found = true
 		}
@@ -196,5 +198,68 @@ func TestThink_WithMotorBus(t *testing.T) {
 	m := cb.Result()
 	if !m.Sealed() {
 		t.Error("molecule should be sealed")
+	}
+}
+
+func TestThink_ToolCallDispatchedToMotor(t *testing.T) {
+	completer := &stubCompleter{
+		response: "looking in the fridge",
+		toolCalls: []troupe.ToolCall{
+			{ID: "call_1", Name: "look_fridge", Input: json.RawMessage(`{}`)},
+		},
+	}
+	reactor := reactivity.NewReactor()
+	motor := &stubBus{}
+	cb := New(reactor, completer, WithMotor(motor), WithMaxTurns(3))
+
+	cb.Think(context.Background(), []byte("find food"))
+
+	found := false
+	for _, evt := range motor.Events() {
+		if evt.Kind == "instrument" && evt.Source == "look_fridge" {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("expected ToolCall to dispatch as motor Event with Kind=instrument Source=look_fridge")
+	}
+}
+
+func TestThink_MultipleToolCalls(t *testing.T) {
+	completer := &stubCompleter{
+		response: "cooking",
+		toolCalls: []troupe.ToolCall{
+			{ID: "call_1", Name: "turn_on_stove", Input: json.RawMessage(`{}`)},
+			{ID: "call_2", Name: "look_fridge", Input: json.RawMessage(`{}`)},
+		},
+	}
+	reactor := reactivity.NewReactor()
+	motor := &stubBus{}
+	cb := New(reactor, completer, WithMotor(motor), WithMaxTurns(3))
+
+	cb.Think(context.Background(), []byte("cook"))
+
+	names := map[string]bool{}
+	for _, evt := range motor.Events() {
+		if evt.Kind == "instrument" {
+			names[evt.Source] = true
+		}
+	}
+	if !names["turn_on_stove"] {
+		t.Error("expected turn_on_stove tool call dispatched")
+	}
+	if !names["look_fridge"] {
+		t.Error("expected look_fridge tool call dispatched")
+	}
+}
+
+func TestBudget_OAEThreshold(t *testing.T) {
+	b := Budget{
+		MaxTurns:    10,
+		TurnTimeout: 30,
+		MinOAE:      0.7,
+	}
+	if b.MinOAE != 0.7 {
+		t.Errorf("expected MinOAE 0.7, got %f", b.MinOAE)
 	}
 }

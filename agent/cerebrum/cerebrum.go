@@ -3,6 +3,8 @@ package cerebrum
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/dpopsuev/tako/agent/organ"
@@ -11,18 +13,33 @@ import (
 	troupe "github.com/dpopsuev/tangle"
 )
 
+type Budget struct {
+	MaxTurns    int
+	TurnTimeout time.Duration
+	MaxTokens   int
+	MinOAE      float64
+}
+
+var DefaultBudget = Budget{
+	MaxTurns:    100,
+	TurnTimeout: 30 * time.Second,
+	MaxTokens:   0,
+}
+
 type Cerebrum struct {
 	reactor   *reactivity.Core
 	completer troupe.Completer
-	maxTurns  int
+	budget    Budget
 
 	sensory Bus
 	motor   Bus
 	signal  Bus
+	synapse Synapse
 
 	classifier    Classifier
 	promptBuilder PromptBuilder
 	parser        ResponseParser
+	toolDefs      []troupe.Tool
 
 	molecule *reactivity.Molecule
 }
@@ -31,11 +48,12 @@ func New(reactor *reactivity.Core, completer troupe.Completer, opts ...Option) *
 	cb := &Cerebrum{
 		reactor:       reactor,
 		completer:     completer,
-		maxTurns:      100,
+		budget:        DefaultBudget,
 		classifier:    DefaultClassifier,
 		promptBuilder: DefaultPromptBuilder,
 		parser:        DefaultParser,
 		sensory:       NewChannelBus(64),
+		synapse:       DefaultSynapse{},
 	}
 	for _, opt := range opts {
 		opt(cb)
@@ -58,20 +76,61 @@ func (cb *Cerebrum) Receive(wire artifact.Wire) error {
 }
 
 func (cb *Cerebrum) Run(ctx context.Context) {
-	for {
-		event, ok := cb.sensory.Receive(ctx)
-		if !ok {
-			return
-		}
-		atom := eventToAtom(event)
-		molecule := cb.reactor.Cognize(atom)
-		cb.dispatch(ctx, molecule)
+	atoms := make(chan reactivity.Atom, 64)
+	emits := make(chan reactivity.Emission, 64)
+	var wg sync.WaitGroup
+	wg.Add(3)
 
-		if molecule.Sealed() {
-			cb.molecule = molecule
-			cb.reactor.Monolog().Park()
+	go func() {
+		defer wg.Done()
+		defer close(atoms)
+		for {
+			event, ok := cb.sensory.Receive(ctx)
+			if !ok {
+				return
+			}
+			atom, err := cb.synapse.Encode(event)
+			if err != nil {
+				continue
+			}
+			select {
+			case atoms <- atom:
+			case <-ctx.Done():
+				return
+			}
 		}
-	}
+	}()
+
+	go func() {
+		defer wg.Done()
+		defer close(emits)
+		for atom := range atoms {
+			molecule := cb.reactor.Cognize(atom)
+			for _, e := range molecule.DrainEmissions() {
+				select {
+				case emits <- e:
+				case <-ctx.Done():
+					return
+				}
+			}
+			if molecule.Sealed() {
+				cb.molecule = molecule
+				cb.reactor.Monolog().Park()
+			}
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		for e := range emits {
+			event := cb.synapse.Decode(e)
+			if cb.motor != nil {
+				cb.motor.Send(ctx, event)
+			}
+		}
+	}()
+
+	wg.Wait()
 }
 
 func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
@@ -83,7 +142,13 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 		CreatedAt: time.Now(),
 	})
 
-	for turn := 0; turn < cb.maxTurns && !molecule.Sealed(); turn++ {
+	slog.InfoContext(ctx, "cerebrum.think.start",
+		slog.String("molecule", molecule.ID),
+		slog.String("phase", molecule.Phase().String()),
+		slog.Int("max_turns", cb.budget.MaxTurns),
+		slog.Duration("turn_timeout", cb.budget.TurnTimeout))
+
+	for turn := 0; turn < cb.budget.MaxTurns && !molecule.Sealed(); turn++ {
 		domain := cb.classifier.Classify(molecule)
 		directives := cb.reactor.Directives(molecule.Phase())
 		prompt := cb.promptBuilder.Build(molecule, need, domain)
@@ -91,8 +156,30 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 			prompt += "\n> " + string(d)
 		}
 
-		response, err := cb.completer.Complete(ctx, prompt)
+		slog.InfoContext(ctx, "cerebrum.think.turn",
+			slog.Int("turn", turn),
+			slog.String("phase", molecule.Phase().String()),
+			slog.Int("mass", molecule.TotalMass()),
+			slog.String("domain", domain.String()))
+		slog.DebugContext(ctx, "cerebrum.think.prompt",
+			slog.Int("turn", turn),
+			slog.String("content", prompt))
+
+		turnCtx, turnCancel := context.WithTimeout(ctx, cb.budget.TurnTimeout)
+		start := time.Now()
+		completion, err := cb.completer.Complete(turnCtx, troupe.CompletionParams{
+			Prompt:    prompt,
+			Tools:     cb.tools(molecule.Phase()),
+			MaxTokens: cb.budget.MaxTokens,
+		})
+		elapsed := time.Since(start)
+		turnCancel()
+
 		if err != nil {
+			slog.WarnContext(ctx, "cerebrum.think.completer_error",
+				slog.Int("turn", turn),
+				slog.Duration("elapsed", elapsed),
+				slog.Any("error", err))
 			cb.reactor.Seal(molecule, reactivity.Atom{
 				ID:        fmt.Sprintf("wish-error-%d", turn),
 				Type:      reactivity.RetrospectionAtom,
@@ -103,10 +190,52 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 			break
 		}
 
-		atoms, _, _ := cb.parser.Parse(response, molecule.Phase(), turn)
+		slog.InfoContext(ctx, "cerebrum.think.response",
+			slog.Int("turn", turn),
+			slog.Duration("elapsed", elapsed),
+			slog.Int("response_len", len(completion.Content)),
+			slog.Int("tool_calls", len(completion.ToolCalls)),
+			slog.Int("tokens_in", completion.Tokens.Input),
+			slog.Int("tokens_out", completion.Tokens.Output))
+		slog.DebugContext(ctx, "cerebrum.think.response_content",
+			slog.Int("turn", turn),
+			slog.String("content", completion.Content))
+
+		for _, tc := range completion.ToolCalls {
+			slog.InfoContext(ctx, "cerebrum.think.tool_call",
+				slog.Int("turn", turn),
+				slog.String("name", tc.Name),
+				slog.Int("input_len", len(tc.Input)))
+			molecule.Emit(reactivity.Emission{
+				Kind:    "instrument",
+				Target:  tc.Name,
+				Payload: tc.Input,
+			})
+		}
+		if len(completion.ToolCalls) > 0 {
+			cb.dispatch(ctx, molecule)
+		}
+
+		atoms, _, _ := cb.parser.Parse(completion.Content, molecule.Phase(), turn)
+
+		slog.InfoContext(ctx, "cerebrum.think.parsed",
+			slog.Int("turn", turn),
+			slog.Int("atoms", len(atoms)))
+
 		for _, atom := range atoms {
 			result, fortune := cb.reactor.Add(molecule, atom)
+
+			slog.InfoContext(ctx, "cerebrum.think.react",
+				slog.Int("turn", turn),
+				slog.String("atom_type", atom.Type.String()),
+				slog.String("taxonomy", atom.Taxonomy),
+				slog.String("result", result.String()),
+				slog.String("phase", molecule.Phase().String()))
+
 			if result == reactivity.Unresolvable {
+				slog.WarnContext(ctx, "cerebrum.think.unresolvable",
+					slog.Int("turn", turn),
+					slog.String("message", fortune.Message))
 				cb.reactor.Seal(molecule, reactivity.Atom{
 					ID:        fmt.Sprintf("wish-unresolvable-%d", turn),
 					Type:      reactivity.RetrospectionAtom,
@@ -121,6 +250,9 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 	}
 
 	if !molecule.Sealed() {
+		slog.WarnContext(ctx, "cerebrum.think.max_turns",
+			slog.Int("max_turns", cb.budget.MaxTurns),
+			slog.Int("mass", molecule.TotalMass()))
 		cb.reactor.Seal(molecule, reactivity.Atom{
 			ID:        "wish-max-turns",
 			Type:      reactivity.RetrospectionAtom,
@@ -129,6 +261,11 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 			CreatedAt: time.Now(),
 		})
 	}
+
+	slog.InfoContext(ctx, "cerebrum.think.done",
+		slog.String("molecule", molecule.ID),
+		slog.Bool("sealed", molecule.Sealed()),
+		slog.Int("mass", molecule.TotalMass()))
 
 	cb.molecule = molecule
 	cb.reactor.Monolog().Park()
@@ -147,26 +284,13 @@ func (cb *Cerebrum) SensoryBus() Bus {
 	return cb.sensory
 }
 
-func eventToAtom(e Event) reactivity.Atom {
-	return reactivity.Atom{
-		ID:        e.ID,
-		Type:      reactivity.IntentAtom,
-		Source:    reactivity.Received,
-		Taxonomy:  "intent." + e.Kind,
-		Content:   e.Payload,
-		CreatedAt: e.CreatedAt,
-	}
+func (cb *Cerebrum) tools(phase reactivity.AtomType) []troupe.Tool {
+	return cb.toolDefs
 }
 
 func (cb *Cerebrum) dispatch(ctx context.Context, m *reactivity.Molecule) {
 	for _, e := range m.DrainEmissions() {
-		event := Event{
-			ID:        fmt.Sprintf("emission-%d", time.Now().UnixNano()),
-			Kind:      e.Kind,
-			Source:    e.Target,
-			Payload:   e.Payload,
-			CreatedAt: time.Now(),
-		}
+		event := cb.synapse.Decode(e)
 		if cb.motor != nil {
 			cb.motor.Send(ctx, event)
 		}

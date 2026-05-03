@@ -3,6 +3,7 @@ package cerebrum
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
@@ -28,7 +29,8 @@ type Response struct {
 
 func ParseResponse(raw string, currentPhase reactivity.AtomType, turn int) ([]reactivity.Atom, *InstrumentCall, error) {
 	var resp Response
-	if err := json.Unmarshal([]byte(raw), &resp); err != nil {
+	cleaned := extractJSON(raw)
+	if err := json.Unmarshal([]byte(cleaned), &resp); err != nil {
 		return fallbackParse(raw, currentPhase, turn), nil, nil
 	}
 
@@ -66,6 +68,18 @@ func fallbackParse(raw string, phase reactivity.AtomType, turn int) []reactivity
 		Content:   []byte(raw),
 		CreatedAt: time.Now(),
 	}}
+}
+
+func extractJSON(s string) string {
+	start := strings.Index(s, "{")
+	if start == -1 {
+		return s
+	}
+	end := strings.LastIndex(s, "}")
+	if end == -1 || end < start {
+		return s
+	}
+	return s[start : end+1]
 }
 
 func parseAtomType(s string, fallback reactivity.AtomType) reactivity.AtomType {
