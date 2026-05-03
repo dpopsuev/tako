@@ -9,7 +9,7 @@ import (
 )
 
 func NewPastaBolognese(ctx context.Context, sensory cerebrum.Bus) Scenario {
-	adv := NewTextAdventure(map[string]any{
+	adv := NewGame(map[string]any{
 		"pantry":        []string{"pasta", "canned tomatoes", "garlic", "onion", "olive oil", "salt", "pepper", "carrot"},
 		"fridge":        []string{"ground beef", "parmesan", "butter"},
 		"stove":         "off",

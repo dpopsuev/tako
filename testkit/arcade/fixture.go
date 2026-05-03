@@ -13,7 +13,7 @@ import (
 type FixtureMotor struct {
 	mu          sync.Mutex
 	instruments map[string]string
-	adventure   *TextAdventure
+	adventure   *Game
 	sensory     cerebrum.Bus
 	calls       []cerebrum.Event
 }

@@ -8,7 +8,7 @@ import (
 type Scenario struct {
 	Name         string
 	Need         string
-	Adventure    *TextAdventure
+	Adventure    *Game
 	IsSolved     func(state map[string]any) bool
 	OptimalTurns int
 }
@@ -38,7 +38,7 @@ func (r ScenarioResult) OAE() float64 {
 }
 
 func NewFridge() Scenario {
-	adv := NewTextAdventure(map[string]any{
+	adv := NewGame(map[string]any{
 		"hungry": true,
 		"fridge": []string{"eggs", "milk", "cheese"},
 		"stove":  "off",
@@ -109,7 +109,7 @@ func NewFridge() Scenario {
 
 
 func NewDirtyRoom() Scenario {
-	adv := NewTextAdventure(map[string]any{
+	adv := NewGame(map[string]any{
 		"floor":   []string{"dust", "crumbs"},
 		"table":   []string{"dirty dishes"},
 		"trash":   "full",

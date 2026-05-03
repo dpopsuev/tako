@@ -10,7 +10,7 @@ import (
 )
 
 func NewTakoyaki(ctx context.Context, sensory cerebrum.Bus) Scenario {
-	adv := NewTextAdventure(map[string]any{
+	adv := NewGame(map[string]any{
 		"stove":           "off",
 		"grill":           "empty",
 		"fryer":           "empty",

@@ -10,7 +10,7 @@ import (
 )
 
 func NewTakoTrail(ctx context.Context, sensory cerebrum.Bus) Scenario {
-	adv := NewTextAdventure(map[string]any{
+	adv := NewGame(map[string]any{
 		"money":              100,
 		"food":               50,
 		"medicine":           3,

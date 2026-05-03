@@ -28,7 +28,7 @@ func NewHuntTheTako() Scenario {
 		roomsAny[strconv.Itoa(k)] = v
 	}
 
-	adv := NewTextAdventure(map[string]any{
+	adv := NewGame(map[string]any{
 		"current_room": 1,
 		"tako_room":    7,
 		"pit_rooms":    []int{4, 11},

@@ -54,7 +54,7 @@ func newCompleter(t *testing.T, ctx context.Context) tangle.Completer {
 	return providers.NewCompleter(provider, resolved.Model, nil)
 }
 
-func instrumentList(adv *TextAdventure) string {
+func instrumentList(adv *Game) string {
 	var parts []string
 	for _, name := range adv.Names() {
 		desc, _ := adv.Describe(name)
@@ -63,7 +63,7 @@ func instrumentList(adv *TextAdventure) string {
 	return strings.Join(parts, "\n")
 }
 
-func instrumentTools(adv *TextAdventure) []tangle.Tool {
+func instrumentTools(adv *Game) []tangle.Tool {
 	var tools []tangle.Tool
 	for _, name := range adv.Names() {
 		desc, _ := adv.Describe(name)
