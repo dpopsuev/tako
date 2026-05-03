@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-func TestStubPoolAppendAndVerify(t *testing.T) {
-	pool := &StubPool{}
+func TestStubLedgerAppendAndVerify(t *testing.T) {
+	pool := &StubLedger{}
 	err := pool.Append(Record{
 		Identity:  "agent-1",
 		Action:    "exec",
@@ -24,8 +24,8 @@ func TestStubPoolAppendAndVerify(t *testing.T) {
 	}
 }
 
-func TestStubPoolHashChain(t *testing.T) {
-	pool := &StubPool{}
+func TestStubLedgerHashChain(t *testing.T) {
+	pool := &StubLedger{}
 	for i := range 5 {
 		_ = pool.Append(Record{
 			Identity:  "agent-1",
@@ -51,7 +51,7 @@ func TestStubPoolHashChain(t *testing.T) {
 }
 
 func TestStubInspectorScore(t *testing.T) {
-	pool := &StubPool{}
+	pool := &StubLedger{}
 	_ = pool.Append(Record{Identity: "a", Action: "x", Timestamp: time.Now()})
 	inspector := StubInspector{}
 	oae, err := inspector.Score(pool)
@@ -64,7 +64,7 @@ func TestStubInspectorScore(t *testing.T) {
 }
 
 func TestStubInspectorVerify(t *testing.T) {
-	pool := &StubPool{}
+	pool := &StubLedger{}
 	_ = pool.Append(Record{Identity: "a", Action: "x", Timestamp: time.Now()})
 	inspector := StubInspector{}
 	if err := inspector.Verify(pool); err != nil {

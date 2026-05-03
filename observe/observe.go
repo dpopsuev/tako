@@ -15,7 +15,7 @@ const (
 	logKeyError  = "error"
 )
 
-func record(ctx context.Context, pool ergograph.Pool, action string, labels map[string]string) {
+func record(ctx context.Context, pool ergograph.Ledger, action string, labels map[string]string) {
 	rec := ergograph.Record{
 		Action:    action,
 		Timestamp: time.Now(),

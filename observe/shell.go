@@ -11,14 +11,14 @@ import (
 
 type Shell struct {
 	inner  instrument.Shell
-	pool   ergograph.Pool
+	pool   ergograph.Ledger
 	tracer trace.Tracer
 	name   string
 }
 
 var _ instrument.Shell = (*Shell)(nil)
 
-func NewShell(inner instrument.Shell, pool ergograph.Pool, tracer trace.Tracer, name string) *Shell {
+func NewShell(inner instrument.Shell, pool ergograph.Ledger, tracer trace.Tracer, name string) *Shell {
 	return &Shell{inner: inner, pool: pool, tracer: tracer, name: name}
 }
 

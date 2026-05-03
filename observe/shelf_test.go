@@ -21,7 +21,7 @@ func setupTracer(t *testing.T) (*tracetest.InMemoryExporter, *sdktrace.TracerPro
 
 func TestShelfPush(t *testing.T) {
 	exporter, tp := setupTracer(t)
-	pool := &ergograph.StubPool{}
+	pool := &ergograph.StubLedger{}
 	dp := depo.NewStubDepo("test")
 	inner := dp.Shelf("s1")
 
@@ -54,7 +54,7 @@ func TestShelfPush(t *testing.T) {
 
 func TestShelfPull(t *testing.T) {
 	exporter, tp := setupTracer(t)
-	pool := &ergograph.StubPool{}
+	pool := &ergograph.StubLedger{}
 	dp := depo.NewStubDepo("test")
 	inner := dp.Shelf("s1")
 
@@ -84,7 +84,7 @@ func TestShelfPull(t *testing.T) {
 
 func TestShelfPeekNoRecord(t *testing.T) {
 	_, tp := setupTracer(t)
-	pool := &ergograph.StubPool{}
+	pool := &ergograph.StubLedger{}
 	dp := depo.NewStubDepo("test")
 	inner := dp.Shelf("s1")
 
@@ -98,7 +98,7 @@ func TestShelfPeekNoRecord(t *testing.T) {
 
 func TestShelfWatchNoRecord(t *testing.T) {
 	_, tp := setupTracer(t)
-	pool := &ergograph.StubPool{}
+	pool := &ergograph.StubLedger{}
 	dp := depo.NewStubDepo("test")
 	inner := dp.Shelf("s1")
 

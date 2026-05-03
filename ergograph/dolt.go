@@ -7,21 +7,21 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// DoltPool is a Dolt-backed append-only pool with hash chain verification.
-type DoltPool struct {
+// DoltLedger is a Dolt-backed append-only pool with hash chain verification.
+type DoltLedger struct {
 	mu   sync.Mutex
 	db   *sqlx.DB
 	seq  uint64
 	prev string
 }
 
-var _ Pool = (*DoltPool)(nil)
+var _ Ledger = (*DoltLedger)(nil)
 
-func NewDoltPool(db *sqlx.DB) *DoltPool {
-	return &DoltPool{db: db}
+func NewDoltLedger(db *sqlx.DB) *DoltLedger {
+	return &DoltLedger{db: db}
 }
 
-func (p *DoltPool) Append(record Record) error {
+func (p *DoltLedger) Append(record Record) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -46,7 +46,7 @@ func (p *DoltPool) Append(record Record) error {
 	return nil
 }
 
-func (p *DoltPool) Records() []Record {
+func (p *DoltLedger) Records() []Record {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -85,7 +85,7 @@ func (p *DoltPool) Records() []Record {
 	return out
 }
 
-func (p *DoltPool) VerifyChain() error {
+func (p *DoltLedger) VerifyChain() error {
 	records := p.Records()
 	for i := 1; i < len(records); i++ {
 		if records[i].PrevHash != records[i-1].Hash {
@@ -95,7 +95,7 @@ func (p *DoltPool) VerifyChain() error {
 	return nil
 }
 
-func (p *DoltPool) Len() int {
+func (p *DoltLedger) Len() int {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 

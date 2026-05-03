@@ -32,7 +32,7 @@ type FabCollective struct {
 	Assembly    fab.Assembly
 	Kanban      kanban.Board
 	Andon       andon.Signal
-	Pool        ergograph.Pool
+	Pool        ergograph.Ledger
 	Inspector   ergograph.Inspector
 	Canvas      render.Canvas
 	Depo        depo.Depo
@@ -56,7 +56,7 @@ type FabCollectiveConfig struct {
 	Assembly    fab.Assembly
 	Kanban      kanban.Board
 	Andon       andon.Signal
-	Pool        ergograph.Pool
+	Pool        ergograph.Ledger
 	Inspector   ergograph.Inspector
 	Canvas      render.Canvas
 	Depo        depo.Depo

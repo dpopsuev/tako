@@ -24,7 +24,7 @@ func TestWalkingSkeleton(t *testing.T) {
 	assembly := fab.StubAssembly()
 	kb := kanban.NewStubBoard(assembly)
 	an := &andon.StubSignal{}
-	pool := &ergograph.StubPool{}
+	pool := &ergograph.StubLedger{}
 	inspector := ergograph.StubInspector{}
 	canvas := render.NewStubCanvas()
 	mesh := memory.NewStubMesh()
@@ -157,8 +157,8 @@ func TestWalkingSkeletonDolt(t *testing.T) {
 	kb := kanban.NewStubBoard(assembly)
 	an := &andon.StubSignal{}
 
-	doltPool := ergograph.NewDoltPool(db.DB)
-	pool := observe.NewPool(doltPool, tracer, "main")
+	doltPool := ergograph.NewDoltLedger(db.DB)
+	pool := observe.NewLedger(doltPool, tracer, "main")
 
 	inspector := ergograph.StubInspector{}
 	canvas := render.NewStubCanvas()

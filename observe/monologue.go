@@ -10,14 +10,14 @@ import (
 
 type Monolog struct {
 	inner  discourse.Monolog
-	pool   ergograph.Pool
+	pool   ergograph.Ledger
 	tracer trace.Tracer
 	name   string
 }
 
 var _ discourse.Monolog = (*Monolog)(nil)
 
-func NewMonolog(inner discourse.Monolog, pool ergograph.Pool, tracer trace.Tracer, name string) *Monolog {
+func NewMonolog(inner discourse.Monolog, pool ergograph.Ledger, tracer trace.Tracer, name string) *Monolog {
 	return &Monolog{inner: inner, pool: pool, tracer: tracer, name: name}
 }
 

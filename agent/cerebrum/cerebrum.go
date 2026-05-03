@@ -43,7 +43,7 @@ type Cerebrum struct {
 	parser        ResponseParser
 	toolDefs      []tangle.Tool
 
-	pool  ergograph.Pool
+	pool  ergograph.Ledger
 	andon andon.Signal
 
 	molecule *reactivity.Molecule

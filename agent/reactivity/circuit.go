@@ -101,13 +101,13 @@ type Core struct {
 	floors  map[Triad]Reactor
 	egress  Reactor
 	monolog *MoleculeStore
-	pool    ergograph.Pool
+	pool    ergograph.Ledger
 	tracer  trace.Tracer
 }
 
 type ReactorOption func(*Core)
 
-func WithPool(pool ergograph.Pool) ReactorOption {
+func WithPool(pool ergograph.Ledger) ReactorOption {
 	return func(c *Core) { c.pool = pool }
 }
 

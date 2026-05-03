@@ -8,9 +8,9 @@ import (
 	"github.com/dpopsuev/tako/store"
 )
 
-func TestDoltPoolTamperDetection(t *testing.T) {
+func TestDoltLedgerTamperDetection(t *testing.T) {
 	db := openTestDB(t)
-	pool := NewDoltPool(db.DB)
+	pool := NewDoltLedger(db.DB)
 
 	_ = pool.Append(Record{Identity: "w", Action: "a", Timestamp: time.Now()})
 	_ = pool.Append(Record{Identity: "w", Action: "b", Timestamp: time.Now()})
@@ -26,7 +26,7 @@ func TestDoltPoolTamperDetection(t *testing.T) {
 	}
 }
 
-func TestDoltPoolDoltRestart(t *testing.T) {
+func TestDoltLedgerDoltRestart(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "restartdb")
 	db, err := store.Open(dir)
 	if err != nil {
@@ -36,7 +36,7 @@ func TestDoltPoolDoltRestart(t *testing.T) {
 		t.Fatalf("migrate: %v", err)
 	}
 
-	pool := NewDoltPool(db.DB)
+	pool := NewDoltLedger(db.DB)
 	_ = pool.Append(Record{Identity: "w", Action: "before-restart", Timestamp: time.Now()})
 	db.Close()
 
@@ -58,9 +58,9 @@ func TestDoltPoolDoltRestart(t *testing.T) {
 	}
 }
 
-func TestDoltPoolLoad1000(t *testing.T) {
+func TestDoltLedgerLoad1000(t *testing.T) {
 	db := openTestDB(t)
-	pool := NewDoltPool(db.DB)
+	pool := NewDoltLedger(db.DB)
 
 	start := time.Now()
 	for i := range 1000 {
@@ -87,9 +87,9 @@ func TestDoltPoolLoad1000(t *testing.T) {
 	}
 }
 
-func TestDoltPoolEmptyState(t *testing.T) {
+func TestDoltLedgerEmptyState(t *testing.T) {
 	db := openTestDB(t)
-	pool := NewDoltPool(db.DB)
+	pool := NewDoltLedger(db.DB)
 
 	if pool.Len() != 0 {
 		t.Errorf("expected 0, got %d", pool.Len())

@@ -8,11 +8,11 @@ import (
 )
 
 type ErgographInspector struct {
-	pool    ergograph.Pool
+	pool    ergograph.Ledger
 	optimal minitako.GameInspector
 }
 
-func NewErgographInspector(pool ergograph.Pool) *ErgographInspector {
+func NewErgographInspector(pool ergograph.Ledger) *ErgographInspector {
 	return &ErgographInspector{
 		pool:    pool,
 		optimal: minitako.StubInspector{},

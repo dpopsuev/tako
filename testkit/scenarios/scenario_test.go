@@ -98,7 +98,7 @@ func runScenario(t *testing.T, scenario Scenario) {
 	motor.instruments = make(map[string]string)
 	motor.adventure = scenario.Adventure
 
-	pool := &ergograph.StubPool{}
+	pool := &ergograph.StubLedger{}
 	cord := &andon.StubSignal{}
 
 	cb := cerebrum.New(reactor, completer,

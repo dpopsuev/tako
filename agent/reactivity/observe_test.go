@@ -10,7 +10,7 @@ import (
 )
 
 func TestObserve_AddEmitsRecordAndSpan(t *testing.T) {
-	pool := &ergograph.StubPool{}
+	pool := &ergograph.StubLedger{}
 	exporter := tracetest.NewInMemoryExporter()
 	tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
 	t.Cleanup(func() { _ = tp.Shutdown(context.Background()) })
@@ -50,7 +50,7 @@ func TestObserve_AddEmitsRecordAndSpan(t *testing.T) {
 }
 
 func TestObserve_TriadSealEmitsRecord(t *testing.T) {
-	pool := &ergograph.StubPool{}
+	pool := &ergograph.StubLedger{}
 	c := NewReactor(WithPool(pool))
 	m := NewMolecule("observed")
 
@@ -68,7 +68,7 @@ func TestObserve_TriadSealEmitsRecord(t *testing.T) {
 }
 
 func TestObserve_UnsealEmitsRecord(t *testing.T) {
-	pool := &ergograph.StubPool{}
+	pool := &ergograph.StubLedger{}
 	c := NewReactor(WithPool(pool))
 	m := NewMolecule("observed")
 
@@ -90,7 +90,7 @@ func TestObserve_UnsealEmitsRecord(t *testing.T) {
 }
 
 func TestObserve_SealEmitsRecord(t *testing.T) {
-	pool := &ergograph.StubPool{}
+	pool := &ergograph.StubLedger{}
 	c := NewReactor(WithPool(pool))
 	m := NewMolecule("observed")
 

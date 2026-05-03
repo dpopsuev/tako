@@ -22,9 +22,9 @@ func openTestDB(t *testing.T) *store.DB {
 	return db
 }
 
-func TestDoltPoolAppend(t *testing.T) {
+func TestDoltLedgerAppend(t *testing.T) {
 	db := openTestDB(t)
-	pool := NewDoltPool(db.DB)
+	pool := NewDoltLedger(db.DB)
 
 	err := pool.Append(Record{
 		Identity:  "worker-0",
@@ -42,9 +42,9 @@ func TestDoltPoolAppend(t *testing.T) {
 	}
 }
 
-func TestDoltPoolHashChain(t *testing.T) {
+func TestDoltLedgerHashChain(t *testing.T) {
 	db := openTestDB(t)
-	pool := NewDoltPool(db.DB)
+	pool := NewDoltLedger(db.DB)
 
 	for i := range 5 {
 		err := pool.Append(Record{
@@ -67,9 +67,9 @@ func TestDoltPoolHashChain(t *testing.T) {
 	}
 }
 
-func TestDoltPoolRecordsOrdered(t *testing.T) {
+func TestDoltLedgerRecordsOrdered(t *testing.T) {
 	db := openTestDB(t)
-	pool := NewDoltPool(db.DB)
+	pool := NewDoltLedger(db.DB)
 
 	_ = pool.Append(Record{Identity: "w", Action: "first", Timestamp: time.Now()})
 	_ = pool.Append(Record{Identity: "w", Action: "second", Timestamp: time.Now()})
@@ -87,9 +87,9 @@ func TestDoltPoolRecordsOrdered(t *testing.T) {
 	}
 }
 
-func TestDoltPoolChainLinksCorrectly(t *testing.T) {
+func TestDoltLedgerChainLinksCorrectly(t *testing.T) {
 	db := openTestDB(t)
-	pool := NewDoltPool(db.DB)
+	pool := NewDoltLedger(db.DB)
 
 	_ = pool.Append(Record{Identity: "w", Action: "a", Timestamp: time.Now()})
 	_ = pool.Append(Record{Identity: "w", Action: "b", Timestamp: time.Now()})
@@ -106,9 +106,9 @@ func TestDoltPoolChainLinksCorrectly(t *testing.T) {
 	}
 }
 
-func TestDoltPoolInspectorScores(t *testing.T) {
+func TestDoltLedgerInspectorScores(t *testing.T) {
 	db := openTestDB(t)
-	pool := NewDoltPool(db.DB)
+	pool := NewDoltLedger(db.DB)
 
 	_ = pool.Append(Record{Identity: "w", Action: "a", Timestamp: time.Now()})
 

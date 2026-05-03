@@ -10,14 +10,14 @@ import (
 
 type Canvas struct {
 	inner  render.Canvas
-	pool   ergograph.Pool
+	pool   ergograph.Ledger
 	tracer trace.Tracer
 	name   string
 }
 
 var _ render.Canvas = (*Canvas)(nil)
 
-func NewCanvas(inner render.Canvas, pool ergograph.Pool, tracer trace.Tracer, name string) *Canvas {
+func NewCanvas(inner render.Canvas, pool ergograph.Ledger, tracer trace.Tracer, name string) *Canvas {
 	return &Canvas{inner: inner, pool: pool, tracer: tracer, name: name}
 }
 

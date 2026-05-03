@@ -58,7 +58,7 @@ func WithTools(tools []tangle.Tool) Option {
 	return func(cb *Cerebrum) { cb.toolDefs = tools }
 }
 
-func WithPool(pool ergograph.Pool) Option {
+func WithPool(pool ergograph.Ledger) Option {
 	return func(cb *Cerebrum) { cb.pool = pool }
 }
 

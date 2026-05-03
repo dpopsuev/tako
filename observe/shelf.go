@@ -12,14 +12,14 @@ import (
 // Shelf wraps a depo.Shelf with OTel spans and Ergograph records.
 type Shelf struct {
 	inner  depo.Shelf
-	pool   ergograph.Pool
+	pool   ergograph.Ledger
 	tracer trace.Tracer
 	name   string
 }
 
 var _ depo.Shelf = (*Shelf)(nil)
 
-func NewShelf(inner depo.Shelf, pool ergograph.Pool, tracer trace.Tracer, name string) *Shelf {
+func NewShelf(inner depo.Shelf, pool ergograph.Ledger, tracer trace.Tracer, name string) *Shelf {
 	return &Shelf{inner: inner, pool: pool, tracer: tracer, name: name}
 }
 

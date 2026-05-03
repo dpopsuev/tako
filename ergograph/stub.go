@@ -2,15 +2,15 @@ package ergograph
 
 import "sync"
 
-// StubPool is an append-only in-memory pool with hash chain verification.
-type StubPool struct {
+// StubLedger is an append-only in-memory pool with hash chain verification.
+type StubLedger struct {
 	mu      sync.Mutex
 	records []Record
 }
 
-var _ Pool = (*StubPool)(nil)
+var _ Ledger = (*StubLedger)(nil)
 
-func (p *StubPool) Append(record Record) error {
+func (p *StubLedger) Append(record Record) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	record.Sequence = uint64(len(p.records))
@@ -22,13 +22,13 @@ func (p *StubPool) Append(record Record) error {
 	return nil
 }
 
-func (p *StubPool) Records() []Record {
+func (p *StubLedger) Records() []Record {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return append([]Record(nil), p.records...)
 }
 
-func (p *StubPool) VerifyChain() error {
+func (p *StubLedger) VerifyChain() error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	for i := 1; i < len(p.records); i++ {
@@ -39,7 +39,7 @@ func (p *StubPool) VerifyChain() error {
 	return nil
 }
 
-func (p *StubPool) Len() int {
+func (p *StubLedger) Len() int {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return len(p.records)
@@ -50,10 +50,10 @@ type StubInspector struct{}
 
 var _ Inspector = StubInspector{}
 
-func (StubInspector) Verify(pool Pool) error {
-	return pool.VerifyChain()
+func (StubInspector) Verify(ledger Ledger) error {
+	return ledger.VerifyChain()
 }
 
-func (StubInspector) Score(_ Pool) (OAE, error) {
+func (StubInspector) Score(_ Ledger) (OAE, error) {
 	return OAE{Availability: 1.0, Performance: 1.0, Quality: 1.0}, nil
 }

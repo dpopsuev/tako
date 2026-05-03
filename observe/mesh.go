@@ -10,14 +10,14 @@ import (
 
 type Mesh struct {
 	inner  memory.Mesh
-	pool   ergograph.Pool
+	pool   ergograph.Ledger
 	tracer trace.Tracer
 	name   string
 }
 
 var _ memory.Mesh = (*Mesh)(nil)
 
-func NewMesh(inner memory.Mesh, pool ergograph.Pool, tracer trace.Tracer, name string) *Mesh {
+func NewMesh(inner memory.Mesh, pool ergograph.Ledger, tracer trace.Tracer, name string) *Mesh {
 	return &Mesh{inner: inner, pool: pool, tracer: tracer, name: name}
 }
 

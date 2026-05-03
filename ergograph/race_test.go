@@ -10,7 +10,7 @@ import (
 	"github.com/dpopsuev/tako/store"
 )
 
-func TestDoltPoolConcurrentAppend(t *testing.T) {
+func TestDoltLedgerConcurrentAppend(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "racedb")
 	db, err := store.Open(dir)
 	if err != nil {
@@ -21,7 +21,7 @@ func TestDoltPoolConcurrentAppend(t *testing.T) {
 		t.Fatalf("migrate: %v", err)
 	}
 
-	pool := NewDoltPool(db.DB)
+	pool := NewDoltLedger(db.DB)
 
 	var wg sync.WaitGroup
 	for i := range 5 {

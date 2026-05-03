@@ -9,17 +9,17 @@ import (
 	"github.com/dpopsuev/tako/ergograph"
 )
 
-type failPool struct{}
+type failLedger struct{}
 
-var errPoolFail = errors.New("pool failure")
+var errLedgerFail = errors.New("pool failure")
 
-func (*failPool) Append(_ ergograph.Record) error { return errPoolFail }
-func (*failPool) Records() []ergograph.Record     { return nil }
-func (*failPool) VerifyChain() error              { return nil }
-func (*failPool) Len() int                        { return 0 }
+func (*failLedger) Append(_ ergograph.Record) error { return errLedgerFail }
+func (*failLedger) Records() []ergograph.Record     { return nil }
+func (*failLedger) VerifyChain() error              { return nil }
+func (*failLedger) Len() int                        { return 0 }
 
-func TestRecordAppendsToPool(t *testing.T) {
-	pool := &ergograph.StubPool{}
+func TestRecordAppendsToLedger(t *testing.T) {
+	pool := &ergograph.StubLedger{}
 	record(context.Background(), pool, "test.action", map[string]string{"key": "val"})
 
 	if pool.Len() != 1 {
@@ -38,7 +38,7 @@ func TestRecordAppendsToPool(t *testing.T) {
 }
 
 func TestRecordTimestampIsRecent(t *testing.T) {
-	pool := &ergograph.StubPool{}
+	pool := &ergograph.StubLedger{}
 	before := time.Now()
 	record(context.Background(), pool, "test.timing", nil)
 	after := time.Now()
@@ -49,7 +49,7 @@ func TestRecordTimestampIsRecent(t *testing.T) {
 	}
 }
 
-func TestRecordPoolErrorDoesNotPanic(t *testing.T) {
-	pool := &failPool{}
+func TestRecordLedgerErrorDoesNotPanic(t *testing.T) {
+	pool := &failLedger{}
 	record(context.Background(), pool, "test.fail", nil)
 }

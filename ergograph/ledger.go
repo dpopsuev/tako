@@ -4,11 +4,11 @@ import "errors"
 
 var (
 	ErrChainBroken = errors.New("ergograph: hash chain verification failed")
-	ErrPoolEmpty   = errors.New("ergograph: pool is empty")
+	ErrLedgerEmpty   = errors.New("ergograph: pool is empty")
 )
 
 // Pool is a label-scoped, append-only collection of Records.
-type Pool interface {
+type Ledger interface {
 	Append(record Record) error
 	Records() []Record
 	VerifyChain() error
@@ -17,6 +17,6 @@ type Pool interface {
 
 // Inspector scores agent effectiveness from Ergograph records.
 type Inspector interface {
-	Verify(pool Pool) error
-	Score(pool Pool) (OAE, error)
+	Verify(ledger Ledger) error
+	Score(ledger Ledger) (OAE, error)
 }
