@@ -1,12 +1,40 @@
 package scenarios
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Scenario struct {
-	Name      string
-	Need      string
-	Adventure *TextAdventure
-	IsSolved  func(state map[string]any) bool
+	Name         string
+	Need         string
+	Adventure    *TextAdventure
+	IsSolved     func(state map[string]any) bool
+	OptimalTurns int
+}
+
+type ScenarioResult struct {
+	Solved       bool
+	Turns        int
+	MotorCalls   int
+	TotalMass    int
+	OptimalTurns int
+	TokensIn     int
+	TokensOut    int
+}
+
+func (r ScenarioResult) OAE() float64 {
+	if r.OptimalTurns == 0 || r.Turns == 0 {
+		return 0
+	}
+	if !r.Solved {
+		return 0
+	}
+	ratio := float64(r.OptimalTurns) / float64(r.Turns)
+	if ratio > 1 {
+		ratio = 1
+	}
+	return ratio
 }
 
 func NewFridge() Scenario {
@@ -26,32 +54,36 @@ func NewFridge() Scenario {
 		return fmt.Sprintf("fridge contains: %v", items)
 	})
 
-	adv.AddInstrument("take", "Take an item from the fridge. Input: item name", func(s map[string]any, input string) string {
+	adv.AddInstrument("take", "Take an item from the fridge. Input: item name (e.g. 'eggs')", func(s map[string]any, input string) string {
+		input = strings.TrimSpace(strings.ToLower(input))
 		items, _ := s["fridge"].([]string)
 		for i, item := range items {
-			if item == input {
+			if strings.EqualFold(item, input) {
 				s["fridge"] = append(items[:i], items[i+1:]...)
-				s["hand"] = input
-				return fmt.Sprintf("you took %s from the fridge", input)
+				s["hand"] = item
+				return fmt.Sprintf("you took %s from the fridge. you are now holding: %s", item, item)
 			}
 		}
-		return fmt.Sprintf("%s is not in the fridge", input)
+		return fmt.Sprintf("%s is not in the fridge. available items: %v", input, items)
 	})
 
 	adv.AddInstrument("cook", "Cook what you're holding. Requires stove to be on.", func(s map[string]any, _ string) string {
 		if s["stove"] != "on" {
-			return "the stove is off, turn it on first"
+			return "the stove is off. call turn_on_stove first, then cook"
 		}
 		hand, _ := s["hand"].(string)
 		if hand == "" {
-			return "you're not holding anything to cook"
+			return "you're not holding anything. call take first to grab food from the fridge"
 		}
 		s["plate"] = fmt.Sprintf("cooked %s", hand)
 		s["hand"] = ""
-		return fmt.Sprintf("you cooked %s, it's on the plate now", hand)
+		return fmt.Sprintf("you cooked %s. it's on the plate now. call eat to eat it", hand)
 	})
 
 	adv.AddInstrument("turn_on_stove", "Turn on the stove", func(s map[string]any, _ string) string {
+		if s["stove"] == "on" {
+			return "stove is already on"
+		}
 		s["stove"] = "on"
 		return "stove is now on"
 	})
@@ -59,18 +91,19 @@ func NewFridge() Scenario {
 	adv.AddInstrument("eat", "Eat what's on the plate", func(s map[string]any, _ string) string {
 		plate, _ := s["plate"].(string)
 		if plate == "" {
-			return "there's nothing on the plate to eat"
+			return "there's nothing on the plate. cook something first"
 		}
 		s["plate"] = ""
 		s["hungry"] = false
-		return fmt.Sprintf("you ate %s, you're no longer hungry", plate)
+		return fmt.Sprintf("you ate %s. you're no longer hungry!", plate)
 	})
 
 	return Scenario{
-		Name:      "fridge",
-		Need:      "You are hungry. Find food in the fridge, cook it, and eat. You must turn on the stove before cooking.",
-		Adventure: adv,
-		IsSolved:  func(s map[string]any) bool { return s["hungry"] == false },
+		Name:         "fridge",
+		Need:         "You are hungry. Find food in the fridge, cook it, and eat. You must turn on the stove before cooking.",
+		Adventure:    adv,
+		IsSolved:     func(s map[string]any) bool { return s["hungry"] == false },
+		OptimalTurns: 5,
 	}
 }
 
@@ -152,9 +185,10 @@ func NewDirtyRoom() Scenario {
 	})
 
 	return Scenario{
-		Name:      "dirty_room",
-		Need:      "The room is dirty. Look around, then clean everything: sweep the floor (need broom from closet first), wash dishes, take out trash.",
-		Adventure: adv,
-		IsSolved:  func(s map[string]any) bool { return s["cleaned"] == true },
+		Name:         "dirty_room",
+		Need:         "The room is dirty. Look around, then clean everything: sweep the floor (need broom from closet first), wash dishes, take out trash.",
+		Adventure:    adv,
+		IsSolved:     func(s map[string]any) bool { return s["cleaned"] == true },
+		OptimalTurns: 6,
 	}
 }

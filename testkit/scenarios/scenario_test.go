@@ -111,19 +111,29 @@ func runScenario(t *testing.T, scenario Scenario) {
 
 	m := cb.Result()
 
+	solved := scenario.IsSolved != nil && scenario.IsSolved(scenario.Adventure.State())
+	result := ScenarioResult{
+		Solved:       solved,
+		Turns:        m.TotalMass(),
+		MotorCalls:   len(motor.Calls()),
+		TotalMass:    m.TotalMass(),
+		OptimalTurns: scenario.OptimalTurns,
+	}
+
 	t.Logf("=== Scenario: %s ===", scenario.Name)
-	t.Logf("Total atoms: %d", m.TotalMass())
+	t.Logf("Solved: %v | OAE: %.1f%% | Turns: %d (optimal: %d) | Motor calls: %d | Mass: %d",
+		result.Solved, result.OAE()*100, result.Turns, result.OptimalTurns, result.MotorCalls, result.TotalMass)
+
 	for _, at := range reactivity.AllAtomTypes() {
 		if mass := m.Mass(at); mass > 0 {
 			t.Logf("  %s: %d", at, mass)
 		}
 	}
 
-	t.Logf("Motor calls: %d", len(motor.Calls()))
 	for _, call := range motor.Calls() {
 		payload := string(call.Payload)
-		if len(payload) > 100 {
-			payload = payload[:100] + "..."
+		if len(payload) > 80 {
+			payload = payload[:80] + "..."
 		}
 		t.Logf("  [%s] %s: %s", call.Kind, call.Source, payload)
 	}
@@ -133,18 +143,8 @@ func runScenario(t *testing.T, scenario Scenario) {
 		t.Logf("  %s: %v", k, v)
 	}
 
-	if m.Sealed() {
-		t.Logf("Molecule: SEALED")
-	} else {
-		t.Logf("Molecule: OPEN (phase: %s)", m.Phase())
-	}
-
-	if scenario.IsSolved != nil {
-		if scenario.IsSolved(scenario.Adventure.State()) {
-			t.Logf("SOLVED")
-		} else {
-			t.Logf("NOT SOLVED")
-		}
+	if !solved {
+		t.Logf("NOT SOLVED")
 	}
 }
 

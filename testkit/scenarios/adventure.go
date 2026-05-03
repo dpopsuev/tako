@@ -127,10 +127,25 @@ func (a *TextAdventure) Exec(ctx context.Context, name string, input json.RawMes
 		return instrument.ErrorResult(fmt.Sprintf("unknown instrument: %s", name)), nil
 	}
 
-	var s string
-	json.Unmarshal(input, &s)
+	s := extractInput(input)
 	result := fn(a.state, s)
 	return instrument.TextResult(result), nil
+}
+
+func extractInput(raw json.RawMessage) string {
+	var s string
+	if json.Unmarshal(raw, &s) == nil && s != "" {
+		return s
+	}
+	var obj map[string]any
+	if json.Unmarshal(raw, &obj) == nil {
+		for _, v := range obj {
+			if str, ok := v.(string); ok {
+				return str
+			}
+		}
+	}
+	return string(raw)
 }
 
 func (a *TextAdventure) State() map[string]any {
