@@ -176,3 +176,22 @@ func TestScenario_PastaBolognese(t *testing.T) {
 func TestScenario_DirtyRoom(t *testing.T) {
 	runScenario(t, NewDirtyRoom())
 }
+
+func TestScenario_Tork(t *testing.T) {
+	runScenario(t, NewTork())
+}
+
+func TestScenario_TakoTrail(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+	sensory := cerebrum.NewChannelBus(64)
+	runScenario(t, NewTakoTrail(ctx, sensory))
+}
+
+func TestScenario_Takonomics(t *testing.T) {
+	runScenario(t, NewTakonomics())
+}
+
+func TestScenario_HuntTheTako(t *testing.T) {
+	runScenario(t, NewHuntTheTako())
+}
