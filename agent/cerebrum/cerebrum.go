@@ -148,7 +148,7 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 		slog.Int("max_turns", cb.budget.MaxTurns),
 		slog.Duration("turn_timeout", cb.budget.TurnTimeout))
 
-	var history []troupe.Message
+	history, _ := molecule.Context().([]troupe.Message)
 
 	for turn := 0; turn < cb.budget.MaxTurns && !molecule.Sealed(); turn++ {
 		domain := cb.classifier.Classify(molecule)
@@ -244,6 +244,7 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 					slog.Int("result_len", len(result)))
 			}
 			toolCancel()
+			molecule.SetContext(history)
 			continue
 		}
 
@@ -278,6 +279,7 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 			}
 			cb.dispatch(ctx, molecule)
 		}
+		molecule.SetContext(history)
 	}
 
 	if !molecule.Sealed() {

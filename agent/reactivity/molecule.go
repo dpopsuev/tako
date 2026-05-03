@@ -18,6 +18,7 @@ type Molecule struct {
 	sealed      bool
 	unsealCount int
 	emissions   []Emission
+	context     any
 	createdAt   time.Time
 }
 
@@ -181,6 +182,9 @@ func (m *Molecule) InsertAtom(atom Atom) {
 func (m *Molecule) SetPhase(p AtomType)    { m.phase = p }
 func (m *Molecule) SealTriad(t Triad)      { m.triadSealed[t] = true }
 func (m *Molecule) IsSealed() bool         { return m.sealed }
+
+func (m *Molecule) Context() any            { return m.context }
+func (m *Molecule) SetContext(v any)        { m.context = v }
 
 func (m *Molecule) Emit(e Emission)        { m.emissions = append(m.emissions, e) }
 
