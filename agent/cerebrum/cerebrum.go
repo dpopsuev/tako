@@ -10,7 +10,7 @@ import (
 	"github.com/dpopsuev/tako/agent/organ"
 	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/artifact"
-	troupe "github.com/dpopsuev/tangle"
+	tangle "github.com/dpopsuev/tangle"
 )
 
 type Budget struct {
@@ -28,7 +28,7 @@ var DefaultBudget = Budget{
 
 type Cerebrum struct {
 	reactor   *reactivity.Core
-	completer troupe.Completer
+	completer tangle.Completer
 	budget    Budget
 
 	sensory Bus
@@ -39,12 +39,12 @@ type Cerebrum struct {
 	classifier    Classifier
 	promptBuilder PromptBuilder
 	parser        ResponseParser
-	toolDefs      []troupe.Tool
+	toolDefs      []tangle.Tool
 
 	molecule *reactivity.Molecule
 }
 
-func New(reactor *reactivity.Core, completer troupe.Completer, opts ...Option) *Cerebrum {
+func New(reactor *reactivity.Core, completer tangle.Completer, opts ...Option) *Cerebrum {
 	cb := &Cerebrum{
 		reactor:       reactor,
 		completer:     completer,
@@ -148,7 +148,7 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 		slog.Int("max_turns", cb.budget.MaxTurns),
 		slog.Duration("turn_timeout", cb.budget.TurnTimeout))
 
-	history, _ := molecule.Context().([]troupe.Message)
+	history, _ := molecule.Context().([]tangle.Message)
 
 	for turn := 0; turn < cb.budget.MaxTurns && !molecule.Sealed(); turn++ {
 		domain := cb.classifier.Classify(molecule)
@@ -168,13 +168,13 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 			slog.Int("turn", turn),
 			slog.String("content", prompt))
 
-		messages := make([]troupe.Message, 0, len(history)+1)
+		messages := make([]tangle.Message, 0, len(history)+1)
 		messages = append(messages, history...)
-		messages = append(messages, troupe.Message{Role: "user", Content: prompt})
+		messages = append(messages, tangle.Message{Role: "user", Content: prompt})
 
 		turnCtx, turnCancel := context.WithTimeout(ctx, cb.budget.TurnTimeout)
 		start := time.Now()
-		completion, err := cb.completer.Complete(turnCtx, troupe.CompletionParams{
+		completion, err := cb.completer.Complete(turnCtx, tangle.CompletionParams{
 			Messages:  messages,
 			Tools:     cb.tools(molecule.Phase()),
 			MaxTokens: cb.budget.MaxTokens,
@@ -208,8 +208,8 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 			slog.Int("turn", turn),
 			slog.String("content", completion.Content))
 
-		history = append(history, troupe.Message{Role: "user", Content: prompt})
-		history = append(history, troupe.Message{
+		history = append(history, tangle.Message{Role: "user", Content: prompt})
+		history = append(history, tangle.Message{
 			Role:      "assistant",
 			Content:   completion.Content,
 			ToolCalls: completion.ToolCalls,
@@ -233,7 +233,7 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 			toolCtx, toolCancel := context.WithTimeout(ctx, cb.budget.TurnTimeout)
 			for _, tc := range completion.ToolCalls {
 				result := cb.waitToolResult(toolCtx, tc)
-				history = append(history, troupe.Message{
+				history = append(history, tangle.Message{
 					Role:       "tool",
 					Content:    result,
 					ToolCallID: tc.ID,
@@ -317,11 +317,11 @@ func (cb *Cerebrum) SensoryBus() Bus {
 	return cb.sensory
 }
 
-func (cb *Cerebrum) tools(phase reactivity.AtomType) []troupe.Tool {
+func (cb *Cerebrum) tools(phase reactivity.AtomType) []tangle.Tool {
 	return cb.toolDefs
 }
 
-func (cb *Cerebrum) waitToolResult(ctx context.Context, tc troupe.ToolCall) string {
+func (cb *Cerebrum) waitToolResult(ctx context.Context, tc tangle.ToolCall) string {
 	event, ok := cb.sensory.Receive(ctx)
 	if !ok {
 		return "tool call timed out"

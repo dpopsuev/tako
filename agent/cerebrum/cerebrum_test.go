@@ -8,7 +8,7 @@ import (
 
 	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/artifact"
-	troupe "github.com/dpopsuev/tangle"
+	tangle "github.com/dpopsuev/tangle"
 )
 
 func TestCerebrum_IsOrgan(t *testing.T) {
@@ -205,7 +205,7 @@ func TestThink_WithMotorBus(t *testing.T) {
 func TestThink_ToolCallDispatchedToMotor(t *testing.T) {
 	completer := &stubCompleter{
 		response: "looking in the fridge",
-		toolCalls: []troupe.ToolCall{
+		toolCalls: []tangle.ToolCall{
 			{ID: "call_1", Name: "look_fridge", Input: json.RawMessage(`{}`)},
 		},
 	}
@@ -230,7 +230,7 @@ func TestThink_ToolCallDispatchedToMotor(t *testing.T) {
 func TestThink_MultipleToolCalls(t *testing.T) {
 	completer := &stubCompleter{
 		response: "cooking",
-		toolCalls: []troupe.ToolCall{
+		toolCalls: []tangle.ToolCall{
 			{ID: "call_1", Name: "turn_on_stove", Input: json.RawMessage(`{}`)},
 			{ID: "call_2", Name: "look_fridge", Input: json.RawMessage(`{}`)},
 		},

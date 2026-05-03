@@ -3,7 +3,7 @@ package cerebrum
 import (
 	"time"
 
-	troupe "github.com/dpopsuev/tangle"
+	tangle "github.com/dpopsuev/tangle"
 )
 
 type Option func(*Cerebrum)
@@ -48,6 +48,6 @@ func WithSynapse(s Synapse) Option {
 	return func(cb *Cerebrum) { cb.synapse = s }
 }
 
-func WithTools(tools []troupe.Tool) Option {
+func WithTools(tools []tangle.Tool) Option {
 	return func(cb *Cerebrum) { cb.toolDefs = tools }
 }

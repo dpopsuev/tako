@@ -5,20 +5,20 @@ import (
 	"sync"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
-	troupe "github.com/dpopsuev/tangle"
+	tangle "github.com/dpopsuev/tangle"
 )
 
 type stubCompleter struct {
 	response  string
-	toolCalls []troupe.ToolCall
+	toolCalls []tangle.ToolCall
 	err       error
 }
 
-func (s *stubCompleter) Complete(_ context.Context, _ troupe.CompletionParams) (*troupe.Completion, error) {
+func (s *stubCompleter) Complete(_ context.Context, _ tangle.CompletionParams) (*tangle.Completion, error) {
 	if s.err != nil {
 		return nil, s.err
 	}
-	return &troupe.Completion{Content: s.response, ToolCalls: s.toolCalls}, nil
+	return &tangle.Completion{Content: s.response, ToolCalls: s.toolCalls}, nil
 }
 
 type stubBus struct {
