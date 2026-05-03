@@ -8,6 +8,10 @@ import (
 
 type Option func(*Cerebrum)
 
+func WithSensory(b Bus) Option {
+	return func(cb *Cerebrum) { cb.sensory = b }
+}
+
 func WithMotor(b Bus) Option {
 	return func(cb *Cerebrum) { cb.motor = b }
 }

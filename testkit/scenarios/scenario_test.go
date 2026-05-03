@@ -13,6 +13,7 @@ import (
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
 	"github.com/dpopsuev/tako/agent/reactivity"
+	tangle "github.com/dpopsuev/tangle"
 	"github.com/dpopsuev/tangle/arsenal"
 	"github.com/dpopsuev/tangle/providers"
 )
@@ -26,9 +27,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func newCompleter(t *testing.T, ctx context.Context) interface {
-	Complete(ctx context.Context, prompt string) (string, error)
-} {
+func newCompleter(t *testing.T, ctx context.Context) tangle.Completer {
 	t.Helper()
 	region := os.Getenv("GOOGLE_CLOUD_LOCATION")
 	project := os.Getenv("GOOGLE_CLOUD_PROJECT")
@@ -62,6 +61,20 @@ func instrumentList(adv *TextAdventure) string {
 	return strings.Join(parts, "\n")
 }
 
+func instrumentTools(adv *TextAdventure) []tangle.Tool {
+	var tools []tangle.Tool
+	for _, name := range adv.Names() {
+		desc, _ := adv.Describe(name)
+		schema, _ := adv.Schema(name)
+		tools = append(tools, tangle.Tool{
+			Name:        name,
+			Description: desc,
+			InputSchema: schema,
+		})
+	}
+	return tools
+}
+
 func runScenario(t *testing.T, scenario Scenario) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -84,10 +97,12 @@ func runScenario(t *testing.T, scenario Scenario) {
 	motor.adventure = scenario.Adventure
 
 	cb := cerebrum.New(reactor, completer,
+		cerebrum.WithSensory(sensory),
 		cerebrum.WithMotor(motor),
 		cerebrum.WithSignal(signal),
 		cerebrum.WithMaxTurns(30),
 		cerebrum.WithTurnTimeout(30*time.Second),
+		cerebrum.WithTools(instrumentTools(scenario.Adventure)),
 	)
 
 	if err := cb.Think(ctx, []byte(scenario.Need)); err != nil {
