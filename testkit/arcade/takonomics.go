@@ -1,4 +1,4 @@
-package scenarios
+package arcade
 
 import (
 	"fmt"

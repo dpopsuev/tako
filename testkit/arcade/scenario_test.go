@@ -1,6 +1,6 @@
 //go:build integration
 
-package scenarios
+package arcade
 
 import (
 	"context"

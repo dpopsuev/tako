@@ -284,7 +284,7 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 			continue
 		}
 
-		atoms, _, _ := cb.parser.Parse(completion.Content, molecule.Phase(), turn)
+		atoms, _ := cb.parser.Parse(completion.Content, molecule.Phase(), turn)
 
 		slog.InfoContext(ctx, "cerebrum.think.parsed",
 			slog.Int("turn", turn),

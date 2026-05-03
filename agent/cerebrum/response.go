@@ -16,26 +16,20 @@ type ParsedAtom struct {
 	Targets  []string `json:"targets,omitempty"`
 }
 
-type InstrumentCall struct {
-	Name  string          `json:"name"`
-	Input json.RawMessage `json:"input"`
-}
-
 type Response struct {
-	Atoms    []ParsedAtom `json:"atoms"`
-	InstrumentCall *InstrumentCall    `json:"instrument_call,omitempty"`
-	Done     bool         `json:"done"`
+	Atoms []ParsedAtom `json:"atoms"`
+	Done  bool         `json:"done"`
 }
 
-func ParseResponse(raw string, currentPhase reactivity.AtomType, turn int) ([]reactivity.Atom, *InstrumentCall, error) {
+func ParseResponse(raw string, currentPhase reactivity.AtomType, turn int) ([]reactivity.Atom, error) {
 	var resp Response
 	cleaned := extractJSON(raw)
 	if err := json.Unmarshal([]byte(cleaned), &resp); err != nil {
-		return fallbackParse(raw, currentPhase, turn), nil, nil
+		return fallbackParse(raw, currentPhase, turn), nil
 	}
 
-	if len(resp.Atoms) == 0 && resp.InstrumentCall == nil {
-		return fallbackParse(raw, currentPhase, turn), nil, nil
+	if len(resp.Atoms) == 0 {
+		return fallbackParse(raw, currentPhase, turn), nil
 	}
 
 	atoms := make([]reactivity.Atom, 0, len(resp.Atoms))
@@ -56,7 +50,7 @@ func ParseResponse(raw string, currentPhase reactivity.AtomType, turn int) ([]re
 		})
 	}
 
-	return atoms, resp.InstrumentCall, nil
+	return atoms, nil
 }
 
 func fallbackParse(raw string, phase reactivity.AtomType, turn int) []reactivity.Atom {
