@@ -5,34 +5,34 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"time"
 
+	"github.com/dpopsuev/tako/agent/cerebrum"
 	"github.com/dpopsuev/tako/instrument"
 )
 
 type InstrumentFunc func(state map[string]any, input string) string
 
-type AdventureInstrument struct {
-	name        string
-	description string
-	fn          InstrumentFunc
-}
-
-func (i *AdventureInstrument) Name() string                  { return i.name }
-func (i *AdventureInstrument) Description() string           { return i.description }
-func (i *AdventureInstrument) InputSchema() json.RawMessage  { return json.RawMessage(`{"type":"string"}`) }
-
-func (i *AdventureInstrument) Execute(ctx context.Context, input json.RawMessage) (instrument.Result, error) {
-	var s string
-	json.Unmarshal(input, &s)
-	// fn is called by TextAdventure.Exec, not directly
-	return instrument.TextResult(s), nil
+type TimerConfig struct {
+	After   time.Duration
+	Event   string
+	Overdue time.Duration
+	Penalty string
+	Mutate  func(state map[string]any)
 }
 
 type TextAdventure struct {
 	mu          sync.Mutex
 	state       map[string]any
-	instruments map[string]*AdventureInstrument
+	instruments map[string]*adventureInstrument
 	fns         map[string]InstrumentFunc
+	sensory     cerebrum.Bus
+	cancel      context.CancelFunc
+}
+
+type adventureInstrument struct {
+	name        string
+	description string
 }
 
 var _ instrument.Shell = (*TextAdventure)(nil)
@@ -40,14 +40,59 @@ var _ instrument.Shell = (*TextAdventure)(nil)
 func NewTextAdventure(initialState map[string]any) *TextAdventure {
 	return &TextAdventure{
 		state:       initialState,
-		instruments: make(map[string]*AdventureInstrument),
+		instruments: make(map[string]*adventureInstrument),
 		fns:         make(map[string]InstrumentFunc),
 	}
 }
 
+func (a *TextAdventure) WithSensory(bus cerebrum.Bus) *TextAdventure {
+	a.sensory = bus
+	return a
+}
+
 func (a *TextAdventure) AddInstrument(name, description string, fn InstrumentFunc) {
-	a.instruments[name] = &AdventureInstrument{name: name, description: description, fn: fn}
+	a.instruments[name] = &adventureInstrument{name: name, description: description}
 	a.fns[name] = fn
+}
+
+func (a *TextAdventure) StartTimer(ctx context.Context, cfg TimerConfig) {
+	go func() {
+		select {
+		case <-time.After(cfg.After):
+			a.mu.Lock()
+			if cfg.Mutate != nil {
+				cfg.Mutate(a.state)
+			}
+			a.mu.Unlock()
+
+			a.sensory.Send(ctx, cerebrum.Event{
+				ID:        fmt.Sprintf("timer-%d", time.Now().UnixNano()),
+				Kind:      "sensory.timer",
+				Source:    "environment",
+				Payload:   []byte(cfg.Event),
+				CreatedAt: time.Now(),
+			})
+
+			if cfg.Overdue > 0 && cfg.Penalty != "" {
+				go func() {
+					select {
+					case <-time.After(cfg.Overdue):
+						a.mu.Lock()
+						a.mu.Unlock()
+						a.sensory.Send(ctx, cerebrum.Event{
+							ID:        fmt.Sprintf("overdue-%d", time.Now().UnixNano()),
+							Kind:      "sensory.warning",
+							Source:    "environment",
+							Payload:   []byte(cfg.Penalty),
+							CreatedAt: time.Now(),
+						})
+					case <-ctx.Done():
+					}
+				}()
+			}
+		case <-ctx.Done():
+		}
+	}()
 }
 
 func (a *TextAdventure) Names() []string {
@@ -73,7 +118,7 @@ func (a *TextAdventure) Schema(name string) (json.RawMessage, error) {
 	return json.RawMessage(`{"type":"string"}`), nil
 }
 
-func (a *TextAdventure) Exec(_ context.Context, name string, input json.RawMessage) (instrument.Result, error) {
+func (a *TextAdventure) Exec(ctx context.Context, name string, input json.RawMessage) (instrument.Result, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 

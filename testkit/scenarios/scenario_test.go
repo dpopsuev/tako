@@ -127,7 +127,10 @@ func TestScenario_Fridge(t *testing.T) {
 }
 
 func TestScenario_PastaBolognese(t *testing.T) {
-	runScenario(t, NewPastaBolognese())
+	ctx, cancel := context.WithTimeout(context.Background(), 180*time.Second)
+	defer cancel()
+	sensory := cerebrum.NewChannelBus(64)
+	runScenario(t, NewPastaBolognese(ctx, sensory))
 }
 
 func TestScenario_DirtyRoom(t *testing.T) {
