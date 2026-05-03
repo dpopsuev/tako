@@ -126,6 +126,10 @@ func TestScenario_Fridge(t *testing.T) {
 	runScenario(t, NewFridge())
 }
 
+func TestScenario_PastaBolognese(t *testing.T) {
+	runScenario(t, NewPastaBolognese())
+}
+
 func TestScenario_DirtyRoom(t *testing.T) {
 	runScenario(t, NewDirtyRoom())
 }
