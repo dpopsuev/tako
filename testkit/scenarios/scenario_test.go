@@ -173,6 +173,13 @@ func TestScenario_PastaBolognese(t *testing.T) {
 	runScenario(t, NewPastaBolognese(ctx, sensory))
 }
 
+func TestScenario_Takoyaki(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+	sensory := cerebrum.NewChannelBus(64)
+	runScenario(t, NewTakoyaki(ctx, sensory))
+}
+
 func TestScenario_DirtyRoom(t *testing.T) {
 	runScenario(t, NewDirtyRoom())
 }
