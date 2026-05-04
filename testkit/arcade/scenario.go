@@ -48,6 +48,13 @@ func NewFridge() Scenario {
 		"plate":  "",
 	})
 
+	adv.AddInstrument("check_hunger", "Check if you are still hungry", organ.MotorRO, func(s map[string]any, _ string) string {
+		if s["hungry"] == true {
+			return "you are still hungry"
+		}
+		return "you are not hungry anymore"
+	})
+
 	adv.AddInstrument("look_fridge", "See what food is in the fridge", organ.MotorRO, func(s map[string]any, _ string) string {
 		items, _ := s["fridge"].([]string)
 		if len(items) == 0 {
@@ -102,7 +109,7 @@ func NewFridge() Scenario {
 
 	return Scenario{
 		Name:         "fridge",
-		Need:         "You are hungry. Find food in the fridge, cook it, and eat. You must turn on the stove before cooking.",
+		Need:         "You are hungry. Find food in the fridge, cook it, and eat. You must turn on the stove before cooking. Use check_hunger to verify when you are no longer hungry — stop as soon as you are satisfied.",
 		Adventure:    adv,
 		IsSolved:     func(s map[string]any) bool { return s["hungry"] == false },
 		OptimalTurns: 5,
