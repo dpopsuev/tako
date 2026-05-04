@@ -205,14 +205,26 @@ func NewHuntTheTako() Scenario {
 		return fmt.Sprintf("Current cave: %d. Arrows remaining: %d. Caves visited: %s.", cur, arrows, formatRooms(visited))
 	})
 
+	adv.AddInstrument("check_caught", "Check if the Tako has been caught", shell.ReadAction, func(s map[string]any, _ string) string {
+		if s["tako_dead"] == true {
+			return "the tako is caught — victory!"
+		}
+		if s["alive"] != true {
+			return "you are dead — the tako is not caught"
+		}
+		return "the tako is not caught yet — keep hunting"
+	})
+
 	return Scenario{
 		Name: "hunt_the_tako",
 		Need: "You are hunting a Tako in a network of 12 dark caves. The Tako lurks in one cave. " +
 			"Two caves have bottomless pits. You have 3 arrows. Move between connected caves. " +
 			"If you smell something terrible, the Tako is in an adjacent cave — shoot an arrow there. " +
 			"If you feel a draft, a pit is adjacent — avoid it. " +
-			"You cannot see the Tako or pits directly. Use clues to deduce their locations.",
+			"You cannot see the Tako or pits directly. Use clues to deduce their locations. " +
+			"Use check_caught to verify when the Tako is caught.",
 		Adventure: adv,
 		IsSolved:  func(s map[string]any) bool { return s["tako_dead"] == true },
+		Criteria:  map[string]any{"caught": true},
 	}
 }

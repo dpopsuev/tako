@@ -213,20 +213,24 @@ func NewTakoyaki(ctx context.Context, sensory cerebrum.Bus) Scenario {
 		pending, _ := s["orders_pending"].([]string)
 		served, _ := s["orders_served"].(int)
 		target, _ := s["orders_target"].(int)
-		if len(pending) == 0 {
-			return fmt.Sprintf("no pending orders, %d/%d served", served, target)
+		if served >= target {
+			return fmt.Sprintf("all orders complete — %d/%d served", served, target)
 		}
-		return fmt.Sprintf("pending: %v, served: %d/%d", pending, served, target)
+		if len(pending) == 0 {
+			return fmt.Sprintf("no pending orders, %d/%d served, not complete yet", served, target)
+		}
+		return fmt.Sprintf("pending: %v, served: %d/%d, not complete yet", pending, served, target)
 	})
 
 	return Scenario{
 		Name: "takoyaki",
-		Need: "You are a chef in a busy takoyaki kitchen. Orders arrive in real time on a queue. You must prep ingredients, cook dishes on the grill/fryer/stove, and serve them before they pile up. Three dishes: takoyaki (needs batter + filling, cooks on grill), tempura (fries in fryer), rice_bowl (cooks on stove). Turn on the stove first. Watch for timer notifications when food is ready. If you leave food too long it catches fire — extinguish immediately. Serve 5 orders to win. You will receive order notifications as they arrive.",
+		Need: "You are a chef in a busy takoyaki kitchen. Orders arrive in real time on a queue. You must prep ingredients, cook dishes on the grill/fryer/stove, and serve them before they pile up. Three dishes: takoyaki (needs batter + filling, cooks on grill), tempura (fries in fryer), rice_bowl (cooks on stove). Turn on the stove first. Watch for timer notifications when food is ready. If you leave food too long it catches fire — extinguish immediately. Serve 5 orders to win. You will receive order notifications as they arrive. Use check_orders to verify completion.",
 		Adventure: adv,
 		IsSolved: func(s map[string]any) bool {
 			served, _ := s["orders_served"].(int)
 			target, _ := s["orders_target"].(int)
 			return served >= target
 		},
+		Criteria: map[string]any{"complete": true},
 	}
 }

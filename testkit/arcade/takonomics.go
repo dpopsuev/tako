@@ -203,13 +203,25 @@ func NewTakonomics() Scenario {
 		return desc
 	})
 
+	adv.AddInstrument("check_prosperity", "Check if the kingdom has survived all seasons", shell.ReadAction, func(s map[string]any, _ string) string {
+		if s["won"] == true {
+			return "the kingdom is prosperous — all seasons survived"
+		}
+		pop := s["population"].(int)
+		if pop <= 0 {
+			return "the kingdom has fallen — prosperity is not achieved"
+		}
+		return fmt.Sprintf("prosperity is not achieved yet — season %d of %d", s["season"], s["max_seasons"])
+	})
+
 	return Scenario{
 		Name: "takonomics",
 		Need: "You rule a small kingdom for 5 seasons. Start with 1000 grain, 100 people, and 200 acres of land. " +
 			"Each season: plant grain on your land, feed your people (20 grain per person per season), optionally trade land, then harvest. " +
 			"Planted grain yields 3x at harvest. If people starve, population drops. " +
-			"Survive all 5 seasons with people alive and grain remaining.",
+			"Survive all 5 seasons with people alive and grain remaining. Use check_prosperity to verify.",
 		Adventure: adv,
 		IsSolved:  func(s map[string]any) bool { return s["won"] == true },
+		Criteria:  map[string]any{"prosperous": true},
 	}
 }

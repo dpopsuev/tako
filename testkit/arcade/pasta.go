@@ -184,10 +184,21 @@ func NewPastaBolognese(ctx context.Context, sensory cerebrum.Bus) Scenario {
 		return "delicious pasta bolognese, buon appetito"
 	})
 
+	adv.AddInstrument("check_served", "Check if the meal has been served and eaten", shell.ReadAction, func(s map[string]any, _ string) string {
+		if s["eaten"] == true {
+			return "the meal is served and eaten"
+		}
+		if s["plated"] == true {
+			return "the meal is not served yet — it is plated, call eat"
+		}
+		return "the meal is not served yet — keep cooking"
+	})
+
 	return Scenario{
 		Name: "pasta_bolognese",
-		Need: "Cook pasta bolognese from scratch. Check the pantry and fridge. The proper order: chop soffritto, saute it, brown meat, add tomatoes and let sauce simmer. While the sauce simmers, boil water and cook pasta. Grate parmesan while you wait. Drain pasta when al dente. Combine pasta with sauce, plate with parmesan, eat. Things cook in real time and you will receive notifications when they are ready. The stove must be on before any cooking. Use your time wisely while things simmer.",
+		Need: "Cook pasta bolognese from scratch. Check the pantry and fridge. The proper order: chop soffritto, saute it, brown meat, add tomatoes and let sauce simmer. While the sauce simmers, boil water and cook pasta. Grate parmesan while you wait. Drain pasta when al dente. Combine pasta with sauce, plate with parmesan, eat. Things cook in real time and you will receive notifications when they are ready. The stove must be on before any cooking. Use your time wisely while things simmer. Use check_served to verify completion.",
 		Adventure: adv,
 		IsSolved:  func(s map[string]any) bool { return s["eaten"] == true },
+		Criteria:  map[string]any{"served": true},
 	}
 }

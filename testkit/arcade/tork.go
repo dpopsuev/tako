@@ -238,10 +238,18 @@ func NewTork() Scenario {
 		}
 	})
 
+	adv.AddInstrument("check_escaped", "Check if you have retrieved the treasure and won", shell.ReadAction, func(s map[string]any, _ string) string {
+		if s["won"] == true {
+			return "you have escaped with the treasure"
+		}
+		return "you have not escaped yet — find and take the treasure"
+	})
+
 	return Scenario{
 		Name:      "tork",
-		Need:      "You are in a dungeon entrance. Explore the rooms, find items, solve puzzles, and retrieve the hidden treasure. Some doors are locked and some rooms are dark.",
+		Need:      "You are in a dungeon entrance. Explore the rooms, find items, solve puzzles, and retrieve the hidden treasure. Some doors are locked and some rooms are dark. Use check_escaped to verify when you have won.",
 		Adventure: adv,
 		IsSolved:  func(s map[string]any) bool { return s["won"] == true },
+		Criteria:  map[string]any{"escaped": true},
 	}
 }

@@ -463,9 +463,13 @@ func (cb *Cerebrum) checkCatalystCriteria(m *reactivity.Molecule, toolName, resu
 	for key, expected := range cat.Criteria {
 		switch v := expected.(type) {
 		case bool:
-			if !v && strings.Contains(strings.ToLower(result), "not "+key) {
-				m.ReportSensor(key, false)
-			} else if !v && strings.Contains(strings.ToLower(result), "no longer "+key) {
+			lower := strings.ToLower(result)
+			hasKey := strings.Contains(lower, strings.ToLower(key))
+			negated := strings.Contains(lower, "not "+strings.ToLower(key)) ||
+				strings.Contains(lower, "no longer "+strings.ToLower(key))
+			if v && hasKey && !negated {
+				m.ReportSensor(key, true)
+			} else if !v && negated {
 				m.ReportSensor(key, false)
 			}
 		case string:

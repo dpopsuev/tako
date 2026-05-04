@@ -247,14 +247,26 @@ func NewTakoTrail(ctx context.Context, sensory cerebrum.Bus) Scenario {
 		return "fording the river... the current is strong!"
 	})
 
+	adv.AddInstrument("check_arrival", "Check if you have arrived at the destination", shell.ReadAction, func(s map[string]any, _ string) string {
+		if s["arrived"] == true && s["alive"] == true {
+			return "you have arrived safely"
+		}
+		if s["alive"] != true {
+			return "you are dead — arrival is not possible"
+		}
+		return fmt.Sprintf("you have not arrived yet — %d miles remaining", intVal(s, "distance_remaining"))
+	})
+
 	return Scenario{
 		Name: "tako_trail",
 		Need: "You must travel 500 miles to reach safety. You have 100 money, 50 food, and 3 medicine. " +
 			"Buy supplies wisely, travel in legs, hunt when food is low, and rest when health drops. " +
-			"Random storms and disease will test your planning. You will receive notifications about events.",
+			"Random storms and disease will test your planning. You will receive notifications about events. " +
+			"Use check_arrival to verify when you have arrived.",
 		Adventure: adv,
 		IsSolved: func(s map[string]any) bool {
 			return s["arrived"] == true && s["alive"] == true
 		},
+		Criteria: map[string]any{"arrived": true},
 	}
 }

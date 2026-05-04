@@ -205,9 +205,10 @@ func NewDirtyRoom() Scenario {
 
 	return Scenario{
 		Name:         "dirty_room",
-		Need:         "The room is dirty. Look around, then clean everything: sweep the floor (need broom from closet first), wash dishes, take out trash.",
+		Need:         "The room is dirty. Look around, then clean everything: sweep the floor (need broom from closet first), wash dishes, take out trash. Use check_done to verify when the room is fully clean.",
 		Adventure:    adv,
 		IsSolved:     func(s map[string]any) bool { return s["cleaned"] == true },
 		OptimalTurns: 6,
+		Criteria:     map[string]any{"cleaned": true},
 	}
 }
