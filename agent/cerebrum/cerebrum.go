@@ -43,8 +43,9 @@ type Cerebrum struct {
 	parser        ResponseParser
 	toolDefs      []tangle.Tool
 
-	pool  ergograph.Ledger
-	andon andon.Signal
+	pool   ergograph.Ledger
+	andon  andon.Signal
+	assert reactivity.Assert
 
 	molecule *reactivity.Molecule
 }
@@ -59,6 +60,7 @@ func New(reactor *reactivity.Core, completer tangle.Completer, opts ...Option) *
 		parser:        DefaultParser,
 		sensory:       NewChannelBus(64),
 		synapse:       DefaultSynapse{},
+		assert:        reactivity.DefaultAssert,
 	}
 	for _, opt := range opts {
 		opt(cb)
@@ -155,15 +157,6 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 		slog.Duration("turn_timeout", cb.budget.TurnTimeout))
 
 	history, _ := molecule.Context().([]tangle.Message)
-	staleTurns := 0
-	lastPhase := molecule.Phase()
-	staleLimit := 0
-	if cb.budget.MinOAE > 0 {
-		staleLimit = int(1.0 / cb.budget.MinOAE)
-		if staleLimit < 2 {
-			staleLimit = 2
-		}
-	}
 
 	for turn := 0; turn < cb.budget.MaxTurns && !molecule.Sealed(); turn++ {
 		molecule.Tick()
@@ -325,31 +318,24 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 		}
 		molecule.SetContext(history)
 
-		currentPhase := molecule.Phase()
-		if currentPhase != lastPhase {
-			staleTurns = 0
-			lastPhase = currentPhase
-		} else {
-			staleTurns++
-		}
-		if staleLimit > 0 && staleTurns >= staleLimit {
-			slog.WarnContext(ctx, "cerebrum.think.oae_bail",
+		criticality := cb.assert.Evaluate(molecule)
+		if criticality == reactivity.Subcritical {
+			slog.WarnContext(ctx, "cerebrum.think.subcritical",
 				slog.Int("turn", turn),
-				slog.Int("stale_turns", staleTurns),
-				slog.Int("stale_limit", staleLimit),
-				slog.Float64("min_oae", cb.budget.MinOAE))
+				slog.Float64("momentum", molecule.Momentum()),
+				slog.Float64("distance", molecule.Distance()))
 			cb.pull(molecule.ID)
-			cb.emit("cerebrum.oae_bail", map[string]string{
-				"molecule":    molecule.ID,
-				"turn":        fmt.Sprintf("%d", turn),
-				"stale_turns": fmt.Sprintf("%d", staleTurns),
-				"min_oae":     fmt.Sprintf("%.2f", cb.budget.MinOAE),
+			cb.emit("cerebrum.subcritical", map[string]string{
+				"molecule": molecule.ID,
+				"turn":     fmt.Sprintf("%d", turn),
+				"momentum": fmt.Sprintf("%.3f", molecule.Momentum()),
+				"distance": fmt.Sprintf("%.3f", molecule.Distance()),
 			})
 			cb.reactor.Seal(molecule, reactivity.Atom{
-				ID:        fmt.Sprintf("wish-oae-bail-%d", turn),
+				ID:        fmt.Sprintf("wish-subcritical-%d", turn),
 				Type:      reactivity.RetrospectionAtom,
-				Taxonomy:  "retrospection.wish.oae-below-threshold",
-				Content:   []byte(fmt.Sprintf("no progress for %d turns, MinOAE=%.2f", staleTurns, cb.budget.MinOAE)),
+				Taxonomy:  "retrospection.wish.subcritical",
+				Content:   []byte(fmt.Sprintf("subcritical: momentum=%.3f distance=%.3f", molecule.Momentum(), molecule.Distance())),
 				CreatedAt: time.Now(),
 			})
 			break

@@ -3,9 +3,10 @@ package cerebrum
 import (
 	"time"
 
-	tangle "github.com/dpopsuev/tangle"
+	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/ergograph"
 	"github.com/dpopsuev/tako/service/andon"
+	tangle "github.com/dpopsuev/tangle"
 )
 
 type Option func(*Cerebrum)
@@ -60,6 +61,10 @@ func WithTools(tools []tangle.Tool) Option {
 
 func WithRouter(r CompleterRouter) Option {
 	return func(cb *Cerebrum) { cb.router = r }
+}
+
+func WithAssert(a reactivity.Assert) Option {
+	return func(cb *Cerebrum) { cb.assert = a }
 }
 
 func WithPool(pool ergograph.Ledger) Option {
