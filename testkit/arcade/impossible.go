@@ -5,7 +5,7 @@ import (
 )
 
 // NewImpossible returns a scenario where the Need requires actions
-// the agent cannot perform — the only organ is read-only (look).
+// the agent cannot perform — the only action is read-only (look).
 // Think should detect impossibility: Distance stays 1.0, Momentum
 // stays 0, Assert fires Subcritical → SCRAM.
 func NewImpossible() Scenario {

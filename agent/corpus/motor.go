@@ -6,14 +6,14 @@ import (
 	"time"
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
-	agentshell "github.com/dpopsuev/tako/agent/shell"
 	"github.com/dpopsuev/tako/agent/reactivity"
+	agentshell "github.com/dpopsuev/tako/agent/shell"
 	"github.com/dpopsuev/tako/artifact"
 )
 
 // MotorBus builds a cerebrum.Bus that routes motor events through the Corpus.
-// Routes by event.Source (organ/instrument name), enforces RO/RW permissions,
-// and emits to Signal organs as a side effect of every route.
+// Routes by event.Source (handler name), enforces RO/RW permissions,
+// and emits to signal bus as a side effect of every route.
 func (c *Corpus) MotorBus(sensory cerebrum.Bus, signal cerebrum.Bus, phase func() reactivity.Triad) cerebrum.Bus {
 	return &corpusMotor{
 		corpus:  c,
@@ -38,7 +38,7 @@ func (m *corpusMotor) Send(ctx context.Context, event cerebrum.Event) error {
 	name := event.Source
 	o, err := m.corpus.Handler(name)
 	if err != nil {
-		m.sendError(ctx, event.Source, fmt.Sprintf("unknown organ: %s", event.Source))
+		m.sendError(ctx, event.Source, fmt.Sprintf("unknown handler: %s", event.Source))
 		return nil
 	}
 
@@ -72,8 +72,8 @@ func (m *corpusMotor) Send(ctx context.Context, event cerebrum.Event) error {
 		return nil
 	}
 
-	// For Shell-based organs, execute and return result via sensory bus.
-	// Organs that implement agentshell.Shell get the full exec path.
+	// For Shell-based handlers, execute and return result via sensory bus.
+	// Handlers that implement agentshell.Shell get the full exec path.
 	if sh, ok := o.(agentshell.Shell); ok {
 		result, err := sh.Exec(ctx, event.Source, event.Payload)
 		if err != nil {

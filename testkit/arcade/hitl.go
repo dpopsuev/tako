@@ -9,7 +9,7 @@ import (
 	"github.com/dpopsuev/tako/artifact"
 )
 
-// HITLListener is a Signal organ that watches for pending.hitl wires
+// HITLListener is a Signal handler that watches for pending.hitl wires
 // and responds with approval.hitl events on the sensory bus.
 // Involuntary — the agent doesn't control when approval arrives.
 type HITLListener struct {

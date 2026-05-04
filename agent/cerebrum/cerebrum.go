@@ -42,9 +42,9 @@ type Cerebrum struct {
 	parser        ResponseParser
 	toolDefs      []tangle.Tool
 
-	pool       ergograph.Ledger
-	andon      andon.Signal
-	assert     reactivity.Assert
+	pool        ergograph.Ledger
+	andon       andon.Signal
+	assert      reactivity.Assert
 	recollector Recollector
 
 	molecule *reactivity.Molecule
@@ -67,7 +67,6 @@ func New(reactor *reactivity.Core, completer tangle.Completer, opts ...Option) *
 	}
 	return cb
 }
-
 
 func (cb *Cerebrum) Run(ctx context.Context) {
 	atoms := make(chan reactivity.Atom, 64)
@@ -134,13 +133,13 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 		molecule = reactivity.NewMoleculeWithCatalyst(
 			fmt.Sprintf("mol-%d", time.Now().UnixNano()), catalyst)
 		cb.reactor.Add(molecule, reactivity.Atom{
-			ID: fmt.Sprintf("need-%d", time.Now().UnixNano()),
+			ID:   fmt.Sprintf("need-%d", time.Now().UnixNano()),
 			Type: reactivity.IntentAtom, Taxonomy: "intent.need",
 			Content: need, CreatedAt: time.Now(),
 		})
 	} else {
 		molecule = cb.reactor.Cognize(reactivity.Atom{
-			ID: fmt.Sprintf("need-%d", time.Now().UnixNano()),
+			ID:   fmt.Sprintf("need-%d", time.Now().UnixNano()),
 			Type: reactivity.IntentAtom, Taxonomy: "intent.need",
 			Content: need, CreatedAt: time.Now(),
 		})
