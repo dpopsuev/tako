@@ -190,6 +190,17 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 		}
 
 		domain := cb.classifier.Classify(molecule)
+		if domain == Clear && molecule.CurrentTriad() == reactivity.ThinkTriad {
+			molecule.SetPhase(reactivity.ExecutionAtom)
+			slog.InfoContext(ctx, "cerebrum.think.cynefin_skip",
+				slog.Int("turn", turn),
+				slog.String("domain", domain.String()))
+			cb.emit("cerebrum.cynefin_skip", map[string]string{
+				"molecule": molecule.ID,
+				"turn":     fmt.Sprintf("%d", turn),
+				"domain":   domain.String(),
+			})
+		}
 		contracts := cb.reactor.Contracts()
 		directives := cb.reactor.Directives(molecule.Phase())
 		prompt := buildContractPrompt(molecule, need, domain, contracts)

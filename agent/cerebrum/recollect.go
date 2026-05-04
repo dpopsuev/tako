@@ -104,7 +104,7 @@ func atomTypeFromString(s string) reactivity.AtomType {
 func PersistMolecule(mesh memory.Mesh, m *reactivity.Molecule, need []byte) error {
 	var book []BookAtom
 	for _, at := range reactivity.AllAtomTypes() {
-		if at.Triad == reactivity.ReflectTriad {
+		if at.Triad == reactivity.ImplementTriad || at.Triad == reactivity.ReflectTriad {
 			continue
 		}
 		for _, atom := range m.Atoms(at) {

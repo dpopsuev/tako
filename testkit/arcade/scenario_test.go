@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -54,6 +55,24 @@ func newCompleter(t *testing.T, ctx context.Context) tangle.Completer {
 		t.Fatalf("NewVertexProvider: %v", err)
 	}
 	return providers.NewCompleter(provider, resolved.Model, nil)
+}
+
+func sumTokens(pool *ergograph.StubLedger) (int, int) {
+	var tokIn, tokOut int
+	for _, rec := range pool.Records() {
+		if rec.Action != "cerebrum.turn" {
+			continue
+		}
+		if v, ok := rec.Labels["tokens_in"]; ok {
+			n, _ := strconv.Atoi(v)
+			tokIn += n
+		}
+		if v, ok := rec.Labels["tokens_out"]; ok {
+			n, _ := strconv.Atoi(v)
+			tokOut += n
+		}
+	}
+	return tokIn, tokOut
 }
 
 func instrumentList(adv *Game) string {
@@ -118,6 +137,7 @@ func runScenario(t *testing.T, scenario Scenario, extraOpts ...cerebrum.Option) 
 		cerebrum.WithSignal(signal),
 		cerebrum.WithPool(pool),
 		cerebrum.WithAndon(cord),
+		cerebrum.WithCompactor(cerebrum.SummaryCompactor{}),
 		cerebrum.WithBudget(cerebrum.Budget{
 			MaxTurns:    30,
 			TurnTimeout: 30 * time.Second,
@@ -139,16 +159,21 @@ func runScenario(t *testing.T, scenario Scenario, extraOpts ...cerebrum.Option) 
 	m := cb.Result()
 
 	solved := scenario.IsSolved != nil && scenario.IsSolved(scenario.Adventure.State())
+	tokensIn, tokensOut := sumTokens(pool)
 	result := ScenarioResult{
-		Solved:       solved,
-		Turns:        m.TotalMass(),
-		TotalMass:    m.TotalMass(),
-		OptimalTurns: scenario.OptimalTurns,
+		Solved:        solved,
+		Turns:         m.TotalMass(),
+		TotalMass:     m.TotalMass(),
+		OptimalTurns:  scenario.OptimalTurns,
+		TokensIn:      tokensIn,
+		TokensOut:     tokensOut,
+		OptimalTokens: scenario.OptimalTurns * 1000,
 	}
 
 	t.Logf("=== Scenario: %s ===", scenario.Name)
-	t.Logf("Solved: %v | OAE: %.1f%% | Turns: %d (optimal: %d) | Mass: %d",
-		result.Solved, result.OAE()*100, result.Turns, result.OptimalTurns, result.TotalMass)
+	t.Logf("Solved: %v | OAE: %.1f%% | Turns: %d (optimal: %d) | Mass: %d | Tokens: %d in + %d out = %d",
+		result.Solved, result.OAE()*100, result.Turns, result.OptimalTurns, result.TotalMass,
+		result.TokensIn, result.TokensOut, result.TokensIn+result.TokensOut)
 
 	for _, at := range reactivity.AllAtomTypes() {
 		if mass := m.Mass(at); mass > 0 {
