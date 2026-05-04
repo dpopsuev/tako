@@ -31,10 +31,10 @@ func TestMain(m *testing.M) {
 
 func newCompleter(t *testing.T, ctx context.Context) tangle.Completer {
 	t.Helper()
-	region := os.Getenv("GOOGLE_CLOUD_LOCATION")
-	project := os.Getenv("GOOGLE_CLOUD_PROJECT")
+	region := os.Getenv("CLOUD_ML_REGION")
+	project := os.Getenv("ANTHROPIC_VERTEX_PROJECT_ID")
 	if region == "" || project == "" {
-		t.Skip("GOOGLE_CLOUD_LOCATION and GOOGLE_CLOUD_PROJECT required")
+		t.Skip("CLOUD_ML_REGION and ANTHROPIC_VERTEX_PROJECT_ID required")
 	}
 
 	ars, err := arsenal.NewArsenal("")
