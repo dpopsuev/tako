@@ -9,7 +9,7 @@ import (
 )
 
 func NewTakonomics() Scenario {
-	adv := NewGame("takonomics", map[string]any{
+	adv := NewGame(map[string]any{
 		"grain":       1000,
 		"population":  100,
 		"land":        200,

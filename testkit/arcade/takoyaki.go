@@ -11,7 +11,7 @@ import (
 )
 
 func NewTakoyaki(ctx context.Context, sensory cerebrum.Bus) Scenario {
-	adv := NewGame("takoyaki", map[string]any{
+	adv := NewGame(map[string]any{
 		"stove":           "off",
 		"grill":           "empty",
 		"fryer":           "empty",

@@ -25,7 +25,6 @@ func NewHITLListener(sensory cerebrum.Bus, approve func(artifact.Wire) bool) *HI
 }
 
 func (h *HITLListener) Name() organ.OrganName { return "hitl" }
-func (h *HITLListener) Kind() organ.Kind      { return organ.Signal }
 
 func (h *HITLListener) Receive(wire artifact.Wire) error {
 	if wire.Kind != "motor.pending.hitl" {

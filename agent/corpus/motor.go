@@ -14,10 +14,11 @@ import (
 // MotorBus builds a cerebrum.Bus that routes motor events through the Corpus.
 // Routes by event.Source (organ/instrument name), enforces RO/RW permissions,
 // and emits to Signal organs as a side effect of every route.
-func (c *Corpus) MotorBus(sensory cerebrum.Bus, phase func() reactivity.Triad) cerebrum.Bus {
+func (c *Corpus) MotorBus(sensory cerebrum.Bus, signal cerebrum.Bus, phase func() reactivity.Triad) cerebrum.Bus {
 	return &corpusMotor{
 		corpus:  c,
 		sensory: sensory,
+		signal:  signal,
 		phase:   phase,
 	}
 }
@@ -25,6 +26,7 @@ func (c *Corpus) MotorBus(sensory cerebrum.Bus, phase func() reactivity.Triad) c
 type corpusMotor struct {
 	corpus  *Corpus
 	sensory cerebrum.Bus
+	signal  cerebrum.Bus
 	phase   func() reactivity.Triad
 }
 
@@ -43,22 +45,22 @@ func (m *corpusMotor) Send(ctx context.Context, event cerebrum.Event) error {
 	if shell, ok := o.(organ.Shell); ok {
 		mode := shell.Mode(event.Source)
 		if mode == organ.WriteAction && m.phase() != reactivity.ImplementTriad {
-			m.signal(ctx, event, "denied.phase")
+			m.emitSignal(ctx, event, "denied.phase")
 			m.sendError(ctx, event.Source, "permission denied: write actions available during implementation phase only")
 			return nil
 		}
 		if shell.Approval(event.Source) == organ.HITL {
-			m.signal(ctx, event, "pending.hitl")
+			m.emitSignal(ctx, event, "pending.hitl")
 			approval, ok := m.sensory.Receive(ctx)
 			if !ok || approval.Kind != "approval.hitl" {
-				m.signal(ctx, event, "denied.hitl")
+				m.emitSignal(ctx, event, "denied.hitl")
 				m.sendError(ctx, event.Source, "approval denied or timed out")
 				return nil
 			}
 		}
 	}
 
-	m.signal(ctx, event, "execute")
+	m.emitSignal(ctx, event, "execute")
 
 	wire := artifact.Wire{
 		Kind:    event.Kind,
@@ -104,17 +106,15 @@ func (m *corpusMotor) sendError(_ context.Context, source, msg string) {
 	})
 }
 
-func (m *corpusMotor) signal(ctx context.Context, event cerebrum.Event, action string) {
-	m.corpus.mu.RLock()
-	defer m.corpus.mu.RUnlock()
-	wire := artifact.Wire{
-		Kind:    fmt.Sprintf("motor.%s", action),
-		Channel: event.Source,
-		Payload: event.Payload,
+func (m *corpusMotor) emitSignal(_ context.Context, event cerebrum.Event, action string) {
+	if m.signal == nil {
+		return
 	}
-	for _, o := range m.corpus.organs {
-		if o.Kind() == organ.Signal {
-			o.Receive(wire)
-		}
-	}
+	m.signal.Send(context.Background(), cerebrum.Event{
+		ID:        fmt.Sprintf("signal-%s-%d", action, time.Now().UnixNano()),
+		Kind:      fmt.Sprintf("motor.%s", action),
+		Source:    event.Source,
+		Payload:   event.Payload,
+		CreatedAt: time.Now(),
+	})
 }

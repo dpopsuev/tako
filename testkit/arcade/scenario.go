@@ -48,7 +48,7 @@ func (r ScenarioResult) OAE() float64 {
 }
 
 func NewFridge() Scenario {
-	adv := NewGame("fridge", map[string]any{
+	adv := NewGame(map[string]any{
 		"hungry": true,
 		"fridge": []string{"eggs", "milk", "cheese"},
 		"stove":  "off",
@@ -126,7 +126,7 @@ func NewFridge() Scenario {
 
 
 func NewDirtyRoom() Scenario {
-	adv := NewGame("dirty_room", map[string]any{
+	adv := NewGame(map[string]any{
 		"floor":   []string{"dust", "crumbs"},
 		"table":   []string{"dirty dishes"},
 		"trash":   "full",

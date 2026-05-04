@@ -10,22 +10,16 @@ import (
 type StubOrgan struct {
 	mu       sync.Mutex
 	name     OrganName
-	kind     Kind
 	received []artifact.Wire
 }
 
 var _ Organ = (*StubOrgan)(nil)
 
 func NewStubOrgan(name OrganName) *StubOrgan {
-	return &StubOrgan{name: name, kind: Cognitive}
-}
-
-func NewStubOrganWithKind(name OrganName, kind Kind) *StubOrgan {
-	return &StubOrgan{name: name, kind: kind}
+	return &StubOrgan{name: name}
 }
 
 func (o *StubOrgan) Name() OrganName { return o.name }
-func (o *StubOrgan) Kind() Kind      { return o.kind }
 
 func (o *StubOrgan) Receive(wire artifact.Wire) error {
 	o.mu.Lock()

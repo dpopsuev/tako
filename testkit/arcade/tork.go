@@ -10,7 +10,7 @@ import (
 // The agent must explore rooms, collect items, solve lock/light
 // dependencies, and retrieve the hidden treasure.
 func NewTork() Scenario {
-	adv := NewGame("tork", map[string]any{
+	adv := NewGame(map[string]any{
 		"current_room":  "entrance",
 		"inventory":     []string{},
 		"key_taken":     false,

@@ -72,7 +72,6 @@ func New(reactor *reactivity.Core, completer tangle.Completer, opts ...Option) *
 var _ organ.Organ = (*Cerebrum)(nil)
 
 func (cb *Cerebrum) Name() organ.OrganName { return organ.CerebrumOrgan }
-func (cb *Cerebrum) Kind() organ.Kind      { return organ.Cognitive }
 
 func (cb *Cerebrum) Receive(wire artifact.Wire) error {
 	return cb.sensory.Send(context.Background(), Event{

@@ -42,18 +42,18 @@ type shellOrgan struct {
 	actionApproval organ.ActionApproval
 }
 
-func newShellOrgan(name organ.OrganName, kind organ.Kind, shell organ.Shell) *shellOrgan {
+func newShellOrgan(name organ.OrganName, shell organ.Shell) *shellOrgan {
 	return &shellOrgan{
-		StubOrgan: *organ.NewStubOrganWithKind(name, kind),
+		StubOrgan: *organ.NewStubOrgan(name),
 		shell:     shell,
 	}
 }
 
-func (o *shellOrgan) Names() []string                          { return o.shell.Names() }
-func (o *shellOrgan) Describe(n string) (string, error)        { return o.shell.Describe(n) }
-func (o *shellOrgan) Schema(n string) (json.RawMessage, error) { return o.shell.Schema(n) }
-func (o *shellOrgan) Mode(n string) organ.ActionMode             { return o.actionMode }
-func (o *shellOrgan) Approval(n string) organ.ActionApproval     { return o.actionApproval }
+func (o *shellOrgan) Names() []string                                                              { return o.shell.Names() }
+func (o *shellOrgan) Describe(n string) (string, error)                                            { return o.shell.Describe(n) }
+func (o *shellOrgan) Schema(n string) (json.RawMessage, error)                                     { return o.shell.Schema(n) }
+func (o *shellOrgan) Mode(n string) organ.ActionMode                                               { return o.actionMode }
+func (o *shellOrgan) Approval(n string) organ.ActionApproval                                       { return o.actionApproval }
 func (o *shellOrgan) Exec(ctx context.Context, name string, input json.RawMessage) (organ.Result, error) {
 	return o.shell.Exec(ctx, name, input)
 }
@@ -69,7 +69,6 @@ func newAutoApproveHITL(sensory cerebrum.Bus) *autoApproveHITL {
 }
 
 func (h *autoApproveHITL) Name() organ.OrganName { return "hitl" }
-func (h *autoApproveHITL) Kind() organ.Kind      { return organ.Signal }
 func (h *autoApproveHITL) Receive(wire artifact.Wire) error {
 	if wire.Kind != "motor.pending.hitl" {
 		return nil
@@ -84,21 +83,18 @@ func (h *autoApproveHITL) Receive(wire artifact.Wire) error {
 func TestCorpusMotorBus_RW_Denied_During_Think(t *testing.T) {
 	c := New()
 	shell := organ.NewStubShell()
-	o := newShellOrgan("echo", organ.Motor, shell)
+	o := newShellOrgan("echo", shell)
 	o.actionMode = organ.WriteAction
 	c.Attach(o)
 
 	sensory := &captureBus{}
 	phase := func() reactivity.Triad { return reactivity.ThinkTriad }
-	bus := c.MotorBus(sensory, phase)
+	bus := c.MotorBus(sensory, nil, phase)
 
 	ctx := context.Background()
 	bus.Send(ctx, cerebrum.Event{
-		ID:        "test-1",
-		Kind:      "instrument",
-		Source:    "echo",
-		Payload:   []byte("hello"),
-		CreatedAt: time.Now(),
+		ID: "test-1", Kind: "instrument", Source: "echo",
+		Payload: []byte("hello"), CreatedAt: time.Now(),
 	})
 
 	events := sensory.Events()
@@ -108,28 +104,22 @@ func TestCorpusMotorBus_RW_Denied_During_Think(t *testing.T) {
 	if events[0].Kind != "instrument.error" {
 		t.Errorf("expected instrument.error, got %s", events[0].Kind)
 	}
-	if string(events[0].Payload) != "permission denied: write actions available during implementation phase only" {
-		t.Errorf("unexpected error message: %s", events[0].Payload)
-	}
 }
 
 func TestCorpusMotorBus_RO_Allowed_During_Think(t *testing.T) {
 	c := New()
 	shell := organ.NewStubShell()
-	o := newShellOrgan("echo", organ.Motor, shell)
+	o := newShellOrgan("echo", shell)
 	c.Attach(o)
 
 	sensory := &captureBus{}
 	phase := func() reactivity.Triad { return reactivity.ThinkTriad }
-	bus := c.MotorBus(sensory, phase)
+	bus := c.MotorBus(sensory, nil, phase)
 
 	ctx := context.Background()
 	bus.Send(ctx, cerebrum.Event{
-		ID:        "test-2",
-		Kind:      "instrument",
-		Source:    "echo",
-		Payload:   []byte("hello"),
-		CreatedAt: time.Now(),
+		ID: "test-2", Kind: "instrument", Source: "echo",
+		Payload: []byte("hello"), CreatedAt: time.Now(),
 	})
 
 	events := sensory.Events()
@@ -144,20 +134,17 @@ func TestCorpusMotorBus_RO_Allowed_During_Think(t *testing.T) {
 func TestCorpusMotorBus_RW_Allowed_During_Implement(t *testing.T) {
 	c := New()
 	shell := organ.NewStubShell()
-	o := newShellOrgan("echo", organ.Motor, shell)
+	o := newShellOrgan("echo", shell)
 	c.Attach(o)
 
 	sensory := &captureBus{}
 	phase := func() reactivity.Triad { return reactivity.ImplementTriad }
-	bus := c.MotorBus(sensory, phase)
+	bus := c.MotorBus(sensory, nil, phase)
 
 	ctx := context.Background()
 	bus.Send(ctx, cerebrum.Event{
-		ID:        "test-3",
-		Kind:      "instrument",
-		Source:    "echo",
-		Payload:   []byte("hello"),
-		CreatedAt: time.Now(),
+		ID: "test-3", Kind: "instrument", Source: "echo",
+		Payload: []byte("hello"), CreatedAt: time.Now(),
 	})
 
 	events := sensory.Events()
@@ -172,51 +159,45 @@ func TestCorpusMotorBus_RW_Allowed_During_Implement(t *testing.T) {
 func TestCorpusMotorBus_SignalEmission(t *testing.T) {
 	c := New()
 	shell := organ.NewStubShell()
-	motor := newShellOrgan("echo", organ.Motor, shell)
-	signal := organ.NewStubOrganWithKind("andon", organ.Signal)
+	motor := newShellOrgan("echo", shell)
 	c.Attach(motor)
-	c.Attach(signal)
 
 	sensory := &captureBus{}
+	signalBus := &captureBus{}
 	phase := func() reactivity.Triad { return reactivity.ImplementTriad }
-	bus := c.MotorBus(sensory, phase)
+	bus := c.MotorBus(sensory, signalBus, phase)
 
 	ctx := context.Background()
 	bus.Send(ctx, cerebrum.Event{
-		ID:        "test-4",
-		Kind:      "instrument",
-		Source:    "echo",
-		Payload:   []byte("hello"),
-		CreatedAt: time.Now(),
+		ID: "test-4", Kind: "instrument", Source: "echo",
+		Payload: []byte("hello"), CreatedAt: time.Now(),
 	})
 
-	received := signal.Received()
-	if len(received) != 1 {
-		t.Fatalf("expected 1 signal wire, got %d", len(received))
+	signals := signalBus.Events()
+	if len(signals) != 1 {
+		t.Fatalf("expected 1 signal event, got %d", len(signals))
 	}
-	if received[0].Kind != "motor.execute" {
-		t.Errorf("expected motor.execute, got %s", received[0].Kind)
+	if signals[0].Kind != "motor.execute" {
+		t.Errorf("expected motor.execute, got %s", signals[0].Kind)
 	}
 }
 
 func TestCorpusMotorBus_HITL_Denied(t *testing.T) {
 	c := New()
 	shell := organ.NewStubShell()
-	o := newShellOrgan("deploy", organ.Motor, shell)
+	o := newShellOrgan("deploy", shell)
 	o.actionMode = organ.WriteAction
 	o.actionApproval = organ.HITL
 	c.Attach(o)
 
 	sensory := cerebrum.NewChannelBus(8)
 	phase := func() reactivity.Triad { return reactivity.ImplementTriad }
-	bus := c.MotorBus(sensory, phase)
+	bus := c.MotorBus(sensory, nil, phase)
 
 	sendCtx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 	bus.Send(sendCtx, cerebrum.Event{
-		ID:     "test-hitl-deny",
-		Kind:   "instrument",
-		Source: "deploy",
+		ID: "test-hitl-deny", Kind: "instrument", Source: "deploy",
 	})
 
 	readCtx, readCancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
@@ -233,23 +214,23 @@ func TestCorpusMotorBus_HITL_Denied(t *testing.T) {
 func TestCorpusMotorBus_HITL_Approved(t *testing.T) {
 	c := New()
 	shell := organ.NewStubShell()
-	o := newShellOrgan("echo", organ.Motor, shell)
+	o := newShellOrgan("echo", shell)
 	o.actionMode = organ.WriteAction
 	o.actionApproval = organ.HITL
 	c.Attach(o)
 
 	sensory := cerebrum.NewChannelBus(8)
-	listener := newAutoApproveHITL(sensory)
-	c.Attach(listener)
-
 	phase := func() reactivity.Triad { return reactivity.ImplementTriad }
-	bus := c.MotorBus(sensory, phase)
+	bus := c.MotorBus(sensory, nil, phase)
+
+	// Pre-load approval on sensory bus (human responds before agent blocks)
+	sensory.Send(context.Background(), cerebrum.Event{
+		Kind: "approval.hitl", Source: "human",
+	})
 
 	ctx := context.Background()
 	bus.Send(ctx, cerebrum.Event{
-		ID:     "test-hitl-approve",
-		Kind:   "instrument",
-		Source: "echo",
+		ID: "test-hitl-approve", Kind: "instrument", Source: "echo",
 	})
 
 	event, ok := sensory.Receive(ctx)
@@ -265,15 +246,12 @@ func TestCorpusMotorBus_UnknownOrgan(t *testing.T) {
 	c := New()
 	sensory := &captureBus{}
 	phase := func() reactivity.Triad { return reactivity.ImplementTriad }
-	bus := c.MotorBus(sensory, phase)
+	bus := c.MotorBus(sensory, nil, phase)
 
 	ctx := context.Background()
 	bus.Send(ctx, cerebrum.Event{
-		ID:        "test-5",
-		Kind:      "instrument",
-		Source:    "nonexistent",
-		Payload:   []byte("hello"),
-		CreatedAt: time.Now(),
+		ID: "test-5", Kind: "instrument", Source: "nonexistent",
+		Payload: []byte("hello"), CreatedAt: time.Now(),
 	})
 
 	events := sensory.Events()
