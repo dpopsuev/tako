@@ -10,7 +10,6 @@ import (
 	"github.com/dpopsuev/tako/agent/cerebrum"
 	"github.com/dpopsuev/tako/agent/organ"
 	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/instrument"
 )
 
 type captureBus struct {
@@ -37,28 +36,28 @@ func (b *captureBus) Events() []cerebrum.Event {
 
 type shellOrgan struct {
 	organ.StubOrgan
-	shell instrument.Shell
+	shell organ.Shell
 }
 
-func newShellOrgan(name organ.OrganName, kind organ.Kind, shell instrument.Shell) *shellOrgan {
+func newShellOrgan(name organ.OrganName, kind organ.Kind, shell organ.Shell) *shellOrgan {
 	return &shellOrgan{
 		StubOrgan: *organ.NewStubOrganWithKind(name, kind),
 		shell:     shell,
 	}
 }
 
-func (o *shellOrgan) Names() []string                                                              { return o.shell.Names() }
-func (o *shellOrgan) Describe(n string) (string, error)                                            { return o.shell.Describe(n) }
-func (o *shellOrgan) Schema(n string) (json.RawMessage, error)                                     { return o.shell.Schema(n) }
-func (o *shellOrgan) Exec(ctx context.Context, name string, input json.RawMessage) (instrument.Result, error) {
+func (o *shellOrgan) Names() []string                          { return o.shell.Names() }
+func (o *shellOrgan) Describe(n string) (string, error)        { return o.shell.Describe(n) }
+func (o *shellOrgan) Schema(n string) (json.RawMessage, error) { return o.shell.Schema(n) }
+func (o *shellOrgan) Exec(ctx context.Context, name string, input json.RawMessage) (organ.Result, error) {
 	return o.shell.Exec(ctx, name, input)
 }
 
-var _ instrument.Shell = (*shellOrgan)(nil)
+var _ organ.Shell = (*shellOrgan)(nil)
 
 func TestCorpusMotorBus_RW_Denied_During_Think(t *testing.T) {
 	c := New()
-	shell := instrument.NewStubShell()
+	shell := organ.NewStubShell()
 	o := newShellOrgan("echo", organ.MotorRW, shell)
 	c.Attach(o)
 
@@ -89,7 +88,7 @@ func TestCorpusMotorBus_RW_Denied_During_Think(t *testing.T) {
 
 func TestCorpusMotorBus_RO_Allowed_During_Think(t *testing.T) {
 	c := New()
-	shell := instrument.NewStubShell()
+	shell := organ.NewStubShell()
 	o := newShellOrgan("echo", organ.MotorRO, shell)
 	c.Attach(o)
 
@@ -117,7 +116,7 @@ func TestCorpusMotorBus_RO_Allowed_During_Think(t *testing.T) {
 
 func TestCorpusMotorBus_RW_Allowed_During_Implement(t *testing.T) {
 	c := New()
-	shell := instrument.NewStubShell()
+	shell := organ.NewStubShell()
 	o := newShellOrgan("echo", organ.MotorRW, shell)
 	c.Attach(o)
 
@@ -145,7 +144,7 @@ func TestCorpusMotorBus_RW_Allowed_During_Implement(t *testing.T) {
 
 func TestCorpusMotorBus_SignalEmission(t *testing.T) {
 	c := New()
-	shell := instrument.NewStubShell()
+	shell := organ.NewStubShell()
 	motor := newShellOrgan("echo", organ.MotorRO, shell)
 	signal := organ.NewStubOrganWithKind("andon", organ.Signal)
 	c.Attach(motor)

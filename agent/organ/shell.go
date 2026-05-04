@@ -1,11 +1,11 @@
-package instrument
+package organ
 
 import (
 	"context"
 	"encoding/json"
 )
 
-// Shell is the Workstation's workbench — instruments are the tools on the bench.
+// Shell groups multiple Functions under a single discoverable interface.
 // Three levels of awareness: Names (L0), Describe (L1), Schema (L2).
 type Shell interface {
 	Names() []string

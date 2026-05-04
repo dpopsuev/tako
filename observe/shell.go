@@ -5,24 +5,24 @@ import (
 	"encoding/json"
 
 	"github.com/dpopsuev/tako/ergograph"
-	"github.com/dpopsuev/tako/instrument"
+	"github.com/dpopsuev/tako/agent/organ"
 	"go.opentelemetry.io/otel/trace"
 )
 
 type Shell struct {
-	inner  instrument.Shell
+	inner  organ.Shell
 	pool   ergograph.Ledger
 	tracer trace.Tracer
 	name   string
 }
 
-var _ instrument.Shell = (*Shell)(nil)
+var _ organ.Shell = (*Shell)(nil)
 
-func NewShell(inner instrument.Shell, pool ergograph.Ledger, tracer trace.Tracer, name string) *Shell {
+func NewShell(inner organ.Shell, pool ergograph.Ledger, tracer trace.Tracer, name string) *Shell {
 	return &Shell{inner: inner, pool: pool, tracer: tracer, name: name}
 }
 
-func (s *Shell) Exec(ctx context.Context, name string, input json.RawMessage) (instrument.Result, error) {
+func (s *Shell) Exec(ctx context.Context, name string, input json.RawMessage) (organ.Result, error) {
 	ctx, span := s.tracer.Start(ctx, "shell.exec")
 	defer span.End()
 	result, err := s.inner.Exec(ctx, name, input)

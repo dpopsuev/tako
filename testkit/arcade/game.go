@@ -9,7 +9,6 @@ import (
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
 	"github.com/dpopsuev/tako/agent/organ"
-	"github.com/dpopsuev/tako/instrument"
 )
 
 type InstrumentFunc func(state map[string]any, input string) string
@@ -37,7 +36,7 @@ type gameInstrument struct {
 	kind        organ.Kind
 }
 
-var _ instrument.Shell = (*Game)(nil)
+var _ organ.Shell = (*Game)(nil)
 
 func NewGame(initialState map[string]any) *Game {
 	return &Game{
@@ -120,18 +119,18 @@ func (a *Game) Schema(name string) (json.RawMessage, error) {
 	return json.RawMessage(`{"type":"string"}`), nil
 }
 
-func (a *Game) Exec(ctx context.Context, name string, input json.RawMessage) (instrument.Result, error) {
+func (a *Game) Exec(ctx context.Context, name string, input json.RawMessage) (organ.Result, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
 	fn, ok := a.fns[name]
 	if !ok {
-		return instrument.ErrorResult(fmt.Sprintf("unknown instrument: %s", name)), nil
+		return organ.ErrorResult(fmt.Sprintf("unknown instrument: %s", name)), nil
 	}
 
 	s := extractInput(input)
 	result := fn(a.state, s)
-	return instrument.TextResult(result), nil
+	return organ.TextResult(result), nil
 }
 
 func extractInput(raw json.RawMessage) string {

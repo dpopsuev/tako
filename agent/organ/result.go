@@ -1,4 +1,4 @@
-package instrument
+package organ
 
 // Result is the structured output of an instrument execution.
 type Result struct {

@@ -9,7 +9,6 @@ import (
 	"github.com/dpopsuev/tako/agent/organ"
 	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/artifact"
-	"github.com/dpopsuev/tako/instrument"
 )
 
 // MotorBus builds a cerebrum.Bus that routes motor events through the Corpus.
@@ -60,8 +59,8 @@ func (m *corpusMotor) Send(ctx context.Context, event cerebrum.Event) error {
 	}
 
 	// For Shell-based organs, execute and return result via sensory bus.
-	// Organs that implement instrument.Shell get the full exec path.
-	if shell, ok := o.(instrument.Shell); ok {
+	// Organs that implement organ.Shell get the full exec path.
+	if shell, ok := o.(organ.Shell); ok {
 		result, err := shell.Exec(ctx, event.Source, event.Payload)
 		if err != nil {
 			m.sendError(ctx, event.Source, err.Error())

@@ -14,7 +14,6 @@ import (
 	"github.com/dpopsuev/tako/discourse"
 	"github.com/dpopsuev/tako/ergograph"
 	"github.com/dpopsuev/tako/fab"
-	"github.com/dpopsuev/tako/instrument"
 	"github.com/dpopsuev/tako/memory"
 	"github.com/dpopsuev/tako/render"
 	"github.com/dpopsuev/tako/service/andon"
@@ -29,20 +28,20 @@ var (
 
 // FabCollective is the composition root — wires all sub-systems into a running Fab.
 type FabCollective struct {
-	Assembly    fab.Assembly
-	Kanban      kanban.Board
-	Andon       andon.Signal
-	Pool        ergograph.Ledger
-	Inspector   ergograph.Inspector
-	Canvas      render.Canvas
-	Depo        depo.Depo
-	Lobby       agent.Lobby
-	Middleware  []Middleware
-	agents      []*agent.Agent
-	runner  agent.Runner
-	mesh    memory.Mesh
-	shell   instrument.Shell
-	monolog discourse.Monolog
+	Assembly   fab.Assembly
+	Kanban     kanban.Board
+	Andon      andon.Signal
+	Pool       ergograph.Ledger
+	Inspector  ergograph.Inspector
+	Canvas     render.Canvas
+	Depo       depo.Depo
+	Lobby      agent.Lobby
+	Middleware []Middleware
+	agents     []*agent.Agent
+	runner     agent.Runner
+	mesh       memory.Mesh
+	shell      organ.Shell
+	monolog    discourse.Monolog
 }
 
 // Middleware processes an Envelope as it flows through the Fab graph.
@@ -53,35 +52,35 @@ type EnvelopeHandler func(ctx context.Context, contract fab.Contract, envelope a
 
 // FabCollectiveConfig holds the dependencies for constructing a FabCollective.
 type FabCollectiveConfig struct {
-	Assembly    fab.Assembly
-	Kanban      kanban.Board
-	Andon       andon.Signal
-	Pool        ergograph.Ledger
-	Inspector   ergograph.Inspector
-	Canvas      render.Canvas
-	Depo        depo.Depo
-	Lobby       agent.Lobby
-	Mesh   memory.Mesh
-	Shell  instrument.Shell
-	Runner agent.Runner
-	Middleware  []Middleware
+	Assembly   fab.Assembly
+	Kanban     kanban.Board
+	Andon      andon.Signal
+	Pool       ergograph.Ledger
+	Inspector  ergograph.Inspector
+	Canvas     render.Canvas
+	Depo       depo.Depo
+	Lobby      agent.Lobby
+	Mesh       memory.Mesh
+	Shell      organ.Shell
+	Runner     agent.Runner
+	Middleware []Middleware
 }
 
 // NewFabCollective creates a FabCollective from its dependencies.
 func NewFabCollective(cfg FabCollectiveConfig) *FabCollective {
 	return &FabCollective{
-		Assembly:    cfg.Assembly,
-		Kanban:      cfg.Kanban,
-		Andon:       cfg.Andon,
-		Pool:        cfg.Pool,
-		Inspector:   cfg.Inspector,
-		Canvas:      cfg.Canvas,
-		Depo:        cfg.Depo,
-		Lobby:       cfg.Lobby,
-		Middleware:  cfg.Middleware,
-		runner: cfg.Runner,
-		mesh:   cfg.Mesh,
-		shell:  cfg.Shell,
+		Assembly:   cfg.Assembly,
+		Kanban:     cfg.Kanban,
+		Andon:      cfg.Andon,
+		Pool:       cfg.Pool,
+		Inspector:  cfg.Inspector,
+		Canvas:     cfg.Canvas,
+		Depo:       cfg.Depo,
+		Lobby:      cfg.Lobby,
+		Middleware: cfg.Middleware,
+		runner:     cfg.Runner,
+		mesh:       cfg.Mesh,
+		shell:      cfg.Shell,
 	}
 }
 
