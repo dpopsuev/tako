@@ -98,11 +98,8 @@ func (fc *FabCollective) Run(ctx context.Context) error {
 		return fmt.Errorf("tako: lobby admit: %w", err)
 	}
 
-	// Assemble Corpus from Capability blueprint (Tangled builds, agent never self-assembles)
 	c := corpus.New()
-	for _, organName := range capability.Organs {
-		c.Attach(organ.NewStubOrgan(organName))
-	}
+	_ = capability.Services
 
 	fc.monolog = &discourse.StubMonolog{}
 

@@ -7,18 +7,13 @@ import (
 	"time"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/artifact"
 	tangle "github.com/dpopsuev/tangle"
 )
 
-func TestCerebrum_IsOrgan(t *testing.T) {
+func TestCerebrum_Think(t *testing.T) {
 	completer := &stubCompleter{response: "done"}
 	reactor := reactivity.NewReactor()
 	cb := New(reactor, completer)
-
-	if cb.Name() != "cerebrum" {
-		t.Errorf("expected organ name 'cerebrum', got %q", cb.Name())
-	}
 
 	if err := cb.Think(context.Background(), []byte("test need")); err != nil {
 		t.Fatalf("Think: %v", err)
@@ -27,17 +22,6 @@ func TestCerebrum_IsOrgan(t *testing.T) {
 	m := cb.Result()
 	if !m.Sealed() {
 		t.Error("Molecule should be sealed after Think")
-	}
-}
-
-func TestCerebrum_Receive_NonBlocking(t *testing.T) {
-	completer := &stubCompleter{response: "done"}
-	reactor := reactivity.NewReactor()
-	cb := New(reactor, completer)
-
-	wire := artifact.Wire{Kind: "cerebrum", Payload: []byte("test")}
-	if err := cb.Receive(wire); err != nil {
-		t.Fatalf("Receive should not error: %v", err)
 	}
 }
 

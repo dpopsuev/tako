@@ -4,70 +4,66 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/dpopsuev/tako/agent/organ"
 	"github.com/dpopsuev/tako/artifact"
 )
 
 var (
-	ErrOrganNotFound = errors.New("corpus: organ not found")
-	ErrNotAssembled  = errors.New("corpus: not assembled")
+	ErrHandlerNotFound = errors.New("corpus: handler not found")
 )
 
-// Corpus is the composition root — wires Organs (body + mind).
-// Cerebrum IS an Organ — same interface, attached via Attach().
-// Tangled builds the Corpus. Agent never self-assembles. SOLID DIP.
+// Handler is a named wire receiver. Stations, services, listeners
+// implement this to receive routed wires.
+type Handler interface {
+	Name() string
+	Receive(wire artifact.Wire) error
+}
+
+// Corpus wires Cerebrum to buses and routes wires to handlers.
 type Corpus struct {
 	mu            sync.RWMutex
-	organs        map[organ.OrganName]organ.Organ
-	subscriptions map[string][]organ.OrganName
+	handlers      map[string]Handler
+	subscriptions map[string][]string
 }
 
-// New creates an empty Corpus. Cerebrum and Organs attached via setters.
 func New() *Corpus {
 	return &Corpus{
-		organs:        make(map[organ.OrganName]organ.Organ),
-		subscriptions: make(map[string][]organ.OrganName),
+		handlers:      make(map[string]Handler),
+		subscriptions: make(map[string][]string),
 	}
 }
 
-// Attach adds an Organ to the Corpus.
-func (c *Corpus) Attach(o organ.Organ) {
+func (c *Corpus) Attach(h Handler) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.organs[o.Name()] = o
+	c.handlers[h.Name()] = h
 }
 
-// Organ returns a named Organ.
-func (c *Corpus) Organ(name organ.OrganName) (organ.Organ, error) {
+func (c *Corpus) Handler(name string) (Handler, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	o, ok := c.organs[name]
+	h, ok := c.handlers[name]
 	if !ok {
-		return nil, ErrOrganNotFound
+		return nil, ErrHandlerNotFound
 	}
-	return o, nil
+	return h, nil
 }
 
-// Organs returns all attached Organ names.
-func (c *Corpus) Organs() []organ.OrganName {
+func (c *Corpus) Handlers() []string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	out := make([]organ.OrganName, 0, len(c.organs))
-	for name := range c.organs {
+	out := make([]string, 0, len(c.handlers))
+	for name := range c.handlers {
 		out = append(out, name)
 	}
 	return out
 }
 
-// Subscribe registers an Organ to receive Wires of a given kind.
-func (c *Corpus) Subscribe(kind string, name organ.OrganName) {
+func (c *Corpus) Subscribe(kind string, name string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.subscriptions[kind] = append(c.subscriptions[kind], name)
 }
 
-// Route dispatches a Wire to all Organs subscribed to Wire.Kind.
-// Falls back to OrganName matching if no subscriptions exist.
 func (c *Corpus) Route(wire artifact.Wire) error {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -76,8 +72,8 @@ func (c *Corpus) Route(wire artifact.Wire) error {
 	if len(subs) > 0 {
 		var firstErr error
 		for _, name := range subs {
-			if o, ok := c.organs[name]; ok {
-				if err := o.Receive(wire); err != nil && firstErr == nil {
+			if h, ok := c.handlers[name]; ok {
+				if err := h.Receive(wire); err != nil && firstErr == nil {
 					firstErr = err
 				}
 			}
@@ -85,9 +81,9 @@ func (c *Corpus) Route(wire artifact.Wire) error {
 		return firstErr
 	}
 
-	o, ok := c.organs[organ.OrganName(wire.Kind)]
+	h, ok := c.handlers[wire.Kind]
 	if !ok {
-		return ErrOrganNotFound
+		return ErrHandlerNotFound
 	}
-	return o.Receive(wire)
+	return h.Receive(wire)
 }

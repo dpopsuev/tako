@@ -7,9 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dpopsuev/tako/agent/organ"
 	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/artifact"
 	"github.com/dpopsuev/tako/ergograph"
 	"github.com/dpopsuev/tako/service/andon"
 	tangle "github.com/dpopsuev/tangle"
@@ -69,19 +67,6 @@ func New(reactor *reactivity.Core, completer tangle.Completer, opts ...Option) *
 	return cb
 }
 
-var _ organ.Organ = (*Cerebrum)(nil)
-
-func (cb *Cerebrum) Name() organ.OrganName { return organ.CerebrumOrgan }
-
-func (cb *Cerebrum) Receive(wire artifact.Wire) error {
-	return cb.sensory.Send(context.Background(), Event{
-		ID:        fmt.Sprintf("wire-%d", time.Now().UnixNano()),
-		Kind:      wire.Kind,
-		Source:    "wire",
-		Payload:   wire.Payload,
-		CreatedAt: time.Now(),
-	})
-}
 
 func (cb *Cerebrum) Run(ctx context.Context) {
 	atoms := make(chan reactivity.Atom, 64)

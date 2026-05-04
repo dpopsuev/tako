@@ -35,30 +35,29 @@ func (b *captureBus) Events() []cerebrum.Event {
 	return append([]cerebrum.Event(nil), b.events...)
 }
 
-type shellOrgan struct {
-	organ.StubOrgan
+type shellHandler struct {
+	name           string
 	shell          organ.Shell
 	actionMode     organ.ActionMode
 	actionApproval organ.ActionApproval
 }
 
-func newShellOrgan(name organ.OrganName, shell organ.Shell) *shellOrgan {
-	return &shellOrgan{
-		StubOrgan: *organ.NewStubOrgan(name),
-		shell:     shell,
-	}
+func newShellHandler(name string, shell organ.Shell) *shellHandler {
+	return &shellHandler{name: name, shell: shell}
 }
 
-func (o *shellOrgan) Names() []string                                                              { return o.shell.Names() }
-func (o *shellOrgan) Describe(n string) (string, error)                                            { return o.shell.Describe(n) }
-func (o *shellOrgan) Schema(n string) (json.RawMessage, error)                                     { return o.shell.Schema(n) }
-func (o *shellOrgan) Mode(n string) organ.ActionMode                                               { return o.actionMode }
-func (o *shellOrgan) Approval(n string) organ.ActionApproval                                       { return o.actionApproval }
-func (o *shellOrgan) Exec(ctx context.Context, name string, input json.RawMessage) (organ.Result, error) {
+func (o *shellHandler) Name() string                                                               { return o.name }
+func (o *shellHandler) Receive(_ artifact.Wire) error                                              { return nil }
+func (o *shellHandler) Names() []string                                                            { return o.shell.Names() }
+func (o *shellHandler) Describe(n string) (string, error)                                          { return o.shell.Describe(n) }
+func (o *shellHandler) Schema(n string) (json.RawMessage, error)                                   { return o.shell.Schema(n) }
+func (o *shellHandler) Mode(n string) organ.ActionMode                                             { return o.actionMode }
+func (o *shellHandler) Approval(n string) organ.ActionApproval                                     { return o.actionApproval }
+func (o *shellHandler) Exec(ctx context.Context, name string, input json.RawMessage) (organ.Result, error) {
 	return o.shell.Exec(ctx, name, input)
 }
 
-var _ organ.Shell = (*shellOrgan)(nil)
+var _ organ.Shell = (*shellHandler)(nil)
 
 type autoApproveHITL struct {
 	sensory cerebrum.Bus
@@ -68,7 +67,7 @@ func newAutoApproveHITL(sensory cerebrum.Bus) *autoApproveHITL {
 	return &autoApproveHITL{sensory: sensory}
 }
 
-func (h *autoApproveHITL) Name() organ.OrganName { return "hitl" }
+func (h *autoApproveHITL) Name() string { return "hitl" }
 func (h *autoApproveHITL) Receive(wire artifact.Wire) error {
 	if wire.Kind != "motor.pending.hitl" {
 		return nil
@@ -83,7 +82,7 @@ func (h *autoApproveHITL) Receive(wire artifact.Wire) error {
 func TestCorpusMotorBus_RW_Denied_During_Think(t *testing.T) {
 	c := New()
 	shell := organ.NewStubShell()
-	o := newShellOrgan("echo", shell)
+	o := newShellHandler("echo", shell)
 	o.actionMode = organ.WriteAction
 	c.Attach(o)
 
@@ -109,7 +108,7 @@ func TestCorpusMotorBus_RW_Denied_During_Think(t *testing.T) {
 func TestCorpusMotorBus_RO_Allowed_During_Think(t *testing.T) {
 	c := New()
 	shell := organ.NewStubShell()
-	o := newShellOrgan("echo", shell)
+	o := newShellHandler("echo", shell)
 	c.Attach(o)
 
 	sensory := &captureBus{}
@@ -134,7 +133,7 @@ func TestCorpusMotorBus_RO_Allowed_During_Think(t *testing.T) {
 func TestCorpusMotorBus_RW_Allowed_During_Implement(t *testing.T) {
 	c := New()
 	shell := organ.NewStubShell()
-	o := newShellOrgan("echo", shell)
+	o := newShellHandler("echo", shell)
 	c.Attach(o)
 
 	sensory := &captureBus{}
@@ -159,7 +158,7 @@ func TestCorpusMotorBus_RW_Allowed_During_Implement(t *testing.T) {
 func TestCorpusMotorBus_SignalEmission(t *testing.T) {
 	c := New()
 	shell := organ.NewStubShell()
-	motor := newShellOrgan("echo", shell)
+	motor := newShellHandler("echo", shell)
 	c.Attach(motor)
 
 	sensory := &captureBus{}
@@ -185,7 +184,7 @@ func TestCorpusMotorBus_SignalEmission(t *testing.T) {
 func TestCorpusMotorBus_HITL_Denied(t *testing.T) {
 	c := New()
 	shell := organ.NewStubShell()
-	o := newShellOrgan("deploy", shell)
+	o := newShellHandler("deploy", shell)
 	o.actionMode = organ.WriteAction
 	o.actionApproval = organ.HITL
 	c.Attach(o)
@@ -214,7 +213,7 @@ func TestCorpusMotorBus_HITL_Denied(t *testing.T) {
 func TestCorpusMotorBus_HITL_Approved(t *testing.T) {
 	c := New()
 	shell := organ.NewStubShell()
-	o := newShellOrgan("echo", shell)
+	o := newShellHandler("echo", shell)
 	o.actionMode = organ.WriteAction
 	o.actionApproval = organ.HITL
 	c.Attach(o)

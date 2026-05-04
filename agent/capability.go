@@ -1,47 +1,25 @@
 package agent
 
-import "github.com/dpopsuev/tako/agent/organ"
-
-// Capability is the AAI token that defines the agent's Corpus blueprint.
-// Declares which Organs to attach. Issued by Lobby (PDP), enforced at Corpus assembly (PEP).
+// Capability is the AAI token that defines the agent's services.
+// Issued by Lobby (PDP), enforced at Corpus assembly (PEP).
 type Capability struct {
 	Identity string
 	Persona  Uniform
-	Organs   []organ.OrganName
+	Services []string
 }
 
-// WorkerCapability returns the default Capability for a Worker persona.
 func WorkerCapability(identity string) Capability {
-	return Capability{
-		Identity: identity,
-		Persona:  Worker,
-		Organs:   []organ.OrganName{organ.Dialog, organ.Kanban, organ.Andon},
-	}
+	return Capability{Identity: identity, Persona: Worker, Services: []string{"dialog", "kanban", "andon"}}
 }
 
-// ForemanCapability returns the default Capability for a Foreman persona.
 func ForemanCapability(identity string) Capability {
-	return Capability{
-		Identity: identity,
-		Persona:  Foreman,
-		Organs:   []organ.OrganName{organ.Dialog, organ.Kanban, organ.Andon},
-	}
+	return Capability{Identity: identity, Persona: Foreman, Services: []string{"dialog", "kanban", "andon"}}
 }
 
-// DirectorCapability returns the default Capability for a Director persona.
 func DirectorCapability(identity string) Capability {
-	return Capability{
-		Identity: identity,
-		Persona:  Director,
-		Organs:   []organ.OrganName{organ.Dialog, organ.Kanban, organ.Andon},
-	}
+	return Capability{Identity: identity, Persona: Director, Services: []string{"dialog", "kanban", "andon"}}
 }
 
-// AvatarCapability returns the default Capability for an Avatar persona.
 func AvatarCapability(identity string) Capability {
-	return Capability{
-		Identity: identity,
-		Persona:  Avatar,
-		Organs:   []organ.OrganName{organ.Dialog, organ.Kanban, organ.Andon},
-	}
+	return Capability{Identity: identity, Persona: Avatar, Services: []string{"dialog", "kanban", "andon"}}
 }

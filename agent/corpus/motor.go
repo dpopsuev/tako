@@ -35,8 +35,8 @@ func (m *corpusMotor) Send(ctx context.Context, event cerebrum.Event) error {
 		return nil
 	}
 
-	name := organ.OrganName(event.Source)
-	o, err := m.corpus.Organ(name)
+	name := event.Source
+	o, err := m.corpus.Handler(name)
 	if err != nil {
 		m.sendError(ctx, event.Source, fmt.Sprintf("unknown organ: %s", event.Source))
 		return nil

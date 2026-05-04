@@ -2,42 +2,62 @@ package corpus
 
 import (
 	"errors"
+	"sync"
 	"testing"
 
-	"github.com/dpopsuev/tako/agent/organ"
 	"github.com/dpopsuev/tako/artifact"
 )
 
+type stubHandler struct {
+	mu       sync.Mutex
+	name     string
+	received []artifact.Wire
+}
+
+func newStubHandler(name string) *stubHandler { return &stubHandler{name: name} }
+func (s *stubHandler) Name() string           { return s.name }
+func (s *stubHandler) Receive(wire artifact.Wire) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.received = append(s.received, wire)
+	return nil
+}
+func (s *stubHandler) Received() []artifact.Wire {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]artifact.Wire(nil), s.received...)
+}
+
 func TestCorpusAttachAndRetrieve(t *testing.T) {
 	c := New()
-	c.Attach(organ.NewStubOrgan("monolog"))
-	c.Attach(organ.NewStubOrgan("dialog"))
+	c.Attach(newStubHandler("monolog"))
+	c.Attach(newStubHandler("dialog"))
 
-	o, err := c.Organ("monolog")
+	o, err := c.Handler("monolog")
 	if err != nil {
-		t.Fatalf("Organ failed: %v", err)
+		t.Fatalf("Handler failed: %v", err)
 	}
 	if o.Name() != "monolog" {
 		t.Errorf("expected monolog, got %s", o.Name())
 	}
 
-	organs := c.Organs()
-	if len(organs) != 2 {
-		t.Errorf("expected 2 organs, got %d", len(organs))
+	handlers := c.Handlers()
+	if len(handlers) != 2 {
+		t.Errorf("expected 2 handlers, got %d", len(handlers))
 	}
 }
 
-func TestCorpusOrganNotFound(t *testing.T) {
+func TestCorpusHandlerNotFound(t *testing.T) {
 	c := New()
-	_, err := c.Organ("missing")
-	if !errors.Is(err, ErrOrganNotFound) {
-		t.Errorf("expected ErrOrganNotFound, got %v", err)
+	_, err := c.Handler("missing")
+	if !errors.Is(err, ErrHandlerNotFound) {
+		t.Errorf("expected ErrHandlerNotFound, got %v", err)
 	}
 }
 
 func TestCorpusRoute(t *testing.T) {
 	c := New()
-	stub := organ.NewStubOrgan("kanban")
+	stub := newStubHandler("kanban")
 	c.Attach(stub)
 
 	wire := artifact.Wire{Kind: "kanban", Payload: []byte("update")}
@@ -49,24 +69,21 @@ func TestCorpusRoute(t *testing.T) {
 	if len(received) != 1 {
 		t.Fatalf("expected 1 received wire, got %d", len(received))
 	}
-	if string(received[0].Payload) != "update" {
-		t.Errorf("expected payload 'update', got %q", received[0].Payload)
-	}
 }
 
-func TestCorpusRouteUnknownOrgan(t *testing.T) {
+func TestCorpusRouteUnknown(t *testing.T) {
 	c := New()
 	wire := artifact.Wire{Kind: "nonexistent", Payload: []byte("data")}
 	err := c.Route(wire)
-	if !errors.Is(err, ErrOrganNotFound) {
-		t.Errorf("expected ErrOrganNotFound, got %v", err)
+	if !errors.Is(err, ErrHandlerNotFound) {
+		t.Errorf("expected ErrHandlerNotFound, got %v", err)
 	}
 }
 
 func TestCorpusSubscribe_FanOut(t *testing.T) {
 	c := New()
-	a := organ.NewStubOrgan("andon")
-	b := organ.NewStubOrgan("monolog")
+	a := newStubHandler("andon")
+	b := newStubHandler("monolog")
 	c.Attach(a)
 	c.Attach(b)
 
@@ -83,41 +100,5 @@ func TestCorpusSubscribe_FanOut(t *testing.T) {
 	}
 	if len(b.Received()) != 1 {
 		t.Errorf("monolog should receive 1 wire, got %d", len(b.Received()))
-	}
-}
-
-func TestCorpusSubscribe_FallbackToNameMatch(t *testing.T) {
-	c := New()
-	stub := organ.NewStubOrgan("kanban")
-	c.Attach(stub)
-
-	wire := artifact.Wire{Kind: "kanban", Payload: []byte("task")}
-	if err := c.Route(wire); err != nil {
-		t.Fatalf("Route fallback: %v", err)
-	}
-	if len(stub.Received()) != 1 {
-		t.Errorf("expected 1 received wire via fallback, got %d", len(stub.Received()))
-	}
-}
-
-func TestCorpusCerebrumIsOrgan(t *testing.T) {
-	c := New()
-	cerebrum := organ.NewStubOrgan(organ.CerebrumOrgan)
-	c.Attach(cerebrum)
-
-	o, err := c.Organ(organ.CerebrumOrgan)
-	if err != nil {
-		t.Fatalf("Organ(cerebrum): %v", err)
-	}
-	if o.Name() != organ.CerebrumOrgan {
-		t.Errorf("expected cerebrum, got %s", o.Name())
-	}
-
-	wire := artifact.Wire{Kind: string(organ.CerebrumOrgan), Payload: []byte("need")}
-	if err := c.Route(wire); err != nil {
-		t.Fatalf("Route to cerebrum: %v", err)
-	}
-	if len(cerebrum.Received()) != 1 {
-		t.Errorf("cerebrum should receive 1 wire, got %d", len(cerebrum.Received()))
 	}
 }

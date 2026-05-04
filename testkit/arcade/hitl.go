@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
-	"github.com/dpopsuev/tako/agent/organ"
 	"github.com/dpopsuev/tako/artifact"
 )
 
@@ -18,13 +17,11 @@ type HITLListener struct {
 	approve func(wire artifact.Wire) bool
 }
 
-var _ organ.Organ = (*HITLListener)(nil)
-
 func NewHITLListener(sensory cerebrum.Bus, approve func(artifact.Wire) bool) *HITLListener {
 	return &HITLListener{sensory: sensory, approve: approve}
 }
 
-func (h *HITLListener) Name() organ.OrganName { return "hitl" }
+func (h *HITLListener) Name() string { return "hitl" }
 
 func (h *HITLListener) Receive(wire artifact.Wire) error {
 	if wire.Kind != "motor.pending.hitl" {
