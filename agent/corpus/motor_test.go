@@ -10,6 +10,7 @@ import (
 	"github.com/dpopsuev/tako/agent/cerebrum"
 	"github.com/dpopsuev/tako/agent/organ"
 	"github.com/dpopsuev/tako/agent/reactivity"
+	"github.com/dpopsuev/tako/artifact"
 )
 
 type captureBus struct {
@@ -58,6 +59,27 @@ func (o *shellOrgan) Exec(ctx context.Context, name string, input json.RawMessag
 }
 
 var _ organ.Shell = (*shellOrgan)(nil)
+
+type autoApproveHITL struct {
+	sensory cerebrum.Bus
+}
+
+func newAutoApproveHITL(sensory cerebrum.Bus) *autoApproveHITL {
+	return &autoApproveHITL{sensory: sensory}
+}
+
+func (h *autoApproveHITL) Name() organ.OrganName { return "hitl" }
+func (h *autoApproveHITL) Kind() organ.Kind      { return organ.Signal }
+func (h *autoApproveHITL) Receive(wire artifact.Wire) error {
+	if wire.Kind != "motor.pending.hitl" {
+		return nil
+	}
+	h.sensory.Send(context.Background(), cerebrum.Event{
+		Kind:   "approval.hitl",
+		Source: "human",
+	})
+	return nil
+}
 
 func TestCorpusMotorBus_RW_Denied_During_Think(t *testing.T) {
 	c := New()
@@ -217,7 +239,7 @@ func TestCorpusMotorBus_HITL_Approved(t *testing.T) {
 	c.Attach(o)
 
 	sensory := cerebrum.NewChannelBus(8)
-	listener := AutoApproveHITL(sensory)
+	listener := newAutoApproveHITL(sensory)
 	c.Attach(listener)
 
 	phase := func() reactivity.Triad { return reactivity.ImplementTriad }

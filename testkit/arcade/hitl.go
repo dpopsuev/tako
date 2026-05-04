@@ -1,4 +1,4 @@
-package corpus
+package arcade
 
 import (
 	"context"
