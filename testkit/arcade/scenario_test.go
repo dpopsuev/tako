@@ -232,3 +232,7 @@ func TestScenario_Takonomics(t *testing.T) {
 func TestScenario_HuntTheTako(t *testing.T) {
 	runScenario(t, NewHuntTheTako())
 }
+
+func TestScenario_Impossible(t *testing.T) {
+	runScenario(t, NewImpossible())
+}

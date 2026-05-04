@@ -142,28 +142,3 @@ func buildPrompt(m *reactivity.Molecule, need []byte, domain Domain) string {
 	return buildContractPrompt(m, need, domain, nil)
 }
 
-func mergeVars(base, overrides map[string]any) map[string]any {
-	if base == nil {
-		base = make(map[string]any)
-	}
-	result := make(map[string]any, len(base))
-	for k, v := range base {
-		result[k] = v
-	}
-	for k, v := range overrides {
-		result[k] = v
-	}
-	return result
-}
-
-func renderTemplate(tmpl string, data any) (string, error) {
-	t, err := template.New("prompt").Option("missingkey=zero").Parse(tmpl)
-	if err != nil {
-		return "", fmt.Errorf("parse prompt template: %w", err)
-	}
-	var buf strings.Builder
-	if err := t.Execute(&buf, data); err != nil {
-		return "", fmt.Errorf("render prompt template: %w", err)
-	}
-	return buf.String(), nil
-}
