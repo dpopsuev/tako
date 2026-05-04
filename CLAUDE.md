@@ -139,11 +139,11 @@ Uniforms are declarative (defined in Fab YAML). Personas are well-known defaults
 - **Shelf** — named location within a Depo. Push(envelope) = Blackboard.Post. Pull(agentID). Watch() = Blackboard.Subscribe(). Station Shelf, Intake Shelf, Output Shelf, HITL Shelf.
 - **Kanban** — read-only projection of Depo Shelves. Kanban column = Shelf. Kanban card = Envelope. No data store — reads Depo state. Toyota mirror pattern (SPC-131).
 - **Discourse** — shared primitives (board.forum.topic.thread.message). Monologue = internal scope (focus, pin). Dialogue = external scope (communicate).
-- **Artifact** — the only type. Everything is an Artifact (Relic Protocol Node). Work artifacts on Depo Shelves. Memory artifacts in Monologue. Knowledge artifacts in Reliquary.
+- **Artifact** — the only type. Everything is an Artifact (Relic Protocol Node). Work artifacts on Depo Shelves. Memory artifacts in Monologue. Knowledge artifacts in Memory Mesh.
 - **Relic** — NOT a type. A certification label (`certified:human`) stamped by humans only (HITL). Agents cannot self-certify. Certified artifacts get an anchor weight — gravity in the graph. High anchor = hard to move, attracts neighbors. Low anchor = drifts, evictable.
-- **Dolt** — the artifact backend. One Dolt instance per Fab (embed first, self-contained). Depo Shelves, Monologue Topics, Dialogue Letters, Knowledge Mesh — all stored in Dolt. Git semantics: DOLT_COMMIT (drain), DOLT_BRANCH (agent session), DOLT_MERGE (collective), DOLT_TAG (certified:human). Embed: dolthub/driver (in-process). Shared Dolt across Fabs deferred until tensions emerge.- **Memory chain** — LLM (Instinct) ←→ Reactivity ←→ Monologue ←→ Recollection. Recollection queries Reliquary, pulls Artifacts into Monologue, forms Molecules (sub-graphs within Topic).
-- **Memory tiers** — STM/Working (Monologue) = live context, per-session, Topics with Molecules. Depo Shelves = work artifacts on production line. LTM (Reliquary) = all artifacts (certified + draft), version-controlled mesh per agent, merged into collective mesh.
-- **Two queries** — Knowledge Query (Reliquary, certified:human only): "what do I know?" Experience Query (Monologue): "what happened this session?"
+- **Dolt** — the artifact backend. One Dolt instance per Fab (embed first, self-contained). Depo Shelves, Monologue Topics, Dialogue Letters, Knowledge Mesh — all stored in Dolt. Git semantics: DOLT_COMMIT (drain), DOLT_BRANCH (agent session), DOLT_MERGE (collective), DOLT_TAG (certified:human). Embed: dolthub/driver (in-process). Shared Dolt across Fabs deferred until tensions emerge.- **Memory chain** — LLM (Instinct) ←→ Reactivity ←→ Monologue ←→ Recollection. Recollection queries Memory Mesh, pulls Artifacts into Monologue, forms Molecules (sub-graphs within Topic).
+- **Memory tiers** — STM/Working (Monologue) = live context, per-session, Topics with Molecules. Depo Shelves = work artifacts on production line. LTM (Memory Mesh) = all artifacts (certified + draft), version-controlled mesh per agent, merged into collective mesh.
+- **Two queries** — Knowledge Query (Memory Mesh, certified:human only): "what do I know?" Experience Query (Monologue): "what happened this session?"
 - **Anchor weight** — gravity in the LTM graph. High anchor = gravity well, neighbors cluster, hard to evict. Low anchor = drifts, evictable. Decays on staleness. Set by human at certification.
 - **Corpus** — the agent's body (composition root). Assembles Organs, builds MotorBus, enforces RO/RW permissions. Tangled builds the Corpus, agent never self-assembles.
 - **Organ** — a functional part attached to the Corpus. 5 Kinds: Cognitive (Cerebrum), Sensory (involuntary input), Signal (involuntary output), MotorRO (voluntary read), MotorRW (voluntary write). Instruments ARE organs. Composition over permission: give the agent the organs it needs, don't restrict.
@@ -188,7 +188,7 @@ Complex is thin (refs + wiring + topology). Fab has the substance. Rehearsal val
 - **No Terminal/TerminalMux**: use "Corpus" (composition root) and "Organ" (functional part).
 - **No FAR**: use "FAR" (Federated Agent Runtime). Three letters, not four.
 - **Persona not role**: Worker/Foreman/Director/Coordinator/Consul/Avatar are Personas. Spiral Dynamics color coded (TAK-DOC-28). Uniforms are the permission sets they wear. Organs are the limbs they get. Avatar is outside the command chain (human proxy, no color).
-- **Dolt is the backend**: services talk to Dolt directly through their own interfaces. Reliquary deferred until an interface layer proves necessary.
+- **Dolt is the backend**: services talk to Dolt directly through their own interfaces. Memory Mesh deferred until an interface layer proves necessary.
 - **Artifact vs Relic**: same type. Relic = `certified:human` label + anchor weight. NOT a type distinction — a quality gate.
 - **Switchboard**: TangleD is the Switchboard (routing hub). Not "hub."
 
