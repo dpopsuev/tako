@@ -255,3 +255,51 @@ func TestScenario_Fridge_WithRecollection(t *testing.T) {
 	recollector := cerebrum.MeshRecollector{Mesh: mesh}
 	runScenario(t, NewFridge(), cerebrum.WithRecollector(recollector))
 }
+
+func TestScenario_Fridge_BookMoves(t *testing.T) {
+	mesh := memory.NewStubMesh()
+	scenario := NewFridge()
+
+	// Run 1: learn — no book, full dialectic
+	t.Log("=== RUN 1: LEARN ===")
+	ctx1, cancel1 := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel1()
+	completer := newCompleter(t, ctx1)
+	reactor1 := reactivity.NewReactor(
+		reactivity.WithDirective(reactivity.ExecutionAtom,
+			reactivity.Directive("Available instruments:\n"+instrumentList(scenario.Adventure)),
+		),
+	)
+	sensory1 := cerebrum.NewChannelBus(64)
+	motor1 := NewFixtureMotor(scenario.Adventure.Names(), sensory1)
+	motor1.instruments = make(map[string]string)
+	motor1.adventure = scenario.Adventure
+	pool1 := &ergograph.StubLedger{}
+
+	cb1 := cerebrum.New(reactor1, completer,
+		cerebrum.WithSensory(sensory1),
+		cerebrum.WithMotor(motor1),
+		cerebrum.WithPool(pool1),
+		cerebrum.WithAndon(&andon.StubSignal{}),
+		cerebrum.WithBudget(cerebrum.Budget{MaxTurns: 30, TurnTimeout: 30 * time.Second}),
+		cerebrum.WithTools(instrumentTools(scenario.Adventure)),
+	)
+	if err := cb1.Think(ctx1, []byte(scenario.Need)); err != nil {
+		t.Fatalf("Run 1 Think: %v", err)
+	}
+	m1 := cb1.Result()
+	run1Turns := m1.TotalMass()
+	t.Logf("Run 1: mass=%d momentum=%.3f distance=%.3f", run1Turns, m1.Momentum(), m1.Distance())
+
+	// Persist the book
+	if err := cerebrum.PersistMolecule(mesh, m1, []byte(scenario.Need)); err != nil {
+		t.Fatalf("PersistMolecule: %v", err)
+	}
+	t.Logf("Book persisted: %d nodes in mesh", len(mesh.Nodes()))
+
+	// Run 2: replay — book moves loaded, should skip Think+Compose
+	t.Log("=== RUN 2: REPLAY ===")
+	scenario2 := NewFridge()
+	recollector := cerebrum.MeshRecollector{Mesh: mesh}
+	runScenario(t, scenario2, cerebrum.WithRecollector(recollector))
+}

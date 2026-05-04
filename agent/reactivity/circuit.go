@@ -272,7 +272,7 @@ func (c *Core) React(m *Molecule, atom Atom) (YieldKind, Yield) {
 		return Unresolvable, Yield{Result: Unresolvable, Message: "molecule is sealed"}
 	}
 
-	if atom.Type.Sequence() > m.phase.Sequence() && atom.Type != AssessmentAtom {
+	if atom.Source != Recollected && atom.Type.Sequence() > m.phase.Sequence() && atom.Type != AssessmentAtom {
 		return Incompatible, Yield{
 			Result:  Incompatible,
 			Message: fmt.Sprintf("molecule is in %s phase, cannot accept future %s atom", m.phase, atom.Type),
