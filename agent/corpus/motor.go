@@ -48,9 +48,13 @@ func (m *corpusMotor) Send(ctx context.Context, event cerebrum.Event) error {
 			return nil
 		}
 		if shell.Approval(event.Source) == organ.HITL {
-			m.signal(ctx, event, "denied.hitl")
-			m.sendError(ctx, event.Source, "approval required: this action needs human sign-off")
-			return nil
+			m.signal(ctx, event, "pending.hitl")
+			approval, ok := m.sensory.Receive(ctx)
+			if !ok || approval.Kind != "approval.hitl" {
+				m.signal(ctx, event, "denied.hitl")
+				m.sendError(ctx, event.Source, "approval denied or timed out")
+				return nil
+			}
 		}
 	}
 
@@ -90,8 +94,8 @@ func (m *corpusMotor) Receive(_ context.Context) (cerebrum.Event, bool) {
 	return cerebrum.Event{}, false
 }
 
-func (m *corpusMotor) sendError(ctx context.Context, source, msg string) {
-	m.sensory.Send(ctx, cerebrum.Event{
+func (m *corpusMotor) sendError(_ context.Context, source, msg string) {
+	m.sensory.Send(context.Background(), cerebrum.Event{
 		ID:        fmt.Sprintf("motor-error-%s-%d", source, time.Now().UnixNano()),
 		Kind:      "instrument.error",
 		Source:    source,

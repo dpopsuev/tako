@@ -185,28 +185,59 @@ func TestCorpusMotorBus_HITL_Denied(t *testing.T) {
 	o.actionApproval = organ.HITL
 	c.Attach(o)
 
-	sensory := &captureBus{}
+	sensory := cerebrum.NewChannelBus(8)
 	phase := func() reactivity.Triad { return reactivity.ImplementTriad }
 	bus := c.MotorBus(sensory, phase)
 
-	ctx := context.Background()
-	bus.Send(ctx, cerebrum.Event{
-		ID:        "test-hitl",
-		Kind:      "instrument",
-		Source:    "deploy",
-		Payload:   []byte("production"),
-		CreatedAt: time.Now(),
+	sendCtx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+	bus.Send(sendCtx, cerebrum.Event{
+		ID:     "test-hitl-deny",
+		Kind:   "instrument",
+		Source: "deploy",
 	})
 
-	events := sensory.Events()
-	if len(events) != 1 {
-		t.Fatalf("expected 1 sensory event, got %d", len(events))
+	readCtx, readCancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer readCancel()
+	event, ok := sensory.Receive(readCtx)
+	if !ok {
+		t.Fatal("expected error event on sensory bus")
 	}
-	if events[0].Kind != "instrument.error" {
-		t.Errorf("expected instrument.error, got %s", events[0].Kind)
+	if event.Kind != "instrument.error" {
+		t.Errorf("expected instrument.error, got %s", event.Kind)
 	}
-	if string(events[0].Payload) != "approval required: this action needs human sign-off" {
-		t.Errorf("unexpected error message: %s", events[0].Payload)
+}
+
+func TestCorpusMotorBus_HITL_Approved(t *testing.T) {
+	c := New()
+	shell := organ.NewStubShell()
+	o := newShellOrgan("echo", organ.Motor, shell)
+	o.actionMode = organ.WriteAction
+	o.actionApproval = organ.HITL
+	c.Attach(o)
+
+	sensory := cerebrum.NewChannelBus(8)
+	phase := func() reactivity.Triad { return reactivity.ImplementTriad }
+	bus := c.MotorBus(sensory, phase)
+
+	sensory.Send(context.Background(), cerebrum.Event{
+		Kind:   "approval.hitl",
+		Source: "human",
+	})
+
+	ctx := context.Background()
+	bus.Send(ctx, cerebrum.Event{
+		ID:     "test-hitl-approve",
+		Kind:   "instrument",
+		Source: "echo",
+	})
+
+	event, ok := sensory.Receive(ctx)
+	if !ok {
+		t.Fatal("expected result event")
+	}
+	if event.Kind != "instrument.result" {
+		t.Errorf("expected instrument.result after approval, got %s", event.Kind)
 	}
 }
 
