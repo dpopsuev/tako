@@ -250,6 +250,11 @@ func TestScenario_Impossible(t *testing.T) {
 	runScenario(t, NewImpossible())
 }
 
+func TestScenario_Autoassembler(t *testing.T) {
+	dir := t.TempDir()
+	runScenario(t, NewAutoassembler(dir))
+}
+
 func TestScenario_Fridge_WithRecollection(t *testing.T) {
 	mesh := memory.NewStubMesh()
 	mesh.AddNode(memory.KnowledgeNode{
