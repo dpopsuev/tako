@@ -49,7 +49,7 @@ func TestThink_RealLLM_Vertex(t *testing.T) {
 	circuit := reactivity.NewReactor()
 	cb := New(circuit, completer, WithMaxTurns(10))
 
-	if err := cb.Think(ctx, []byte("What is 2+2? Answer in one word.")); err != nil {
+	if err := cb.Think(ctx, reactivity.Catalyst{Need: string("What is 2+2? Answer in one word.")}); err != nil {
 		t.Fatalf("Think: %v", err)
 	}
 	m := cb.Result()

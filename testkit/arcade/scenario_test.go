@@ -120,15 +120,9 @@ func runScenario(t *testing.T, scenario Scenario, extraOpts ...cerebrum.Option) 
 	scenario.Adventure.WithSensory(sensory)
 
 	need := scenario.Need + "\n\nCurrent environment: " + scenario.Adventure.Observe()
-	if len(scenario.Criteria) > 0 {
-		catalyst := reactivity.Catalyst{Need: need, Criteria: scenario.Criteria}
-		if err := cb.ThinkWithCatalyst(ctx, catalyst); err != nil {
-			t.Fatalf("ThinkWithCatalyst: %v", err)
-		}
-	} else {
-		if err := cb.Think(ctx, []byte(need)); err != nil {
-			t.Fatalf("Think: %v", err)
-		}
+	catalyst := reactivity.Catalyst{Need: need, Criteria: scenario.Criteria}
+	if err := cb.Think(ctx, catalyst); err != nil {
+		t.Fatalf("Think: %v", err)
 	}
 
 	m := cb.Result()
@@ -190,7 +184,7 @@ func TestSmoke_SingleCompletion(t *testing.T) {
 
 	t.Log("Sending single Think with 3 max turns...")
 	start := time.Now()
-	if err := cb.Think(ctx, []byte("Say hello")); err != nil {
+	if err := cb.Think(ctx, reactivity.Catalyst{Need: "Say hello"}); err != nil {
 		t.Fatalf("Think: %v", err)
 	}
 	t.Logf("Think completed in %s", time.Since(start))
@@ -294,7 +288,7 @@ func TestScenario_Fridge_BookMoves(t *testing.T) {
 		cerebrum.WithBudget(cerebrum.Budget{MaxTurns: 30, TurnTimeout: 30 * time.Second}),
 		cerebrum.WithTools(instrumentTools(scenario.Adventure)),
 	)
-	if err := cb1.Think(ctx1, []byte(scenario.Need)); err != nil {
+	if err := cb1.Think(ctx1, reactivity.Catalyst{Need: scenario.Need}); err != nil {
 		t.Fatalf("Run 1 Think: %v", err)
 	}
 	m1 := cb1.Result()

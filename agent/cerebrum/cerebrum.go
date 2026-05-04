@@ -127,11 +127,7 @@ func (cb *Cerebrum) Run(ctx context.Context) {
 	wg.Wait()
 }
 
-func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
-	return cb.ThinkWithCatalyst(ctx, reactivity.Catalyst{Need: string(need)})
-}
-
-func (cb *Cerebrum) ThinkWithCatalyst(ctx context.Context, catalyst reactivity.Catalyst) error {
+func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) error {
 	need := []byte(catalyst.Need)
 	var molecule *reactivity.Molecule
 	if len(catalyst.Criteria) > 0 {

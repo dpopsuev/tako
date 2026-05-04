@@ -15,7 +15,7 @@ func TestCerebrum_Think(t *testing.T) {
 	reactor := reactivity.NewReactor()
 	cb := New(reactor, completer)
 
-	if err := cb.Think(context.Background(), []byte("test need")); err != nil {
+	if err := cb.Think(context.Background(), reactivity.Catalyst{Need: string("test need")}); err != nil {
 		t.Fatalf("Think: %v", err)
 	}
 
@@ -30,7 +30,7 @@ func TestThink_FullLoop(t *testing.T) {
 	circuit := reactivity.NewReactor()
 	cb := New(circuit, completer)
 
-	if err := cb.Think(context.Background(), []byte("clean the room")); err != nil {
+	if err := cb.Think(context.Background(), reactivity.Catalyst{Need: string("clean the room")}); err != nil {
 		t.Fatalf("Think: %v", err)
 	}
 	m := cb.Result()
@@ -49,7 +49,7 @@ func TestThink_SealOnCompleterError(t *testing.T) {
 	circuit := reactivity.NewReactor()
 	cb := New(circuit, completer)
 
-	if err := cb.Think(context.Background(), []byte("anything")); err != nil {
+	if err := cb.Think(context.Background(), reactivity.Catalyst{Need: string("anything")}); err != nil {
 		t.Fatalf("Think should not return error (Wish handles it): %v", err)
 	}
 	m := cb.Result()
@@ -75,7 +75,7 @@ func TestThink_MoleculeHasAllPhases(t *testing.T) {
 	circuit := reactivity.NewReactor()
 	cb := New(circuit, completer)
 
-	cb.Think(context.Background(), []byte("investigate failure"))
+	cb.Think(context.Background(), reactivity.Catalyst{Need: string("investigate failure")})
 	m := cb.Result()
 
 	if m.Mass(reactivity.IntentAtom) == 0 {
@@ -100,7 +100,7 @@ func TestThink_MaxTurnsAbort(t *testing.T) {
 	circuit := reactivity.NewReactor()
 	cb := New(circuit, completer, WithMaxTurns(3))
 
-	cb.Think(context.Background(), []byte("impossible"))
+	cb.Think(context.Background(), reactivity.Catalyst{Need: string("impossible")})
 	m := cb.Result()
 
 	if !m.Sealed() {
@@ -124,7 +124,7 @@ func TestThink_BackwardCompatible(t *testing.T) {
 	circuit := reactivity.NewReactor()
 	cb := New(circuit, completer)
 
-	if err := cb.Think(context.Background(), []byte("test")); err != nil {
+	if err := cb.Think(context.Background(), reactivity.Catalyst{Need: string("test")}); err != nil {
 		t.Fatalf("Think: %v", err)
 	}
 	m := cb.Result()
@@ -138,8 +138,8 @@ func TestThink_StoreIntegration(t *testing.T) {
 	reactor := reactivity.NewReactor()
 	cb := New(reactor, completer)
 
-	cb.Think(context.Background(), []byte("first need"))
-	cb.Think(context.Background(), []byte("second need"))
+	cb.Think(context.Background(), reactivity.Catalyst{Need: string("first need")})
+	cb.Think(context.Background(), reactivity.Catalyst{Need: string("second need")})
 
 	store := cb.Store()
 	molecules := store.Molecules()
@@ -160,7 +160,7 @@ func TestThink_EmissionsDispatchedViaMotor(t *testing.T) {
 	motor := &stubBus{}
 	cb := New(reactor, completer, WithMotor(motor))
 
-	cb.Think(context.Background(), []byte("test emission"))
+	cb.Think(context.Background(), reactivity.Catalyst{Need: string("test emission")})
 
 	found := false
 	for _, cmd := range motor.Events() {
@@ -179,7 +179,7 @@ func TestThink_WithMotorBus(t *testing.T) {
 	motor := &stubBus{}
 	cb := New(reactor, completer, WithMotor(motor))
 
-	cb.Think(context.Background(), []byte("test"))
+	cb.Think(context.Background(), reactivity.Catalyst{Need: string("test")})
 	m := cb.Result()
 	if !m.Sealed() {
 		t.Error("molecule should be sealed")
@@ -198,7 +198,7 @@ func TestThink_ToolCallDispatchedToMotor(t *testing.T) {
 	cb := New(reactor, completer, WithMotor(motor), WithMaxTurns(3),
 		WithTurnTimeout(100*time.Millisecond))
 
-	cb.Think(context.Background(), []byte("find food"))
+	cb.Think(context.Background(), reactivity.Catalyst{Need: string("find food")})
 
 	found := false
 	for _, evt := range motor.Events() {
@@ -224,7 +224,7 @@ func TestThink_MultipleToolCalls(t *testing.T) {
 	cb := New(reactor, completer, WithMotor(motor), WithMaxTurns(3),
 		WithTurnTimeout(100*time.Millisecond))
 
-	cb.Think(context.Background(), []byte("cook"))
+	cb.Think(context.Background(), reactivity.Catalyst{Need: string("cook")})
 
 	names := map[string]bool{}
 	for _, evt := range motor.Events() {

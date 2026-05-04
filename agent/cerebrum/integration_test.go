@@ -13,7 +13,7 @@ func TestThink_FullVerticalSlice(t *testing.T) {
 	motor := &stubBus{}
 	cb := New(reactor, completer, WithMotor(motor))
 
-	if err := cb.Think(context.Background(), []byte("investigate PTP failure")); err != nil {
+	if err := cb.Think(context.Background(), reactivity.Catalyst{Need: string("investigate PTP failure")}); err != nil {
 		t.Fatalf("Think: %v", err)
 	}
 	m := cb.Result()
