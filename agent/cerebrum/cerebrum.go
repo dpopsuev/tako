@@ -166,6 +166,7 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 	}
 
 	for turn := 0; turn < cb.budget.MaxTurns && !molecule.Sealed(); turn++ {
+		molecule.Tick()
 		domain := cb.classifier.Classify(molecule)
 		contracts := cb.reactor.Contracts()
 		directives := cb.reactor.Directives(molecule.Phase())
@@ -179,7 +180,9 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 			slog.String("phase", molecule.Phase().String()),
 			slog.Int("mass", molecule.TotalMass()),
 			slog.Int("history_len", len(history)),
-			slog.String("domain", domain.String()))
+			slog.String("domain", domain.String()),
+			slog.Float64("momentum", molecule.Momentum()),
+			slog.Float64("distance", molecule.Distance()))
 		slog.DebugContext(ctx, "cerebrum.think.prompt",
 			slog.Int("turn", turn),
 			slog.String("content", prompt))
@@ -231,6 +234,8 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 			"tokens_in":  fmt.Sprintf("%d", completion.Tokens.Input),
 			"tokens_out": fmt.Sprintf("%d", completion.Tokens.Output),
 			"elapsed_ms": fmt.Sprintf("%d", elapsed.Milliseconds()),
+			"momentum":   fmt.Sprintf("%.3f", molecule.Momentum()),
+			"distance":   fmt.Sprintf("%.3f", molecule.Distance()),
 		})
 		slog.DebugContext(ctx, "cerebrum.think.response_content",
 			slog.Int("turn", turn),

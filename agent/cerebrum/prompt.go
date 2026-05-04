@@ -100,16 +100,34 @@ func buildContractPrompt(m *reactivity.Molecule, need []byte, domain Domain, con
 func instructionsForPhase(phase reactivity.AtomType) string {
 	switch phase.Triad {
 	case reactivity.ThinkTriad:
-		return "Fill this contract with reasoning. You may call instruments to gather information."
-	case reactivity.ComposeTriad:
-		return "Fill this contract with strategic analysis. Plan which instruments to use and in what order."
-	case reactivity.ImplementTriad:
-		if phase.Position == reactivity.ThesisPosition {
-			return "Execute the committed plan NOW. Call ALL required instruments in this single response. Batch your tool calls."
+		switch phase.Position {
+		case reactivity.ThesisPosition:
+			return "DISCOVER: What is the desired state? Call instruments to observe the current state."
+		case reactivity.AntithesisPosition:
+			return "DISCOVER: What constraints and obstacles exist? What blocks the path from current to desired?"
+		default:
+			return "DISCOVER: What do you know that is relevant? Synthesize your observations into knowledge."
 		}
-		return "Evaluate the execution results. Did the instruments respond as expected?"
+	case reactivity.ComposeTriad:
+		switch phase.Position {
+		case reactivity.ThesisPosition:
+			return "DESIGN: Generate possible approaches to bridge the gap from current state to desired state."
+		case reactivity.AntithesisPosition:
+			return "DESIGN: Stress test each approach. Which ones fail under scrutiny? Filter ruthlessly."
+		default:
+			return "DESIGN: Commit to the approach that survives. This is your blueprint."
+		}
+	case reactivity.ImplementTriad:
+		switch phase.Position {
+		case reactivity.ThesisPosition:
+			return "BUILD: Execute the blueprint NOW. Call ALL required instruments. Batch your tool calls."
+		case reactivity.AntithesisPosition:
+			return "BUILD: Did reality match the blueprint? Assert the results against your plan."
+		default:
+			return "BUILD: Adapt. What needs refinement based on actual results?"
+		}
 	default:
-		return "Evaluate the outcome. Was the need fulfilled?"
+		return "Was the need fulfilled? What is the wish?"
 	}
 }
 

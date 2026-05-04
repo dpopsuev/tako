@@ -17,9 +17,11 @@ type Molecule struct {
 	phase       AtomType
 	sealed      bool
 	unsealCount int
-	emissions   []Emission
-	context     any
-	createdAt   time.Time
+	emissions        []Emission
+	context          any
+	createdAt        time.Time
+	turns            int
+	phaseTransitions int
 }
 
 // NewMolecule creates a Molecule starting at Intent phase.
@@ -179,9 +181,42 @@ func (m *Molecule) InsertAtom(atom Atom) {
 	}
 }
 
-func (m *Molecule) SetPhase(p AtomType)    { m.phase = p }
-func (m *Molecule) SealTriad(t Triad)      { m.triadSealed[t] = true }
-func (m *Molecule) IsSealed() bool         { return m.sealed }
+func (m *Molecule) SetPhase(p AtomType) {
+	if p != m.phase {
+		m.phaseTransitions++
+	}
+	m.phase = p
+}
+func (m *Molecule) SealTriad(t Triad) { m.triadSealed[t] = true }
+func (m *Molecule) IsSealed() bool    { return m.sealed }
+
+func (m *Molecule) Tick()  { m.turns++ }
+func (m *Molecule) Turns() int { return m.turns }
+
+// Momentum returns the ratio of phase transitions to turns spent.
+// 0 = no progress (subcritical). 1 = one transition per turn (critical).
+// >1 = multiple transitions per turn (supercritical).
+func (m *Molecule) Momentum() float64 {
+	if m.turns == 0 {
+		return 0
+	}
+	return float64(m.phaseTransitions) / float64(m.turns)
+}
+
+// Distance returns the fraction of contracts still unfilled (0.0 = all filled, 1.0 = none filled).
+func (m *Molecule) Distance() float64 {
+	all := AllAtomTypes()
+	if len(all) == 0 {
+		return 0
+	}
+	unfilled := 0
+	for _, at := range all {
+		if m.mass[at] == 0 {
+			unfilled++
+		}
+	}
+	return float64(unfilled) / float64(len(all))
+}
 
 func (m *Molecule) Context() any            { return m.context }
 func (m *Molecule) SetContext(v any)        { m.context = v }
