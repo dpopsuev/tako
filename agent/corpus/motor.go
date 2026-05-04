@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
-	"github.com/dpopsuev/tako/agent/organ"
+	agentshell "github.com/dpopsuev/tako/agent/shell"
 	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/artifact"
 )
@@ -42,14 +42,14 @@ func (m *corpusMotor) Send(ctx context.Context, event cerebrum.Event) error {
 		return nil
 	}
 
-	if shell, ok := o.(organ.Shell); ok {
-		mode := shell.Mode(event.Source)
-		if mode == organ.WriteAction && m.phase() != reactivity.ImplementTriad {
+	if sh, ok := o.(agentshell.Shell); ok {
+		mode := sh.Mode(event.Source)
+		if mode == agentshell.WriteAction && m.phase() != reactivity.ImplementTriad {
 			m.emitSignal(ctx, event, "denied.phase")
 			m.sendError(ctx, event.Source, "permission denied: write actions available during implementation phase only")
 			return nil
 		}
-		if shell.Approval(event.Source) == organ.HITL {
+		if sh.Approval(event.Source) == agentshell.HITL {
 			m.emitSignal(ctx, event, "pending.hitl")
 			approval, ok := m.sensory.Receive(ctx)
 			if !ok || approval.Kind != "approval.hitl" {
@@ -73,9 +73,9 @@ func (m *corpusMotor) Send(ctx context.Context, event cerebrum.Event) error {
 	}
 
 	// For Shell-based organs, execute and return result via sensory bus.
-	// Organs that implement organ.Shell get the full exec path.
-	if shell, ok := o.(organ.Shell); ok {
-		result, err := shell.Exec(ctx, event.Source, event.Payload)
+	// Organs that implement agentshell.Shell get the full exec path.
+	if sh, ok := o.(agentshell.Shell); ok {
+		result, err := sh.Exec(ctx, event.Source, event.Payload)
 		if err != nil {
 			m.sendError(ctx, event.Source, err.Error())
 			return nil

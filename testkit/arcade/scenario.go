@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dpopsuev/tako/agent/organ"
+	"github.com/dpopsuev/tako/agent/shell"
 )
 
 type Scenario struct {
@@ -56,14 +56,14 @@ func NewFridge() Scenario {
 		"plate":  "",
 	})
 
-	adv.AddInstrument("check_hunger", "Check if you are still hungry", organ.ReadAction, func(s map[string]any, _ string) string {
+	adv.AddInstrument("check_hunger", "Check if you are still hungry", shell.ReadAction, func(s map[string]any, _ string) string {
 		if s["hungry"] == true {
 			return "you are still hungry"
 		}
 		return "you are not hungry anymore"
 	})
 
-	adv.AddInstrument("look_fridge", "See what food is in the fridge", organ.ReadAction, func(s map[string]any, _ string) string {
+	adv.AddInstrument("look_fridge", "See what food is in the fridge", shell.ReadAction, func(s map[string]any, _ string) string {
 		items, _ := s["fridge"].([]string)
 		if len(items) == 0 {
 			return "the fridge is empty"
@@ -71,7 +71,7 @@ func NewFridge() Scenario {
 		return fmt.Sprintf("fridge contains: %v", items)
 	})
 
-	adv.AddInstrument("take", "Take an item from the fridge. Input: item name (e.g. 'eggs')", organ.WriteAction, func(s map[string]any, input string) string {
+	adv.AddInstrument("take", "Take an item from the fridge. Input: item name (e.g. 'eggs')", shell.WriteAction, func(s map[string]any, input string) string {
 		input = strings.TrimSpace(strings.ToLower(input))
 		items, _ := s["fridge"].([]string)
 		for i, item := range items {
@@ -84,7 +84,7 @@ func NewFridge() Scenario {
 		return fmt.Sprintf("%s is not in the fridge. available items: %v", input, items)
 	})
 
-	adv.AddInstrument("cook", "Cook what you're holding. Requires stove to be on.", organ.WriteAction, func(s map[string]any, _ string) string {
+	adv.AddInstrument("cook", "Cook what you're holding. Requires stove to be on.", shell.WriteAction, func(s map[string]any, _ string) string {
 		if s["stove"] != "on" {
 			return "the stove is off. call turn_on_stove first, then cook"
 		}
@@ -97,7 +97,7 @@ func NewFridge() Scenario {
 		return fmt.Sprintf("you cooked %s. it's on the plate now. call eat to eat it", hand)
 	})
 
-	adv.AddInstrument("turn_on_stove", "Turn on the stove", organ.WriteAction, func(s map[string]any, _ string) string {
+	adv.AddInstrument("turn_on_stove", "Turn on the stove", shell.WriteAction, func(s map[string]any, _ string) string {
 		if s["stove"] == "on" {
 			return "stove is already on"
 		}
@@ -105,7 +105,7 @@ func NewFridge() Scenario {
 		return "stove is now on"
 	})
 
-	adv.AddInstrument("eat", "Eat what's on the plate", organ.WriteAction, func(s map[string]any, _ string) string {
+	adv.AddInstrument("eat", "Eat what's on the plate", shell.WriteAction, func(s map[string]any, _ string) string {
 		plate, _ := s["plate"].(string)
 		if plate == "" {
 			return "there's nothing on the plate. cook something first"
@@ -134,7 +134,7 @@ func NewDirtyRoom() Scenario {
 		"cleaned": false,
 	})
 
-	adv.AddInstrument("look", "Look around the room to see what needs cleaning", organ.ReadAction, func(s map[string]any, _ string) string {
+	adv.AddInstrument("look", "Look around the room to see what needs cleaning", shell.ReadAction, func(s map[string]any, _ string) string {
 		floor, _ := s["floor"].([]string)
 		table, _ := s["table"].([]string)
 		trash, _ := s["trash"].(string)
@@ -154,7 +154,7 @@ func NewDirtyRoom() Scenario {
 		return fmt.Sprintf("you see: %s", fmt.Sprint(parts))
 	})
 
-	adv.AddInstrument("get_broom", "Get the broom from the closet", organ.WriteAction, func(s map[string]any, _ string) string {
+	adv.AddInstrument("get_broom", "Get the broom from the closet", shell.WriteAction, func(s map[string]any, _ string) string {
 		if s["broom"] == "hand" {
 			return "you already have the broom"
 		}
@@ -162,7 +162,7 @@ func NewDirtyRoom() Scenario {
 		return "you got the broom from the closet"
 	})
 
-	adv.AddInstrument("sweep", "Sweep the floor. Requires broom in hand.", organ.WriteAction, func(s map[string]any, _ string) string {
+	adv.AddInstrument("sweep", "Sweep the floor. Requires broom in hand.", shell.WriteAction, func(s map[string]any, _ string) string {
 		if s["broom"] != "hand" {
 			return "you need the broom first, get it from the closet"
 		}
@@ -170,17 +170,17 @@ func NewDirtyRoom() Scenario {
 		return "floor swept clean"
 	})
 
-	adv.AddInstrument("wash_dishes", "Wash the dishes on the table", organ.WriteAction, func(s map[string]any, _ string) string {
+	adv.AddInstrument("wash_dishes", "Wash the dishes on the table", shell.WriteAction, func(s map[string]any, _ string) string {
 		s["table"] = []string{}
 		return "dishes washed and put away"
 	})
 
-	adv.AddInstrument("take_out_trash", "Take the trash out", organ.WriteAction, func(s map[string]any, _ string) string {
+	adv.AddInstrument("take_out_trash", "Take the trash out", shell.WriteAction, func(s map[string]any, _ string) string {
 		s["trash"] = "empty"
 		return "trash taken out"
 	})
 
-	adv.AddInstrument("check_done", "Check if the room is fully clean", organ.ReadAction, func(s map[string]any, _ string) string {
+	adv.AddInstrument("check_done", "Check if the room is fully clean", shell.ReadAction, func(s map[string]any, _ string) string {
 		floor, _ := s["floor"].([]string)
 		table, _ := s["table"].([]string)
 		trash, _ := s["trash"].(string)

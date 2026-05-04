@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/dpopsuev/tako/agent/organ"
+	"github.com/dpopsuev/tako/agent/shell"
 )
 
 var (
@@ -22,7 +22,7 @@ type ActionFunction struct {
 	gs     *GameState
 }
 
-var _ organ.Function = (*ActionFunction)(nil)
+var _ shell.Function = (*ActionFunction)(nil)
 
 func NewActionFunction(a Action, gs *GameState) *ActionFunction {
 	return &ActionFunction{action: a, gs: gs}
@@ -34,7 +34,7 @@ func (f *ActionFunction) InputSchema() json.RawMessage {
 	return json.RawMessage(`{"type":"object"}`)
 }
 
-func (f *ActionFunction) Execute(_ context.Context, _ json.RawMessage) (organ.Result, error) {
+func (f *ActionFunction) Execute(_ context.Context, _ json.RawMessage) (shell.Result, error) {
 	return ApplyAction(f.gs, f.action)
 }
 
@@ -54,9 +54,9 @@ var descriptions = map[Action]string{
 	Idle:     "Do nothing.",
 }
 
-func ApplyAction(gs *GameState, action Action) (organ.Result, error) {
+func ApplyAction(gs *GameState, action Action) (shell.Result, error) {
 	if HourToTimeOfDay(gs.Hour) == Night {
-		return organ.Result{}, ErrNightTime
+		return shell.Result{}, ErrNightTime
 	}
 
 	consecutive := 1
@@ -97,7 +97,7 @@ func ApplyAction(gs *GameState, action Action) (organ.Result, error) {
 
 	case Medicine:
 		if gs.Pet.Health >= 40 {
-			return organ.Result{}, ErrNotSick
+			return shell.Result{}, ErrNotSick
 		}
 		gs.Pet.Health += 20
 		gs.Pet.Happiness -= 10
@@ -108,10 +108,10 @@ func ApplyAction(gs *GameState, action Action) (organ.Result, error) {
 
 	case Hunt:
 		if !gs.HasRifle {
-			return organ.Result{}, ErrNoRifle
+			return shell.Result{}, ErrNoRifle
 		}
 		if gs.Ammo <= 0 {
-			return organ.Result{}, ErrNoAmmo
+			return shell.Result{}, ErrNoAmmo
 		}
 		gs.Ammo--
 		gs.Pet.Hunger += 50
@@ -132,7 +132,7 @@ func ApplyAction(gs *GameState, action Action) (organ.Result, error) {
 		// nothing
 
 	default:
-		return organ.Result{}, ErrUnknownAction
+		return shell.Result{}, ErrUnknownAction
 	}
 
 	gs.LastAction = action
@@ -141,7 +141,7 @@ func ApplyAction(gs *GameState, action Action) (organ.Result, error) {
 	pet := Pet{}
 	pet.clamp(&gs.Pet)
 
-	return organ.TextResult(action.String()), err
+	return shell.TextResult(action.String()), err
 }
 
 func AvailableActions(gs *GameState) []Action {
@@ -162,15 +162,15 @@ func AvailableActions(gs *GameState) []Action {
 	return actions
 }
 
-func GameFunctions(gs *GameState) []organ.Function {
+func GameFunctions(gs *GameState) []shell.Function {
 	actions := AvailableActions(gs)
-	fns := make([]organ.Function, len(actions))
+	fns := make([]shell.Function, len(actions))
 	for i, a := range actions {
 		fns[i] = NewActionFunction(a, gs)
 	}
 	return fns
 }
 
-func GameShell(gs *GameState) organ.Shell {
-	return organ.NewShellWith(GameFunctions(gs)...)
+func GameShell(gs *GameState) shell.Shell {
+	return shell.NewShellWith(GameFunctions(gs)...)
 }

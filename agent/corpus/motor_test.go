@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
-	"github.com/dpopsuev/tako/agent/organ"
+	agentshell "github.com/dpopsuev/tako/agent/shell"
 	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/artifact"
 )
@@ -37,12 +37,12 @@ func (b *captureBus) Events() []cerebrum.Event {
 
 type shellHandler struct {
 	name           string
-	shell          organ.Shell
-	actionMode     organ.ActionMode
-	actionApproval organ.ActionApproval
+	shell          agentshell.Shell
+	actionMode     agentshell.ActionMode
+	actionApproval agentshell.ActionApproval
 }
 
-func newShellHandler(name string, shell organ.Shell) *shellHandler {
+func newShellHandler(name string, shell agentshell.Shell) *shellHandler {
 	return &shellHandler{name: name, shell: shell}
 }
 
@@ -51,13 +51,13 @@ func (o *shellHandler) Receive(_ artifact.Wire) error                           
 func (o *shellHandler) Names() []string                                                            { return o.shell.Names() }
 func (o *shellHandler) Describe(n string) (string, error)                                          { return o.shell.Describe(n) }
 func (o *shellHandler) Schema(n string) (json.RawMessage, error)                                   { return o.shell.Schema(n) }
-func (o *shellHandler) Mode(n string) organ.ActionMode                                             { return o.actionMode }
-func (o *shellHandler) Approval(n string) organ.ActionApproval                                     { return o.actionApproval }
-func (o *shellHandler) Exec(ctx context.Context, name string, input json.RawMessage) (organ.Result, error) {
+func (o *shellHandler) Mode(n string) agentshell.ActionMode                                             { return o.actionMode }
+func (o *shellHandler) Approval(n string) agentshell.ActionApproval                                     { return o.actionApproval }
+func (o *shellHandler) Exec(ctx context.Context, name string, input json.RawMessage) (agentshell.Result, error) {
 	return o.shell.Exec(ctx, name, input)
 }
 
-var _ organ.Shell = (*shellHandler)(nil)
+var _ agentshell.Shell = (*shellHandler)(nil)
 
 type autoApproveHITL struct {
 	sensory cerebrum.Bus
@@ -81,9 +81,9 @@ func (h *autoApproveHITL) Receive(wire artifact.Wire) error {
 
 func TestCorpusMotorBus_RW_Denied_During_Think(t *testing.T) {
 	c := New()
-	shell := organ.NewStubShell()
+	shell := agentshell.NewStubShell()
 	o := newShellHandler("echo", shell)
-	o.actionMode = organ.WriteAction
+	o.actionMode = agentshell.WriteAction
 	c.Attach(o)
 
 	sensory := &captureBus{}
@@ -107,7 +107,7 @@ func TestCorpusMotorBus_RW_Denied_During_Think(t *testing.T) {
 
 func TestCorpusMotorBus_RO_Allowed_During_Think(t *testing.T) {
 	c := New()
-	shell := organ.NewStubShell()
+	shell := agentshell.NewStubShell()
 	o := newShellHandler("echo", shell)
 	c.Attach(o)
 
@@ -132,7 +132,7 @@ func TestCorpusMotorBus_RO_Allowed_During_Think(t *testing.T) {
 
 func TestCorpusMotorBus_RW_Allowed_During_Implement(t *testing.T) {
 	c := New()
-	shell := organ.NewStubShell()
+	shell := agentshell.NewStubShell()
 	o := newShellHandler("echo", shell)
 	c.Attach(o)
 
@@ -157,7 +157,7 @@ func TestCorpusMotorBus_RW_Allowed_During_Implement(t *testing.T) {
 
 func TestCorpusMotorBus_SignalEmission(t *testing.T) {
 	c := New()
-	shell := organ.NewStubShell()
+	shell := agentshell.NewStubShell()
 	motor := newShellHandler("echo", shell)
 	c.Attach(motor)
 
@@ -183,10 +183,10 @@ func TestCorpusMotorBus_SignalEmission(t *testing.T) {
 
 func TestCorpusMotorBus_HITL_Denied(t *testing.T) {
 	c := New()
-	shell := organ.NewStubShell()
+	shell := agentshell.NewStubShell()
 	o := newShellHandler("deploy", shell)
-	o.actionMode = organ.WriteAction
-	o.actionApproval = organ.HITL
+	o.actionMode = agentshell.WriteAction
+	o.actionApproval = agentshell.HITL
 	c.Attach(o)
 
 	sensory := cerebrum.NewChannelBus(8)
@@ -212,10 +212,10 @@ func TestCorpusMotorBus_HITL_Denied(t *testing.T) {
 
 func TestCorpusMotorBus_HITL_Approved(t *testing.T) {
 	c := New()
-	shell := organ.NewStubShell()
+	shell := agentshell.NewStubShell()
 	o := newShellHandler("echo", shell)
-	o.actionMode = organ.WriteAction
-	o.actionApproval = organ.HITL
+	o.actionMode = agentshell.WriteAction
+	o.actionApproval = agentshell.HITL
 	c.Attach(o)
 
 	sensory := cerebrum.NewChannelBus(8)

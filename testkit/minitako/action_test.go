@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/dpopsuev/tako/agent/organ"
+	"github.com/dpopsuev/tako/agent/shell"
 )
 
 func TestAction_Feed_IncreasesHunger(t *testing.T) {
@@ -156,7 +156,7 @@ func TestAvailableActions_AdolescentUnlocksHunt(t *testing.T) {
 
 func TestActionFunction_SatisfiesInterface(t *testing.T) {
 	gs := NewGameState()
-	var _ organ.Function = NewActionFunction(Feed, &gs)
+	var _ shell.Function = NewActionFunction(Feed, &gs)
 }
 
 func TestActionFunction_Execute(t *testing.T) {

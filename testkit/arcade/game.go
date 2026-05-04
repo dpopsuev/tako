@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
-	"github.com/dpopsuev/tako/agent/organ"
+	"github.com/dpopsuev/tako/agent/shell"
 )
 
 type InstrumentFunc func(state map[string]any, input string) string
@@ -34,11 +34,11 @@ type Game struct {
 type gameInstrument struct {
 	name        string
 	description string
-	mode        organ.ActionMode
-	approval    organ.ActionApproval
+	mode        shell.ActionMode
+	approval    shell.ActionApproval
 }
 
-var _ organ.Shell = (*Game)(nil)
+var _ shell.Shell = (*Game)(nil)
 
 func NewGame(initialState map[string]any) *Game {
 	return &Game{
@@ -65,7 +65,7 @@ func (a *Game) Observe() string {
 	return strings.Join(parts, ". ")
 }
 
-func (a *Game) AddInstrument(name, description string, mode organ.ActionMode, fn InstrumentFunc) {
+func (a *Game) AddInstrument(name, description string, mode shell.ActionMode, fn InstrumentFunc) {
 	a.instruments[name] = &gameInstrument{name: name, description: description, mode: mode}
 	a.fns[name] = fn
 }
@@ -126,18 +126,18 @@ func (a *Game) Describe(name string) (string, error) {
 	return inst.description, nil
 }
 
-func (a *Game) Mode(name string) organ.ActionMode {
+func (a *Game) Mode(name string) shell.ActionMode {
 	inst, ok := a.instruments[name]
 	if !ok {
-		return organ.ReadAction
+		return shell.ReadAction
 	}
 	return inst.mode
 }
 
-func (a *Game) Approval(name string) organ.ActionApproval {
+func (a *Game) Approval(name string) shell.ActionApproval {
 	inst, ok := a.instruments[name]
 	if !ok {
-		return organ.Auto
+		return shell.Auto
 	}
 	return inst.approval
 }
@@ -149,18 +149,18 @@ func (a *Game) Schema(name string) (json.RawMessage, error) {
 	return json.RawMessage(`{"type":"string"}`), nil
 }
 
-func (a *Game) Exec(ctx context.Context, name string, input json.RawMessage) (organ.Result, error) {
+func (a *Game) Exec(ctx context.Context, name string, input json.RawMessage) (shell.Result, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
 	fn, ok := a.fns[name]
 	if !ok {
-		return organ.ErrorResult(fmt.Sprintf("unknown instrument: %s", name)), nil
+		return shell.ErrorResult(fmt.Sprintf("unknown instrument: %s", name)), nil
 	}
 
 	s := extractInput(input)
 	result := fn(a.state, s)
-	return organ.TextResult(result), nil
+	return shell.TextResult(result), nil
 }
 
 func extractInput(raw json.RawMessage) string {

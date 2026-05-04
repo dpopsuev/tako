@@ -1,4 +1,4 @@
-package organ
+package shell
 
 import (
 	"bytes"
