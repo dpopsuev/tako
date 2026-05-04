@@ -50,7 +50,8 @@ func (s *StubShell) Names() []string {
 	return out
 }
 
-func (s *StubShell) Mode(_ string) ActionMode { return ReadAction }
+func (s *StubShell) Mode(_ string) ActionMode       { return ReadAction }
+func (s *StubShell) Approval(_ string) ActionApproval { return Auto }
 
 func (s *StubShell) Describe(name string) (string, error) {
 	fn, ok := s.functions[name]

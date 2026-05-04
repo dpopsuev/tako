@@ -34,6 +34,7 @@ type gameInstrument struct {
 	name        string
 	description string
 	mode        organ.ActionMode
+	approval    organ.ActionApproval
 }
 
 var _ organ.Shell = (*Game)(nil)
@@ -118,6 +119,14 @@ func (a *Game) Mode(name string) organ.ActionMode {
 		return organ.ReadAction
 	}
 	return inst.mode
+}
+
+func (a *Game) Approval(name string) organ.ActionApproval {
+	inst, ok := a.instruments[name]
+	if !ok {
+		return organ.Auto
+	}
+	return inst.approval
 }
 
 func (a *Game) Schema(name string) (json.RawMessage, error) {

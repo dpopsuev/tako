@@ -36,8 +36,9 @@ func (b *captureBus) Events() []cerebrum.Event {
 
 type shellOrgan struct {
 	organ.StubOrgan
-	shell      organ.Shell
-	actionMode organ.ActionMode
+	shell          organ.Shell
+	actionMode     organ.ActionMode
+	actionApproval organ.ActionApproval
 }
 
 func newShellOrgan(name organ.OrganName, kind organ.Kind, shell organ.Shell) *shellOrgan {
@@ -50,7 +51,8 @@ func newShellOrgan(name organ.OrganName, kind organ.Kind, shell organ.Shell) *sh
 func (o *shellOrgan) Names() []string                          { return o.shell.Names() }
 func (o *shellOrgan) Describe(n string) (string, error)        { return o.shell.Describe(n) }
 func (o *shellOrgan) Schema(n string) (json.RawMessage, error) { return o.shell.Schema(n) }
-func (o *shellOrgan) Mode(n string) organ.ActionMode           { return o.actionMode }
+func (o *shellOrgan) Mode(n string) organ.ActionMode             { return o.actionMode }
+func (o *shellOrgan) Approval(n string) organ.ActionApproval     { return o.actionApproval }
 func (o *shellOrgan) Exec(ctx context.Context, name string, input json.RawMessage) (organ.Result, error) {
 	return o.shell.Exec(ctx, name, input)
 }
@@ -172,6 +174,39 @@ func TestCorpusMotorBus_SignalEmission(t *testing.T) {
 	}
 	if received[0].Kind != "motor.execute" {
 		t.Errorf("expected motor.execute, got %s", received[0].Kind)
+	}
+}
+
+func TestCorpusMotorBus_HITL_Denied(t *testing.T) {
+	c := New()
+	shell := organ.NewStubShell()
+	o := newShellOrgan("deploy", organ.Motor, shell)
+	o.actionMode = organ.WriteAction
+	o.actionApproval = organ.HITL
+	c.Attach(o)
+
+	sensory := &captureBus{}
+	phase := func() reactivity.Triad { return reactivity.ImplementTriad }
+	bus := c.MotorBus(sensory, phase)
+
+	ctx := context.Background()
+	bus.Send(ctx, cerebrum.Event{
+		ID:        "test-hitl",
+		Kind:      "instrument",
+		Source:    "deploy",
+		Payload:   []byte("production"),
+		CreatedAt: time.Now(),
+	})
+
+	events := sensory.Events()
+	if len(events) != 1 {
+		t.Fatalf("expected 1 sensory event, got %d", len(events))
+	}
+	if events[0].Kind != "instrument.error" {
+		t.Errorf("expected instrument.error, got %s", events[0].Kind)
+	}
+	if string(events[0].Payload) != "approval required: this action needs human sign-off" {
+		t.Errorf("unexpected error message: %s", events[0].Payload)
 	}
 }
 

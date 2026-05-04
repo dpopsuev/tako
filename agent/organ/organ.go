@@ -27,7 +27,15 @@ type ActionMode int
 
 const (
 	ReadAction  ActionMode = iota // observation — look, status, check
-	WriteAction                   // mutation — take, cook, move
+	WriteAction                   // mutation — take, cook, move, deploy
+)
+
+// ActionApproval controls whether an action needs human sign-off.
+type ActionApproval int
+
+const (
+	Auto ActionApproval = iota // agent decides
+	HITL                       // human must approve
 )
 
 // Organ is a functional part attached to an agent's Corpus.

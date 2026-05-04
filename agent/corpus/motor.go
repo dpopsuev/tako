@@ -41,9 +41,15 @@ func (m *corpusMotor) Send(ctx context.Context, event cerebrum.Event) error {
 	}
 
 	if shell, ok := o.(organ.Shell); ok {
-		if shell.Mode(event.Source) == organ.WriteAction && m.phase() != reactivity.ImplementTriad {
-			m.signal(ctx, event, "denied")
+		mode := shell.Mode(event.Source)
+		if mode == organ.WriteAction && m.phase() != reactivity.ImplementTriad {
+			m.signal(ctx, event, "denied.phase")
 			m.sendError(ctx, event.Source, "permission denied: write actions available during implementation phase only")
+			return nil
+		}
+		if shell.Approval(event.Source) == organ.HITL {
+			m.signal(ctx, event, "denied.hitl")
+			m.sendError(ctx, event.Source, "approval required: this action needs human sign-off")
 			return nil
 		}
 	}

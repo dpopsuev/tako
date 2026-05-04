@@ -12,5 +12,6 @@ type Shell interface {
 	Describe(name string) (string, error)
 	Schema(name string) (json.RawMessage, error)
 	Mode(name string) ActionMode
+	Approval(name string) ActionApproval
 	Exec(ctx context.Context, name string, input json.RawMessage) (Result, error)
 }
