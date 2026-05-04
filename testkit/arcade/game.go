@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
+	"github.com/dpopsuev/tako/agent/organ"
 	"github.com/dpopsuev/tako/instrument"
 )
 
@@ -33,6 +34,7 @@ type Game struct {
 type gameInstrument struct {
 	name        string
 	description string
+	kind        organ.Kind
 }
 
 var _ instrument.Shell = (*Game)(nil)
@@ -50,8 +52,8 @@ func (a *Game) WithSensory(bus cerebrum.Bus) *Game {
 	return a
 }
 
-func (a *Game) AddInstrument(name, description string, fn InstrumentFunc) {
-	a.instruments[name] = &gameInstrument{name: name, description: description}
+func (a *Game) AddInstrument(name, description string, kind organ.Kind, fn InstrumentFunc) {
+	a.instruments[name] = &gameInstrument{name: name, description: description, kind: kind}
 	a.fns[name] = fn
 }
 

@@ -58,6 +58,10 @@ func WithTools(tools []tangle.Tool) Option {
 	return func(cb *Cerebrum) { cb.toolDefs = tools }
 }
 
+func WithRouter(r CompleterRouter) Option {
+	return func(cb *Cerebrum) { cb.router = r }
+}
+
 func WithPool(pool ergograph.Ledger) Option {
 	return func(cb *Cerebrum) { cb.pool = pool }
 }

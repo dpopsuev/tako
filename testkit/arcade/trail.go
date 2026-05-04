@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
+	"github.com/dpopsuev/tako/agent/organ"
 )
 
 func NewTakoTrail(ctx context.Context, sensory cerebrum.Bus) Scenario {
@@ -27,13 +28,13 @@ func NewTakoTrail(ctx context.Context, sensory cerebrum.Bus) Scenario {
 		return v
 	}
 
-	adv.AddInstrument("status", "Show all current stats: money, food, medicine, health, distance traveled, distance remaining, days", func(s map[string]any, _ string) string {
+	adv.AddInstrument("status", "Show all current stats: money, food, medicine, health, distance traveled, distance remaining, days", organ.MotorRO, func(s map[string]any, _ string) string {
 		return fmt.Sprintf("Day %d | Money: %d | Food: %d | Medicine: %d | Health: %d | Traveled: %d miles | Remaining: %d miles",
 			intVal(s, "days"), intVal(s, "money"), intVal(s, "food"), intVal(s, "medicine"),
 			intVal(s, "health"), intVal(s, "distance_traveled"), intVal(s, "distance_remaining"))
 	})
 
-	adv.AddInstrument("buy_food", "Spend money to buy food. Input: amount of money to spend. 1 money = 2 food.", func(s map[string]any, input string) string {
+	adv.AddInstrument("buy_food", "Spend money to buy food. Input: amount of money to spend. 1 money = 2 food.", organ.MotorRW, func(s map[string]any, input string) string {
 		amount, err := strconv.Atoi(input)
 		if err != nil || amount <= 0 {
 			return "specify a positive number of money to spend"
@@ -48,7 +49,7 @@ func NewTakoTrail(ctx context.Context, sensory cerebrum.Bus) Scenario {
 		return fmt.Sprintf("bought %d food for %d money. Food: %d, Money: %d", amount*2, amount, food, money-amount)
 	})
 
-	adv.AddInstrument("buy_medicine", "Spend money to buy medicine. Input: amount of money to spend. 5 money = 1 medicine.", func(s map[string]any, input string) string {
+	adv.AddInstrument("buy_medicine", "Spend money to buy medicine. Input: amount of money to spend. 5 money = 1 medicine.", organ.MotorRW, func(s map[string]any, input string) string {
 		amount, err := strconv.Atoi(input)
 		if err != nil || amount <= 0 {
 			return "specify a positive number of money to spend"
@@ -68,7 +69,7 @@ func NewTakoTrail(ctx context.Context, sensory cerebrum.Bus) Scenario {
 		return fmt.Sprintf("bought %d medicine for %d money. Medicine: %d, Money: %d", units, cost, med, money-cost)
 	})
 
-	adv.AddInstrument("travel", "Travel forward on the trail. Consumes 1 food per 10 miles. Travels 50-100 miles per leg. Increments days.", func(s map[string]any, _ string) string {
+	adv.AddInstrument("travel", "Travel forward on the trail. Consumes 1 food per 10 miles. Travels 50-100 miles per leg. Increments days.", organ.MotorRW, func(s map[string]any, _ string) string {
 		if s["alive"] != true {
 			return "you are dead, the journey is over"
 		}
@@ -172,7 +173,7 @@ func NewTakoTrail(ctx context.Context, sensory cerebrum.Bus) Scenario {
 		return result
 	})
 
-	adv.AddInstrument("rest", "Rest for a day. Restores 10 health (max 100). Consumes 1 food.", func(s map[string]any, _ string) string {
+	adv.AddInstrument("rest", "Rest for a day. Restores 10 health (max 100). Consumes 1 food.", organ.MotorRW, func(s map[string]any, _ string) string {
 		if s["alive"] != true {
 			return "you are dead, the journey is over"
 		}
@@ -193,7 +194,7 @@ func NewTakoTrail(ctx context.Context, sensory cerebrum.Bus) Scenario {
 		return fmt.Sprintf("rested for a day. Health: %d, Food: %d", health, intVal(s, "food"))
 	})
 
-	adv.AddInstrument("hunt", "Spend a day hunting for food. Gain 10 food at no money cost.", func(s map[string]any, _ string) string {
+	adv.AddInstrument("hunt", "Spend a day hunting for food. Gain 10 food at no money cost.", organ.MotorRW, func(s map[string]any, _ string) string {
 		if s["alive"] != true {
 			return "you are dead, the journey is over"
 		}
@@ -205,7 +206,7 @@ func NewTakoTrail(ctx context.Context, sensory cerebrum.Bus) Scenario {
 		return fmt.Sprintf("hunted for a day and gathered 10 food. Food: %d", food)
 	})
 
-	adv.AddInstrument("ford_river", "Attempt to ford a river crossing. 50% chance of losing supplies. Available at river crossings (every 150 miles).", func(s map[string]any, _ string) string {
+	adv.AddInstrument("ford_river", "Attempt to ford a river crossing. 50% chance of losing supplies. Available at river crossings (every 150 miles).", organ.MotorRW, func(s map[string]any, _ string) string {
 		if s["alive"] != true {
 			return "you are dead, the journey is over"
 		}

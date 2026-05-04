@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
+	"github.com/dpopsuev/tako/agent/organ"
 )
 
 func NewPastaBolognese(ctx context.Context, sensory cerebrum.Bus) Scenario {
@@ -26,7 +27,7 @@ func NewPastaBolognese(ctx context.Context, sensory cerebrum.Bus) Scenario {
 		"eaten":         false,
 	}).WithSensory(sensory)
 
-	adv.AddInstrument("look_pantry", "Check what ingredients are in the pantry", func(s map[string]any, _ string) string {
+	adv.AddInstrument("look_pantry", "Check what ingredients are in the pantry", organ.MotorRO, func(s map[string]any, _ string) string {
 		items, _ := s["pantry"].([]string)
 		if len(items) == 0 {
 			return "pantry is empty"
@@ -34,7 +35,7 @@ func NewPastaBolognese(ctx context.Context, sensory cerebrum.Bus) Scenario {
 		return fmt.Sprintf("pantry has: %v", items)
 	})
 
-	adv.AddInstrument("look_fridge", "Check what ingredients are in the fridge", func(s map[string]any, _ string) string {
+	adv.AddInstrument("look_fridge", "Check what ingredients are in the fridge", organ.MotorRO, func(s map[string]any, _ string) string {
 		items, _ := s["fridge"].([]string)
 		if len(items) == 0 {
 			return "fridge is empty"
@@ -42,23 +43,23 @@ func NewPastaBolognese(ctx context.Context, sensory cerebrum.Bus) Scenario {
 		return fmt.Sprintf("fridge has: %v", items)
 	})
 
-	adv.AddInstrument("look_kitchen", "Check the current state of everything in the kitchen", func(s map[string]any, _ string) string {
+	adv.AddInstrument("look_kitchen", "Check the current state of everything in the kitchen", organ.MotorRO, func(s map[string]any, _ string) string {
 		return fmt.Sprintf("stove: %s, pot: %s, pan: %s, cutting board: %s, water: %s, pasta: %s, meat: %s, sauce: %s",
 			s["stove"], s["pot"], s["pan"], s["cutting_board"], s["water"], s["pasta"], s["meat"], s["sauce"])
 	})
 
-	adv.AddInstrument("turn_on_stove", "Turn on the stove", func(s map[string]any, _ string) string {
+	adv.AddInstrument("turn_on_stove", "Turn on the stove", organ.MotorRW, func(s map[string]any, _ string) string {
 		s["stove"] = "on"
 		return "stove is on"
 	})
 
-	adv.AddInstrument("chop_soffritto", "Chop onion, garlic, and carrot for the soffritto base", func(s map[string]any, _ string) string {
+	adv.AddInstrument("chop_soffritto", "Chop onion, garlic, and carrot for the soffritto base", organ.MotorRW, func(s map[string]any, _ string) string {
 		s["cutting_board"] = "chopped soffritto"
 		s["soffritto"] = true
 		return "onion, garlic, and carrot chopped for soffritto"
 	})
 
-	adv.AddInstrument("saute_soffritto", "Saute the chopped soffritto in the pan with olive oil. Takes a moment to soften.", func(s map[string]any, _ string) string {
+	adv.AddInstrument("saute_soffritto", "Saute the chopped soffritto in the pan with olive oil. Takes a moment to soften.", organ.MotorRW, func(s map[string]any, _ string) string {
 		if s["stove"] != "on" {
 			return "stove is off, turn it on first"
 		}
@@ -74,7 +75,7 @@ func NewPastaBolognese(ctx context.Context, sensory cerebrum.Bus) Scenario {
 		return "soffritto is sizzling in the pan, it will be ready in a moment"
 	})
 
-	adv.AddInstrument("brown_meat", "Add ground beef to the pan and brown it. Takes a moment.", func(s map[string]any, _ string) string {
+	adv.AddInstrument("brown_meat", "Add ground beef to the pan and brown it. Takes a moment.", organ.MotorRW, func(s map[string]any, _ string) string {
 		if s["stove"] != "on" {
 			return "stove is off"
 		}
@@ -93,7 +94,7 @@ func NewPastaBolognese(ctx context.Context, sensory cerebrum.Bus) Scenario {
 		return "ground beef is browning with the soffritto, stir occasionally"
 	})
 
-	adv.AddInstrument("add_tomatoes", "Add canned tomatoes to the pan to start the sauce. It needs to simmer.", func(s map[string]any, _ string) string {
+	adv.AddInstrument("add_tomatoes", "Add canned tomatoes to the pan to start the sauce. It needs to simmer.", organ.MotorRW, func(s map[string]any, _ string) string {
 		if s["meat"] != "browned" {
 			return "brown the meat first"
 		}
@@ -107,7 +108,7 @@ func NewPastaBolognese(ctx context.Context, sensory cerebrum.Bus) Scenario {
 		return "tomatoes added, sauce is now simmering. This will take a while. You can prepare pasta in the meantime."
 	})
 
-	adv.AddInstrument("boil_water", "Fill pot with water and put on stove. Takes a moment to boil.", func(s map[string]any, _ string) string {
+	adv.AddInstrument("boil_water", "Fill pot with water and put on stove. Takes a moment to boil.", organ.MotorRW, func(s map[string]any, _ string) string {
 		if s["stove"] != "on" {
 			return "stove is off, turn it on first"
 		}
@@ -121,7 +122,7 @@ func NewPastaBolognese(ctx context.Context, sensory cerebrum.Bus) Scenario {
 		return "pot of water is on the stove, heating up"
 	})
 
-	adv.AddInstrument("cook_pasta", "Add pasta to boiling water. Takes a moment to cook al dente.", func(s map[string]any, _ string) string {
+	adv.AddInstrument("cook_pasta", "Add pasta to boiling water. Takes a moment to cook al dente.", organ.MotorRW, func(s map[string]any, _ string) string {
 		if s["water"] != "boiling" {
 			return "water isn't boiling yet, wait for it"
 		}
@@ -137,7 +138,7 @@ func NewPastaBolognese(ctx context.Context, sensory cerebrum.Bus) Scenario {
 		return "pasta is in the boiling water, cooking"
 	})
 
-	adv.AddInstrument("drain_pasta", "Drain the cooked pasta", func(s map[string]any, _ string) string {
+	adv.AddInstrument("drain_pasta", "Drain the cooked pasta", organ.MotorRW, func(s map[string]any, _ string) string {
 		pasta, _ := s["pasta"].(string)
 		if pasta != "al dente" && pasta != "cooking" {
 			return "pasta isn't ready to drain"
@@ -147,12 +148,12 @@ func NewPastaBolognese(ctx context.Context, sensory cerebrum.Bus) Scenario {
 		return "pasta drained"
 	})
 
-	adv.AddInstrument("grate_parmesan", "Grate fresh parmesan cheese", func(s map[string]any, _ string) string {
+	adv.AddInstrument("grate_parmesan", "Grate fresh parmesan cheese", organ.MotorRW, func(s map[string]any, _ string) string {
 		s["parmesan"] = "grated"
 		return "parmesan freshly grated"
 	})
 
-	adv.AddInstrument("combine", "Toss drained pasta with the sauce in the pan", func(s map[string]any, _ string) string {
+	adv.AddInstrument("combine", "Toss drained pasta with the sauce in the pan", organ.MotorRW, func(s map[string]any, _ string) string {
 		if s["pasta"] != "drained" {
 			return "drain the pasta first"
 		}
@@ -163,7 +164,7 @@ func NewPastaBolognese(ctx context.Context, sensory cerebrum.Bus) Scenario {
 		return "pasta tossed with bolognese sauce, it's coming together beautifully"
 	})
 
-	adv.AddInstrument("plate", "Plate the pasta bolognese with parmesan on top", func(s map[string]any, _ string) string {
+	adv.AddInstrument("plate", "Plate the pasta bolognese with parmesan on top", organ.MotorRW, func(s map[string]any, _ string) string {
 		pan, _ := s["pan"].(string)
 		if pan != "pasta bolognese" {
 			return "combine pasta and sauce first"
@@ -175,7 +176,7 @@ func NewPastaBolognese(ctx context.Context, sensory cerebrum.Bus) Scenario {
 		return "pasta bolognese plated (no parmesan)"
 	})
 
-	adv.AddInstrument("eat", "Eat the plated dish", func(s map[string]any, _ string) string {
+	adv.AddInstrument("eat", "Eat the plated dish", organ.MotorRW, func(s map[string]any, _ string) string {
 		if s["plated"] != true {
 			return "nothing plated yet"
 		}

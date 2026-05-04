@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/dpopsuev/tako/agent/organ"
 )
 
 func NewHuntTheTako() Scenario {
@@ -84,7 +86,7 @@ func NewHuntTheTako() Scenario {
 
 	// instruments -------------------------------------------------------------
 
-	adv.AddInstrument("look", "Look around the current cave. Shows connected caves and any environmental clues.", func(s map[string]any, _ string) string {
+	adv.AddInstrument("look", "Look around the current cave. Shows connected caves and any environmental clues.", organ.MotorRO, func(s map[string]any, _ string) string {
 		if s["alive"] != true {
 			return "You are dead. Game over."
 		}
@@ -97,7 +99,7 @@ func NewHuntTheTako() Scenario {
 		return msg
 	})
 
-	adv.AddInstrument("move", "Move to an adjacent cave. Input: room number (e.g. \"5\")", func(s map[string]any, input string) string {
+	adv.AddInstrument("move", "Move to an adjacent cave. Input: room number (e.g. \"5\")", organ.MotorRW, func(s map[string]any, input string) string {
 		if s["alive"] != true {
 			return "You are dead. Game over."
 		}
@@ -146,7 +148,7 @@ func NewHuntTheTako() Scenario {
 		return msg
 	})
 
-	adv.AddInstrument("shoot", "Shoot an arrow into an adjacent cave. Input: room number (e.g. \"7\")", func(s map[string]any, input string) string {
+	adv.AddInstrument("shoot", "Shoot an arrow into an adjacent cave. Input: room number (e.g. \"7\")", organ.MotorRW, func(s map[string]any, input string) string {
 		if s["alive"] != true {
 			return "You are dead. Game over."
 		}
@@ -180,7 +182,7 @@ func NewHuntTheTako() Scenario {
 		return fmt.Sprintf("Your arrow vanishes into the darkness. Arrows remaining: %d.", arrows)
 	})
 
-	adv.AddInstrument("sniff", "Sniff the air to detect the Tako. If adjacent, tells you which caves it could be in.", func(s map[string]any, _ string) string {
+	adv.AddInstrument("sniff", "Sniff the air to detect the Tako. If adjacent, tells you which caves it could be in.", organ.MotorRO, func(s map[string]any, _ string) string {
 		if s["alive"] != true {
 			return "You are dead. Game over."
 		}
@@ -193,7 +195,7 @@ func NewHuntTheTako() Scenario {
 		return "The air is clear. No smell detected."
 	})
 
-	adv.AddInstrument("status", "Check your current status: cave, arrows, and visited caves.", func(s map[string]any, _ string) string {
+	adv.AddInstrument("status", "Check your current status: cave, arrows, and visited caves.", organ.MotorRO, func(s map[string]any, _ string) string {
 		if s["alive"] != true {
 			return "You are dead. Game over."
 		}

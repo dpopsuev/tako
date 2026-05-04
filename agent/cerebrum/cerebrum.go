@@ -29,9 +29,9 @@ var DefaultBudget = Budget{
 }
 
 type Cerebrum struct {
-	reactor   *reactivity.Core
-	completer tangle.Completer
-	budget    Budget
+	reactor *reactivity.Core
+	router  CompleterRouter
+	budget  Budget
 
 	sensory Bus
 	motor   Bus
@@ -52,7 +52,7 @@ type Cerebrum struct {
 func New(reactor *reactivity.Core, completer tangle.Completer, opts ...Option) *Cerebrum {
 	cb := &Cerebrum{
 		reactor:       reactor,
-		completer:     completer,
+		router:        SingleRouter(completer),
 		budget:        DefaultBudget,
 		classifier:    DefaultClassifier,
 		promptBuilder: DefaultPromptBuilder,
@@ -69,6 +69,7 @@ func New(reactor *reactivity.Core, completer tangle.Completer, opts ...Option) *
 var _ organ.Organ = (*Cerebrum)(nil)
 
 func (cb *Cerebrum) Name() organ.OrganName { return organ.CerebrumOrgan }
+func (cb *Cerebrum) Kind() organ.Kind      { return organ.Cognitive }
 
 func (cb *Cerebrum) Receive(wire artifact.Wire) error {
 	return cb.sensory.Send(context.Background(), Event{
@@ -187,9 +188,11 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 		messages = append(messages, history...)
 		messages = append(messages, tangle.Message{Role: "user", Content: prompt})
 
+		completer := cb.router.Route(molecule.Phase())
+
 		turnCtx, turnCancel := context.WithTimeout(ctx, cb.budget.TurnTimeout)
 		start := time.Now()
-		completion, err := cb.completer.Complete(turnCtx, tangle.CompletionParams{
+		completion, err := completer.Complete(turnCtx, tangle.CompletionParams{
 			Messages:  messages,
 			Tools:     cb.tools(molecule.Phase()),
 			MaxTokens: cb.budget.MaxTokens,

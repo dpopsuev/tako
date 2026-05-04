@@ -14,12 +14,12 @@ import (
 	"github.com/dpopsuev/tako/discourse"
 	"github.com/dpopsuev/tako/ergograph"
 	"github.com/dpopsuev/tako/fab"
+	"github.com/dpopsuev/tako/instrument"
 	"github.com/dpopsuev/tako/memory"
 	"github.com/dpopsuev/tako/render"
 	"github.com/dpopsuev/tako/service/andon"
 	"github.com/dpopsuev/tako/service/depo"
 	"github.com/dpopsuev/tako/service/kanban"
-	"github.com/dpopsuev/tako/workstation"
 )
 
 var (
@@ -39,10 +39,10 @@ type FabCollective struct {
 	Lobby       agent.Lobby
 	Middleware  []Middleware
 	agents      []*agent.Agent
-	runner      agent.Runner
-	mesh        memory.Mesh
-	workstation workstation.Workstation
-	monolog   discourse.Monolog
+	runner  agent.Runner
+	mesh    memory.Mesh
+	shell   instrument.Shell
+	monolog discourse.Monolog
 }
 
 // Middleware processes an Envelope as it flows through the Fab graph.
@@ -61,9 +61,9 @@ type FabCollectiveConfig struct {
 	Canvas      render.Canvas
 	Depo        depo.Depo
 	Lobby       agent.Lobby
-	Mesh        memory.Mesh
-	Workstation workstation.Workstation
-	Runner      agent.Runner
+	Mesh   memory.Mesh
+	Shell  instrument.Shell
+	Runner agent.Runner
 	Middleware  []Middleware
 }
 
@@ -79,9 +79,9 @@ func NewFabCollective(cfg FabCollectiveConfig) *FabCollective {
 		Depo:        cfg.Depo,
 		Lobby:       cfg.Lobby,
 		Middleware:  cfg.Middleware,
-		runner:      cfg.Runner,
-		mesh:        cfg.Mesh,
-		workstation: cfg.Workstation,
+		runner: cfg.Runner,
+		mesh:   cfg.Mesh,
+		shell:  cfg.Shell,
 	}
 }
 
@@ -91,10 +91,6 @@ func (fc *FabCollective) Run(ctx context.Context) error {
 	intake, err := fc.Assembly.Intake()
 	if err != nil {
 		return fmt.Errorf("tako: %w", err)
-	}
-
-	if err := fc.workstation.Provision(intake); err != nil {
-		return fmt.Errorf("tako: provision workstation: %w", err)
 	}
 
 	// Admit agent through Lobby (PDP-PEP: Lobby evaluates, issues Capability)
@@ -123,13 +119,12 @@ func (fc *FabCollective) Run(ctx context.Context) error {
 		return fmt.Errorf("tako: claim station: %w", err)
 	}
 
-	shell := fc.workstation.Shell()
-	names := shell.Names()
+	names := fc.shell.Names()
 	if len(names) == 0 {
 		return fmt.Errorf("%w: %s", ErrNoInstruments, intake.Name)
 	}
 
-	result, err := shell.Exec(ctx, names[0], json.RawMessage(`"walking-skeleton"`))
+	result, err := fc.shell.Exec(ctx, names[0], json.RawMessage(`"walking-skeleton"`))
 	if err != nil {
 		return fmt.Errorf("tako: instrument exec: %w", err)
 	}

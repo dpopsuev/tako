@@ -15,7 +15,7 @@ func WorkerCapability(identity string) Capability {
 	return Capability{
 		Identity: identity,
 		Persona:  Worker,
-		Organs:   []organ.OrganName{organ.Dialog, organ.Kanban, organ.Andon, organ.Workstation},
+		Organs:   []organ.OrganName{organ.Dialog, organ.Kanban, organ.Andon},
 	}
 }
 
@@ -42,6 +42,6 @@ func AvatarCapability(identity string) Capability {
 	return Capability{
 		Identity: identity,
 		Persona:  Avatar,
-		Organs:   []organ.OrganName{organ.Dialog, organ.Kanban, organ.Andon, organ.Workstation},
+		Organs:   []organ.OrganName{organ.Dialog, organ.Kanban, organ.Andon},
 	}
 }

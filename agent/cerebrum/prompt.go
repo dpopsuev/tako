@@ -100,9 +100,9 @@ func buildContractPrompt(m *reactivity.Molecule, need []byte, domain Domain, con
 func instructionsForPhase(phase reactivity.AtomType) string {
 	switch phase.Triad {
 	case reactivity.ThinkTriad:
-		return "Fill this contract with reasoning. You may call observation instruments (look, status, check) to gather information. Do NOT call action instruments yet."
+		return "Fill this contract with reasoning. You may call instruments to gather information."
 	case reactivity.ComposeTriad:
-		return "Fill this contract with strategic analysis. Do NOT call any instruments. Pure reasoning only."
+		return "Fill this contract with strategic analysis. Plan which instruments to use and in what order."
 	case reactivity.ImplementTriad:
 		if phase.Position == reactivity.ThesisPosition {
 			return "Execute the committed plan NOW. Call ALL required instruments in this single response. Batch your tool calls."

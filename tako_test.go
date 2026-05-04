@@ -8,6 +8,7 @@ import (
 	"github.com/dpopsuev/tako/agent"
 	"github.com/dpopsuev/tako/ergograph"
 	"github.com/dpopsuev/tako/fab"
+	"github.com/dpopsuev/tako/instrument"
 	"github.com/dpopsuev/tako/memory"
 	"github.com/dpopsuev/tako/observe"
 	"github.com/dpopsuev/tako/render"
@@ -15,7 +16,6 @@ import (
 	"github.com/dpopsuev/tako/service/depo"
 	"github.com/dpopsuev/tako/service/kanban"
 	"github.com/dpopsuev/tako/store"
-	"github.com/dpopsuev/tako/workstation"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 )
@@ -28,23 +28,23 @@ func TestWalkingSkeleton(t *testing.T) {
 	inspector := ergograph.StubInspector{}
 	canvas := render.NewStubCanvas()
 	mesh := memory.NewStubMesh()
-	ws := workstation.NewStubWorkstation()
+	shell := instrument.NewStubShell()
 	dp := depo.NewStubDepo("test")
 	lobby := agent.StubLobby{}
 	runner := &agent.StubRunner{}
 
 	fc := NewFabCollective(FabCollectiveConfig{
-		Assembly:    assembly,
-		Kanban:      kb,
-		Andon:       an,
-		Pool:        pool,
-		Inspector:   inspector,
-		Canvas:      canvas,
-		Depo:        dp,
-		Lobby:       lobby,
-		Mesh:        mesh,
-		Workstation: ws,
-		Runner:      runner,
+		Assembly:  assembly,
+		Kanban:    kb,
+		Andon:     an,
+		Pool:      pool,
+		Inspector: inspector,
+		Canvas:    canvas,
+		Depo:      dp,
+		Lobby:     lobby,
+		Mesh:      mesh,
+		Shell:     shell,
+		Runner:    runner,
 	})
 
 	ctx := context.Background()
@@ -63,23 +63,13 @@ func TestWalkingSkeleton(t *testing.T) {
 
 	// 2. Corpus has Organs
 	organs := agents[0].Corpus.Organs()
-	if len(organs) < 4 {
-		t.Errorf("expected at least 4 organs, got %d", len(organs))
+	if len(organs) < 3 {
+		t.Errorf("expected at least 3 organs, got %d", len(organs))
 	}
 
 	// 3. Reactivity completed (runner executed)
 	if !runner.Executed {
 		t.Error("agent runner was not executed")
-	}
-
-	// 4. Workstation provisioned with shell
-	shell := ws.Shell()
-	if shell == nil {
-		t.Fatal("workstation shell is nil after provision")
-	}
-	names := shell.Names()
-	if len(names) == 0 {
-		t.Fatal("shell has no instruments")
 	}
 
 	// 5. Kanban station was claimed
@@ -163,23 +153,23 @@ func TestWalkingSkeletonDolt(t *testing.T) {
 	inspector := ergograph.StubInspector{}
 	canvas := render.NewStubCanvas()
 	mesh := memory.NewStubMesh()
-	ws := workstation.NewStubWorkstation()
+	shell := instrument.NewStubShell()
 	dp := depo.NewDoltDepo(db.DB, "test")
 	lobby := agent.StubLobby{}
 	runner := &agent.StubRunner{}
 
 	fc := NewFabCollective(FabCollectiveConfig{
-		Assembly:    assembly,
-		Kanban:      kb,
-		Andon:       an,
-		Pool:        pool,
-		Inspector:   inspector,
-		Canvas:      canvas,
-		Depo:        dp,
-		Lobby:       lobby,
-		Mesh:        mesh,
-		Workstation: ws,
-		Runner:      runner,
+		Assembly:  assembly,
+		Kanban:    kb,
+		Andon:     an,
+		Pool:      pool,
+		Inspector: inspector,
+		Canvas:    canvas,
+		Depo:      dp,
+		Lobby:     lobby,
+		Mesh:      mesh,
+		Shell:     shell,
+		Runner:    runner,
 	})
 
 	ctx := context.Background()
