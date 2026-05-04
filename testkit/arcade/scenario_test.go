@@ -117,7 +117,10 @@ func runScenario(t *testing.T, scenario Scenario, extraOpts ...cerebrum.Option) 
 
 	cb := cerebrum.New(reactor, completer, opts...)
 
-	if err := cb.Think(ctx, []byte(scenario.Need)); err != nil {
+	scenario.Adventure.WithSensory(sensory)
+
+	need := scenario.Need + "\n\nCurrent environment: " + scenario.Adventure.Observe()
+	if err := cb.Think(ctx, []byte(need)); err != nil {
 		t.Fatalf("Think: %v", err)
 	}
 

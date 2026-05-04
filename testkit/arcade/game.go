@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -50,6 +51,18 @@ func NewGame(initialState map[string]any) *Game {
 func (a *Game) WithSensory(bus cerebrum.Bus) *Game {
 	a.sensory = bus
 	return a
+}
+
+// Observe returns the current world state as a string.
+// Used to inject initial awareness before Think() starts.
+func (a *Game) Observe() string {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	var parts []string
+	for k, v := range a.state {
+		parts = append(parts, fmt.Sprintf("%s: %v", k, v))
+	}
+	return strings.Join(parts, ". ")
 }
 
 func (a *Game) AddInstrument(name, description string, mode organ.ActionMode, fn InstrumentFunc) {
