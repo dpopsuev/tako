@@ -7,8 +7,7 @@ import (
 )
 
 // Agent is the runtime representation of an agent inside a Fab.
-// Corpus is its body (Organs attached by Tangled from AAI.Capability).
-// Reactivity is its brain (FSM cognitive loop).
+// Corpus wires Cerebrum to buses. Reactivity is the cognitive loop.
 type Agent struct {
 	Identity   string
 	Persona    Uniform
