@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 	"sync"
 	"time"
 
@@ -127,13 +128,27 @@ func (cb *Cerebrum) Run(ctx context.Context) {
 }
 
 func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
-	molecule := cb.reactor.Cognize(reactivity.Atom{
-		ID:        fmt.Sprintf("need-%d", time.Now().UnixNano()),
-		Type:      reactivity.IntentAtom,
-		Taxonomy:  "intent.need",
-		Content:   need,
-		CreatedAt: time.Now(),
-	})
+	return cb.ThinkWithCatalyst(ctx, reactivity.Catalyst{Need: string(need)})
+}
+
+func (cb *Cerebrum) ThinkWithCatalyst(ctx context.Context, catalyst reactivity.Catalyst) error {
+	need := []byte(catalyst.Need)
+	var molecule *reactivity.Molecule
+	if len(catalyst.Criteria) > 0 {
+		molecule = reactivity.NewMoleculeWithCatalyst(
+			fmt.Sprintf("mol-%d", time.Now().UnixNano()), catalyst)
+		cb.reactor.Add(molecule, reactivity.Atom{
+			ID: fmt.Sprintf("need-%d", time.Now().UnixNano()),
+			Type: reactivity.IntentAtom, Taxonomy: "intent.need",
+			Content: need, CreatedAt: time.Now(),
+		})
+	} else {
+		molecule = cb.reactor.Cognize(reactivity.Atom{
+			ID: fmt.Sprintf("need-%d", time.Now().UnixNano()),
+			Type: reactivity.IntentAtom, Taxonomy: "intent.need",
+			Content: need, CreatedAt: time.Now(),
+		})
+	}
 
 	if cb.recollector != nil {
 		recollected := cb.recollector.Recollect(need)
@@ -281,8 +296,17 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 					"tool":       tc.Name,
 					"result_len": fmt.Sprintf("%d", len(result)),
 				})
+				if molecule.Catalyst() != nil {
+					cb.checkCatalystCriteria(molecule, tc.Name, result)
+				}
 			}
 			toolCancel()
+			if molecule.Sealed() {
+				slog.InfoContext(ctx, "cerebrum.think.catalyst_sealed",
+					slog.Int("turn", turn),
+					slog.Float64("distance", molecule.Distance()))
+				break
+			}
 			molecule.SetContext(history)
 			continue
 		}
@@ -406,6 +430,27 @@ func (cb *Cerebrum) pull(agentID string) {
 		return
 	}
 	cb.andon.Pull(agentID)
+}
+
+func (cb *Cerebrum) checkCatalystCriteria(m *reactivity.Molecule, toolName, result string) {
+	cat := m.Catalyst()
+	if cat == nil {
+		return
+	}
+	for key, expected := range cat.Criteria {
+		switch v := expected.(type) {
+		case bool:
+			if !v && strings.Contains(strings.ToLower(result), "not "+key) {
+				m.ReportSensor(key, false)
+			} else if !v && strings.Contains(strings.ToLower(result), "no longer "+key) {
+				m.ReportSensor(key, false)
+			}
+		case string:
+			if strings.Contains(result, v) {
+				m.ReportSensor(key, v)
+			}
+		}
+	}
 }
 
 func (cb *Cerebrum) waitToolResult(ctx context.Context, tc tangle.ToolCall) string {
