@@ -10,6 +10,7 @@ import (
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
 	"github.com/dpopsuev/tako/agent/organ"
+	"github.com/dpopsuev/tako/artifact"
 )
 
 type InstrumentFunc func(state map[string]any, input string) string
@@ -24,6 +25,7 @@ type TimerConfig struct {
 
 type Game struct {
 	mu          sync.Mutex
+	name        string
 	state       map[string]any
 	instruments map[string]*gameInstrument
 	fns         map[string]InstrumentFunc
@@ -39,13 +41,26 @@ type gameInstrument struct {
 }
 
 var _ organ.Shell = (*Game)(nil)
+var _ organ.Organ = (*Game)(nil)
 
-func NewGame(initialState map[string]any) *Game {
+func NewGame(name string, initialState map[string]any) *Game {
 	return &Game{
+		name:        name,
 		state:       initialState,
 		instruments: make(map[string]*gameInstrument),
 		fns:         make(map[string]InstrumentFunc),
 	}
+}
+
+func (a *Game) Name() organ.OrganName { return organ.OrganName(a.name) }
+func (a *Game) Kind() organ.Kind      { return organ.Motor }
+
+func (a *Game) Receive(wire artifact.Wire) error {
+	if wire.Kind != "instrument" {
+		return nil
+	}
+	_, err := a.Exec(context.Background(), wire.Channel, wire.Payload)
+	return err
 }
 
 func (a *Game) WithSensory(bus cerebrum.Bus) *Game {

@@ -9,7 +9,7 @@ import (
 // Think should detect impossibility: Distance stays 1.0, Momentum
 // stays 0, Assert fires Subcritical → SCRAM.
 func NewImpossible() Scenario {
-	adv := NewGame(map[string]any{
+	adv := NewGame("impossible", map[string]any{
 		"locked": true,
 		"key":    "hidden",
 	})

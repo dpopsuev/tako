@@ -11,7 +11,7 @@ import (
 )
 
 func NewTakoTrail(ctx context.Context, sensory cerebrum.Bus) Scenario {
-	adv := NewGame(map[string]any{
+	adv := NewGame("tako_trail", map[string]any{
 		"money":              100,
 		"food":               50,
 		"medicine":           3,
