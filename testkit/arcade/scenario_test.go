@@ -14,6 +14,7 @@ import (
 	"github.com/dpopsuev/tako/agent/cerebrum"
 	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/ergograph"
+	"github.com/dpopsuev/tako/memory"
 	"github.com/dpopsuev/tako/service/andon"
 	tangle "github.com/dpopsuev/tangle"
 	"github.com/dpopsuev/tangle/arsenal"
@@ -77,7 +78,7 @@ func instrumentTools(adv *Game) []tangle.Tool {
 	return tools
 }
 
-func runScenario(t *testing.T, scenario Scenario) {
+func runScenario(t *testing.T, scenario Scenario, extraOpts ...cerebrum.Option) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
@@ -94,14 +95,13 @@ func runScenario(t *testing.T, scenario Scenario) {
 	motor := NewFixtureMotor(scenario.Adventure.Names(), sensory)
 	signal := NewFixtureSignal()
 
-	// Wire motor to use the adventure's stateful instruments
 	motor.instruments = make(map[string]string)
 	motor.adventure = scenario.Adventure
 
 	pool := &ergograph.StubLedger{}
 	cord := &andon.StubSignal{}
 
-	cb := cerebrum.New(reactor, completer,
+	opts := []cerebrum.Option{
 		cerebrum.WithSensory(sensory),
 		cerebrum.WithMotor(motor),
 		cerebrum.WithSignal(signal),
@@ -110,10 +110,12 @@ func runScenario(t *testing.T, scenario Scenario) {
 		cerebrum.WithBudget(cerebrum.Budget{
 			MaxTurns:    30,
 			TurnTimeout: 30 * time.Second,
-			MinOAE:      0.3,
 		}),
 		cerebrum.WithTools(instrumentTools(scenario.Adventure)),
-	)
+	}
+	opts = append(opts, extraOpts...)
+
+	cb := cerebrum.New(reactor, completer, opts...)
 
 	if err := cb.Think(ctx, []byte(scenario.Need)); err != nil {
 		t.Fatalf("Think: %v", err)
@@ -235,4 +237,21 @@ func TestScenario_HuntTheTako(t *testing.T) {
 
 func TestScenario_Impossible(t *testing.T) {
 	runScenario(t, NewImpossible())
+}
+
+func TestScenario_Fridge_WithRecollection(t *testing.T) {
+	mesh := memory.NewStubMesh()
+	mesh.AddNode(memory.KnowledgeNode{
+		ID:      "k1",
+		Content: "The fridge contains eggs, milk, and cheese. The stove must be turned on before cooking.",
+		Tier:    memory.Knowledge,
+	})
+	mesh.AddNode(memory.KnowledgeNode{
+		ID:      "k2",
+		Content: "To eat: take item from fridge, turn on stove, cook, then eat from plate.",
+		Tier:    memory.Understanding,
+	})
+
+	recollector := cerebrum.MeshRecollector{Mesh: mesh}
+	runScenario(t, NewFridge(), cerebrum.WithRecollector(recollector))
 }

@@ -67,6 +67,10 @@ func WithAssert(a reactivity.Assert) Option {
 	return func(cb *Cerebrum) { cb.assert = a }
 }
 
+func WithRecollector(r Recollector) Option {
+	return func(cb *Cerebrum) { cb.recollector = r }
+}
+
 func WithPool(pool ergograph.Ledger) Option {
 	return func(cb *Cerebrum) { cb.pool = pool }
 }

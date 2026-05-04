@@ -43,9 +43,10 @@ type Cerebrum struct {
 	parser        ResponseParser
 	toolDefs      []tangle.Tool
 
-	pool   ergograph.Ledger
-	andon  andon.Signal
-	assert reactivity.Assert
+	pool       ergograph.Ledger
+	andon      andon.Signal
+	assert     reactivity.Assert
+	recollector Recollector
 
 	molecule *reactivity.Molecule
 }
@@ -149,6 +150,23 @@ func (cb *Cerebrum) Think(ctx context.Context, need []byte) error {
 		Content:   need,
 		CreatedAt: time.Now(),
 	})
+
+	if cb.recollector != nil {
+		recollected := cb.recollector.Recollect(need)
+		for _, atom := range recollected {
+			cb.reactor.Add(molecule, atom)
+		}
+		if len(recollected) > 0 {
+			slog.InfoContext(ctx, "cerebrum.think.recollect",
+				slog.String("molecule", molecule.ID),
+				slog.Int("atoms", len(recollected)),
+				slog.String("phase", molecule.Phase().String()))
+			cb.emit("cerebrum.recollect", map[string]string{
+				"molecule": molecule.ID,
+				"atoms":    fmt.Sprintf("%d", len(recollected)),
+			})
+		}
+	}
 
 	slog.InfoContext(ctx, "cerebrum.think.start",
 		slog.String("molecule", molecule.ID),
