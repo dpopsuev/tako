@@ -46,7 +46,7 @@ tako/
   ├─ fab/                     ← Fab Graph + Channel (stigmergy)
   │   ├─ node/                ← Stations (StationNode), submission contracts
   │   └─ edge/                ← Assertions, matches, gates
-  ├─ agent/organ/             ← Organ contract + Shell/Function/Result (instruments ARE organs)
+  ├─ agent/organ/             ← Organ contract (Name + Receive), Shell, Function, Result
   ├─ contextual/              ← Current Context assembly (NOW) — leaf
   │   └─ block/               ← Block type, scopes, assembly strategy
   ├─ memory/                  ← Saved Memory (Perennial)
@@ -61,8 +61,8 @@ tako/
   ├─ agent/corpus/            ← Composition root — assembles Organs, MotorBus, routing
   ├─ agent/                   ← Agent runtime
   │   ├─ corpus/              ← Agent body — assembled from AAI.Capability blueprint
-  │   ├─ organ/               ← Organ contract, Shell, Function, Result (instruments ARE organs)
-  │   │                         5 Kinds: Cognitive, Sensory, Signal, MotorRO, MotorRW
+  │   ├─ organ/               ← Organ contract (Name + Receive), Shell, Function, Result
+  │   │                         Organs have no Kind — they connect to buses at assembly time
   │   └─ runtime/             ← FSM + ReAct loop
   ├─ assemble/                ← DSL compiler (Blueprint → mono-binary)
   │   ├─ parser/              ← YAML parser for 6 kinds
@@ -121,10 +121,10 @@ Human → Avatar (co-pilot, human's presence in Agent Space)
 - Operator talks to Director only. Foreman never talks to operator.
 
 Persona → Uniform → Organs (corpus blueprint from AAI.Capability):
-- Worker: Cerebrum + Motor organs (MotorRO + MotorRW). Has instruments.
-- Foreman: Cerebrum + MotorRO only. Observe + communicate, no write organs.
-- Director: Cerebrum + MotorRO. Fab-level view.
-- Avatar: Cerebrum + MotorRO + Blackboard. Human proxy.
+- Worker: Cerebrum + Station instruments (read + write actions).
+- Foreman: Cerebrum + read-only Station access. Observe + communicate.
+- Director: Cerebrum. Fab-level view.
+- Avatar: Cerebrum + Blackboard. Human proxy.
 
 Agents don't know about interface families (AAI/ARI/ANI/ASI/AOI/AXI) — that's Tangled plumbing.
 Uniforms are declarative (defined in Fab YAML). Personas are well-known defaults.
@@ -146,8 +146,10 @@ Uniforms are declarative (defined in Fab YAML). Personas are well-known defaults
 - **Two queries** — Knowledge Query (Memory Mesh, certified:human only): "what do I know?" Experience Query (Monologue): "what happened this session?"
 - **Anchor weight** — gravity in the LTM graph. High anchor = gravity well, neighbors cluster, hard to evict. Low anchor = drifts, evictable. Decays on staleness. Set by human at certification.
 - **Corpus** — the agent's body (composition root). Assembles Organs, builds MotorBus, enforces RO/RW permissions. Tangled builds the Corpus, agent never self-assembles.
-- **Organ** — a functional part attached to the Corpus. 5 Kinds: Cognitive (Cerebrum), Sensory (involuntary input), Signal (involuntary output), MotorRO (voluntary read), MotorRW (voluntary write). Instruments ARE organs. Composition over permission: give the agent the organs it needs, don't restrict.
-- **Corpus.MotorBus** — routes motor events to organs, enforces RO/RW (MotorRW blocked outside ImplementTriad), emits to Signal organs as side effect. The gearbox between engine and wheels.
+- **Organ** — a functional part attached to the Corpus (Name + Receive). Organs have no Kind — they connect to buses (sensory, motor, signal) at assembly time. Like a robot joint: same limb has motor AND sensor nerves.
+- **Buses** — pure pub-sub nervous system. Sensory (involuntary input), Motor (voluntary output), Signal (involuntary output). Agnostic of organs. Carry events.
+- **Station** — the environment the agent is assigned to (ISA-95 L0). Has instruments (API endpoints). Agent interacts through buses, doesn't own the Station. Game = Station in arcade tests.
+- **Corpus.MotorBus** — routes motor events to Station instruments, enforces RO/RW per action (WriteAction blocked outside ImplementTriad), emits to signal bus as side effect. The gearbox between engine and wheels.
 - **Station knowledge** — three layers at the station, none in the instrument. Prompt templates = Ford's jigs (guide the tool). Contracts = Ford's fixtures (hold the output in shape). Instrument cache = hash-based memoization (same input → cache hit). Semantic knowledge comes from the agent's Mesh via Recollection, not from the station or instrument.
 - **Instrument cache** — hash-based only. Input signature → cached result. KISS. No Mesh, no vector search, no semantics at instrument level. Agents and instruments benefit from different things.
 - **Event-driven Needs** — ReActivity is event-driven. Agents subscribe to Blackboard services (Depo, Andon, Kanban, Discourse). Events become Needs. Needs start Molecules. The Three Blackboards ARE the delivery belt. No separate trigger mechanism.
@@ -176,7 +178,7 @@ Complex is thin (refs + wiring + topology). Fab has the substance. Rehearsal val
 - **No Ouroboros**: use "Self-Assembly" or "Autoassembler"
 - **No Cortex**: use "contextual" or "memory"
 - **No Battery (package)**: absorbed into tako/agent/organ/
-- **No instrument/ (package)**: absorbed into tako/agent/organ/ — instruments ARE organs
+- **No instrument/ (package)**: absorbed into tako/agent/organ/ — Shell/Function/Result live in organ package
 - **No workstation/ (package)**: killed — Corpus is the composition root, organs plug directly
 - **No motor/ (package)**: absorbed into agent/corpus/ — Corpus.MotorBus handles routing
 - **No FSM for ReActivity**: it's a reaction engine, not a state machine. Molecule drives the agent.

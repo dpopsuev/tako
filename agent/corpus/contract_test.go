@@ -11,7 +11,7 @@ import (
 func TestCorpusAttachAndRetrieve(t *testing.T) {
 	c := New()
 	c.Attach(organ.NewStubOrgan("monolog"))
-	c.Attach(organ.NewStubOrgan("workstation"))
+	c.Attach(organ.NewStubOrgan("dialog"))
 
 	o, err := c.Organ("monolog")
 	if err != nil {
