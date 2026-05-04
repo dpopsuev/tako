@@ -35,29 +35,30 @@ func (b *captureBus) Events() []cerebrum.Event {
 	return append([]cerebrum.Event(nil), b.events...)
 }
 
-type shellHandler struct {
+type testShellHandler struct {
 	name           string
 	shell          agentshell.Shell
 	actionMode     agentshell.ActionMode
 	actionApproval agentshell.ActionApproval
 }
 
-func newShellHandler(name string, shell agentshell.Shell) *shellHandler {
-	return &shellHandler{name: name, shell: shell}
+func newTestShellHandler(name string, shell agentshell.Shell) *testShellHandler {
+	return &testShellHandler{name: name, shell: shell}
 }
 
-func (o *shellHandler) Name() string                                                               { return o.name }
-func (o *shellHandler) Receive(_ artifact.Wire) error                                              { return nil }
-func (o *shellHandler) Names() []string                                                            { return o.shell.Names() }
-func (o *shellHandler) Describe(n string) (string, error)                                          { return o.shell.Describe(n) }
-func (o *shellHandler) Schema(n string) (json.RawMessage, error)                                   { return o.shell.Schema(n) }
-func (o *shellHandler) Mode(n string) agentshell.ActionMode                                             { return o.actionMode }
-func (o *shellHandler) Approval(n string) agentshell.ActionApproval                                     { return o.actionApproval }
-func (o *shellHandler) Exec(ctx context.Context, name string, input json.RawMessage) (agentshell.Result, error) {
+func (o *testShellHandler) Name() string                                                               { return o.name }
+func (o *testShellHandler) Receive(_ artifact.Wire) error                                              { return nil }
+func (o *testShellHandler) Names() []string                                                            { return o.shell.Names() }
+func (o *testShellHandler) Describe(n string) (string, error)                                          { return o.shell.Describe(n) }
+func (o *testShellHandler) Schema(n string) (json.RawMessage, error)                                   { return o.shell.Schema(n) }
+func (o *testShellHandler) Mode(n string) agentshell.ActionMode                                             { return o.actionMode }
+func (o *testShellHandler) Approval(n string) agentshell.ActionApproval { return o.actionApproval }
+func (o *testShellHandler) Risk(_ string) float64                      { return 0 }
+func (o *testShellHandler) Exec(ctx context.Context, name string, input json.RawMessage) (agentshell.Result, error) {
 	return o.shell.Exec(ctx, name, input)
 }
 
-var _ agentshell.Shell = (*shellHandler)(nil)
+var _ agentshell.Shell = (*testShellHandler)(nil)
 
 type autoApproveHITL struct {
 	sensory cerebrum.Bus
@@ -82,7 +83,7 @@ func (h *autoApproveHITL) Receive(wire artifact.Wire) error {
 func TestCorpusMotorBus_RW_Denied_During_Think(t *testing.T) {
 	c := New()
 	shell := agentshell.NewStubShell()
-	o := newShellHandler("echo", shell)
+	o := newTestShellHandler("echo", shell)
 	o.actionMode = agentshell.WriteAction
 	c.Attach(o)
 
@@ -108,7 +109,7 @@ func TestCorpusMotorBus_RW_Denied_During_Think(t *testing.T) {
 func TestCorpusMotorBus_RO_Allowed_During_Think(t *testing.T) {
 	c := New()
 	shell := agentshell.NewStubShell()
-	o := newShellHandler("echo", shell)
+	o := newTestShellHandler("echo", shell)
 	c.Attach(o)
 
 	sensory := &captureBus{}
@@ -133,7 +134,7 @@ func TestCorpusMotorBus_RO_Allowed_During_Think(t *testing.T) {
 func TestCorpusMotorBus_RW_Allowed_During_Implement(t *testing.T) {
 	c := New()
 	shell := agentshell.NewStubShell()
-	o := newShellHandler("echo", shell)
+	o := newTestShellHandler("echo", shell)
 	c.Attach(o)
 
 	sensory := &captureBus{}
@@ -158,7 +159,7 @@ func TestCorpusMotorBus_RW_Allowed_During_Implement(t *testing.T) {
 func TestCorpusMotorBus_SignalEmission(t *testing.T) {
 	c := New()
 	shell := agentshell.NewStubShell()
-	motor := newShellHandler("echo", shell)
+	motor := newTestShellHandler("echo", shell)
 	c.Attach(motor)
 
 	sensory := &captureBus{}
@@ -184,7 +185,7 @@ func TestCorpusMotorBus_SignalEmission(t *testing.T) {
 func TestCorpusMotorBus_HITL_Denied(t *testing.T) {
 	c := New()
 	shell := agentshell.NewStubShell()
-	o := newShellHandler("deploy", shell)
+	o := newTestShellHandler("deploy", shell)
 	o.actionMode = agentshell.WriteAction
 	o.actionApproval = agentshell.HITL
 	c.Attach(o)
@@ -213,7 +214,7 @@ func TestCorpusMotorBus_HITL_Denied(t *testing.T) {
 func TestCorpusMotorBus_HITL_Approved(t *testing.T) {
 	c := New()
 	shell := agentshell.NewStubShell()
-	o := newShellHandler("echo", shell)
+	o := newTestShellHandler("echo", shell)
 	o.actionMode = agentshell.WriteAction
 	o.actionApproval = agentshell.HITL
 	c.Attach(o)
@@ -259,5 +260,72 @@ func TestCorpusMotorBus_UnknownOrgan(t *testing.T) {
 	}
 	if events[0].Kind != "instrument.error" {
 		t.Errorf("expected instrument.error, got %s", events[0].Kind)
+	}
+}
+
+type riskyShellHandler struct {
+	testShellHandler
+	risk float64
+}
+
+func (r *riskyShellHandler) Risk(_ string) float64 { return r.risk }
+
+func TestCorpusMotorBus_TrustGating_RiskExceedsTrust(t *testing.T) {
+	c := New()
+	sh := agentshell.NewStubShell()
+	o := &riskyShellHandler{
+		testShellHandler: testShellHandler{name: "deploy", shell: sh, actionMode: agentshell.WriteAction},
+		risk:             0.8,
+	}
+	c.Attach(o)
+
+	sensory := cerebrum.NewChannelBus(8)
+	phase := func() reactivity.Triad { return reactivity.ImplementTriad }
+	trust := func() float64 { return 0.3 }
+	bus := c.MotorBus(sensory, nil, phase, trust)
+
+	sendCtx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+	bus.Send(sendCtx, cerebrum.Event{
+		ID: "trust-risk-1", Kind: "instrument", Source: "deploy",
+	})
+
+	readCtx, readCancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer readCancel()
+	event, ok := sensory.Receive(readCtx)
+	if !ok {
+		t.Fatal("expected error event on sensory bus")
+	}
+	if event.Kind != "instrument.error" {
+		t.Errorf("expected instrument.error (HITL denied), got %s", event.Kind)
+	}
+}
+
+func TestCorpusMotorBus_TrustGating_TrustExceedsRisk(t *testing.T) {
+	c := New()
+	sh := agentshell.NewStubShell()
+	o := &riskyShellHandler{
+		testShellHandler: testShellHandler{name: "echo", shell: sh},
+		risk:             0.3,
+	}
+	c.Attach(o)
+
+	sensory := &captureBus{}
+	phase := func() reactivity.Triad { return reactivity.ImplementTriad }
+	trust := func() float64 { return 0.8 }
+	bus := c.MotorBus(sensory, nil, phase, trust)
+
+	ctx := context.Background()
+	bus.Send(ctx, cerebrum.Event{
+		ID: "trust-risk-2", Kind: "instrument", Source: "echo",
+		Payload: []byte("hello"), CreatedAt: time.Now(),
+	})
+
+	events := sensory.Events()
+	if len(events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(events))
+	}
+	if events[0].Kind != "instrument.result" {
+		t.Errorf("expected instrument.result (trust > risk), got %s", events[0].Kind)
 	}
 }

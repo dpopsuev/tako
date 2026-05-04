@@ -14,13 +14,17 @@ import (
 // MotorBus builds a cerebrum.Bus that routes motor events through the Corpus.
 // Routes by event.Source (handler name), enforces RO/RW permissions,
 // and emits to signal bus as a side effect of every route.
-func (c *Corpus) MotorBus(sensory cerebrum.Bus, signal cerebrum.Bus, phase func() reactivity.Triad) cerebrum.Bus {
-	return &corpusMotor{
+func (c *Corpus) MotorBus(sensory cerebrum.Bus, signal cerebrum.Bus, phase func() reactivity.Triad, trust ...func() float64) cerebrum.Bus {
+	m := &corpusMotor{
 		corpus:  c,
 		sensory: sensory,
 		signal:  signal,
 		phase:   phase,
 	}
+	if len(trust) > 0 {
+		m.trust = trust[0]
+	}
+	return m
 }
 
 type corpusMotor struct {
@@ -28,6 +32,7 @@ type corpusMotor struct {
 	sensory cerebrum.Bus
 	signal  cerebrum.Bus
 	phase   func() reactivity.Triad
+	trust   func() float64
 }
 
 func (m *corpusMotor) Send(ctx context.Context, event cerebrum.Event) error {
@@ -49,7 +54,11 @@ func (m *corpusMotor) Send(ctx context.Context, event cerebrum.Event) error {
 			m.sendError(ctx, event.Source, "permission denied: write actions available during implementation phase only")
 			return nil
 		}
-		if sh.Approval(event.Source) == agentshell.HITL {
+		needsHITL := sh.Approval(event.Source) == agentshell.HITL
+		if !needsHITL && m.trust != nil {
+			needsHITL = sh.Risk(event.Source) > m.trust()
+		}
+		if needsHITL {
 			m.emitSignal(ctx, event, "pending.hitl")
 			approval, ok := m.sensory.Receive(ctx)
 			if !ok || approval.Kind != "approval.hitl" {

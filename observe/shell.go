@@ -39,6 +39,7 @@ func (s *Shell) Names() []string {
 
 func (s *Shell) Mode(name string) shell.ActionMode         { return s.inner.Mode(name) }
 func (s *Shell) Approval(name string) shell.ActionApproval { return s.inner.Approval(name) }
+func (s *Shell) Risk(name string) float64                  { return s.inner.Risk(name) }
 
 func (s *Shell) Describe(name string) (string, error) {
 	_, span := s.tracer.Start(context.Background(), "shell.describe")

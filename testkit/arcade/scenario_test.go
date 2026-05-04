@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
+	"github.com/dpopsuev/tako/agent/corpus"
 	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/ergograph"
 	"github.com/dpopsuev/tako/memory"
@@ -92,18 +93,28 @@ func runScenario(t *testing.T, scenario Scenario, extraOpts ...cerebrum.Option) 
 	)
 
 	sensory := cerebrum.NewChannelBus(64)
-	motor := NewFixtureMotor(scenario.Adventure.Names(), sensory)
 	signal := NewFixtureSignal()
-
-	motor.instruments = make(map[string]string)
-	motor.adventure = scenario.Adventure
-
 	pool := &ergograph.StubLedger{}
 	cord := &andon.StubSignal{}
 
+	corp := corpus.New()
+	corp.AttachShell(scenario.Adventure)
+
+	var cb *cerebrum.Cerebrum
+	motorBus := corp.MotorBus(sensory, signal, func() reactivity.Triad {
+		if cb == nil {
+			return reactivity.ThinkTriad
+		}
+		m := cb.Result()
+		if m == nil {
+			return reactivity.ThinkTriad
+		}
+		return m.CurrentTriad()
+	})
+
 	opts := []cerebrum.Option{
 		cerebrum.WithSensory(sensory),
-		cerebrum.WithMotor(motor),
+		cerebrum.WithMotor(motorBus),
 		cerebrum.WithSignal(signal),
 		cerebrum.WithPool(pool),
 		cerebrum.WithAndon(cord),
@@ -115,7 +126,7 @@ func runScenario(t *testing.T, scenario Scenario, extraOpts ...cerebrum.Option) 
 	}
 	opts = append(opts, extraOpts...)
 
-	cb := cerebrum.New(reactor, completer, opts...)
+	cb = cerebrum.New(reactor, completer, opts...)
 
 	scenario.Adventure.WithSensory(sensory)
 
@@ -131,14 +142,13 @@ func runScenario(t *testing.T, scenario Scenario, extraOpts ...cerebrum.Option) 
 	result := ScenarioResult{
 		Solved:       solved,
 		Turns:        m.TotalMass(),
-		MotorCalls:   len(motor.Calls()),
 		TotalMass:    m.TotalMass(),
 		OptimalTurns: scenario.OptimalTurns,
 	}
 
 	t.Logf("=== Scenario: %s ===", scenario.Name)
-	t.Logf("Solved: %v | OAE: %.1f%% | Turns: %d (optimal: %d) | Motor calls: %d | Mass: %d",
-		result.Solved, result.OAE()*100, result.Turns, result.OptimalTurns, result.MotorCalls, result.TotalMass)
+	t.Logf("Solved: %v | OAE: %.1f%% | Turns: %d (optimal: %d) | Mass: %d",
+		result.Solved, result.OAE()*100, result.Turns, result.OptimalTurns, result.TotalMass)
 
 	for _, at := range reactivity.AllAtomTypes() {
 		if mass := m.Mass(at); mass > 0 {
@@ -146,17 +156,14 @@ func runScenario(t *testing.T, scenario Scenario, extraOpts ...cerebrum.Option) 
 		}
 	}
 
-	for _, call := range motor.Calls() {
-		payload := string(call.Payload)
-		if len(payload) > 80 {
-			payload = payload[:80] + "..."
-		}
-		t.Logf("  [%s] %s: %s", call.Kind, call.Source, payload)
-	}
-
 	t.Logf("Final state:")
 	for k, v := range scenario.Adventure.State() {
 		t.Logf("  %s: %v", k, v)
+	}
+
+	t.Logf("Signal events: %d", len(signal.Signals()))
+	for _, sig := range signal.Signals() {
+		t.Logf("  [%s] %s", sig.Kind, sig.Source)
 	}
 
 	t.Logf("Ergograph: %d records | Andon: %s", pool.Len(), cord.Status())
@@ -275,14 +282,26 @@ func TestScenario_Fridge_BookMoves(t *testing.T) {
 		),
 	)
 	sensory1 := cerebrum.NewChannelBus(64)
-	motor1 := NewFixtureMotor(scenario.Adventure.Names(), sensory1)
-	motor1.instruments = make(map[string]string)
-	motor1.adventure = scenario.Adventure
 	pool1 := &ergograph.StubLedger{}
 
-	cb1 := cerebrum.New(reactor1, completer,
+	corp1 := corpus.New()
+	corp1.AttachShell(scenario.Adventure)
+
+	var cb1 *cerebrum.Cerebrum
+	motorBus1 := corp1.MotorBus(sensory1, NewFixtureSignal(), func() reactivity.Triad {
+		if cb1 == nil {
+			return reactivity.ThinkTriad
+		}
+		m := cb1.Result()
+		if m == nil {
+			return reactivity.ThinkTriad
+		}
+		return m.CurrentTriad()
+	})
+
+	cb1 = cerebrum.New(reactor1, completer,
 		cerebrum.WithSensory(sensory1),
-		cerebrum.WithMotor(motor1),
+		cerebrum.WithMotor(motorBus1),
 		cerebrum.WithPool(pool1),
 		cerebrum.WithAndon(&andon.StubSignal{}),
 		cerebrum.WithBudget(cerebrum.Budget{MaxTurns: 30, TurnTimeout: 30 * time.Second}),

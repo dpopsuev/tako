@@ -78,3 +78,7 @@ func WithPool(pool ergograph.Ledger) Option {
 func WithAndon(signal andon.Signal) Option {
 	return func(cb *Cerebrum) { cb.andon = signal }
 }
+
+func WithCompactor(c Compactor) Option {
+	return func(cb *Cerebrum) { cb.compactor = c }
+}

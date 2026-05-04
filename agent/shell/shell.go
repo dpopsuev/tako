@@ -13,5 +13,6 @@ type Shell interface {
 	Schema(name string) (json.RawMessage, error)
 	Mode(name string) ActionMode
 	Approval(name string) ActionApproval
+	Risk(name string) float64 // 0.0 = safe read, 0.5 = local write, 1.0 = destructive
 	Exec(ctx context.Context, name string, input json.RawMessage) (Result, error)
 }

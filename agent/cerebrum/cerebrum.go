@@ -46,6 +46,7 @@ type Cerebrum struct {
 	andon       andon.Signal
 	assert      reactivity.Assert
 	recollector Recollector
+	compactor   Compactor
 
 	molecule *reactivity.Molecule
 }
@@ -145,6 +146,8 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 		})
 	}
 
+	cb.molecule = molecule
+
 	if cb.recollector != nil {
 		recollected := cb.recollector.Recollect(need)
 		for _, atom := range recollected {
@@ -170,8 +173,22 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 
 	history, _ := molecule.Context().([]tangle.Message)
 
+	prevTriad := molecule.CurrentTriad()
 	for turn := 0; turn < cb.budget.MaxTurns && !molecule.Sealed(); turn++ {
 		molecule.Tick()
+
+		if cb.compactor != nil {
+			currentTriad := molecule.CurrentTriad()
+			if currentTriad != prevTriad {
+				history = cb.compactor.Compact(history, prevTriad)
+				slog.InfoContext(ctx, "cerebrum.think.compact",
+					slog.String("from", prevTriad.String()),
+					slog.String("to", currentTriad.String()),
+					slog.Int("history_len", len(history)))
+				prevTriad = currentTriad
+			}
+		}
+
 		domain := cb.classifier.Classify(molecule)
 		contracts := cb.reactor.Contracts()
 		directives := cb.reactor.Directives(molecule.Phase())

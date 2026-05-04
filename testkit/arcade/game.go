@@ -36,6 +36,7 @@ type gameInstrument struct {
 	description string
 	mode        shell.ActionMode
 	approval    shell.ActionApproval
+	risk        float64
 }
 
 var _ shell.Shell = (*Game)(nil)
@@ -140,6 +141,20 @@ func (a *Game) Approval(name string) shell.ActionApproval {
 		return shell.Auto
 	}
 	return inst.approval
+}
+
+func (a *Game) Risk(name string) float64 {
+	inst, ok := a.instruments[name]
+	if !ok {
+		return 0
+	}
+	if inst.risk > 0 {
+		return inst.risk
+	}
+	if inst.mode == shell.WriteAction {
+		return 0.5
+	}
+	return 0
 }
 
 func (a *Game) Schema(name string) (json.RawMessage, error) {

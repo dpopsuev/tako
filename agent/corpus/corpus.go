@@ -1,9 +1,12 @@
 package corpus
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"sync"
 
+	agentshell "github.com/dpopsuev/tako/agent/shell"
 	"github.com/dpopsuev/tako/artifact"
 )
 
@@ -86,4 +89,33 @@ func (c *Corpus) Route(wire artifact.Wire) error {
 		return ErrHandlerNotFound
 	}
 	return h.Receive(wire)
+}
+
+// AttachShell registers a Shell as a handler for each of its action names.
+// Motor.go's type assertion to shell.Shell works because shellHandler
+// implements both Handler and Shell by delegation.
+func (c *Corpus) AttachShell(sh agentshell.Shell) {
+	for _, name := range sh.Names() {
+		c.Attach(&shellHandler{actionName: name, shell: sh})
+	}
+}
+
+type shellHandler struct {
+	actionName string
+	shell      agentshell.Shell
+}
+
+func (h *shellHandler) Name() string                  { return h.actionName }
+func (h *shellHandler) Receive(_ artifact.Wire) error { return nil }
+
+func (h *shellHandler) Names() []string                        { return h.shell.Names() }
+func (h *shellHandler) Describe(name string) (string, error)   { return h.shell.Describe(name) }
+func (h *shellHandler) Schema(name string) (json.RawMessage, error) { return h.shell.Schema(name) }
+func (h *shellHandler) Mode(name string) agentshell.ActionMode { return h.shell.Mode(name) }
+func (h *shellHandler) Approval(name string) agentshell.ActionApproval {
+	return h.shell.Approval(name)
+}
+func (h *shellHandler) Risk(name string) float64 { return h.shell.Risk(name) }
+func (h *shellHandler) Exec(ctx context.Context, name string, input json.RawMessage) (agentshell.Result, error) {
+	return h.shell.Exec(ctx, name, input)
 }
