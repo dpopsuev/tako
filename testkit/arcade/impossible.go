@@ -14,7 +14,7 @@ func NewImpossible() Scenario {
 		"key":    "hidden",
 	})
 
-	adv.AddInstrument("look", "Look at the locked door", organ.MotorRO, func(s map[string]any, _ string) string {
+	adv.AddInstrument("look", "Look at the locked door", organ.ReadAction, func(s map[string]any, _ string) string {
 		if s["locked"] == true {
 			return "you see a locked door. it requires a key to open. you need to use the 'unlock' instrument."
 		}

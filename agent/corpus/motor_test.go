@@ -36,7 +36,8 @@ func (b *captureBus) Events() []cerebrum.Event {
 
 type shellOrgan struct {
 	organ.StubOrgan
-	shell organ.Shell
+	shell      organ.Shell
+	actionMode organ.ActionMode
 }
 
 func newShellOrgan(name organ.OrganName, kind organ.Kind, shell organ.Shell) *shellOrgan {
@@ -49,6 +50,7 @@ func newShellOrgan(name organ.OrganName, kind organ.Kind, shell organ.Shell) *sh
 func (o *shellOrgan) Names() []string                          { return o.shell.Names() }
 func (o *shellOrgan) Describe(n string) (string, error)        { return o.shell.Describe(n) }
 func (o *shellOrgan) Schema(n string) (json.RawMessage, error) { return o.shell.Schema(n) }
+func (o *shellOrgan) Mode(n string) organ.ActionMode           { return o.actionMode }
 func (o *shellOrgan) Exec(ctx context.Context, name string, input json.RawMessage) (organ.Result, error) {
 	return o.shell.Exec(ctx, name, input)
 }
@@ -58,7 +60,8 @@ var _ organ.Shell = (*shellOrgan)(nil)
 func TestCorpusMotorBus_RW_Denied_During_Think(t *testing.T) {
 	c := New()
 	shell := organ.NewStubShell()
-	o := newShellOrgan("echo", organ.MotorRW, shell)
+	o := newShellOrgan("echo", organ.Motor, shell)
+	o.actionMode = organ.WriteAction
 	c.Attach(o)
 
 	sensory := &captureBus{}
@@ -81,7 +84,7 @@ func TestCorpusMotorBus_RW_Denied_During_Think(t *testing.T) {
 	if events[0].Kind != "instrument.error" {
 		t.Errorf("expected instrument.error, got %s", events[0].Kind)
 	}
-	if string(events[0].Payload) != "permission denied: write operations available during implementation phase only" {
+	if string(events[0].Payload) != "permission denied: write actions available during implementation phase only" {
 		t.Errorf("unexpected error message: %s", events[0].Payload)
 	}
 }
@@ -89,7 +92,7 @@ func TestCorpusMotorBus_RW_Denied_During_Think(t *testing.T) {
 func TestCorpusMotorBus_RO_Allowed_During_Think(t *testing.T) {
 	c := New()
 	shell := organ.NewStubShell()
-	o := newShellOrgan("echo", organ.MotorRO, shell)
+	o := newShellOrgan("echo", organ.Motor, shell)
 	c.Attach(o)
 
 	sensory := &captureBus{}
@@ -117,7 +120,7 @@ func TestCorpusMotorBus_RO_Allowed_During_Think(t *testing.T) {
 func TestCorpusMotorBus_RW_Allowed_During_Implement(t *testing.T) {
 	c := New()
 	shell := organ.NewStubShell()
-	o := newShellOrgan("echo", organ.MotorRW, shell)
+	o := newShellOrgan("echo", organ.Motor, shell)
 	c.Attach(o)
 
 	sensory := &captureBus{}
@@ -145,7 +148,7 @@ func TestCorpusMotorBus_RW_Allowed_During_Implement(t *testing.T) {
 func TestCorpusMotorBus_SignalEmission(t *testing.T) {
 	c := New()
 	shell := organ.NewStubShell()
-	motor := newShellOrgan("echo", organ.MotorRO, shell)
+	motor := newShellOrgan("echo", organ.Motor, shell)
 	signal := organ.NewStubOrganWithKind("andon", organ.Signal)
 	c.Attach(motor)
 	c.Attach(signal)

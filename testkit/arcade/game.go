@@ -33,7 +33,7 @@ type Game struct {
 type gameInstrument struct {
 	name        string
 	description string
-	kind        organ.Kind
+	mode        organ.ActionMode
 }
 
 var _ organ.Shell = (*Game)(nil)
@@ -51,8 +51,8 @@ func (a *Game) WithSensory(bus cerebrum.Bus) *Game {
 	return a
 }
 
-func (a *Game) AddInstrument(name, description string, kind organ.Kind, fn InstrumentFunc) {
-	a.instruments[name] = &gameInstrument{name: name, description: description, kind: kind}
+func (a *Game) AddInstrument(name, description string, mode organ.ActionMode, fn InstrumentFunc) {
+	a.instruments[name] = &gameInstrument{name: name, description: description, mode: mode}
 	a.fns[name] = fn
 }
 
@@ -110,6 +110,14 @@ func (a *Game) Describe(name string) (string, error) {
 		return "", fmt.Errorf("unknown instrument: %s", name)
 	}
 	return inst.description, nil
+}
+
+func (a *Game) Mode(name string) organ.ActionMode {
+	inst, ok := a.instruments[name]
+	if !ok {
+		return organ.ReadAction
+	}
+	return inst.mode
 }
 
 func (a *Game) Schema(name string) (json.RawMessage, error) {

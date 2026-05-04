@@ -11,5 +11,6 @@ type Shell interface {
 	Names() []string
 	Describe(name string) (string, error)
 	Schema(name string) (json.RawMessage, error)
+	Mode(name string) ActionMode
 	Exec(ctx context.Context, name string, input json.RawMessage) (Result, error)
 }

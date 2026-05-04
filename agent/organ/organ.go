@@ -19,8 +19,15 @@ const (
 	Cognitive Kind = iota // the brain — Cerebrum
 	Sensory              // involuntary input — events arrive without asking
 	Signal               // involuntary output — telemetry, alerting
-	MotorRO              // voluntary, read-only — look, status, check
-	MotorRW              // voluntary, read-write — take, cook, move
+	Motor                // voluntary actions — each action declares its Mode
+)
+
+// ActionMode labels whether an individual action reads or writes.
+type ActionMode int
+
+const (
+	ReadAction  ActionMode = iota // observation — look, status, check
+	WriteAction                   // mutation — take, cook, move
 )
 
 // Organ is a functional part attached to an agent's Corpus.

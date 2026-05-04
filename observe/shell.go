@@ -37,6 +37,8 @@ func (s *Shell) Names() []string {
 	return s.inner.Names()
 }
 
+func (s *Shell) Mode(name string) organ.ActionMode { return s.inner.Mode(name) }
+
 func (s *Shell) Describe(name string) (string, error) {
 	_, span := s.tracer.Start(context.Background(), "shell.describe")
 	defer span.End()
