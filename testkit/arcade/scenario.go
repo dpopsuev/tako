@@ -16,23 +16,31 @@ type Scenario struct {
 }
 
 type ScenarioResult struct {
-	Solved       bool
-	Turns        int
-	MotorCalls   int
-	TotalMass    int
-	OptimalTurns int
-	TokensIn     int
-	TokensOut    int
+	Solved        bool
+	Turns         int
+	MotorCalls    int
+	TotalMass     int
+	OptimalTurns  int
+	TokensIn      int
+	TokensOut     int
+	OptimalTokens int
 }
 
+// OAE returns efficiency as optimal_tokens / actual_tokens.
+// Do more with less budget.
 func (r ScenarioResult) OAE() float64 {
-	if r.OptimalTurns == 0 || r.Turns == 0 {
-		return 0
-	}
 	if !r.Solved {
 		return 0
 	}
-	ratio := float64(r.OptimalTurns) / float64(r.Turns)
+	actual := r.TokensIn + r.TokensOut
+	if actual == 0 {
+		return 0
+	}
+	optimal := r.OptimalTokens
+	if optimal == 0 {
+		optimal = r.OptimalTurns * 1000
+	}
+	ratio := float64(optimal) / float64(actual)
 	if ratio > 1 {
 		ratio = 1
 	}

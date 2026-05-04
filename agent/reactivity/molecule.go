@@ -22,6 +22,8 @@ type Molecule struct {
 	createdAt        time.Time
 	turns            int
 	phaseTransitions int
+	catalyst         *Catalyst
+	sensorResults    map[string]any
 }
 
 // NewMolecule creates a Molecule starting at Intent phase.
@@ -38,6 +40,40 @@ func NewMolecule(id string) *Molecule {
 		phase:       IntentAtom,
 		createdAt:   time.Now(),
 	}
+}
+
+// NewMoleculeWithCatalyst creates a Molecule with structured completion criteria.
+func NewMoleculeWithCatalyst(id string, c Catalyst) *Molecule {
+	m := NewMolecule(id)
+	m.catalyst = &c
+	m.sensorResults = make(map[string]any)
+	return m
+}
+
+func (m *Molecule) Catalyst() *Catalyst { return m.catalyst }
+
+// ReportSensor records a sensor result. If all criteria are met, seals the Molecule.
+func (m *Molecule) ReportSensor(key string, value any) {
+	if m.sensorResults == nil {
+		m.sensorResults = make(map[string]any)
+	}
+	m.sensorResults[key] = value
+	if m.catalyst != nil && m.criteriaMet() {
+		m.sealed = true
+	}
+}
+
+func (m *Molecule) criteriaMet() bool {
+	if m.catalyst == nil || len(m.catalyst.Criteria) == 0 {
+		return false
+	}
+	for k, expected := range m.catalyst.Criteria {
+		actual, ok := m.sensorResults[k]
+		if !ok || actual != expected {
+			return false
+		}
+	}
+	return true
 }
 
 func (m *Molecule) Phase() AtomType             { return m.phase }
@@ -203,8 +239,20 @@ func (m *Molecule) Momentum() float64 {
 	return float64(m.phaseTransitions) / float64(m.turns)
 }
 
-// Distance returns the fraction of contracts still unfilled (0.0 = all filled, 1.0 = none filled).
+// Distance returns progress toward the goal.
+// With Catalyst: fraction of unmet criteria (0.0 = all met, 1.0 = none met).
+// Without Catalyst: fraction of unfilled phases (fallback).
 func (m *Molecule) Distance() float64 {
+	if m.catalyst != nil && len(m.catalyst.Criteria) > 0 {
+		total := len(m.catalyst.Criteria)
+		met := 0
+		for k, expected := range m.catalyst.Criteria {
+			if actual, ok := m.sensorResults[k]; ok && actual == expected {
+				met++
+			}
+		}
+		return float64(total-met) / float64(total)
+	}
 	all := AllAtomTypes()
 	if len(all) == 0 {
 		return 0
