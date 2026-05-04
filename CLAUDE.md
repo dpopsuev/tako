@@ -35,7 +35,7 @@ Tako is a Factory. Tangled is the Utilities — electricity, water, railway, sec
 - **ANI** — Agent Network Interface (connect: Admission, Gate, Registry)
 - **ASI** — Agent State Interface (persist: Stateful seam, StateStore, Config, Meter). Meter tracks whatever the utility provides — CPU/mem/IO AND LLM tokens when LLM is infrastructure.
 - **AOI** — Agent Observability Interface (watch: Health events, Admin, OTel shape). Tangled emits raw signals, Tako interprets (Andon, OAE).
-- **AXI** — Agent Execution Interface (execute: Executor, Sandbox, ResourceLimit, Policy) — L0, OPTIONAL, Workstation Organ only. Policy IS Mirage.Spec. Breaches emit events, Tako's Andon interprets.
+- **AXI** — Agent Execution Interface (execute: Executor, Sandbox, ResourceLimit, Policy) — L0, OPTIONAL. Policy IS Mirage.Spec. Breaches emit events, Tako's Andon interprets.
 
 AAI defines contracts. Other families enforce at their boundary. Defense-in-depth.
 
@@ -46,9 +46,7 @@ tako/
   ├─ fab/                     ← Fab Graph + Channel (stigmergy)
   │   ├─ node/                ← Stations (StationNode), submission contracts
   │   └─ edge/                ← Assertions, matches, gates
-  ├─ instrument/              ← Contracts & composition primitives
-  │   ├─ function/            ← Function interface, Result type
-  │   └─ shell/               ← Shell contract (search/man/exec)
+  ├─ agent/organ/             ← Organ contract + Shell/Function/Result (instruments ARE organs)
   ├─ contextual/              ← Current Context assembly (NOW) — leaf
   │   └─ block/               ← Block type, scopes, assembly strategy
   ├─ memory/                  ← Saved Memory (Perennial)
@@ -60,19 +58,11 @@ tako/
   │                             Scene, Node, Renderable, Workspace, Viewport
   │                             Panel, Layout, Table, Status, List, Chart, Tree, Text, Action, Toolbar
   ├─ tangle/                  ← Tangle client port (interfaces Tako expects from Tangled) — leaf
-  ├─ workstation/             ← Pre-configured environment (exists without agent)
-  │   └─ builtin/             ← Station-level instruments (always present)
-  │       ├─ envelope/        ← Artifact lifecycle (create/claim/push/release)
-  │       └─ andon/           ← Station health state (pull/clear)
+  ├─ agent/corpus/            ← Composition root — assembles Organs, MotorBus, routing
   ├─ agent/                   ← Agent runtime
   │   ├─ corpus/              ← Agent body — assembled from AAI.Capability blueprint
-  │   ├─ organ/               ← Functional parts attached to the Corpus
-  │   │   ├─ workstation/     ← Remote connection to Station instruments (Workers only)
-  │   │   ├─ dialogue/        ← External Discourse (communicate)
-  │   │   ├─ monologue/       ← Internal Discourse (focus, pin, Topics)
-  │   │   ├─ kanban/          ← Board observer (read-only)
-  │   │   ├─ andon/           ← Health observer (read-only)
-  │   │   └─ blackboard/       ← Shared Blackboard reader (Avatar only)
+  │   ├─ organ/               ← Organ contract, Shell, Function, Result (instruments ARE organs)
+  │   │                         5 Kinds: Cognitive, Sensory, Signal, MotorRO, MotorRW
   │   └─ runtime/             ← FSM + ReAct loop
   ├─ assemble/                ← DSL compiler (Blueprint → mono-binary)
   │   ├─ parser/              ← YAML parser for 6 kinds
@@ -111,7 +101,6 @@ Agent Space is a partitioned, sandboxed region of User Space managed by Tangled 
 
 - Agent Space > Sandbox. Sandbox is one implementation strategy within Agent Space.
 - Mirage backends: Overlay (fs), Container (ns+cgroup), Virtual (Kata VM), Stub (testing)
-- Three nested lifecycles: Tangled > Agent Space > Workstation
 - AXI controls the gate. Workers have AXI. Director/Foreman/Avatar do not.
 
 ## Collective Topology (SPC-130)
@@ -132,10 +121,10 @@ Human → Avatar (co-pilot, human's presence in Agent Space)
 - Operator talks to Director only. Foreman never talks to operator.
 
 Persona → Uniform → Organs (corpus blueprint from AAI.Capability):
-- Worker: Monologue, Dialogue, Kanban, Andon, Workstation (has remote Station access)
-- Foreman: Monologue, Dialogue, Kanban, Andon (observe + communicate, no Workstation)
-- Director: Monologue, Dialogue, Kanban (Fab-level view)
-- Avatar: Monologue, Dialogue, Kanban, Andon, Blackboard (human proxy)
+- Worker: Cerebrum + Motor organs (MotorRO + MotorRW). Has instruments.
+- Foreman: Cerebrum + MotorRO only. Observe + communicate, no write organs.
+- Director: Cerebrum + MotorRO. Fab-level view.
+- Avatar: Cerebrum + MotorRO + Blackboard. Human proxy.
 
 Agents don't know about interface families (AAI/ARI/ANI/ASI/AOI/AXI) — that's Tangled plumbing.
 Uniforms are declarative (defined in Fab YAML). Personas are well-known defaults.
@@ -143,10 +132,10 @@ Uniforms are declarative (defined in Fab YAML). Personas are well-known defaults
 ## Key Concepts
 
 - **Fab Graph** — production line (fab = fabrication plant). StationNodes, edges, artifacts flow through. Kanban projects from it.
-- **Stigmergy** — coordination by doing. Services hook into manufactory/workstation/instruments. Kanban + Andon are read-only projections. Agents never write to boards.
-- **Andon** — health signaling with 4 levels (Agent, Workstation, Station, Fab). Two-pull protocol: Yellow = Foreman responds, Red = escalates. CORDON = death spiral circuit breaker (Jidoka — stop the line). Only escalates to HITL on Red timeout, not by default. (SPC-132).
+- **Stigmergy** — coordination by doing. Kanban + Andon are read-only projections. Agents never write to boards.
+- **Andon** — health signaling with 4 levels (Agent, Station, Fab, Collective). Two-pull protocol: Yellow = Foreman responds, Red = escalates. CORDON = death spiral circuit breaker (Jidoka — stop the line). Only escalates to HITL on Red timeout, not by default. (SPC-132).
 - **Three Blackboards** — same Blackboard pattern (shared knowledge structure, producers post, consumers subscribe), three domains: render.Blackboard (UI panels), service.Depo (work artifacts), discourse.Board (messages).
-- **Depo** — Blackboard for artifact Pub-Sub. Push/Pull API — same interface internal or external. Each Station gets a Shelf. Workstation reads/writes to its Shelf. Embed mode = in-memory. Connect mode = external depod service. Agent state and Artifact state have separate persistence paths — agents crash, artifacts survive.
+- **Depo** — Blackboard for artifact Pub-Sub. Push/Pull API — same interface internal or external. Each Station gets a Shelf. Embed mode = in-memory. Connect mode = external depod service. Agent state and Artifact state have separate persistence paths — agents crash, artifacts survive.
 - **Shelf** — named location within a Depo. Push(envelope) = Blackboard.Post. Pull(agentID). Watch() = Blackboard.Subscribe(). Station Shelf, Intake Shelf, Output Shelf, HITL Shelf.
 - **Kanban** — read-only projection of Depo Shelves. Kanban column = Shelf. Kanban card = Envelope. No data store — reads Depo state. Toyota mirror pattern (SPC-131).
 - **Discourse** — shared primitives (board.forum.topic.thread.message). Monologue = internal scope (focus, pin). Dialogue = external scope (communicate).
@@ -156,17 +145,17 @@ Uniforms are declarative (defined in Fab YAML). Personas are well-known defaults
 - **Memory tiers** — STM/Working (Monologue) = live context, per-session, Topics with Molecules. Depo Shelves = work artifacts on production line. LTM (Reliquary) = all artifacts (certified + draft), version-controlled mesh per agent, merged into collective mesh.
 - **Two queries** — Knowledge Query (Reliquary, certified:human only): "what do I know?" Experience Query (Monologue): "what happened this session?"
 - **Anchor weight** — gravity in the LTM graph. High anchor = gravity well, neighbors cluster, hard to evict. Low anchor = drifts, evictable. Decays on staleness. Set by human at certification.
-- **Corpus** — the agent's body, assembled from AAI.Capability blueprint. Collection of Organs. Tangled builds the Corpus, agent never self-assembles.
-- **Organ** — a functional part attached to the Corpus. Monologue, Dialogue, Kanban, Andon, Workstation, Blackboard. The Uniform declares which Organs attach.
-- **Workstation (Organ)** — remote connection to a Station's instruments. The Station has the workbench, the agent has the remote control limb. Default: one agent per station, fixed assignment (Ford alignment). Workers don't roam. If a station is overloaded, add workers there, don't move them from elsewhere.
+- **Corpus** — the agent's body (composition root). Assembles Organs, builds MotorBus, enforces RO/RW permissions. Tangled builds the Corpus, agent never self-assembles.
+- **Organ** — a functional part attached to the Corpus. 5 Kinds: Cognitive (Cerebrum), Sensory (involuntary input), Signal (involuntary output), MotorRO (voluntary read), MotorRW (voluntary write). Instruments ARE organs. Composition over permission: give the agent the organs it needs, don't restrict.
+- **Corpus.MotorBus** — routes motor events to organs, enforces RO/RW (MotorRW blocked outside ImplementTriad), emits to Signal organs as side effect. The gearbox between engine and wheels.
 - **Station knowledge** — three layers at the station, none in the instrument. Prompt templates = Ford's jigs (guide the tool). Contracts = Ford's fixtures (hold the output in shape). Instrument cache = hash-based memoization (same input → cache hit). Semantic knowledge comes from the agent's Mesh via Recollection, not from the station or instrument.
 - **Instrument cache** — hash-based only. Input signature → cached result. KISS. No Mesh, no vector search, no semantics at instrument level. Agents and instruments benefit from different things.
 - **Event-driven Needs** — ReActivity is event-driven. Agents subscribe to Blackboard services (Depo, Andon, Kanban, Discourse). Events become Needs. Needs start Molecules. The Three Blackboards ARE the delivery belt. No separate trigger mechanism.
 - **Ford divergence: Memory Disk** — Ford moved knowledge from workers into jigs because brains can't be cloned. We have both: station knowledge (jigs/fixtures/cache) AND agent knowledge (Mesh). Agent Mesh is a disk: serialize, clone, merge, fork via Dolt. sleep/ drains agent Mesh into collective Mesh (DOLT_MERGE). No knowledge lost. Agents are replaceable muscle WITH transferable memory.
 - **Avatar** — human's co-pilot in Agent Space. Renders scene (compose UI). Acts on behalf (API proxy + A2A delegation). IS the vision tap. Persists on disconnect (tmux model). TAK-SPC-1.
 - **render.Blackboard** — shared knowledge structure (Blackboard architecture, Hayes-Roth 1985). Sub-systems post Panels (Fab Map, Kanban, Andon, etc.). Avatar reads the Blackboard and composes a view. Not DOM, not Canvas — a Blackboard.
-- **ReActivity** — NOT an FSM. A reaction engine (SPC-117). Typed artifacts (Intent, Assessment, Plan, Execution, Retrospection) bond into Molecules. Agent is catalyst — reads open bonds, produces Atoms, Assert validates bonds. Back-pressure reverses flow when bonds unsatisfied. Wish seals the Molecule, closes the Topic. Prior art: CHAM (Berry & Boudol 1992), BDI (Rao & Georgeff 1995), Colored Petri Nets.
-- **Molecule** — compound of bonded Atoms within a Monologue Topic. Mass = accumulated artifacts. Depth = how far into the reaction chain. Fission = decomposition into sub-Molecules (breadth). Sealed by Wish.
+- **ReActivity** — NOT an FSM. A reaction engine (SPC-117). Reactor phases = gearbox between Cerebrum (engine) and Motor organs (wheels). Think=DISCOVER, Compose=DESIGN, Implement=BUILD, Reflect=EVALUATE. Dialectic (thesis/antithesis/synthesis) per phase = delayed neutrons (controllable reaction). Assert evaluates Criticality: Subcritical/Critical/Supercritical. Prior art: CHAM (Berry & Boudol 1992), BDI (Rao & Georgeff 1995), APF (Khatib 1986).
+- **Molecule** — compound of bonded Atoms. Nuclear reactor lifecycle: subcritical (gathering fuel) → critical (self-sustaining) → supercritical (power output) → shutdown (sealed). Reconciliation Momentum = phase_transitions / turns. Distance = unfilled contracts / total. Mass = accumulated artifacts. Sealed by Wish.
 - **Cynefin Classification** — Molecule composition determines Cynefin domain (Dave Snowden). High Recollection mass = Clear (cheap model, loose gates). High Assessment mass = Complex (Opus, strict gates). All unknowns = Chaotic (HITL). Drives Caster.Pick, Assert sensitivity, and HITL threshold automatically.
 - **Drain/Hydrate** — universal lifecycle primitive. Same mechanism for crash recovery, self-update, and federation (Embed → Switchboard live migration). StateStore is the migration wire.
 - **AuditEntry** — universal WHO/WHAT/WHICH/WHEN/WHERE/RESULT record. One struct, all 6 families. Append-only. K8s audit level pattern (TNG-SPC-1).
@@ -186,14 +175,17 @@ Complex is thin (refs + wiring + topology). Fab has the substance. Rehearsal val
 - **DAG is banned**: use "fab graph"
 - **No Ouroboros**: use "Self-Assembly" or "Autoassembler"
 - **No Cortex**: use "contextual" or "memory"
-- **No Battery (package)**: absorbed into tako/instrument/
+- **No Battery (package)**: absorbed into tako/agent/organ/
+- **No instrument/ (package)**: absorbed into tako/agent/organ/ — instruments ARE organs
+- **No workstation/ (package)**: killed — Corpus is the composition root, organs plug directly
+- **No motor/ (package)**: absorbed into agent/corpus/ — Corpus.MotorBus handles routing
 - **No FSM for ReActivity**: it's a reaction engine, not a state machine. Molecule drives the agent.
 - **No Canvas**: use "Blackboard" (render.Blackboard). Canvas is dead terminology.
 - **No compose/fold**: dead. CLI is "tako assemble". Instrument is "tako.assemble". Same API.
 - **No janitor**: use "sleep" (service/sleep/)
 - **No DOM, no Scene, no Canvas**: use "Blackboard" (render.Blackboard — shared knowledge structure for Operator + Avatar)
 - **No sandbox (as concept)**: use "Agent Space". Sandbox is one implementation strategy.
-- **No Terminal/TerminalMux**: use "Corpus" (agent body) and "Organ" (functional part). Workstation is an Organ, not a separate system.
+- **No Terminal/TerminalMux**: use "Corpus" (composition root) and "Organ" (functional part).
 - **No FAR**: use "FAR" (Federated Agent Runtime). Three letters, not four.
 - **Persona not role**: Worker/Foreman/Director/Coordinator/Consul/Avatar are Personas. Spiral Dynamics color coded (TAK-DOC-28). Uniforms are the permission sets they wear. Organs are the limbs they get. Avatar is outside the command chain (human proxy, no color).
 - **Dolt is the backend**: services talk to Dolt directly through their own interfaces. Reliquary deferred until an interface layer proves necessary.
