@@ -127,7 +127,7 @@ func instructionsForPhase(phase reactivity.AtomType) string {
 			return "BUILD: Adapt. What needs refinement based on actual results?"
 		}
 	default:
-		return "Was the need fulfilled? What is the wish?"
+		return "REFLECT: Was the need fulfilled? If YES — respond with type 'retrospection' and state the outcome. If NO — state what is still missing. Do NOT repeat actions already taken."
 	}
 }
 
