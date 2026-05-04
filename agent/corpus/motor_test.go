@@ -217,13 +217,11 @@ func TestCorpusMotorBus_HITL_Approved(t *testing.T) {
 	c.Attach(o)
 
 	sensory := cerebrum.NewChannelBus(8)
+	listener := AutoApproveHITL(sensory)
+	c.Attach(listener)
+
 	phase := func() reactivity.Triad { return reactivity.ImplementTriad }
 	bus := c.MotorBus(sensory, phase)
-
-	sensory.Send(context.Background(), cerebrum.Event{
-		Kind:   "approval.hitl",
-		Source: "human",
-	})
 
 	ctx := context.Background()
 	bus.Send(ctx, cerebrum.Event{
