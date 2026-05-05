@@ -201,6 +201,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 		slog.Int("cfg.backward_turn_limit", cb.config.BackwardTurnLimit))
 
 	history, _ := molecule.Context().([]tangle.Message)
+	var turnRecords []TurnRecord
 
 	prevTriad := molecule.CurrentTriad()
 	for turn := 0; turn < cb.budget.MaxTurns && !molecule.Sealed(); turn++ {
@@ -285,17 +286,31 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 			slog.Int("tokens_in", completion.Tokens.Input),
 			slog.Int("tokens_out", completion.Tokens.Output))
 
-		cb.emit("cerebrum.turn", map[string]string{
-			"molecule":   molecule.ID,
-			"turn":       fmt.Sprintf("%d", turn),
-			"phase":      molecule.Phase().String(),
-			"tool_calls": fmt.Sprintf("%d", len(completion.ToolCalls)),
-			"tokens_in":  fmt.Sprintf("%d", completion.Tokens.Input),
-			"tokens_out": fmt.Sprintf("%d", completion.Tokens.Output),
-			"elapsed_ms": fmt.Sprintf("%d", elapsed.Milliseconds()),
-			"momentum":   fmt.Sprintf("%.3f", molecule.Momentum()),
-			"distance":   fmt.Sprintf("%.3f", molecule.Distance()),
-		})
+		unmetCount := 0
+		if residual := molecule.Residual(); residual != nil {
+			for _, v := range residual {
+				if v > 0 {
+					unmetCount++
+				}
+			}
+		}
+		tr := TurnRecord{
+			MoleculeID:   molecule.ID,
+			Turn:         turn,
+			Phase:        molecule.Phase().String(),
+			Gear:         GearNovel,
+			Domain:       domain.String(),
+			TokensIn:     completion.Tokens.Input,
+			TokensOut:    completion.Tokens.Output,
+			ToolCalls:    len(completion.ToolCalls),
+			Distance:     molecule.Distance(),
+			DeltaDistance: molecule.DeltaDistance(),
+			Momentum:     molecule.Momentum(),
+			UnmetCount:   unmetCount,
+			ElapsedMs:    elapsed.Milliseconds(),
+		}
+		cb.emit("cerebrum.turn", tr.Labels())
+		turnRecords = append(turnRecords, tr)
 		slog.DebugContext(ctx, "cerebrum.think.response_content",
 			slog.Int("turn", turn),
 			slog.String("content", completion.Content))
@@ -435,12 +450,21 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 		slog.Bool("sealed", molecule.Sealed()),
 		slog.Int("mass", molecule.TotalMass()))
 
-	cb.emit("cerebrum.sealed", map[string]string{
-		"molecule": molecule.ID,
-		"mass":     fmt.Sprintf("%d", molecule.TotalMass()),
-		"phase":    molecule.Phase().String(),
-		"sealed":   fmt.Sprintf("%v", molecule.Sealed()),
-	})
+	summary := computeSessionSummary(molecule.ID, turnRecords, molecule)
+	cb.emit("cerebrum.session", summary.Labels())
+
+	slog.InfoContext(ctx, "cerebrum.think.session_summary",
+		slog.String("molecule", molecule.ID),
+		slog.Int("turns", summary.TotalTurns),
+		slog.Int("tokens_in", summary.TotalTokensIn),
+		slog.Int("tokens_out", summary.TotalTokensOut),
+		slog.Float64("oae", summary.OAE),
+		slog.Float64("gear_novel_pct", summary.GearNovelPct),
+		slog.Float64("gear_familiar_pct", summary.GearFamiliarPct),
+		slog.Float64("gear_reflex_pct", summary.GearReflexPct),
+		slog.Int("reflex_hits", summary.ReflexHits),
+		slog.Int64("avg_turn_ms", summary.AvgTurnMs),
+		slog.Float64("final_distance", summary.FinalDistance))
 
 	cb.molecule = molecule
 	cb.reactor.Monolog().Park()
