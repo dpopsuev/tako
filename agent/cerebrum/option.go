@@ -5,8 +5,6 @@ import (
 
 	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/agent/shell"
-	"github.com/dpopsuev/tako/ergograph"
-	"github.com/dpopsuev/tako/service/andon"
 	tangle "github.com/dpopsuev/tangle"
 )
 
@@ -72,12 +70,12 @@ func WithRecollector(r Recollector) Option {
 	return func(cb *Cerebrum) { cb.recollector = r }
 }
 
-func WithPool(pool ergograph.Ledger) Option {
-	return func(cb *Cerebrum) { cb.pool = pool }
+func WithRecorder(r Recorder) Option {
+	return func(cb *Cerebrum) { cb.recorder = r }
 }
 
-func WithAndon(signal andon.Signal) Option {
-	return func(cb *Cerebrum) { cb.andon = signal }
+func WithHalter(h Halter) Option {
+	return func(cb *Cerebrum) { cb.halter = h }
 }
 
 func WithCompactor(c Compactor) Option {

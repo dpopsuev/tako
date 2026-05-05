@@ -9,7 +9,6 @@ import (
 	"github.com/dpopsuev/tako/agent/cerebrum"
 	"github.com/dpopsuev/tako/agent/corpus"
 	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/ergograph"
 	"github.com/dpopsuev/tako/service/andon"
 	tangle "github.com/dpopsuev/tangle"
 )
@@ -118,7 +117,7 @@ func (m *Match) wirePlayer(p *MatchPlayer, completer tangle.Completer) {
 
 	sensory := cerebrum.NewChannelBus(64)
 	signal := NewFixtureSignal()
-	pool := &ergograph.StubLedger{}
+	pool := &StubRecorder{}
 
 	corp := corpus.New()
 	for _, cap := range p.View.Capabilities() {
@@ -143,8 +142,8 @@ func (m *Match) wirePlayer(p *MatchPlayer, completer tangle.Completer) {
 		cerebrum.WithSensory(sensory),
 		cerebrum.WithMotor(motorBus),
 		cerebrum.WithSignal(signal),
-		cerebrum.WithPool(pool),
-		cerebrum.WithAndon(&andon.StubSignal{}),
+		cerebrum.WithRecorder(pool),
+		cerebrum.WithHalter(&andon.StubSignal{}),
 		cerebrum.WithCompactor(cerebrum.SummaryCompactor{}),
 		cerebrum.WithBudget(cerebrum.Budget{
 			MaxTurns:    15,

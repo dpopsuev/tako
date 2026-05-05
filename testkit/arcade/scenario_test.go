@@ -15,7 +15,6 @@ import (
 	"github.com/dpopsuev/tako/agent/cerebrum"
 	"github.com/dpopsuev/tako/agent/corpus"
 	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/ergograph"
 	"github.com/dpopsuev/tako/memory"
 	"github.com/dpopsuev/tako/service/andon"
 	tangle "github.com/dpopsuev/tangle"
@@ -57,7 +56,7 @@ func newCompleter(t *testing.T, ctx context.Context) tangle.Completer {
 	return providers.NewCompleter(provider, resolved.Model, nil)
 }
 
-func sumTokens(pool *ergograph.StubLedger) (int, int) {
+func sumTokens(pool *StubRecorder) (int, int) {
 	var tokIn, tokOut int
 	for _, rec := range pool.Records() {
 		if rec.Action != "cerebrum.turn" {
@@ -127,7 +126,7 @@ func runScenario(t *testing.T, scenario Scenario, extraOpts ...cerebrum.Option) 
 
 	sensory := cerebrum.NewChannelBus(64)
 	signal := NewFixtureSignal()
-	pool := &ergograph.StubLedger{}
+	pool := &StubRecorder{}
 	cord := &andon.StubSignal{}
 
 	corp := corpus.New()
@@ -151,8 +150,8 @@ func runScenario(t *testing.T, scenario Scenario, extraOpts ...cerebrum.Option) 
 		cerebrum.WithSensory(sensory),
 		cerebrum.WithMotor(motorBus),
 		cerebrum.WithSignal(signal),
-		cerebrum.WithPool(pool),
-		cerebrum.WithAndon(cord),
+		cerebrum.WithRecorder(pool),
+		cerebrum.WithHalter(cord),
 		cerebrum.WithCompactor(cerebrum.SummaryCompactor{}),
 		cerebrum.WithBudget(cerebrum.Budget{
 			MaxTurns:    30,
@@ -311,7 +310,7 @@ func TestScenario_Fridge_WithRecollection(t *testing.T) {
 		Tier:    memory.Understanding,
 	})
 
-	recollector := cerebrum.MeshRecollector{Mesh: mesh}
+	recollector := MeshRecollector{Mesh: mesh}
 	runScenario(t, NewFridge(), cerebrum.WithRecollector(recollector))
 }
 
@@ -330,7 +329,7 @@ func TestScenario_Fridge_BookMoves(t *testing.T) {
 		),
 	)
 	sensory1 := cerebrum.NewChannelBus(64)
-	pool1 := &ergograph.StubLedger{}
+	pool1 := &StubRecorder{}
 
 	corp1 := corpus.New()
 	for _, cap := range scenario.Adventure.Capabilities() {
@@ -352,8 +351,8 @@ func TestScenario_Fridge_BookMoves(t *testing.T) {
 	cb1 = cerebrum.New(reactor1, completer,
 		cerebrum.WithSensory(sensory1),
 		cerebrum.WithMotor(motorBus1),
-		cerebrum.WithPool(pool1),
-		cerebrum.WithAndon(&andon.StubSignal{}),
+		cerebrum.WithRecorder(pool1),
+		cerebrum.WithHalter(&andon.StubSignal{}),
 		cerebrum.WithBudget(cerebrum.Budget{MaxTurns: 30, TurnTimeout: 30 * time.Second}),
 		cerebrum.WithTools(instrumentTools(scenario.Adventure)),
 		cerebrum.WithObserver(scenario.Adventure.State),
@@ -367,7 +366,7 @@ func TestScenario_Fridge_BookMoves(t *testing.T) {
 	t.Logf("Run 1: mass=%d momentum=%.3f distance=%.3f", run1Turns, m1.Momentum(), m1.Distance())
 
 	// Persist the book
-	if err := cerebrum.PersistMolecule(mesh, m1, []byte(scenario.Need)); err != nil {
+	if err := PersistMolecule(mesh, m1, []byte(scenario.Need)); err != nil {
 		t.Fatalf("PersistMolecule: %v", err)
 	}
 	t.Logf("Book persisted: %d nodes in mesh", len(mesh.Nodes()))
@@ -375,6 +374,6 @@ func TestScenario_Fridge_BookMoves(t *testing.T) {
 	// Run 2: replay — book moves loaded, should skip Think+Compose
 	t.Log("=== RUN 2: REPLAY ===")
 	scenario2 := NewFridge()
-	recollector := cerebrum.MeshRecollector{Mesh: mesh}
+	recollector := MeshRecollector{Mesh: mesh}
 	runScenario(t, scenario2, cerebrum.WithRecollector(recollector))
 }

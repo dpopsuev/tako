@@ -10,8 +10,6 @@ import (
 
 	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/agent/shell"
-	"github.com/dpopsuev/tako/ergograph"
-	"github.com/dpopsuev/tako/service/andon"
 	tangle "github.com/dpopsuev/tangle"
 )
 
@@ -26,6 +24,20 @@ var DefaultBudget = Budget{
 	MaxTurns:    100,
 	TurnTimeout: 30 * time.Second,
 	MaxTokens:   0,
+}
+
+type Record struct {
+	Action    string
+	Timestamp time.Time
+	Labels    map[string]string
+}
+
+type Recorder interface {
+	Append(record Record) error
+}
+
+type Halter interface {
+	Pull(agentID string)
 }
 
 type Cerebrum struct {
@@ -43,8 +55,8 @@ type Cerebrum struct {
 	parser        ResponseParser
 	toolDefs      []tangle.Tool
 
-	pool        ergograph.Ledger
-	andon       andon.Signal
+	recorder    Recorder
+	halter      Halter
 	assert      reactivity.Assert
 	recollector Recollector
 	compactor   Compactor
@@ -482,10 +494,10 @@ func (cb *Cerebrum) render(ctx Context) string {
 }
 
 func (cb *Cerebrum) emit(action string, labels map[string]string) {
-	if cb.pool == nil {
+	if cb.recorder == nil {
 		return
 	}
-	cb.pool.Append(ergograph.Record{
+	cb.recorder.Append(Record{
 		Action:    action,
 		Timestamp: time.Now(),
 		Labels:    labels,
@@ -493,10 +505,10 @@ func (cb *Cerebrum) emit(action string, labels map[string]string) {
 }
 
 func (cb *Cerebrum) pull(agentID string) {
-	if cb.andon == nil {
+	if cb.halter == nil {
 		return
 	}
-	cb.andon.Pull(agentID)
+	cb.halter.Pull(agentID)
 }
 
 func (cb *Cerebrum) checkCatalystDesired(m *reactivity.Molecule, toolName, result string) {
