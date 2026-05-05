@@ -9,7 +9,6 @@ import (
 	"github.com/dpopsuev/tako/agent/cerebrum"
 	"github.com/dpopsuev/tako/assemble"
 	"github.com/dpopsuev/tako/shells/code"
-	"github.com/dpopsuev/tako/testkit/arcade"
 	tangle "github.com/dpopsuev/tangle"
 )
 
@@ -93,69 +92,3 @@ func TestE2E_FixTheTest_Rehearsal(t *testing.T) {
 	t.Logf("FixTheTest: pass=%v score=%.2f elapsed=%v", metrics.Pass, metrics.Score, metrics.TimeElapsed)
 }
 
-func TestE2E_Fridge_AsRehearsal(t *testing.T) {
-	scenario := arcade.NewFridge()
-
-	completer := &scriptedCompleter{
-		turns: []tangle.Completion{
-			{
-				Content: "I'll take food from the fridge.",
-				ToolCalls: []tangle.ToolCall{
-					{ID: "c1", Name: "take", Input: json.RawMessage(`"eggs"`)},
-				},
-			},
-			{
-				Content: "Now turn on the stove.",
-				ToolCalls: []tangle.ToolCall{
-					{ID: "c2", Name: "turn_on_stove", Input: json.RawMessage(`""`)},
-				},
-			},
-			{
-				Content: "Cook the food.",
-				ToolCalls: []tangle.ToolCall{
-					{ID: "c3", Name: "cook", Input: json.RawMessage(`"eggs"`)},
-				},
-			},
-			{
-				Content: "Eat from the plate.",
-				ToolCalls: []tangle.ToolCall{
-					{ID: "c4", Name: "eat", Input: json.RawMessage(`""`)},
-				},
-			},
-			{
-				Content: `{"atoms":[{"type":"retrospection","taxonomy":"retrospection.done","content":"Fed the tako."}]}`,
-			},
-		},
-	}
-
-	bp := assemble.Blueprint{
-		Model:        "stub",
-		Capabilities: scenario.Adventure.Capabilities(),
-		Budget:       cerebrum.Budget{MaxTurns: 10, TurnTimeout: 10 * time.Second},
-	}
-	agent := assemble.Assemble(bp, completer)
-
-	gameReferee := &GameReferee{
-		IsSolved: scenario.IsSolved,
-		State:    scenario.Adventure.State,
-	}
-
-	runner, err := NewRunBuilder().
-		WithScenario(NewStubScenario("fridge", scenario.Need)).
-		WithReferee(gameReferee).
-		WithActor(agent).
-		Build()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	metrics, err := runner.Execute(ctx)
-	if err != nil {
-		t.Fatalf("Execute: %v", err)
-	}
-
-	t.Logf("Fridge as Rehearsal: pass=%v score=%.2f elapsed=%v", metrics.Pass, metrics.Score, metrics.TimeElapsed)
-}

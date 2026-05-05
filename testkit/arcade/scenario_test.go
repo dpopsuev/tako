@@ -17,6 +17,7 @@ import (
 	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/memory"
 	"github.com/dpopsuev/tako/service/andon"
+	"github.com/dpopsuev/tako/testkit/rehearsal"
 	tangle "github.com/dpopsuev/tangle"
 	"github.com/dpopsuev/tangle/arsenal"
 	"github.com/dpopsuev/tangle/providers"
@@ -113,106 +114,32 @@ func runScenario(t *testing.T, scenario Scenario, extraOpts ...cerebrum.Option) 
 	defer cancel()
 
 	completer := newCompleter(t, ctx)
+	agent := BuildArcadeAgent(scenario, completer)
+	referee := ArcadeReferee(scenario)
 
-	nav := navigatorFromEnv()
-	t.Logf("Navigator: %s", os.Getenv("TAKO_NAVIGATOR"))
-
-	reactor := reactivity.NewReactor(
-		reactivity.WithNavigator(nav),
-		reactivity.WithDirective(reactivity.ExecutionAtom,
-			reactivity.Directive("Available instruments:\n"+instrumentList(scenario.Adventure)),
-		),
-	)
-
-	sensory := cerebrum.NewChannelBus(64)
-	signal := NewFixtureSignal()
-	pool := &StubRecorder{}
-	cord := &andon.StubSignal{}
-
-	corp := corpus.New()
-	for _, cap := range scenario.Adventure.Capabilities() {
-		corp.Register(cap)
+	runner, err := rehearsal.NewRunBuilder().
+		WithScenario(rehearsal.NewStubScenario(scenario.Name, scenario.Need)).
+		WithReferee(referee).
+		WithActor(agent).
+		Build()
+	if err != nil {
+		t.Fatalf("RunBuilder: %v", err)
 	}
 
-	var cb *cerebrum.Cerebrum
-	motorBus := corp.MotorBus(sensory, signal, func() reactivity.Triad {
-		if cb == nil {
-			return reactivity.ThinkTriad
-		}
-		m := cb.Result()
-		if m == nil {
-			return reactivity.ThinkTriad
-		}
-		return m.CurrentTriad()
-	})
-
-	opts := []cerebrum.Option{
-		cerebrum.WithSensory(sensory),
-		cerebrum.WithMotor(motorBus),
-		cerebrum.WithSignal(signal),
-		cerebrum.WithRecorder(pool),
-		cerebrum.WithHalter(cord),
-		cerebrum.WithCompactor(cerebrum.SummaryCompactor{}),
-		cerebrum.WithBudget(cerebrum.Budget{
-			MaxTurns:    30,
-			TurnTimeout: 30 * time.Second,
-		}),
-		cerebrum.WithTools(instrumentTools(scenario.Adventure)),
-		cerebrum.WithObserver(scenario.Adventure.State),
-		cerebrum.WithCapabilities(scenario.Adventure.Capabilities()),
-	}
-	opts = append(opts, extraOpts...)
-
-	cb = cerebrum.New(reactor, completer, opts...)
-
-	scenario.Adventure.WithSensory(sensory)
-
-	catalyst := reactivity.Catalyst{Need: scenario.Need, Desired: scenario.Desired}
-	if err := cb.Think(ctx, catalyst); err != nil {
-		t.Fatalf("Think: %v", err)
-	}
-
-	m := cb.Result()
-
-	solved := scenario.IsSolved != nil && scenario.IsSolved(scenario.Adventure.State())
-	tokensIn, tokensOut := sumTokens(pool)
-	result := ScenarioResult{
-		Solved:        solved,
-		Turns:         m.TotalMass(),
-		TotalMass:     m.TotalMass(),
-		OptimalTurns:  scenario.OptimalTurns,
-		TokensIn:      tokensIn,
-		TokensOut:     tokensOut,
-		OptimalTokens: scenario.OptimalTurns * 1000,
+	metrics, err := runner.Execute(ctx)
+	if err != nil {
+		t.Fatalf("Execute: %v", err)
 	}
 
 	t.Logf("=== Scenario: %s ===", scenario.Name)
-	t.Logf("Solved: %v | OAE: %.1f%% | Turns: %d (optimal: %d) | Mass: %d | Tokens: %d in + %d out = %d",
-		result.Solved, result.OAE()*100, result.Turns, result.OptimalTurns, result.TotalMass,
-		result.TokensIn, result.TokensOut, result.TokensIn+result.TokensOut)
-
-	for _, at := range reactivity.AllAtomTypes() {
-		if mass := m.Mass(at); mass > 0 {
-			t.Logf("  %s: %d", at, mass)
-		}
-	}
+	t.Logf("Pass: %v | Score: %.2f | Elapsed: %v", metrics.Pass, metrics.Score, metrics.TimeElapsed)
 
 	t.Logf("Final state:")
 	for k, v := range scenario.Adventure.State() {
 		t.Logf("  %s: %v", k, v)
 	}
 
-	t.Logf("Signal events: %d", len(signal.Signals()))
-	for _, sig := range signal.Signals() {
-		t.Logf("  [%s] %s", sig.Kind, sig.Source)
-	}
-
-	t.Logf("Ergograph: %d records | Andon: %s", pool.Len(), cord.Status())
-	for _, rec := range pool.Records() {
-		t.Logf("  [%s] %v", rec.Action, rec.Labels)
-	}
-
-	if !solved {
+	if !metrics.Pass {
 		t.Logf("NOT SOLVED")
 	}
 }
