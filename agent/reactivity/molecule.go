@@ -36,7 +36,9 @@ type Molecule struct {
 	sensorResults    map[string]any
 	prevDistance      float64
 	deltaDistance     float64
-	subscribers      []func(MoleculeEvent)
+	listeners    map[string][]MoleculeListener
+	eventLog     []MoleculeEvent
+	eventLogCap  int
 }
 
 // NewMolecule creates a Molecule starting at Intent phase.
@@ -310,34 +312,75 @@ func (m *Molecule) Residual() map[string]float64 {
 	return r
 }
 
+type MoleculeListener interface {
+	Name() string
+	OnMoleculeEvent(MoleculeEvent)
+}
+
+func (m *Molecule) On(kind string, listener MoleculeListener) {
+	if m.listeners == nil {
+		m.listeners = make(map[string][]MoleculeListener)
+	}
+	m.listeners[kind] = append(m.listeners[kind], listener)
+}
+
 func (m *Molecule) Subscribe(fn func(MoleculeEvent)) {
-	m.subscribers = append(m.subscribers, fn)
+	m.On("*", listenerFunc{name: "anonymous", fn: fn})
+}
+
+func (m *Molecule) EventLog() []MoleculeEvent {
+	out := make([]MoleculeEvent, len(m.eventLog))
+	copy(out, m.eventLog)
+	return out
 }
 
 func (m *Molecule) notify(kind string, atom *Atom) {
-	if len(m.subscribers) == 0 {
-		return
-	}
 	event := MoleculeEvent{
 		Kind:       kind,
 		MoleculeID: m.ID,
 		Atom:       atom,
 		Phase:      m.phase,
 	}
-	for _, fn := range m.subscribers {
+
+	cap := m.eventLogCap
+	if cap <= 0 {
+		cap = 256
+	}
+	m.eventLog = append(m.eventLog, event)
+	if len(m.eventLog) > cap {
+		m.eventLog = m.eventLog[len(m.eventLog)-cap:]
+	}
+
+	if m.listeners == nil {
+		return
+	}
+
+	targets := m.listeners[kind]
+	targets = append(targets, m.listeners["*"]...)
+
+	for _, l := range targets {
 		func() {
 			defer func() {
 				if r := recover(); r != nil {
-					slog.Warn("molecule.subscriber_panic",
+					slog.Warn("molecule.listener_panic",
 						slog.String("molecule", m.ID),
 						slog.String("event", kind),
+						slog.String("listener", l.Name()),
 						slog.Any("panic", r))
 				}
 			}()
-			fn(event)
+			l.OnMoleculeEvent(event)
 		}()
 	}
 }
+
+type listenerFunc struct {
+	name string
+	fn   func(MoleculeEvent)
+}
+
+func (l listenerFunc) Name() string                  { return l.name }
+func (l listenerFunc) OnMoleculeEvent(e MoleculeEvent) { l.fn(e) }
 
 func (m *Molecule) Context() any            { return m.context }
 func (m *Molecule) SetContext(v any)        { m.context = v }
