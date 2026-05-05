@@ -7,17 +7,23 @@ import (
 func TestLinearNavigator(t *testing.T) {
 	m := NewMolecule("nav-1")
 	cases := []struct {
-		sealed Triad
-		want   AtomType
+		current AtomType
+		want    AtomType
 	}{
-		{ThinkTriad, ExpansionAtom},
-		{ComposeTriad, ExecutionAtom},
-		{ImplementTriad, RetrospectionAtom},
+		{IntentAtom, AssessmentAtom},
+		{AssessmentAtom, KnowledgeAtom},
+		{KnowledgeAtom, ExpansionAtom},
+		{ExpansionAtom, ReductionAtom},
+		{ReductionAtom, SelectionAtom},
+		{SelectionAtom, ExecutionAtom},
+		{ExecutionAtom, AcclimationAtom},
+		{AcclimationAtom, RefinementAtom},
+		{RefinementAtom, RetrospectionAtom},
 	}
 	for _, tc := range cases {
-		got := LinearNavigator(m, tc.sealed)
+		got := LinearNavigator(m, tc.current)
 		if got != tc.want {
-			t.Errorf("Linear(%s) = %s, want %s", tc.sealed, got, tc.want)
+			t.Errorf("Linear(%s) = %s, want %s", tc.current, got, tc.want)
 		}
 	}
 }
@@ -28,12 +34,12 @@ func TestTreeNavigator_ShortcutsOnLowDistance(t *testing.T) {
 		Desired: map[string]any{"done": true},
 	}
 	m := NewMoleculeWithCatalyst("nav-2", cat)
-	m.ReportSensor("done", true) // distance = 0, already met
+	m.ReportSensor("done", true) // distance = 0
 
-	got := TreeNavigator(m, ThinkTriad)
-	// With distance 0, should skip expansion/reduction → go straight to Selection
+	got := TreeNavigator(m, IntentAtom)
+	// After Intent with distance=0 → shortcut to Selection (skip Assessment+Knowledge+Expansion+Reduction)
 	if got != SelectionAtom {
-		t.Errorf("TreeNavigator should go to Selection when distance=0, got %s", got)
+		t.Errorf("TreeNavigator after Intent with distance=0 should go to Selection, got %s", got)
 	}
 }
 
@@ -44,13 +50,12 @@ func TestTreeNavigator_ShortcutsToExecutionWithRecollection(t *testing.T) {
 	}
 	m := NewMoleculeWithCatalyst("nav-2b", cat)
 	m.ReportSensor("done", true) // distance = 0
-	// Add recollected atoms to trigger recollection shortcut
 	m.InsertAtom(Atom{ID: "r1", Type: KnowledgeAtom, Source: Recollected, Content: []byte("known")})
 	m.InsertAtom(Atom{ID: "r2", Type: ExpansionAtom, Source: Recollected, Content: []byte("plan")})
 	m.InsertAtom(Atom{ID: "f1", Type: IntentAtom, Source: Fresh, Content: []byte("need")})
 
-	got := TreeNavigator(m, ThinkTriad)
-	// High recollection ratio + low distance → shortcut to Execution
+	got := TreeNavigator(m, IntentAtom)
+	// Recollection >30% + distance<0.3 → shortcut straight to Execution
 	if got != ExecutionAtom {
 		t.Errorf("TreeNavigator should shortcut to Execution with recollection+low distance, got %s", got)
 	}
@@ -62,42 +67,61 @@ func TestTreeNavigator_FullPathOnHighDistance(t *testing.T) {
 		Desired: map[string]any{"a": true, "b": true, "c": true, "d": true},
 	}
 	m := NewMoleculeWithCatalyst("nav-3", cat)
-	// distance = 1.0 (nothing met)
 
-	got := TreeNavigator(m, ThinkTriad)
-	// With distance 1.0, should go to Expansion (full compose path)
-	if got != ExpansionAtom {
-		t.Errorf("TreeNavigator should go to Expansion on high distance, got %s", got)
+	got := TreeNavigator(m, IntentAtom)
+	// distance=1.0 → need assessment, no shortcut
+	if got != AssessmentAtom {
+		t.Errorf("TreeNavigator after Intent with high distance should go to Assessment, got %s", got)
 	}
 }
 
-func TestTreeNavigator_SkipToExecutionAfterCompose(t *testing.T) {
+func TestTreeNavigator_SkipAfterAssessment(t *testing.T) {
 	cat := Catalyst{
-		Need:    "task with plan",
-		Desired: map[string]any{"done": true},
+		Need:    "medium task",
+		Desired: map[string]any{"done": true, "checked": true, "verified": true},
 	}
 	m := NewMoleculeWithCatalyst("nav-4", cat)
-	// Compose is done, should go to Execution
-	got := TreeNavigator(m, ComposeTriad)
-	if got != ExecutionAtom {
-		t.Errorf("after Compose, should go to Execution, got %s", got)
+	m.ReportSensor("done", true)     // 1 of 3 met
+	m.ReportSensor("checked", true)  // 2 of 3 met → distance = 0.33
+
+	got := TreeNavigator(m, AssessmentAtom)
+	// distance=0.33 < 0.5 → skip to Selection
+	if got != SelectionAtom {
+		t.Errorf("TreeNavigator after Assessment with distance=0.33 should skip to Selection, got %s", got)
 	}
 }
 
-func TestTreeNavigator_ReflectAlwaysGoesToRetrospection(t *testing.T) {
+func TestTreeNavigator_SelectionAlwaysToExecution(t *testing.T) {
 	m := NewMolecule("nav-5")
-	got := TreeNavigator(m, ImplementTriad)
+	got := TreeNavigator(m, SelectionAtom)
+	if got != ExecutionAtom {
+		t.Errorf("after Selection should always go to Execution, got %s", got)
+	}
+}
+
+func TestTreeNavigator_ExecutionAlwaysToAcclimation(t *testing.T) {
+	m := NewMolecule("nav-6")
+	got := TreeNavigator(m, ExecutionAtom)
+	if got != AcclimationAtom {
+		t.Errorf("after Execution should go to Acclimation, got %s", got)
+	}
+}
+
+func TestTreeNavigator_AcclimationSkipsRefinementOnZeroDistance(t *testing.T) {
+	cat := Catalyst{Desired: map[string]any{"done": true}}
+	m := NewMoleculeWithCatalyst("nav-7", cat)
+	m.ReportSensor("done", true) // distance = 0
+
+	got := TreeNavigator(m, AcclimationAtom)
 	if got != RetrospectionAtom {
-		t.Errorf("after Implement, should go to Retrospection, got %s", got)
+		t.Errorf("after Acclimation with distance=0 should skip to Retrospection, got %s", got)
 	}
 }
 
 func TestNavigatorOnTriadReactor_ViaCore(t *testing.T) {
-	// Use Core to verify Navigator is called — Core walks through triads properly
-	coreLinear := NewReactor() // default = LinearNavigator
-	m := NewMolecule("nav-6")
+	coreLinear := NewReactor()
+	m := NewMolecule("nav-core-1")
 
-	// Add atoms to fill Think triad
 	coreLinear.Add(m, Atom{ID: "a1", Type: IntentAtom, Taxonomy: "intent.need", Content: []byte("test")})
 	coreLinear.Add(m, Atom{ID: "a2", Type: AssessmentAtom, Taxonomy: "assessment.x", Content: []byte("x")})
 	coreLinear.Add(m, Atom{ID: "a3", Type: KnowledgeAtom, Taxonomy: "knowledge.x", Content: []byte("x")})
@@ -108,23 +132,27 @@ func TestNavigatorOnTriadReactor_ViaCore(t *testing.T) {
 	if m.Phase() != ExpansionAtom {
 		t.Errorf("LinearNavigator: after Think sealed, phase should be Expansion, got %s", m.Phase())
 	}
+}
 
-	// Now test with TreeNavigator
+func TestTreeNavigatorOnCore_ShortcutsAfterIntent(t *testing.T) {
 	coreTree := NewReactor(WithNavigator(TreeNavigator))
-	m2 := NewMoleculeWithCatalyst("nav-7", Catalyst{
-		Need:    "complex",
-		Desired: map[string]any{"a": true, "b": true, "c": true, "d": true},
-	})
+	// Desired has 4 dimensions, 3 already met → distance = 0.25 (< 0.3)
+	cat := Catalyst{Need: "mostly known", Desired: map[string]any{"a": true, "b": true, "c": true, "d": true}}
+	m := NewMoleculeWithCatalyst("nav-core-2", cat)
+	m.ReportSensor("a", true)
+	m.ReportSensor("b", true)
+	m.ReportSensor("c", true)
+	// d not met → distance = 0.25, NOT sealed
+	// Add recollected atoms for high recollection ratio
+	m.InsertAtom(Atom{ID: "r1", Type: KnowledgeAtom, Source: Recollected, Content: []byte("known")})
+	m.InsertAtom(Atom{ID: "r2", Type: ExpansionAtom, Source: Recollected, Content: []byte("plan")})
+	m.InsertAtom(Atom{ID: "r3", Type: SelectionAtom, Source: Recollected, Content: []byte("commit")})
 
-	coreTree.Add(m2, Atom{ID: "b1", Type: IntentAtom, Taxonomy: "intent.need", Content: []byte("test")})
-	coreTree.Add(m2, Atom{ID: "b2", Type: AssessmentAtom, Taxonomy: "assessment.x", Content: []byte("x")})
-	coreTree.Add(m2, Atom{ID: "b3", Type: KnowledgeAtom, Taxonomy: "knowledge.x", Content: []byte("x")})
+	coreTree.Add(m, Atom{ID: "a1", Type: IntentAtom, Taxonomy: "intent.need", Content: []byte("test")})
 
-	if !m2.TriadSealed(ThinkTriad) {
-		t.Fatal("Think triad should be sealed")
-	}
-	// distance=1.0 (nothing met) → TreeNavigator should go to Expansion (full path)
-	if m2.Phase() != ExpansionAtom {
-		t.Errorf("TreeNavigator with high distance: after Think sealed, phase should be Expansion, got %s", m2.Phase())
+	// distance=0.25 + recollection=3/4=0.75 → should shortcut past Think to Execution
+	if m.Phase().Triad == ThinkTriad {
+		t.Errorf("TreeNavigator should have skipped Think triad, still at %s (distance=%.2f, recollection=%d/%d)",
+			m.Phase(), m.Distance(), m.SourceMass(Recollected), m.TotalMass())
 	}
 }

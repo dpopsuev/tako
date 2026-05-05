@@ -64,9 +64,18 @@ func (t *TriadReactor) React(m *Molecule, atom Atom) (YieldKind, Yield) {
 	node := t.Node(atom.Type.Position)
 	node.React(m, atom)
 
+	// After each node, ask the Navigator where to go next.
+	// If Navigator says skip ahead (to a different Triad), seal this Triad and jump.
+	next := t.navigator(m, atom.Type)
+	if next.Triad != t.triad {
+		m.SealTriad(t.triad)
+		m.SetPhase(next)
+		return Pass, Yield{}
+	}
+
+	// Navigator says stay in this Triad — advance normally.
 	if m.mass[t.phase(SynthesisPosition)] > 0 {
 		m.SealTriad(t.triad)
-		next := t.navigator(m, t.triad)
 		m.SetPhase(next)
 		return Pass, Yield{}
 	}
