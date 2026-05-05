@@ -88,7 +88,11 @@ func defaultBlueprint() assemble.Blueprint {
 
 func newAgentCompleter(_ context.Context, providerName, model string) (tangle.Completer, error) {
 	if providerName == "" {
-		providerName = detectProvider()
+		var err error
+		providerName, err = detectProvider()
+		if err != nil {
+			return nil, err
+		}
 	}
 	if model == "" {
 		model = "claude-sonnet-4-6"
@@ -106,18 +110,18 @@ func newAgentCompleter(_ context.Context, providerName, model string) (tangle.Co
 	return providers.NewCompleter(p, model, nil), nil
 }
 
-func detectProvider() string {
+func detectProvider() (string, error) {
 	if os.Getenv("ANTHROPIC_API_KEY") != "" {
-		return "anthropic-api"
+		return "anthropic-api", nil
 	}
 	if os.Getenv("CLOUD_ML_REGION") != "" && os.Getenv("ANTHROPIC_VERTEX_PROJECT_ID") != "" {
-		return "vertex-ai"
+		return "vertex-ai", nil
 	}
 	if os.Getenv("GOOGLE_API_KEY") != "" {
-		return "gemini-api"
+		return "gemini-api", nil
 	}
 	if os.Getenv("OPENROUTER_API_KEY") != "" {
-		return "openrouter"
+		return "openrouter", nil
 	}
-	return "anthropic-api"
+	return "", fmt.Errorf("no LLM provider configured: set --provider flag, or set one of: ANTHROPIC_API_KEY, CLOUD_ML_REGION+ANTHROPIC_VERTEX_PROJECT_ID, GOOGLE_API_KEY, OPENROUTER_API_KEY")
 }
