@@ -39,9 +39,9 @@ func CatalystFromTask(card TaskCard) reactivity.Catalyst {
 	criteria := criteriaFromCard(card)
 
 	return reactivity.Catalyst{
-		Need:     need.String(),
-		Criteria: criteria,
-		Trust:    trust,
+		Need:    need.String(),
+		Desired: criteria,
+		Trust:   trust,
 	}
 }
 

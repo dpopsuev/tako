@@ -267,6 +267,6 @@ func NewTakoTrail(ctx context.Context, sensory cerebrum.Bus) Scenario {
 		IsSolved: func(s map[string]any) bool {
 			return s["arrived"] == true && s["alive"] == true
 		},
-		Criteria: map[string]any{"arrived": true},
+		Desired: map[string]any{"arrived": true},
 	}
 }

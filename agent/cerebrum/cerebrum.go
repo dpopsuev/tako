@@ -130,7 +130,7 @@ func (cb *Cerebrum) Run(ctx context.Context) {
 func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) error {
 	need := []byte(catalyst.Need)
 	var molecule *reactivity.Molecule
-	if len(catalyst.Criteria) > 0 {
+	if len(catalyst.Desired) > 0 {
 		molecule = reactivity.NewMoleculeWithCatalyst(
 			fmt.Sprintf("mol-%d", time.Now().UnixNano()), catalyst)
 		cb.reactor.Add(molecule, reactivity.Atom{
@@ -320,7 +320,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 					"result_len": fmt.Sprintf("%d", len(result)),
 				})
 				if molecule.Catalyst() != nil {
-					cb.checkCatalystCriteria(molecule, tc.Name, result)
+					cb.checkCatalystDesired(molecule, tc.Name, result)
 				}
 			}
 			toolCancel()
@@ -455,12 +455,12 @@ func (cb *Cerebrum) pull(agentID string) {
 	cb.andon.Pull(agentID)
 }
 
-func (cb *Cerebrum) checkCatalystCriteria(m *reactivity.Molecule, toolName, result string) {
+func (cb *Cerebrum) checkCatalystDesired(m *reactivity.Molecule, toolName, result string) {
 	cat := m.Catalyst()
 	if cat == nil {
 		return
 	}
-	for key, expected := range cat.Criteria {
+	for key, expected := range cat.Desired {
 		switch v := expected.(type) {
 		case bool:
 			lower := strings.ToLower(result)

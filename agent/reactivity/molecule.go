@@ -64,10 +64,10 @@ func (m *Molecule) ReportSensor(key string, value any) {
 }
 
 func (m *Molecule) criteriaMet() bool {
-	if m.catalyst == nil || len(m.catalyst.Criteria) == 0 {
+	if m.catalyst == nil || len(m.catalyst.Desired) == 0 {
 		return false
 	}
-	for k, expected := range m.catalyst.Criteria {
+	for k, expected := range m.catalyst.Desired {
 		actual, ok := m.sensorResults[k]
 		if !ok || actual != expected {
 			return false
@@ -239,14 +239,14 @@ func (m *Molecule) Momentum() float64 {
 	return float64(m.phaseTransitions) / float64(m.turns)
 }
 
-// Distance returns progress toward the goal.
-// With Catalyst: fraction of unmet criteria (0.0 = all met, 1.0 = none met).
+// Distance returns progress toward the Desired state.
+// With Catalyst: vector distance (0.0 = at Desired, 1.0 = at Current).
 // Without Catalyst: fraction of unfilled phases (fallback).
 func (m *Molecule) Distance() float64 {
-	if m.catalyst != nil && len(m.catalyst.Criteria) > 0 {
-		total := len(m.catalyst.Criteria)
+	if m.catalyst != nil && len(m.catalyst.Desired) > 0 {
+		total := len(m.catalyst.Desired)
 		met := 0
-		for k, expected := range m.catalyst.Criteria {
+		for k, expected := range m.catalyst.Desired {
 			if actual, ok := m.sensorResults[k]; ok && actual == expected {
 				met++
 			}

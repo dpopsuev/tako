@@ -130,7 +130,7 @@ Use check_status to confirm both build_clean and tests_pass are true.`,
 		Adventure:    adv,
 		IsSolved:     func(s map[string]any) bool { return s["build_clean"] == true && s["tests_pass"] == true },
 		OptimalTurns: 5,
-		Criteria:     map[string]any{"build_clean": true, "tests_pass": true},
+		Desired:     map[string]any{"build_clean": true, "tests_pass": true},
 	}
 }
 

@@ -199,6 +199,6 @@ func NewPastaBolognese(ctx context.Context, sensory cerebrum.Bus) Scenario {
 		Need: "Cook pasta bolognese from scratch. Check the pantry and fridge. The proper order: chop soffritto, saute it, brown meat, add tomatoes and let sauce simmer. While the sauce simmers, boil water and cook pasta. Grate parmesan while you wait. Drain pasta when al dente. Combine pasta with sauce, plate with parmesan, eat. Things cook in real time and you will receive notifications when they are ready. The stove must be on before any cooking. Use your time wisely while things simmer. Use check_served to verify completion.",
 		Adventure: adv,
 		IsSolved:  func(s map[string]any) bool { return s["eaten"] == true },
-		Criteria:  map[string]any{"served": true},
+		Desired:  map[string]any{"served": true},
 	}
 }

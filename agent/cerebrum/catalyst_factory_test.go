@@ -19,10 +19,10 @@ func TestCatalystFromTask_BasicMapping(t *testing.T) {
 	if cat.Need == "" {
 		t.Error("need should not be empty")
 	}
-	if cat.Criteria["tests_pass"] != true {
+	if cat.Desired["tests_pass"] != true {
 		t.Error("default criteria should include tests_pass")
 	}
-	if cat.Criteria["build_clean"] != true {
+	if cat.Desired["build_clean"] != true {
 		t.Error("default criteria should include build_clean")
 	}
 }
@@ -46,7 +46,7 @@ func TestCatalystFromTask_TrustMapping(t *testing.T) {
 	}
 }
 
-func TestCatalystFromTask_AcceptanceCriteria(t *testing.T) {
+func TestCatalystFromTask_AcceptanceDesired(t *testing.T) {
 	card := TaskCard{
 		Title:    "Deploy service",
 		Priority: "critical",
@@ -56,13 +56,13 @@ func TestCatalystFromTask_AcceptanceCriteria(t *testing.T) {
 	}
 	cat := CatalystFromTask(card)
 
-	if len(cat.Criteria) != 2 {
-		t.Fatalf("expected 2 criteria from acceptance, got %d: %v", len(cat.Criteria), cat.Criteria)
+	if len(cat.Desired) != 2 {
+		t.Fatalf("expected 2 criteria from acceptance, got %d: %v", len(cat.Desired), cat.Desired)
 	}
-	if _, ok := cat.Criteria["tests_pass"]; !ok {
+	if _, ok := cat.Desired["tests_pass"]; !ok {
 		t.Error("missing 'tests_pass' criterion")
 	}
-	if _, ok := cat.Criteria["no_regressions"]; !ok {
+	if _, ok := cat.Desired["no_regressions"]; !ok {
 		t.Error("missing 'no_regressions' criterion")
 	}
 }

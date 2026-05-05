@@ -2,8 +2,8 @@ package reactivity
 
 import "testing"
 
-func TestCatalyst_SealOnCriteriaMatch(t *testing.T) {
-	catalyst := Catalyst{Need: "eat food", Criteria: map[string]any{"hungry": false}}
+func TestCatalyst_SealOnDesiredMatch(t *testing.T) {
+	catalyst := Catalyst{Need: "eat food", Desired: map[string]any{"hungry": false}}
 	m := NewMoleculeWithCatalyst("mol-1", catalyst)
 
 	m.InsertAtom(Atom{ID: "a1", Type: IntentAtom, Taxonomy: "intent.need", Content: []byte("eat food")})
@@ -25,7 +25,7 @@ func TestCatalyst_SealOnCriteriaMatch(t *testing.T) {
 func TestCatalyst_DistanceFromSensors(t *testing.T) {
 	catalyst := Catalyst{
 		Need:     "eat",
-		Criteria: map[string]any{"hungry": false, "plate": ""},
+		Desired: map[string]any{"hungry": false, "plate": ""},
 	}
 	m := NewMoleculeWithCatalyst("mol-2", catalyst)
 
@@ -47,7 +47,7 @@ func TestCatalyst_DistanceFromSensors(t *testing.T) {
 	}
 }
 
-func TestCatalyst_NoCriteria_DistanceFallsBackToPhases(t *testing.T) {
+func TestCatalyst_NoDesired_DistanceFallsBackToPhases(t *testing.T) {
 	m := NewMolecule("mol-3")
 
 	d := m.Distance()

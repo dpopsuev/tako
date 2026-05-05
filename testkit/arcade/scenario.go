@@ -13,7 +13,7 @@ type Scenario struct {
 	Adventure    *Game
 	IsSolved     func(state map[string]any) bool
 	OptimalTurns int
-	Criteria     map[string]any
+	Desired      map[string]any
 }
 
 type ScenarioResult struct {
@@ -122,7 +122,7 @@ func NewFridge() Scenario {
 		Adventure:    adv,
 		IsSolved:     func(s map[string]any) bool { return s["hungry"] == false },
 		OptimalTurns: 5,
-		Criteria:     map[string]any{"hungry": false},
+		Desired:     map[string]any{"hungry": false},
 	}
 }
 
@@ -209,6 +209,6 @@ func NewDirtyRoom() Scenario {
 		Adventure:    adv,
 		IsSolved:     func(s map[string]any) bool { return s["cleaned"] == true },
 		OptimalTurns: 6,
-		Criteria:     map[string]any{"cleaned": true},
+		Desired:     map[string]any{"cleaned": true},
 	}
 }

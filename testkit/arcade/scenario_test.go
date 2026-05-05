@@ -151,7 +151,7 @@ func runScenario(t *testing.T, scenario Scenario, extraOpts ...cerebrum.Option) 
 	scenario.Adventure.WithSensory(sensory)
 
 	need := scenario.Need + "\n\nCurrent environment: " + scenario.Adventure.Observe()
-	catalyst := reactivity.Catalyst{Need: need, Criteria: scenario.Criteria}
+	catalyst := reactivity.Catalyst{Need: need, Desired: scenario.Desired}
 	if err := cb.Think(ctx, catalyst); err != nil {
 		t.Fatalf("Think: %v", err)
 	}

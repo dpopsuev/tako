@@ -225,6 +225,6 @@ func NewHuntTheTako() Scenario {
 			"Use check_caught to verify when the Tako is caught.",
 		Adventure: adv,
 		IsSolved:  func(s map[string]any) bool { return s["tako_dead"] == true },
-		Criteria:  map[string]any{"caught": true},
+		Desired:  map[string]any{"caught": true},
 	}
 }

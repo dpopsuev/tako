@@ -231,6 +231,6 @@ func NewTakoyaki(ctx context.Context, sensory cerebrum.Bus) Scenario {
 			target, _ := s["orders_target"].(int)
 			return served >= target
 		},
-		Criteria: map[string]any{"complete": true},
+		Desired: map[string]any{"complete": true},
 	}
 }

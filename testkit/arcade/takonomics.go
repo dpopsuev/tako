@@ -222,6 +222,6 @@ func NewTakonomics() Scenario {
 			"Survive all 5 seasons with people alive and grain remaining. Use check_prosperity to verify.",
 		Adventure: adv,
 		IsSolved:  func(s map[string]any) bool { return s["won"] == true },
-		Criteria:  map[string]any{"prosperous": true},
+		Desired:  map[string]any{"prosperous": true},
 	}
 }

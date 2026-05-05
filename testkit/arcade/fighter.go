@@ -153,12 +153,12 @@ func NewTakoFighterMatch() *Match {
 
 	match.AddPlayer("fighter_1", p1View, reactivity.Catalyst{
 		Need:     "You are Player 1 in a fighting game. Each round, choose attack, defend, or special. Attack beats special, special beats defend, defend beats attack. Check your HP with p1_check_hp. Reduce your opponent's HP to 0 to win.",
-		Criteria: map[string]any{"winner": true},
+		Desired: map[string]any{"winner": true},
 	})
 
 	match.AddPlayer("fighter_2", p2View, reactivity.Catalyst{
 		Need:     "You are Player 2 in a fighting game. Each round, choose attack, defend, or special. Attack beats special, special beats defend, defend beats attack. Check your HP with p2_check_hp. Reduce your opponent's HP to 0 to win.",
-		Criteria: map[string]any{"winner": true},
+		Desired: map[string]any{"winner": true},
 	})
 
 	return match

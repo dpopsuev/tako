@@ -250,6 +250,6 @@ func NewTork() Scenario {
 		Need:      "You are in a dungeon entrance. Explore the rooms, find items, solve puzzles, and retrieve the hidden treasure. Some doors are locked and some rooms are dark. Use check_escaped to verify when you have won.",
 		Adventure: adv,
 		IsSolved:  func(s map[string]any) bool { return s["won"] == true },
-		Criteria:  map[string]any{"escaped": true},
+		Desired:  map[string]any{"escaped": true},
 	}
 }
