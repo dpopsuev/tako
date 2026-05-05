@@ -59,6 +59,18 @@ func (v *PlayerView) Exec(ctx context.Context, name string, input json.RawMessag
 	return v.game.Exec(ctx, name, input)
 }
 
+// Capabilities returns the filtered subset as Capabilities.
+func (v *PlayerView) Capabilities() []shell.Capability {
+	all := v.game.Capabilities()
+	var filtered []shell.Capability
+	for _, cap := range all {
+		if v.has(cap.Name) {
+			filtered = append(filtered, cap)
+		}
+	}
+	return filtered
+}
+
 func (v *PlayerView) has(name string) bool {
 	for _, n := range v.instruments {
 		if n == name {

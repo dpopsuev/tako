@@ -194,6 +194,37 @@ func extractInput(raw json.RawMessage) string {
 	return string(raw)
 }
 
+// Capabilities returns all instruments as Capabilities.
+// The unified path — Corpus.Register each one directly.
+func (a *Game) Capabilities() []shell.Capability {
+	caps := make([]shell.Capability, 0, len(a.instruments))
+	for _, name := range a.Names() {
+		inst := a.instruments[name]
+		fn := a.fns[name]
+		risk := inst.risk
+		if risk == 0 && inst.mode == shell.WriteAction {
+			risk = 0.5
+		}
+		caps = append(caps, shell.Capability{
+			Name:        inst.name,
+			Description: inst.description,
+			Schema:      json.RawMessage(`{"type":"string"}`),
+			Mode:        inst.mode,
+			Risk:        risk,
+			Approval:    inst.approval,
+			Source:      shell.Environment,
+			Execute: func(ctx context.Context, input json.RawMessage) (shell.Result, error) {
+				a.mu.Lock()
+				defer a.mu.Unlock()
+				s := extractInput(input)
+				result := fn(a.state, s)
+				return shell.TextResult(result), nil
+			},
+		})
+	}
+	return caps
+}
+
 func (a *Game) State() map[string]any {
 	a.mu.Lock()
 	defer a.mu.Unlock()

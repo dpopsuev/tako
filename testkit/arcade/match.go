@@ -121,7 +121,9 @@ func (m *Match) wirePlayer(p *MatchPlayer, completer tangle.Completer) {
 	pool := &ergograph.StubLedger{}
 
 	corp := corpus.New()
-	corp.AttachShell(p.View)
+	for _, cap := range p.View.Capabilities() {
+		corp.Register(cap)
+	}
 
 	var cb *cerebrum.Cerebrum
 	motorBus := corp.MotorBus(sensory, signal, func() reactivity.Triad {

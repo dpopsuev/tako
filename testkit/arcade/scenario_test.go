@@ -117,7 +117,9 @@ func runScenario(t *testing.T, scenario Scenario, extraOpts ...cerebrum.Option) 
 	cord := &andon.StubSignal{}
 
 	corp := corpus.New()
-	corp.AttachShell(scenario.Adventure)
+	for _, cap := range scenario.Adventure.Capabilities() {
+		corp.Register(cap)
+	}
 
 	var cb *cerebrum.Cerebrum
 	motorBus := corp.MotorBus(sensory, signal, func() reactivity.Triad {
@@ -315,7 +317,9 @@ func TestScenario_Fridge_BookMoves(t *testing.T) {
 	pool1 := &ergograph.StubLedger{}
 
 	corp1 := corpus.New()
-	corp1.AttachShell(scenario.Adventure)
+	for _, cap := range scenario.Adventure.Capabilities() {
+		corp1.Register(cap)
+	}
 
 	var cb1 *cerebrum.Cerebrum
 	motorBus1 := corp1.MotorBus(sensory1, NewFixtureSignal(), func() reactivity.Triad {
