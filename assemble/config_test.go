@@ -76,6 +76,38 @@ func TestBlueprintConfig_ToBlueprint(t *testing.T) {
 	}
 }
 
+func TestLoadBlueprint_StoredFiles(t *testing.T) {
+	files := []struct {
+		path      string
+		model     string
+		minTurns  int
+	}{
+		{"../blueprints/code.yaml", "claude-sonnet-4-6", 30},
+		{"../blueprints/explore.yaml", "claude-haiku-4-5-20251001", 10},
+		{"../blueprints/plan.yaml", "claude-sonnet-4-6", 15},
+		{"../blueprints/general.yaml", "claude-sonnet-4-6", 20},
+	}
+
+	for _, f := range files {
+		t.Run(filepath.Base(f.path), func(t *testing.T) {
+			cfg, err := LoadBlueprint(f.path)
+			if err != nil {
+				t.Fatalf("LoadBlueprint(%s): %v", f.path, err)
+			}
+			if cfg.Model != f.model {
+				t.Errorf("model: got %s, want %s", cfg.Model, f.model)
+			}
+			if cfg.Budget.MaxTurns != f.minTurns {
+				t.Errorf("max_turns: got %d, want %d", cfg.Budget.MaxTurns, f.minTurns)
+			}
+			bp := cfg.ToBlueprint()
+			if len(bp.Capabilities) < 10 {
+				t.Errorf("capabilities: got %d, want 10+", len(bp.Capabilities))
+			}
+		})
+	}
+}
+
 func TestBlueprintConfig_Defaults(t *testing.T) {
 	cfg := BlueprintConfig{
 		Model:        "test",

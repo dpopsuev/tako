@@ -1,0 +1,9 @@
+model: claude-haiku-4-5-20251001
+capabilities:
+  - code
+budget:
+  max_turns: 10
+  turn_timeout: "15s"
+config:
+  distance_close: 0.3
+  distance_mid: 0.5

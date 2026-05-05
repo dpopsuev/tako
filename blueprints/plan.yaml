@@ -1,0 +1,9 @@
+model: claude-sonnet-4-6
+capabilities:
+  - code
+budget:
+  max_turns: 15
+  turn_timeout: "30s"
+config:
+  distance_close: 0.4
+  distance_mid: 0.6
