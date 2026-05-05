@@ -29,6 +29,7 @@ type Runner struct {
 	actorFactory ActorFactory
 	sandbox      Sandbox
 	setup        []SetupOption
+	workspace    string
 	log          *slog.Logger
 }
 
@@ -38,11 +39,15 @@ func (r *Runner) Execute(ctx context.Context) (*RunMetrics, error) {
 		log = slog.Default()
 	}
 
-	workspace, err := os.MkdirTemp("", "rehearsal-"+r.scenario.ID()+"-")
-	if err != nil {
-		return nil, fmt.Errorf("rehearsal: create workspace: %w", err)
+	workspace := r.workspace
+	if workspace == "" {
+		var err error
+		workspace, err = os.MkdirTemp("", "rehearsal-"+r.scenario.ID()+"-")
+		if err != nil {
+			return nil, fmt.Errorf("rehearsal: create workspace: %w", err)
+		}
+		defer os.RemoveAll(workspace)
 	}
-	defer os.RemoveAll(workspace)
 
 	if r.sandbox != nil {
 		handle, err := r.sandbox.Create(ctx, "none")
@@ -132,6 +137,7 @@ type RunBuilder struct {
 	actorFactory ActorFactory
 	sandbox      Sandbox
 	setup        []SetupOption
+	workspace    string
 	log          *slog.Logger
 }
 
@@ -145,6 +151,7 @@ func (b *RunBuilder) WithOperator(o Operator) *RunBuilder     { b.operator = o; 
 func (b *RunBuilder) WithActor(a ActorFunc) *RunBuilder       { b.actor = a; return b }
 func (b *RunBuilder) WithActorFactory(f ActorFactory) *RunBuilder { b.actorFactory = f; return b }
 func (b *RunBuilder) WithSandbox(s Sandbox) *RunBuilder       { b.sandbox = s; return b }
+func (b *RunBuilder) WithWorkspace(path string) *RunBuilder    { b.workspace = path; return b }
 func (b *RunBuilder) WithSetup(opts ...SetupOption) *RunBuilder { b.setup = opts; return b }
 func (b *RunBuilder) WithLogger(l *slog.Logger) *RunBuilder   { b.log = l; return b }
 
@@ -166,6 +173,7 @@ func (b *RunBuilder) Build() (*Runner, error) {
 		actorFactory: b.actorFactory,
 		sandbox:      b.sandbox,
 		setup:        b.setup,
+		workspace:    b.workspace,
 		log:          b.log,
 	}, nil
 }
