@@ -1,5 +1,7 @@
 package reactivity
 
+import "log/slog"
+
 // Navigator decides which Sephirah the Molecule flows to next
 // after a Triad seals. The Tree of Life has 22 valid paths —
 // the Navigator picks which one to take from the current node.
@@ -7,62 +9,84 @@ type Navigator func(m *Molecule, sealed Triad) AtomType
 
 // LinearNavigator always follows the fixed sequence:
 // Think → Compose → Implement → Reflect.
-// This is the current default behavior.
-var LinearNavigator Navigator = func(_ *Molecule, sealed Triad) AtomType {
+var LinearNavigator Navigator = func(m *Molecule, sealed Triad) AtomType {
+	var next AtomType
 	switch sealed {
 	case ThinkTriad:
-		return ExpansionAtom
+		next = ExpansionAtom
 	case ComposeTriad:
-		return ExecutionAtom
+		next = ExecutionAtom
 	case ImplementTriad:
-		return RetrospectionAtom
+		next = RetrospectionAtom
 	default:
-		return RetrospectionAtom
+		next = RetrospectionAtom
 	}
+	slog.Info("navigator.decision",
+		slog.String("navigator", "linear"),
+		slog.String("sealed", sealed.String()),
+		slog.String("next", next.String()),
+		slog.String("molecule", m.ID))
+	return next
 }
 
 // TreeNavigator uses the Molecule's distance to Desired state
 // to select paths on the Tree of Life. Short distance = shortcuts.
 // Long distance = full deliberation.
-//
-// Paths (Sephirot → Sephirot):
-//   Think sealed:
-//     distance < 0.3 → Execution (shortcut: plan is known)
-//     distance < 0.6 → Selection (skip expand/reduce, commit directly)
-//     distance >= 0.6 → Expansion (full compose path)
-//   Compose sealed:
-//     always → Execution (plan is made, execute it)
-//   Implement sealed:
-//     always → Retrospection (reflect on results)
 var TreeNavigator Navigator = func(m *Molecule, sealed Triad) AtomType {
+	d := m.Distance()
+	recollected := m.SourceMass(Recollected)
+	total := m.TotalMass()
+	ratio := float64(0)
+	if total > 0 {
+		ratio = float64(recollected) / float64(total)
+	}
+	momentum := m.Momentum()
+	turns := m.Turns()
+
+	var next AtomType
+	var reason string
+
 	switch sealed {
 	case ThinkTriad:
-		d := m.Distance()
-		recollected := m.SourceMass(Recollected)
-		total := m.TotalMass()
-
-		// High recollection ratio + low distance = known territory
-		if total > 0 && float64(recollected)/float64(total) > 0.3 && d < 0.3 {
-			return ExecutionAtom
+		if ratio > 0.3 && d < 0.3 {
+			next = ExecutionAtom
+			reason = "recollection>0.3 + distance<0.3: known territory, skip to execution"
+		} else if d < 0.3 {
+			next = SelectionAtom
+			reason = "distance<0.3: close to goal, skip expand/reduce"
+		} else if d < 0.6 {
+			next = SelectionAtom
+			reason = "distance<0.6: moderate gap, skip expand/reduce"
+		} else {
+			next = ExpansionAtom
+			reason = "distance>=0.6: far from goal, full compose path"
 		}
-		// Low distance = close to goal, skip deliberation
-		if d < 0.3 {
-			return SelectionAtom
-		}
-		// Medium distance = need a plan but not deep exploration
-		if d < 0.6 {
-			return SelectionAtom
-		}
-		// High distance = full compose path
-		return ExpansionAtom
 
 	case ComposeTriad:
-		return ExecutionAtom
+		next = ExecutionAtom
+		reason = "compose sealed: execute the plan"
 
 	case ImplementTriad:
-		return RetrospectionAtom
+		next = RetrospectionAtom
+		reason = "implement sealed: reflect on results"
 
 	default:
-		return RetrospectionAtom
+		next = RetrospectionAtom
+		reason = "default: retrospection"
 	}
+
+	slog.Info("navigator.decision",
+		slog.String("navigator", "tree"),
+		slog.String("sealed", sealed.String()),
+		slog.String("next", next.String()),
+		slog.Float64("distance", d),
+		slog.Float64("recollection_ratio", ratio),
+		slog.Float64("momentum", momentum),
+		slog.Int("turns", turns),
+		slog.Int("mass", total),
+		slog.Int("recollected", recollected),
+		slog.String("reason", reason),
+		slog.String("molecule", m.ID))
+
+	return next
 }
