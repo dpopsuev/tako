@@ -38,6 +38,8 @@ func main() {
 
 	var err error
 	switch os.Args[1] {
+	case "agent":
+		err = agentCmd(os.Args[2:])
 	case "run":
 		err = runCmd(os.Args[2:])
 	case "validate":
@@ -92,6 +94,7 @@ func printUsage() {
 	fmt.Fprintln(os.Stderr, `Usage: tako <command> [flags]
 
 Commands:
+  agent      Run a code agent from a Blueprint YAML (e.g. tako agent --blueprint code.yaml 'fix the bug')
   serve      Start HTTP MCP server for a circuit (e.g. tako serve --circuit sdlc)
   run        Execute a circuit YAML
   validate   Validate a circuit YAML without executing
