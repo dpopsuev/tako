@@ -40,7 +40,7 @@ type FabCollective struct {
 	agents     []*agent.Agent
 	runner     agent.Runner
 	mesh       memory.Mesh
-	shell      shell.Shell
+	capabilities *shell.CapabilitySet
 	monolog    discourse.Monolog
 }
 
@@ -61,7 +61,7 @@ type FabCollectiveConfig struct {
 	Depo       depo.Depo
 	Lobby      agent.Lobby
 	Mesh       memory.Mesh
-	Shell      shell.Shell
+	Capabilities *shell.CapabilitySet
 	Runner     agent.Runner
 	Middleware []Middleware
 }
@@ -80,7 +80,7 @@ func NewFabCollective(cfg FabCollectiveConfig) *FabCollective {
 		Middleware: cfg.Middleware,
 		runner:     cfg.Runner,
 		mesh:       cfg.Mesh,
-		shell:      cfg.Shell,
+		capabilities: cfg.Capabilities,
 	}
 }
 
@@ -115,12 +115,12 @@ func (fc *FabCollective) Run(ctx context.Context) error {
 		return fmt.Errorf("tako: claim station: %w", err)
 	}
 
-	names := fc.shell.Names()
+	names := fc.capabilities.Names()
 	if len(names) == 0 {
 		return fmt.Errorf("%w: %s", ErrNoInstruments, intake.Name)
 	}
 
-	result, err := fc.shell.Exec(ctx, names[0], json.RawMessage(`"walking-skeleton"`))
+	cap, _ := fc.capabilities.Get(names[0]); result, err := cap.Execute(ctx, json.RawMessage(`"walking-skeleton"`))
 	if err != nil {
 		return fmt.Errorf("tako: instrument exec: %w", err)
 	}

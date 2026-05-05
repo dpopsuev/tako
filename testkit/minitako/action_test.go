@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/dpopsuev/tako/agent/shell"
 )
 
 func TestAction_Feed_IncreasesHunger(t *testing.T) {
@@ -154,9 +153,15 @@ func TestAvailableActions_AdolescentUnlocksHunt(t *testing.T) {
 	t.Error("Adolescent should have Hunt")
 }
 
-func TestActionFunction_SatisfiesInterface(t *testing.T) {
+func TestActionFunction_HasRequiredMethods(t *testing.T) {
 	gs := NewGameState()
-	var _ shell.Function = NewActionFunction(Feed, &gs)
+	af := NewActionFunction(Feed, &gs)
+	if af.Name() == "" {
+		t.Error("Name should not be empty")
+	}
+	if af.Description() == "" {
+		t.Error("Description should not be empty")
+	}
 }
 
 func TestActionFunction_Execute(t *testing.T) {
@@ -176,9 +181,9 @@ func TestActionFunction_Execute(t *testing.T) {
 	}
 }
 
-func TestGameShell_Names(t *testing.T) {
+func TestGameCapabilitySet_Names(t *testing.T) {
 	gs := NewGameState()
-	shell := GameShell(&gs)
+	shell := GameCapabilitySet(&gs)
 
 	names := shell.Names()
 	if len(names) == 0 {
@@ -186,27 +191,28 @@ func TestGameShell_Names(t *testing.T) {
 	}
 }
 
-func TestGameShell_Describe(t *testing.T) {
+func TestGameCapabilitySet_Describe(t *testing.T) {
 	gs := NewGameState()
-	shell := GameShell(&gs)
+	cs := GameCapabilitySet(&gs)
 
-	desc, err := shell.Describe("feed")
-	if err != nil {
-		t.Fatalf("Describe: %v", err)
+	cap, ok := cs.Get("feed")
+	if !ok {
+		t.Fatal("feed not found")
 	}
-	if desc == "" {
+	if cap.Description == "" {
 		t.Error("description should not be empty")
 	}
 }
 
-func TestGameShell_Schema(t *testing.T) {
+func TestGameCapabilitySet_Schema(t *testing.T) {
 	gs := NewGameState()
-	shell := GameShell(&gs)
+	cs := GameCapabilitySet(&gs)
 
-	schema, err := shell.Schema("feed")
-	if err != nil {
-		t.Fatalf("Schema: %v", err)
+	cap, ok := cs.Get("feed")
+	if !ok {
+		t.Fatal("feed not found")
 	}
+	schema := cap.Schema
 	if !json.Valid(schema) {
 		t.Error("schema should be valid JSON")
 	}

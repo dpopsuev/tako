@@ -22,7 +22,6 @@ type Command struct {
 	description string
 }
 
-var _ Function = (*Command)(nil)
 
 type CommandInput struct {
 	Input string `json:"input"`

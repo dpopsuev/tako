@@ -12,15 +12,20 @@ import (
 	"github.com/dpopsuev/tako/agent/shell"
 )
 
-// NewShell returns a Shell for code operations rooted at the given path.
-func NewShell(rootPath string) *shell.FunctionShell {
-	sh := shell.NewFunctionShell()
-	sh.Add(&readFileFunc{root: rootPath}, shell.ReadAction, 0)
-	sh.Add(&writeFileFunc{root: rootPath}, shell.WriteAction, 0.7)
-	sh.Add(&goBuildFunc{root: rootPath}, shell.ReadAction, 0)
-	sh.Add(&goTestFunc{root: rootPath}, shell.WriteAction, 0.3)
-	sh.Add(&goVetFunc{root: rootPath}, shell.ReadAction, 0)
-	return sh
+// Capabilities returns code operation capabilities rooted at the given path.
+func Capabilities(rootPath string) []shell.Capability {
+	rf := &readFileFunc{root: rootPath}
+	wf := &writeFileFunc{root: rootPath}
+	gb := &goBuildFunc{root: rootPath}
+	gt := &goTestFunc{root: rootPath}
+	gv := &goVetFunc{root: rootPath}
+	return []shell.Capability{
+		{Name: "read_file", Description: rf.Description(), Schema: rf.InputSchema(), Mode: shell.ReadAction, Risk: 0, Source: shell.Environment, Execute: rf.Execute},
+		{Name: "write_file", Description: wf.Description(), Schema: wf.InputSchema(), Mode: shell.WriteAction, Risk: 0.7, Source: shell.Environment, Execute: wf.Execute},
+		{Name: "go_build", Description: gb.Description(), Schema: gb.InputSchema(), Mode: shell.ReadAction, Risk: 0, Source: shell.Environment, Execute: gb.Execute},
+		{Name: "go_test", Description: gt.Description(), Schema: gt.InputSchema(), Mode: shell.WriteAction, Risk: 0.3, Source: shell.Environment, Execute: gt.Execute},
+		{Name: "go_vet", Description: gv.Description(), Schema: gv.InputSchema(), Mode: shell.ReadAction, Risk: 0, Source: shell.Environment, Execute: gv.Execute},
+	}
 }
 
 // --- read_file ---

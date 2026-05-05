@@ -22,7 +22,7 @@ type ActionFunction struct {
 	gs     *GameState
 }
 
-var _ shell.Function = (*ActionFunction)(nil)
+
 
 func NewActionFunction(a Action, gs *GameState) *ActionFunction {
 	return &ActionFunction{action: a, gs: gs}
@@ -162,15 +162,15 @@ func AvailableActions(gs *GameState) []Action {
 	return actions
 }
 
-func GameFunctions(gs *GameState) []shell.Function {
+func GameCapabilities(gs *GameState) []shell.Capability {
 	actions := AvailableActions(gs)
-	fns := make([]shell.Function, len(actions))
+	fns := make([]shell.Capability, len(actions))
 	for i, a := range actions {
-		fns[i] = NewActionFunction(a, gs)
+		af := NewActionFunction(a, gs); fns[i] = shell.Capability{Name: af.Name(), Description: af.Description(), Schema: af.InputSchema(), Mode: shell.WriteAction, Source: shell.Environment, Execute: af.Execute}
 	}
 	return fns
 }
 
-func GameShell(gs *GameState) shell.Shell {
-	return shell.NewShellWith(GameFunctions(gs)...)
+func GameCapabilitySet(gs *GameState) *shell.CapabilitySet {
+	cs := shell.NewCapabilitySet(); for _, c := range GameCapabilities(gs) { cs.Register(c) }; return cs
 }

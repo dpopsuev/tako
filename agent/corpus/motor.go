@@ -9,7 +9,6 @@ import (
 	"github.com/dpopsuev/tako/agent/cerebrum"
 	"github.com/dpopsuev/tako/agent/reactivity"
 	agentshell "github.com/dpopsuev/tako/agent/shell"
-	"github.com/dpopsuev/tako/artifact"
 )
 
 // MotorBus builds a cerebrum.Bus that routes motor events through the Corpus.
@@ -41,70 +40,13 @@ func (m *corpusMotor) Send(ctx context.Context, event cerebrum.Event) error {
 		return nil
 	}
 
-	name := event.Source
-
-	// Capability path (unified)
-	if cap, ok := m.corpus.Capability(name); ok {
-		return m.executeCapability(ctx, event, cap)
-	}
-
-	// Legacy Handler path (backward compat — will be removed)
-	o, err := m.corpus.Handler(name)
-	if err != nil {
+	cap, ok := m.corpus.Capability(event.Source)
+	if !ok {
 		m.sendError(ctx, event.Source, fmt.Sprintf("unknown capability: %s", event.Source))
 		return nil
 	}
 
-	if sh, ok := o.(agentshell.Shell); ok {
-		mode := sh.Mode(event.Source)
-		if mode == agentshell.WriteAction && m.phase() != reactivity.ImplementTriad {
-			m.emitSignal(ctx, event, "denied.phase")
-			m.sendError(ctx, event.Source, "permission denied: write actions available during implementation phase only")
-			return nil
-		}
-		needsHITL := sh.Approval(event.Source) == agentshell.HITL
-		if !needsHITL && m.trust != nil {
-			needsHITL = sh.Risk(event.Source) > m.trust()
-		}
-		if needsHITL {
-			m.emitSignal(ctx, event, "pending.hitl")
-			approval, ok := m.sensory.Receive(ctx)
-			if !ok || approval.Kind != "approval.hitl" {
-				m.emitSignal(ctx, event, "denied.hitl")
-				m.sendError(ctx, event.Source, "approval denied or timed out")
-				return nil
-			}
-		}
-	}
-
-	m.emitSignal(ctx, event, "execute")
-
-	wire := artifact.Wire{
-		Kind:    event.Kind,
-		Channel: event.Source,
-		Payload: event.Payload,
-	}
-	if err := o.Receive(wire); err != nil {
-		m.sendError(ctx, event.Source, err.Error())
-		return nil
-	}
-
-	if sh, ok := o.(agentshell.Shell); ok {
-		result, err := sh.Exec(ctx, event.Source, event.Payload)
-		if err != nil {
-			m.sendError(ctx, event.Source, err.Error())
-			return nil
-		}
-		return m.sensory.Send(ctx, cerebrum.Event{
-			ID:        fmt.Sprintf("motor-%s-%d", event.Source, time.Now().UnixNano()),
-			Kind:      "instrument.result",
-			Source:    event.Source,
-			Payload:   result.Text(),
-			CreatedAt: time.Now(),
-		})
-	}
-
-	return nil
+	return m.executeCapability(ctx, event, cap)
 }
 
 func (m *corpusMotor) executeCapability(ctx context.Context, event cerebrum.Event, cap agentshell.Capability) error {

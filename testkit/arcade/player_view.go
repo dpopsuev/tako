@@ -16,7 +16,6 @@ type PlayerView struct {
 	instruments []string
 }
 
-var _ shell.Shell = (*PlayerView)(nil)
 
 func NewPlayerView(game *Game, playerID string, instruments []string) *PlayerView {
 	return &PlayerView{game: game, playerID: playerID, instruments: instruments}

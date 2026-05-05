@@ -39,7 +39,6 @@ type gameInstrument struct {
 	risk        float64
 }
 
-var _ shell.Shell = (*Game)(nil)
 
 func NewGame(initialState map[string]any) *Game {
 	return &Game{
