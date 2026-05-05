@@ -98,94 +98,13 @@ func instrumentTools(adv *Game) []tangle.Tool {
 	return tools
 }
 
-func runScenarioWithNavigator(t *testing.T, scenario Scenario, nav reactivity.Navigator) {
-	t.Helper()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
 
-	completer := newCompleter(t, ctx)
-
-	reactor := reactivity.NewReactor(
-		reactivity.WithNavigator(nav),
-		reactivity.WithDirective(reactivity.ExecutionAtom,
-			reactivity.Directive("Available instruments:\n"+instrumentList(scenario.Adventure)),
-		),
-	)
-
-	sensory := cerebrum.NewChannelBus(64)
-	signal := NewFixtureSignal()
-	pool := &ergograph.StubLedger{}
-	cord := &andon.StubSignal{}
-
-	corp := corpus.New()
-	for _, cap := range scenario.Adventure.Capabilities() {
-		corp.Register(cap)
-	}
-
-	var cb *cerebrum.Cerebrum
-	motorBus := corp.MotorBus(sensory, signal, func() reactivity.Triad {
-		if cb == nil {
-			return reactivity.ThinkTriad
-		}
-		m := cb.Result()
-		if m == nil {
-			return reactivity.ThinkTriad
-		}
-		return m.CurrentTriad()
-	})
-
-	cb = cerebrum.New(reactor, completer,
-		cerebrum.WithSensory(sensory),
-		cerebrum.WithMotor(motorBus),
-		cerebrum.WithSignal(signal),
-		cerebrum.WithPool(pool),
-		cerebrum.WithAndon(cord),
-		cerebrum.WithCompactor(cerebrum.SummaryCompactor{}),
-		cerebrum.WithBudget(cerebrum.Budget{
-			MaxTurns:    30,
-			TurnTimeout: 30 * time.Second,
-		}),
-		cerebrum.WithTools(instrumentTools(scenario.Adventure)),
-	)
-
-	scenario.Adventure.WithSensory(sensory)
-
-	need := scenario.Need + "\n\nCurrent environment: " + scenario.Adventure.Observe()
-	catalyst := reactivity.Catalyst{Need: need, Desired: scenario.Desired}
-	if err := cb.Think(ctx, catalyst); err != nil {
-		t.Fatalf("Think: %v", err)
-	}
-
-	m := cb.Result()
-
-	solved := scenario.IsSolved != nil && scenario.IsSolved(scenario.Adventure.State())
-	tokensIn, tokensOut := sumTokens(pool)
-	result := ScenarioResult{
-		Solved:        solved,
-		Turns:         m.TotalMass(),
-		TotalMass:     m.TotalMass(),
-		OptimalTurns:  scenario.OptimalTurns,
-		TokensIn:      tokensIn,
-		TokensOut:     tokensOut,
-		OptimalTokens: scenario.OptimalTurns * 1000,
-	}
-
-	t.Logf("=== Scenario: %s (Navigator: %T) ===", scenario.Name, nav)
-	t.Logf("Solved: %v | OAE: %.1f%% | Turns: %d (optimal: %d) | Mass: %d | Tokens: %d in + %d out = %d",
-		result.Solved, result.OAE()*100, result.Turns, result.OptimalTurns, result.TotalMass,
-		result.TokensIn, result.TokensOut, result.TokensIn+result.TokensOut)
-
-	for _, at := range reactivity.AllAtomTypes() {
-		if mass := m.Mass(at); mass > 0 {
-			t.Logf("  %s: %d", at, mass)
-		}
-	}
-
-	t.Logf("Signal events: %d", len(signal.Signals()))
-	t.Logf("Ergograph: %d records | Andon: %s", pool.Len(), cord.Status())
-
-	if !solved {
-		t.Logf("NOT SOLVED")
+func navigatorFromEnv() reactivity.Navigator {
+	switch os.Getenv("TAKO_NAVIGATOR") {
+	case "tree":
+		return reactivity.TreeNavigator
+	default:
+		return reactivity.LinearNavigator
 	}
 }
 
@@ -196,7 +115,11 @@ func runScenario(t *testing.T, scenario Scenario, extraOpts ...cerebrum.Option) 
 
 	completer := newCompleter(t, ctx)
 
+	nav := navigatorFromEnv()
+	t.Logf("Navigator: %s", os.Getenv("TAKO_NAVIGATOR"))
+
 	reactor := reactivity.NewReactor(
+		reactivity.WithNavigator(nav),
 		reactivity.WithDirective(reactivity.ExecutionAtom,
 			reactivity.Directive("Available instruments:\n"+instrumentList(scenario.Adventure)),
 		),
@@ -327,16 +250,6 @@ func TestScenario_Fridge(t *testing.T) {
 	runScenario(t, NewFridge())
 }
 
-func TestAblation_Fridge_LinearVsTree(t *testing.T) {
-	scenario := NewFridge()
-
-	t.Log("=== LINEAR NAVIGATOR ===")
-	runScenario(t, scenario)
-
-	t.Log("=== TREE NAVIGATOR ===")
-	scenario2 := NewFridge()
-	runScenarioWithNavigator(t, scenario2, reactivity.TreeNavigator)
-}
 
 func TestScenario_PastaBolognese(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
