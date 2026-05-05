@@ -41,9 +41,16 @@ func (m *corpusMotor) Send(ctx context.Context, event cerebrum.Event) error {
 	}
 
 	name := event.Source
+
+	// Capability path (unified)
+	if cap, ok := m.corpus.Capability(name); ok {
+		return m.executeCapability(ctx, event, cap)
+	}
+
+	// Legacy Handler path (backward compat — will be removed)
 	o, err := m.corpus.Handler(name)
 	if err != nil {
-		m.sendError(ctx, event.Source, fmt.Sprintf("unknown handler: %s", event.Source))
+		m.sendError(ctx, event.Source, fmt.Sprintf("unknown capability: %s", event.Source))
 		return nil
 	}
 
@@ -81,8 +88,6 @@ func (m *corpusMotor) Send(ctx context.Context, event cerebrum.Event) error {
 		return nil
 	}
 
-	// For Shell-based handlers, execute and return result via sensory bus.
-	// Handlers that implement agentshell.Shell get the full exec path.
 	if sh, ok := o.(agentshell.Shell); ok {
 		result, err := sh.Exec(ctx, event.Source, event.Payload)
 		if err != nil {
@@ -99,6 +104,49 @@ func (m *corpusMotor) Send(ctx context.Context, event cerebrum.Event) error {
 	}
 
 	return nil
+}
+
+func (m *corpusMotor) executeCapability(ctx context.Context, event cerebrum.Event, cap agentshell.Capability) error {
+	if cap.Mode == agentshell.WriteAction && m.phase() != reactivity.ImplementTriad {
+		m.emitSignal(ctx, event, "denied.phase")
+		m.sendError(ctx, event.Source, "permission denied: write actions available during implementation phase only")
+		return nil
+	}
+
+	needsHITL := cap.Approval == agentshell.HITL
+	if !needsHITL && m.trust != nil {
+		needsHITL = cap.Risk > m.trust()
+	}
+	if needsHITL {
+		m.emitSignal(ctx, event, "pending.hitl")
+		approval, ok := m.sensory.Receive(ctx)
+		if !ok || approval.Kind != "approval.hitl" {
+			m.emitSignal(ctx, event, "denied.hitl")
+			m.sendError(ctx, event.Source, "approval denied or timed out")
+			return nil
+		}
+	}
+
+	m.emitSignal(ctx, event, "execute")
+
+	if cap.Execute == nil {
+		m.sendError(ctx, event.Source, "capability has no execute function")
+		return nil
+	}
+
+	result, err := cap.Execute(ctx, event.Payload)
+	if err != nil {
+		m.sendError(ctx, event.Source, err.Error())
+		return nil
+	}
+
+	return m.sensory.Send(ctx, cerebrum.Event{
+		ID:        fmt.Sprintf("motor-%s-%d", event.Source, time.Now().UnixNano()),
+		Kind:      "instrument.result",
+		Source:    event.Source,
+		Payload:   result.Text(),
+		CreatedAt: time.Now(),
+	})
 }
 
 func (m *corpusMotor) Receive(_ context.Context) (cerebrum.Event, bool) {

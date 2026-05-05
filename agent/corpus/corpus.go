@@ -21,18 +21,41 @@ type Handler interface {
 	Receive(wire artifact.Wire) error
 }
 
-// Corpus wires Cerebrum to buses and routes wires to handlers.
+// Corpus is the agent's body — registers all capabilities (built-in + environment),
+// wires buses, enforces gating. The composition root.
 type Corpus struct {
 	mu            sync.RWMutex
 	handlers      map[string]Handler
+	capabilities  *agentshell.CapabilitySet
 	subscriptions map[string][]string
 }
 
 func New() *Corpus {
 	return &Corpus{
 		handlers:      make(map[string]Handler),
+		capabilities:  agentshell.NewCapabilitySet(),
 		subscriptions: make(map[string][]string),
 	}
+}
+
+// Register adds a Capability to the Corpus. The unified path —
+// no distinction between organ, instrument, or shell.
+func (c *Corpus) Register(cap agentshell.Capability) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.capabilities.Register(cap)
+}
+
+// Capability returns a registered capability by name.
+func (c *Corpus) Capability(name string) (agentshell.Capability, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.capabilities.Get(name)
+}
+
+// Capabilities returns the full set.
+func (c *Corpus) Capabilities() *agentshell.CapabilitySet {
+	return c.capabilities
 }
 
 func (c *Corpus) Attach(h Handler) {
