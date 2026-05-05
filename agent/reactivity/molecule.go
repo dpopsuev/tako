@@ -266,6 +266,23 @@ func (m *Molecule) Distance() float64 {
 	return float64(unfilled) / float64(len(all))
 }
 
+// Residual returns the per-dimension gap between actual state and Desired.
+// 0 = dimension met, 1 = dimension unmet. Returns nil without Catalyst.
+func (m *Molecule) Residual() map[string]float64 {
+	if m.catalyst == nil || len(m.catalyst.Desired) == 0 {
+		return nil
+	}
+	r := make(map[string]float64, len(m.catalyst.Desired))
+	for k, expected := range m.catalyst.Desired {
+		if actual, ok := m.sensorResults[k]; ok && actual == expected {
+			r[k] = 0
+		} else {
+			r[k] = 1
+		}
+	}
+	return r
+}
+
 func (m *Molecule) Context() any            { return m.context }
 func (m *Molecule) SetContext(v any)        { m.context = v }
 

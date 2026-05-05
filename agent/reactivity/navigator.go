@@ -143,6 +143,7 @@ var TreeNavigator Navigator = func(m *Molecule, current AtomType) AtomType {
 		reason = "default→retrospection"
 	}
 
+	residual := m.Residual()
 	if next != linearNext(current) {
 		slog.Info("navigator.shortcut",
 			slog.String("navigator", "tree"),
@@ -151,6 +152,7 @@ var TreeNavigator Navigator = func(m *Molecule, current AtomType) AtomType {
 			slog.String("linear_would", linearNext(current).String()),
 			slog.Float64("distance", d),
 			slog.Float64("recollection_ratio", ratio),
+			slog.Any("residual", residual),
 			slog.String("reason", reason),
 			slog.String("molecule", m.ID))
 	} else {
@@ -158,6 +160,8 @@ var TreeNavigator Navigator = func(m *Molecule, current AtomType) AtomType {
 			slog.String("navigator", "tree"),
 			slog.String("from", current.String()),
 			slog.String("next", next.String()),
+			slog.Float64("distance", d),
+			slog.Any("residual", residual),
 			slog.String("reason", reason),
 			slog.String("molecule", m.ID))
 	}
