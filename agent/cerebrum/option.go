@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
+	"github.com/dpopsuev/tako/agent/shell"
 	"github.com/dpopsuev/tako/ergograph"
 	"github.com/dpopsuev/tako/service/andon"
 	tangle "github.com/dpopsuev/tangle"
@@ -81,4 +82,24 @@ func WithAndon(signal andon.Signal) Option {
 
 func WithCompactor(c Compactor) Option {
 	return func(cb *Cerebrum) { cb.compactor = c }
+}
+
+func WithObserver(o Observer) Option {
+	return func(cb *Cerebrum) { cb.observer = o }
+}
+
+func WithRegulator(r Regulator) Option {
+	return func(cb *Cerebrum) { cb.regulator = r }
+}
+
+func WithAssembler(a Assembler) Option {
+	return func(cb *Cerebrum) { cb.assembler = a }
+}
+
+func WithCapabilities(caps []shell.Capability) Option {
+	return func(cb *Cerebrum) { cb.capabilities = caps }
+}
+
+func WithConfig(cfg *reactivity.Config) Option {
+	return func(cb *Cerebrum) { cb.config = cfg }
 }

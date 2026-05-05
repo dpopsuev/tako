@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
+	"github.com/dpopsuev/tako/agent/shell"
 	"github.com/dpopsuev/tako/ergograph"
 	"github.com/dpopsuev/tako/service/andon"
 	tangle "github.com/dpopsuev/tangle"
@@ -48,24 +49,35 @@ type Cerebrum struct {
 	recollector Recollector
 	compactor   Compactor
 
+	observer     Observer
+	regulator    Regulator
+	assembler    Assembler
+	capabilities []shell.Capability
+	config       *reactivity.Config
+
 	molecule *reactivity.Molecule
 }
 
 func New(reactor *reactivity.Core, completer tangle.Completer, opts ...Option) *Cerebrum {
+	cfg := &reactivity.DefaultConfig
 	cb := &Cerebrum{
 		reactor:       reactor,
 		router:        SingleRouter(completer),
 		budget:        DefaultBudget,
-		classifier:    DefaultClassifier,
 		promptBuilder: DefaultPromptBuilder,
 		parser:        DefaultParser,
 		sensory:       NewChannelBus(64),
 		synapse:       DefaultSynapse{},
 		assert:        reactivity.DefaultAssert,
+		config:        cfg,
 	}
+	cb.classifier = ClassifierFunc(func(m *reactivity.Molecule) Domain {
+		return ClassifyWithConfig(m, cb.config)
+	})
 	for _, opt := range opts {
 		opt(cb)
 	}
+	cb.config.Validate()
 	return cb
 }
 
@@ -169,7 +181,12 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 		slog.String("molecule", molecule.ID),
 		slog.String("phase", molecule.Phase().String()),
 		slog.Int("max_turns", cb.budget.MaxTurns),
-		slog.Duration("turn_timeout", cb.budget.TurnTimeout))
+		slog.Duration("turn_timeout", cb.budget.TurnTimeout),
+		slog.Float64("cfg.distance_close", cb.config.DistanceClose),
+		slog.Float64("cfg.distance_mid", cb.config.DistanceMid),
+		slog.Float64("cfg.recollection_min", cb.config.RecollectionMin),
+		slog.Int("cfg.unmet_dim_max", cb.config.UnmetDimMax),
+		slog.Int("cfg.backward_turn_limit", cb.config.BackwardTurnLimit))
 
 	history, _ := molecule.Context().([]tangle.Message)
 
@@ -201,12 +218,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 				"domain":   domain.String(),
 			})
 		}
-		contracts := cb.reactor.Contracts()
-		directives := cb.reactor.Directives(molecule.Phase())
-		prompt := buildContractPrompt(molecule, need, domain, contracts)
-		for _, d := range directives {
-			prompt += "\n> " + string(d)
-		}
+		prompt := cb.assemble(molecule, need, domain, turn)
 
 		slog.InfoContext(ctx, "cerebrum.think.turn",
 			slog.Int("turn", turn),
@@ -437,6 +449,36 @@ func (cb *Cerebrum) SensoryBus() Bus {
 
 func (cb *Cerebrum) tools(phase reactivity.AtomType) []tangle.Tool {
 	return cb.toolDefs
+}
+
+func (cb *Cerebrum) assemble(m *reactivity.Molecule, need []byte, domain Domain, turn int) string {
+	raw := RawContext{
+		Need:         need,
+		Observer:     cb.observer,
+		Molecule:     m,
+		Capabilities: cb.capabilities,
+		Domain:       domain,
+		Contracts:    cb.reactor.Contracts(),
+		Directives:   cb.reactor.Directives(m.Phase()),
+		Config:       cb.config,
+		Turn:         turn,
+	}
+	ctx := cb.regulate(raw)
+	return cb.render(ctx)
+}
+
+func (cb *Cerebrum) regulate(raw RawContext) Context {
+	if cb.regulator != nil {
+		return cb.regulator.Regulate(raw)
+	}
+	return defaultRegulate(raw)
+}
+
+func (cb *Cerebrum) render(ctx Context) string {
+	if cb.assembler != nil {
+		return cb.assembler.Assemble(ctx)
+	}
+	return defaultRender(ctx)
 }
 
 func (cb *Cerebrum) emit(action string, labels map[string]string) {

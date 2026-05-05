@@ -54,130 +54,125 @@ func linearNext(current AtomType) AtomType {
 	}
 }
 
-// TreeNavigator navigates the Tree of Life per-Sephirah.
-// At each node, evaluates distance + recollection to decide:
-// continue linearly, skip ahead, or shortcut to Execution.
-// TreeNavigator uses PID control on the residual tensor:
-//   P (distance): how far from Desired
-//   I (momentum): accumulated phase transitions / turns
-//   D (delta): rate of distance change per turn
-// Combined with Capability.Writes as MPC prediction model
-// and Book Moves as feedforward.
-var TreeNavigator Navigator = func(m *Molecule, current AtomType) AtomType {
-	p := m.Distance()     // P: proportional — how far
-	d := m.DeltaDistance() // D: derivative — rate of change
-	recollected := m.SourceMass(Recollected)
-	total := m.TotalMass()
-	ratio := float64(0)
-	if total > 0 {
-		ratio = float64(recollected) / float64(total)
-	}
-	residual := m.Residual()
-	unmetCount := 0
-	for _, v := range residual {
-		if v > 0 {
-			unmetCount++
+var TreeNavigator Navigator = NewTreeNavigator(&DefaultConfig)
+
+func NewTreeNavigator(cfg *Config) Navigator {
+	return func(m *Molecule, current AtomType) AtomType {
+		p := m.Distance()
+		d := m.DeltaDistance()
+		recollected := m.SourceMass(Recollected)
+		total := m.TotalMass()
+		ratio := float64(0)
+		if total > 0 {
+			ratio = float64(recollected) / float64(total)
 		}
-	}
+		residual := m.Residual()
+		unmetCount := 0
+		for _, v := range residual {
+			if v > 0 {
+				unmetCount++
+			}
+		}
 
-	var next AtomType
-	var reason string
+		var next AtomType
+		var reason string
 
-	switch current {
-	case IntentAtom:
-		if ratio > 0.3 && p < 0.3 {
+		switch current {
+		case IntentAtom:
+			if ratio > cfg.RecollectionMin && p < cfg.DistanceClose {
+				next = ExecutionAtom
+				reason = "intent→execution: feedforward"
+			} else if p < cfg.DistanceClose {
+				next = SelectionAtom
+				reason = "intent→selection: close distance, skip deliberation"
+			} else if unmetCount == 1 {
+				next = SelectionAtom
+				reason = "intent→selection: single unmet dimension"
+			} else {
+				next = AssessmentAtom
+				reason = "intent→assessment: multiple unmet dimensions"
+			}
+
+		case AssessmentAtom:
+			if p < cfg.DistanceMid || unmetCount <= cfg.UnmetDimMax {
+				next = SelectionAtom
+				reason = "assessment→selection: mid-range or few unmet"
+			} else {
+				next = KnowledgeAtom
+				reason = "assessment→knowledge: far + many unmet, need depth"
+			}
+
+		case KnowledgeAtom:
+			if p < cfg.DistanceMid {
+				next = SelectionAtom
+				reason = "knowledge→selection: mid-range, sufficient"
+			} else {
+				next = ExpansionAtom
+				reason = "knowledge→expansion: far, explore options"
+			}
+
+		case ExpansionAtom:
+			next = ReductionAtom
+			reason = "expansion→reduction: filter options"
+
+		case ReductionAtom:
+			next = SelectionAtom
+			reason = "reduction→selection: commit to plan"
+
+		case SelectionAtom:
 			next = ExecutionAtom
-			reason = "intent→execution: feedforward (recollection>0.3 + P<0.3)"
-		} else if p < 0.3 {
-			next = SelectionAtom
-			reason = "intent→selection: P<0.3, skip deliberation"
-		} else if unmetCount == 1 {
-			next = SelectionAtom
-			reason = "intent→selection: single unmet dimension, skip to planning"
-		} else {
-			next = AssessmentAtom
-			reason = "intent→assessment: P>=0.3, multiple unmet dimensions"
-		}
+			reason = "selection→execution: execute the plan"
 
-	case AssessmentAtom:
-		if p < 0.5 || unmetCount <= 2 {
-			next = SelectionAtom
-			reason = "assessment→selection: P<0.5 or <=2 unmet dimensions"
-		} else {
-			next = KnowledgeAtom
-			reason = "assessment→knowledge: P>=0.5 and >2 unmet, need depth"
-		}
+		case ExecutionAtom:
+			next = AcclimationAtom
+			reason = "execution→acclimation: observe results"
 
-	case KnowledgeAtom:
-		if p < 0.5 {
-			next = SelectionAtom
-			reason = "knowledge→selection: P<0.5, sufficient for planning"
-		} else {
-			next = ExpansionAtom
-			reason = "knowledge→expansion: P>=0.5, explore options"
-		}
+		case AcclimationAtom:
+			if p == 0 {
+				next = RetrospectionAtom
+				reason = "acclimation→retrospection: goal reached"
+			} else if d > 0 && m.Turns() > cfg.BackwardTurnLimit {
+				next = RetrospectionAtom
+				reason = "acclimation→retrospection: backward, cut losses"
+			} else {
+				next = RefinementAtom
+				reason = "acclimation→refinement: refine approach"
+			}
 
-	case ExpansionAtom:
-		next = ReductionAtom
-		reason = "expansion→reduction: filter options"
-
-	case ReductionAtom:
-		next = SelectionAtom
-		reason = "reduction→selection: commit to plan"
-
-	case SelectionAtom:
-		next = ExecutionAtom
-		reason = "selection→execution: execute the plan"
-
-	case ExecutionAtom:
-		next = AcclimationAtom
-		reason = "execution→acclimation: observe results"
-
-	case AcclimationAtom:
-		if p == 0 {
+		case RefinementAtom:
 			next = RetrospectionAtom
-			reason = "acclimation→retrospection: P=0, goal reached"
-		} else if d > 0 && m.Turns() > 3 {
+			reason = "refinement→retrospection: seal"
+
+		default:
 			next = RetrospectionAtom
-			reason = "acclimation→retrospection: D>0 (going backward), cut losses"
-		} else {
-			next = RefinementAtom
-			reason = "acclimation→refinement: P>0, refine approach"
+			reason = "default→retrospection"
 		}
 
-	case RefinementAtom:
-		next = RetrospectionAtom
-		reason = "refinement→retrospection: seal"
+		if next != linearNext(current) {
+			slog.Info("navigator.shortcut",
+				slog.String("navigator", "tree"),
+				slog.String("from", current.String()),
+				slog.String("next", next.String()),
+				slog.String("linear_would", linearNext(current).String()),
+				slog.Float64("P", p),
+				slog.Float64("D", d),
+				slog.Float64("recollection", ratio),
+				slog.Int("unmet", unmetCount),
+				slog.Any("residual", residual),
+				slog.String("reason", reason),
+				slog.String("molecule", m.ID))
+		} else {
+			slog.Debug("navigator.decision",
+				slog.String("navigator", "tree"),
+				slog.String("from", current.String()),
+				slog.String("next", next.String()),
+				slog.Float64("P", p),
+				slog.Float64("D", d),
+				slog.Int("unmet", unmetCount),
+				slog.String("reason", reason),
+				slog.String("molecule", m.ID))
+		}
 
-	default:
-		next = RetrospectionAtom
-		reason = "default→retrospection"
+		return next
 	}
-
-	if next != linearNext(current) {
-		slog.Info("navigator.shortcut",
-			slog.String("navigator", "tree"),
-			slog.String("from", current.String()),
-			slog.String("next", next.String()),
-			slog.String("linear_would", linearNext(current).String()),
-			slog.Float64("P", p),
-			slog.Float64("D", d),
-			slog.Float64("recollection", ratio),
-			slog.Int("unmet", unmetCount),
-			slog.Any("residual", residual),
-			slog.String("reason", reason),
-			slog.String("molecule", m.ID))
-	} else {
-		slog.Debug("navigator.decision",
-			slog.String("navigator", "tree"),
-			slog.String("from", current.String()),
-			slog.String("next", next.String()),
-			slog.Float64("P", p),
-			slog.Float64("D", d),
-			slog.Int("unmet", unmetCount),
-			slog.String("reason", reason),
-			slog.String("molecule", m.ID))
-	}
-
-	return next
 }

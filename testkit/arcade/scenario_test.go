@@ -159,6 +159,8 @@ func runScenario(t *testing.T, scenario Scenario, extraOpts ...cerebrum.Option) 
 			TurnTimeout: 30 * time.Second,
 		}),
 		cerebrum.WithTools(instrumentTools(scenario.Adventure)),
+		cerebrum.WithObserver(scenario.Adventure.State),
+		cerebrum.WithCapabilities(scenario.Adventure.Capabilities()),
 	}
 	opts = append(opts, extraOpts...)
 
@@ -166,8 +168,7 @@ func runScenario(t *testing.T, scenario Scenario, extraOpts ...cerebrum.Option) 
 
 	scenario.Adventure.WithSensory(sensory)
 
-	need := scenario.Need + "\n\nCurrent environment: " + scenario.Adventure.Observe()
-	catalyst := reactivity.Catalyst{Need: need, Desired: scenario.Desired}
+	catalyst := reactivity.Catalyst{Need: scenario.Need, Desired: scenario.Desired}
 	if err := cb.Think(ctx, catalyst); err != nil {
 		t.Fatalf("Think: %v", err)
 	}
@@ -355,6 +356,8 @@ func TestScenario_Fridge_BookMoves(t *testing.T) {
 		cerebrum.WithAndon(&andon.StubSignal{}),
 		cerebrum.WithBudget(cerebrum.Budget{MaxTurns: 30, TurnTimeout: 30 * time.Second}),
 		cerebrum.WithTools(instrumentTools(scenario.Adventure)),
+		cerebrum.WithObserver(scenario.Adventure.State),
+		cerebrum.WithCapabilities(scenario.Adventure.Capabilities()),
 	)
 	if err := cb1.Think(ctx1, reactivity.Catalyst{Need: scenario.Need}); err != nil {
 		t.Fatalf("Run 1 Think: %v", err)

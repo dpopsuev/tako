@@ -13,13 +13,18 @@ type Compactor interface {
 	Compact(history []tangle.Message, sealedTriad reactivity.Triad) []tangle.Message
 }
 
-// SummaryCompactor replaces sealed triad messages with a single summary.
-// Tool call/result pairs are preserved (factual, reusable).
-type SummaryCompactor struct{}
+type SummaryCompactor struct {
+	MaxChars int
+}
 
-func (SummaryCompactor) Compact(history []tangle.Message, sealed reactivity.Triad) []tangle.Message {
+func (sc SummaryCompactor) Compact(history []tangle.Message, sealed reactivity.Triad) []tangle.Message {
 	if len(history) == 0 {
 		return history
+	}
+
+	maxChars := sc.MaxChars
+	if maxChars <= 0 {
+		maxChars = reactivity.DefaultConfig.CompactMaxChars
 	}
 
 	var summary []string
@@ -44,8 +49,8 @@ func (SummaryCompactor) Compact(history []tangle.Message, sealed reactivity.Tria
 
 	if len(summary) > 0 {
 		combined := strings.Join(summary, "\n")
-		if len(combined) > 500 {
-			combined = combined[:500] + "..."
+		if len(combined) > maxChars {
+			combined = combined[:maxChars] + "..."
 		}
 		compacted = append([]tangle.Message{{
 			Role:    "user",
