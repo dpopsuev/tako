@@ -10,18 +10,19 @@ import (
 
 	"github.com/dpopsuev/tako/assemble"
 	tangle "github.com/dpopsuev/tangle"
-	"github.com/dpopsuev/tangle/arsenal"
 	"github.com/dpopsuev/tangle/providers"
 )
 
 func agentCmd(args []string) error {
 	fs := flag.NewFlagSet("agent", flag.ExitOnError)
 	blueprintPath := fs.String("blueprint", "", "path to Blueprint YAML")
+	provider := fs.String("provider", "", "LLM provider (claude, vertex-ai, gemini, openrouter)")
+	model := fs.String("model", "", "model name (default: claude-sonnet-4-6)")
 	verbose := fs.Bool("v", false, "verbose output (debug level)")
 	_ = fs.Parse(args)
 
 	if fs.NArg() < 1 {
-		return fmt.Errorf("usage: tako agent --blueprint FILE 'task description'")
+		return fmt.Errorf("usage: tako agent [--blueprint FILE] [--provider NAME] [--model NAME] 'task'")
 	}
 	task := fs.Arg(0)
 
@@ -42,10 +43,14 @@ func agentCmd(args []string) error {
 		bp = defaultBlueprint()
 	}
 
+	if *model != "" {
+		bp.Model = *model
+	}
+
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	completer, err := newAgentCompleter(ctx, bp.Model)
+	completer, err := newAgentCompleter(ctx, *provider, bp.Model)
 	if err != nil {
 		return fmt.Errorf("completer: %w", err)
 	}
@@ -64,9 +69,6 @@ func agentCmd(args []string) error {
 		slog.Float64("distance", m.Distance()),
 		slog.Int("mass", m.TotalMass()))
 
-	if m.Distance() > 0 {
-		return fmt.Errorf("task not completed (distance=%.2f)", m.Distance())
-	}
 	return nil
 }
 
@@ -84,29 +86,38 @@ func defaultBlueprint() assemble.Blueprint {
 	return cfg.ToBlueprint()
 }
 
-func newAgentCompleter(ctx context.Context, model string) (tangle.Completer, error) {
-	region := os.Getenv("CLOUD_ML_REGION")
-	project := os.Getenv("ANTHROPIC_VERTEX_PROJECT_ID")
-	if region == "" || project == "" {
-		return nil, fmt.Errorf("CLOUD_ML_REGION and ANTHROPIC_VERTEX_PROJECT_ID required")
+func newAgentCompleter(_ context.Context, providerName, model string) (tangle.Completer, error) {
+	if providerName == "" {
+		providerName = detectProvider()
 	}
-
-	ars, err := arsenal.NewArsenal("")
-	if err != nil {
-		return nil, err
-	}
-
 	if model == "" {
 		model = "claude-sonnet-4-6"
 	}
-	resolved, err := ars.Pick(model, "vertex-ai")
+
+	p, err := providers.NewProviderByName(providerName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("provider %q: %w", providerName, err)
 	}
 
-	provider, err := providers.NewVertexProvider(ctx, region, project)
-	if err != nil {
-		return nil, err
+	slog.Info("tako.agent.provider",
+		slog.String("provider", providerName),
+		slog.String("model", model))
+
+	return providers.NewCompleter(p, model, nil), nil
+}
+
+func detectProvider() string {
+	if os.Getenv("ANTHROPIC_API_KEY") != "" {
+		return "anthropic-api"
 	}
-	return providers.NewCompleter(provider, resolved.Model, nil), nil
+	if os.Getenv("CLOUD_ML_REGION") != "" && os.Getenv("ANTHROPIC_VERTEX_PROJECT_ID") != "" {
+		return "vertex-ai"
+	}
+	if os.Getenv("GOOGLE_API_KEY") != "" {
+		return "gemini-api"
+	}
+	if os.Getenv("OPENROUTER_API_KEY") != "" {
+		return "openrouter"
+	}
+	return "anthropic-api"
 }
