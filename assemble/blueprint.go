@@ -66,6 +66,15 @@ func Assemble(bp Blueprint, completer tangle.Completer) *Agent {
 			slog.String("source", cap.Source.String()))
 	}
 
+	subagent := &SubagentFactory{Root: ".", Completer: completer}
+	subCap := subagent.Capability()
+	corp.Register(subCap)
+	tools = append(tools, tangle.Tool{
+		Name:        subCap.Name,
+		Description: subCap.Description,
+		InputSchema: subCap.Schema,
+	})
+
 	if len(bp.Capabilities) == 0 {
 		slog.Warn("assemble.no_capabilities")
 	}
