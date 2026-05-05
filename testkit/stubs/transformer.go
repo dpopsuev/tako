@@ -1,4 +1,4 @@
-// Package stubs provides reusable test doubles for the origami framework.
+// Package stubs provides reusable test doubles for the tako framework.
 // All stubs are thread-safe, support error injection, and track calls.
 package stubs
 

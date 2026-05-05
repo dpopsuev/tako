@@ -11,7 +11,7 @@ import (
 	"github.com/dpopsuev/tako/engine"
 )
 
-// repoRoot returns the absolute path to the origami repo root.
+// repoRoot returns the absolute path to the tako repo root.
 func repoRoot() string {
 	_, f, _, _ := runtime.Caller(0)
 	return filepath.Join(filepath.Dir(f), "..", "..")
