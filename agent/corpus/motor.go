@@ -3,6 +3,7 @@ package corpus
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
@@ -108,6 +109,10 @@ func (m *corpusMotor) Send(ctx context.Context, event cerebrum.Event) error {
 
 func (m *corpusMotor) executeCapability(ctx context.Context, event cerebrum.Event, cap agentshell.Capability) error {
 	if cap.Mode == agentshell.WriteAction && m.phase() != reactivity.ImplementTriad {
+		slog.WarnContext(ctx, "corpus.motor.denied_phase",
+			slog.String("capability", cap.Name),
+			slog.String("mode", "write"),
+			slog.String("phase", m.phase().String()))
 		m.emitSignal(ctx, event, "denied.phase")
 		m.sendError(ctx, event.Source, "permission denied: write actions available during implementation phase only")
 		return nil
@@ -118,9 +123,14 @@ func (m *corpusMotor) executeCapability(ctx context.Context, event cerebrum.Even
 		needsHITL = cap.Risk > m.trust()
 	}
 	if needsHITL {
+		slog.InfoContext(ctx, "corpus.motor.hitl_gate",
+			slog.String("capability", cap.Name),
+			slog.Float64("risk", cap.Risk))
 		m.emitSignal(ctx, event, "pending.hitl")
 		approval, ok := m.sensory.Receive(ctx)
 		if !ok || approval.Kind != "approval.hitl" {
+			slog.WarnContext(ctx, "corpus.motor.hitl_denied",
+				slog.String("capability", cap.Name))
 			m.emitSignal(ctx, event, "denied.hitl")
 			m.sendError(ctx, event.Source, "approval denied or timed out")
 			return nil
@@ -130,15 +140,30 @@ func (m *corpusMotor) executeCapability(ctx context.Context, event cerebrum.Even
 	m.emitSignal(ctx, event, "execute")
 
 	if cap.Execute == nil {
+		slog.WarnContext(ctx, "corpus.motor.no_execute",
+			slog.String("capability", cap.Name))
 		m.sendError(ctx, event.Source, "capability has no execute function")
 		return nil
 	}
 
+	start := time.Now()
 	result, err := cap.Execute(ctx, event.Payload)
+	elapsed := time.Since(start)
+
 	if err != nil {
+		slog.WarnContext(ctx, "corpus.motor.execute_error",
+			slog.String("capability", cap.Name),
+			slog.Duration("elapsed", elapsed),
+			slog.Any("error", err))
 		m.sendError(ctx, event.Source, err.Error())
 		return nil
 	}
+
+	slog.InfoContext(ctx, "corpus.motor.execute_ok",
+		slog.String("capability", cap.Name),
+		slog.String("source", string(cap.Source.String())),
+		slog.Duration("elapsed", elapsed),
+		slog.Int("result_len", len(result.Text())))
 
 	return m.sensory.Send(ctx, cerebrum.Event{
 		ID:        fmt.Sprintf("motor-%s-%d", event.Source, time.Now().UnixNano()),
