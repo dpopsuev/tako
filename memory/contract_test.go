@@ -45,6 +45,73 @@ func TestStubMeshEdgesAndNeighbors(t *testing.T) {
 	}
 }
 
+func TestInMemoryMesh_BFSWalk(t *testing.T) {
+	mesh := NewInMemoryMesh()
+	now := time.Now()
+	mesh.AddNode(KnowledgeNode{ID: "a", Content: "root", CreatedAt: now})
+	mesh.AddNode(KnowledgeNode{ID: "b", Content: "child1", CreatedAt: now})
+	mesh.AddNode(KnowledgeNode{ID: "c", Content: "child2", CreatedAt: now})
+	mesh.AddNode(KnowledgeNode{ID: "d", Content: "grandchild", CreatedAt: now})
+	mesh.AddEdge(Edge{From: "a", To: "b", CreatedAt: now})
+	mesh.AddEdge(Edge{From: "a", To: "c", CreatedAt: now})
+	mesh.AddEdge(Edge{From: "b", To: "d", CreatedAt: now})
+
+	var visited []string
+	var depths []int
+	mesh.Walk("a", func(n KnowledgeNode, depth int) bool {
+		visited = append(visited, n.ID)
+		depths = append(depths, depth)
+		return true
+	})
+
+	if len(visited) != 4 {
+		t.Fatalf("expected 4 nodes visited, got %d: %v", len(visited), visited)
+	}
+	if visited[0] != "a" {
+		t.Errorf("first visited should be root 'a', got %s", visited[0])
+	}
+	if depths[0] != 0 || depths[len(depths)-1] != 2 {
+		t.Errorf("depths should range 0-2, got %v", depths)
+	}
+}
+
+func TestInMemoryMesh_WalkStopEarly(t *testing.T) {
+	mesh := NewInMemoryMesh()
+	now := time.Now()
+	mesh.AddNode(KnowledgeNode{ID: "a", Content: "root", CreatedAt: now})
+	mesh.AddNode(KnowledgeNode{ID: "b", Content: "child", CreatedAt: now})
+	mesh.AddEdge(Edge{From: "a", To: "b", CreatedAt: now})
+
+	var count int
+	mesh.Walk("a", func(n KnowledgeNode, depth int) bool {
+		count++
+		return false
+	})
+
+	if count != 1 {
+		t.Errorf("walk should stop after first node, got %d", count)
+	}
+}
+
+func TestInMemoryMesh_NodesByTier(t *testing.T) {
+	mesh := NewInMemoryMesh()
+	now := time.Now()
+	mesh.AddNode(KnowledgeNode{ID: "k1", Tier: Knowledge, CreatedAt: now})
+	mesh.AddNode(KnowledgeNode{ID: "k2", Tier: Knowledge, CreatedAt: now})
+	mesh.AddNode(KnowledgeNode{ID: "u1", Tier: Understanding, CreatedAt: now})
+	mesh.AddNode(KnowledgeNode{ID: "w1", Tier: Wisdom, CreatedAt: now})
+
+	knowledge := mesh.NodesByTier(Knowledge)
+	if len(knowledge) != 2 {
+		t.Errorf("expected 2 Knowledge nodes, got %d", len(knowledge))
+	}
+
+	wisdom := mesh.NodesByTier(Wisdom)
+	if len(wisdom) != 1 {
+		t.Errorf("expected 1 Wisdom node, got %d", len(wisdom))
+	}
+}
+
 func TestStubMeshNodes(t *testing.T) {
 	mesh := NewStubMesh()
 	_ = mesh.AddNode(KnowledgeNode{ID: "x", Content: "x", CreatedAt: time.Now()})

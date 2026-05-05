@@ -2,17 +2,25 @@ package memory
 
 import "sync"
 
-// StubMesh is an in-memory mesh — append-only, no fusion/fission/decay.
-type StubMesh struct {
+// StubMesh is an alias for InMemoryMesh (backward compatibility).
+type StubMesh = InMemoryMesh
+
+// InMemoryMesh is the real in-memory mesh — append-only, no fusion/fission/decay.
+// Supports BFS Walk, tier-aware queries, thread-safe.
+type InMemoryMesh struct {
 	mu    sync.RWMutex
 	nodes map[string]KnowledgeNode
 	edges []Edge
 }
 
-var _ Mesh = (*StubMesh)(nil)
+var _ Mesh = (*InMemoryMesh)(nil)
 
-func NewStubMesh() *StubMesh {
-	return &StubMesh{nodes: make(map[string]KnowledgeNode)}
+func NewStubMesh() *InMemoryMesh {
+	return NewInMemoryMesh()
+}
+
+func NewInMemoryMesh() *InMemoryMesh {
+	return &InMemoryMesh{nodes: make(map[string]KnowledgeNode)}
 }
 
 func (m *StubMesh) AddNode(node KnowledgeNode) error {
@@ -59,11 +67,33 @@ func (m *StubMesh) Neighbors(id string) ([]KnowledgeNode, error) {
 func (m *StubMesh) Walk(startID string, fn WalkFunc) error {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	n, ok := m.nodes[startID]
+	start, ok := m.nodes[startID]
 	if !ok {
 		return ErrNodeNotFound
 	}
-	fn(n, 0)
+
+	visited := map[string]bool{startID: true}
+	type entry struct {
+		node  KnowledgeNode
+		depth int
+	}
+	queue := []entry{{start, 0}}
+
+	for len(queue) > 0 {
+		curr := queue[0]
+		queue = queue[1:]
+		if !fn(curr.node, curr.depth) {
+			return nil
+		}
+		for _, e := range m.edges {
+			if e.From == curr.node.ID && !visited[e.To] {
+				if next, ok := m.nodes[e.To]; ok {
+					visited[e.To] = true
+					queue = append(queue, entry{next, curr.depth + 1})
+				}
+			}
+		}
+	}
 	return nil
 }
 
@@ -73,6 +103,18 @@ func (m *StubMesh) Nodes() []KnowledgeNode {
 	out := make([]KnowledgeNode, 0, len(m.nodes))
 	for _, n := range m.nodes {
 		out = append(out, n)
+	}
+	return out
+}
+
+func (m *StubMesh) NodesByTier(tier Tier) []KnowledgeNode {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	var out []KnowledgeNode
+	for _, n := range m.nodes {
+		if n.Tier == tier {
+			out = append(out, n)
+		}
 	}
 	return out
 }
