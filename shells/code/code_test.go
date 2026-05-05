@@ -21,7 +21,7 @@ func capSet(dir string) *shell.CapabilitySet {
 func TestCodeCapabilities_Names(t *testing.T) {
 	cs := capSet(t.TempDir())
 	names := cs.Names()
-	expected := []string{"read_file", "write_file", "go_build", "go_test", "go_vet"}
+	expected := []string{"read_file", "write_file", "edit", "bash", "glob", "grep", "git_status", "git_diff", "git_commit", "go_build", "go_test", "go_vet"}
 	if len(names) != len(expected) {
 		t.Fatalf("expected %d names, got %d: %v", len(expected), len(names), names)
 	}

@@ -19,12 +19,26 @@ func Capabilities(rootPath string) []shell.Capability {
 	gb := &goBuildFunc{root: rootPath}
 	gt := &goTestFunc{root: rootPath}
 	gv := &goVetFunc{root: rootPath}
+	bf := &bashFunc{root: rootPath}
+	ef := &editFunc{root: rootPath}
+	gl := &globFunc{root: rootPath}
+	gr := &grepFunc{root: rootPath}
+	gs := &gitStatusFunc{root: rootPath}
+	gd := &gitDiffFunc{root: rootPath}
+	gc := &gitCommitFunc{root: rootPath}
 	return []shell.Capability{
-		{Name: "read_file", Description: rf.Description(), Schema: rf.InputSchema(), Mode: shell.ReadAction, Risk: 0, Source: shell.Environment, Execute: rf.Execute},
-		{Name: "write_file", Description: wf.Description(), Schema: wf.InputSchema(), Mode: shell.WriteAction, Risk: 0.7, Source: shell.Environment, Execute: wf.Execute},
-		{Name: "go_build", Description: gb.Description(), Schema: gb.InputSchema(), Mode: shell.ReadAction, Risk: 0, Source: shell.Environment, Execute: gb.Execute},
-		{Name: "go_test", Description: gt.Description(), Schema: gt.InputSchema(), Mode: shell.WriteAction, Risk: 0.3, Source: shell.Environment, Execute: gt.Execute},
-		{Name: "go_vet", Description: gv.Description(), Schema: gv.InputSchema(), Mode: shell.ReadAction, Risk: 0, Source: shell.Environment, Execute: gv.Execute},
+		{Name: "read_file", Description: rf.Description(), Schema: rf.InputSchema(), Mode: shell.ReadAction, Risk: 0, Source: shell.Environment, Reads: []string{"filesystem"}, Execute: rf.Execute},
+		{Name: "write_file", Description: wf.Description(), Schema: wf.InputSchema(), Mode: shell.WriteAction, Risk: 0.7, Source: shell.Environment, Writes: []string{"filesystem"}, Execute: wf.Execute},
+		{Name: "edit", Description: ef.Description(), Schema: ef.InputSchema(), Mode: shell.WriteAction, Risk: 0.5, Source: shell.Environment, Reads: []string{"filesystem"}, Writes: []string{"filesystem"}, Execute: ef.Execute},
+		{Name: "bash", Description: bf.Description(), Schema: bf.InputSchema(), Mode: shell.WriteAction, Risk: 0.8, Source: shell.Environment, Execute: bf.Execute},
+		{Name: "glob", Description: gl.Description(), Schema: gl.InputSchema(), Mode: shell.ReadAction, Risk: 0, Source: shell.Environment, Reads: []string{"filesystem"}, Execute: gl.Execute},
+		{Name: "grep", Description: gr.Description(), Schema: gr.InputSchema(), Mode: shell.ReadAction, Risk: 0, Source: shell.Environment, Reads: []string{"filesystem"}, Execute: gr.Execute},
+		{Name: "git_status", Description: gs.Description(), Schema: gs.InputSchema(), Mode: shell.ReadAction, Risk: 0, Source: shell.Environment, Reads: []string{"git"}, Execute: gs.Execute},
+		{Name: "git_diff", Description: gd.Description(), Schema: gd.InputSchema(), Mode: shell.ReadAction, Risk: 0, Source: shell.Environment, Reads: []string{"git"}, Execute: gd.Execute},
+		{Name: "git_commit", Description: gc.Description(), Schema: gc.InputSchema(), Mode: shell.WriteAction, Risk: 0.7, Source: shell.Environment, Reads: []string{"git"}, Writes: []string{"git"}, Execute: gc.Execute},
+		{Name: "go_build", Description: gb.Description(), Schema: gb.InputSchema(), Mode: shell.ReadAction, Risk: 0, Source: shell.Environment, Reads: []string{"filesystem"}, Execute: gb.Execute},
+		{Name: "go_test", Description: gt.Description(), Schema: gt.InputSchema(), Mode: shell.WriteAction, Risk: 0.3, Source: shell.Environment, Reads: []string{"filesystem"}, Writes: []string{"filesystem"}, Execute: gt.Execute},
+		{Name: "go_vet", Description: gv.Description(), Schema: gv.InputSchema(), Mode: shell.ReadAction, Risk: 0, Source: shell.Environment, Reads: []string{"filesystem"}, Execute: gv.Execute},
 	}
 }
 
