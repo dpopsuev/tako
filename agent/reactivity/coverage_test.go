@@ -91,7 +91,7 @@ func TestTriadNodes_Generic(t *testing.T) {
 }
 
 func TestTriadReactor_Accessors(t *testing.T) {
-	tr := NewTriadReactor(ComposeTriad, ExecutionAtom)
+	tr := NewTriadReactor(ComposeTriad, LinearNavigator)
 	if tr.Antithesis() == nil {
 		t.Error("Antithesis() should return a node")
 	}

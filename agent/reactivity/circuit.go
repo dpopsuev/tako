@@ -20,21 +20,22 @@ type Directive string
 
 // TriadReactor composes 3 Nodes — thesis, antithesis, synthesis.
 // Same Reactor interface. Each floor of the Core is a TriadReactor.
+// Navigator selects which Sephirah to flow to after this Triad seals.
 type TriadReactor struct {
-	triad     Triad
-	thesis    *Node
+	triad      Triad
+	thesis     *Node
 	antithesis *Node
 	synthesis  *Node
-	nextPhase AtomType
+	navigator  Navigator
 }
 
-func NewTriadReactor(triad Triad, nextPhase AtomType) *TriadReactor {
+func NewTriadReactor(triad Triad, nav Navigator) *TriadReactor {
 	return &TriadReactor{
 		triad:      triad,
 		thesis:     GimpedNode(AtomType{triad, ThesisPosition}),
 		antithesis: GimpedNode(AtomType{triad, AntithesisPosition}),
 		synthesis:  GimpedNode(AtomType{triad, SynthesisPosition}),
-		nextPhase:  nextPhase,
+		navigator:  nav,
 	}
 }
 
@@ -65,7 +66,8 @@ func (t *TriadReactor) React(m *Molecule, atom Atom) (YieldKind, Yield) {
 
 	if m.mass[t.phase(SynthesisPosition)] > 0 {
 		m.SealTriad(t.triad)
-		m.SetPhase(t.nextPhase)
+		next := t.navigator(m, t.triad)
+		m.SetPhase(next)
 		return Pass, Yield{}
 	}
 	if m.mass[t.phase(AntithesisPosition)] > 0 && m.phase == t.phase(ThesisPosition) {
@@ -123,6 +125,17 @@ func WithReflect(r Reactor) ReactorOption {
 	return func(c *Core) { c.egress = r }
 }
 
+func WithNavigator(nav Navigator) ReactorOption {
+	return func(c *Core) {
+		for triad, reactor := range c.floors {
+			if tr, ok := reactor.(*TriadReactor); ok {
+				tr.navigator = nav
+				c.floors[triad] = tr
+			}
+		}
+	}
+}
+
 func WithDirective(phase AtomType, directive Directive) ReactorOption {
 	return func(c *Core) {
 		if n := c.node(phase); n != nil {
@@ -143,9 +156,9 @@ func NewReactor(opts ...ReactorOption) *Core {
 	c := &Core{
 		monolog: NewMoleculeStore(),
 		floors: map[Triad]Reactor{
-			ThinkTriad:     NewTriadReactor(ThinkTriad, AtomType{ComposeTriad, ThesisPosition}),
-			ComposeTriad:   NewTriadReactor(ComposeTriad, AtomType{ImplementTriad, ThesisPosition}),
-			ImplementTriad: NewTriadReactor(ImplementTriad, RetrospectionAtom),
+			ThinkTriad:     NewTriadReactor(ThinkTriad, LinearNavigator),
+			ComposeTriad:   NewTriadReactor(ComposeTriad, LinearNavigator),
+			ImplementTriad: NewTriadReactor(ImplementTriad, LinearNavigator),
 		},
 		egress: Reflection{},
 	}

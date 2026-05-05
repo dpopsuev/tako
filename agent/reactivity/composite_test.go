@@ -13,7 +13,7 @@ func TestComposite_ReactInterface(t *testing.T) {
 }
 
 func TestComposite_WithTriad_GimpedNodes(t *testing.T) {
-	gimped := NewTriadReactor(ComposeTriad, ExecutionAtom)
+	gimped := NewTriadReactor(ComposeTriad, LinearNavigator)
 	c := NewReactor(WithTriad(ComposeTriad, gimped))
 	m := NewMolecule("ablation")
 
