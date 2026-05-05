@@ -116,6 +116,13 @@ func NewFridge() Scenario {
 		return fmt.Sprintf("you ate %s. you're no longer hungry!", plate)
 	})
 
+	adv.WithScope("check_hunger", []string{"hungry"}, nil)
+	adv.WithScope("look_fridge", []string{"fridge"}, nil)
+	adv.WithScope("take", nil, []string{"hand", "fridge"})
+	adv.WithScope("cook", nil, []string{"plate", "hand"})
+	adv.WithScope("turn_on_stove", nil, []string{"stove"})
+	adv.WithScope("eat", nil, []string{"hungry", "plate"})
+
 	return Scenario{
 		Name:         "fridge",
 		Need:         "You are hungry. Find food in the fridge, cook it, and eat. You must turn on the stove before cooking. Use check_hunger to verify when you are no longer hungry — stop as soon as you are satisfied.",

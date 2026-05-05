@@ -37,6 +37,8 @@ type gameInstrument struct {
 	mode        shell.ActionMode
 	approval    shell.ActionApproval
 	risk        float64
+	reads       []string
+	writes      []string
 }
 
 
@@ -68,6 +70,15 @@ func (a *Game) Observe() string {
 func (a *Game) AddInstrument(name, description string, mode shell.ActionMode, fn InstrumentFunc) {
 	a.instruments[name] = &gameInstrument{name: name, description: description, mode: mode}
 	a.fns[name] = fn
+}
+
+// WithScope declares which state dimensions an instrument reads and writes.
+func (a *Game) WithScope(name string, reads, writes []string) *Game {
+	if inst, ok := a.instruments[name]; ok {
+		inst.reads = reads
+		inst.writes = writes
+	}
+	return a
 }
 
 func (a *Game) StartTimer(ctx context.Context, cfg TimerConfig) {
@@ -212,6 +223,8 @@ func (a *Game) Capabilities() []shell.Capability {
 			Risk:        risk,
 			Approval:    inst.approval,
 			Source:      shell.Environment,
+			Reads:       inst.reads,
+			Writes:      inst.writes,
 			Execute: func(ctx context.Context, input json.RawMessage) (shell.Result, error) {
 				a.mu.Lock()
 				defer a.mu.Unlock()

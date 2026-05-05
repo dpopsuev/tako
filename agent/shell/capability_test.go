@@ -94,6 +94,56 @@ func TestCapabilitySet_Register(t *testing.T) {
 	}
 }
 
+func TestCapability_WritesMatchResidual(t *testing.T) {
+	eat := Capability{Name: "eat", Writes: []string{"hungry"}}
+	cook := Capability{Name: "cook", Writes: []string{"plate", "hand"}}
+	look := Capability{Name: "look", Reads: []string{"fridge"}}
+
+	if !eat.TouchesDimension("hungry") {
+		t.Error("eat should touch hungry")
+	}
+	if eat.TouchesDimension("plate") {
+		t.Error("eat should not touch plate")
+	}
+	if !cook.TouchesDimension("plate") {
+		t.Error("cook should touch plate")
+	}
+	if look.TouchesDimension("fridge") {
+		t.Error("look only reads fridge, TouchesDimension checks Writes")
+	}
+}
+
+func TestCapabilitySet_ForDimension(t *testing.T) {
+	cs := NewCapabilitySet()
+	cs.Register(Capability{Name: "eat", Writes: []string{"hungry"}})
+	cs.Register(Capability{Name: "cook", Writes: []string{"plate", "hand"}})
+	cs.Register(Capability{Name: "take", Writes: []string{"hand", "fridge"}})
+	cs.Register(Capability{Name: "look", Reads: []string{"fridge"}})
+
+	matches := cs.ForDimension("hungry")
+	if len(matches) != 1 || matches[0].Name != "eat" {
+		t.Errorf("expected [eat] for hungry, got %v", names(matches))
+	}
+
+	matches = cs.ForDimension("hand")
+	if len(matches) != 2 {
+		t.Errorf("expected 2 capabilities for hand, got %d", len(matches))
+	}
+
+	matches = cs.ForDimension("nonexistent")
+	if len(matches) != 0 {
+		t.Errorf("expected 0 for nonexistent, got %d", len(matches))
+	}
+}
+
+func names(caps []Capability) []string {
+	out := make([]string, len(caps))
+	for i, c := range caps {
+		out[i] = c.Name
+	}
+	return out
+}
+
 func TestCapabilitySet_Names(t *testing.T) {
 	cs := NewCapabilitySet()
 	cs.Register(Capability{Name: "b", Source: Environment})

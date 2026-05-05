@@ -20,6 +20,8 @@ func (s CapabilitySource) String() string {
 // Capability is a single thing the agent can do.
 // Unified: no organ/instrument/shell distinction.
 // Some are built-in (agent reflexes), some come from the environment.
+// Reads/Writes declare which state dimensions this capability touches
+// (STRIPS-style scope declaration for GOAP-style planning).
 type Capability struct {
 	Name        string
 	Description string
@@ -28,7 +30,19 @@ type Capability struct {
 	Risk        float64
 	Approval    ActionApproval
 	Source      CapabilitySource
+	Reads       []string // state dimensions this capability observes
+	Writes      []string // state dimensions this capability modifies
 	Execute     func(ctx context.Context, input json.RawMessage) (Result, error)
+}
+
+// TouchesDimension returns true if this capability Writes to the given dimension.
+func (c Capability) TouchesDimension(dim string) bool {
+	for _, w := range c.Writes {
+		if w == dim {
+			return true
+		}
+	}
+	return false
 }
 
 // CapabilitySet is a registry of capabilities. Preserves insertion order.
@@ -61,6 +75,18 @@ func (cs *CapabilitySet) All() []Capability {
 	out := make([]Capability, 0, len(cs.order))
 	for _, name := range cs.order {
 		out = append(out, cs.caps[name])
+	}
+	return out
+}
+
+// ForDimension returns capabilities that Write to the given state dimension.
+func (cs *CapabilitySet) ForDimension(dim string) []Capability {
+	var out []Capability
+	for _, name := range cs.order {
+		c := cs.caps[name]
+		if c.TouchesDimension(dim) {
+			out = append(out, c)
+		}
 	}
 	return out
 }
