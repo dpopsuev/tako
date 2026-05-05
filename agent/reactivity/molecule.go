@@ -1,6 +1,16 @@
 package reactivity
 
-import "time"
+import (
+	"log/slog"
+	"time"
+)
+
+type MoleculeEvent struct {
+	Kind       string
+	MoleculeID string
+	Atom       *Atom
+	Phase      AtomType
+}
 
 // Molecule is the substrate the Reactor operates on.
 // Reactor = CPU. Molecule = RAM. Focus switch = swap Molecule.
@@ -26,6 +36,7 @@ type Molecule struct {
 	sensorResults    map[string]any
 	prevDistance      float64
 	deltaDistance     float64
+	subscribers      []func(MoleculeEvent)
 }
 
 // NewMolecule creates a Molecule starting at Intent phase.
@@ -176,6 +187,7 @@ func (m *Molecule) Seal(wish Atom) {
 		m.taxonomy[wish.Taxonomy] = append(m.taxonomy[wish.Taxonomy], wish.ID)
 	}
 	m.sealed = true
+	m.notify("sealed", nil)
 }
 
 func (m *Molecule) Contradict(atom Atom) (bool, *Atom) {
@@ -217,11 +229,15 @@ func (m *Molecule) InsertAtom(atom Atom) {
 	for _, target := range atom.Targets {
 		m.AddEdge(atom.ID, target, Reference)
 	}
+	m.notify("atom_inserted", &atom)
 }
 
 func (m *Molecule) SetPhase(p AtomType) {
 	if p != m.phase {
 		m.phaseTransitions++
+		m.phase = p
+		m.notify("phase_changed", nil)
+		return
 	}
 	m.phase = p
 }
@@ -292,6 +308,35 @@ func (m *Molecule) Residual() map[string]float64 {
 		}
 	}
 	return r
+}
+
+func (m *Molecule) Subscribe(fn func(MoleculeEvent)) {
+	m.subscribers = append(m.subscribers, fn)
+}
+
+func (m *Molecule) notify(kind string, atom *Atom) {
+	if len(m.subscribers) == 0 {
+		return
+	}
+	event := MoleculeEvent{
+		Kind:       kind,
+		MoleculeID: m.ID,
+		Atom:       atom,
+		Phase:      m.phase,
+	}
+	for _, fn := range m.subscribers {
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					slog.Warn("molecule.subscriber_panic",
+						slog.String("molecule", m.ID),
+						slog.String("event", kind),
+						slog.Any("panic", r))
+				}
+			}()
+			fn(event)
+		}()
+	}
 }
 
 func (m *Molecule) Context() any            { return m.context }
