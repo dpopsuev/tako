@@ -50,7 +50,7 @@ func (m *corpusMotor) Send(ctx context.Context, event cerebrum.Event) error {
 }
 
 func (m *corpusMotor) executeCapability(ctx context.Context, event cerebrum.Event, cap agentshell.Capability) error {
-	if cap.Mode == agentshell.WriteAction && m.phase() != reactivity.ImplementTriad {
+	if cap.Mode == agentshell.WriteAction && m.phase != nil && m.phase() != reactivity.ImplementTriad {
 		slog.WarnContext(ctx, "corpus.motor.denied_phase",
 			slog.String("capability", cap.Name),
 			slog.String("mode", "write"),

@@ -72,16 +72,7 @@ func Assemble(bp Blueprint, completer tangle.Completer) *Agent {
 
 	var cb *cerebrum.Cerebrum
 
-	motorBus := corp.MotorBus(sensory, nil, func() reactivity.Triad {
-		if cb == nil {
-			return reactivity.ThinkTriad
-		}
-		m := cb.Result()
-		if m == nil {
-			return reactivity.ThinkTriad
-		}
-		return m.CurrentTriad()
-	})
+	motorBus := corp.MotorBus(sensory, nil, nil)
 
 	cb = cerebrum.New(reactor, completer,
 		cerebrum.WithSensory(sensory),
