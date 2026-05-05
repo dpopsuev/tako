@@ -86,9 +86,9 @@ func TestRunner_Execute_StubReferee(t *testing.T) {
 	runner, err := NewRunBuilder().
 		WithScenario(NewStubScenario("test", "do something")).
 		WithReferee(NewStubReferee(CheckResult{Pass: true, Score: 1.0})).
-		WithActor(func(_ context.Context, _ string) (string, error) {
+		WithActor(ActorFunc(func(_ context.Context, _ string) (string, error) {
 			return "done", nil
-		}).
+		})).
 		Build()
 	if err != nil {
 		t.Fatal(err)

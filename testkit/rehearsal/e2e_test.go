@@ -68,19 +68,12 @@ func TestE2E_FixTheTest_Rehearsal(t *testing.T) {
 		Budget:       cerebrum.Budget{MaxTurns: 10, TurnTimeout: 30 * time.Second},
 	}
 	agent := assemble.Assemble(bp, completer)
-	actor := func(ctx context.Context, prompt string) (string, error) {
-		err := agent.Think(ctx, prompt)
-		if err != nil {
-			return "", err
-		}
-		return extractResult(agent.Result()), nil
-	}
 
 	runner, err := NewRunBuilder().
 		WithScenario(NewStubScenario("fix-test", "Fix the failing test in auth/handler_failing_test.go")).
 		WithReferee(&GoTestReferee{}).
 		WithWorkspace(workspace).
-		WithActor(actor).
+		WithActor(agent).
 		Build()
 	if err != nil {
 		t.Fatal(err)
@@ -135,24 +128,12 @@ func TestE2E_Fridge_AsRehearsal(t *testing.T) {
 		},
 	}
 
-	sensory := cerebrum.NewChannelBus(64)
-	scenario.Adventure.WithSensory(sensory)
-
-	gameActor := func(_ string) (ActorFunc, error) {
-		bp := assemble.Blueprint{
-			Model:        "stub",
-			Capabilities: scenario.Adventure.Capabilities(),
-			Budget:       cerebrum.Budget{MaxTurns: 10, TurnTimeout: 10 * time.Second},
-		}
-		agent := assemble.Assemble(bp, completer)
-		return func(ctx context.Context, prompt string) (string, error) {
-			err := agent.Think(ctx, prompt)
-			if err != nil {
-				return "", err
-			}
-			return extractResult(agent.Result()), nil
-		}, nil
+	bp := assemble.Blueprint{
+		Model:        "stub",
+		Capabilities: scenario.Adventure.Capabilities(),
+		Budget:       cerebrum.Budget{MaxTurns: 10, TurnTimeout: 10 * time.Second},
 	}
+	agent := assemble.Assemble(bp, completer)
 
 	gameReferee := &GameReferee{
 		IsSolved: scenario.IsSolved,
@@ -162,7 +143,7 @@ func TestE2E_Fridge_AsRehearsal(t *testing.T) {
 	runner, err := NewRunBuilder().
 		WithScenario(NewStubScenario("fridge", scenario.Need)).
 		WithReferee(gameReferee).
-		WithActorFactory(gameActor).
+		WithActor(agent).
 		Build()
 	if err != nil {
 		t.Fatal(err)

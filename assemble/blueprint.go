@@ -2,6 +2,7 @@ package assemble
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
@@ -30,6 +31,18 @@ func (a *Agent) Think(ctx context.Context, need string) error {
 
 func (a *Agent) Result() *reactivity.Molecule {
 	return a.Cerebrum.Result()
+}
+
+func (a *Agent) Run(ctx context.Context, task string) (string, error) {
+	if err := a.Think(ctx, task); err != nil {
+		return "", err
+	}
+	m := a.Result()
+	retro := m.ByTaxonomy("retrospection.")
+	if len(retro) > 0 {
+		return string(retro[len(retro)-1].Content), nil
+	}
+	return fmt.Sprintf("completed (mass=%d, distance=%.2f)", m.TotalMass(), m.Distance()), nil
 }
 
 func Assemble(bp Blueprint, completer tangle.Completer) *Agent {
