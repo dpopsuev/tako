@@ -216,6 +216,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 			slog.String("domain", domain.String()),
 			slog.Float64("momentum", molecule.Momentum()),
 			slog.Float64("distance", molecule.Distance()),
+			slog.Float64("delta", molecule.DeltaDistance()),
 			slog.Any("residual", molecule.Residual()))
 		slog.DebugContext(ctx, "cerebrum.think.prompt",
 			slog.Int("turn", turn),

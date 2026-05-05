@@ -24,6 +24,8 @@ type Molecule struct {
 	phaseTransitions int
 	catalyst         *Catalyst
 	sensorResults    map[string]any
+	prevDistance      float64
+	deltaDistance     float64
 }
 
 // NewMolecule creates a Molecule starting at Intent phase.
@@ -226,7 +228,16 @@ func (m *Molecule) SetPhase(p AtomType) {
 func (m *Molecule) SealTriad(t Triad) { m.triadSealed[t] = true }
 func (m *Molecule) IsSealed() bool    { return m.sealed }
 
-func (m *Molecule) Tick()  { m.turns++ }
+func (m *Molecule) Tick() {
+	d := m.Distance()
+	m.deltaDistance = d - m.prevDistance
+	m.prevDistance = d
+	m.turns++
+}
+
+// DeltaDistance returns the change in distance since last turn.
+// Negative = getting closer (good). Positive = getting further (bad). Zero = stuck.
+func (m *Molecule) DeltaDistance() float64 { return m.deltaDistance }
 func (m *Molecule) Turns() int { return m.turns }
 
 // Momentum returns the ratio of phase transitions to turns spent.
