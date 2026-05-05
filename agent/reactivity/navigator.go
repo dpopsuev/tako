@@ -74,73 +74,73 @@ var TreeNavigator Navigator = func(m *Molecule, current AtomType) AtomType {
 	case IntentAtom:
 		if ratio > 0.3 && d < 0.3 {
 			next = ExecutionAtom
-			reason = "Keter→Netzach: recollection>0.3 + distance<0.3, known territory"
+			reason = "intent→execution: recollection>0.3 + distance<0.3, known territory"
 		} else if d < 0.3 {
 			next = SelectionAtom
-			reason = "Keter→Tiferet: distance<0.3, skip deliberation"
+			reason = "intent→selection: distance<0.3, skip deliberation"
 		} else {
 			next = AssessmentAtom
-			reason = "Keter→Chokhmah: need assessment"
+			reason = "intent→assessment: need assessment"
 		}
 
 	// After Assessment: skip to Selection or continue?
 	case AssessmentAtom:
 		if d < 0.5 {
 			next = SelectionAtom
-			reason = "Chokhmah→Tiferet: distance<0.5 after assessment, skip to selection"
+			reason = "assessment→selection: distance<0.5 after assessment, skip to selection"
 		} else {
 			next = KnowledgeAtom
-			reason = "Chokhmah→Binah: need deeper knowledge"
+			reason = "assessment→knowledge: need deeper knowledge"
 		}
 
 	// After Knowledge: go to Expansion or skip to Selection?
 	case KnowledgeAtom:
 		if d < 0.5 {
 			next = SelectionAtom
-			reason = "Binah→Tiferet: distance<0.5, knowledge sufficient for selection"
+			reason = "knowledge→selection: distance<0.5, knowledge sufficient for selection"
 		} else {
 			next = ExpansionAtom
-			reason = "Binah→Chesed: need to explore options"
+			reason = "knowledge→expansion: need to explore options"
 		}
 
-	// After Expansion: always Reduction (Chesed→Gevurah)
+	// After Expansion: always Reduction (expansion→reduction)
 	case ExpansionAtom:
 		next = ReductionAtom
-		reason = "Chesed→Gevurah: filter options"
+		reason = "expansion→reduction: filter options"
 
-	// After Reduction: always Selection (Gevurah→Tiferet)
+	// After Reduction: always Selection (reduction→selection)
 	case ReductionAtom:
 		next = SelectionAtom
-		reason = "Gevurah→Tiferet: commit to plan"
+		reason = "reduction→selection: commit to plan"
 
-	// After Selection: always Execution (Tiferet→Netzach)
+	// After Selection: always Execution (selection→execution)
 	case SelectionAtom:
 		next = ExecutionAtom
-		reason = "Tiferet→Netzach: execute the plan"
+		reason = "selection→execution: execute the plan"
 
-	// After Execution: always Acclimation (Netzach→Hod)
+	// After Execution: always Acclimation (execution→acclimation)
 	case ExecutionAtom:
 		next = AcclimationAtom
-		reason = "Netzach→Hod: observe results"
+		reason = "execution→acclimation: observe results"
 
 	// After Acclimation: skip Refinement if distance is 0?
 	case AcclimationAtom:
 		if d == 0 {
 			next = RetrospectionAtom
-			reason = "Hod→Malkhut: distance=0, skip refinement"
+			reason = "acclimation→retrospection: distance=0, skip refinement"
 		} else {
 			next = RefinementAtom
-			reason = "Hod→Yesod: refine approach"
+			reason = "acclimation→refinement: refine approach"
 		}
 
-	// After Refinement: always Retrospection (Yesod→Malkhut)
+	// After Refinement: always Retrospection (refinement→retrospection)
 	case RefinementAtom:
 		next = RetrospectionAtom
-		reason = "Yesod→Malkhut: seal"
+		reason = "refinement→retrospection: seal"
 
 	default:
 		next = RetrospectionAtom
-		reason = "default→Malkhut"
+		reason = "default→retrospection"
 	}
 
 	if next != linearNext(current) {
