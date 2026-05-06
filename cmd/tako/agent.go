@@ -87,41 +87,23 @@ func defaultBlueprint() assemble.Blueprint {
 }
 
 func newAgentCompleter(_ context.Context, providerName, model string) (tangle.Completer, error) {
-	if providerName == "" {
-		var err error
-		providerName, err = detectProvider()
-		if err != nil {
-			return nil, err
-		}
-	}
 	if model == "" {
 		model = "claude-sonnet-4-6"
 	}
 
+	var err error
+	if providerName == "" {
+		providerName = os.Getenv("TAKO_PROVIDER")
+	}
+	if providerName == "" {
+		return nil, fmt.Errorf("provider: set --provider flag or TAKO_PROVIDER env var (e.g. vertex-ai, anthropic-api)")
+	}
 	p, err := providers.NewProviderByName(providerName)
 	if err != nil {
-		return nil, fmt.Errorf("provider %q: %w", providerName, err)
+		return nil, fmt.Errorf("provider: %w", err)
 	}
 
-	slog.Info("tako.agent.provider",
-		slog.String("provider", providerName),
-		slog.String("model", model))
+	slog.Info("tako.agent.provider", slog.String("model", model))
 
 	return providers.NewCompleter(p, model, nil), nil
-}
-
-func detectProvider() (string, error) {
-	if os.Getenv("ANTHROPIC_API_KEY") != "" {
-		return "anthropic-api", nil
-	}
-	if os.Getenv("CLOUD_ML_REGION") != "" && os.Getenv("ANTHROPIC_VERTEX_PROJECT_ID") != "" {
-		return "vertex-ai", nil
-	}
-	if os.Getenv("GOOGLE_API_KEY") != "" {
-		return "gemini-api", nil
-	}
-	if os.Getenv("OPENROUTER_API_KEY") != "" {
-		return "openrouter", nil
-	}
-	return "", fmt.Errorf("no LLM provider configured: set --provider flag, or set one of: ANTHROPIC_API_KEY, CLOUD_ML_REGION+ANTHROPIC_VERTEX_PROJECT_ID, GOOGLE_API_KEY, OPENROUTER_API_KEY")
 }
