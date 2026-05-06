@@ -100,6 +100,9 @@ type Cerebrum struct {
 	watcher            tangle.Completer
 	globalStore        chan Event
 	monitorEvents      chan Event
+	pendingMu          sync.Mutex
+	pending            map[string]bool
+	focusCancel        context.CancelFunc
 
 	molecule *reactivity.Molecule
 }
@@ -119,6 +122,7 @@ func New(reactor *reactivity.Core, completer tangle.Completer, opts ...Option) *
 		priorityClassifier: defaultClassifierImpl{},
 		globalStore:        make(chan Event, 128),
 		monitorEvents:      make(chan Event, 64),
+		pending:            make(map[string]bool),
 	}
 	cb.classifier = ClassifierFunc(func(m *reactivity.Molecule) Domain {
 		return ClassifyWithConfig(m, cb.config)
@@ -379,6 +383,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 					})
 				} else {
 					capCalls = append(capCalls, tc)
+					cb.registerPending(tc.ID)
 					slog.InfoContext(ctx, "cerebrum.think.tool_call",
 						slog.Int("turn", turn),
 						slog.String("name", tc.Name),
@@ -569,6 +574,12 @@ func (cb *Cerebrum) Monitor(ctx context.Context, bus Bus) {
 			return
 		}
 
+		if event.ToolCallID != "" && cb.isPending(event.ToolCallID) {
+			slog.DebugContext(ctx, "monitor.skip_pending",
+				slog.String("tool_call_id", event.ToolCallID))
+			continue
+		}
+
 		m := cb.molecule
 		if m == nil {
 			slog.DebugContext(ctx, "monitor.no_molecule", slog.String("event", event.Kind))
@@ -613,6 +624,32 @@ func (cb *Cerebrum) Monitor(ctx context.Context, bus Bus) {
 			}
 		}
 	}
+}
+
+func (cb *Cerebrum) registerPending(id string) {
+	cb.pendingMu.Lock()
+	cb.pending[id] = true
+	cb.pendingMu.Unlock()
+}
+
+func (cb *Cerebrum) clearPending(id string) {
+	cb.pendingMu.Lock()
+	delete(cb.pending, id)
+	cb.pendingMu.Unlock()
+}
+
+func (cb *Cerebrum) isPending(id string) bool {
+	cb.pendingMu.Lock()
+	defer cb.pendingMu.Unlock()
+	return cb.pending[id]
+}
+
+func (cb *Cerebrum) SwitchFocus(moleculeID string) {
+	if cb.focusCancel != nil {
+		cb.focusCancel()
+	}
+	cb.reactor.Monolog().Focus(moleculeID)
+	slog.Info("cerebrum.focus_switch", slog.String("to", moleculeID))
 }
 
 func (cb *Cerebrum) DrainMonitorEvents() []Event {
@@ -735,6 +772,7 @@ func (cb *Cerebrum) waitToolResult(ctx context.Context, tc tangle.ToolCall) stri
 			return "tool call timed out"
 		}
 		if event.ToolCallID == tc.ID || (event.ToolCallID == "" && event.Source == tc.Name) {
+			cb.clearPending(tc.ID)
 			return string(event.Payload)
 		}
 		select {
