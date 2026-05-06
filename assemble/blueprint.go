@@ -64,14 +64,10 @@ func Assemble(bp Blueprint, completer tangle.Completer) *Agent {
 	sensory := cerebrum.NewChannelBus(64)
 	corp := corpus.New()
 
-	var tools []tangle.Tool
+	allCaps := make([]shell.Capability, 0, len(bp.Capabilities)+1)
 	for _, cap := range bp.Capabilities {
 		corp.Register(cap)
-		tools = append(tools, tangle.Tool{
-			Name:        cap.Name,
-			Description: cap.Description,
-			InputSchema: cap.Schema,
-		})
+		allCaps = append(allCaps, cap)
 
 		slog.Info("assemble.capability",
 			slog.String("name", cap.Name),
@@ -82,11 +78,7 @@ func Assemble(bp Blueprint, completer tangle.Completer) *Agent {
 	subagent := &SubagentFactory{Root: ".", Completer: completer}
 	subCap := subagent.Capability()
 	corp.Register(subCap)
-	tools = append(tools, tangle.Tool{
-		Name:        subCap.Name,
-		Description: subCap.Description,
-		InputSchema: subCap.Schema,
-	})
+	allCaps = append(allCaps, subCap)
 
 	if len(bp.Capabilities) == 0 {
 		slog.Warn("assemble.no_capabilities")
@@ -101,8 +93,7 @@ func Assemble(bp Blueprint, completer tangle.Completer) *Agent {
 		cerebrum.WithMotor(motorBus),
 		cerebrum.WithCompactor(cerebrum.SummaryCompactor{}),
 		cerebrum.WithBudget(budget),
-		cerebrum.WithTools(tools),
-		cerebrum.WithCapabilities(bp.Capabilities),
+		cerebrum.WithCapabilities(allCaps),
 		cerebrum.WithConfig(cfg),
 	)
 

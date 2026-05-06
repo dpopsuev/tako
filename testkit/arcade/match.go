@@ -136,8 +136,6 @@ func (m *Match) wirePlayer(p *MatchPlayer, completer tangle.Completer) {
 		return mol.CurrentTriad()
 	})
 
-	tools := instrumentToolsFromView(p.View)
-
 	cb = cerebrum.New(reactor, completer,
 		cerebrum.WithSensory(sensory),
 		cerebrum.WithMotor(motorBus),
@@ -149,7 +147,7 @@ func (m *Match) wirePlayer(p *MatchPlayer, completer tangle.Completer) {
 			MaxTurns:    15,
 			TurnTimeout: 30 * time.Second,
 		}),
-		cerebrum.WithTools(tools),
+		cerebrum.WithCapabilities(p.View.Capabilities()),
 	)
 
 	m.Game.WithSensory(sensory)
@@ -169,19 +167,6 @@ func instrumentListFromView(v *PlayerView) string {
 	return result
 }
 
-func instrumentToolsFromView(v *PlayerView) []tangle.Tool {
-	var tools []tangle.Tool
-	for _, name := range v.Names() {
-		desc, _ := v.Describe(name)
-		schema, _ := v.Schema(name)
-		tools = append(tools, tangle.Tool{
-			Name:        name,
-			Description: desc,
-			InputSchema: schema,
-		})
-	}
-	return tools
-}
 
 // GameMode labels the topology of a multi-agent game.
 type GameMode int

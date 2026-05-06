@@ -54,6 +54,8 @@ func WithSynapse(s Synapse) Option {
 	return func(cb *Cerebrum) { cb.synapse = s }
 }
 
+// Deprecated: use WithCapabilities instead. WithTools sets raw tool definitions
+// without Mode/Risk metadata. Phase-filtered tools require WithCapabilities.
 func WithTools(tools []tangle.Tool) Option {
 	return func(cb *Cerebrum) { cb.toolDefs = tools }
 }
