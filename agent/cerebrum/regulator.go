@@ -2,6 +2,7 @@ package cerebrum
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/agent/shell"
@@ -116,10 +117,11 @@ func (d *DeltaRegulator) Regulate(raw RawContext) Context {
 
 	if d.prevResidual != nil && ctx.Residual != nil {
 		same := true
+		changed := 0
 		for k, v := range ctx.Residual {
 			if d.prevResidual[k] != v {
 				same = false
-				break
+				changed++
 			}
 		}
 		if same {
@@ -128,6 +130,26 @@ func (d *DeltaRegulator) Regulate(raw RawContext) Context {
 			d.stagnant = 0
 		}
 		ctx.StagnantTurns = d.stagnant
+
+		if d.stagnant >= 2 {
+			slog.Warn("regulator.stagnant_residual",
+				slog.Int("stagnant_turns", d.stagnant),
+				slog.Int("turn", ctx.Turn),
+				slog.Float64("distance", ctx.Distance))
+		}
+
+		if ctx.DeltaDistance > 0 {
+			slog.Warn("regulator.distance_regressing",
+				slog.Float64("delta", ctx.DeltaDistance),
+				slog.Int("turn", ctx.Turn))
+		}
+
+		slog.Info("regulator.delta",
+			slog.Int("turn", ctx.Turn),
+			slog.Int("dimensions_changed", changed),
+			slog.Int("state_changes", len(ctx.StateChanges)),
+			slog.Float64("distance", ctx.Distance),
+			slog.Float64("delta_distance", ctx.DeltaDistance))
 	}
 
 	d.prevState = ctx.State

@@ -1,6 +1,8 @@
 package cerebrum
 
 import (
+	"log/slog"
+
 	"github.com/dpopsuev/tako/agent/reactivity"
 	tangle "github.com/dpopsuev/tangle"
 )
@@ -49,6 +51,7 @@ type AdaptiveRouter struct {
 	deep     tangle.Completer
 	fallback tangle.Completer
 	config   *reactivity.Config
+	prev     tangle.Completer
 }
 
 func NewAdaptiveRouter(fast, deep tangle.Completer, cfg *reactivity.Config) *AdaptiveRouter {
@@ -68,11 +71,34 @@ func (r *AdaptiveRouter) Route(m *reactivity.Molecule) tangle.Completer {
 		ratio = float64(recollected) / float64(total)
 	}
 
+	var selected tangle.Completer
+	var mode string
+
 	if ratio > r.config.RecollectionMin && m.Distance() < r.config.DistanceClose {
-		return r.fast
+		selected = r.fast
+		mode = "fast"
+	} else if m.Distance() < r.config.DistanceClose {
+		selected = r.fast
+		mode = "fast"
+	} else {
+		selected = r.deep
+		mode = "deep"
 	}
-	if m.Distance() < r.config.DistanceClose {
-		return r.fast
+
+	if r.prev != nil && r.prev != selected {
+		slog.Warn("router.model_switch",
+			slog.String("mode", mode),
+			slog.Float64("distance", m.Distance()),
+			slog.Float64("recollection", ratio),
+			slog.String("molecule", m.ID))
 	}
-	return r.deep
+
+	slog.Info("router.selected",
+		slog.String("mode", mode),
+		slog.Float64("distance", m.Distance()),
+		slog.Float64("recollection", ratio),
+		slog.Int("turn", m.Turns()))
+
+	r.prev = selected
+	return selected
 }

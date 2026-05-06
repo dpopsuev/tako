@@ -624,6 +624,11 @@ func (cb *Cerebrum) Monitor(ctx context.Context, bus Bus) {
 				slog.WarnContext(ctx, "monitor.encode_error", slog.Any("error", err))
 				continue
 			}
+			slog.WarnContext(ctx, "monitor.interrupt",
+				slog.String("event", event.Kind),
+				slog.String("source", event.Source),
+				slog.String("molecule", m.ID),
+				slog.String("phase", m.Phase().String()))
 			m.InsertAtom(atom)
 			slog.InfoContext(ctx, "monitor.injected",
 				slog.String("atom", atom.ID),
