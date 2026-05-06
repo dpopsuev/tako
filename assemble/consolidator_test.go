@@ -1,4 +1,4 @@
-package cerebrum
+package assemble
 
 import (
 	"testing"
