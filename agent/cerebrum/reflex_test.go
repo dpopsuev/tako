@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/agent/shell"
 )
 
@@ -149,4 +150,34 @@ func TestFireReflex(t *testing.T) {
 
 func TestReflexStoreInterface(t *testing.T) {
 	var _ ReflexStore = (*InMemoryReflexStore)(nil)
+}
+
+func TestSuggestionAtom(t *testing.T) {
+	caps := []shell.Capability{{Name: "read_file"}, {Name: "grep"}}
+	atom := suggestionAtom(caps, 0.85, 3)
+
+	if atom.Type.String() != "knowledge" {
+		t.Fatalf("suggestion should be knowledge atom, got %s", atom.Type.String())
+	}
+	if atom.Source != reactivity.Recollected {
+		t.Fatalf("suggestion should be recollected source")
+	}
+	if atom.Taxonomy != "knowledge.suggestion.intuition" {
+		t.Fatalf("taxonomy = %s, want knowledge.suggestion.intuition", atom.Taxonomy)
+	}
+	if len(atom.Content) == 0 {
+		t.Fatal("content should not be empty")
+	}
+}
+
+func TestSelectGearIntuition(t *testing.T) {
+	if selectGear(0.85) != GearIntuition {
+		t.Fatal("0.85 overlap should be intuition")
+	}
+	if selectGear(0.7) != GearIntuition {
+		t.Fatal("0.7 overlap should be intuition")
+	}
+	if selectGear(0.69) != GearFamiliar {
+		t.Fatal("0.69 overlap should be familiar")
+	}
 }

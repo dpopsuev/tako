@@ -3,8 +3,11 @@ package cerebrum
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
+	"time"
 
+	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/agent/shell"
 )
 
@@ -104,6 +107,22 @@ func selectGear(overlap float64) Gear {
 		return GearFamiliar
 	default:
 		return GearNovel
+	}
+}
+
+func suggestionAtom(caps []shell.Capability, overlap float64, turn int) reactivity.Atom {
+	var names []string
+	for _, c := range caps {
+		names = append(names, c.Name)
+	}
+	content := fmt.Sprintf("intuition suggests: %v (overlap=%.0f%%)", names, overlap*100)
+	return reactivity.Atom{
+		ID:        fmt.Sprintf("suggestion-turn-%d", turn),
+		Type:      reactivity.KnowledgeAtom,
+		Source:    reactivity.Recollected,
+		Taxonomy:  "knowledge.suggestion.intuition",
+		Content:   []byte(content),
+		CreatedAt: time.Now(),
 	}
 }
 
