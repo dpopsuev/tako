@@ -33,6 +33,22 @@ func (r *RewardLoop) Process(oae float64) {
 	before := *r.config
 	r.adjust(rpe)
 
+	if r.config.DistanceClose == 0.1 || r.config.DistanceClose == 0.5 {
+		slog.Warn("reward.threshold_clamped",
+			slog.String("param", "DistanceClose"),
+			slog.Float64("value", r.config.DistanceClose))
+	}
+	if r.config.DistanceMid == 0.2 || r.config.DistanceMid == 0.7 {
+		slog.Warn("reward.threshold_clamped",
+			slog.String("param", "DistanceMid"),
+			slog.Float64("value", r.config.DistanceMid))
+	}
+	if oae < 0.2 && r.expectedOAE > 0.4 {
+		slog.Warn("reward.oae_collapse",
+			slog.Float64("oae", oae),
+			slog.Float64("expected", r.expectedOAE))
+	}
+
 	slog.Info("reward.process",
 		slog.Float64("oae", oae),
 		slog.Float64("rpe", rpe),
@@ -46,16 +62,9 @@ func (r *RewardLoop) Process(oae float64) {
 
 func (r *RewardLoop) adjust(rpe float64) {
 	delta := r.learningRate * rpe
-
-	if rpe > 0 {
-		r.config.DistanceClose = clamp(r.config.DistanceClose-delta*0.1, 0.1, 0.5)
-		r.config.DistanceMid = clamp(r.config.DistanceMid-delta*0.1, 0.2, 0.7)
-		r.config.RecollectionMin = clamp(r.config.RecollectionMin-delta*0.1, 0.1, 0.5)
-	} else {
-		r.config.DistanceClose = clamp(r.config.DistanceClose-delta*0.1, 0.1, 0.5)
-		r.config.DistanceMid = clamp(r.config.DistanceMid-delta*0.1, 0.2, 0.7)
-		r.config.RecollectionMin = clamp(r.config.RecollectionMin-delta*0.1, 0.1, 0.5)
-	}
+	r.config.DistanceClose = clamp(r.config.DistanceClose-delta*0.1, 0.1, 0.5)
+	r.config.DistanceMid = clamp(r.config.DistanceMid-delta*0.1, 0.2, 0.7)
+	r.config.RecollectionMin = clamp(r.config.RecollectionMin-delta*0.1, 0.1, 0.5)
 }
 
 func (r *RewardLoop) ExpectedOAE() float64   { return r.expectedOAE }
