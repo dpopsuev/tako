@@ -64,9 +64,13 @@ func defaultRegulate(raw RawContext) Context {
 	filled := make(map[string]string, len(raw.Contracts))
 	for _, c := range raw.Contracts {
 		if m.Mass(c.Phase) > 0 {
-			atoms := m.Atoms(c.Phase)
-			if len(atoms) > 0 {
-				filled[c.Phase.String()] = truncate(string(atoms[0].Content), summaryMax)
+			if synth := m.Synthesis(c.Phase.Triad); synth != nil {
+				filled[c.Phase.String()] = truncate(string(synth.Content), summaryMax)
+			} else {
+				atoms := m.Atoms(c.Phase)
+				if len(atoms) > 0 {
+					filled[c.Phase.String()] = truncate(string(atoms[len(atoms)-1].Content), summaryMax)
+				}
 			}
 		}
 	}

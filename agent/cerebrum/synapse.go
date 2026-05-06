@@ -27,10 +27,11 @@ func (DefaultSynapse) Encode(e Event) (reactivity.Atom, error) {
 
 func (DefaultSynapse) Decode(e reactivity.Emission) Event {
 	return Event{
-		ID:        fmt.Sprintf("emission-%d", time.Now().UnixNano()),
-		Kind:      e.Kind,
-		Source:    e.Target,
-		Payload:   e.Payload,
-		CreatedAt: time.Now(),
+		ID:         fmt.Sprintf("emission-%d", time.Now().UnixNano()),
+		Kind:       e.Kind,
+		Source:     e.Target,
+		Payload:    e.Payload,
+		ToolCallID: e.ToolCallID,
+		CreatedAt:  time.Now(),
 	}
 }

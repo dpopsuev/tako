@@ -36,7 +36,8 @@ type Edge struct {
 // The Reactor writes emissions to the Molecule. The Cerebrum drains
 // and dispatches them via Motor Bus. Zero coupling.
 type Emission struct {
-	Kind    string
-	Target  string
-	Payload []byte
+	Kind       string
+	Target     string
+	Payload    []byte
+	ToolCallID string
 }

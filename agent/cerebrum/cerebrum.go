@@ -367,9 +367,10 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 				"tool":     tc.Name,
 			})
 			molecule.Emit(reactivity.Emission{
-				Kind:    "instrument",
-				Target:  tc.Name,
-				Payload: tc.Input,
+				Kind:       "instrument",
+				Target:     tc.Name,
+				Payload:    tc.Input,
+				ToolCallID: tc.ID,
 			})
 		}
 
@@ -583,7 +584,21 @@ func (cb *Cerebrum) SensoryBus() Bus {
 }
 
 func (cb *Cerebrum) tools(phase reactivity.AtomType) []tangle.Tool {
-	return cb.toolDefs
+	if len(cb.capabilities) == 0 {
+		return cb.toolDefs
+	}
+	var tools []tangle.Tool
+	for _, cap := range cb.capabilities {
+		if cap.Mode == shell.WriteAction && phase.Triad != reactivity.ImplementTriad {
+			continue
+		}
+		tools = append(tools, tangle.Tool{
+			Name:        cap.Name,
+			Description: cap.Description,
+			InputSchema: cap.Schema,
+		})
+	}
+	return tools
 }
 
 func (cb *Cerebrum) assemble(m *reactivity.Molecule, need []byte, domain Domain, turn int) string {
@@ -660,11 +675,22 @@ func (cb *Cerebrum) checkCatalystDesired(m *reactivity.Molecule, toolName, resul
 }
 
 func (cb *Cerebrum) waitToolResult(ctx context.Context, tc tangle.ToolCall) string {
-	event, ok := cb.sensory.Receive(ctx)
-	if !ok {
-		return "tool call timed out"
+	for {
+		event, ok := cb.sensory.Receive(ctx)
+		if !ok {
+			return "tool call timed out"
+		}
+		if event.ToolCallID == tc.ID || (event.ToolCallID == "" && event.Source == tc.Name) {
+			return string(event.Payload)
+		}
+		select {
+		case cb.monitorEvents <- event:
+		default:
+			slog.Warn("cerebrum.waitToolResult.overflow",
+				slog.String("event", event.Kind),
+				slog.String("expected_tool", tc.Name))
+		}
 	}
-	return string(event.Payload)
 }
 
 func (cb *Cerebrum) dispatch(ctx context.Context, m *reactivity.Molecule) {

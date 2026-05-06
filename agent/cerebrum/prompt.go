@@ -66,9 +66,13 @@ func buildContractPrompt(m *reactivity.Molecule, need []byte, domain Domain, con
 		active := c.Phase == phase
 		var summary string
 		if filled {
-			atoms := m.Atoms(c.Phase)
-			if len(atoms) > 0 {
-				summary = truncate(string(atoms[0].Content), 120)
+			if synth := m.Synthesis(c.Phase.Triad); synth != nil {
+				summary = truncate(string(synth.Content), 120)
+			} else {
+				atoms := m.Atoms(c.Phase)
+				if len(atoms) > 0 {
+					summary = truncate(string(atoms[len(atoms)-1].Content), 120)
+				}
 			}
 		}
 		cv := ContractView{

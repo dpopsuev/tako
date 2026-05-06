@@ -101,6 +101,17 @@ func (m *Molecule) CurrentTriad() Triad         { return m.phase.Triad }
 func (m *Molecule) TriadSealed(t Triad) bool    { return m.triadSealed[t] }
 func (m *Molecule) UnsealCount() int            { return m.unsealCount }
 
+func (m *Molecule) Synthesis(triad Triad) *Atom {
+	synthPhase := AtomType{triad, SynthesisPosition}
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	atoms := m.subgraphs[synthPhase]
+	if len(atoms) == 0 {
+		return nil
+	}
+	return m.atoms[atoms[len(atoms)-1]]
+}
+
 func (m *Molecule) AllTriadsSealed() bool {
 	return m.triadSealed[ThinkTriad] && m.triadSealed[ComposeTriad] &&
 		m.triadSealed[ImplementTriad] && m.triadSealed[ReflectTriad]

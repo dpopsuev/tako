@@ -108,11 +108,12 @@ func (m *corpusMotor) executeCapability(ctx context.Context, event cerebrum.Even
 		slog.Int("result_len", len(result.Text())))
 
 	return m.sensory.Send(ctx, cerebrum.Event{
-		ID:        fmt.Sprintf("motor-%s-%d", event.Source, time.Now().UnixNano()),
-		Kind:      "instrument.result",
-		Source:    event.Source,
-		Payload:   result.Text(),
-		CreatedAt: time.Now(),
+		ID:         fmt.Sprintf("motor-%s-%d", event.Source, time.Now().UnixNano()),
+		Kind:       "instrument.result",
+		Source:     event.Source,
+		Payload:    result.Text(),
+		ToolCallID: event.ToolCallID,
+		CreatedAt:  time.Now(),
 	})
 }
 

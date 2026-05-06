@@ -6,11 +6,12 @@ import (
 )
 
 type Event struct {
-	ID        string
-	Kind      string
-	Source    string
-	Payload   []byte
-	CreatedAt time.Time
+	ID         string
+	Kind       string
+	Source     string
+	Payload    []byte
+	ToolCallID string
+	CreatedAt  time.Time
 }
 
 type Bus interface {
