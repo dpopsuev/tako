@@ -38,6 +38,8 @@ func main() {
 
 	var err error
 	switch os.Args[1] {
+	case "tui":
+		err = tuiCmd(os.Args[2:])
 	case "agent":
 		err = agentCmd(os.Args[2:])
 	case "run":

@@ -1,0 +1,134 @@
+package tui
+
+import (
+	"fmt"
+	"strings"
+
+	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/dpopsuev/tako/assemble"
+	"github.com/dpopsuev/tako/tui/core"
+	"github.com/dpopsuev/tako/tui/layout"
+	"github.com/dpopsuev/tako/tui/widgets"
+)
+
+type Model struct {
+	agent  *assemble.Agent
+	output *widgets.OutputPanel
+	input  *widgets.InputPanel
+	status *widgets.StatusPanel
+	focus  *core.FocusManager
+	width  int
+	height int
+	done   bool
+	err    error
+}
+
+func NewModel(agent *assemble.Agent, modelName string) Model {
+	output := widgets.NewOutputPanel()
+	input := widgets.NewInputPanel()
+	status := widgets.NewStatusPanel(modelName)
+
+	fm := core.NewFocusManager(input, output)
+
+	return Model{
+		agent:  agent,
+		output: output,
+		input:  input,
+		status: status,
+		focus:  fm,
+	}
+}
+
+func (m Model) Init() tea.Cmd {
+	return tea.SetWindowTitle("tako")
+}
+
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
+		return m, nil
+
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "ctrl+c", "q":
+			return m, tea.Quit
+		case "tab":
+			m.focus.Cycle()
+			return m, nil
+		}
+
+	case widgets.SubmitMsg:
+		m.output.Update(widgets.AppendOutputMsg{Line: "> " + msg.Text})
+		return m, runAgent(m.agent, msg.Text)
+
+	case widgets.AgentDoneMsg:
+		m.done = true
+		m.output.Update(widgets.AppendOutputMsg{
+			Line: fmt.Sprintf("\n--- done: %d turns, d=%.2f, OAE=%.0f%% ---",
+				msg.Turns, msg.Distance, msg.OAE*100),
+		})
+		m.status.Update(msg)
+		result := m.agent.Result()
+		if result != nil {
+			retro := result.ByTaxonomy("retrospection.")
+			if len(retro) > 0 {
+				m.output.Update(widgets.AppendOutputMsg{
+					Line: string(retro[len(retro)-1].Content),
+				})
+			}
+		}
+		return m, nil
+
+	case widgets.ErrorMsg:
+		m.err = msg.Err
+		m.output.Update(widgets.AppendOutputMsg{Line: "ERROR: " + msg.Err.Error()})
+		return m, nil
+
+	case widgets.PhaseChangeMsg, widgets.ToolCallStartMsg, widgets.ToolCallResultMsg:
+		m.output.Update(msg)
+		m.status.Update(msg)
+		return m, nil
+	}
+
+	active := m.focus.Active()
+	if active != nil {
+		updated, cmd := active.Update(msg)
+		if p, ok := updated.(*widgets.InputPanel); ok {
+			m.input = p
+		}
+		if p, ok := updated.(*widgets.OutputPanel); ok {
+			m.output = p
+		}
+		return m, cmd
+	}
+
+	return m, nil
+}
+
+func (m Model) View() string {
+	if m.width == 0 {
+		return "initializing..."
+	}
+
+	outputHeight := m.height - 6
+	if outputHeight < 3 {
+		outputHeight = 3
+	}
+
+	p, _ := m.output.Update(layout.ResizeMsg{Width: m.width, Height: outputHeight})
+	m.output = p.(*widgets.OutputPanel)
+
+	var b strings.Builder
+	b.WriteString(m.output.View(m.width))
+	b.WriteString("\n")
+	b.WriteString(strings.Repeat("─", m.width))
+	b.WriteString("\n")
+	b.WriteString(m.status.View(m.width))
+	b.WriteString("\n")
+	b.WriteString(m.input.View(m.width))
+	return b.String()
+}
+
