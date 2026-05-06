@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/tako/agent"
-	"github.com/dpopsuev/tako/agent/shell"
 	"github.com/dpopsuev/tako/ergograph"
 	"github.com/dpopsuev/tako/fab"
 	"github.com/dpopsuev/tako/memory"
@@ -28,7 +27,6 @@ func TestWalkingSkeleton(t *testing.T) {
 	inspector := ergograph.StubInspector{}
 	canvas := render.NewStubCanvas()
 	mesh := memory.NewStubMesh()
-	shell := shell.NewStubShell()
 	dp := depo.NewStubDepo("test")
 	lobby := agent.StubLobby{}
 	runner := &agent.StubRunner{}
@@ -43,7 +41,6 @@ func TestWalkingSkeleton(t *testing.T) {
 		Depo:      dp,
 		Lobby:     lobby,
 		Mesh:      mesh,
-		Shell:     shell,
 		Runner:    runner,
 	})
 
@@ -150,7 +147,6 @@ func TestWalkingSkeletonDolt(t *testing.T) {
 	inspector := ergograph.StubInspector{}
 	canvas := render.NewStubCanvas()
 	mesh := memory.NewStubMesh()
-	shell := shell.NewStubShell()
 	dp := depo.NewDoltDepo(db.DB, "test")
 	lobby := agent.StubLobby{}
 	runner := &agent.StubRunner{}
@@ -165,7 +161,6 @@ func TestWalkingSkeletonDolt(t *testing.T) {
 		Depo:      dp,
 		Lobby:     lobby,
 		Mesh:      mesh,
-		Shell:     shell,
 		Runner:    runner,
 	})
 

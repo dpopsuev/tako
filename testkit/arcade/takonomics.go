@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dpopsuev/tako/agent/shell"
+	"github.com/dpopsuev/tako/agent/capability"
 )
 
 func NewTakonomics() Scenario {
@@ -22,14 +22,14 @@ func NewTakonomics() Scenario {
 		"won":         false,
 	})
 
-	adv.AddInstrument("status", "Show current kingdom status: grain, population, land, season, planted, fed", shell.ReadAction, func(s map[string]any, _ string) string {
+	adv.AddInstrument("status", "Show current kingdom status: grain, population, land, season, planted, fed", capability.ReadAction, func(s map[string]any, _ string) string {
 		return fmt.Sprintf(
 			"Season %d/%d | Grain: %d | Population: %d | Land: %d acres | Planted: %d | Fed: %d grain to people",
 			s["season"], s["max_seasons"], s["grain"], s["population"], s["land"], s["planted"], s["fed"],
 		)
 	})
 
-	adv.AddInstrument("plant", "Plant grain on your land. Input: number of grain to plant (costs 1 grain per acre, max = min(grain, land))", shell.WriteAction, func(s map[string]any, input string) string {
+	adv.AddInstrument("plant", "Plant grain on your land. Input: number of grain to plant (costs 1 grain per acre, max = min(grain, land))", capability.WriteAction, func(s map[string]any, input string) string {
 		if s["harvested"] == true {
 			return "you already harvested this season, advance to next season first"
 		}
@@ -51,7 +51,7 @@ func NewTakonomics() Scenario {
 		return fmt.Sprintf("planted %d grain across %d acres; %d grain remaining", amount, amount, s["grain"])
 	})
 
-	adv.AddInstrument("feed", "Feed your population. Input: total grain to distribute (each person needs 20 grain per season)", shell.WriteAction, func(s map[string]any, input string) string {
+	adv.AddInstrument("feed", "Feed your population. Input: total grain to distribute (each person needs 20 grain per season)", capability.WriteAction, func(s map[string]any, input string) string {
 		if s["harvested"] == true {
 			return "you already harvested this season, advance to next season first"
 		}
@@ -73,7 +73,7 @@ func NewTakonomics() Scenario {
 		return fmt.Sprintf("fed %d grain to %d people (needed %d); some people will go hungry", amount, population, needed)
 	})
 
-	adv.AddInstrument("trade", "Buy or sell land. Input: 'buy N' or 'sell N'. Buying costs 20 grain/acre, selling yields 15 grain/acre", shell.WriteAction, func(s map[string]any, input string) string {
+	adv.AddInstrument("trade", "Buy or sell land. Input: 'buy N' or 'sell N'. Buying costs 20 grain/acre, selling yields 15 grain/acre", capability.WriteAction, func(s map[string]any, input string) string {
 		parts := strings.Fields(strings.TrimSpace(input))
 		if len(parts) != 2 {
 			return "input must be 'buy N' or 'sell N'"
@@ -108,7 +108,7 @@ func NewTakonomics() Scenario {
 		}
 	})
 
-	adv.AddInstrument("harvest", "End the current season. Calculates harvest yield (planted * 3), applies starvation, advances season", shell.WriteAction, func(s map[string]any, _ string) string {
+	adv.AddInstrument("harvest", "End the current season. Calculates harvest yield (planted * 3), applies starvation, advances season", capability.WriteAction, func(s map[string]any, _ string) string {
 		if s["harvested"] == true {
 			return "you already harvested this season"
 		}
@@ -167,7 +167,7 @@ func NewTakonomics() Scenario {
 		return report
 	})
 
-	adv.AddInstrument("look", "Describe the current state of your kingdom narratively", shell.ReadAction, func(s map[string]any, _ string) string {
+	adv.AddInstrument("look", "Describe the current state of your kingdom narratively", capability.ReadAction, func(s map[string]any, _ string) string {
 		season := s["season"].(int)
 		maxSeasons := s["max_seasons"].(int)
 		grain := s["grain"].(int)
@@ -203,7 +203,7 @@ func NewTakonomics() Scenario {
 		return desc
 	})
 
-	adv.AddInstrument("check_prosperity", "Check if the kingdom has survived all seasons", shell.ReadAction, func(s map[string]any, _ string) string {
+	adv.AddInstrument("check_prosperity", "Check if the kingdom has survived all seasons", capability.ReadAction, func(s map[string]any, _ string) string {
 		if s["won"] == true {
 			return "the kingdom is prosperous — all seasons survived"
 		}

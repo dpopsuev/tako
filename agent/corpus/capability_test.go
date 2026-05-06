@@ -8,19 +8,19 @@ import (
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
 	"github.com/dpopsuev/tako/agent/reactivity"
-	agentshell "github.com/dpopsuev/tako/agent/shell"
+	"github.com/dpopsuev/tako/agent/capability"
 )
 
 func TestCapabilityPath_Execute(t *testing.T) {
 	c := New()
-	c.Register(agentshell.Capability{
+	c.Register(capability.Capability{
 		Name:        "greet",
 		Description: "Say hello",
-		Mode:        agentshell.ReadAction,
+		Mode:        capability.ReadAction,
 		Risk:        0,
-		Source:      agentshell.Environment,
-		Execute: func(_ context.Context, input json.RawMessage) (agentshell.Result, error) {
-			return agentshell.TextResult("hello " + string(input)), nil
+		Source:      capability.Environment,
+		Execute: func(_ context.Context, input json.RawMessage) (capability.Result, error) {
+			return capability.TextResult("hello " + string(input)), nil
 		},
 	})
 
@@ -48,13 +48,13 @@ func TestCapabilityPath_Execute(t *testing.T) {
 
 func TestCapabilityPath_PhaseGating(t *testing.T) {
 	c := New()
-	c.Register(agentshell.Capability{
+	c.Register(capability.Capability{
 		Name:   "deploy",
-		Mode:   agentshell.WriteAction,
+		Mode:   capability.WriteAction,
 		Risk:   0.5,
-		Source: agentshell.Environment,
-		Execute: func(_ context.Context, _ json.RawMessage) (agentshell.Result, error) {
-			return agentshell.TextResult("deployed"), nil
+		Source: capability.Environment,
+		Execute: func(_ context.Context, _ json.RawMessage) (capability.Result, error) {
+			return capability.TextResult("deployed"), nil
 		},
 	})
 
@@ -78,13 +78,13 @@ func TestCapabilityPath_PhaseGating(t *testing.T) {
 
 func TestCapabilityPath_TrustGating(t *testing.T) {
 	c := New()
-	c.Register(agentshell.Capability{
+	c.Register(capability.Capability{
 		Name:   "delete",
-		Mode:   agentshell.WriteAction,
+		Mode:   capability.WriteAction,
 		Risk:   0.9,
-		Source: agentshell.Environment,
-		Execute: func(_ context.Context, _ json.RawMessage) (agentshell.Result, error) {
-			return agentshell.TextResult("deleted"), nil
+		Source: capability.Environment,
+		Execute: func(_ context.Context, _ json.RawMessage) (capability.Result, error) {
+			return capability.TextResult("deleted"), nil
 		},
 	})
 
@@ -113,12 +113,12 @@ func TestCapabilityPath_TrustGating(t *testing.T) {
 
 func TestCapabilityPath_SignalEmission(t *testing.T) {
 	c := New()
-	c.Register(agentshell.Capability{
+	c.Register(capability.Capability{
 		Name:   "look",
-		Mode:   agentshell.ReadAction,
-		Source: agentshell.Environment,
-		Execute: func(_ context.Context, _ json.RawMessage) (agentshell.Result, error) {
-			return agentshell.TextResult("you see a room"), nil
+		Mode:   capability.ReadAction,
+		Source: capability.Environment,
+		Execute: func(_ context.Context, _ json.RawMessage) (capability.Result, error) {
+			return capability.TextResult("you see a room"), nil
 		},
 	})
 

@@ -7,25 +7,25 @@ import (
 	"time"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/agent/shell"
+	"github.com/dpopsuev/tako/agent/capability"
 	tangle "github.com/dpopsuev/tangle"
 )
 
 func TestPhaseB_FullPipeline(t *testing.T) {
 	cfg := reactivity.DefaultConfig
 
-	readCap := shell.Capability{
+	readCap := capability.Capability{
 		Name:        "read_file",
 		Description: "read a file",
 		Schema:      json.RawMessage(`{"type":"object","properties":{"path":{"type":"string"}}}`),
-		Mode:        shell.ReadAction,
-		Source:      shell.Environment,
-		Execute: func(_ context.Context, _ json.RawMessage) (shell.Result, error) {
-			return shell.TextResult("file contents"), nil
+		Mode:        capability.ReadAction,
+		Source:      capability.Environment,
+		Execute: func(_ context.Context, _ json.RawMessage) (capability.Result, error) {
+			return capability.TextResult("file contents"), nil
 		},
 	}
 
-	reflexStore := NewReflexStore([]shell.Capability{readCap})
+	reflexStore := NewReflexStore([]capability.Capability{readCap})
 	reflexStore.AddReflex(
 		map[string]float64{"file.exists": 1},
 		[]string{"read_file"},
@@ -51,7 +51,7 @@ func TestPhaseB_FullPipeline(t *testing.T) {
 
 	cb := New(reactor, completer,
 		WithMotor(motor),
-		WithCapabilities([]shell.Capability{readCap}),
+		WithCapabilities([]capability.Capability{readCap}),
 		WithConfig(&cfg),
 		WithAssert(convergenceAssert),
 		WithAlignmentChecker(alignment),
@@ -109,7 +109,7 @@ func TestPhaseB_FullPipeline(t *testing.T) {
 	})
 
 	t.Run("gear_intuition_for_partial_match", func(t *testing.T) {
-		partialStore := NewReflexStore([]shell.Capability{readCap})
+		partialStore := NewReflexStore([]capability.Capability{readCap})
 		partialStore.AddReflex(
 			map[string]float64{"file.exists": 1, "file.readable": 1, "file.writable": 1},
 			[]string{"read_file"},

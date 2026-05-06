@@ -1,4 +1,4 @@
-package shell
+package capability
 
 // ActionMode labels whether an individual action reads or writes.
 type ActionMode int

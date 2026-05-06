@@ -5,7 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/agent/shell"
+	"github.com/dpopsuev/tako/agent/capability"
 )
 
 type Observer func() map[string]any
@@ -14,7 +14,7 @@ type RawContext struct {
 	Need         []byte
 	Observer     Observer
 	Molecule     *reactivity.Molecule
-	Capabilities []shell.Capability
+	Capabilities []capability.Capability
 	Domain       Domain
 	Contracts    []reactivity.ContractInfo
 	Directives   []reactivity.Directive
@@ -28,7 +28,7 @@ type Context struct {
 	StateChanges  map[string][2]any
 	Desired       map[string]any
 	Residual      map[string]float64
-	Capabilities  []shell.Capability
+	Capabilities  []capability.Capability
 	Phase         reactivity.AtomType
 	Domain        Domain
 	Contracts     []reactivity.ContractInfo

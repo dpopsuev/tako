@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/dpopsuev/tako/agent/shell"
+	"github.com/dpopsuev/tako/agent/capability"
 )
 
 type grepInput struct {
@@ -31,18 +31,18 @@ func (f *grepFunc) InputSchema() json.RawMessage {
 	return json.RawMessage(`{"type":"object","properties":{"pattern":{"type":"string","description":"Regex pattern to search for"},"path":{"type":"string","description":"File or directory to search"},"limit":{"type":"integer","description":"Max results (default 100)"}},"required":["pattern","path"]}`)
 }
 
-func (f *grepFunc) Execute(ctx context.Context, input json.RawMessage) (shell.Result, error) {
+func (f *grepFunc) Execute(ctx context.Context, input json.RawMessage) (capability.Result, error) {
 	var in grepInput
 	if err := json.Unmarshal(input, &in); err != nil {
-		return shell.Result{}, fmt.Errorf("grep: %w", err)
+		return capability.Result{}, fmt.Errorf("grep: %w", err)
 	}
 	if in.Pattern == "" || in.Path == "" {
-		return shell.ErrorResult("grep: pattern and path required"), nil
+		return capability.ErrorResult("grep: pattern and path required"), nil
 	}
 
 	re, err := regexp.Compile(in.Pattern)
 	if err != nil {
-		return shell.ErrorResult(fmt.Sprintf("grep: invalid regex %q: %s", in.Pattern, err)), nil
+		return capability.ErrorResult(fmt.Sprintf("grep: invalid regex %q: %s", in.Pattern, err)), nil
 	}
 
 	limit := 100
@@ -68,17 +68,17 @@ func (f *grepFunc) Execute(ctx context.Context, input json.RawMessage) (shell.Re
 		return grepFile(p, re, limit, &matchCount, &sb)
 	})
 	if err != nil {
-		return shell.ErrorResult(fmt.Sprintf("grep: %s", err)), nil
+		return capability.ErrorResult(fmt.Sprintf("grep: %s", err)), nil
 	}
 
 	if matchCount == 0 {
-		return shell.TextResult("no matches found"), nil
+		return capability.TextResult("no matches found"), nil
 	}
 	if matchCount >= limit {
 		fmt.Fprintf(&sb, "... (truncated at %d matches)\n", limit)
 	}
 
-	return shell.TextResult(sb.String()), nil
+	return capability.TextResult(sb.String()), nil
 }
 
 func grepFile(path string, re *regexp.Regexp, limit int, count *int, sb *strings.Builder) error {

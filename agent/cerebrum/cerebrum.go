@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/agent/shell"
+	"github.com/dpopsuev/tako/agent/capability"
 	tangle "github.com/dpopsuev/tangle"
 )
 
@@ -94,7 +94,7 @@ type Cerebrum struct {
 	observer           Observer
 	regulator          Regulator
 	assembler          Assembler
-	capabilities       []shell.Capability
+	capabilities       []capability.Capability
 	config             *reactivity.Config
 	priorityClassifier PriorityClassifier
 	watcher            tangle.Completer
@@ -699,7 +699,7 @@ func (cb *Cerebrum) tools(phase reactivity.AtomType) []tangle.Tool {
 	tools := []tangle.Tool{phaseToolFor(phase)}
 
 	for _, cap := range cb.capabilities {
-		if cap.Mode == shell.WriteAction && phase.Triad != reactivity.ImplementTriad {
+		if cap.Mode == capability.WriteAction && phase.Triad != reactivity.ImplementTriad {
 			continue
 		}
 		tools = append(tools, tangle.Tool{

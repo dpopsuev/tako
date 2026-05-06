@@ -8,11 +8,11 @@ import (
 	"time"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/agent/shell"
+	"github.com/dpopsuev/tako/agent/capability"
 )
 
 type ReflexStore interface {
-	Match(residual map[string]float64) ([]shell.Capability, float64)
+	Match(residual map[string]float64) ([]capability.Capability, float64)
 }
 
 type ReflexEntry struct {
@@ -22,10 +22,10 @@ type ReflexEntry struct {
 
 type InMemoryReflexStore struct {
 	entries      []ReflexEntry
-	capabilities []shell.Capability
+	capabilities []capability.Capability
 }
 
-func NewReflexStore(caps []shell.Capability) *InMemoryReflexStore {
+func NewReflexStore(caps []capability.Capability) *InMemoryReflexStore {
 	return &InMemoryReflexStore{capabilities: caps}
 }
 
@@ -33,12 +33,12 @@ func (s *InMemoryReflexStore) AddReflex(pattern map[string]float64, actions []st
 	s.entries = append(s.entries, ReflexEntry{Pattern: pattern, Actions: actions})
 }
 
-func (s *InMemoryReflexStore) Match(residual map[string]float64) ([]shell.Capability, float64) {
+func (s *InMemoryReflexStore) Match(residual map[string]float64) ([]capability.Capability, float64) {
 	if residual == nil || len(s.entries) == 0 {
 		return nil, 0
 	}
 
-	var bestCaps []shell.Capability
+	var bestCaps []capability.Capability
 	var bestOverlap float64
 
 	for _, entry := range s.entries {
@@ -65,8 +65,8 @@ func computeOverlap(residual, pattern map[string]float64) float64 {
 	return float64(matched) / float64(len(pattern))
 }
 
-func (s *InMemoryReflexStore) resolveActions(names []string) []shell.Capability {
-	var caps []shell.Capability
+func (s *InMemoryReflexStore) resolveActions(names []string) []capability.Capability {
+	var caps []capability.Capability
 	for _, name := range names {
 		for _, cap := range s.capabilities {
 			if cap.Name == name {
@@ -78,7 +78,7 @@ func (s *InMemoryReflexStore) resolveActions(names []string) []shell.Capability 
 	return caps
 }
 
-func fireReflex(ctx context.Context, caps []shell.Capability, overlap float64) {
+func fireReflex(ctx context.Context, caps []capability.Capability, overlap float64) {
 	for _, cap := range caps {
 		if cap.Execute == nil {
 			continue
@@ -110,7 +110,7 @@ func selectGear(overlap float64) Gear {
 	}
 }
 
-func suggestionAtom(caps []shell.Capability, overlap float64, turn int) reactivity.Atom {
+func suggestionAtom(caps []capability.Capability, overlap float64, turn int) reactivity.Atom {
 	var names []string
 	for _, c := range caps {
 		names = append(names, c.Name)

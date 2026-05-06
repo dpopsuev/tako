@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/agent/shell"
+	"github.com/dpopsuev/tako/agent/capability"
 	tangle "github.com/dpopsuev/tangle"
 )
 
@@ -96,7 +96,7 @@ func WithAssembler(a Assembler) Option {
 	return func(cb *Cerebrum) { cb.assembler = a }
 }
 
-func WithCapabilities(caps []shell.Capability) Option {
+func WithCapabilities(caps []capability.Capability) Option {
 	return func(cb *Cerebrum) { cb.capabilities = caps }
 }
 

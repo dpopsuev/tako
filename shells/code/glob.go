@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dpopsuev/tako/agent/shell"
+	"github.com/dpopsuev/tako/agent/capability"
 )
 
 type globInput struct {
@@ -27,13 +27,13 @@ func (f *globFunc) InputSchema() json.RawMessage {
 	return json.RawMessage(`{"type":"object","properties":{"pattern":{"type":"string","description":"Glob pattern (e.g. *.go, **/*.go)"},"path":{"type":"string","description":"Base directory (default: working dir)"}},"required":["pattern"]}`)
 }
 
-func (f *globFunc) Execute(ctx context.Context, input json.RawMessage) (shell.Result, error) {
+func (f *globFunc) Execute(ctx context.Context, input json.RawMessage) (capability.Result, error) {
 	var in globInput
 	if err := json.Unmarshal(input, &in); err != nil {
-		return shell.Result{}, fmt.Errorf("glob: %w", err)
+		return capability.Result{}, fmt.Errorf("glob: %w", err)
 	}
 	if in.Pattern == "" {
-		return shell.ErrorResult("glob: pattern required"), nil
+		return capability.ErrorResult("glob: pattern required"), nil
 	}
 
 	base := in.Path
@@ -48,12 +48,12 @@ func (f *globFunc) Execute(ctx context.Context, input json.RawMessage) (shell.Re
 
 	matches, err := filepath.Glob(pattern)
 	if err != nil {
-		return shell.ErrorResult(fmt.Sprintf("glob: invalid pattern: %s", err)), nil
+		return capability.ErrorResult(fmt.Sprintf("glob: invalid pattern: %s", err)), nil
 	}
 
 	if len(matches) == 0 {
-		return shell.TextResult("no files found"), nil
+		return capability.TextResult("no files found"), nil
 	}
 
-	return shell.TextResult(strings.Join(matches, "\n")), nil
+	return capability.TextResult(strings.Join(matches, "\n")), nil
 }

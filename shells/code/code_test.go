@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/dpopsuev/tako/agent/shell"
+	"github.com/dpopsuev/tako/agent/capability"
 )
 
-func capSet(dir string) *shell.CapabilitySet {
-	cs := shell.NewCapabilitySet()
+func capSet(dir string) *capability.CapabilitySet {
+	cs := capability.NewCapabilitySet()
 	for _, c := range Capabilities(dir) {
 		cs.Register(c)
 	}
@@ -34,7 +34,7 @@ func TestCodeCapabilities_Names(t *testing.T) {
 
 func TestCodeCapabilities_Modes(t *testing.T) {
 	cs := capSet(t.TempDir())
-	check := func(name string, want shell.ActionMode) {
+	check := func(name string, want capability.ActionMode) {
 		cap, ok := cs.Get(name)
 		if !ok {
 			t.Fatalf("%s not found", name)
@@ -43,9 +43,9 @@ func TestCodeCapabilities_Modes(t *testing.T) {
 			t.Errorf("%s mode = %v, want %v", name, cap.Mode, want)
 		}
 	}
-	check("read_file", shell.ReadAction)
-	check("write_file", shell.WriteAction)
-	check("go_test", shell.WriteAction)
+	check("read_file", capability.ReadAction)
+	check("write_file", capability.WriteAction)
+	check("go_test", capability.WriteAction)
 }
 
 func TestCodeCapabilities_Risk(t *testing.T) {

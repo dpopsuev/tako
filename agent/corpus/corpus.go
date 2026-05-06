@@ -4,7 +4,7 @@ import (
 	"errors"
 	"sync"
 
-	agentshell "github.com/dpopsuev/tako/agent/shell"
+	"github.com/dpopsuev/tako/agent/capability"
 	"github.com/dpopsuev/tako/artifact"
 )
 
@@ -24,35 +24,35 @@ type Handler interface {
 type Corpus struct {
 	mu            sync.RWMutex
 	handlers      map[string]Handler
-	capabilities  *agentshell.CapabilitySet
+	capabilities  *capability.CapabilitySet
 	subscriptions map[string][]string
 }
 
 func New() *Corpus {
 	return &Corpus{
 		handlers:      make(map[string]Handler),
-		capabilities:  agentshell.NewCapabilitySet(),
+		capabilities:  capability.NewCapabilitySet(),
 		subscriptions: make(map[string][]string),
 	}
 }
 
 // Register adds a Capability to the Corpus. The unified path —
-// no distinction between organ, instrument, or shell.
-func (c *Corpus) Register(cap agentshell.Capability) {
+// no distinction between organ, instrument, or capability.
+func (c *Corpus) Register(cap capability.Capability) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.capabilities.Register(cap)
 }
 
 // Capability returns a registered capability by name.
-func (c *Corpus) Capability(name string) (agentshell.Capability, bool) {
+func (c *Corpus) Capability(name string) (capability.Capability, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.capabilities.Get(name)
 }
 
 // Capabilities returns the full set.
-func (c *Corpus) Capabilities() *agentshell.CapabilitySet {
+func (c *Corpus) Capabilities() *capability.CapabilitySet {
 	return c.capabilities
 }
 

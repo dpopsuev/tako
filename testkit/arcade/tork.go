@@ -3,7 +3,7 @@ package arcade
 import (
 	"fmt"
 
-	"github.com/dpopsuev/tako/agent/shell"
+	"github.com/dpopsuev/tako/agent/capability"
 )
 
 // NewTork returns a Zork-inspired inventory puzzle scenario.
@@ -49,7 +49,7 @@ func NewTork() Scenario {
 		return ""
 	}
 
-	adv.AddInstrument("look", "Look around the current room to see its description and visible items", shell.ReadAction, func(s map[string]any, _ string) string {
+	adv.AddInstrument("look", "Look around the current room to see its description and visible items", capability.ReadAction, func(s map[string]any, _ string) string {
 		room := s["current_room"].(string)
 		desc, ok := rooms[room]
 		if !ok {
@@ -58,7 +58,7 @@ func NewTork() Scenario {
 		return desc + roomItems(s, room)
 	})
 
-	adv.AddInstrument("go", "Move to a connected room. Input: room name (entrance, hallway, locked_room, dark_cave, treasure_room)", shell.WriteAction, func(s map[string]any, input string) string {
+	adv.AddInstrument("go", "Move to a connected room. Input: room name (entrance, hallway, locked_room, dark_cave, treasure_room)", capability.WriteAction, func(s map[string]any, input string) string {
 		current := s["current_room"].(string)
 
 		// Define allowed connections.
@@ -114,7 +114,7 @@ func NewTork() Scenario {
 		return fmt.Sprintf("you move to the %s. %s%s", input, desc, roomItems(s, input))
 	})
 
-	adv.AddInstrument("take", "Pick up an item in the current room. Input: item name (key, treasure)", shell.WriteAction, func(s map[string]any, input string) string {
+	adv.AddInstrument("take", "Pick up an item in the current room. Input: item name (key, treasure)", capability.WriteAction, func(s map[string]any, input string) string {
 		room := s["current_room"].(string)
 
 		switch input {
@@ -144,7 +144,7 @@ func NewTork() Scenario {
 		}
 	})
 
-	adv.AddInstrument("use", "Use an item from your inventory. Input: item name (key, lamp)", shell.WriteAction, func(s map[string]any, input string) string {
+	adv.AddInstrument("use", "Use an item from your inventory. Input: item name (key, lamp)", capability.WriteAction, func(s map[string]any, input string) string {
 		inv := s["inventory"].([]string)
 		hasItem := false
 		for _, item := range inv {
@@ -180,7 +180,7 @@ func NewTork() Scenario {
 		}
 	})
 
-	adv.AddInstrument("inventory", "List what you are currently carrying", shell.ReadAction, func(s map[string]any, _ string) string {
+	adv.AddInstrument("inventory", "List what you are currently carrying", capability.ReadAction, func(s map[string]any, _ string) string {
 		inv := s["inventory"].([]string)
 		if len(inv) == 0 {
 			return "you are carrying nothing"
@@ -188,7 +188,7 @@ func NewTork() Scenario {
 		return fmt.Sprintf("you are carrying: %v", inv)
 	})
 
-	adv.AddInstrument("examine", "Examine an item or object in the current room for more details. Input: item or object name", shell.ReadAction, func(s map[string]any, input string) string {
+	adv.AddInstrument("examine", "Examine an item or object in the current room for more details. Input: item or object name", capability.ReadAction, func(s map[string]any, input string) string {
 		room := s["current_room"].(string)
 
 		switch input {
@@ -238,7 +238,7 @@ func NewTork() Scenario {
 		}
 	})
 
-	adv.AddInstrument("check_escaped", "Check if you have retrieved the treasure and won", shell.ReadAction, func(s map[string]any, _ string) string {
+	adv.AddInstrument("check_escaped", "Check if you have retrieved the treasure and won", capability.ReadAction, func(s map[string]any, _ string) string {
 		if s["won"] == true {
 			return "you have escaped with the treasure"
 		}

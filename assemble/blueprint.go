@@ -8,14 +8,14 @@ import (
 	"github.com/dpopsuev/tako/agent/cerebrum"
 	"github.com/dpopsuev/tako/agent/corpus"
 	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/agent/shell"
+	"github.com/dpopsuev/tako/agent/capability"
 	tangle "github.com/dpopsuev/tangle"
 )
 
 type Blueprint struct {
 	Model        string
 	ModelWatcher string
-	Capabilities []shell.Capability
+	Capabilities []capability.Capability
 	Budget       cerebrum.Budget
 	Config       *reactivity.Config
 }
@@ -65,7 +65,7 @@ func Assemble(bp Blueprint, completer tangle.Completer) *Agent {
 	sensory := cerebrum.NewChannelBus(64)
 	corp := corpus.New()
 
-	allCaps := make([]shell.Capability, 0, len(bp.Capabilities)+1)
+	allCaps := make([]capability.Capability, 0, len(bp.Capabilities)+1)
 	for _, cap := range bp.Capabilities {
 		corp.Register(cap)
 		allCaps = append(allCaps, cap)

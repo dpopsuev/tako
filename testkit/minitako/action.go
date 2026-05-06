@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/dpopsuev/tako/agent/shell"
+	"github.com/dpopsuev/tako/agent/capability"
 )
 
 var (
@@ -34,7 +34,7 @@ func (f *ActionFunction) InputSchema() json.RawMessage {
 	return json.RawMessage(`{"type":"object"}`)
 }
 
-func (f *ActionFunction) Execute(_ context.Context, _ json.RawMessage) (shell.Result, error) {
+func (f *ActionFunction) Execute(_ context.Context, _ json.RawMessage) (capability.Result, error) {
 	return ApplyAction(f.gs, f.action)
 }
 
@@ -54,9 +54,9 @@ var descriptions = map[Action]string{
 	Idle:     "Do nothing.",
 }
 
-func ApplyAction(gs *GameState, action Action) (shell.Result, error) {
+func ApplyAction(gs *GameState, action Action) (capability.Result, error) {
 	if HourToTimeOfDay(gs.Hour) == Night {
-		return shell.Result{}, ErrNightTime
+		return capability.Result{}, ErrNightTime
 	}
 
 	consecutive := 1
@@ -97,7 +97,7 @@ func ApplyAction(gs *GameState, action Action) (shell.Result, error) {
 
 	case Medicine:
 		if gs.Pet.Health >= 40 {
-			return shell.Result{}, ErrNotSick
+			return capability.Result{}, ErrNotSick
 		}
 		gs.Pet.Health += 20
 		gs.Pet.Happiness -= 10
@@ -108,10 +108,10 @@ func ApplyAction(gs *GameState, action Action) (shell.Result, error) {
 
 	case Hunt:
 		if !gs.HasRifle {
-			return shell.Result{}, ErrNoRifle
+			return capability.Result{}, ErrNoRifle
 		}
 		if gs.Ammo <= 0 {
-			return shell.Result{}, ErrNoAmmo
+			return capability.Result{}, ErrNoAmmo
 		}
 		gs.Ammo--
 		gs.Pet.Hunger += 50
@@ -132,7 +132,7 @@ func ApplyAction(gs *GameState, action Action) (shell.Result, error) {
 		// nothing
 
 	default:
-		return shell.Result{}, ErrUnknownAction
+		return capability.Result{}, ErrUnknownAction
 	}
 
 	gs.LastAction = action
@@ -141,7 +141,7 @@ func ApplyAction(gs *GameState, action Action) (shell.Result, error) {
 	pet := Pet{}
 	pet.clamp(&gs.Pet)
 
-	return shell.TextResult(action.String()), err
+	return capability.TextResult(action.String()), err
 }
 
 func AvailableActions(gs *GameState) []Action {
@@ -162,15 +162,15 @@ func AvailableActions(gs *GameState) []Action {
 	return actions
 }
 
-func GameCapabilities(gs *GameState) []shell.Capability {
+func GameCapabilities(gs *GameState) []capability.Capability {
 	actions := AvailableActions(gs)
-	fns := make([]shell.Capability, len(actions))
+	fns := make([]capability.Capability, len(actions))
 	for i, a := range actions {
-		af := NewActionFunction(a, gs); fns[i] = shell.Capability{Name: af.Name(), Description: af.Description(), Schema: af.InputSchema(), Mode: shell.WriteAction, Source: shell.Environment, Execute: af.Execute}
+		af := NewActionFunction(a, gs); fns[i] = capability.Capability{Name: af.Name(), Description: af.Description(), Schema: af.InputSchema(), Mode: capability.WriteAction, Source: capability.Environment, Execute: af.Execute}
 	}
 	return fns
 }
 
-func GameCapabilitySet(gs *GameState) *shell.CapabilitySet {
-	cs := shell.NewCapabilitySet(); for _, c := range GameCapabilities(gs) { cs.Register(c) }; return cs
+func GameCapabilitySet(gs *GameState) *capability.CapabilitySet {
+	cs := capability.NewCapabilitySet(); for _, c := range GameCapabilities(gs) { cs.Register(c) }; return cs
 }

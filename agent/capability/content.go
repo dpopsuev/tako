@@ -1,4 +1,4 @@
-package shell
+package capability
 
 // Content is one part of an instrument Result.
 type Content struct {

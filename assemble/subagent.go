@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
-	"github.com/dpopsuev/tako/agent/shell"
+	"github.com/dpopsuev/tako/agent/capability"
 	"github.com/dpopsuev/tako/shells/code"
 	tangle "github.com/dpopsuev/tangle"
 )
@@ -24,26 +24,26 @@ type SubagentFactory struct {
 	Completer tangle.Completer
 }
 
-func (f *SubagentFactory) Capability() shell.Capability {
-	return shell.Capability{
+func (f *SubagentFactory) Capability() capability.Capability {
+	return capability.Capability{
 		Name:        "spawn_agent",
 		Description: "Spawn a child agent to handle a sub-task. Types: explore (read-only, fast), plan (read-only, deep), general (full capabilities). Returns the child's result.",
 		Schema:      json.RawMessage(`{"type":"object","properties":{"task":{"type":"string","description":"Task for the child agent"},"type":{"type":"string","enum":["explore","plan","general"],"description":"Agent type (default: general)"},"max_turns":{"type":"integer","description":"Max turns for child (default: 10)"}},"required":["task"]}`),
-		Mode:        shell.WriteAction,
+		Mode:        capability.WriteAction,
 		Risk:        0.3,
-		Source:      shell.BuiltIn,
+		Source:      capability.BuiltIn,
 		Writes:      []string{"filesystem", "git"},
 		Execute:     f.execute,
 	}
 }
 
-func (f *SubagentFactory) execute(ctx context.Context, input json.RawMessage) (shell.Result, error) {
+func (f *SubagentFactory) execute(ctx context.Context, input json.RawMessage) (capability.Result, error) {
 	var in subagentInput
 	if err := json.Unmarshal(input, &in); err != nil {
-		return shell.Result{}, fmt.Errorf("spawn_agent: %w", err)
+		return capability.Result{}, fmt.Errorf("spawn_agent: %w", err)
 	}
 	if in.Task == "" {
-		return shell.ErrorResult("spawn_agent: task required"), nil
+		return capability.ErrorResult("spawn_agent: task required"), nil
 	}
 
 	agentType := in.Type
@@ -84,7 +84,7 @@ func (f *SubagentFactory) execute(ctx context.Context, input json.RawMessage) (s
 			slog.String("type", agentType),
 			slog.Duration("elapsed", elapsed),
 			slog.Any("error", err))
-		return shell.ErrorResult(fmt.Sprintf("subagent failed: %s", err)), nil
+		return capability.ErrorResult(fmt.Sprintf("subagent failed: %s", err)), nil
 	}
 
 	m := child.Result()
@@ -104,25 +104,25 @@ func (f *SubagentFactory) execute(ctx context.Context, input json.RawMessage) (s
 		result = fmt.Sprintf("subagent completed (type=%s, mass=%d, distance=%.2f)", agentType, m.TotalMass(), m.Distance())
 	}
 
-	return shell.TextResult(result), nil
+	return capability.TextResult(result), nil
 }
 
-func (f *SubagentFactory) capsForType(agentType string) []shell.Capability {
+func (f *SubagentFactory) capsForType(agentType string) []capability.Capability {
 	all := code.Capabilities(f.Root)
 
 	switch agentType {
 	case "explore":
-		var readOnly []shell.Capability
+		var readOnly []capability.Capability
 		for _, c := range all {
-			if c.Mode == shell.ReadAction {
+			if c.Mode == capability.ReadAction {
 				readOnly = append(readOnly, c)
 			}
 		}
 		return readOnly
 	case "plan":
-		var readOnly []shell.Capability
+		var readOnly []capability.Capability
 		for _, c := range all {
-			if c.Mode == shell.ReadAction {
+			if c.Mode == capability.ReadAction {
 				readOnly = append(readOnly, c)
 			}
 		}

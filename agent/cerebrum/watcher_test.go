@@ -6,12 +6,12 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/agent/shell"
+	"github.com/dpopsuev/tako/agent/capability"
 	tangle "github.com/dpopsuev/tangle"
 )
 
 func TestWatcherClassifier_ReflexHit(t *testing.T) {
-	store := NewReflexStore([]shell.Capability{{Name: "read_file"}})
+	store := NewReflexStore([]capability.Capability{{Name: "read_file"}})
 	store.AddReflex(map[string]float64{"file.exists": 1}, []string{"read_file"})
 
 	wc := &WatcherClassifier{Reflex: store}

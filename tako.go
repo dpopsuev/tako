@@ -9,7 +9,7 @@ import (
 
 	"github.com/dpopsuev/tako/agent"
 	"github.com/dpopsuev/tako/agent/corpus"
-	"github.com/dpopsuev/tako/agent/shell"
+	"github.com/dpopsuev/tako/agent/capability"
 	"github.com/dpopsuev/tako/artifact"
 	"github.com/dpopsuev/tako/discourse"
 	"github.com/dpopsuev/tako/ergograph"
@@ -40,7 +40,7 @@ type FabCollective struct {
 	agents     []*agent.Agent
 	runner     agent.Runner
 	mesh       memory.Mesh
-	capabilities *shell.CapabilitySet
+	capabilities *capability.CapabilitySet
 	monolog    discourse.Monolog
 }
 
@@ -61,7 +61,7 @@ type FabCollectiveConfig struct {
 	Depo       depo.Depo
 	Lobby      agent.Lobby
 	Mesh       memory.Mesh
-	Capabilities *shell.CapabilitySet
+	Capabilities *capability.CapabilitySet
 	Runner     agent.Runner
 	Middleware []Middleware
 }
@@ -93,19 +93,19 @@ func (fc *FabCollective) Run(ctx context.Context) error {
 	}
 
 	// Admit agent through Lobby (PDP-PEP: Lobby evaluates, issues Capability)
-	capability, err := fc.Lobby.Admit("worker-0", agent.Worker)
+	cap, err := fc.Lobby.Admit("worker-0", agent.Worker)
 	if err != nil {
 		return fmt.Errorf("tako: lobby admit: %w", err)
 	}
 
 	c := corpus.New()
-	_ = capability.Services
+	_ = cap.Services
 
 	fc.monolog = &discourse.StubMonolog{}
 
 	a := &agent.Agent{
-		Identity:   capability.Identity,
-		Persona:    capability.Persona,
+		Identity:   cap.Identity,
+		Persona:    cap.Persona,
 		Corpus:     c,
 		Reactivity: &agent.StubReactivity{},
 	}
@@ -120,7 +120,7 @@ func (fc *FabCollective) Run(ctx context.Context) error {
 		return fmt.Errorf("%w: %s", ErrNoInstruments, intake.Name)
 	}
 
-	cap, _ := fc.capabilities.Get(names[0]); result, err := cap.Execute(ctx, json.RawMessage(`"walking-skeleton"`))
+	instrCap, _ := fc.capabilities.Get(names[0]); result, err := instrCap.Execute(ctx, json.RawMessage(`"walking-skeleton"`))
 	if err != nil {
 		return fmt.Errorf("tako: instrument exec: %w", err)
 	}

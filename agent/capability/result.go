@@ -1,4 +1,4 @@
-package shell
+package capability
 
 // Result is the structured output of an instrument execution.
 type Result struct {

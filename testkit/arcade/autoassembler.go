@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dpopsuev/tako/agent/shell"
+	"github.com/dpopsuev/tako/agent/capability"
 )
 
 // NewAutoassembler creates a scenario where the agent implements a Go function.
@@ -28,7 +28,7 @@ func NewAutoassembler(workDir string) Scenario {
 		"files_written": 0,
 	})
 
-	adv.AddInstrument("read_file", "Read a file from the workspace. Input: relative path.", shell.ReadAction, func(s map[string]any, input string) string {
+	adv.AddInstrument("read_file", "Read a file from the workspace. Input: relative path.", capability.ReadAction, func(s map[string]any, input string) string {
 		path := strings.TrimSpace(input)
 		abs := filepath.Join(workDir, filepath.Clean(path))
 		data, err := os.ReadFile(abs)
@@ -40,7 +40,7 @@ func NewAutoassembler(workDir string) Scenario {
 		return string(data)
 	})
 
-	adv.AddInstrument("write_file", "Write content to a file. Input JSON: {\"path\": \"...\", \"content\": \"...\"}.", shell.WriteAction, func(s map[string]any, input string) string {
+	adv.AddInstrument("write_file", "Write content to a file. Input JSON: {\"path\": \"...\", \"content\": \"...\"}.", capability.WriteAction, func(s map[string]any, input string) string {
 		var args struct {
 			Path    string `json:"path"`
 			Content string `json:"content"`
@@ -65,7 +65,7 @@ func NewAutoassembler(workDir string) Scenario {
 		return fmt.Sprintf("wrote %d bytes to %s", len(args.Content), args.Path)
 	})
 
-	adv.AddInstrument("go_build", "Run go build on the workspace. Checks if code compiles.", shell.ReadAction, func(s map[string]any, _ string) string {
+	adv.AddInstrument("go_build", "Run go build on the workspace. Checks if code compiles.", capability.ReadAction, func(s map[string]any, _ string) string {
 		src := filepath.Join(workDir, "greet", "greet.go")
 		data, err := os.ReadFile(src)
 		if err != nil {
@@ -85,7 +85,7 @@ func NewAutoassembler(workDir string) Scenario {
 		return "build ok: greet package compiles"
 	})
 
-	adv.AddInstrument("go_test", "Run go test on the workspace. Verifies the implementation.", shell.WriteAction, func(s map[string]any, _ string) string {
+	adv.AddInstrument("go_test", "Run go test on the workspace. Verifies the implementation.", capability.WriteAction, func(s map[string]any, _ string) string {
 		src := filepath.Join(workDir, "greet", "greet.go")
 		data, err := os.ReadFile(src)
 		if err != nil {
@@ -103,7 +103,7 @@ func NewAutoassembler(workDir string) Scenario {
 		return "test ok: all tests pass\n--- PASS: TestGreet (0.00s)\nPASS"
 	})
 
-	adv.AddInstrument("check_status", "Check build and test status.", shell.ReadAction, func(s map[string]any, _ string) string {
+	adv.AddInstrument("check_status", "Check build and test status.", capability.ReadAction, func(s map[string]any, _ string) string {
 		buildClean, _ := s["build_clean"].(bool)
 		testsPass, _ := s["tests_pass"].(bool)
 		if buildClean && testsPass {

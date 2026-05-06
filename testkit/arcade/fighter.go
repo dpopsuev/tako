@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/agent/shell"
+	"github.com/dpopsuev/tako/agent/capability"
 )
 
 // NewTakoFighter creates a 1v1 combat game.
@@ -21,41 +21,41 @@ func NewTakoFighter() (*Game, *PlayerView, *PlayerView) {
 		"winner":    "",
 	})
 
-	game.AddInstrument("p1_attack", "Player 1: Attack the opponent. Beats special, loses to defend.", shell.WriteAction, func(s map[string]any, _ string) string {
+	game.AddInstrument("p1_attack", "Player 1: Attack the opponent. Beats special, loses to defend.", capability.WriteAction, func(s map[string]any, _ string) string {
 		s["p1_action"] = "attack"
 		return resolveRound(s)
 	})
 
-	game.AddInstrument("p1_defend", "Player 1: Defend against attacks. Beats attack, loses to special.", shell.WriteAction, func(s map[string]any, _ string) string {
+	game.AddInstrument("p1_defend", "Player 1: Defend against attacks. Beats attack, loses to special.", capability.WriteAction, func(s map[string]any, _ string) string {
 		s["p1_action"] = "defend"
 		return resolveRound(s)
 	})
 
-	game.AddInstrument("p1_special", "Player 1: Use special move. Beats defend, loses to attack.", shell.WriteAction, func(s map[string]any, _ string) string {
+	game.AddInstrument("p1_special", "Player 1: Use special move. Beats defend, loses to attack.", capability.WriteAction, func(s map[string]any, _ string) string {
 		s["p1_action"] = "special"
 		return resolveRound(s)
 	})
 
-	game.AddInstrument("p1_check_hp", "Player 1: Check both players' HP and round number", shell.ReadAction, func(s map[string]any, _ string) string {
+	game.AddInstrument("p1_check_hp", "Player 1: Check both players' HP and round number", capability.ReadAction, func(s map[string]any, _ string) string {
 		return fmt.Sprintf("Round %d | Your HP: %d | Opponent HP: %d", s["round"], s["p1_hp"], s["p2_hp"])
 	})
 
-	game.AddInstrument("p2_attack", "Player 2: Attack the opponent. Beats special, loses to defend.", shell.WriteAction, func(s map[string]any, _ string) string {
+	game.AddInstrument("p2_attack", "Player 2: Attack the opponent. Beats special, loses to defend.", capability.WriteAction, func(s map[string]any, _ string) string {
 		s["p2_action"] = "attack"
 		return resolveRound(s)
 	})
 
-	game.AddInstrument("p2_defend", "Player 2: Defend against attacks. Beats attack, loses to special.", shell.WriteAction, func(s map[string]any, _ string) string {
+	game.AddInstrument("p2_defend", "Player 2: Defend against attacks. Beats attack, loses to special.", capability.WriteAction, func(s map[string]any, _ string) string {
 		s["p2_action"] = "defend"
 		return resolveRound(s)
 	})
 
-	game.AddInstrument("p2_special", "Player 2: Use special move. Beats defend, loses to attack.", shell.WriteAction, func(s map[string]any, _ string) string {
+	game.AddInstrument("p2_special", "Player 2: Use special move. Beats defend, loses to attack.", capability.WriteAction, func(s map[string]any, _ string) string {
 		s["p2_action"] = "special"
 		return resolveRound(s)
 	})
 
-	game.AddInstrument("p2_check_hp", "Player 2: Check both players' HP and round number", shell.ReadAction, func(s map[string]any, _ string) string {
+	game.AddInstrument("p2_check_hp", "Player 2: Check both players' HP and round number", capability.ReadAction, func(s map[string]any, _ string) string {
 		return fmt.Sprintf("Round %d | Your HP: %d | Opponent HP: %d", s["round"], s["p2_hp"], s["p1_hp"])
 	})
 

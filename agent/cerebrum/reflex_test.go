@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/agent/shell"
+	"github.com/dpopsuev/tako/agent/capability"
 )
 
 func TestComputeOverlap(t *testing.T) {
@@ -58,7 +58,7 @@ func TestSelectGear(t *testing.T) {
 }
 
 func TestReflexStoreMatch(t *testing.T) {
-	caps := []shell.Capability{
+	caps := []capability.Capability{
 		{Name: "read_file"},
 		{Name: "write_file"},
 		{Name: "bash"},
@@ -125,19 +125,19 @@ func TestReflexStoreEmpty(t *testing.T) {
 
 func TestFireReflex(t *testing.T) {
 	var called atomic.Int32
-	caps := []shell.Capability{
+	caps := []capability.Capability{
 		{
 			Name: "test_cap",
-			Execute: func(_ context.Context, _ json.RawMessage) (shell.Result, error) {
+			Execute: func(_ context.Context, _ json.RawMessage) (capability.Result, error) {
 				called.Add(1)
-				return shell.TextResult("ok"), nil
+				return capability.TextResult("ok"), nil
 			},
 		},
 		{Name: "nil_execute"},
 		{
 			Name: "error_cap",
-			Execute: func(_ context.Context, _ json.RawMessage) (shell.Result, error) {
-				return shell.Result{}, errors.New("boom")
+			Execute: func(_ context.Context, _ json.RawMessage) (capability.Result, error) {
+				return capability.Result{}, errors.New("boom")
 			},
 		},
 	}
@@ -153,7 +153,7 @@ func TestReflexStoreInterface(t *testing.T) {
 }
 
 func TestSuggestionAtom(t *testing.T) {
-	caps := []shell.Capability{{Name: "read_file"}, {Name: "grep"}}
+	caps := []capability.Capability{{Name: "read_file"}, {Name: "grep"}}
 	atom := suggestionAtom(caps, 0.85, 3)
 
 	if atom.Type.String() != "knowledge" {
