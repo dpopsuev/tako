@@ -112,6 +112,47 @@ func (m *Molecule) Synthesis(triad Triad) *Atom {
 	return m.atoms[atoms[len(atoms)-1]]
 }
 
+func (m *Molecule) SynthesisDiff(triad Triad) float64 {
+	synthPhase := AtomType{triad, SynthesisPosition}
+	m.mu.RLock()
+	ids := m.subgraphs[synthPhase]
+	m.mu.RUnlock()
+	if len(ids) < 2 {
+		return 1.0
+	}
+	prev := m.atoms[ids[len(ids)-2]]
+	curr := m.atoms[ids[len(ids)-1]]
+	if prev == nil || curr == nil {
+		return 1.0
+	}
+	return contentDiff(prev.Content, curr.Content)
+}
+
+func contentDiff(a, b []byte) float64 {
+	if len(a) == 0 && len(b) == 0 {
+		return 0
+	}
+	if string(a) == string(b) {
+		return 0
+	}
+	la, lb := len(a), len(b)
+	maxLen := la
+	if lb > maxLen {
+		maxLen = lb
+	}
+	common := 0
+	minLen := la
+	if lb < minLen {
+		minLen = lb
+	}
+	for i := 0; i < minLen; i++ {
+		if a[i] == b[i] {
+			common++
+		}
+	}
+	return 1.0 - float64(common)/float64(maxLen)
+}
+
 func (m *Molecule) AllTriadsSealed() bool {
 	return m.triadSealed[ThinkTriad] && m.triadSealed[ComposeTriad] &&
 		m.triadSealed[ImplementTriad] && m.triadSealed[ReflectTriad]

@@ -111,3 +111,7 @@ func WithPriorityClassifier(pc PriorityClassifier) Option {
 func WithWatcher(w tangle.Completer) Option {
 	return func(cb *Cerebrum) { cb.watcher = w }
 }
+
+func WithAlignmentChecker(a AlignmentChecker) Option {
+	return func(cb *Cerebrum) { cb.alignment = a }
+}

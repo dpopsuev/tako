@@ -103,6 +103,7 @@ type Cerebrum struct {
 	pendingMu          sync.Mutex
 	pending            map[string]bool
 	focusCancel        context.CancelFunc
+	alignment          AlignmentChecker
 
 	molecule *reactivity.Molecule
 }
@@ -438,6 +439,17 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 
 			if len(phaseAtoms) > 0 {
 				for _, atom := range phaseAtoms {
+					if cb.alignment != nil {
+						ar := cb.alignment.Check(atom, molecule)
+						if len(ar.DriftFlags) > 0 {
+							slog.WarnContext(ctx, "cerebrum.think.alignment_drift",
+								slog.Int("turn", turn),
+								slog.String("atom", atom.Taxonomy),
+								slog.Float64("score", ar.Score),
+								slog.Any("flags", ar.DriftFlags))
+						}
+					}
+
 					result, fortune := cb.reactor.Add(molecule, atom)
 					slog.InfoContext(ctx, "cerebrum.think.phase_atom",
 						slog.Int("turn", turn),
