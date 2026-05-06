@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/tako/testkit/rehearsal"
-	"github.com/dpopsuev/tako/testkit/rig"
+	"github.com/dpopsuev/tako/testkit"
 )
 
 func TestUserStory_ReadAndExplain(t *testing.T) {
-	rig.SkipWithoutLLM(t)
+	testkit.SkipWithoutLLM(t)
 
 	dir := rehearsal.SetupWorkspace(t,
 		rehearsal.WithExtraFiles(map[string]string{
@@ -49,8 +49,8 @@ func FormatReport(data map[string]int) string {
 		}),
 	)
 
-	agent := rig.NewRealAgent(t, dir)
-	result := rig.RunAgent(t, agent, "Read pipeline.go and explain what the Process function does. Be specific about the aggregation logic.")
+	agent := testkit.NewRealAgent(t, dir)
+	result := testkit.RunAgent(t, agent, "Read pipeline.go and explain what the Process function does. Be specific about the aggregation logic.")
 
 	if len(result) < 20 {
 		t.Fatalf("response too short, agent didn't explain: %q", result)

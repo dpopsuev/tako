@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/tako/testkit/rehearsal"
-	"github.com/dpopsuev/tako/testkit/rig"
+	"github.com/dpopsuev/tako/testkit"
 )
 
 func TestUserStory_FixFailingTest(t *testing.T) {
-	rig.SkipWithoutLLM(t)
+	testkit.SkipWithoutLLM(t)
 
 	dir := rehearsal.SetupWorkspace(t,
 		rehearsal.WithExtraFiles(map[string]string{
@@ -34,10 +34,10 @@ func TestMultiply(t *testing.T) {
 		rehearsal.WithGitRepo(),
 	)
 
-	agent := rig.NewRealAgent(t, dir)
-	result := rig.RunAgent(t, agent, "The test in calc_test.go is failing. Fix it so that go test passes.")
+	agent := testkit.NewRealAgent(t, dir)
+	result := testkit.RunAgent(t, agent, "The test in calc_test.go is failing. Fix it so that go test passes.")
 
-	referee := rig.GoReferee{WorkDir: dir}
+	referee := testkit.GoReferee{WorkDir: dir}
 	check := referee.Check(context.Background())
 
 	if !check.TestsPass {

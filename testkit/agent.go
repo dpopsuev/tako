@@ -1,4 +1,4 @@
-package rig
+package testkit
 
 import (
 	"context"
