@@ -102,6 +102,7 @@ type Cerebrum struct {
 	monitorEvents      chan Event
 	pendingMu          sync.Mutex
 	pending            map[string]bool
+	resultBuffer       map[string]Event
 	focusCancel        context.CancelFunc
 	alignment          AlignmentChecker
 
@@ -124,6 +125,7 @@ func New(reactor *reactivity.Core, completer tangle.Completer, opts ...Option) *
 		globalStore:        make(chan Event, 128),
 		monitorEvents:      make(chan Event, 64),
 		pending:            make(map[string]bool),
+		resultBuffer:       make(map[string]Event),
 	}
 	cb.classifier = ClassifierFunc(func(m *reactivity.Molecule) Domain {
 		return ClassifyWithConfig(m, cb.config)
@@ -778,6 +780,12 @@ func (cb *Cerebrum) checkCatalystDesired(m *reactivity.Molecule, toolName, resul
 }
 
 func (cb *Cerebrum) waitToolResult(ctx context.Context, tc tangle.ToolCall) string {
+	if buffered, ok := cb.resultBuffer[tc.ID]; ok {
+		delete(cb.resultBuffer, tc.ID)
+		cb.clearPending(tc.ID)
+		return string(buffered.Payload)
+	}
+
 	for {
 		event, ok := cb.sensory.Receive(ctx)
 		if !ok {
@@ -786,6 +794,10 @@ func (cb *Cerebrum) waitToolResult(ctx context.Context, tc tangle.ToolCall) stri
 		if event.ToolCallID == tc.ID || (event.ToolCallID == "" && event.Source == tc.Name) {
 			cb.clearPending(tc.ID)
 			return string(event.Payload)
+		}
+		if event.ToolCallID != "" && cb.isPending(event.ToolCallID) {
+			cb.resultBuffer[event.ToolCallID] = event
+			continue
 		}
 		select {
 		case cb.monitorEvents <- event:
