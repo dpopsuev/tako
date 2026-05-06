@@ -251,7 +251,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 		messages = append(messages, history...)
 		messages = append(messages, tangle.Message{Role: "user", Content: prompt})
 
-		completer := cb.router.Route(molecule.Phase())
+		completer := cb.router.Route(molecule)
 
 		turnCtx, turnCancel := context.WithTimeout(ctx, cb.budget.TurnTimeout)
 		start := time.Now()

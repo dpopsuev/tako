@@ -17,9 +17,18 @@ func defaultRender(ctx Context) string {
 	b.WriteString(ctx.Need)
 	b.WriteString("\n")
 
-	if len(ctx.State) > 0 {
+	if len(ctx.StateChanges) > 0 {
+		b.WriteString("\n# State Changes\n")
+		for k, v := range ctx.StateChanges {
+			b.WriteString(fmt.Sprintf("- %s: %v → %v\n", k, v[0], v[1]))
+		}
+	} else if len(ctx.State) > 0 {
 		b.WriteString("\n# Current State\n")
 		writeMap(&b, ctx.State)
+	}
+
+	if ctx.StagnantTurns > 1 {
+		b.WriteString(fmt.Sprintf("\nWARNING: no progress for %d turns\n", ctx.StagnantTurns))
 	}
 
 	if len(ctx.Desired) > 0 {

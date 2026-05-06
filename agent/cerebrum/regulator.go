@@ -1,6 +1,8 @@
 package cerebrum
 
 import (
+	"fmt"
+
 	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/agent/shell"
 )
@@ -20,19 +22,21 @@ type RawContext struct {
 }
 
 type Context struct {
-	Need         string
-	State        map[string]any
-	Desired      map[string]any
-	Residual     map[string]float64
-	Capabilities []shell.Capability
-	Phase        reactivity.AtomType
-	Domain       Domain
-	Contracts    []reactivity.ContractInfo
-	Directives   []reactivity.Directive
-	Filled       map[string]string
-	Distance     float64
-	DeltaDistance float64
-	Turn         int
+	Need          string
+	State         map[string]any
+	StateChanges  map[string][2]any
+	Desired       map[string]any
+	Residual      map[string]float64
+	Capabilities  []shell.Capability
+	Phase         reactivity.AtomType
+	Domain        Domain
+	Contracts     []reactivity.ContractInfo
+	Directives    []reactivity.Directive
+	Filled        map[string]string
+	Distance      float64
+	DeltaDistance  float64
+	Turn          int
+	StagnantTurns int
 }
 
 type Regulator interface {
@@ -82,4 +86,54 @@ func defaultRegulate(raw RawContext) Context {
 		DeltaDistance: m.DeltaDistance(),
 		Turn:         raw.Turn,
 	}
+}
+
+type DeltaRegulator struct {
+	prevState    map[string]any
+	prevResidual map[string]float64
+	stagnant     int
+}
+
+func (d *DeltaRegulator) Regulate(raw RawContext) Context {
+	ctx := defaultRegulate(raw)
+
+	if d.prevState != nil && ctx.State != nil {
+		changes := make(map[string][2]any)
+		for k, v := range ctx.State {
+			if prev, ok := d.prevState[k]; ok && fmt.Sprintf("%v", prev) != fmt.Sprintf("%v", v) {
+				changes[k] = [2]any{prev, v}
+			}
+		}
+		if len(changes) > 0 {
+			ctx.StateChanges = changes
+			ctx.State = nil
+		}
+	}
+
+	if d.prevResidual != nil && ctx.Residual != nil {
+		same := true
+		for k, v := range ctx.Residual {
+			if d.prevResidual[k] != v {
+				same = false
+				break
+			}
+		}
+		if same {
+			d.stagnant++
+		} else {
+			d.stagnant = 0
+		}
+		ctx.StagnantTurns = d.stagnant
+	}
+
+	d.prevState = ctx.State
+	if ctx.StateChanges != nil && d.prevState == nil {
+		d.prevState = make(map[string]any)
+		if raw.Observer != nil {
+			d.prevState = raw.Observer()
+		}
+	}
+	d.prevResidual = ctx.Residual
+
+	return ctx
 }
