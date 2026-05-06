@@ -9,9 +9,10 @@ import (
 type Gear string
 
 const (
-	GearNovel    Gear = "novel"
-	GearFamiliar Gear = "familiar"
-	GearReflex   Gear = "reflex"
+	GearNovel     Gear = "novel"
+	GearFamiliar  Gear = "familiar"
+	GearIntuition Gear = "intuition"
+	GearReflex    Gear = "reflex"
 )
 
 type TurnRecord struct {
@@ -64,10 +65,11 @@ type SessionSummary struct {
 	TotalTokensIn   int
 	TotalTokensOut  int
 	TotalToolCalls  int
-	OAE             float64
-	GearNovelPct    float64
-	GearFamiliarPct float64
-	GearReflexPct   float64
+	OAE               float64
+	GearNovelPct      float64
+	GearFamiliarPct   float64
+	GearIntuitionPct  float64
+	GearReflexPct     float64
 	ReflexHits      int
 	AvgTurnMs       int64
 	Sealed          bool
@@ -82,8 +84,9 @@ func (s SessionSummary) Labels() map[string]string {
 		"total_tokens_out":  fmt.Sprintf("%d", s.TotalTokensOut),
 		"total_tool_calls":  fmt.Sprintf("%d", s.TotalToolCalls),
 		"oae":               fmt.Sprintf("%.3f", s.OAE),
-		"gear_novel_pct":    fmt.Sprintf("%.1f", s.GearNovelPct),
+		"gear_novel_pct":     fmt.Sprintf("%.1f", s.GearNovelPct),
 		"gear_familiar_pct": fmt.Sprintf("%.1f", s.GearFamiliarPct),
+		"gear_intuition_pct": fmt.Sprintf("%.1f", s.GearIntuitionPct),
 		"gear_reflex_pct":   fmt.Sprintf("%.1f", s.GearReflexPct),
 		"reflex_hits":       fmt.Sprintf("%d", s.ReflexHits),
 		"avg_turn_ms":       fmt.Sprintf("%d", s.AvgTurnMs),
@@ -101,7 +104,7 @@ func computeSessionSummary(moleculeID string, turns []TurnRecord, m *reactivity.
 	}
 
 	var totalMs int64
-	var novel, familiar, reflex int
+	var novel, familiar, intuition, reflex int
 	for _, t := range turns {
 		s.TotalTokensIn += t.TokensIn
 		s.TotalTokensOut += t.TokensOut
@@ -113,6 +116,8 @@ func computeSessionSummary(moleculeID string, turns []TurnRecord, m *reactivity.
 			novel++
 		case GearFamiliar:
 			familiar++
+		case GearIntuition:
+			intuition++
 		case GearReflex:
 			reflex++
 		}
@@ -123,6 +128,7 @@ func computeSessionSummary(moleculeID string, turns []TurnRecord, m *reactivity.
 		total := float64(s.TotalTurns)
 		s.GearNovelPct = float64(novel) / total * 100
 		s.GearFamiliarPct = float64(familiar) / total * 100
+		s.GearIntuitionPct = float64(intuition) / total * 100
 		s.GearReflexPct = float64(reflex) / total * 100
 	}
 
