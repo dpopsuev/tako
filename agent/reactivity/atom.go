@@ -81,11 +81,12 @@ const (
 
 // Atom is a single knowledge node in the Molecule graph.
 type Atom struct {
-	ID        string
-	Type      AtomType
-	Source    AtomSource
-	Taxonomy  string
-	Content   []byte
-	Targets   []string
-	CreatedAt time.Time
+	ID         string
+	Type       AtomType
+	Source     AtomSource
+	Taxonomy   string
+	Content    []byte
+	Targets    []string
+	Dimensions []string
+	CreatedAt  time.Time
 }

@@ -356,56 +356,105 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 			ToolCalls: completion.ToolCalls,
 		})
 
-		for _, tc := range completion.ToolCalls {
-			slog.InfoContext(ctx, "cerebrum.think.tool_call",
-				slog.Int("turn", turn),
-				slog.String("name", tc.Name),
-				slog.Int("input_len", len(tc.Input)))
-			cb.emit("cerebrum.tool_call", map[string]string{
-				"molecule": molecule.ID,
-				"turn":     fmt.Sprintf("%d", turn),
-				"tool":     tc.Name,
-			})
-			molecule.Emit(reactivity.Emission{
-				Kind:       "instrument",
-				Target:     tc.Name,
-				Payload:    tc.Input,
-				ToolCallID: tc.ID,
-			})
-		}
-
 		if len(completion.ToolCalls) > 0 {
-			cb.dispatch(ctx, molecule)
+			var phaseAtoms []reactivity.Atom
+			var capCalls []tangle.ToolCall
 
-			toolCtx, toolCancel := context.WithTimeout(ctx, cb.budget.TurnTimeout)
 			for _, tc := range completion.ToolCalls {
-				result := cb.waitToolResult(toolCtx, tc)
-				history = append(history, tangle.Message{
-					Role:       "tool",
-					Content:    result,
-					ToolCallID: tc.ID,
-				})
-				slog.InfoContext(ctx, "cerebrum.think.tool_result",
-					slog.Int("turn", turn),
-					slog.String("name", tc.Name),
-					slog.Int("result_len", len(result)))
-				cb.emit("cerebrum.tool_result", map[string]string{
-					"molecule":   molecule.ID,
-					"turn":       fmt.Sprintf("%d", turn),
-					"tool":       tc.Name,
-					"result_len": fmt.Sprintf("%d", len(result)),
-				})
-				if molecule.Catalyst() != nil {
-					cb.checkCatalystDesired(molecule, tc.Name, result)
+				if isPhaseToolCall(tc.Name) {
+					atom, err := phaseToolCallToAtom(tc, molecule.Phase(), turn)
+					if err != nil {
+						slog.WarnContext(ctx, "cerebrum.think.phase_tool_error",
+							slog.String("tool", tc.Name), slog.Any("error", err))
+						continue
+					}
+					phaseAtoms = append(phaseAtoms, atom)
+					history = append(history, tangle.Message{
+						Role:       "tool",
+						Content:    fmt.Sprintf("atom %s recorded: %s", atom.Type, atom.Taxonomy),
+						ToolCallID: tc.ID,
+					})
+				} else {
+					capCalls = append(capCalls, tc)
+					slog.InfoContext(ctx, "cerebrum.think.tool_call",
+						slog.Int("turn", turn),
+						slog.String("name", tc.Name),
+						slog.Int("input_len", len(tc.Input)))
+					cb.emit("cerebrum.tool_call", map[string]string{
+						"molecule": molecule.ID,
+						"turn":     fmt.Sprintf("%d", turn),
+						"tool":     tc.Name,
+					})
+					molecule.Emit(reactivity.Emission{
+						Kind:       "instrument",
+						Target:     tc.Name,
+						Payload:    tc.Input,
+						ToolCallID: tc.ID,
+					})
 				}
 			}
-			toolCancel()
+
+			if len(capCalls) > 0 {
+				cb.dispatch(ctx, molecule)
+				toolCtx, toolCancel := context.WithTimeout(ctx, cb.budget.TurnTimeout)
+				for _, tc := range capCalls {
+					result := cb.waitToolResult(toolCtx, tc)
+					history = append(history, tangle.Message{
+						Role:       "tool",
+						Content:    result,
+						ToolCallID: tc.ID,
+					})
+					slog.InfoContext(ctx, "cerebrum.think.tool_result",
+						slog.Int("turn", turn),
+						slog.String("name", tc.Name),
+						slog.Int("result_len", len(result)))
+					cb.emit("cerebrum.tool_result", map[string]string{
+						"molecule":   molecule.ID,
+						"turn":       fmt.Sprintf("%d", turn),
+						"tool":       tc.Name,
+						"result_len": fmt.Sprintf("%d", len(result)),
+					})
+					if molecule.Catalyst() != nil {
+						cb.checkCatalystDesired(molecule, tc.Name, result)
+					}
+				}
+				toolCancel()
+			}
+
 			if molecule.Sealed() {
 				slog.InfoContext(ctx, "cerebrum.think.catalyst_sealed",
 					slog.Int("turn", turn),
 					slog.Float64("distance", molecule.Distance()))
 				break
 			}
+
+			if len(phaseAtoms) > 0 {
+				for _, atom := range phaseAtoms {
+					result, fortune := cb.reactor.Add(molecule, atom)
+					slog.InfoContext(ctx, "cerebrum.think.phase_atom",
+						slog.Int("turn", turn),
+						slog.String("atom_type", atom.Type.String()),
+						slog.String("taxonomy", atom.Taxonomy),
+						slog.String("result", result.String()),
+						slog.Any("dimensions", atom.Dimensions))
+
+					if result == reactivity.Unresolvable {
+						slog.WarnContext(ctx, "cerebrum.think.unresolvable",
+							slog.Int("turn", turn),
+							slog.String("message", fortune.Message))
+						cb.reactor.Seal(molecule, reactivity.Atom{
+							ID:        fmt.Sprintf("wish-unresolvable-%d", turn),
+							Type:      reactivity.RetrospectionAtom,
+							Taxonomy:  "retrospection.wish.unresolvable",
+							Content:   []byte(fortune.Message),
+							CreatedAt: time.Now(),
+						})
+						break
+					}
+					cb.dispatch(ctx, molecule)
+				}
+			}
+
 			molecule.SetContext(history)
 			continue
 		}
@@ -587,7 +636,9 @@ func (cb *Cerebrum) tools(phase reactivity.AtomType) []tangle.Tool {
 	if len(cb.capabilities) == 0 {
 		return cb.toolDefs
 	}
-	var tools []tangle.Tool
+
+	tools := []tangle.Tool{phaseToolFor(phase)}
+
 	for _, cap := range cb.capabilities {
 		if cap.Mode == shell.WriteAction && phase.Triad != reactivity.ImplementTriad {
 			continue
