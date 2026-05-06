@@ -97,6 +97,8 @@ type Cerebrum struct {
 	capabilities       []shell.Capability
 	config             *reactivity.Config
 	priorityClassifier PriorityClassifier
+	watcher            tangle.Completer
+	globalStore        chan Event
 	monitorEvents      chan Event
 
 	molecule *reactivity.Molecule
@@ -115,6 +117,7 @@ func New(reactor *reactivity.Core, completer tangle.Completer, opts ...Option) *
 		assert:             reactivity.DefaultAssert,
 		config:             cfg,
 		priorityClassifier: defaultClassifierImpl{},
+		globalStore:        make(chan Event, 128),
 		monitorEvents:      make(chan Event, 64),
 	}
 	cb.classifier = ClassifierFunc(func(m *reactivity.Molecule) Domain {

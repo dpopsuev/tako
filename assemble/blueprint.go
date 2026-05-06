@@ -14,6 +14,7 @@ import (
 
 type Blueprint struct {
 	Model        string
+	ModelWatcher string
 	Capabilities []shell.Capability
 	Budget       cerebrum.Budget
 	Config       *reactivity.Config

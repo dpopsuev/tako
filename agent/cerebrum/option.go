@@ -107,3 +107,7 @@ func WithConfig(cfg *reactivity.Config) Option {
 func WithPriorityClassifier(pc PriorityClassifier) Option {
 	return func(cb *Cerebrum) { cb.priorityClassifier = pc }
 }
+
+func WithWatcher(w tangle.Completer) Option {
+	return func(cb *Cerebrum) { cb.watcher = w }
+}

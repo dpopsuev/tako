@@ -14,6 +14,8 @@ import (
 
 type BlueprintConfig struct {
 	Model        string       `yaml:"model"`
+	ModelWatcher string       `yaml:"model_watcher"`
+	ModelThinker string       `yaml:"model_thinker"`
 	Capabilities []string     `yaml:"capabilities"`
 	Budget       BudgetConfig `yaml:"budget"`
 	Config       ConfigValues `yaml:"config"`
@@ -48,7 +50,11 @@ func LoadBlueprint(path string) (*BlueprintConfig, error) {
 
 func (bc *BlueprintConfig) ToBlueprint() Blueprint {
 	bp := Blueprint{
-		Model: bc.Model,
+		Model:        bc.Model,
+		ModelWatcher: bc.ModelWatcher,
+	}
+	if bp.ModelWatcher == "" && bc.ModelThinker != "" {
+		bp.Model = bc.ModelThinker
 	}
 
 	bp.Budget = cerebrum.Budget{
