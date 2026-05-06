@@ -40,6 +40,36 @@ type Halter interface {
 	Pull(agentID string)
 }
 
+type Priority int
+
+const (
+	PriorityIgnore    Priority = iota
+	PriorityPark
+	PriorityInterrupt
+	PriorityEmergency
+)
+
+func (p Priority) String() string {
+	return [...]string{"ignore", "park", "interrupt", "emergency"}[p]
+}
+
+type PriorityClassifier interface {
+	Classify(event Event, molecule *reactivity.Molecule) Priority
+}
+
+type defaultClassifierImpl struct{}
+
+func (defaultClassifierImpl) Classify(event Event, _ *reactivity.Molecule) Priority {
+	switch event.Kind {
+	case "sensory.alarm", "sensory.emergency":
+		return PriorityEmergency
+	case "sensory.timer", "sensory.warning":
+		return PriorityInterrupt
+	default:
+		return PriorityPark
+	}
+}
+
 type Cerebrum struct {
 	reactor *reactivity.Core
 	router  CompleterRouter
@@ -61,11 +91,13 @@ type Cerebrum struct {
 	recollector Recollector
 	compactor   Compactor
 
-	observer     Observer
-	regulator    Regulator
-	assembler    Assembler
-	capabilities []shell.Capability
-	config       *reactivity.Config
+	observer           Observer
+	regulator          Regulator
+	assembler          Assembler
+	capabilities       []shell.Capability
+	config             *reactivity.Config
+	priorityClassifier PriorityClassifier
+	monitorEvents      chan Event
 
 	molecule *reactivity.Molecule
 }
@@ -73,15 +105,17 @@ type Cerebrum struct {
 func New(reactor *reactivity.Core, completer tangle.Completer, opts ...Option) *Cerebrum {
 	cfg := &reactivity.DefaultConfig
 	cb := &Cerebrum{
-		reactor:       reactor,
-		router:        SingleRouter(completer),
-		budget:        DefaultBudget,
-		promptBuilder: DefaultPromptBuilder,
-		parser:        DefaultParser,
-		sensory:       NewChannelBus(64),
-		synapse:       DefaultSynapse{},
-		assert:        reactivity.DefaultAssert,
-		config:        cfg,
+		reactor:            reactor,
+		router:             SingleRouter(completer),
+		budget:             DefaultBudget,
+		promptBuilder:      DefaultPromptBuilder,
+		parser:             DefaultParser,
+		sensory:            NewChannelBus(64),
+		synapse:            DefaultSynapse{},
+		assert:             reactivity.DefaultAssert,
+		config:             cfg,
+		priorityClassifier: defaultClassifierImpl{},
+		monitorEvents:      make(chan Event, 64),
 	}
 	cb.classifier = ClassifierFunc(func(m *reactivity.Molecule) Domain {
 		return ClassifyWithConfig(m, cb.config)
@@ -473,6 +507,71 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 
 func (cb *Cerebrum) Result() *reactivity.Molecule {
 	return cb.molecule
+}
+
+func (cb *Cerebrum) Monitor(ctx context.Context, bus Bus) {
+	for {
+		event, ok := bus.Receive(ctx)
+		if !ok {
+			return
+		}
+
+		m := cb.molecule
+		if m == nil {
+			slog.DebugContext(ctx, "monitor.no_molecule", slog.String("event", event.Kind))
+			continue
+		}
+
+		priority := cb.priorityClassifier.Classify(event, m)
+
+		slog.InfoContext(ctx, "monitor.classify",
+			slog.String("event", event.Kind),
+			slog.String("priority", priority.String()),
+			slog.String("molecule", m.ID))
+
+		switch priority {
+		case PriorityIgnore:
+			continue
+
+		case PriorityPark:
+			select {
+			case cb.monitorEvents <- event:
+			default:
+				slog.WarnContext(ctx, "monitor.park_overflow", slog.String("event", event.Kind))
+			}
+
+		case PriorityInterrupt:
+			atom, err := cb.synapse.Encode(event)
+			if err != nil {
+				slog.WarnContext(ctx, "monitor.encode_error", slog.Any("error", err))
+				continue
+			}
+			m.InsertAtom(atom)
+			slog.InfoContext(ctx, "monitor.injected",
+				slog.String("atom", atom.ID),
+				slog.String("molecule", m.ID))
+
+		case PriorityEmergency:
+			if cb.halter != nil {
+				cb.halter.Pull(m.ID)
+				slog.WarnContext(ctx, "monitor.emergency_halt",
+					slog.String("event", event.Kind),
+					slog.String("molecule", m.ID))
+			}
+		}
+	}
+}
+
+func (cb *Cerebrum) DrainMonitorEvents() []Event {
+	var events []Event
+	for {
+		select {
+		case e := <-cb.monitorEvents:
+			events = append(events, e)
+		default:
+			return events
+		}
+	}
 }
 
 func (cb *Cerebrum) Store() *reactivity.MoleculeStore {

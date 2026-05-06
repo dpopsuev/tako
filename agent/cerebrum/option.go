@@ -101,3 +101,7 @@ func WithCapabilities(caps []shell.Capability) Option {
 func WithConfig(cfg *reactivity.Config) Option {
 	return func(cb *Cerebrum) { cb.config = cfg }
 }
+
+func WithPriorityClassifier(pc PriorityClassifier) Option {
+	return func(cb *Cerebrum) { cb.priorityClassifier = pc }
+}

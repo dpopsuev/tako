@@ -2,6 +2,7 @@ package reactivity
 
 import (
 	"log/slog"
+	"sync"
 	"time"
 )
 
@@ -15,6 +16,7 @@ type MoleculeEvent struct {
 // Molecule is the substrate the Reactor operates on.
 // Reactor = CPU. Molecule = RAM. Focus switch = swap Molecule.
 type Molecule struct {
+	mu          sync.RWMutex
 	ID          string
 	atoms       map[string]*Atom
 	edges       []Edge
@@ -113,6 +115,8 @@ func (m *Molecule) TotalMass() int {
 }
 
 func (m *Molecule) Atoms(t AtomType) []*Atom {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	ids := m.subgraphs[t]
 	out := make([]*Atom, 0, len(ids))
 	for _, id := range ids {
@@ -221,6 +225,7 @@ func (m *Molecule) UnsealTriad(t Triad) {
 }
 
 func (m *Molecule) InsertAtom(atom Atom) {
+	m.mu.Lock()
 	m.atoms[atom.ID] = &atom
 	m.subgraphs[atom.Type] = append(m.subgraphs[atom.Type], atom.ID)
 	m.mass[atom.Type]++
@@ -231,6 +236,7 @@ func (m *Molecule) InsertAtom(atom Atom) {
 	for _, target := range atom.Targets {
 		m.AddEdge(atom.ID, target, Reference)
 	}
+	m.mu.Unlock()
 	m.notify("atom_inserted", &atom)
 }
 
