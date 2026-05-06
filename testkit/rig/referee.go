@@ -1,4 +1,4 @@
-package userstory
+package rig
 
 import (
 	"context"

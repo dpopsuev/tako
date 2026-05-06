@@ -1,14 +1,15 @@
-package userstory
+package e2e
 
 import (
 	"context"
 	"testing"
 
 	"github.com/dpopsuev/tako/testkit/rehearsal"
+	"github.com/dpopsuev/tako/testkit/rig"
 )
 
 func TestUserStory_FixFailingTest(t *testing.T) {
-	SkipWithoutLLM(t)
+	rig.SkipWithoutLLM(t)
 
 	dir := rehearsal.SetupWorkspace(t,
 		rehearsal.WithExtraFiles(map[string]string{
@@ -33,10 +34,10 @@ func TestMultiply(t *testing.T) {
 		rehearsal.WithGitRepo(),
 	)
 
-	agent := NewRealAgent(t, dir)
-	result := RunAgent(t, agent, "The test in calc_test.go is failing. Fix it so that go test passes.")
+	agent := rig.NewRealAgent(t, dir)
+	result := rig.RunAgent(t, agent, "The test in calc_test.go is failing. Fix it so that go test passes.")
 
-	referee := GoReferee{WorkDir: dir}
+	referee := rig.GoReferee{WorkDir: dir}
 	check := referee.Check(context.Background())
 
 	if !check.TestsPass {

@@ -1,14 +1,15 @@
-package userstory
+package e2e
 
 import (
 	"strings"
 	"testing"
 
 	"github.com/dpopsuev/tako/testkit/rehearsal"
+	"github.com/dpopsuev/tako/testkit/rig"
 )
 
 func TestUserStory_ReadAndExplain(t *testing.T) {
-	SkipWithoutLLM(t)
+	rig.SkipWithoutLLM(t)
 
 	dir := rehearsal.SetupWorkspace(t,
 		rehearsal.WithExtraFiles(map[string]string{
@@ -48,8 +49,8 @@ func FormatReport(data map[string]int) string {
 		}),
 	)
 
-	agent := NewRealAgent(t, dir)
-	result := RunAgent(t, agent, "Read pipeline.go and explain what the Process function does. Be specific about the aggregation logic.")
+	agent := rig.NewRealAgent(t, dir)
+	result := rig.RunAgent(t, agent, "Read pipeline.go and explain what the Process function does. Be specific about the aggregation logic.")
 
 	if len(result) < 20 {
 		t.Fatalf("response too short, agent didn't explain: %q", result)

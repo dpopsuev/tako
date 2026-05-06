@@ -1,14 +1,15 @@
-package userstory
+package e2e
 
 import (
 	"context"
 	"testing"
 
 	"github.com/dpopsuev/tako/testkit/rehearsal"
+	"github.com/dpopsuev/tako/testkit/rig"
 )
 
 func TestUserStory_MultistepGrepEditTestCommit(t *testing.T) {
-	SkipWithoutLLM(t)
+	rig.SkipWithoutLLM(t)
 
 	dir := rehearsal.SetupWorkspace(t,
 		rehearsal.WithExtraFiles(map[string]string{
@@ -45,12 +46,12 @@ func TestReverse(t *testing.T) {
 		rehearsal.WithGitRepo(),
 	)
 
-	referee := GoReferee{WorkDir: dir}
+	referee := rig.GoReferee{WorkDir: dir}
 	baselineCheck := referee.Check(context.Background())
 	baselineCommits := baselineCheck.GitCommits
 
-	agent := NewRealAgent(t, dir)
-	result := RunAgent(t, agent, "Find the TODO in util.go, implement the Reverse function correctly so it actually reverses strings, verify the tests pass, and commit the change.")
+	agent := rig.NewRealAgent(t, dir)
+	result := rig.RunAgent(t, agent, "Find the TODO in util.go, implement the Reverse function correctly so it actually reverses strings, verify the tests pass, and commit the change.")
 
 	check := referee.Check(context.Background())
 	referee.AssertFileNotContains(&check, "util.go", "// TODO")

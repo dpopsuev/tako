@@ -1,14 +1,15 @@
-package userstory
+package e2e
 
 import (
 	"context"
 	"testing"
 
 	"github.com/dpopsuev/tako/testkit/rehearsal"
+	"github.com/dpopsuev/tako/testkit/rig"
 )
 
 func TestUserStory_FixCompileError(t *testing.T) {
-	SkipWithoutLLM(t)
+	rig.SkipWithoutLLM(t)
 
 	dir := rehearsal.SetupWorkspace(t,
 		rehearsal.WithExtraFiles(map[string]string{
@@ -24,10 +25,10 @@ func main( {
 		rehearsal.WithGitRepo(),
 	)
 
-	agent := NewRealAgent(t, dir)
-	result := RunAgent(t, agent, "There is a compile error in main.go. Fix it so the project builds successfully.")
+	agent := rig.NewRealAgent(t, dir)
+	result := rig.RunAgent(t, agent, "There is a compile error in main.go. Fix it so the project builds successfully.")
 
-	referee := GoReferee{WorkDir: dir}
+	referee := rig.GoReferee{WorkDir: dir}
 	check := referee.Check(context.Background())
 
 	if !check.Compiles {
