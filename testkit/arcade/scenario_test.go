@@ -84,21 +84,6 @@ func instrumentList(adv *Game) string {
 	return strings.Join(parts, "\n")
 }
 
-func instrumentTools(adv *Game) []tangle.Tool {
-	var tools []tangle.Tool
-	for _, name := range adv.Names() {
-		desc, _ := adv.Describe(name)
-		schema, _ := adv.Schema(name)
-		tools = append(tools, tangle.Tool{
-			Name:        name,
-			Description: desc,
-			InputSchema: schema,
-		})
-	}
-	return tools
-}
-
-
 func navigatorFromEnv() reactivity.Navigator {
 	switch os.Getenv("TAKO_NAVIGATOR") {
 	case "tree":
@@ -281,7 +266,6 @@ func TestScenario_Fridge_BookMoves(t *testing.T) {
 		cerebrum.WithRecorder(pool1),
 		cerebrum.WithHalter(&andon.StubSignal{}),
 		cerebrum.WithBudget(cerebrum.Budget{MaxTurns: 30, TurnTimeout: 30 * time.Second}),
-		cerebrum.WithTools(instrumentTools(scenario.Adventure)),
 		cerebrum.WithObserver(scenario.Adventure.State),
 		cerebrum.WithCapabilities(scenario.Adventure.Capabilities()),
 	)

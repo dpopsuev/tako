@@ -82,7 +82,6 @@ type Cerebrum struct {
 
 	classifier    Classifier
 	promptBuilder PromptBuilder
-	toolDefs      []tangle.Tool
 
 	recorder    Recorder
 	halter      Halter
@@ -726,7 +725,7 @@ func (cb *Cerebrum) SensoryBus() Bus {
 
 func (cb *Cerebrum) tools(phase reactivity.AtomType) []tangle.Tool {
 	if len(cb.capabilities) == 0 {
-		return cb.toolDefs
+		return nil
 	}
 
 	tools := []tangle.Tool{phaseToolFor(phase)}
