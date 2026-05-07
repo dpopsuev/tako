@@ -8,19 +8,19 @@ import (
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
 	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/agent/capability"
+	"github.com/dpopsuev/tako/agent/organ"
 )
 
 func TestCapabilityPath_Execute(t *testing.T) {
 	c := New()
-	c.Register(capability.Capability{
+	c.Register(organ.Func{
 		Name:        "greet",
 		Description: "Say hello",
-		Mode:        capability.ReadAction,
+		Mode:        organ.ReadAction,
 		Risk:        0,
-		Source:      capability.Environment,
-		Execute: func(_ context.Context, input json.RawMessage) (capability.Result, error) {
-			return capability.TextResult("hello " + string(input)), nil
+		Source:      organ.Environment,
+		Execute: func(_ context.Context, input json.RawMessage) (organ.Result, error) {
+			return organ.TextResult("hello " + string(input)), nil
 		},
 	})
 
@@ -48,13 +48,13 @@ func TestCapabilityPath_Execute(t *testing.T) {
 
 func TestCapabilityPath_PhaseGating(t *testing.T) {
 	c := New()
-	c.Register(capability.Capability{
+	c.Register(organ.Func{
 		Name:   "deploy",
-		Mode:   capability.WriteAction,
+		Mode:   organ.WriteAction,
 		Risk:   0.5,
-		Source: capability.Environment,
-		Execute: func(_ context.Context, _ json.RawMessage) (capability.Result, error) {
-			return capability.TextResult("deployed"), nil
+		Source: organ.Environment,
+		Execute: func(_ context.Context, _ json.RawMessage) (organ.Result, error) {
+			return organ.TextResult("deployed"), nil
 		},
 	})
 
@@ -78,13 +78,13 @@ func TestCapabilityPath_PhaseGating(t *testing.T) {
 
 func TestCapabilityPath_TrustGating(t *testing.T) {
 	c := New()
-	c.Register(capability.Capability{
+	c.Register(organ.Func{
 		Name:   "delete",
-		Mode:   capability.WriteAction,
+		Mode:   organ.WriteAction,
 		Risk:   0.9,
-		Source: capability.Environment,
-		Execute: func(_ context.Context, _ json.RawMessage) (capability.Result, error) {
-			return capability.TextResult("deleted"), nil
+		Source: organ.Environment,
+		Execute: func(_ context.Context, _ json.RawMessage) (organ.Result, error) {
+			return organ.TextResult("deleted"), nil
 		},
 	})
 
@@ -113,12 +113,12 @@ func TestCapabilityPath_TrustGating(t *testing.T) {
 
 func TestCapabilityPath_SignalEmission(t *testing.T) {
 	c := New()
-	c.Register(capability.Capability{
+	c.Register(organ.Func{
 		Name:   "look",
-		Mode:   capability.ReadAction,
-		Source: capability.Environment,
-		Execute: func(_ context.Context, _ json.RawMessage) (capability.Result, error) {
-			return capability.TextResult("you see a room"), nil
+		Mode:   organ.ReadAction,
+		Source: organ.Environment,
+		Execute: func(_ context.Context, _ json.RawMessage) (organ.Result, error) {
+			return organ.TextResult("you see a room"), nil
 		},
 	})
 

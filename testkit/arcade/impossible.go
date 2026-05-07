@@ -1,7 +1,7 @@
 package arcade
 
 import (
-	"github.com/dpopsuev/tako/agent/capability"
+	"github.com/dpopsuev/tako/agent/organ"
 )
 
 // NewImpossible returns a scenario where the Need requires actions
@@ -14,7 +14,7 @@ func NewImpossible() Scenario {
 		"key":    "hidden",
 	})
 
-	adv.AddInstrument("look", "Look at the locked door", capability.ReadAction, func(s map[string]any, _ string) string {
+	adv.AddInstrument("look", "Look at the locked door", organ.ReadAction, func(s map[string]any, _ string) string {
 		if s["locked"] == true {
 			return "you see a locked door. it requires a key to open. you need to use the 'unlock' instrument."
 		}

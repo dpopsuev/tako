@@ -1,4 +1,4 @@
-package capability
+package organ
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 )
 
 func TestCapability_Execute(t *testing.T) {
-	cap := Capability{
+	cap := Func{
 		Name:        "greet",
 		Description: "Say hello",
 		Schema:      json.RawMessage(`{"type":"string"}`),
@@ -29,12 +29,12 @@ func TestCapability_Execute(t *testing.T) {
 }
 
 func TestCapability_BuiltInVsEnvironment(t *testing.T) {
-	builtIn := Capability{
+	builtIn := Func{
 		Name:   "andon",
 		Source: BuiltIn,
 		Mode:   ReadAction,
 	}
-	env := Capability{
+	env := Func{
 		Name:   "take",
 		Source: Environment,
 		Mode:   WriteAction,
@@ -50,7 +50,7 @@ func TestCapability_BuiltInVsEnvironment(t *testing.T) {
 }
 
 func TestCapability_RiskAndMode(t *testing.T) {
-	cap := Capability{
+	cap := Func{
 		Name: "write_file",
 		Mode: WriteAction,
 		Risk: 0.7,
@@ -64,12 +64,12 @@ func TestCapability_RiskAndMode(t *testing.T) {
 	}
 }
 
-func TestCapabilitySet_Register(t *testing.T) {
+func TestFuncSet_Register(t *testing.T) {
 	noop := func(_ context.Context, _ json.RawMessage) (Result, error) { return Result{}, nil }
-	cs := NewCapabilitySet()
-	cs.Register(Capability{Name: "take", Mode: WriteAction, Risk: 0.5, Source: Environment, Execute: noop})
-	cs.Register(Capability{Name: "look", Mode: ReadAction, Source: Environment, Execute: noop})
-	cs.Register(Capability{Name: "andon", Mode: ReadAction, Source: BuiltIn, Execute: noop})
+	cs := NewFuncSet()
+	cs.Register(Func{Name: "take", Mode: WriteAction, Risk: 0.5, Source: Environment, Execute: noop})
+	cs.Register(Func{Name: "look", Mode: ReadAction, Source: Environment, Execute: noop})
+	cs.Register(Func{Name: "andon", Mode: ReadAction, Source: BuiltIn, Execute: noop})
 
 	if len(cs.All()) != 3 {
 		t.Fatalf("expected 3 capabilities, got %d", len(cs.All()))
@@ -95,9 +95,9 @@ func TestCapabilitySet_Register(t *testing.T) {
 }
 
 func TestCapability_WritesMatchResidual(t *testing.T) {
-	eat := Capability{Name: "eat", Writes: []string{"hungry"}}
-	cook := Capability{Name: "cook", Writes: []string{"plate", "hand"}}
-	look := Capability{Name: "look", Reads: []string{"fridge"}}
+	eat := Func{Name: "eat", Writes: []string{"hungry"}}
+	cook := Func{Name: "cook", Writes: []string{"plate", "hand"}}
+	look := Func{Name: "look", Reads: []string{"fridge"}}
 
 	if !eat.TouchesDimension("hungry") {
 		t.Error("eat should touch hungry")
@@ -113,12 +113,12 @@ func TestCapability_WritesMatchResidual(t *testing.T) {
 	}
 }
 
-func TestCapabilitySet_ForDimension(t *testing.T) {
-	cs := NewCapabilitySet()
-	cs.Register(Capability{Name: "eat", Writes: []string{"hungry"}})
-	cs.Register(Capability{Name: "cook", Writes: []string{"plate", "hand"}})
-	cs.Register(Capability{Name: "take", Writes: []string{"hand", "fridge"}})
-	cs.Register(Capability{Name: "look", Reads: []string{"fridge"}})
+func TestFuncSet_ForDimension(t *testing.T) {
+	cs := NewFuncSet()
+	cs.Register(Func{Name: "eat", Writes: []string{"hungry"}})
+	cs.Register(Func{Name: "cook", Writes: []string{"plate", "hand"}})
+	cs.Register(Func{Name: "take", Writes: []string{"hand", "fridge"}})
+	cs.Register(Func{Name: "look", Reads: []string{"fridge"}})
 
 	matches := cs.ForDimension("hungry")
 	if len(matches) != 1 || matches[0].Name != "eat" {
@@ -136,7 +136,7 @@ func TestCapabilitySet_ForDimension(t *testing.T) {
 	}
 }
 
-func names(caps []Capability) []string {
+func names(caps []Func) []string {
 	out := make([]string, len(caps))
 	for i, c := range caps {
 		out[i] = c.Name
@@ -144,11 +144,11 @@ func names(caps []Capability) []string {
 	return out
 }
 
-func TestCapabilitySet_Names(t *testing.T) {
-	cs := NewCapabilitySet()
-	cs.Register(Capability{Name: "b", Source: Environment})
-	cs.Register(Capability{Name: "a", Source: Environment})
-	cs.Register(Capability{Name: "c", Source: BuiltIn})
+func TestFuncSet_Names(t *testing.T) {
+	cs := NewFuncSet()
+	cs.Register(Func{Name: "b", Source: Environment})
+	cs.Register(Func{Name: "a", Source: Environment})
+	cs.Register(Func{Name: "c", Source: BuiltIn})
 
 	names := cs.Names()
 	if len(names) != 3 {

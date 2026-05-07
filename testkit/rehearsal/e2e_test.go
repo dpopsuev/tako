@@ -8,7 +8,7 @@ import (
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
 	"github.com/dpopsuev/tako/assemble"
-	"github.com/dpopsuev/tako/shells/code"
+	"github.com/dpopsuev/tako/organs/code"
 	tangle "github.com/dpopsuev/tangle"
 )
 

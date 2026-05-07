@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/dpopsuev/tako/agent/capability"
+	"github.com/dpopsuev/tako/agent/organ"
 )
 
 type gitStatusFunc struct{ root string }
@@ -23,12 +23,12 @@ func (f *gitStatusFunc) InputSchema() json.RawMessage {
 	return json.RawMessage(`{"type":"object","properties":{}}`)
 }
 
-func (f *gitStatusFunc) Execute(ctx context.Context, input json.RawMessage) (capability.Result, error) {
+func (f *gitStatusFunc) Execute(ctx context.Context, input json.RawMessage) (organ.Result, error) {
 	out, err := gitExec(ctx, f.root, "status", "--porcelain", "-b")
 	if err != nil {
-		return capability.ErrorResult(fmt.Sprintf("git_status: %s", err)), nil
+		return organ.ErrorResult(fmt.Sprintf("git_status: %s", err)), nil
 	}
-	return capability.TextResult(out), nil
+	return organ.TextResult(out), nil
 }
 
 func (f *gitDiffFunc) Description() string {
@@ -39,7 +39,7 @@ func (f *gitDiffFunc) InputSchema() json.RawMessage {
 	return json.RawMessage(`{"type":"object","properties":{"path":{"type":"string","description":"Optional file path to diff"}}}`)
 }
 
-func (f *gitDiffFunc) Execute(ctx context.Context, input json.RawMessage) (capability.Result, error) {
+func (f *gitDiffFunc) Execute(ctx context.Context, input json.RawMessage) (organ.Result, error) {
 	var in struct {
 		Path string `json:"path"`
 	}
@@ -52,12 +52,12 @@ func (f *gitDiffFunc) Execute(ctx context.Context, input json.RawMessage) (capab
 
 	out, err := gitExec(ctx, f.root, args...)
 	if err != nil {
-		return capability.ErrorResult(fmt.Sprintf("git_diff: %s", err)), nil
+		return organ.ErrorResult(fmt.Sprintf("git_diff: %s", err)), nil
 	}
 	if out == "" {
-		return capability.TextResult("no changes"), nil
+		return organ.TextResult("no changes"), nil
 	}
-	return capability.TextResult(out), nil
+	return organ.TextResult(out), nil
 }
 
 func (f *gitCommitFunc) Description() string {
@@ -68,32 +68,32 @@ func (f *gitCommitFunc) InputSchema() json.RawMessage {
 	return json.RawMessage(`{"type":"object","properties":{"message":{"type":"string","description":"Commit message"},"files":{"type":"array","items":{"type":"string"},"description":"Files to stage (if empty, commits all staged)"}},"required":["message"]}`)
 }
 
-func (f *gitCommitFunc) Execute(ctx context.Context, input json.RawMessage) (capability.Result, error) {
+func (f *gitCommitFunc) Execute(ctx context.Context, input json.RawMessage) (organ.Result, error) {
 	var in struct {
 		Message string   `json:"message"`
 		Files   []string `json:"files"`
 	}
 	if err := json.Unmarshal(input, &in); err != nil {
-		return capability.Result{}, fmt.Errorf("git_commit: %w", err)
+		return organ.Result{}, fmt.Errorf("git_commit: %w", err)
 	}
 	if in.Message == "" {
-		return capability.ErrorResult("git_commit: message required"), nil
+		return organ.ErrorResult("git_commit: message required"), nil
 	}
 
 	if len(in.Files) > 0 {
 		args := append([]string{"add"}, in.Files...)
 		if _, err := gitExec(ctx, f.root, args...); err != nil {
-			return capability.ErrorResult(fmt.Sprintf("git_commit: stage failed: %s", err)), nil
+			return organ.ErrorResult(fmt.Sprintf("git_commit: stage failed: %s", err)), nil
 		}
 	}
 
 	out, err := gitExec(ctx, f.root, "commit", "-m", in.Message)
 	if err != nil {
-		return capability.ErrorResult(fmt.Sprintf("git_commit: %s\n%s", err, out)), nil
+		return organ.ErrorResult(fmt.Sprintf("git_commit: %s\n%s", err, out)), nil
 	}
 
 	hash, _ := gitExec(ctx, f.root, "rev-parse", "--short", "HEAD")
-	return capability.TextResult(fmt.Sprintf("committed %s: %s", strings.TrimSpace(hash), in.Message)), nil
+	return organ.TextResult(fmt.Sprintf("committed %s: %s", strings.TrimSpace(hash), in.Message)), nil
 }
 
 func gitExec(ctx context.Context, root string, args ...string) (string, error) {

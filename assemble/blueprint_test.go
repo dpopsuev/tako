@@ -8,7 +8,7 @@ import (
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
 	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/shells/code"
+	"github.com/dpopsuev/tako/organs/code"
 	tangle "github.com/dpopsuev/tangle"
 )
 
@@ -37,7 +37,7 @@ func TestWalkingSkeleton_ReadFile(t *testing.T) {
 		}
 	}
 	if !readCap {
-		t.Fatal("read_file capability not found in shells/code")
+		t.Fatal("read_file capability not found in organs/code")
 	}
 
 	completer := &scriptedCompleter{

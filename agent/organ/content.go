@@ -1,4 +1,4 @@
-package capability
+package organ
 
 // Content is one part of an instrument Result.
 type Content struct {

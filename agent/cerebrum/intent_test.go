@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/dpopsuev/tako/agent/capability"
+	"github.com/dpopsuev/tako/agent/organ"
 	"github.com/dpopsuev/tako/agent/reactivity"
 )
 
@@ -25,12 +25,12 @@ func TestIntentRouter_ReflexBypass(t *testing.T) {
 		}},
 	})
 
-	speakCap := capability.Capability{
+	speakCap := organ.Func{
 		Name: "speak",
-		Execute: func(_ context.Context, input json.RawMessage) (capability.Result, error) {
+		Execute: func(_ context.Context, input json.RawMessage) (organ.Result, error) {
 			var args struct{ Response string `json:"response"` }
 			json.Unmarshal(input, &args)
-			return capability.TextResult(args.Response), nil
+			return organ.TextResult(args.Response), nil
 		},
 	}
 
@@ -39,7 +39,7 @@ func TestIntentRouter_ReflexBypass(t *testing.T) {
 	cb := New(reactor, completer,
 		WithEmbedder(embedder),
 		WithReflexStore(store),
-		WithCapabilities([]capability.Capability{speakCap}),
+		WithCapabilities([]organ.Func{speakCap}),
 	)
 
 	err := cb.Think(context.Background(), reactivity.Catalyst{Need: "hello"})

@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/dpopsuev/tako/agent/capability"
+	"github.com/dpopsuev/tako/agent/organ"
 	"github.com/dpopsuev/tako/agent/reactivity"
 )
 
@@ -28,7 +28,7 @@ type ReplayResult struct {
 	Response      string
 }
 
-func ReplayPipe(ctx context.Context, pipe *Pipe, caps map[string]capability.Capability) (ReplayResult, error) {
+func ReplayPipe(ctx context.Context, pipe *Pipe, caps map[string]organ.Func) (ReplayResult, error) {
 	pipe.Usage++
 	pipe.LastPlayed = time.Now()
 
@@ -110,7 +110,7 @@ func suggestionAtom(pipe *Pipe, overlap float64, turn int) reactivity.Atom {
 	}
 }
 
-func fireReflex(ctx context.Context, caps []capability.Capability, overlap float64) {
+func fireReflex(ctx context.Context, caps []organ.Func, overlap float64) {
 	for _, cap := range caps {
 		if cap.Execute == nil {
 			continue

@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/dpopsuev/tako/agent/capability"
+	"github.com/dpopsuev/tako/agent/organ"
 	"github.com/dpopsuev/tako/agent/reactivity"
 	tangle "github.com/dpopsuev/tangle"
 )
@@ -62,7 +62,7 @@ func (s *stubSynapse) Decode(e reactivity.Emission) Event {
 }
 
 type autoExecMotor struct {
-	caps    map[string]capability.Capability
+	caps    map[string]organ.Func
 	sensory Bus
 }
 

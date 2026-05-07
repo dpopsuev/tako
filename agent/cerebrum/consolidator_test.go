@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/dpopsuev/tako/agent/capability"
+	"github.com/dpopsuev/tako/agent/organ"
 	"github.com/dpopsuev/tako/agent/reactivity"
 	tangle "github.com/dpopsuev/tangle"
 )
@@ -114,12 +114,12 @@ func TestFlywheel_ConsolidateThenReflex(t *testing.T) {
 	store := NewPipeStore()
 	cons := &PipeConsolidator{Store: store, Embedder: embedder}
 
-	speakCap := capability.Capability{
+	speakCap := organ.Func{
 		Name: "speak",
-		Execute: func(_ context.Context, input json.RawMessage) (capability.Result, error) {
+		Execute: func(_ context.Context, input json.RawMessage) (organ.Result, error) {
 			var args struct{ Response string `json:"response"` }
 			json.Unmarshal(input, &args)
-			return capability.TextResult(args.Response), nil
+			return organ.TextResult(args.Response), nil
 		},
 	}
 
@@ -133,7 +133,7 @@ func TestFlywheel_ConsolidateThenReflex(t *testing.T) {
 	}
 
 	sensory := NewChannelBus(64)
-	motor := &autoExecMotor{caps: map[string]capability.Capability{"speak": speakCap}, sensory: sensory}
+	motor := &autoExecMotor{caps: map[string]organ.Func{"speak": speakCap}, sensory: sensory}
 
 	reactor := reactivity.NewReactor()
 	cb := New(reactor, completer,
@@ -142,7 +142,7 @@ func TestFlywheel_ConsolidateThenReflex(t *testing.T) {
 		WithEmbedder(embedder),
 		WithReflexStore(store),
 		WithConsolidator(cons),
-		WithCapabilities([]capability.Capability{speakCap}),
+		WithCapabilities([]organ.Func{speakCap}),
 		WithMaxTurns(3),
 	)
 
@@ -158,7 +158,7 @@ func TestFlywheel_ConsolidateThenReflex(t *testing.T) {
 	cb2 := New(reactor2, shouldNotCall,
 		WithEmbedder(embedder),
 		WithReflexStore(store),
-		WithCapabilities([]capability.Capability{speakCap}),
+		WithCapabilities([]organ.Func{speakCap}),
 	)
 
 	err := cb2.Think(context.Background(), reactivity.Catalyst{Need: "hello"})

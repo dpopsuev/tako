@@ -1,4 +1,4 @@
-package capability
+package organ
 
 // ActionMode labels whether an individual action reads or writes.
 type ActionMode int

@@ -9,7 +9,7 @@ import (
 
 	"github.com/dpopsuev/tako/agent"
 	"github.com/dpopsuev/tako/agent/corpus"
-	"github.com/dpopsuev/tako/agent/capability"
+	"github.com/dpopsuev/tako/agent/organ"
 	"github.com/dpopsuev/tako/artifact"
 	"github.com/dpopsuev/tako/discourse"
 	"github.com/dpopsuev/tako/ergograph"
@@ -40,7 +40,7 @@ type FabCollective struct {
 	agents     []*agent.Agent
 	runner     agent.Runner
 	mesh       memory.Mesh
-	capabilities *capability.CapabilitySet
+	capabilities *organ.FuncSet
 	monolog    discourse.Monolog
 }
 
@@ -61,7 +61,7 @@ type FabCollectiveConfig struct {
 	Depo       depo.Depo
 	Lobby      agent.Lobby
 	Mesh       memory.Mesh
-	Capabilities *capability.CapabilitySet
+	Capabilities *organ.FuncSet
 	Runner     agent.Runner
 	Middleware []Middleware
 }

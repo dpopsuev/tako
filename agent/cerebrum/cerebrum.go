@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/agent/capability"
+	"github.com/dpopsuev/tako/agent/organ"
 	tangle "github.com/dpopsuev/tangle"
 )
 
@@ -92,7 +92,7 @@ type Cerebrum struct {
 	observer           Observer
 	regulator          Regulator
 	assembler          Assembler
-	capabilities       []capability.Capability
+	capabilities       []organ.Func
 	config             *reactivity.Config
 	priorityClassifier PriorityClassifier
 	watcher            tangle.Completer
@@ -220,7 +220,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 
 	intent := cb.classifyIntent(ctx, need)
 	if intent.Gear == GearReflex && intent.Pipe != nil {
-		capMap := make(map[string]capability.Capability)
+		capMap := make(map[string]organ.Func)
 		for _, c := range cb.capabilities {
 			capMap[c.Name] = c
 		}
@@ -731,7 +731,7 @@ func (cb *Cerebrum) tools(phase reactivity.AtomType) []tangle.Tool {
 	tools := []tangle.Tool{phaseToolFor(phase)}
 
 	for _, cap := range cb.capabilities {
-		if cap.Mode == capability.WriteAction && phase.Triad != reactivity.ImplementTriad {
+		if cap.Mode == organ.WriteAction && phase.Triad != reactivity.ImplementTriad {
 			continue
 		}
 		tools = append(tools, tangle.Tool{

@@ -1,42 +1,42 @@
-package capability
+package organ
 
 import (
 	"context"
 	"encoding/json"
 )
 
-// CapabilitySource identifies where a capability comes from.
-type CapabilitySource int
+// FuncSource identifies where a capability comes from.
+type FuncSource int
 
 const (
-	BuiltIn     CapabilitySource = iota // agent's own: andon, recollector, compactor
+	BuiltIn     FuncSource = iota // agent's own: andon, recollector, compactor
 	Environment                         // provided by the world: take, cook, read_file
 )
 
-func (s CapabilitySource) String() string {
+func (s FuncSource) String() string {
 	return [...]string{"built-in", "environment"}[s]
 }
 
-// Capability is a single thing the agent can do.
+// Func is a single thing the agent can do.
 // Unified: no organ/instrument/shell distinction.
 // Some are built-in (agent reflexes), some come from the environment.
 // Reads/Writes declare which state dimensions this capability touches
 // (STRIPS-style scope declaration for GOAP-style planning).
-type Capability struct {
+type Func struct {
 	Name        string
 	Description string
 	Schema      json.RawMessage
 	Mode        ActionMode
 	Risk        float64
 	Approval    ActionApproval
-	Source      CapabilitySource
+	Source      FuncSource
 	Reads       []string // state dimensions this capability observes
 	Writes      []string // state dimensions this capability modifies
 	Execute     func(ctx context.Context, input json.RawMessage) (Result, error)
 }
 
 // TouchesDimension returns true if this capability Writes to the given dimension.
-func (c Capability) TouchesDimension(dim string) bool {
+func (c Func) TouchesDimension(dim string) bool {
 	for _, w := range c.Writes {
 		if w == dim {
 			return true
@@ -45,34 +45,34 @@ func (c Capability) TouchesDimension(dim string) bool {
 	return false
 }
 
-// CapabilitySet is a registry of capabilities. Preserves insertion order.
-type CapabilitySet struct {
-	caps  map[string]Capability
+// FuncSet is a registry of capabilities. Preserves insertion order.
+type FuncSet struct {
+	caps  map[string]Func
 	order []string
 }
 
-func NewCapabilitySet() *CapabilitySet {
-	return &CapabilitySet{caps: make(map[string]Capability)}
+func NewFuncSet() *FuncSet {
+	return &FuncSet{caps: make(map[string]Func)}
 }
 
-func (cs *CapabilitySet) Register(c Capability) {
+func (cs *FuncSet) Register(c Func) {
 	if _, exists := cs.caps[c.Name]; !exists {
 		cs.order = append(cs.order, c.Name)
 	}
 	cs.caps[c.Name] = c
 }
 
-func (cs *CapabilitySet) Get(name string) (Capability, bool) {
+func (cs *FuncSet) Get(name string) (Func, bool) {
 	c, ok := cs.caps[name]
 	return c, ok
 }
 
-func (cs *CapabilitySet) Names() []string {
+func (cs *FuncSet) Names() []string {
 	return append([]string(nil), cs.order...)
 }
 
-func (cs *CapabilitySet) All() []Capability {
-	out := make([]Capability, 0, len(cs.order))
+func (cs *FuncSet) All() []Func {
+	out := make([]Func, 0, len(cs.order))
 	for _, name := range cs.order {
 		out = append(out, cs.caps[name])
 	}
@@ -80,8 +80,8 @@ func (cs *CapabilitySet) All() []Capability {
 }
 
 // ForDimension returns capabilities that Write to the given state dimension.
-func (cs *CapabilitySet) ForDimension(dim string) []Capability {
-	var out []Capability
+func (cs *FuncSet) ForDimension(dim string) []Func {
+	var out []Func
 	for _, name := range cs.order {
 		c := cs.caps[name]
 		if c.TouchesDimension(dim) {
@@ -92,8 +92,8 @@ func (cs *CapabilitySet) ForDimension(dim string) []Capability {
 }
 
 // Voluntary returns capabilities the LLM can call as tools.
-func (cs *CapabilitySet) Voluntary() []Capability {
-	var out []Capability
+func (cs *FuncSet) Voluntary() []Func {
+	var out []Func
 	for _, name := range cs.order {
 		c := cs.caps[name]
 		if c.Execute != nil {

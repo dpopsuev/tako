@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/dpopsuev/tako/agent/capability"
+	"github.com/dpopsuev/tako/agent/organ"
 	"github.com/dpopsuev/tako/agent/reactivity"
 )
 
@@ -127,11 +127,11 @@ func TestReplayPipe_FullSuccess(t *testing.T) {
 		Steps: []PipeStep{{ID: "greet", Call: "greet", Expected: HashResult([]byte("hello"))}},
 	}
 
-	caps := map[string]capability.Capability{
+	caps := map[string]organ.Func{
 		"greet": {
 			Name: "greet",
-			Execute: func(_ context.Context, _ json.RawMessage) (capability.Result, error) {
-				return capability.TextResult("hello"), nil
+			Execute: func(_ context.Context, _ json.RawMessage) (organ.Result, error) {
+				return organ.TextResult("hello"), nil
 			},
 		},
 	}
@@ -162,11 +162,11 @@ func TestReplayPipe_Escalation(t *testing.T) {
 		}},
 	}
 
-	caps := map[string]capability.Capability{
+	caps := map[string]organ.Func{
 		"read_file": {
 			Name: "read_file",
-			Execute: func(_ context.Context, _ json.RawMessage) (capability.Result, error) {
-				return capability.TextResult("different content"), nil
+			Execute: func(_ context.Context, _ json.RawMessage) (organ.Result, error) {
+				return organ.TextResult("different content"), nil
 			},
 		},
 	}
@@ -241,19 +241,19 @@ func TestPipeExecutor_FailureCascade(t *testing.T) {
 
 func TestFireReflex(t *testing.T) {
 	var called atomic.Int32
-	caps := []capability.Capability{
+	caps := []organ.Func{
 		{
 			Name: "test_cap",
-			Execute: func(_ context.Context, _ json.RawMessage) (capability.Result, error) {
+			Execute: func(_ context.Context, _ json.RawMessage) (organ.Result, error) {
 				called.Add(1)
-				return capability.TextResult("ok"), nil
+				return organ.TextResult("ok"), nil
 			},
 		},
 		{Name: "nil_execute"},
 		{
 			Name: "error_cap",
-			Execute: func(_ context.Context, _ json.RawMessage) (capability.Result, error) {
-				return capability.Result{}, errors.New("boom")
+			Execute: func(_ context.Context, _ json.RawMessage) (organ.Result, error) {
+				return organ.Result{}, errors.New("boom")
 			},
 		},
 	}

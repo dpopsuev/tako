@@ -7,8 +7,8 @@ import (
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
 	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/agent/capability"
-	"github.com/dpopsuev/tako/shells/code"
+	"github.com/dpopsuev/tako/agent/organ"
+	"github.com/dpopsuev/tako/organs/code"
 	"gopkg.in/yaml.v3"
 )
 
@@ -97,11 +97,11 @@ func (bc *BlueprintConfig) ToBlueprint() Blueprint {
 	return bp
 }
 
-func resolveCapabilities(names []string, workDir string) []capability.Capability {
+func resolveCapabilities(names []string, workDir string) []organ.Func {
 	if workDir == "" {
 		workDir = "."
 	}
-	var caps []capability.Capability
+	var caps []organ.Func
 	for _, name := range names {
 		switch name {
 		case "code":

@@ -8,7 +8,7 @@ import (
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
 	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/agent/capability"
+	"github.com/dpopsuev/tako/agent/organ"
 )
 
 // MotorBus builds a cerebrum.Bus that routes motor events through the Corpus.
@@ -49,8 +49,8 @@ func (m *corpusMotor) Send(ctx context.Context, event cerebrum.Event) error {
 	return m.executeCapability(ctx, event, cap)
 }
 
-func (m *corpusMotor) executeCapability(ctx context.Context, event cerebrum.Event, cap capability.Capability) error {
-	if cap.Mode == capability.WriteAction && m.phase != nil && m.phase() != reactivity.ImplementTriad {
+func (m *corpusMotor) executeCapability(ctx context.Context, event cerebrum.Event, cap organ.Func) error {
+	if cap.Mode == organ.WriteAction && m.phase != nil && m.phase() != reactivity.ImplementTriad {
 		slog.WarnContext(ctx, "corpus.motor.denied_phase",
 			slog.String("capability", cap.Name),
 			slog.String("mode", "write"),
@@ -60,7 +60,7 @@ func (m *corpusMotor) executeCapability(ctx context.Context, event cerebrum.Even
 		return nil
 	}
 
-	needsHITL := cap.Approval == capability.HITL
+	needsHITL := cap.Approval == organ.HITL
 	if !needsHITL && m.trust != nil {
 		needsHITL = cap.Risk > m.trust()
 	}

@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/dpopsuev/tako/agent/capability"
+	"github.com/dpopsuev/tako/agent/organ"
 )
 
 type bashInput struct {
@@ -28,13 +28,13 @@ func (f *bashFunc) InputSchema() json.RawMessage {
 	return json.RawMessage(`{"type":"object","properties":{"command":{"type":"string","description":"Shell command to execute"},"timeout":{"type":"integer","description":"Timeout in seconds (default 120)"}},"required":["command"]}`)
 }
 
-func (f *bashFunc) Execute(ctx context.Context, input json.RawMessage) (capability.Result, error) {
+func (f *bashFunc) Execute(ctx context.Context, input json.RawMessage) (organ.Result, error) {
 	var in bashInput
 	if err := json.Unmarshal(input, &in); err != nil {
-		return capability.Result{}, fmt.Errorf("bash: %w", err)
+		return organ.Result{}, fmt.Errorf("bash: %w", err)
 	}
 	if in.Command == "" {
-		return capability.ErrorResult("bash: empty command"), nil
+		return organ.ErrorResult("bash: empty command"), nil
 	}
 
 	timeout := 120
@@ -65,9 +65,9 @@ func (f *bashFunc) Execute(ctx context.Context, input json.RawMessage) (capabili
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			result += fmt.Sprintf("\nexit code: %d", exitErr.ExitCode())
 		} else {
-			return capability.Result{}, fmt.Errorf("bash: %w", err)
+			return organ.Result{}, fmt.Errorf("bash: %w", err)
 		}
 	}
 
-	return capability.TextResult(result), nil
+	return organ.TextResult(result), nil
 }

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/agent/capability"
+	"github.com/dpopsuev/tako/agent/organ"
 )
 
 func TestDefaultRender_Basic(t *testing.T) {
@@ -88,7 +88,7 @@ func TestDefaultRender_WithCapabilities(t *testing.T) {
 	ctx := Context{
 		Need:  "feed the tako",
 		Phase: reactivity.ExecutionAtom,
-		Capabilities: []capability.Capability{
+		Capabilities: []organ.Func{
 			{
 				Name:        "eat",
 				Description: "eat food from plate",
@@ -206,7 +206,7 @@ func TestDefaultRegulate(t *testing.T) {
 		Need:     []byte("feed"),
 		Observer: func() map[string]any { return state },
 		Molecule: m,
-		Capabilities: []capability.Capability{
+		Capabilities: []organ.Func{
 			{Name: "eat", Description: "eat food", Writes: []string{"hungry"}},
 		},
 		Domain: Complicated,
@@ -257,7 +257,7 @@ func TestCerebrum_Assemble_WithObserver(t *testing.T) {
 	reactor := reactivity.NewReactor()
 	cb := New(reactor, completer,
 		WithObserver(observer),
-		WithCapabilities([]capability.Capability{
+		WithCapabilities([]organ.Func{
 			{Name: "eat", Description: "eat food", Writes: []string{"hungry"}},
 		}),
 	)

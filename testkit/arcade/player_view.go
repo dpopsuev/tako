@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/dpopsuev/tako/agent/capability"
+	"github.com/dpopsuev/tako/agent/organ"
 )
 
 // PlayerView restricts a Game's Shell to a subset of instruments.
@@ -39,11 +39,11 @@ func (v *PlayerView) Schema(name string) (json.RawMessage, error) {
 	return v.game.Schema(name)
 }
 
-func (v *PlayerView) Mode(name string) capability.ActionMode {
+func (v *PlayerView) Mode(name string) organ.ActionMode {
 	return v.game.Mode(name)
 }
 
-func (v *PlayerView) Approval(name string) capability.ActionApproval {
+func (v *PlayerView) Approval(name string) organ.ActionApproval {
 	return v.game.Approval(name)
 }
 
@@ -51,17 +51,17 @@ func (v *PlayerView) Risk(name string) float64 {
 	return v.game.Risk(name)
 }
 
-func (v *PlayerView) Exec(ctx context.Context, name string, input json.RawMessage) (capability.Result, error) {
+func (v *PlayerView) Exec(ctx context.Context, name string, input json.RawMessage) (organ.Result, error) {
 	if !v.has(name) {
-		return capability.ErrorResult(fmt.Sprintf("instrument %s not available to player %s", name, v.playerID)), nil
+		return organ.ErrorResult(fmt.Sprintf("instrument %s not available to player %s", name, v.playerID)), nil
 	}
 	return v.game.Exec(ctx, name, input)
 }
 
 // Capabilities returns the filtered subset as Capabilities.
-func (v *PlayerView) Capabilities() []capability.Capability {
+func (v *PlayerView) Capabilities() []organ.Func {
 	all := v.game.Capabilities()
-	var filtered []capability.Capability
+	var filtered []organ.Func
 	for _, cap := range all {
 		if v.has(cap.Name) {
 			filtered = append(filtered, cap)

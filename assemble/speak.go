@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/dpopsuev/tako/agent/capability"
+	"github.com/dpopsuev/tako/agent/organ"
 )
 
 var speakSchema = json.RawMessage(`{
@@ -15,22 +15,22 @@ var speakSchema = json.RawMessage(`{
 	"required": ["response"]
 }`)
 
-func speakCapability() capability.Capability {
-	return capability.Capability{
+func speakCapability() organ.Func {
+	return organ.Func{
 		Name:        "speak",
 		Description: "Respond to the operator. Use this to answer questions, greet, or provide information.",
 		Schema:      speakSchema,
-		Mode:        capability.ReadAction,
+		Mode:        organ.ReadAction,
 		Risk:        0,
-		Source:      capability.BuiltIn,
-		Execute: func(_ context.Context, input json.RawMessage) (capability.Result, error) {
+		Source:      organ.BuiltIn,
+		Execute: func(_ context.Context, input json.RawMessage) (organ.Result, error) {
 			var args struct {
 				Response string `json:"response"`
 			}
 			if err := json.Unmarshal(input, &args); err != nil {
-				return capability.TextResult(string(input)), nil
+				return organ.TextResult(string(input)), nil
 			}
-			return capability.TextResult(args.Response), nil
+			return organ.TextResult(args.Response), nil
 		},
 	}
 }

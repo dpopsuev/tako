@@ -9,11 +9,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dpopsuev/tako/agent/capability"
+	"github.com/dpopsuev/tako/agent/organ"
 )
 
 // Capabilities returns code operation capabilities rooted at the given path.
-func Capabilities(rootPath string) []capability.Capability {
+func Capabilities(rootPath string) []organ.Func {
 	rf := &readFileFunc{root: rootPath}
 	wf := &writeFileFunc{root: rootPath}
 	gb := &goBuildFunc{root: rootPath}
@@ -26,19 +26,19 @@ func Capabilities(rootPath string) []capability.Capability {
 	gs := &gitStatusFunc{root: rootPath}
 	gd := &gitDiffFunc{root: rootPath}
 	gc := &gitCommitFunc{root: rootPath}
-	return []capability.Capability{
-		{Name: "read_file", Description: rf.Description(), Schema: rf.InputSchema(), Mode: capability.ReadAction, Risk: 0, Source: capability.Environment, Reads: []string{"filesystem"}, Execute: rf.Execute},
-		{Name: "write_file", Description: wf.Description(), Schema: wf.InputSchema(), Mode: capability.WriteAction, Risk: 0.7, Source: capability.Environment, Writes: []string{"filesystem"}, Execute: wf.Execute},
-		{Name: "edit", Description: ef.Description(), Schema: ef.InputSchema(), Mode: capability.WriteAction, Risk: 0.5, Source: capability.Environment, Reads: []string{"filesystem"}, Writes: []string{"filesystem"}, Execute: ef.Execute},
-		{Name: "bash", Description: bf.Description(), Schema: bf.InputSchema(), Mode: capability.WriteAction, Risk: 0.8, Source: capability.Environment, Execute: bf.Execute},
-		{Name: "glob", Description: gl.Description(), Schema: gl.InputSchema(), Mode: capability.ReadAction, Risk: 0, Source: capability.Environment, Reads: []string{"filesystem"}, Execute: gl.Execute},
-		{Name: "grep", Description: gr.Description(), Schema: gr.InputSchema(), Mode: capability.ReadAction, Risk: 0, Source: capability.Environment, Reads: []string{"filesystem"}, Execute: gr.Execute},
-		{Name: "git_status", Description: gs.Description(), Schema: gs.InputSchema(), Mode: capability.ReadAction, Risk: 0, Source: capability.Environment, Reads: []string{"git"}, Execute: gs.Execute},
-		{Name: "git_diff", Description: gd.Description(), Schema: gd.InputSchema(), Mode: capability.ReadAction, Risk: 0, Source: capability.Environment, Reads: []string{"git"}, Execute: gd.Execute},
-		{Name: "git_commit", Description: gc.Description(), Schema: gc.InputSchema(), Mode: capability.WriteAction, Risk: 0.7, Source: capability.Environment, Reads: []string{"git"}, Writes: []string{"git"}, Execute: gc.Execute},
-		{Name: "go_build", Description: gb.Description(), Schema: gb.InputSchema(), Mode: capability.ReadAction, Risk: 0, Source: capability.Environment, Reads: []string{"filesystem"}, Execute: gb.Execute},
-		{Name: "go_test", Description: gt.Description(), Schema: gt.InputSchema(), Mode: capability.WriteAction, Risk: 0.3, Source: capability.Environment, Reads: []string{"filesystem"}, Writes: []string{"filesystem"}, Execute: gt.Execute},
-		{Name: "go_vet", Description: gv.Description(), Schema: gv.InputSchema(), Mode: capability.ReadAction, Risk: 0, Source: capability.Environment, Reads: []string{"filesystem"}, Execute: gv.Execute},
+	return []organ.Func{
+		{Name: "read_file", Description: rf.Description(), Schema: rf.InputSchema(), Mode: organ.ReadAction, Risk: 0, Source: organ.Environment, Reads: []string{"filesystem"}, Execute: rf.Execute},
+		{Name: "write_file", Description: wf.Description(), Schema: wf.InputSchema(), Mode: organ.WriteAction, Risk: 0.7, Source: organ.Environment, Writes: []string{"filesystem"}, Execute: wf.Execute},
+		{Name: "edit", Description: ef.Description(), Schema: ef.InputSchema(), Mode: organ.WriteAction, Risk: 0.5, Source: organ.Environment, Reads: []string{"filesystem"}, Writes: []string{"filesystem"}, Execute: ef.Execute},
+		{Name: "bash", Description: bf.Description(), Schema: bf.InputSchema(), Mode: organ.WriteAction, Risk: 0.8, Source: organ.Environment, Execute: bf.Execute},
+		{Name: "glob", Description: gl.Description(), Schema: gl.InputSchema(), Mode: organ.ReadAction, Risk: 0, Source: organ.Environment, Reads: []string{"filesystem"}, Execute: gl.Execute},
+		{Name: "grep", Description: gr.Description(), Schema: gr.InputSchema(), Mode: organ.ReadAction, Risk: 0, Source: organ.Environment, Reads: []string{"filesystem"}, Execute: gr.Execute},
+		{Name: "git_status", Description: gs.Description(), Schema: gs.InputSchema(), Mode: organ.ReadAction, Risk: 0, Source: organ.Environment, Reads: []string{"git"}, Execute: gs.Execute},
+		{Name: "git_diff", Description: gd.Description(), Schema: gd.InputSchema(), Mode: organ.ReadAction, Risk: 0, Source: organ.Environment, Reads: []string{"git"}, Execute: gd.Execute},
+		{Name: "git_commit", Description: gc.Description(), Schema: gc.InputSchema(), Mode: organ.WriteAction, Risk: 0.7, Source: organ.Environment, Reads: []string{"git"}, Writes: []string{"git"}, Execute: gc.Execute},
+		{Name: "go_build", Description: gb.Description(), Schema: gb.InputSchema(), Mode: organ.ReadAction, Risk: 0, Source: organ.Environment, Reads: []string{"filesystem"}, Execute: gb.Execute},
+		{Name: "go_test", Description: gt.Description(), Schema: gt.InputSchema(), Mode: organ.WriteAction, Risk: 0.3, Source: organ.Environment, Reads: []string{"filesystem"}, Writes: []string{"filesystem"}, Execute: gt.Execute},
+		{Name: "go_vet", Description: gv.Description(), Schema: gv.InputSchema(), Mode: organ.ReadAction, Risk: 0, Source: organ.Environment, Reads: []string{"filesystem"}, Execute: gv.Execute},
 	}
 }
 
@@ -52,20 +52,20 @@ func (f *readFileFunc) InputSchema() json.RawMessage {
 	return json.RawMessage(`{"type":"object","properties":{"path":{"type":"string","description":"relative file path"}},"required":["path"]}`)
 }
 
-func (f *readFileFunc) Execute(_ context.Context, input json.RawMessage) (capability.Result, error) {
+func (f *readFileFunc) Execute(_ context.Context, input json.RawMessage) (organ.Result, error) {
 	p := extractPath(input)
 	if p == "" {
-		return capability.ErrorResult("path is required"), nil
+		return organ.ErrorResult("path is required"), nil
 	}
 	abs := filepath.Join(f.root, filepath.Clean(p))
 	if !strings.HasPrefix(abs, f.root) { // TODO: remove when Mirage Agent Space is wired
-		return capability.ErrorResult("path escapes project root"), nil
+		return organ.ErrorResult("path escapes project root"), nil
 	}
 	data, err := os.ReadFile(abs)
 	if err != nil {
-		return capability.ErrorResult(err.Error()), nil
+		return organ.ErrorResult(err.Error()), nil
 	}
-	return capability.TextResult(string(data)), nil
+	return organ.TextResult(string(data)), nil
 }
 
 // --- write_file ---
@@ -78,28 +78,28 @@ func (f *writeFileFunc) InputSchema() json.RawMessage {
 	return json.RawMessage(`{"type":"object","properties":{"path":{"type":"string","description":"relative file path"},"content":{"type":"string","description":"file content to write"}},"required":["path","content"]}`)
 }
 
-func (f *writeFileFunc) Execute(_ context.Context, input json.RawMessage) (capability.Result, error) {
+func (f *writeFileFunc) Execute(_ context.Context, input json.RawMessage) (organ.Result, error) {
 	var args struct {
 		Path    string `json:"path"`
 		Content string `json:"content"`
 	}
 	if err := json.Unmarshal(input, &args); err != nil {
-		return capability.ErrorResult(fmt.Sprintf("invalid input: %v", err)), nil
+		return organ.ErrorResult(fmt.Sprintf("invalid input: %v", err)), nil
 	}
 	if args.Path == "" {
-		return capability.ErrorResult("path is required"), nil
+		return organ.ErrorResult("path is required"), nil
 	}
 	abs := filepath.Join(f.root, filepath.Clean(args.Path))
 	if !strings.HasPrefix(abs, f.root) { // TODO: remove when Mirage Agent Space is wired
-		return capability.ErrorResult("path escapes project root"), nil
+		return organ.ErrorResult("path escapes project root"), nil
 	}
 	if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
-		return capability.ErrorResult(err.Error()), nil
+		return organ.ErrorResult(err.Error()), nil
 	}
 	if err := os.WriteFile(abs, []byte(args.Content), 0o644); err != nil {
-		return capability.ErrorResult(err.Error()), nil
+		return organ.ErrorResult(err.Error()), nil
 	}
-	return capability.TextResult(fmt.Sprintf("wrote %d bytes to %s", len(args.Content), args.Path)), nil
+	return organ.TextResult(fmt.Sprintf("wrote %d bytes to %s", len(args.Content), args.Path)), nil
 }
 
 // --- go_build ---
@@ -112,7 +112,7 @@ func (f *goBuildFunc) InputSchema() json.RawMessage {
 	return json.RawMessage(`{"type":"object","properties":{"package":{"type":"string","description":"Go package pattern","default":"./..."}},"required":[]}`)
 }
 
-func (f *goBuildFunc) Execute(ctx context.Context, input json.RawMessage) (capability.Result, error) {
+func (f *goBuildFunc) Execute(ctx context.Context, input json.RawMessage) (organ.Result, error) {
 	pkg := extractField(input, "package")
 	if pkg == "" {
 		pkg = "./..."
@@ -130,7 +130,7 @@ func (f *goTestFunc) InputSchema() json.RawMessage {
 	return json.RawMessage(`{"type":"object","properties":{"package":{"type":"string","description":"Go package pattern","default":"./..."},"flags":{"type":"string","description":"additional flags (e.g. '-race -count=1')"}},"required":[]}`)
 }
 
-func (f *goTestFunc) Execute(ctx context.Context, input json.RawMessage) (capability.Result, error) {
+func (f *goTestFunc) Execute(ctx context.Context, input json.RawMessage) (organ.Result, error) {
 	pkg := extractField(input, "package")
 	if pkg == "" {
 		pkg = "./..."
@@ -153,7 +153,7 @@ func (f *goVetFunc) InputSchema() json.RawMessage {
 	return json.RawMessage(`{"type":"object","properties":{"package":{"type":"string","description":"Go package pattern","default":"./..."}},"required":[]}`)
 }
 
-func (f *goVetFunc) Execute(ctx context.Context, input json.RawMessage) (capability.Result, error) {
+func (f *goVetFunc) Execute(ctx context.Context, input json.RawMessage) (organ.Result, error) {
 	pkg := extractField(input, "package")
 	if pkg == "" {
 		pkg = "./..."
@@ -181,20 +181,20 @@ func extractField(input json.RawMessage, field string) string {
 	return ""
 }
 
-func runGoCmd(ctx context.Context, dir, subcmd, pkg string) (capability.Result, error) {
+func runGoCmd(ctx context.Context, dir, subcmd, pkg string) (organ.Result, error) {
 	return runGoCmdArgs(ctx, dir, subcmd, pkg)
 }
 
-func runGoCmdArgs(ctx context.Context, dir string, args ...string) (capability.Result, error) {
+func runGoCmdArgs(ctx context.Context, dir string, args ...string) (organ.Result, error) {
 	cmd := exec.CommandContext(ctx, "go", args...)
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return capability.ErrorResult(fmt.Sprintf("%s\n%s", err.Error(), string(out))), nil
+		return organ.ErrorResult(fmt.Sprintf("%s\n%s", err.Error(), string(out))), nil
 	}
 	output := string(out)
 	if output == "" {
 		output = fmt.Sprintf("go %s: ok", args[0])
 	}
-	return capability.TextResult(output), nil
+	return organ.TextResult(output), nil
 }

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
-	"github.com/dpopsuev/tako/agent/capability"
+	"github.com/dpopsuev/tako/agent/organ"
 )
 
 type InstrumentFunc func(state map[string]any, input string) string
@@ -34,8 +34,8 @@ type Game struct {
 type gameInstrument struct {
 	name        string
 	description string
-	mode        capability.ActionMode
-	approval    capability.ActionApproval
+	mode        organ.ActionMode
+	approval    organ.ActionApproval
 	risk        float64
 	reads       []string
 	writes      []string
@@ -67,7 +67,7 @@ func (a *Game) Observe() string {
 	return strings.Join(parts, ". ")
 }
 
-func (a *Game) AddInstrument(name, description string, mode capability.ActionMode, fn InstrumentFunc) {
+func (a *Game) AddInstrument(name, description string, mode organ.ActionMode, fn InstrumentFunc) {
 	a.instruments[name] = &gameInstrument{name: name, description: description, mode: mode}
 	a.fns[name] = fn
 }
@@ -137,18 +137,18 @@ func (a *Game) Describe(name string) (string, error) {
 	return inst.description, nil
 }
 
-func (a *Game) Mode(name string) capability.ActionMode {
+func (a *Game) Mode(name string) organ.ActionMode {
 	inst, ok := a.instruments[name]
 	if !ok {
-		return capability.ReadAction
+		return organ.ReadAction
 	}
 	return inst.mode
 }
 
-func (a *Game) Approval(name string) capability.ActionApproval {
+func (a *Game) Approval(name string) organ.ActionApproval {
 	inst, ok := a.instruments[name]
 	if !ok {
-		return capability.Auto
+		return organ.Auto
 	}
 	return inst.approval
 }
@@ -161,7 +161,7 @@ func (a *Game) Risk(name string) float64 {
 	if inst.risk > 0 {
 		return inst.risk
 	}
-	if inst.mode == capability.WriteAction {
+	if inst.mode == organ.WriteAction {
 		return 0.5
 	}
 	return 0
@@ -174,18 +174,18 @@ func (a *Game) Schema(name string) (json.RawMessage, error) {
 	return json.RawMessage(`{"type":"string"}`), nil
 }
 
-func (a *Game) Exec(ctx context.Context, name string, input json.RawMessage) (capability.Result, error) {
+func (a *Game) Exec(ctx context.Context, name string, input json.RawMessage) (organ.Result, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
 	fn, ok := a.fns[name]
 	if !ok {
-		return capability.ErrorResult(fmt.Sprintf("unknown instrument: %s", name)), nil
+		return organ.ErrorResult(fmt.Sprintf("unknown instrument: %s", name)), nil
 	}
 
 	s := extractInput(input)
 	result := fn(a.state, s)
-	return capability.TextResult(result), nil
+	return organ.TextResult(result), nil
 }
 
 func extractInput(raw json.RawMessage) string {
@@ -206,31 +206,31 @@ func extractInput(raw json.RawMessage) string {
 
 // Capabilities returns all instruments as Capabilities.
 // The unified path — Corpus.Register each one directly.
-func (a *Game) Capabilities() []capability.Capability {
-	caps := make([]capability.Capability, 0, len(a.instruments))
+func (a *Game) Capabilities() []organ.Func {
+	caps := make([]organ.Func, 0, len(a.instruments))
 	for _, name := range a.Names() {
 		inst := a.instruments[name]
 		fn := a.fns[name]
 		risk := inst.risk
-		if risk == 0 && inst.mode == capability.WriteAction {
+		if risk == 0 && inst.mode == organ.WriteAction {
 			risk = 0.5
 		}
-		caps = append(caps, capability.Capability{
+		caps = append(caps, organ.Func{
 			Name:        inst.name,
 			Description: inst.description,
 			Schema:      json.RawMessage(`{"type":"string"}`),
 			Mode:        inst.mode,
 			Risk:        risk,
 			Approval:    inst.approval,
-			Source:      capability.Environment,
+			Source:      organ.Environment,
 			Reads:       inst.reads,
 			Writes:      inst.writes,
-			Execute: func(ctx context.Context, input json.RawMessage) (capability.Result, error) {
+			Execute: func(ctx context.Context, input json.RawMessage) (organ.Result, error) {
 				a.mu.Lock()
 				defer a.mu.Unlock()
 				s := extractInput(input)
 				result := fn(a.state, s)
-				return capability.TextResult(result), nil
+				return organ.TextResult(result), nil
 			},
 		})
 	}

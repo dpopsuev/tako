@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/tako/agent/capability"
+	"github.com/dpopsuev/tako/agent/organ"
 	"github.com/dpopsuev/tako/agent/reactivity"
 	tangle "github.com/dpopsuev/tangle"
 )
@@ -14,14 +14,14 @@ import (
 func TestPhaseB_FullPipeline(t *testing.T) {
 	cfg := reactivity.DefaultConfig
 
-	readCap := capability.Capability{
+	readCap := organ.Func{
 		Name:        "read_file",
 		Description: "read a file",
 		Schema:      json.RawMessage(`{"type":"object","properties":{"path":{"type":"string"}}}`),
-		Mode:        capability.ReadAction,
-		Source:      capability.Environment,
-		Execute: func(_ context.Context, _ json.RawMessage) (capability.Result, error) {
-			return capability.TextResult("file contents"), nil
+		Mode:        organ.ReadAction,
+		Source:      organ.Environment,
+		Execute: func(_ context.Context, _ json.RawMessage) (organ.Result, error) {
+			return organ.TextResult("file contents"), nil
 		},
 	}
 
@@ -48,7 +48,7 @@ func TestPhaseB_FullPipeline(t *testing.T) {
 
 	cb := New(reactor, completer,
 		WithMotor(motor),
-		WithCapabilities([]capability.Capability{readCap}),
+		WithCapabilities([]organ.Func{readCap}),
 		WithConfig(&cfg),
 		WithAssert(convergenceAssert),
 		WithAlignmentChecker(alignment),
