@@ -218,6 +218,37 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 
 	cb.molecule = molecule
 
+	intent := cb.classifyIntent(ctx, need)
+	if intent.Gear == GearReflex && intent.Pipe != nil {
+		capMap := make(map[string]capability.Capability)
+		for _, c := range cb.capabilities {
+			capMap[c.Name] = c
+		}
+		result, err := ReplayPipe(ctx, intent.Pipe, capMap)
+		if err == nil && result.EscalatedAt == -1 {
+			molecule.SetResponse(result.Response)
+			slog.InfoContext(ctx, "cerebrum.think.reflex_replay",
+				slog.String("pipe", intent.Pipe.Name),
+				slog.Int("steps", result.StepsReflex),
+				slog.Float64("overlap", intent.Overlap))
+			cb.reactor.Seal(molecule, reactivity.Atom{
+				ID:        "wish-reflex",
+				Type:      reactivity.RetrospectionAtom,
+				Taxonomy:  "retrospection.reflex",
+				Content:   []byte(result.Response),
+				CreatedAt: time.Now(),
+			})
+			if cb.listener != nil {
+				cb.listener.OnSealed(molecule.ID, molecule.Distance(), molecule.Turns(), result.Response)
+			}
+			return nil
+		}
+		slog.InfoContext(ctx, "cerebrum.think.reflex_escalated",
+			slog.String("pipe", intent.Pipe.Name),
+			slog.Int("escalated_at", result.EscalatedAt),
+			slog.String("gear", string(result.EscalatedGear)))
+	}
+
 	if cb.recollector != nil {
 		recollected := cb.recollector.Recollect(need)
 		for _, atom := range recollected {
