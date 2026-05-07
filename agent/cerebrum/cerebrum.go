@@ -336,11 +336,19 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 		if cb.listener != nil {
 			onToken = cb.listener.OnToken
 		}
+		thinkingLevel := "medium"
+		if domain == Clear {
+			thinkingLevel = "minimal"
+		} else if domain == Complex || domain == Chaotic {
+			thinkingLevel = "high"
+		}
 		completion, err := completer.Complete(turnCtx, tangle.CompletionParams{
-			Messages:  messages,
-			Tools:     cb.tools(molecule.Phase()),
-			MaxTokens: cb.budget.MaxTokens,
-			OnToken:   onToken,
+			Messages:      messages,
+			Tools:         cb.tools(molecule.Phase()),
+			MaxTokens:     cb.budget.MaxTokens,
+			OnToken:       onToken,
+			ThinkingLevel: thinkingLevel,
+			SessionID:     molecule.ID,
 		})
 		elapsed := time.Since(start)
 		turnCancel()

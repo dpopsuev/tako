@@ -3,7 +3,7 @@ module github.com/dpopsuev/tako
 go 1.25.8
 
 require (
-	github.com/dpopsuev/tangle v0.18.0
+	github.com/dpopsuev/tangle v0.19.0
 	github.com/expr-lang/expr v1.17.8
 	github.com/jedib0t/go-pretty/v6 v6.7.8
 	github.com/modelcontextprotocol/go-sdk v1.5.0

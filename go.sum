@@ -308,6 +308,8 @@ github.com/dpopsuev/tangle v0.17.3 h1:V9M0bCG3z+VtqJ84RwAFdCOt5zCUnMzGVPIaDQm42E
 github.com/dpopsuev/tangle v0.17.3/go.mod h1:56bLbJrLFCEItWPtnXyfb+lBuSaUVPlh9BFv7a9wenw=
 github.com/dpopsuev/tangle v0.18.0 h1:vzVes/wHlvZv1+YxaW+cF7nLRvuKFIobGRQAEmxqiy0=
 github.com/dpopsuev/tangle v0.18.0/go.mod h1:56bLbJrLFCEItWPtnXyfb+lBuSaUVPlh9BFv7a9wenw=
+github.com/dpopsuev/tangle v0.19.0 h1:Zg+DElfg2ZAW+r1wybDsUWZ0qqiE8SLI5zC9MMZSRFA=
+github.com/dpopsuev/tangle v0.19.0/go.mod h1:56bLbJrLFCEItWPtnXyfb+lBuSaUVPlh9BFv7a9wenw=
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
