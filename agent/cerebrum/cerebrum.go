@@ -332,10 +332,15 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 
 		turnCtx, turnCancel := context.WithTimeout(ctx, cb.budget.TurnTimeout)
 		start := time.Now()
+		var onToken func(string)
+		if cb.listener != nil {
+			onToken = cb.listener.OnToken
+		}
 		completion, err := completer.Complete(turnCtx, tangle.CompletionParams{
 			Messages:  messages,
 			Tools:     cb.tools(molecule.Phase()),
 			MaxTokens: cb.budget.MaxTokens,
+			OnToken:   onToken,
 		})
 		elapsed := time.Since(start)
 		turnCancel()

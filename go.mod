@@ -3,7 +3,7 @@ module github.com/dpopsuev/tako
 go 1.25.8
 
 require (
-	github.com/dpopsuev/tangle v0.17.3
+	github.com/dpopsuev/tangle v0.18.0
 	github.com/expr-lang/expr v1.17.8
 	github.com/jedib0t/go-pretty/v6 v6.7.8
 	github.com/modelcontextprotocol/go-sdk v1.5.0
@@ -191,4 +191,3 @@ require (
 	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )
-

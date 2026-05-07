@@ -71,3 +71,10 @@ func (a *Adapter) OnError(turn int, err error) {
 	}
 	a.Program.Send(widgets.ErrorMsg{Err: err})
 }
+
+func (a *Adapter) OnToken(token string) {
+	if a.Program == nil {
+		return
+	}
+	a.Program.Send(widgets.StreamTokenMsg(token))
+}

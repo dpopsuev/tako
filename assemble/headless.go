@@ -38,3 +38,5 @@ func (SlogListener) OnSealed(id string, distance float64, turns int, _ string) {
 func (SlogListener) OnError(turn int, err error) {
 	slog.Warn("error", slog.Int("turn", turn), slog.Any("error", err))
 }
+
+func (SlogListener) OnToken(_ string) {}
