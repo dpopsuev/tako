@@ -304,6 +304,8 @@ github.com/dolthub/vitess v0.0.0-20240709194214-7926ea9d425d h1:qifIBMiYOCw/OLcz
 github.com/dolthub/vitess v0.0.0-20240709194214-7926ea9d425d/go.mod h1:uBvlRluuL+SbEWTCZ68o0xvsdYZER3CEG/35INdzfJM=
 github.com/dpopsuev/oculus/v3 v3.19.0 h1:5SkA3Y4NKIVHwX29/5LO5wKSy8PFe4k2r7W63+mKxqE=
 github.com/dpopsuev/oculus/v3 v3.19.0/go.mod h1:pPm2FOTqwsacl7kCAiywrpA45UkPVkXBmYLn1bMjCgo=
+github.com/dpopsuev/tangle v0.17.3 h1:V9M0bCG3z+VtqJ84RwAFdCOt5zCUnMzGVPIaDQm42EU=
+github.com/dpopsuev/tangle v0.17.3/go.mod h1:56bLbJrLFCEItWPtnXyfb+lBuSaUVPlh9BFv7a9wenw=
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
