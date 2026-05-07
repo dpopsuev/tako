@@ -39,3 +39,7 @@ deploy/ca-certificates.crt
 .certs/*.key
 .certs/*.crt
 /origami
+
+# Binaries
+/tako
+/origami
