@@ -28,6 +28,7 @@ type AgentDoneMsg struct {
 	Distance float64
 	Turns    int
 	OAE      float64
+	Result   string
 }
 
 type ErrorMsg struct{ Err error }

@@ -48,7 +48,7 @@ func tuiCmd(args []string) error {
 		cerebrum.WithContextListener(adapter),
 	)
 
-	m := takoTUI.NewModel(agent, bp.Model)
+	m := takoTUI.NewModel(agent, bp.Model) // agent satisfies tui.Runner
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	adapter.Program = p
 

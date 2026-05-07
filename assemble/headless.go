@@ -28,7 +28,7 @@ func (SlogListener) OnToolResult(name string, _ []byte, elapsed time.Duration) {
 	slog.Info("tool.result", slog.String("name", name), slog.Duration("elapsed", elapsed))
 }
 
-func (SlogListener) OnSealed(id string, distance float64, turns int) {
+func (SlogListener) OnSealed(id string, distance float64, turns int, _ string) {
 	slog.Info("sealed",
 		slog.String("molecule", id),
 		slog.Float64("distance", distance),

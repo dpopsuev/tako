@@ -53,7 +53,7 @@ func (a *Adapter) OnToolResult(name string, result []byte, _ time.Duration) {
 	})
 }
 
-func (a *Adapter) OnSealed(moleculeID string, distance float64, turns int) {
+func (a *Adapter) OnSealed(_ string, distance float64, turns int, result string) {
 	if a.Program == nil {
 		return
 	}
@@ -61,6 +61,7 @@ func (a *Adapter) OnSealed(moleculeID string, distance float64, turns int) {
 		Sealed:   true,
 		Distance: distance,
 		Turns:    turns,
+		Result:   result,
 	})
 }
 

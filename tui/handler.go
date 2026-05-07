@@ -5,14 +5,16 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/dpopsuev/tako/assemble"
 	"github.com/dpopsuev/tako/tui/widgets"
 )
 
-func runAgentCmd(agent *assemble.Agent, task string) tea.Cmd {
+type Runner interface {
+	Run(ctx context.Context, task string) (string, error)
+}
+
+func runAgentCmd(runner Runner, task string) tea.Cmd {
 	return func() tea.Msg {
-		ctx := context.Background()
-		_, err := agent.Run(ctx, task)
+		_, err := runner.Run(context.Background(), task)
 		if err != nil {
 			return widgets.ErrorMsg{Err: err}
 		}

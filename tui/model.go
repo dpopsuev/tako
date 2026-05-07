@@ -6,14 +6,13 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/dpopsuev/tako/assemble"
 	"github.com/dpopsuev/tako/tui/core"
 	"github.com/dpopsuev/tako/tui/layout"
 	"github.com/dpopsuev/tako/tui/widgets"
 )
 
 type Model struct {
-	agent   *assemble.Agent
+	runner  Runner
 	output  *widgets.OutputPanel
 	input   *widgets.InputPanel
 	status  *widgets.StatusPanel
@@ -23,7 +22,7 @@ type Model struct {
 	running bool
 }
 
-func NewModel(agent *assemble.Agent, modelName string) Model {
+func NewModel(runner Runner, modelName string) Model {
 	output := widgets.NewOutputPanel()
 	input := widgets.NewInputPanel()
 	status := widgets.NewStatusPanel(modelName)
@@ -31,7 +30,7 @@ func NewModel(agent *assemble.Agent, modelName string) Model {
 	fm := core.NewFocusManager(input, output)
 
 	return Model{
-		agent:  agent,
+		runner: runner,
 		output: output,
 		input:  input,
 		status: status,
@@ -66,7 +65,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.running = true
 		m.output.Update(widgets.AppendOutputMsg{Line: "> " + msg.Text})
 		m.output.Update(widgets.SetOverlayMsg{Text: "thinking..."})
-		return m, runAgentCmd(m.agent, msg.Text)
+		return m, runAgentCmd(m.runner, msg.Text)
 
 	case widgets.AgentDoneMsg:
 		m.running = false
@@ -75,16 +74,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			Line: fmt.Sprintf("\n--- done: %d turns, d=%.2f ---",
 				msg.Turns, msg.Distance),
 		})
-		m.status.Update(msg)
-		result := m.agent.Result()
-		if result != nil {
-			retro := result.ByTaxonomy("retrospection.")
-			if len(retro) > 0 {
-				m.output.Update(widgets.AppendOutputMsg{
-					Line: "\n" + string(retro[len(retro)-1].Content),
-				})
-			}
+		if msg.Result != "" {
+			m.output.Update(widgets.AppendOutputMsg{Line: "\n" + msg.Result})
 		}
+		m.status.Update(msg)
 		return m, nil
 
 	case widgets.ErrorMsg:

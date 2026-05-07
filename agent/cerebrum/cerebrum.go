@@ -570,7 +570,12 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 	summary := computeSessionSummary(molecule.ID, turnRecords, molecule)
 	cb.emit("cerebrum.session", summary.Labels())
 	if cb.listener != nil {
-		cb.listener.OnSealed(molecule.ID, molecule.Distance(), molecule.Turns())
+		var resultText string
+		retro := molecule.ByTaxonomy("retrospection.")
+		if len(retro) > 0 {
+			resultText = string(retro[len(retro)-1].Content)
+		}
+		cb.listener.OnSealed(molecule.ID, molecule.Distance(), molecule.Turns(), resultText)
 	}
 
 	slog.InfoContext(ctx, "cerebrum.think.session_summary",
