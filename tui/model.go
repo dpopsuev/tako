@@ -12,16 +12,20 @@ import (
 	"github.com/dpopsuev/tako/tui/widgets"
 )
 
+type programRef struct {
+	p *tea.Program
+}
+
 type Model struct {
-	agent  *assemble.Agent
-	output *widgets.OutputPanel
-	input  *widgets.InputPanel
-	status *widgets.StatusPanel
-	focus  *core.FocusManager
-	width  int
-	height int
-	done   bool
-	err    error
+	agent   *assemble.Agent
+	program *programRef
+	output  *widgets.OutputPanel
+	input   *widgets.InputPanel
+	status  *widgets.StatusPanel
+	focus   *core.FocusManager
+	width   int
+	height  int
+	running bool
 }
 
 func NewModel(agent *assemble.Agent, modelName string) Model {
@@ -32,11 +36,12 @@ func NewModel(agent *assemble.Agent, modelName string) Model {
 	fm := core.NewFocusManager(input, output)
 
 	return Model{
-		agent:  agent,
-		output: output,
-		input:  input,
-		status: status,
-		focus:  fm,
+		agent:   agent,
+		program: &programRef{},
+		output:  output,
+		input:   input,
+		status:  status,
+		focus:   fm,
 	}
 }
 
@@ -53,7 +58,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "q":
+		case "ctrl+c":
 			return m, tea.Quit
 		case "tab":
 			m.focus.Cycle()
@@ -61,11 +66,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case widgets.SubmitMsg:
+		if m.running {
+			return m, nil
+		}
+		m.running = true
 		m.output.Update(widgets.AppendOutputMsg{Line: "> " + msg.Text})
-		return m, runAgent(m.agent, msg.Text)
+		m.output.Update(widgets.SetOverlayMsg{Text: "thinking..."})
+		return m, runAgentCmd(m.agent, msg.Text, m.program.p)
 
 	case widgets.AgentDoneMsg:
-		m.done = true
+		m.running = false
+		m.output.Update(widgets.SetOverlayMsg{Text: ""})
 		m.output.Update(widgets.AppendOutputMsg{
 			Line: fmt.Sprintf("\n--- done: %d turns, d=%.2f, OAE=%.0f%% ---",
 				msg.Turns, msg.Distance, msg.OAE*100),
@@ -76,20 +87,33 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			retro := result.ByTaxonomy("retrospection.")
 			if len(retro) > 0 {
 				m.output.Update(widgets.AppendOutputMsg{
-					Line: string(retro[len(retro)-1].Content),
+					Line: "\n" + string(retro[len(retro)-1].Content),
 				})
 			}
 		}
 		return m, nil
 
 	case widgets.ErrorMsg:
-		m.err = msg.Err
+		m.running = false
+		m.output.Update(widgets.SetOverlayMsg{Text: ""})
 		m.output.Update(widgets.AppendOutputMsg{Line: "ERROR: " + msg.Err.Error()})
 		return m, nil
 
-	case widgets.PhaseChangeMsg, widgets.ToolCallStartMsg, widgets.ToolCallResultMsg:
+	case widgets.PhaseChangeMsg:
 		m.output.Update(msg)
 		m.status.Update(msg)
+		return m, nil
+
+	case widgets.ToolCallStartMsg:
+		m.output.Update(msg)
+		return m, nil
+
+	case widgets.ToolCallResultMsg:
+		m.output.Update(msg)
+		return m, nil
+
+	case widgets.AppendOutputMsg:
+		m.output.Update(msg)
 		return m, nil
 	}
 
@@ -132,3 +156,6 @@ func (m Model) View() string {
 	return b.String()
 }
 
+func (m Model) SetProgram(p *tea.Program) {
+	m.program.p = p
+}

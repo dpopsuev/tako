@@ -23,6 +23,7 @@ type Blueprint struct {
 type Agent struct {
 	Cerebrum *cerebrum.Cerebrum
 	Sensory  cerebrum.Bus
+	Signal   cerebrum.Bus
 	Corpus   *corpus.Corpus
 }
 
@@ -87,7 +88,8 @@ func Assemble(bp Blueprint, completer tangle.Completer) *Agent {
 
 	var cb *cerebrum.Cerebrum
 
-	motorBus := corp.MotorBus(sensory, nil, nil)
+	signal := cerebrum.NewChannelBus(64)
+	motorBus := corp.MotorBus(sensory, signal, nil)
 
 	cb = cerebrum.New(reactor, completer,
 		cerebrum.WithSensory(sensory),
@@ -106,6 +108,7 @@ func Assemble(bp Blueprint, completer tangle.Completer) *Agent {
 	return &Agent{
 		Cerebrum: cb,
 		Sensory:  sensory,
+		Signal:   signal,
 		Corpus:   corp,
 	}
 }

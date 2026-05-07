@@ -45,6 +45,8 @@ func tuiCmd(args []string) error {
 
 	m := takoTUI.NewModel(agent, bp.Model)
 	p := tea.NewProgram(m, tea.WithAltScreen())
+	m.SetProgram(p)
+	takoTUI.SubscribeMolecule(agent, p)
 
 	if _, err := p.Run(); err != nil {
 		return fmt.Errorf("tui: %w", err)
