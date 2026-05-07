@@ -32,8 +32,11 @@ var (
 //nolint:gocyclo // CLI command dispatcher — one case per subcommand
 func main() {
 	if len(os.Args) < 2 {
-		printUsage()
-		os.Exit(1)
+		if err := tuiCmd(nil); err != nil {
+			fmt.Fprintf(os.Stderr, "tako: %v\n", err)
+			os.Exit(1)
+		}
+		return
 	}
 
 	var err error
