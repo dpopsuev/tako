@@ -21,7 +21,7 @@ func (a *Adapter) OnContext(ctx cerebrum.Context, turn int) {
 	}
 	a.Program.Send(widgets.PhaseChangeMsg{
 		Phase: ctx.Phase.String(),
-		Turn:  turn,
+		Turn:  turn + 1,
 	})
 }
 
