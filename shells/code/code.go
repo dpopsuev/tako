@@ -58,7 +58,7 @@ func (f *readFileFunc) Execute(_ context.Context, input json.RawMessage) (capabi
 		return capability.ErrorResult("path is required"), nil
 	}
 	abs := filepath.Join(f.root, filepath.Clean(p))
-	if !strings.HasPrefix(abs, f.root) {
+	if !strings.HasPrefix(abs, f.root) { // TODO: remove when Mirage Agent Space is wired
 		return capability.ErrorResult("path escapes project root"), nil
 	}
 	data, err := os.ReadFile(abs)
@@ -90,7 +90,7 @@ func (f *writeFileFunc) Execute(_ context.Context, input json.RawMessage) (capab
 		return capability.ErrorResult("path is required"), nil
 	}
 	abs := filepath.Join(f.root, filepath.Clean(args.Path))
-	if !strings.HasPrefix(abs, f.root) {
+	if !strings.HasPrefix(abs, f.root) { // TODO: remove when Mirage Agent Space is wired
 		return capability.ErrorResult("path escapes project root"), nil
 	}
 	if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
