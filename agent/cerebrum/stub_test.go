@@ -2,7 +2,6 @@ package cerebrum
 
 import (
 	"context"
-	"encoding/json"
 	"sync"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
@@ -15,27 +14,11 @@ type stubCompleter struct {
 	err       error
 }
 
-func (s *stubCompleter) Complete(_ context.Context, params tangle.CompletionParams) (*tangle.Completion, error) {
+func (s *stubCompleter) Complete(_ context.Context, _ tangle.CompletionParams) (*tangle.Completion, error) {
 	if s.err != nil {
 		return nil, s.err
 	}
-	if len(s.toolCalls) > 0 {
-		return &tangle.Completion{Content: s.response, ToolCalls: s.toolCalls}, nil
-	}
-	if s.response != "" {
-		tc := phaseToolCallForResponse(s.response, params)
-		return &tangle.Completion{ToolCalls: []tangle.ToolCall{tc}}, nil
-	}
-	return &tangle.Completion{Content: s.response}, nil
-}
-
-func phaseToolCallForResponse(response string, _ tangle.CompletionParams) tangle.ToolCall {
-	input, _ := json.Marshal(map[string]string{"response": response})
-	return tangle.ToolCall{
-		ID:    "stub-tc",
-		Name:  "speak",
-		Input: input,
-	}
+	return &tangle.Completion{Content: s.response, ToolCalls: s.toolCalls}, nil
 }
 
 type stubBus struct {

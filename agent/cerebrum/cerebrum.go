@@ -2,7 +2,6 @@ package cerebrum
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -136,7 +135,6 @@ func New(reactor *reactivity.Core, completer tangle.Completer, opts ...Option) *
 	for _, opt := range opts {
 		opt(cb)
 	}
-	cb.capabilities = append(cb.capabilities, speakCapability())
 	cb.config.Validate()
 	return cb
 }
@@ -382,24 +380,6 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 			var capCalls []tangle.ToolCall
 
 			for _, tc := range completion.ToolCalls {
-				if tc.Name == "speak" {
-					var args struct{ Response string `json:"response"` }
-					json.Unmarshal(tc.Input, &args)
-					molecule.SetResponse(args.Response)
-					history = append(history, tangle.Message{
-						Role:       "tool",
-						Content:    "delivered to operator",
-						ToolCallID: tc.ID,
-					})
-					slog.InfoContext(ctx, "cerebrum.think.speak",
-						slog.Int("turn", turn),
-						slog.Int("response_len", len(args.Response)))
-					if cb.listener != nil {
-						cb.listener.OnToolCall("speak", tc.Input)
-						cb.listener.OnToolResult("speak", []byte(args.Response), 0)
-					}
-					continue
-				}
 				if isPhaseToolCall(tc.Name) {
 					atom, err := phaseToolCallToAtom(tc, molecule.Phase(), turn)
 					if err != nil {

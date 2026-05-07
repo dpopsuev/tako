@@ -80,6 +80,10 @@ func Assemble(bp Blueprint, completer tangle.Completer, opts ...cerebrum.Option)
 			slog.String("source", cap.Source.String()))
 	}
 
+	speakCap := speakCapability()
+	corp.Register(speakCap)
+	allCaps = append(allCaps, speakCap)
+
 	subagent := &SubagentFactory{Root: ".", Completer: completer}
 	subCap := subagent.Capability()
 	corp.Register(subCap)
