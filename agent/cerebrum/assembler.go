@@ -100,6 +100,12 @@ func defaultRender(ctx Context) string {
 		}
 	}
 
+	if sight := ctx.Sight.FormatPrompt(); sight != "" {
+		b.WriteString("\n# Operator Focus\n")
+		b.WriteString(sight)
+		b.WriteString("\n")
+	}
+
 	b.WriteString("\n## Response Format\n")
 	b.WriteString(`Respond with JSON: {"atoms": [{"type": "<phase>", "taxonomy": "<phase.domain>", "content": "<your answer to the contract>"}]}`)
 	b.WriteString("\n")

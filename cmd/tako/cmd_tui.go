@@ -8,6 +8,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/dpopsuev/tako/agent/cerebrum"
 	"github.com/dpopsuev/tako/assemble"
 	takoTUI "github.com/dpopsuev/tako/tui"
 )
@@ -41,12 +42,15 @@ func tuiCmd(args []string) error {
 		return fmt.Errorf("completer: %w", err)
 	}
 
-	agent := assemble.Assemble(bp, completer)
+	adapter := &takoTUI.Adapter{}
+
+	agent := assemble.Assemble(bp, completer,
+		cerebrum.WithContextListener(adapter),
+	)
 
 	m := takoTUI.NewModel(agent, bp.Model)
 	p := tea.NewProgram(m, tea.WithAltScreen())
-	m.SetProgram(p)
-	takoTUI.SubscribeMolecule(agent, p)
+	adapter.Program = p
 
 	if _, err := p.Run(); err != nil {
 		return fmt.Errorf("tui: %w", err)

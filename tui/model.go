@@ -12,13 +12,8 @@ import (
 	"github.com/dpopsuev/tako/tui/widgets"
 )
 
-type programRef struct {
-	p *tea.Program
-}
-
 type Model struct {
 	agent   *assemble.Agent
-	program *programRef
 	output  *widgets.OutputPanel
 	input   *widgets.InputPanel
 	status  *widgets.StatusPanel
@@ -36,12 +31,11 @@ func NewModel(agent *assemble.Agent, modelName string) Model {
 	fm := core.NewFocusManager(input, output)
 
 	return Model{
-		agent:   agent,
-		program: &programRef{},
-		output:  output,
-		input:   input,
-		status:  status,
-		focus:   fm,
+		agent:  agent,
+		output: output,
+		input:  input,
+		status: status,
+		focus:  fm,
 	}
 }
 
@@ -72,14 +66,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.running = true
 		m.output.Update(widgets.AppendOutputMsg{Line: "> " + msg.Text})
 		m.output.Update(widgets.SetOverlayMsg{Text: "thinking..."})
-		return m, runAgentCmd(m.agent, msg.Text, m.program.p)
+		return m, runAgentCmd(m.agent, msg.Text)
 
 	case widgets.AgentDoneMsg:
 		m.running = false
 		m.output.Update(widgets.SetOverlayMsg{Text: ""})
 		m.output.Update(widgets.AppendOutputMsg{
-			Line: fmt.Sprintf("\n--- done: %d turns, d=%.2f, OAE=%.0f%% ---",
-				msg.Turns, msg.Distance, msg.OAE*100),
+			Line: fmt.Sprintf("\n--- done: %d turns, d=%.2f ---",
+				msg.Turns, msg.Distance),
 		})
 		m.status.Update(msg)
 		result := m.agent.Result()
@@ -154,8 +148,4 @@ func (m Model) View() string {
 	b.WriteString("\n")
 	b.WriteString(m.input.View(m.width))
 	return b.String()
-}
-
-func (m Model) SetProgram(p *tea.Program) {
-	m.program.p = p
 }

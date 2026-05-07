@@ -105,6 +105,8 @@ type Cerebrum struct {
 	resultBuffer       map[string]Event
 	focusCancel        context.CancelFunc
 	alignment          AlignmentChecker
+	listener           ContextListener
+	sight              SightProvider
 
 	molecule *reactivity.Molecule
 }
@@ -312,6 +314,9 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 				slog.Int("turn", turn),
 				slog.Duration("elapsed", elapsed),
 				slog.Any("error", err))
+			if cb.listener != nil {
+				cb.listener.OnError(turn, err)
+			}
 			cb.reactor.Seal(molecule, reactivity.Atom{
 				ID:        fmt.Sprintf("wish-error-%d", turn),
 				Type:      reactivity.RetrospectionAtom,
@@ -396,6 +401,9 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 						"turn":     fmt.Sprintf("%d", turn),
 						"tool":     tc.Name,
 					})
+					if cb.listener != nil {
+						cb.listener.OnToolCall(tc.Name, tc.Input)
+					}
 					molecule.Emit(reactivity.Emission{
 						Kind:       "instrument",
 						Target:     tc.Name,
@@ -425,6 +433,9 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 						"tool":       tc.Name,
 						"result_len": fmt.Sprintf("%d", len(result)),
 					})
+					if cb.listener != nil {
+						cb.listener.OnToolResult(tc.Name, []byte(result), elapsed)
+					}
 					if molecule.Catalyst() != nil {
 						cb.checkCatalystDesired(molecule, tc.Name, result)
 					}
@@ -558,6 +569,9 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 
 	summary := computeSessionSummary(molecule.ID, turnRecords, molecule)
 	cb.emit("cerebrum.session", summary.Labels())
+	if cb.listener != nil {
+		cb.listener.OnSealed(molecule.ID, molecule.Distance(), molecule.Turns())
+	}
 
 	slog.InfoContext(ctx, "cerebrum.think.session_summary",
 		slog.String("molecule", molecule.ID),
@@ -712,6 +726,10 @@ func (cb *Cerebrum) tools(phase reactivity.AtomType) []tangle.Tool {
 }
 
 func (cb *Cerebrum) assemble(m *reactivity.Molecule, need []byte, domain Domain, turn int) string {
+	var sight CellSight
+	if cb.sight != nil {
+		sight = cb.sight()
+	}
 	raw := RawContext{
 		Need:         need,
 		Observer:     cb.observer,
@@ -722,8 +740,12 @@ func (cb *Cerebrum) assemble(m *reactivity.Molecule, need []byte, domain Domain,
 		Directives:   cb.reactor.Directives(m.Phase()),
 		Config:       cb.config,
 		Turn:         turn,
+		Sight:        sight,
 	}
 	ctx := cb.regulate(raw)
+	if cb.listener != nil {
+		cb.listener.OnContext(ctx, turn)
+	}
 	return cb.render(ctx)
 }
 

@@ -20,6 +20,7 @@ type RawContext struct {
 	Directives   []reactivity.Directive
 	Config       *reactivity.Config
 	Turn         int
+	Sight        CellSight
 }
 
 type Context struct {
@@ -38,6 +39,7 @@ type Context struct {
 	DeltaDistance  float64
 	Turn          int
 	StagnantTurns int
+	Sight         CellSight
 }
 
 type Regulator interface {
@@ -90,6 +92,7 @@ func defaultRegulate(raw RawContext) Context {
 		Distance:     m.Distance(),
 		DeltaDistance: m.DeltaDistance(),
 		Turn:         raw.Turn,
+		Sight:        raw.Sight,
 	}
 }
 

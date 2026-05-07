@@ -47,7 +47,7 @@ func (a *Agent) Run(ctx context.Context, task string) (string, error) {
 	return fmt.Sprintf("completed (mass=%d, distance=%.2f)", m.TotalMass(), m.Distance()), nil
 }
 
-func Assemble(bp Blueprint, completer tangle.Completer) *Agent {
+func Assemble(bp Blueprint, completer tangle.Completer, opts ...cerebrum.Option) *Agent {
 	cfg := bp.Config
 	if cfg == nil {
 		cfg = &reactivity.DefaultConfig
@@ -91,14 +91,15 @@ func Assemble(bp Blueprint, completer tangle.Completer) *Agent {
 	signal := cerebrum.NewChannelBus(64)
 	motorBus := corp.MotorBus(sensory, signal, nil)
 
-	cb = cerebrum.New(reactor, completer,
+	baseOpts := []cerebrum.Option{
 		cerebrum.WithSensory(sensory),
 		cerebrum.WithMotor(motorBus),
 		cerebrum.WithCompactor(cerebrum.SummaryCompactor{}),
 		cerebrum.WithBudget(budget),
 		cerebrum.WithCapabilities(allCaps),
 		cerebrum.WithConfig(cfg),
-	)
+	}
+	cb = cerebrum.New(reactor, completer, append(baseOpts, opts...)...)
 
 	slog.Info("assemble.complete",
 		slog.String("model", bp.Model),

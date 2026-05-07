@@ -115,3 +115,13 @@ func WithWatcher(w tangle.Completer) Option {
 func WithAlignmentChecker(a AlignmentChecker) Option {
 	return func(cb *Cerebrum) { cb.alignment = a }
 }
+
+type SightProvider func() CellSight
+
+func WithContextListener(l ContextListener) Option {
+	return func(cb *Cerebrum) { cb.listener = l }
+}
+
+func WithSight(s SightProvider) Option {
+	return func(cb *Cerebrum) { cb.sight = s }
+}
