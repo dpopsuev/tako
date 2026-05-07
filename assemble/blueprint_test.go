@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
+	"github.com/dpopsuev/tako/agent/organ"
 	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/organs/code"
 	tangle "github.com/dpopsuev/tangle"
@@ -197,6 +198,76 @@ func TestWalkingSkeleton_ToolResultReachesLLM(t *testing.T) {
 		for i, msg := range secondCallMessages {
 			t.Logf("  msg[%d] role=%s len=%d", i, msg.Role, len(msg.Content))
 		}
+	}
+}
+
+func TestClosedCircuit_OrganExecutesAndResultReturns(t *testing.T) {
+	var organCalled bool
+	pingOrgan := organ.Func{
+		Name:        "ping",
+		Description: "returns pong",
+		Schema:      json.RawMessage(`{"type":"object","properties":{}}`),
+		Mode:        organ.ReadAction,
+		Source:      organ.Environment,
+		Execute: func(_ context.Context, _ json.RawMessage) (organ.Result, error) {
+			organCalled = true
+			return organ.TextResult("pong"), nil
+		},
+	}
+
+	var toolResultContent string
+	completer := &capturingCompleter{
+		turns: []tangle.Completion{
+			{
+				Content: "pinging",
+				ToolCalls: []tangle.ToolCall{
+					{ID: "call_ping", Name: "ping", Input: json.RawMessage(`{}`)},
+				},
+			},
+			{
+				Content: `{"atoms":[{"type":"retrospection","taxonomy":"retrospection.done","content":"got pong"}]}`,
+			},
+		},
+		onCall: func(call int, params tangle.CompletionParams) {
+			if call == 1 {
+				for _, msg := range params.Messages {
+					if msg.Role == cerebrum.RoleTool && msg.ToolCallID == "call_ping" {
+						toolResultContent = msg.Content
+					}
+				}
+			}
+		},
+	}
+
+	bp := Blueprint{
+		Model:        "stub",
+		Capabilities: []organ.Func{pingOrgan},
+		Budget:       cerebrum.Budget{MaxTurns: 5, TurnTimeout: 10 * time.Second},
+	}
+
+	agent := Assemble(bp, completer)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	if err := agent.Think(ctx, "ping the organ"); err != nil {
+		t.Fatalf("Think: %v", err)
+	}
+
+	if !organCalled {
+		t.Fatal("organ.Func.Execute was never called — motor bus did not route the event")
+	}
+
+	if toolResultContent != "pong" {
+		t.Errorf("tool result = %q, want %q — sensory bus did not return the result", toolResultContent, "pong")
+	}
+
+	m := agent.Result()
+	if !m.Sealed() {
+		t.Fatal("molecule should be sealed")
+	}
+
+	if completer.call < 2 {
+		t.Errorf("expected at least 2 LLM calls (tool call + seal), got %d", completer.call)
 	}
 }
 
