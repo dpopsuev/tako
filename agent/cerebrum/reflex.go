@@ -7,75 +7,107 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/agent/capability"
+	"github.com/dpopsuev/tako/agent/reactivity"
 )
 
 type ReflexStore interface {
-	Match(residual map[string]float64) ([]capability.Capability, float64)
+	Match(embedding []float64) (*Pipe, float64)
+	Add(pipe Pipe) error
+	Merge(embedding []float64, steps []PipeStep) bool
+	Prune(minScore float64) int
+	Save() error
+	Len() int
 }
 
-type ReflexEntry struct {
-	Pattern    map[string]float64
-	Actions    []string
+type ReplayResult struct {
+	StepsTotal    int
+	StepsReflex   int
+	EscalatedAt   int
+	EscalatedGear Gear
+	Response      string
 }
 
-type InMemoryReflexStore struct {
-	entries      []ReflexEntry
-	capabilities []capability.Capability
-}
+func ReplayPipe(ctx context.Context, pipe *Pipe, caps map[string]capability.Capability) (ReplayResult, error) {
+	pipe.Usage++
+	pipe.LastPlayed = time.Now()
 
-func NewReflexStore(caps []capability.Capability) *InMemoryReflexStore {
-	return &InMemoryReflexStore{capabilities: caps}
-}
+	exec := NewPipeExecutor()
+	runID, pr := exec.StartWithPipe(*pipe)
 
-func (s *InMemoryReflexStore) AddReflex(pattern map[string]float64, actions []string) {
-	s.entries = append(s.entries, ReflexEntry{Pattern: pattern, Actions: actions})
-}
-
-func (s *InMemoryReflexStore) Match(residual map[string]float64) ([]capability.Capability, float64) {
-	if residual == nil || len(s.entries) == 0 {
-		return nil, 0
-	}
-
-	var bestCaps []capability.Capability
-	var bestOverlap float64
-
-	for _, entry := range s.entries {
-		overlap := computeOverlap(residual, entry.Pattern)
-		if overlap > bestOverlap {
-			bestOverlap = overlap
-			bestCaps = s.resolveActions(entry.Actions)
+	result := ReplayResult{EscalatedAt: -1}
+	for {
+		step, _, err := exec.NextStepFromPipe(runID, pr.steps)
+		if err != nil {
+			return result, err
 		}
+		if step == nil {
+			break
+		}
+		result.StepsTotal++
+
+		cap, ok := caps[step.Call]
+		if !ok || cap.Execute == nil {
+			exec.SubmitAndUnlock(runID, step.ID, nil, "unknown capability: "+step.Call, pr.steps)
+			result.EscalatedAt = result.StepsTotal - 1
+			result.EscalatedGear = GearNovel
+			break
+		}
+
+		out, err := cap.Execute(ctx, argsToJSON(step.Args))
+		if err != nil {
+			exec.SubmitAndUnlock(runID, step.ID, nil, err.Error(), pr.steps)
+			result.EscalatedAt = result.StepsTotal - 1
+			result.EscalatedGear = GearFamiliar
+			break
+		}
+
+		actual := HashResult(out.Text())
+		emptyHash := [32]byte{}
+		if step.Expected != emptyHash && actual != step.Expected && step.Confidence < 0.5 {
+			slog.InfoContext(ctx, "reflex.drift",
+				slog.String("step", step.ID),
+				slog.String("action", step.Call),
+				slog.Float64("confidence", step.Confidence))
+			result.EscalatedAt = result.StepsTotal - 1
+			result.EscalatedGear = GearFamiliar
+			break
+		}
+
+		exec.SubmitAndUnlock(runID, step.ID, string(out.Text()), "", pr.steps)
+		result.StepsReflex++
+		result.Response = string(out.Text())
 	}
 
-	return bestCaps, bestOverlap
+	if result.EscalatedAt == -1 {
+		pipe.Replays++
+	}
+	return result, nil
 }
 
-func computeOverlap(residual, pattern map[string]float64) float64 {
-	if len(pattern) == 0 {
-		return 0
+func selectGear(overlap float64) Gear {
+	switch {
+	case overlap >= 0.95:
+		return GearReflex
+	case overlap >= 0.7:
+		return GearIntuition
+	case overlap >= 0.3:
+		return GearFamiliar
+	default:
+		return GearNovel
 	}
-	matched := 0
-	for k, v := range pattern {
-		if rv, ok := residual[k]; ok && rv == v {
-			matched++
-		}
-	}
-	return float64(matched) / float64(len(pattern))
 }
 
-func (s *InMemoryReflexStore) resolveActions(names []string) []capability.Capability {
-	var caps []capability.Capability
-	for _, name := range names {
-		for _, cap := range s.capabilities {
-			if cap.Name == name {
-				caps = append(caps, cap)
-				break
-			}
-		}
+func suggestionAtom(pipe *Pipe, overlap float64, turn int) reactivity.Atom {
+	content := fmt.Sprintf("intuition suggests replay of %s (overlap=%.0f%%)", pipe.Name, overlap*100)
+	return reactivity.Atom{
+		ID:        fmt.Sprintf("suggestion-turn-%d", turn),
+		Type:      reactivity.KnowledgeAtom,
+		Source:    reactivity.Recollected,
+		Taxonomy:  "knowledge.suggestion.intuition",
+		Content:   []byte(content),
+		CreatedAt: time.Now(),
 	}
-	return caps
 }
 
 func fireReflex(ctx context.Context, caps []capability.Capability, overlap float64) {
@@ -96,33 +128,3 @@ func fireReflex(ctx context.Context, caps []capability.Capability, overlap float
 			slog.Int("result_len", len(result.Text())))
 	}
 }
-
-func selectGear(overlap float64) Gear {
-	switch {
-	case overlap >= 1.0:
-		return GearReflex
-	case overlap >= 0.7:
-		return GearIntuition
-	case overlap >= 0.3:
-		return GearFamiliar
-	default:
-		return GearNovel
-	}
-}
-
-func suggestionAtom(caps []capability.Capability, overlap float64, turn int) reactivity.Atom {
-	var names []string
-	for _, c := range caps {
-		names = append(names, c.Name)
-	}
-	content := fmt.Sprintf("intuition suggests: %v (overlap=%.0f%%)", names, overlap*100)
-	return reactivity.Atom{
-		ID:        fmt.Sprintf("suggestion-turn-%d", turn),
-		Type:      reactivity.KnowledgeAtom,
-		Source:    reactivity.Recollected,
-		Taxonomy:  "knowledge.suggestion.intuition",
-		Content:   []byte(content),
-		CreatedAt: time.Now(),
-	}
-}
-

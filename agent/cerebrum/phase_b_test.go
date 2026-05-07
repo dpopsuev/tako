@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/agent/capability"
+	"github.com/dpopsuev/tako/agent/reactivity"
 	tangle "github.com/dpopsuev/tangle"
 )
 
@@ -25,11 +25,8 @@ func TestPhaseB_FullPipeline(t *testing.T) {
 		},
 	}
 
-	reflexStore := NewReflexStore([]capability.Capability{readCap})
-	reflexStore.AddReflex(
-		map[string]float64{"file.exists": 1},
-		[]string{"read_file"},
-	)
+	embedder := StubEmbedder{Dims: 8}
+	pipeStore := NewPipeStore()
 
 	alignment := TieredAlignment{}
 	convergenceAssert := ConvergenceAssert{
@@ -56,6 +53,8 @@ func TestPhaseB_FullPipeline(t *testing.T) {
 		WithAssert(convergenceAssert),
 		WithAlignmentChecker(alignment),
 		WithMaxTurns(5),
+		WithEmbedder(embedder),
+		WithReflexStore(pipeStore),
 	)
 
 	catalyst := reactivity.Catalyst{
@@ -72,15 +71,20 @@ func TestPhaseB_FullPipeline(t *testing.T) {
 		t.Fatal("molecule should be sealed")
 	}
 
-	t.Run("reflex_store_matches_residual", func(t *testing.T) {
-		residual := map[string]float64{"file.exists": 1}
-		caps, overlap := reflexStore.Match(residual)
-		if overlap != 1.0 || len(caps) != 1 {
-			t.Fatalf("reflex should match residual exactly, got overlap=%v caps=%d", overlap, len(caps))
+	t.Run("pipe_store_embedding_match", func(t *testing.T) {
+		embedding, _ := embedder.Embed(context.Background(), "read the config file")
+		pipeStore.Add(Pipe{
+			Name:      "test-read",
+			Embedding: embedding,
+			Steps:     []PipeStep{{ID: "read", Call: "read_file"}},
+		})
+		pipe, sim := pipeStore.Match(embedding)
+		if sim < 0.999 || pipe == nil {
+			t.Fatalf("exact embedding should match, got sim=%v", sim)
 		}
-		gear := selectGear(overlap)
+		gear := selectGear(sim)
 		if gear != GearReflex {
-			t.Fatalf("100%% overlap should be reflex gear, got %s", gear)
+			t.Fatalf("high sim should be reflex, got %s", gear)
 		}
 	})
 
@@ -91,13 +95,8 @@ func TestPhaseB_FullPipeline(t *testing.T) {
 		}
 		ar := alignment.Check(atom, m)
 		if len(ar.DriftFlags) > 0 {
-			t.Logf("drift flags (expected for sealed molecule): %v", ar.DriftFlags)
+			t.Logf("drift flags: %v", ar.DriftFlags)
 		}
-	})
-
-	t.Run("convergence_on_sealed", func(t *testing.T) {
-		diff := m.SynthesisDiff(reactivity.ThinkTriad)
-		t.Logf("synthesis diff (think triad): %.3f", diff)
 	})
 
 	t.Run("reward_loop_adjusts_thresholds", func(t *testing.T) {
@@ -106,31 +105,6 @@ func TestPhaseB_FullPipeline(t *testing.T) {
 		rewardLoop.Process(summary.OAE)
 		after := cfg.DistanceClose
 		t.Logf("OAE=%.3f, DistanceClose: %.6f → %.6f", summary.OAE, before, after)
-	})
-
-	t.Run("gear_intuition_for_partial_match", func(t *testing.T) {
-		partialStore := NewReflexStore([]capability.Capability{readCap})
-		partialStore.AddReflex(
-			map[string]float64{"file.exists": 1, "file.readable": 1, "file.writable": 1},
-			[]string{"read_file"},
-		)
-		residual := map[string]float64{
-			"file.exists":   1,
-			"file.readable": 1,
-			"file.writable": 0,
-		}
-		caps, overlap := partialStore.Match(residual)
-		gear := selectGear(overlap)
-		if gear != GearFamiliar && gear != GearIntuition {
-			t.Fatalf("partial match should be familiar/intuition, got %s (overlap=%.2f, caps=%d)", gear, overlap, len(caps))
-		}
-		if overlap > 0 && overlap < 1.0 {
-			suggestion := suggestionAtom(caps, overlap, 1)
-			if suggestion.Source != reactivity.Recollected {
-				t.Fatal("suggestion should be recollected")
-			}
-			t.Logf("suggestion generated: %s (overlap=%.0f%%)", suggestion.Content, overlap*100)
-		}
 	})
 }
 

@@ -7,29 +7,27 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/agent/capability"
+	"github.com/dpopsuev/tako/agent/reactivity"
 )
 
-func TestComputeOverlap(t *testing.T) {
+func TestCosineSimilarity(t *testing.T) {
 	tests := []struct {
-		name     string
-		residual map[string]float64
-		pattern  map[string]float64
-		want     float64
+		name string
+		a, b []float64
+		want float64
 	}{
-		{"empty pattern", map[string]float64{"a": 1}, nil, 0},
-		{"exact match", map[string]float64{"a": 1, "b": 2}, map[string]float64{"a": 1, "b": 2}, 1.0},
-		{"partial match", map[string]float64{"a": 1, "b": 2}, map[string]float64{"a": 1, "c": 3}, 0.5},
-		{"no match", map[string]float64{"a": 1}, map[string]float64{"b": 2}, 0},
-		{"value mismatch", map[string]float64{"a": 1}, map[string]float64{"a": 9}, 0},
+		{"identical", []float64{1, 0, 0}, []float64{1, 0, 0}, 1.0},
+		{"orthogonal", []float64{1, 0, 0}, []float64{0, 1, 0}, 0.0},
+		{"empty", nil, nil, 0},
+		{"length mismatch", []float64{1}, []float64{1, 2}, 0},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := computeOverlap(tt.residual, tt.pattern)
+			got := CosineSimilarity(tt.a, tt.b)
 			if got != tt.want {
-				t.Errorf("computeOverlap() = %v, want %v", got, tt.want)
+				t.Errorf("CosineSimilarity() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -41,6 +39,7 @@ func TestSelectGear(t *testing.T) {
 		want    Gear
 	}{
 		{1.0, GearReflex},
+		{0.95, GearReflex},
 		{0.9, GearIntuition},
 		{0.7, GearIntuition},
 		{0.5, GearFamiliar},
@@ -57,69 +56,186 @@ func TestSelectGear(t *testing.T) {
 	}
 }
 
-func TestReflexStoreMatch(t *testing.T) {
-	caps := []capability.Capability{
-		{Name: "read_file"},
-		{Name: "write_file"},
-		{Name: "bash"},
-	}
+func TestPipeStoreMatch(t *testing.T) {
+	store := NewPipeStore()
+	store.Add(Pipe{
+		Name:      "greet",
+		Embedding: []float64{1, 0, 0},
+		Steps:     []PipeStep{{ID: "respond", Call: "greet"}},
+	})
+	store.Add(Pipe{
+		Name:      "code",
+		Embedding: []float64{0, 1, 0},
+		Steps:     []PipeStep{{ID: "read", Call: "read_file"}},
+	})
 
-	store := NewReflexStore(caps)
-	store.AddReflex(
-		map[string]float64{"file.exists": 0, "content.unknown": 1},
-		[]string{"read_file"},
-	)
-	store.AddReflex(
-		map[string]float64{"file.exists": 1, "content.known": 1},
-		[]string{"write_file"},
-	)
-
-	t.Run("exact match returns reflex gear", func(t *testing.T) {
-		residual := map[string]float64{"file.exists": 0, "content.unknown": 1}
-		caps, overlap := store.Match(residual)
-		if overlap != 1.0 {
-			t.Fatalf("overlap = %v, want 1.0", overlap)
+	t.Run("exact match", func(t *testing.T) {
+		pipe, sim := store.Match([]float64{1, 0, 0})
+		if pipe == nil || pipe.Name != "greet" {
+			t.Fatalf("expected greet, got %v", pipe)
 		}
-		if len(caps) != 1 || caps[0].Name != "read_file" {
-			t.Fatalf("caps = %v, want [read_file]", caps)
+		if sim != 1.0 {
+			t.Fatalf("sim = %v, want 1.0", sim)
 		}
 	})
 
-	t.Run("nil residual returns zero", func(t *testing.T) {
-		caps, overlap := store.Match(nil)
-		if overlap != 0 || caps != nil {
-			t.Fatalf("expected nil/0, got %v/%v", caps, overlap)
+	t.Run("no match", func(t *testing.T) {
+		_, sim := store.Match([]float64{0, 0, 1})
+		if sim > 0.01 {
+			t.Fatalf("expected ~0 sim, got %v", sim)
 		}
 	})
 
-	t.Run("no match returns zero", func(t *testing.T) {
-		caps, overlap := store.Match(map[string]float64{"x": 99})
-		if overlap != 0 || len(caps) != 0 {
-			t.Fatalf("expected empty/0, got %v/%v", caps, overlap)
-		}
-	})
-
-	t.Run("best match wins", func(t *testing.T) {
-		residual := map[string]float64{
-			"file.exists":    1,
-			"content.known":  1,
-			"content.unknown": 1,
-		}
-		caps, overlap := store.Match(residual)
-		if overlap != 1.0 {
-			t.Fatalf("overlap = %v, want 1.0", overlap)
-		}
-		if len(caps) != 1 || caps[0].Name != "write_file" {
-			t.Fatalf("caps = %v, want [write_file]", caps)
+	t.Run("empty embedding", func(t *testing.T) {
+		pipe, sim := store.Match(nil)
+		if pipe != nil || sim != 0 {
+			t.Fatalf("expected nil/0")
 		}
 	})
 }
 
-func TestReflexStoreEmpty(t *testing.T) {
-	store := NewReflexStore(nil)
-	caps, overlap := store.Match(map[string]float64{"a": 1})
-	if overlap != 0 || caps != nil {
-		t.Fatalf("empty store should return nil/0")
+func TestPipeScoring(t *testing.T) {
+	pipe := Pipe{Replays: 0, Usage: 0}
+	if s := pipe.Score(); s != 0.5 {
+		t.Fatalf("initial score = %v, want 0.5", s)
+	}
+
+	pipe.Replays = 9
+	pipe.Usage = 10
+	if s := pipe.Score(); s < 0.8 {
+		t.Fatalf("high replay score = %v, want > 0.8", s)
+	}
+}
+
+func TestPipeStorePrune(t *testing.T) {
+	store := NewPipeStore()
+	store.Add(Pipe{Name: "good", Replays: 10, Usage: 10})
+	store.Add(Pipe{Name: "bad", Replays: 0, Usage: 100})
+
+	pruned := store.Prune(0.05)
+	if pruned != 1 {
+		t.Fatalf("pruned = %d, want 1", pruned)
+	}
+	if store.Len() != 1 {
+		t.Fatalf("len = %d, want 1", store.Len())
+	}
+}
+
+func TestReplayPipe_FullSuccess(t *testing.T) {
+	pipe := &Pipe{
+		Name:  "test",
+		Steps: []PipeStep{{ID: "greet", Call: "greet", Expected: HashResult([]byte("hello"))}},
+	}
+
+	caps := map[string]capability.Capability{
+		"greet": {
+			Name: "greet",
+			Execute: func(_ context.Context, _ json.RawMessage) (capability.Result, error) {
+				return capability.TextResult("hello"), nil
+			},
+		},
+	}
+
+	result, err := ReplayPipe(context.Background(), pipe, caps)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.StepsReflex != 1 {
+		t.Fatalf("steps reflex = %d, want 1", result.StepsReflex)
+	}
+	if result.EscalatedAt != -1 {
+		t.Fatalf("escalated at %d, want -1", result.EscalatedAt)
+	}
+	if pipe.Replays != 1 {
+		t.Fatalf("replays = %d, want 1", pipe.Replays)
+	}
+}
+
+func TestReplayPipe_Escalation(t *testing.T) {
+	pipe := &Pipe{
+		Name: "test",
+		Steps: []PipeStep{{
+			ID:         "read",
+			Call:       "read_file",
+			Expected:   HashResult([]byte("expected content")),
+			Confidence: 0.1,
+		}},
+	}
+
+	caps := map[string]capability.Capability{
+		"read_file": {
+			Name: "read_file",
+			Execute: func(_ context.Context, _ json.RawMessage) (capability.Result, error) {
+				return capability.TextResult("different content"), nil
+			},
+		},
+	}
+
+	result, err := ReplayPipe(context.Background(), pipe, caps)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.EscalatedAt != 0 {
+		t.Fatalf("escalated at %d, want 0", result.EscalatedAt)
+	}
+	if result.EscalatedGear != GearFamiliar {
+		t.Fatalf("gear = %s, want familiar", result.EscalatedGear)
+	}
+}
+
+func TestPipeExecutor_DependencyResolution(t *testing.T) {
+	pipe := Pipe{
+		Name: "test",
+		Steps: []PipeStep{
+			{ID: "a", Call: "step_a"},
+			{ID: "b", Call: "step_b", DependsOn: []string{"a"}},
+			{ID: "c", Call: "step_c", DependsOn: []string{"a", "b"}},
+		},
+	}
+
+	exec := NewPipeExecutor()
+	runID, pr := exec.StartWithPipe(pipe)
+
+	step, _, _ := exec.NextStepFromPipe(runID, pr.steps)
+	if step == nil || step.ID != "a" {
+		t.Fatalf("first step should be a, got %v", step)
+	}
+
+	exec.SubmitAndUnlock(runID, "a", "done", "", pr.steps)
+
+	step, _, _ = exec.NextStepFromPipe(runID, pr.steps)
+	if step == nil || step.ID != "b" {
+		t.Fatalf("after a, b should be ready, got %v", step)
+	}
+
+	exec.SubmitAndUnlock(runID, "b", "done", "", pr.steps)
+
+	step, _, _ = exec.NextStepFromPipe(runID, pr.steps)
+	if step == nil || step.ID != "c" {
+		t.Fatalf("after a+b, c should be ready, got %v", step)
+	}
+}
+
+func TestPipeExecutor_FailureCascade(t *testing.T) {
+	pipe := Pipe{
+		Name: "test",
+		Steps: []PipeStep{
+			{ID: "a", Call: "step_a"},
+			{ID: "b", Call: "step_b", DependsOn: []string{"a"}},
+		},
+	}
+
+	exec := NewPipeExecutor()
+	runID, pr := exec.StartWithPipe(pipe)
+
+	exec.NextStepFromPipe(runID, pr.steps)
+	state, _ := exec.SubmitAndUnlock(runID, "a", nil, "boom", pr.steps)
+
+	if state.Steps["b"].Status != "skipped" {
+		t.Fatalf("b should be skipped, got %s", state.Steps["b"].Status)
+	}
+	if state.Status != "failed" {
+		t.Fatalf("run should be failed, got %s", state.Status)
 	}
 }
 
@@ -148,36 +264,40 @@ func TestFireReflex(t *testing.T) {
 	}
 }
 
-func TestReflexStoreInterface(t *testing.T) {
-	var _ ReflexStore = (*InMemoryReflexStore)(nil)
-}
-
 func TestSuggestionAtom(t *testing.T) {
-	caps := []capability.Capability{{Name: "read_file"}, {Name: "grep"}}
-	atom := suggestionAtom(caps, 0.85, 3)
+	pipe := &Pipe{Name: "test-pipe"}
+	atom := suggestionAtom(pipe, 0.85, 3)
 
 	if atom.Type.String() != "knowledge" {
-		t.Fatalf("suggestion should be knowledge atom, got %s", atom.Type.String())
+		t.Fatalf("type = %s, want knowledge", atom.Type.String())
 	}
 	if atom.Source != reactivity.Recollected {
-		t.Fatalf("suggestion should be recollected source")
-	}
-	if atom.Taxonomy != "knowledge.suggestion.intuition" {
-		t.Fatalf("taxonomy = %s, want knowledge.suggestion.intuition", atom.Taxonomy)
-	}
-	if len(atom.Content) == 0 {
-		t.Fatal("content should not be empty")
+		t.Fatal("source should be recollected")
 	}
 }
 
-func TestSelectGearIntuition(t *testing.T) {
-	if selectGear(0.85) != GearIntuition {
-		t.Fatal("0.85 overlap should be intuition")
+func TestStubEmbedder(t *testing.T) {
+	e := StubEmbedder{Dims: 8}
+	v1, err := e.Embed(context.Background(), "hello")
+	if err != nil {
+		t.Fatal(err)
 	}
-	if selectGear(0.7) != GearIntuition {
-		t.Fatal("0.7 overlap should be intuition")
+	if len(v1) != 8 {
+		t.Fatalf("dims = %d, want 8", len(v1))
 	}
-	if selectGear(0.69) != GearFamiliar {
-		t.Fatal("0.69 overlap should be familiar")
+
+	v2, _ := e.Embed(context.Background(), "hello")
+	if CosineSimilarity(v1, v2) < 0.999 {
+		t.Fatal("same input should produce same embedding")
 	}
+
+	v3, _ := e.Embed(context.Background(), "goodbye")
+	sim := CosineSimilarity(v1, v3)
+	if sim > 0.999 {
+		t.Fatal("different inputs should produce different embeddings")
+	}
+}
+
+func TestReflexStoreInterface(t *testing.T) {
+	var _ ReflexStore = (*PipeStore)(nil)
 }

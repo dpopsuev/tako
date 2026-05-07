@@ -33,16 +33,17 @@ type classifyResult struct {
 }
 
 type WatcherClassifier struct {
-	Watcher tangle.Completer
-	Reflex  ReflexStore
+	Watcher  tangle.Completer
+	Reflex   ReflexStore
+	Embedder Embedder
 }
 
 func (w *WatcherClassifier) Classify(event Event, m *reactivity.Molecule) Priority {
-	if w.Reflex != nil {
-		residual := m.Residual()
-		if residual != nil {
-			_, overlap := w.Reflex.Match(residual)
-			if overlap >= 1.0 {
+	if w.Reflex != nil && w.Embedder != nil {
+		embedding, err := w.Embedder.Embed(context.Background(), string(event.Payload))
+		if err == nil {
+			_, overlap := w.Reflex.Match(embedding)
+			if overlap >= 0.95 {
 				slog.Info("watcher.reflex_hit",
 					slog.String("event", event.Kind),
 					slog.Float64("overlap", overlap))

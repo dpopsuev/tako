@@ -107,6 +107,8 @@ type Cerebrum struct {
 	alignment          AlignmentChecker
 	listener           ContextListener
 	sight              SightProvider
+	embedder           Embedder
+	reflexStore        ReflexStore
 
 	molecule *reactivity.Molecule
 }

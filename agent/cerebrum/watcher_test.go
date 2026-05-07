@@ -6,15 +6,19 @@ import (
 	"testing"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/agent/capability"
 	tangle "github.com/dpopsuev/tangle"
 )
 
 func TestWatcherClassifier_ReflexHit(t *testing.T) {
-	store := NewReflexStore([]capability.Capability{{Name: "read_file"}})
-	store.AddReflex(map[string]float64{"file.exists": 1}, []string{"read_file"})
+	store := NewPipeStore()
+	store.Add(Pipe{
+		Name:      "read",
+		Embedding: []float64{1, 0, 0},
+		Steps:     []PipeStep{{ID: "read", Call: "read_file"}},
+	})
 
-	wc := &WatcherClassifier{Reflex: store}
+	embedder := StubEmbedder{Dims: 3}
+	wc := &WatcherClassifier{Reflex: store, Embedder: embedder}
 	m := reactivity.NewMoleculeWithCatalyst("test", reactivity.Catalyst{
 		Need:    "test",
 		Desired: map[string]any{"file.exists": "done"},

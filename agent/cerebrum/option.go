@@ -125,3 +125,11 @@ func WithContextListener(l ContextListener) Option {
 func WithSight(s SightProvider) Option {
 	return func(cb *Cerebrum) { cb.sight = s }
 }
+
+func WithEmbedder(e Embedder) Option {
+	return func(cb *Cerebrum) { cb.embedder = e }
+}
+
+func WithReflexStore(s ReflexStore) Option {
+	return func(cb *Cerebrum) { cb.reflexStore = s }
+}
