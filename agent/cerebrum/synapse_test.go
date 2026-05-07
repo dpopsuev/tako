@@ -2,10 +2,12 @@ package cerebrum
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
+	tangle "github.com/dpopsuev/tangle"
 )
 
 func TestDefaultSynapse_Encode(t *testing.T) {
@@ -145,7 +147,11 @@ func TestCerebrum_WithCustomSynapse(t *testing.T) {
 	reactor := reactivity.NewReactor(
 		reactivity.WithTriad(reactivity.ThinkTriad, &emittingTriadReactor{}),
 	)
-	completer := &stubCompleter{response: `{"atoms":[{"type":"intent","taxonomy":"intent.goal.test","content":"go"}]}`}
+	completer := &stubCompleter{toolCalls: []tangle.ToolCall{{
+		ID:    "tc-phase",
+		Name:  "intent",
+		Input: json.RawMessage(`{"taxonomy":"intent.goal.test","content":"go","dimensions":["test"]}`),
+	}}}
 	motor := &stubBus{}
 	cb := New(reactor, completer, WithMotor(motor), WithSynapse(syn))
 

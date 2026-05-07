@@ -2,6 +2,7 @@ package cerebrum
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -82,7 +83,6 @@ type Cerebrum struct {
 
 	classifier    Classifier
 	promptBuilder PromptBuilder
-	parser        ResponseParser
 	toolDefs      []tangle.Tool
 
 	recorder    Recorder
@@ -120,7 +120,6 @@ func New(reactor *reactivity.Core, completer tangle.Completer, opts ...Option) *
 		router:             SingleRouter(completer),
 		budget:             DefaultBudget,
 		promptBuilder:      DefaultPromptBuilder,
-		parser:             DefaultParser,
 		sensory:            NewChannelBus(64),
 		synapse:            DefaultSynapse{},
 		assert:             reactivity.DefaultAssert,
@@ -137,6 +136,7 @@ func New(reactor *reactivity.Core, completer tangle.Completer, opts ...Option) *
 	for _, opt := range opts {
 		opt(cb)
 	}
+	cb.capabilities = append(cb.capabilities, speakCapability())
 	cb.config.Validate()
 	return cb
 }
@@ -382,6 +382,24 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 			var capCalls []tangle.ToolCall
 
 			for _, tc := range completion.ToolCalls {
+				if tc.Name == "speak" {
+					var args struct{ Response string `json:"response"` }
+					json.Unmarshal(tc.Input, &args)
+					molecule.SetResponse(args.Response)
+					history = append(history, tangle.Message{
+						Role:       "tool",
+						Content:    "delivered to operator",
+						ToolCallID: tc.ID,
+					})
+					slog.InfoContext(ctx, "cerebrum.think.speak",
+						slog.Int("turn", turn),
+						slog.Int("response_len", len(args.Response)))
+					if cb.listener != nil {
+						cb.listener.OnToolCall("speak", tc.Input)
+						cb.listener.OnToolResult("speak", []byte(args.Response), 0)
+					}
+					continue
+				}
 				if isPhaseToolCall(tc.Name) {
 					atom, err := phaseToolCallToAtom(tc, molecule.Phase(), turn)
 					if err != nil {
@@ -498,52 +516,17 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 			continue
 		}
 
-		conversational := molecule.Catalyst() == nil || len(molecule.Catalyst().Desired) == 0
-		if conversational && len(completion.ToolCalls) == 0 && completion.Content != "" {
-			slog.InfoContext(ctx, "cerebrum.think.conversational_seal",
-				slog.Int("turn", turn),
-				slog.Int("response_len", len(completion.Content)))
-			cb.reactor.Seal(molecule, reactivity.Atom{
-				ID:        fmt.Sprintf("wish-conversational-%d", turn),
-				Type:      reactivity.RetrospectionAtom,
-				Taxonomy:  "retrospection.conversational",
-				Content:   []byte(completion.Content),
-				CreatedAt: time.Now(),
-			})
-			break
-		}
-
-		atoms, _ := cb.parser.Parse(completion.Content, molecule.Phase(), turn)
-
-		slog.InfoContext(ctx, "cerebrum.think.parsed",
-			slog.Int("turn", turn),
-			slog.Int("atoms", len(atoms)))
-
-		for _, atom := range atoms {
-			result, fortune := cb.reactor.Add(molecule, atom)
-
-			slog.InfoContext(ctx, "cerebrum.think.react",
-				slog.Int("turn", turn),
-				slog.String("atom_type", atom.Type.String()),
-				slog.String("taxonomy", atom.Taxonomy),
-				slog.String("result", result.String()),
-				slog.String("phase", molecule.Phase().String()))
-
-			if result == reactivity.Unresolvable {
-				slog.WarnContext(ctx, "cerebrum.think.unresolvable",
+		if len(completion.ToolCalls) == 0 {
+			if completion.Content != "" {
+				molecule.SetResponse(completion.Content)
+				slog.WarnContext(ctx, "cerebrum.think.no_tool_calls",
 					slog.Int("turn", turn),
-					slog.String("message", fortune.Message))
-				cb.reactor.Seal(molecule, reactivity.Atom{
-					ID:        fmt.Sprintf("wish-unresolvable-%d", turn),
-					Type:      reactivity.RetrospectionAtom,
-					Taxonomy:  "retrospection.wish.unresolvable",
-					Content:   []byte(fortune.Message),
-					CreatedAt: time.Now(),
-				})
-				break
+					slog.Int("content_len", len(completion.Content)))
 			}
-			cb.dispatch(ctx, molecule)
+			molecule.SetContext(history)
+			continue
 		}
+
 		molecule.SetContext(history)
 
 		criticality := cb.assert.Evaluate(molecule)

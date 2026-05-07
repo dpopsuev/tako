@@ -70,28 +70,22 @@ func TestThink_SealOnCompleterError(t *testing.T) {
 	}
 }
 
-func TestThink_MoleculeHasAllPhases(t *testing.T) {
-	completer := &stubCompleter{response: "ok"}
+func TestThink_SpeakToolCallProducesResponse(t *testing.T) {
+	completer := &stubCompleter{response: "I can help with that"}
 	circuit := reactivity.NewReactor()
-	cb := New(circuit, completer)
+	cb := New(circuit, completer, WithMaxTurns(5))
 
-	cb.Think(context.Background(), reactivity.Catalyst{Need: "investigate failure", Desired: map[string]any{"resolved": true}})
+	cb.Think(context.Background(), reactivity.Catalyst{Need: "help me", Desired: map[string]any{"helped": true}})
 	m := cb.Result()
 
-	if m.Mass(reactivity.IntentAtom) == 0 {
-		t.Error("expected Intent atoms")
+	if !m.Sealed() {
+		t.Error("molecule should be sealed")
 	}
-	if m.Mass(reactivity.AssessmentAtom) == 0 {
-		t.Error("expected Assessment atoms")
+	if m.Response() == "" {
+		t.Error("expected response from speak tool call")
 	}
-	if m.Mass(reactivity.ExpansionAtom) == 0 {
-		t.Error("expected Plan atoms")
-	}
-	if m.Mass(reactivity.ExecutionAtom) == 0 {
-		t.Error("expected Execution atoms")
-	}
-	if m.Mass(reactivity.RetrospectionAtom) == 0 {
-		t.Error("expected Retrospection atoms")
+	if m.Response() != "I can help with that" {
+		t.Errorf("response = %q, want 'I can help with that'", m.Response())
 	}
 }
 
@@ -153,7 +147,11 @@ func TestThink_StoreIntegration(t *testing.T) {
 }
 
 func TestThink_EmissionsDispatchedViaMotor(t *testing.T) {
-	completer := &stubCompleter{response: `{"atoms":[{"type":"intent","taxonomy":"intent.goal.test","content":"go"}]}`}
+	completer := &stubCompleter{toolCalls: []tangle.ToolCall{{
+		ID:    "tc-phase",
+		Name:  "intent",
+		Input: json.RawMessage(`{"taxonomy":"intent.goal.test","content":"go","dimensions":["test"]}`),
+	}}}
 	reactor := reactivity.NewReactor(
 		reactivity.WithTriad(reactivity.ThinkTriad, &emittingTriadReactor{}),
 	)

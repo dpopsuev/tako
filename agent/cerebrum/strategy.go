@@ -24,30 +24,14 @@ func (f PromptBuilderFunc) Build(m *reactivity.Molecule, need []byte, domain Dom
 	return f(m, need, domain)
 }
 
-type ResponseParser interface {
-	Parse(raw string, phase reactivity.AtomType, turn int) ([]reactivity.Atom, error)
-}
-
-type ResponseParserFunc func(raw string, phase reactivity.AtomType, turn int) ([]reactivity.Atom, error)
-
-func (f ResponseParserFunc) Parse(raw string, phase reactivity.AtomType, turn int) ([]reactivity.Atom, error) {
-	return f(raw, phase, turn)
-}
-
 var (
-	DefaultClassifier    Classifier     = ClassifierFunc(Classify)
-	DefaultPromptBuilder PromptBuilder  = PromptBuilderFunc(buildPrompt)
-	DefaultParser        ResponseParser = ResponseParserFunc(ParseResponse)
+	DefaultClassifier    Classifier    = ClassifierFunc(Classify)
+	DefaultPromptBuilder PromptBuilder = PromptBuilderFunc(buildPrompt)
 
-	BasicPromptBuilder PromptBuilder  = PromptBuilderFunc(naivePrompt)
-	PlainTextParser    ResponseParser = ResponseParserFunc(rawParse)
-	StaticClassifier   Classifier     = ClassifierFunc(func(_ *reactivity.Molecule) Domain { return Complicated })
+	BasicPromptBuilder PromptBuilder = PromptBuilderFunc(naivePrompt)
+	StaticClassifier   Classifier    = ClassifierFunc(func(_ *reactivity.Molecule) Domain { return Complicated })
 )
 
 func naivePrompt(m *reactivity.Molecule, need []byte, _ Domain) string {
 	return fmt.Sprintf("phase:%s mass:%d need:%s", m.Phase(), m.Mass(m.Phase()), string(need))
-}
-
-func rawParse(raw string, phase reactivity.AtomType, turn int) ([]reactivity.Atom, error) {
-	return fallbackParse(raw, phase, turn), nil
 }

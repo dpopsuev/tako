@@ -46,10 +46,6 @@ func WithPromptBuilder(p PromptBuilder) Option {
 	return func(cb *Cerebrum) { cb.promptBuilder = p }
 }
 
-func WithParser(p ResponseParser) Option {
-	return func(cb *Cerebrum) { cb.parser = p }
-}
-
 func WithSynapse(s Synapse) Option {
 	return func(cb *Cerebrum) { cb.synapse = s }
 }
