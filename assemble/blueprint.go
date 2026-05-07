@@ -21,18 +21,18 @@ type Blueprint struct {
 }
 
 type Agent struct {
-	Cerebrum *cerebrum.Cerebrum
-	Sensory  cerebrum.Bus
-	Signal   cerebrum.Bus
-	Corpus   *corpus.Corpus
+	cerebrum *cerebrum.Cerebrum
+	sensory  cerebrum.Bus
+	signal   cerebrum.Bus
+	corpus   *corpus.Corpus
 }
 
 func (a *Agent) Think(ctx context.Context, need string) error {
-	return a.Cerebrum.Think(ctx, reactivity.Catalyst{Need: need})
+	return a.cerebrum.Think(ctx, reactivity.Catalyst{Need: need})
 }
 
 func (a *Agent) Result() *reactivity.Molecule {
-	return a.Cerebrum.Result()
+	return a.cerebrum.Result()
 }
 
 func (a *Agent) Run(ctx context.Context, task string) (string, error) {
@@ -114,9 +114,9 @@ func Assemble(bp Blueprint, completer tangle.Completer, opts ...cerebrum.Option)
 		slog.Int("max_turns", budget.MaxTurns))
 
 	return &Agent{
-		Cerebrum: cb,
-		Sensory:  sensory,
-		Signal:   signal,
-		Corpus:   corp,
+		cerebrum: cb,
+		sensory:  sensory,
+		signal:   signal,
+		corpus:   corp,
 	}
 }

@@ -98,7 +98,7 @@ func TestAssemble_Capabilities(t *testing.T) {
 	completer := &scriptedCompleter{}
 	agent := Assemble(bp, completer)
 
-	corpCaps := agent.Corpus.Capabilities()
+	corpCaps := agent.corpus.Capabilities()
 	names := corpCaps.Names()
 
 	if len(names) < 5 {
@@ -125,7 +125,7 @@ func TestAssemble_EmptyCapabilities_Warns(t *testing.T) {
 	completer := &scriptedCompleter{}
 	agent := Assemble(bp, completer)
 
-	if agent.Cerebrum == nil {
+	if agent.cerebrum == nil {
 		t.Error("Cerebrum should not be nil even with empty capabilities")
 	}
 }
@@ -143,7 +143,7 @@ func TestAssemble_CustomConfig(t *testing.T) {
 	completer := &scriptedCompleter{}
 	agent := Assemble(bp, completer)
 
-	if agent.Cerebrum == nil {
+	if agent.cerebrum == nil {
 		t.Error("Cerebrum should not be nil")
 	}
 }
