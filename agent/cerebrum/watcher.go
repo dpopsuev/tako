@@ -32,6 +32,7 @@ type classifyResult struct {
 	Action     string   `json:"action"`
 }
 
+// EXPERIMENTAL: WatcherClassifier uses LLM for classification — vs Cynefin state-based (TSK-436)
 type WatcherClassifier struct {
 	Watcher  tangle.Completer
 	Reflex   ReflexStore

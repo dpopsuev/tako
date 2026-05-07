@@ -23,6 +23,7 @@ func (s singleCompleter) Route(_ *reactivity.Molecule) tangle.Completer {
 	return s.c
 }
 
+// EXPERIMENTAL: PhaseRouter vs AdaptiveRouter — ablation needed (TSK-436)
 type PhaseRouter struct {
 	routes   map[reactivity.Triad]tangle.Completer
 	fallback tangle.Completer
@@ -46,6 +47,7 @@ func (r *PhaseRouter) Route(m *reactivity.Molecule) tangle.Completer {
 	return r.fallback
 }
 
+// EXPERIMENTAL: AdaptiveRouter vs PhaseRouter — ablation needed (TSK-436)
 type AdaptiveRouter struct {
 	fast     tangle.Completer
 	deep     tangle.Completer

@@ -111,6 +111,7 @@ func noDimensionFlags(atom reactivity.Atom, residual map[string]float64) []strin
 	return nil
 }
 
+// EXPERIMENTAL: ConvergenceAssert wraps MomentumAssert — ablation needed (TSK-436)
 type ConvergenceAssert struct {
 	Inner          reactivity.Assert
 	StagnantLimit  int

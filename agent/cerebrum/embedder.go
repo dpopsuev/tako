@@ -10,6 +10,7 @@ type Embedder interface {
 	Embed(ctx context.Context, text string) ([]float64, error)
 }
 
+// EXPERIMENTAL: StubEmbedder is hash-based — needs real embedding model for production (TSK-436)
 type StubEmbedder struct {
 	Dims int
 }

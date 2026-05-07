@@ -28,8 +28,8 @@ var (
 	DefaultClassifier    Classifier    = ClassifierFunc(Classify)
 	DefaultPromptBuilder PromptBuilder = PromptBuilderFunc(buildPrompt)
 
-	BasicPromptBuilder PromptBuilder = PromptBuilderFunc(naivePrompt)
-	StaticClassifier   Classifier    = ClassifierFunc(func(_ *reactivity.Molecule) Domain { return Complicated })
+	BasicPromptBuilder PromptBuilder = PromptBuilderFunc(naivePrompt)          // EXPERIMENTAL: lobotomy baseline
+	StaticClassifier   Classifier    = ClassifierFunc(func(_ *reactivity.Molecule) Domain { return Complicated }) // EXPERIMENTAL: lobotomy baseline
 )
 
 func naivePrompt(m *reactivity.Molecule, need []byte, _ Domain) string {

@@ -11,6 +11,7 @@ type Navigator func(m *Molecule, current AtomType) AtomType
 // LinearNavigator always follows the fixed sequence within each Triad.
 // Only makes inter-Triad decisions: Think → Compose → Implement → Reflect.
 // Returns current.Next() for intra-Triad progression (no skipping).
+// EXPERIMENTAL: lobotomy baseline — TreeNavigator is the production candidate (TSK-436)
 var LinearNavigator Navigator = func(m *Molecule, current AtomType) AtomType {
 	next := linearNext(current)
 	if next != current {
