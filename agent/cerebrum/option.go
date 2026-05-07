@@ -129,3 +129,7 @@ func WithEmbedder(e Embedder) Option {
 func WithReflexStore(s ReflexStore) Option {
 	return func(cb *Cerebrum) { cb.reflexStore = s }
 }
+
+func WithConsolidator(c Consolidator) Option {
+	return func(cb *Cerebrum) { cb.consolidator = c }
+}

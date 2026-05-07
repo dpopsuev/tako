@@ -108,6 +108,7 @@ type Cerebrum struct {
 	sight              SightProvider
 	embedder           Embedder
 	reflexStore        ReflexStore
+	consolidator       Consolidator
 
 	molecule *reactivity.Molecule
 }
@@ -586,6 +587,9 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 	cb.emit("cerebrum.session", summary.Labels())
 	if cb.listener != nil {
 		cb.listener.OnSealed(molecule.ID, molecule.Distance(), molecule.Turns(), molecule.Response())
+	}
+	if cb.consolidator != nil {
+		cb.consolidator.Consolidate(ctx, string(need), history)
 	}
 
 	slog.InfoContext(ctx, "cerebrum.think.session_summary",

@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/dpopsuev/tako/agent/capability"
 	"github.com/dpopsuev/tako/agent/reactivity"
 	tangle "github.com/dpopsuev/tangle"
 )
@@ -58,6 +59,33 @@ func (s *stubSynapse) Encode(e Event) (reactivity.Atom, error) {
 func (s *stubSynapse) Decode(e reactivity.Emission) Event {
 	s.decodeCalled++
 	return DefaultSynapse{}.Decode(e)
+}
+
+type autoExecMotor struct {
+	caps    map[string]capability.Capability
+	sensory Bus
+}
+
+func (m *autoExecMotor) Send(ctx context.Context, event Event) error {
+	if event.Kind != "instrument" {
+		return nil
+	}
+	cap, ok := m.caps[event.Source]
+	if !ok || cap.Execute == nil {
+		return nil
+	}
+	result, _ := cap.Execute(ctx, event.Payload)
+	return m.sensory.Send(ctx, Event{
+		ID:         "auto-" + event.ID,
+		Kind:       "instrument.result",
+		Source:     event.Source,
+		Payload:    result.Text(),
+		ToolCallID: event.ToolCallID,
+	})
+}
+
+func (m *autoExecMotor) Receive(_ context.Context) (Event, bool) {
+	return Event{}, false
 }
 
 type emittingTriadReactor struct{}
