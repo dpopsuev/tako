@@ -71,6 +71,9 @@ type SessionSummary struct {
 	GearIntuitionPct  float64
 	GearReflexPct     float64
 	ReflexHits      int
+	ReflexCoverage  float64
+	LLMCalls        int
+	ReflexFires     int
 	AvgTurnMs       int64
 	Sealed          bool
 	FinalDistance    float64
@@ -89,6 +92,9 @@ func (s SessionSummary) Labels() map[string]string {
 		"gear_intuition_pct": fmt.Sprintf("%.1f", s.GearIntuitionPct),
 		"gear_reflex_pct":   fmt.Sprintf("%.1f", s.GearReflexPct),
 		"reflex_hits":       fmt.Sprintf("%d", s.ReflexHits),
+		"reflex_coverage":   fmt.Sprintf("%.3f", s.ReflexCoverage),
+		"llm_calls":         fmt.Sprintf("%d", s.LLMCalls),
+		"reflex_fires":      fmt.Sprintf("%d", s.ReflexFires),
 		"avg_turn_ms":       fmt.Sprintf("%d", s.AvgTurnMs),
 		"sealed":            fmt.Sprintf("%v", s.Sealed),
 		"final_distance":    fmt.Sprintf("%.3f", s.FinalDistance),
@@ -123,6 +129,8 @@ func computeSessionSummary(moleculeID string, turns []TurnRecord, m *reactivity.
 		}
 	}
 
+	s.LLMCalls = novel + familiar + intuition
+	s.ReflexFires = reflex
 	if s.TotalTurns > 0 {
 		s.AvgTurnMs = totalMs / int64(s.TotalTurns)
 		total := float64(s.TotalTurns)
@@ -130,6 +138,7 @@ func computeSessionSummary(moleculeID string, turns []TurnRecord, m *reactivity.
 		s.GearFamiliarPct = float64(familiar) / total * 100
 		s.GearIntuitionPct = float64(intuition) / total * 100
 		s.GearReflexPct = float64(reflex) / total * 100
+		s.ReflexCoverage = float64(reflex) / total
 	}
 
 	if s.TotalTurns > 0 {

@@ -99,7 +99,7 @@ func (s *PipeStore) Merge(embedding []float64, steps []PipeStep) bool {
 		}
 		sim := CosineSimilarity(embedding, p.Embedding)
 		if sim > 0.9 {
-			p.Steps = append(p.Steps, steps...)
+			mergeSteps(&p, steps)
 			s.config.Pipes[name] = p
 			return true
 		}
@@ -151,6 +151,22 @@ func (s *PipeStore) Get(name string) (Pipe, bool) {
 	defer s.mu.RUnlock()
 	p, ok := s.config.Pipes[name]
 	return p, ok
+}
+
+func mergeSteps(pipe *Pipe, incoming []PipeStep) {
+	existing := pipe.Steps
+	i := 0
+	for i < len(existing) && i < len(incoming) {
+		if existing[i].Call == incoming[i].Call {
+			existing[i].Confidence = existing[i].Confidence*0.9 + 0.1
+			i++
+		} else {
+			break
+		}
+	}
+	for j := i; j < len(incoming); j++ {
+		pipe.Steps = append(pipe.Steps, incoming[j])
+	}
 }
 
 func defaultReflexPath() string {
