@@ -61,9 +61,9 @@ type defaultClassifierImpl struct{}
 
 func (defaultClassifierImpl) Classify(event Event, _ *reactivity.Molecule) Priority {
 	switch event.Kind {
-	case "sensory.alarm", "sensory.emergency":
+	case EventSensoryAlarm, EventSensoryEmergency:
 		return PriorityEmergency
-	case "sensory.timer", "sensory.warning":
+	case EventSensoryTimer, EventSensoryWarning:
 		return PriorityInterrupt
 	default:
 		return PriorityPark
@@ -135,6 +135,17 @@ func New(reactor *reactivity.Core, completer tangle.Completer, opts ...Option) *
 	for _, opt := range opts {
 		opt(cb)
 	}
+
+	if cb.watcher != nil {
+		if _, isDefault := cb.priorityClassifier.(defaultClassifierImpl); isDefault {
+			cb.priorityClassifier = &WatcherClassifier{
+				Watcher:  cb.watcher,
+				Reflex:   cb.reflexStore,
+				Embedder: cb.embedder,
+			}
+		}
+	}
+
 	cb.config.Validate()
 	return cb
 }
@@ -326,7 +337,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 
 		messages := make([]tangle.Message, 0, len(history)+1)
 		messages = append(messages, history...)
-		messages = append(messages, tangle.Message{Role: "user", Content: prompt})
+		messages = append(messages, tangle.Message{Role: RoleUser, Content: prompt})
 
 		completer := cb.router.Route(molecule)
 
@@ -336,11 +347,11 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 		if cb.listener != nil {
 			onToken = cb.listener.OnToken
 		}
-		thinkingLevel := "medium"
+		thinkingLevel := ThinkingMedium
 		if domain == Clear {
-			thinkingLevel = "minimal"
+			thinkingLevel = ThinkingMinimal
 		} else if domain == Complex || domain == Chaotic {
-			thinkingLevel = "high"
+			thinkingLevel = ThinkingHigh
 		}
 		completion, err := completer.Complete(turnCtx, tangle.CompletionParams{
 			Messages:      messages,
@@ -412,9 +423,9 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 			molecule.SetResponse(completion.Content)
 		}
 
-		history = append(history, tangle.Message{Role: "user", Content: prompt})
+		history = append(history, tangle.Message{Role: RoleUser, Content: prompt})
 		history = append(history, tangle.Message{
-			Role:      "assistant",
+			Role:      RoleAssistant,
 			Content:   completion.Content,
 			ToolCalls: completion.ToolCalls,
 		})
@@ -433,7 +444,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 					}
 					phaseAtoms = append(phaseAtoms, atom)
 					history = append(history, tangle.Message{
-						Role:       "tool",
+						Role:       RoleTool,
 						Content:    fmt.Sprintf("atom %s recorded: %s", atom.Type, atom.Taxonomy),
 						ToolCallID: tc.ID,
 					})
@@ -453,7 +464,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 						cb.listener.OnToolCall(tc.Name, tc.Input)
 					}
 					molecule.Emit(reactivity.Emission{
-						Kind:       "instrument",
+						Kind:       string(EventOrgan),
 						Target:     tc.Name,
 						Payload:    tc.Input,
 						ToolCallID: tc.ID,
@@ -467,7 +478,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 				for _, tc := range capCalls {
 					result := cb.waitToolResult(toolCtx, tc)
 					history = append(history, tangle.Message{
-						Role:       "tool",
+						Role:       RoleTool,
 						Content:    result,
 						ToolCallID: tc.ID,
 					})
@@ -641,14 +652,14 @@ func (cb *Cerebrum) Monitor(ctx context.Context, bus Bus) {
 
 		m := cb.molecule
 		if m == nil {
-			slog.DebugContext(ctx, "monitor.no_molecule", slog.String("event", event.Kind))
+			slog.DebugContext(ctx, "monitor.no_molecule", slog.String("event", event.Kind.String()))
 			continue
 		}
 
 		priority := cb.priorityClassifier.Classify(event, m)
 
 		slog.InfoContext(ctx, "monitor.classify",
-			slog.String("event", event.Kind),
+			slog.String("event", event.Kind.String()),
 			slog.String("priority", priority.String()),
 			slog.String("molecule", m.ID))
 
@@ -660,7 +671,7 @@ func (cb *Cerebrum) Monitor(ctx context.Context, bus Bus) {
 			select {
 			case cb.monitorEvents <- event:
 			default:
-				slog.WarnContext(ctx, "monitor.park_overflow", slog.String("event", event.Kind))
+				slog.WarnContext(ctx, "monitor.park_overflow", slog.String("event", event.Kind.String()))
 			}
 
 		case PriorityInterrupt:
@@ -670,7 +681,7 @@ func (cb *Cerebrum) Monitor(ctx context.Context, bus Bus) {
 				continue
 			}
 			slog.WarnContext(ctx, "monitor.interrupt",
-				slog.String("event", event.Kind),
+				slog.String("event", event.Kind.String()),
 				slog.String("source", event.Source),
 				slog.String("molecule", m.ID),
 				slog.String("phase", m.Phase().String()))
@@ -683,7 +694,7 @@ func (cb *Cerebrum) Monitor(ctx context.Context, bus Bus) {
 			if cb.halter != nil {
 				cb.halter.Pull(m.ID)
 				slog.WarnContext(ctx, "monitor.emergency_halt",
-					slog.String("event", event.Kind),
+					slog.String("event", event.Kind.String()),
 					slog.String("molecule", m.ID))
 			}
 		}
@@ -861,7 +872,7 @@ func (cb *Cerebrum) waitToolResult(ctx context.Context, tc tangle.ToolCall) stri
 		case cb.monitorEvents <- event:
 		default:
 			slog.Warn("cerebrum.waitToolResult.overflow",
-				slog.String("event", event.Kind),
+				slog.String("event", event.Kind.String()),
 				slog.String("expected_tool", tc.Name))
 		}
 	}

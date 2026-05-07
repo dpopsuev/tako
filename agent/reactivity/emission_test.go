@@ -5,8 +5,8 @@ import "testing"
 func TestMolecule_Emit(t *testing.T) {
 	m := NewMolecule("emit-test")
 
-	m.Emit(Emission{Kind: "instrument", Target: "grep", Payload: []byte(`{"pattern":"error"}`)})
-	m.Emit(Emission{Kind: "instrument", Target: "read", Payload: []byte(`{"path":"main.go"}`)})
+	m.Emit(Emission{Kind: "organ", Target: "grep", Payload: []byte(`{"pattern":"error"}`)})
+	m.Emit(Emission{Kind: "organ", Target: "read", Payload: []byte(`{"path":"main.go"}`)})
 
 	emissions := m.Emissions()
 	if len(emissions) != 2 {
@@ -21,7 +21,7 @@ func TestMolecule_DrainEmissions(t *testing.T) {
 	m := NewMolecule("drain-test")
 
 	m.Emit(Emission{Kind: "wish", Target: "monolog", Payload: []byte("done")})
-	m.Emit(Emission{Kind: "instrument", Target: "write", Payload: []byte("data")})
+	m.Emit(Emission{Kind: "organ", Target: "write", Payload: []byte("data")})
 
 	drained := m.DrainEmissions()
 	if len(drained) != 2 {
@@ -53,7 +53,7 @@ func TestReactor_React_CanEmit(t *testing.T) {
 	if len(emissions) != 1 {
 		t.Fatalf("expected 1 emission from act reactor, got %d", len(emissions))
 	}
-	if emissions[0].Kind != "instrument" {
+	if emissions[0].Kind != "organ" {
 		t.Errorf("expected instrument emission, got %s", emissions[0].Kind)
 	}
 }
@@ -61,7 +61,7 @@ func TestReactor_React_CanEmit(t *testing.T) {
 type emittingReactor struct{}
 
 func (emittingReactor) React(m *Molecule, atom Atom) (YieldKind, Yield) {
-	m.Emit(Emission{Kind: "instrument", Target: "test-tool", Payload: atom.Content})
+	m.Emit(Emission{Kind: "organ", Target: "test-tool", Payload: atom.Content})
 	if m.mass[RefinementAtom] > 0 {
 		m.SealTriad(ImplementTriad)
 		m.SetPhase(RetrospectionAtom)

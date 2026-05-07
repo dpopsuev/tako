@@ -7,7 +7,7 @@ import (
 	"github.com/dpopsuev/tako/agent/reactivity"
 )
 
-func TestThink_FullVerticalSlice(t *testing.T) {
+func TestThink_SealsWithIntentAndRetrospection(t *testing.T) {
 	completer := &stubCompleter{response: "done"}
 	reactor := reactivity.NewReactor()
 	motor := &stubBus{}

@@ -82,7 +82,7 @@ func (s *PipeStore) Add(pipe Pipe) error {
 	defer s.mu.Unlock()
 
 	if _, exists := s.config.Pipes[pipe.Name]; exists {
-		return fmt.Errorf("pipe %q already exists", pipe.Name)
+		return fmt.Errorf("%w: %s", ErrPipeExists, pipe.Name)
 	}
 	s.config.Pipes[pipe.Name] = pipe
 	return nil

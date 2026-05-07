@@ -48,15 +48,15 @@ func TestDefaultSynapse_Encode(t *testing.T) {
 func TestDefaultSynapse_Decode(t *testing.T) {
 	syn := DefaultSynapse{}
 	emission := reactivity.Emission{
-		Kind:    "instrument",
+		Kind:    "organ",
 		Target:  "look_fridge",
 		Payload: []byte("{}"),
 	}
 
 	event := syn.Decode(emission)
 
-	if event.Kind != "instrument" {
-		t.Errorf("Kind: got %q, want %q", event.Kind, "instrument")
+	if event.Kind != "organ" {
+		t.Errorf("Kind: got %q, want %q", event.Kind, "organ")
 	}
 	if event.Source != "look_fridge" {
 		t.Errorf("Source: got %q, want %q", event.Source, "look_fridge")
@@ -110,7 +110,7 @@ func TestRun_EventFlowsThrough(t *testing.T) {
 			if len(events) > 0 {
 				cancel()
 				<-done
-				if events[0].Kind != "instrument" {
+				if events[0].Kind != "organ" {
 					t.Errorf("expected instrument emission, got %q", events[0].Kind)
 				}
 				return

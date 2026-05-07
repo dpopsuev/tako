@@ -30,7 +30,7 @@ func TestCapabilityPath_Execute(t *testing.T) {
 
 	ctx := context.Background()
 	bus.Send(ctx, cerebrum.Event{
-		ID: "cap-1", Kind: "instrument", Source: "greet",
+		ID: "cap-1", Kind: "organ", Source: "greet",
 		Payload: []byte(`"world"`), CreatedAt: time.Now(),
 	})
 
@@ -38,8 +38,8 @@ func TestCapabilityPath_Execute(t *testing.T) {
 	if !ok {
 		t.Fatal("expected result on sensory bus")
 	}
-	if result.Kind != "instrument.result" {
-		t.Errorf("expected instrument.result, got %s", result.Kind)
+	if result.Kind != "organ.result" {
+		t.Errorf("expected organ.result, got %s", result.Kind)
 	}
 	if string(result.Payload) != `hello "world"` {
 		t.Errorf("payload = %q, want %q", string(result.Payload), `hello "world"`)
@@ -63,7 +63,7 @@ func TestCapabilityPath_PhaseGating(t *testing.T) {
 	bus := c.MotorBus(sensory, nil, phase)
 
 	bus.Send(context.Background(), cerebrum.Event{
-		ID: "cap-2", Kind: "instrument", Source: "deploy",
+		ID: "cap-2", Kind: "organ", Source: "deploy",
 		CreatedAt: time.Now(),
 	})
 
@@ -71,8 +71,8 @@ func TestCapabilityPath_PhaseGating(t *testing.T) {
 	if len(events) != 1 {
 		t.Fatalf("expected 1 event, got %d", len(events))
 	}
-	if events[0].Kind != "instrument.error" {
-		t.Errorf("expected instrument.error (write blocked in Think), got %s", events[0].Kind)
+	if events[0].Kind != "organ.error" {
+		t.Errorf("expected organ.error (write blocked in Think), got %s", events[0].Kind)
 	}
 }
 
@@ -96,7 +96,7 @@ func TestCapabilityPath_TrustGating(t *testing.T) {
 	sendCtx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 	bus.Send(sendCtx, cerebrum.Event{
-		ID: "cap-3", Kind: "instrument", Source: "delete",
+		ID: "cap-3", Kind: "organ", Source: "delete",
 		CreatedAt: time.Now(),
 	})
 
@@ -106,8 +106,8 @@ func TestCapabilityPath_TrustGating(t *testing.T) {
 	if !ok {
 		t.Fatal("expected error event")
 	}
-	if event.Kind != "instrument.error" {
-		t.Errorf("expected instrument.error (risk > trust), got %s", event.Kind)
+	if event.Kind != "organ.error" {
+		t.Errorf("expected organ.error (risk > trust), got %s", event.Kind)
 	}
 }
 
@@ -128,7 +128,7 @@ func TestCapabilityPath_SignalEmission(t *testing.T) {
 	bus := c.MotorBus(sensory, signalBus, phase)
 
 	bus.Send(context.Background(), cerebrum.Event{
-		ID: "cap-4", Kind: "instrument", Source: "look",
+		ID: "cap-4", Kind: "organ", Source: "look",
 		CreatedAt: time.Now(),
 	})
 
@@ -149,7 +149,7 @@ func TestCapabilityPath_UnknownCapability(t *testing.T) {
 	bus := c.MotorBus(sensory, nil, phase)
 
 	bus.Send(context.Background(), cerebrum.Event{
-		ID: "cap-5", Kind: "instrument", Source: "nonexistent",
+		ID: "cap-5", Kind: "organ", Source: "nonexistent",
 		CreatedAt: time.Now(),
 	})
 
@@ -157,7 +157,7 @@ func TestCapabilityPath_UnknownCapability(t *testing.T) {
 	if len(events) != 1 {
 		t.Fatalf("expected 1 error, got %d", len(events))
 	}
-	if events[0].Kind != "instrument.error" {
-		t.Errorf("expected instrument.error, got %s", events[0].Kind)
+	if events[0].Kind != "organ.error" {
+		t.Errorf("expected organ.error, got %s", events[0].Kind)
 	}
 }

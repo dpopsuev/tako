@@ -25,7 +25,7 @@ func TestCerebrum_Think(t *testing.T) {
 	}
 }
 
-func TestThink_FullLoop(t *testing.T) {
+func TestThink_SealsAndProducesAtoms(t *testing.T) {
 	completer := &stubCompleter{response: "response"}
 	circuit := reactivity.NewReactor()
 	cb := New(circuit, completer)
@@ -70,7 +70,7 @@ func TestThink_SealOnCompleterError(t *testing.T) {
 	}
 }
 
-func TestThink_SpeakToolCallProducesResponse(t *testing.T) {
+func TestThink_ConversationalSeal_SetsResponse(t *testing.T) {
 	completer := &stubCompleter{response: "I can help with that"}
 	circuit := reactivity.NewReactor()
 	cb := New(circuit, completer, WithMaxTurns(5))
@@ -113,21 +113,9 @@ func TestThink_MaxTurnsAbort(t *testing.T) {
 	}
 }
 
-func TestThink_BackwardCompatible(t *testing.T) {
-	completer := &stubCompleter{response: "done"}
-	circuit := reactivity.NewReactor()
-	cb := New(circuit, completer)
 
-	if err := cb.Think(context.Background(), reactivity.Catalyst{Need: string("test")}); err != nil {
-		t.Fatalf("Think: %v", err)
-	}
-	m := cb.Result()
-	if !m.Sealed() {
-		t.Error("should seal")
-	}
-}
 
-func TestThink_StoreIntegration(t *testing.T) {
+func TestThink_MultipleSessions_StoredInMonolog(t *testing.T) {
 	completer := &stubCompleter{response: "done"}
 	reactor := reactivity.NewReactor()
 	cb := New(reactor, completer)
@@ -162,7 +150,7 @@ func TestThink_EmissionsDispatchedViaMotor(t *testing.T) {
 
 	found := false
 	for _, cmd := range motor.Events() {
-		if cmd.Kind == "instrument" && cmd.Source == "emitted-tool" {
+		if cmd.Kind == "organ" && cmd.Source == "emitted-tool" {
 			found = true
 		}
 	}
@@ -200,12 +188,12 @@ func TestThink_ToolCallDispatchedToMotor(t *testing.T) {
 
 	found := false
 	for _, evt := range motor.Events() {
-		if evt.Kind == "instrument" && evt.Source == "look_fridge" {
+		if evt.Kind == "organ" && evt.Source == "look_fridge" {
 			found = true
 		}
 	}
 	if !found {
-		t.Error("expected ToolCall to dispatch as motor Event with Kind=instrument Source=look_fridge")
+		t.Error("expected ToolCall to dispatch as motor Event with Kind=organ Source=look_fridge")
 	}
 }
 
@@ -226,7 +214,7 @@ func TestThink_MultipleToolCalls(t *testing.T) {
 
 	names := map[string]bool{}
 	for _, evt := range motor.Events() {
-		if evt.Kind == "instrument" {
+		if evt.Kind == "organ" {
 			names[evt.Source] = true
 		}
 	}

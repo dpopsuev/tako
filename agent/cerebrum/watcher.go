@@ -46,7 +46,7 @@ func (w *WatcherClassifier) Classify(event Event, m *reactivity.Molecule) Priori
 			_, overlap := w.Reflex.Match(embedding)
 			if overlap >= 0.95 {
 				slog.Info("watcher.reflex_hit",
-					slog.String("event", event.Kind),
+					slog.String("event", event.Kind.String()),
 					slog.Float64("overlap", overlap))
 				return PriorityPark
 			}
@@ -63,7 +63,7 @@ func (w *WatcherClassifier) Classify(event Event, m *reactivity.Molecule) Priori
 	)
 
 	completion, err := w.Watcher.Complete(context.Background(), tangle.CompletionParams{
-		Messages: []tangle.Message{{Role: "user", Content: prompt}},
+		Messages: []tangle.Message{{Role: RoleUser, Content: prompt}},
 		Tools:    []tangle.Tool{classifyTool},
 	})
 	if err != nil {
@@ -82,7 +82,7 @@ func (w *WatcherClassifier) Classify(event Event, m *reactivity.Molecule) Priori
 		}
 
 		slog.Info("watcher.classified",
-			slog.String("event", event.Kind),
+			slog.String("event", event.Kind.String()),
 			slog.String("priority", cr.Priority),
 			slog.Any("dimensions", cr.Dimensions),
 			slog.String("action", cr.Action))

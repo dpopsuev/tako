@@ -15,6 +15,7 @@ import (
 type Blueprint struct {
 	Model        string
 	ModelWatcher string
+	Watcher      tangle.Completer
 	Capabilities []organ.Func
 	Budget       cerebrum.Budget
 	Config       *reactivity.Config
@@ -98,13 +99,30 @@ func Assemble(bp Blueprint, completer tangle.Completer, opts ...cerebrum.Option)
 	signal := cerebrum.NewChannelBus(64)
 	motorBus := corp.MotorBus(sensory, signal, nil)
 
+	embedder := cerebrum.StubEmbedder{}
+	pipeStore := cerebrum.NewPipeStore()
+	consolidator := &cerebrum.PipeConsolidator{
+		Store:    pipeStore,
+		Embedder: embedder,
+	}
+
 	baseOpts := []cerebrum.Option{
 		cerebrum.WithSensory(sensory),
+		cerebrum.WithSignal(signal),
 		cerebrum.WithMotor(motorBus),
 		cerebrum.WithCompactor(cerebrum.SummaryCompactor{}),
 		cerebrum.WithBudget(budget),
 		cerebrum.WithCapabilities(allCaps),
 		cerebrum.WithConfig(cfg),
+		cerebrum.WithEmbedder(embedder),
+		cerebrum.WithReflexStore(pipeStore),
+		cerebrum.WithConsolidator(consolidator),
+		cerebrum.WithRegulator(&cerebrum.DeltaRegulator{}),
+		cerebrum.WithAlignmentChecker(cerebrum.TieredAlignment{}),
+	}
+
+	if bp.Watcher != nil {
+		baseOpts = append(baseOpts, cerebrum.WithWatcher(bp.Watcher))
 	}
 	cb = cerebrum.New(reactor, completer, append(baseOpts, opts...)...)
 

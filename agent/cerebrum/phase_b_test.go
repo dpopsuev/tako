@@ -11,7 +11,7 @@ import (
 	tangle "github.com/dpopsuev/tangle"
 )
 
-func TestPhaseB_FullPipeline(t *testing.T) {
+func TestSubsystems_AlignmentRewardPipeStore(t *testing.T) {
 	cfg := reactivity.DefaultConfig
 
 	readCap := organ.Func{
@@ -108,7 +108,7 @@ func TestPhaseB_FullPipeline(t *testing.T) {
 	})
 }
 
-func TestPhaseB_InstrumentationGearIntuition(t *testing.T) {
+func TestSessionSummary_GearDistribution(t *testing.T) {
 	turns := []TurnRecord{
 		{Gear: GearNovel},
 		{Gear: GearFamiliar},

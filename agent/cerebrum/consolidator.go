@@ -68,7 +68,7 @@ func extractPipeSteps(history []tangle.Message) []PipeStep {
 	var steps []PipeStep
 
 	for i, msg := range history {
-		if msg.Role != "assistant" || len(msg.ToolCalls) == 0 {
+		if msg.Role != RoleAssistant || len(msg.ToolCalls) == 0 {
 			continue
 		}
 		for _, tc := range msg.ToolCalls {
@@ -78,7 +78,7 @@ func extractPipeSteps(history []tangle.Message) []PipeStep {
 
 			var result []byte
 			for j := i + 1; j < len(history); j++ {
-				if history[j].Role == "tool" && history[j].ToolCallID == tc.ID {
+				if history[j].Role == RoleTool && history[j].ToolCallID == tc.ID {
 					result = []byte(history[j].Content)
 					break
 				}

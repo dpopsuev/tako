@@ -19,7 +19,7 @@ func (DefaultSynapse) Encode(e Event) (reactivity.Atom, error) {
 		ID:        e.ID,
 		Type:      reactivity.IntentAtom,
 		Source:    reactivity.Received,
-		Taxonomy:  "intent." + e.Kind,
+		Taxonomy:  "intent." + e.Kind.String(),
 		Content:   e.Payload,
 		CreatedAt: e.CreatedAt,
 	}, nil
@@ -28,7 +28,7 @@ func (DefaultSynapse) Encode(e Event) (reactivity.Atom, error) {
 func (DefaultSynapse) Decode(e reactivity.Emission) Event {
 	return Event{
 		ID:         fmt.Sprintf("emission-%d", time.Now().UnixNano()),
-		Kind:       e.Kind,
+		Kind:       EventKind(e.Kind),
 		Source:     e.Target,
 		Payload:    e.Payload,
 		ToolCallID: e.ToolCallID,

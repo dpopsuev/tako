@@ -67,7 +67,7 @@ type autoExecMotor struct {
 }
 
 func (m *autoExecMotor) Send(ctx context.Context, event Event) error {
-	if event.Kind != "instrument" {
+	if event.Kind != "organ" {
 		return nil
 	}
 	cap, ok := m.caps[event.Source]
@@ -77,7 +77,7 @@ func (m *autoExecMotor) Send(ctx context.Context, event Event) error {
 	result, _ := cap.Execute(ctx, event.Payload)
 	return m.sensory.Send(ctx, Event{
 		ID:         "auto-" + event.ID,
-		Kind:       "instrument.result",
+		Kind:       "organ.result",
 		Source:     event.Source,
 		Payload:    result.Text(),
 		ToolCallID: event.ToolCallID,
@@ -91,7 +91,7 @@ func (m *autoExecMotor) Receive(_ context.Context) (Event, bool) {
 type emittingTriadReactor struct{}
 
 func (emittingTriadReactor) React(m *reactivity.Molecule, atom reactivity.Atom) (reactivity.YieldKind, reactivity.Yield) {
-	m.Emit(reactivity.Emission{Kind: "instrument", Target: "emitted-tool", Payload: atom.Content})
+	m.Emit(reactivity.Emission{Kind: "organ", Target: "emitted-tool", Payload: atom.Content})
 	if m.Mass(reactivity.AssessmentAtom) > 0 {
 		m.SealTriad(reactivity.ThinkTriad)
 		m.SetPhase(reactivity.ExpansionAtom)

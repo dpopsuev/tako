@@ -55,6 +55,14 @@ func agentCmd(args []string) error {
 		return fmt.Errorf("completer: %w", err)
 	}
 
+	if bp.ModelWatcher != "" {
+		watcher, err := newAgentCompleter(ctx, *provider, bp.ModelWatcher)
+		if err != nil {
+			return fmt.Errorf("watcher completer: %w", err)
+		}
+		bp.Watcher = watcher
+	}
+
 	agent := assemble.Assemble(bp, completer)
 
 	slog.Info("tako.agent.start", slog.String("task", task), slog.String("model", bp.Model))

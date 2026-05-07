@@ -7,12 +7,16 @@ import (
 
 type Event struct {
 	ID         string
-	Kind       string
+	Kind       EventKind
 	Source     string
 	Payload    []byte
 	ToolCallID string
 	CreatedAt  time.Time
 }
+
+func (e Event) IsOrgan() bool  { return e.Kind == EventOrgan }
+func (e Event) IsResult() bool { return e.Kind == EventOrganResult }
+func (e Event) IsError() bool  { return e.Kind == EventOrganError }
 
 type Bus interface {
 	Send(ctx context.Context, event Event) error

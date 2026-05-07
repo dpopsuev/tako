@@ -31,10 +31,8 @@ func (sc SummaryCompactor) Compact(history []tangle.Message, sealed reactivity.T
 	var compacted []tangle.Message
 	triadLabel := sealed.String()
 
-	const toolOutputMax = 2000
-
 	for _, msg := range history {
-		if msg.Role == "tool" {
+		if msg.Role == RoleTool {
 			if len(msg.Content) > toolOutputMax {
 				msg.Content = msg.Content[:toolOutputMax] + fmt.Sprintf("... (%d chars truncated)", len(msg.Content)-toolOutputMax)
 			}
@@ -45,11 +43,11 @@ func (sc SummaryCompactor) Compact(history []tangle.Message, sealed reactivity.T
 			compacted = append(compacted, msg)
 			continue
 		}
-		if msg.Role == "assistant" && msg.Content != "" {
+		if msg.Role == RoleAssistant && msg.Content != "" {
 			summary = append(summary, msg.Content)
 			continue
 		}
-		if msg.Role == "user" {
+		if msg.Role == RoleUser {
 			summary = append(summary, msg.Content)
 			continue
 		}
@@ -62,7 +60,7 @@ func (sc SummaryCompactor) Compact(history []tangle.Message, sealed reactivity.T
 			combined = combined[:maxChars] + "..."
 		}
 		compacted = append([]tangle.Message{{
-			Role:    "user",
+			Role:    RoleUser,
 			Content: fmt.Sprintf("[%s phase completed] %s", triadLabel, combined),
 		}}, compacted...)
 	}

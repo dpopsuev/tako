@@ -42,6 +42,14 @@ func tuiCmd(args []string) error {
 		return fmt.Errorf("completer: %w", err)
 	}
 
+	if bp.ModelWatcher != "" {
+		watcher, err := newAgentCompleter(nil, *provider, bp.ModelWatcher)
+		if err != nil {
+			return fmt.Errorf("watcher completer: %w", err)
+		}
+		bp.Watcher = watcher
+	}
+
 	adapter := &takoTUI.Adapter{}
 
 	agent := assemble.Assemble(bp, completer,

@@ -92,20 +92,20 @@ func (e *PipeExecutor) StartWithPipe(pipe Pipe) (string, *pipeRun) {
 	state := &RunState{
 		ID:        runID,
 		Pipe:      pipe.Name,
-		Status:    "running",
+		Status:    StepRunning,
 		Steps:     make(map[string]*StepState),
 		StartedAt: time.Now(),
 	}
 
 	stepMap := make(map[string]PipeStep)
 	for _, step := range pipe.Steps {
-		state.Steps[step.ID] = &StepState{ID: step.ID, Status: "pending"}
+		state.Steps[step.ID] = &StepState{ID: step.ID, Status: StepPending}
 		stepMap[step.ID] = step
 	}
 
 	for _, step := range pipe.Steps {
 		if len(step.DependsOn) == 0 {
-			state.Steps[step.ID].Status = "ready"
+			state.Steps[step.ID].Status = StepReady
 		}
 	}
 
@@ -121,12 +121,12 @@ func (e *PipeExecutor) NextStepFromPipe(runID string, steps map[string]PipeStep)
 
 	run, ok := e.runs[runID]
 	if !ok {
-		return nil, nil, fmt.Errorf("run %q not found", runID)
+		return nil, nil, fmt.Errorf("%w: %s", ErrRunNotFound, runID)
 	}
 
 	for id, ss := range run.Steps {
-		if ss.Status == "ready" {
-			ss.Status = "running"
+		if ss.Status == StepReady {
+			ss.Status = StepRunning
 			step := steps[id]
 			return &step, run, nil
 		}
@@ -141,41 +141,41 @@ func (e *PipeExecutor) SubmitAndUnlock(runID, stepID string, output any, stepErr
 
 	run, ok := e.runs[runID]
 	if !ok {
-		return nil, fmt.Errorf("run %q not found", runID)
+		return nil, fmt.Errorf("%w: %s", ErrRunNotFound, runID)
 	}
 
 	ss, ok := run.Steps[stepID]
 	if !ok {
-		return nil, fmt.Errorf("step %q not found", stepID)
+		return nil, fmt.Errorf("%w: %s", ErrStepNotFound, stepID)
 	}
 
 	if stepErr != "" {
-		ss.Status = "failed"
+		ss.Status = StepFailed
 		ss.Error = stepErr
 		for id, step := range steps {
 			for _, dep := range step.DependsOn {
 				if dep == stepID {
-					run.Steps[id].Status = "skipped"
+					run.Steps[id].Status = StepSkipped
 					run.Steps[id].Error = fmt.Sprintf("dependency %s failed", stepID)
 				}
 			}
 		}
 	} else {
-		ss.Status = "complete"
+		ss.Status = StepComplete
 		ss.Output = output
 		for id, step := range steps {
-			if run.Steps[id].Status != "pending" {
+			if run.Steps[id].Status != StepPending {
 				continue
 			}
 			allDone := true
 			for _, dep := range step.DependsOn {
-				if run.Steps[dep].Status != "complete" {
+				if run.Steps[dep].Status != StepComplete {
 					allDone = false
 					break
 				}
 			}
 			if allDone {
-				run.Steps[id].Status = "ready"
+				run.Steps[id].Status = StepReady
 			}
 		}
 	}
@@ -190,7 +190,7 @@ func (e *PipeExecutor) Report(runID string) (*RunState, error) {
 
 	run, ok := e.runs[runID]
 	if !ok {
-		return nil, fmt.Errorf("run %q not found", runID)
+		return nil, fmt.Errorf("%w: %s", ErrRunNotFound, runID)
 	}
 	return run, nil
 }
@@ -200,18 +200,18 @@ func (e *PipeExecutor) updateRunState(run *RunState) {
 	anyFailed := false
 	for _, ss := range run.Steps {
 		switch ss.Status {
-		case "pending", "ready", "running":
+		case StepPending, StepReady, StepRunning:
 			allDone = false
-		case "failed":
+		case StepFailed:
 			anyFailed = true
 		}
 	}
 
 	if allDone {
 		if anyFailed {
-			run.Status = "failed"
+			run.Status = StepFailed
 		} else {
-			run.Status = "complete"
+			run.Status = StepComplete
 		}
 	}
 }

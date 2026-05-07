@@ -36,7 +36,7 @@ type corpusMotor struct {
 }
 
 func (m *corpusMotor) Send(ctx context.Context, event cerebrum.Event) error {
-	if event.Kind != "instrument" {
+	if event.Kind != cerebrum.EventOrgan {
 		return nil
 	}
 
@@ -55,7 +55,7 @@ func (m *corpusMotor) executeCapability(ctx context.Context, event cerebrum.Even
 			slog.String("capability", cap.Name),
 			slog.String("mode", "write"),
 			slog.String("phase", m.phase().String()))
-		m.emitSignal(ctx, event, "denied.phase")
+		m.emitSignal(ctx, event, cerebrum.EventMotorDeniedPhase)
 		m.sendError(ctx, event.Source, "permission denied: write actions available during implementation phase only")
 		return nil
 	}
@@ -68,18 +68,18 @@ func (m *corpusMotor) executeCapability(ctx context.Context, event cerebrum.Even
 		slog.InfoContext(ctx, "corpus.motor.hitl_gate",
 			slog.String("capability", cap.Name),
 			slog.Float64("risk", cap.Risk))
-		m.emitSignal(ctx, event, "pending.hitl")
+		m.emitSignal(ctx, event, cerebrum.EventMotorPendingHITL)
 		approval, ok := m.sensory.Receive(ctx)
-		if !ok || approval.Kind != "approval.hitl" {
+		if !ok || approval.Kind != cerebrum.EventApprovalHITL {
 			slog.WarnContext(ctx, "corpus.motor.hitl_denied",
 				slog.String("capability", cap.Name))
-			m.emitSignal(ctx, event, "denied.hitl")
+			m.emitSignal(ctx, event, cerebrum.EventMotorDeniedHITL)
 			m.sendError(ctx, event.Source, "approval denied or timed out")
 			return nil
 		}
 	}
 
-	m.emitSignal(ctx, event, "execute")
+	m.emitSignal(ctx, event, cerebrum.EventMotorExecute)
 
 	if cap.Execute == nil {
 		slog.WarnContext(ctx, "corpus.motor.no_execute",
@@ -109,7 +109,7 @@ func (m *corpusMotor) executeCapability(ctx context.Context, event cerebrum.Even
 
 	return m.sensory.Send(ctx, cerebrum.Event{
 		ID:         fmt.Sprintf("motor-%s-%d", event.Source, time.Now().UnixNano()),
-		Kind:       "instrument.result",
+		Kind:       cerebrum.EventOrganResult,
 		Source:     event.Source,
 		Payload:    result.Text(),
 		ToolCallID: event.ToolCallID,
@@ -124,20 +124,20 @@ func (m *corpusMotor) Receive(_ context.Context) (cerebrum.Event, bool) {
 func (m *corpusMotor) sendError(_ context.Context, source, msg string) {
 	m.sensory.Send(context.Background(), cerebrum.Event{
 		ID:        fmt.Sprintf("motor-error-%s-%d", source, time.Now().UnixNano()),
-		Kind:      "instrument.error",
+		Kind:      cerebrum.EventOrganError,
 		Source:    source,
 		Payload:   []byte(msg),
 		CreatedAt: time.Now(),
 	})
 }
 
-func (m *corpusMotor) emitSignal(_ context.Context, event cerebrum.Event, action string) {
+func (m *corpusMotor) emitSignal(_ context.Context, event cerebrum.Event, action cerebrum.EventKind) {
 	if m.signal == nil {
 		return
 	}
 	m.signal.Send(context.Background(), cerebrum.Event{
 		ID:        fmt.Sprintf("signal-%s-%d", action, time.Now().UnixNano()),
-		Kind:      fmt.Sprintf("motor.%s", action),
+		Kind:      action,
 		Source:    event.Source,
 		Payload:   event.Payload,
 		CreatedAt: time.Now(),
