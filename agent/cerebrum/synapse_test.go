@@ -149,7 +149,7 @@ func TestCerebrum_WithCustomSynapse(t *testing.T) {
 	motor := &stubBus{}
 	cb := New(reactor, completer, WithMotor(motor), WithSynapse(syn))
 
-	if err := cb.Think(context.Background(), reactivity.Catalyst{Need: string("test")}); err != nil {
+	if err := cb.Think(context.Background(), reactivity.Catalyst{Need: "test", Desired: map[string]any{"done": true}}); err != nil {
 		t.Fatalf("Think: %v", err)
 	}
 

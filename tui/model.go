@@ -67,6 +67,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.output.Update(widgets.SetOverlayMsg{Text: "thinking..."})
 		return m, runAgentCmd(m.runner, msg.Text)
 
+	case agentStartedMsg:
+		return m, nil
+
 	case widgets.AgentDoneMsg:
 		m.running = false
 		m.output.Update(widgets.SetOverlayMsg{Text: ""})

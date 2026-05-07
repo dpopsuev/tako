@@ -38,6 +38,7 @@ type Molecule struct {
 	sensorResults    map[string]any
 	prevDistance      float64
 	deltaDistance     float64
+	response         string
 	listeners    map[string][]MoleculeListener
 	eventLog     []MoleculeEvent
 	eventLogCap  int
@@ -442,6 +443,8 @@ func (l listenerFunc) OnMoleculeEvent(e MoleculeEvent) { l.fn(e) }
 
 func (m *Molecule) Context() any            { return m.context }
 func (m *Molecule) SetContext(v any)        { m.context = v }
+func (m *Molecule) Response() string        { return m.response }
+func (m *Molecule) SetResponse(s string)    { m.response = s }
 
 func (m *Molecule) Emit(e Emission)        { m.emissions = append(m.emissions, e) }
 

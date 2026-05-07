@@ -75,7 +75,7 @@ func TestThink_MoleculeHasAllPhases(t *testing.T) {
 	circuit := reactivity.NewReactor()
 	cb := New(circuit, completer)
 
-	cb.Think(context.Background(), reactivity.Catalyst{Need: string("investigate failure")})
+	cb.Think(context.Background(), reactivity.Catalyst{Need: "investigate failure", Desired: map[string]any{"resolved": true}})
 	m := cb.Result()
 
 	if m.Mass(reactivity.IntentAtom) == 0 {
@@ -100,7 +100,7 @@ func TestThink_MaxTurnsAbort(t *testing.T) {
 	circuit := reactivity.NewReactor()
 	cb := New(circuit, completer, WithMaxTurns(3))
 
-	cb.Think(context.Background(), reactivity.Catalyst{Need: string("impossible")})
+	cb.Think(context.Background(), reactivity.Catalyst{Need: "impossible", Desired: map[string]any{"done": true}})
 	m := cb.Result()
 
 	if !m.Sealed() {
@@ -160,7 +160,7 @@ func TestThink_EmissionsDispatchedViaMotor(t *testing.T) {
 	motor := &stubBus{}
 	cb := New(reactor, completer, WithMotor(motor))
 
-	cb.Think(context.Background(), reactivity.Catalyst{Need: string("test emission")})
+	cb.Think(context.Background(), reactivity.Catalyst{Need: "test emission", Desired: map[string]any{"emitted": true}})
 
 	found := false
 	for _, cmd := range motor.Events() {

@@ -364,6 +364,10 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 			slog.Int("turn", turn),
 			slog.String("content", completion.Content))
 
+		if completion.Content != "" {
+			molecule.SetResponse(completion.Content)
+		}
+
 		history = append(history, tangle.Message{Role: "user", Content: prompt})
 		history = append(history, tangle.Message{
 			Role:      "assistant",
@@ -492,6 +496,21 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 			continue
 		}
 
+		conversational := molecule.Catalyst() == nil || len(molecule.Catalyst().Desired) == 0
+		if conversational && len(completion.ToolCalls) == 0 && completion.Content != "" {
+			slog.InfoContext(ctx, "cerebrum.think.conversational_seal",
+				slog.Int("turn", turn),
+				slog.Int("response_len", len(completion.Content)))
+			cb.reactor.Seal(molecule, reactivity.Atom{
+				ID:        fmt.Sprintf("wish-conversational-%d", turn),
+				Type:      reactivity.RetrospectionAtom,
+				Taxonomy:  "retrospection.conversational",
+				Content:   []byte(completion.Content),
+				CreatedAt: time.Now(),
+			})
+			break
+		}
+
 		atoms, _ := cb.parser.Parse(completion.Content, molecule.Phase(), turn)
 
 		slog.InfoContext(ctx, "cerebrum.think.parsed",
@@ -570,12 +589,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 	summary := computeSessionSummary(molecule.ID, turnRecords, molecule)
 	cb.emit("cerebrum.session", summary.Labels())
 	if cb.listener != nil {
-		var resultText string
-		retro := molecule.ByTaxonomy("retrospection.")
-		if len(retro) > 0 {
-			resultText = string(retro[len(retro)-1].Content)
-		}
-		cb.listener.OnSealed(molecule.ID, molecule.Distance(), molecule.Turns(), resultText)
+		cb.listener.OnSealed(molecule.ID, molecule.Distance(), molecule.Turns(), molecule.Response())
 	}
 
 	slog.InfoContext(ctx, "cerebrum.think.session_summary",

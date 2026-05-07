@@ -4,20 +4,25 @@ import (
 	"context"
 
 	tea "github.com/charmbracelet/bubbletea"
-
-	"github.com/dpopsuev/tako/tui/widgets"
 )
 
 type Runner interface {
 	Run(ctx context.Context, task string) (string, error)
 }
 
+type agentStartedMsg struct{}
+
 func runAgentCmd(runner Runner, task string) tea.Cmd {
 	return func() tea.Msg {
-		_, err := runner.Run(context.Background(), task)
-		if err != nil {
-			return widgets.ErrorMsg{Err: err}
-		}
-		return nil
+		go func() {
+			runner.Run(context.Background(), task)
+		}()
+		return agentStartedMsg{}
+	}
+}
+
+func waitForMsg(ch <-chan tea.Msg) tea.Cmd {
+	return func() tea.Msg {
+		return <-ch
 	}
 }
