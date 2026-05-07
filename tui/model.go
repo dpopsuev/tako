@@ -2,7 +2,6 @@ package tui
 
 import (
 	"fmt"
-	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -16,6 +15,7 @@ type Model struct {
 	output  *widgets.OutputPanel
 	input   *widgets.InputPanel
 	status  *widgets.StatusPanel
+	engine  *layout.LayoutEngine
 	focus   *core.FocusManager
 	width   int
 	height  int
@@ -28,14 +28,45 @@ func NewModel(runner Runner, modelName string) Model {
 	status := widgets.NewStatusPanel(modelName)
 
 	fm := core.NewFocusManager(input, output)
+	engine := layout.NewLayoutEngine(fm, plainBorder{})
+
+	engine.Register(layout.PanelSlot{
+		Panel:  status,
+		Weight: 0,
+		Border: layout.BorderNone,
+	})
+	engine.Register(layout.PanelSlot{
+		Panel:     output,
+		Weight:    1,
+		MinHeight: 5,
+		Focusable: true,
+		Border:    layout.BorderNone,
+	})
+	engine.Register(layout.PanelSlot{
+		Panel:     input,
+		Weight:    0,
+		Focusable: true,
+		Border:    layout.BorderNone,
+	})
 
 	return Model{
 		runner: runner,
 		output: output,
 		input:  input,
 		status: status,
+		engine: engine,
 		focus:  fm,
 	}
+}
+
+type plainBorder struct{}
+
+func (plainBorder) RenderWithDepth(content string, _ int, _ int) string { return content }
+func (plainBorder) RenderBorderOnly(content string, _ bool, _ int) string { return content }
+func (plainBorder) FocusDepths(count, _ int) []int {
+	d := make([]int, count)
+	for i := range d { d[i] = 1 }
+	return d
 }
 
 func (m Model) Init() tea.Cmd {
@@ -47,6 +78,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		m.engine.Resize(msg.Width, msg.Height)
 		return m, nil
 
 	case tea.KeyMsg:
@@ -126,22 +158,5 @@ func (m Model) View() string {
 	if m.width == 0 {
 		return "initializing..."
 	}
-
-	outputHeight := m.height - 6
-	if outputHeight < 3 {
-		outputHeight = 3
-	}
-
-	p, _ := m.output.Update(layout.ResizeMsg{Width: m.width, Height: outputHeight})
-	m.output = p.(*widgets.OutputPanel)
-
-	var b strings.Builder
-	b.WriteString(m.output.View(m.width))
-	b.WriteString("\n")
-	b.WriteString(strings.Repeat("─", m.width))
-	b.WriteString("\n")
-	b.WriteString(m.status.View(m.width))
-	b.WriteString("\n")
-	b.WriteString(m.input.View(m.width))
-	return b.String()
+	return m.engine.Render()
 }
