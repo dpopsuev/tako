@@ -31,8 +31,17 @@ func (sc SummaryCompactor) Compact(history []tangle.Message, sealed reactivity.T
 	var compacted []tangle.Message
 	triadLabel := sealed.String()
 
+	const toolOutputMax = 2000
+
 	for _, msg := range history {
-		if msg.Role == "tool" || len(msg.ToolCalls) > 0 {
+		if msg.Role == "tool" {
+			if len(msg.Content) > toolOutputMax {
+				msg.Content = msg.Content[:toolOutputMax] + fmt.Sprintf("... (%d chars truncated)", len(msg.Content)-toolOutputMax)
+			}
+			compacted = append(compacted, msg)
+			continue
+		}
+		if len(msg.ToolCalls) > 0 {
 			compacted = append(compacted, msg)
 			continue
 		}

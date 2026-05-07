@@ -59,6 +59,45 @@ func TestSummaryCompactor_TruncatesLongSummary(t *testing.T) {
 	}
 }
 
+func TestSummaryCompactor_TruncatesToolOutput(t *testing.T) {
+	longOutput := ""
+	for i := 0; i < 500; i++ {
+		longOutput += "line of output\n"
+	}
+	history := []tangle.Message{
+		{Role: "user", Content: "read the file"},
+		{Role: "assistant", Content: "", ToolCalls: []tangle.ToolCall{{ID: "tc1", Name: "read_file"}}},
+		{Role: "tool", Content: longOutput, ToolCallID: "tc1"},
+	}
+
+	c := SummaryCompactor{}
+	result := c.Compact(history, reactivity.ThinkTriad)
+
+	for _, m := range result {
+		if m.Role == "tool" {
+			if len(m.Content) > 2100 {
+				t.Errorf("tool output should be truncated to ~2000 chars, got %d", len(m.Content))
+			}
+			if len(m.Content) < 2000 {
+				t.Errorf("tool output should preserve up to 2000 chars, got %d", len(m.Content))
+			}
+		}
+	}
+}
+
+func TestSummaryCompactor_ShortToolOutputPreserved(t *testing.T) {
+	history := []tangle.Message{
+		{Role: "tool", Content: "short result", ToolCallID: "tc1"},
+	}
+
+	c := SummaryCompactor{}
+	result := c.Compact(history, reactivity.ThinkTriad)
+
+	if result[0].Content != "short result" {
+		t.Errorf("short tool output should be preserved verbatim, got %q", result[0].Content)
+	}
+}
+
 func TestSummaryCompactor_EmptyHistory(t *testing.T) {
 	c := SummaryCompactor{}
 	result := c.Compact(nil, reactivity.ThinkTriad)
