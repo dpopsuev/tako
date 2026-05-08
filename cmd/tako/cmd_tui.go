@@ -22,6 +22,12 @@ func tuiCmd(args []string) error {
 
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn})))
 
+	if *blueprintPath == "" {
+		if _, err := os.Stat(".tako/blueprint.yaml"); err == nil {
+			*blueprintPath = ".tako/blueprint.yaml"
+		}
+	}
+
 	var bp assemble.Blueprint
 	if *blueprintPath != "" {
 		cfg, err := assemble.LoadBlueprint(*blueprintPath)

@@ -41,6 +41,13 @@ func agentCmd(args []string) error {
 	}
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})))
 
+	if *blueprintPath == "" {
+		if _, err := os.Stat(".tako/blueprint.yaml"); err == nil {
+			*blueprintPath = ".tako/blueprint.yaml"
+			slog.Info("tako.blueprint.auto", slog.String("path", *blueprintPath))
+		}
+	}
+
 	var bp assemble.Blueprint
 	if *blueprintPath != "" {
 		cfg, err := assemble.LoadBlueprint(*blueprintPath)
