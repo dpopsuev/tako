@@ -83,8 +83,9 @@ func agentCmd(args []string) error {
 
 	slog.Info("tako.agent.start", slog.String("task", task), slog.String("model", bp.Model))
 
-	if err := agent.Think(ctx, task); err != nil {
-		return fmt.Errorf("think: %w", err)
+	result, err := agent.Run(ctx, task)
+	if err != nil {
+		return fmt.Errorf("agent: %w", err)
 	}
 
 	m := agent.Result()
@@ -92,6 +93,8 @@ func agentCmd(args []string) error {
 		slog.Bool("sealed", m.Sealed()),
 		slog.Float64("distance", m.Distance()),
 		slog.Int("mass", m.TotalMass()))
+
+	fmt.Println(result)
 
 	return nil
 }
