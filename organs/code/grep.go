@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -24,7 +25,7 @@ type grepFunc struct {
 }
 
 func (f *grepFunc) Description() string {
-	return "Search file contents using a regex pattern. Returns file:line: content."
+	return "Search file contents using a regex pattern. Uses ripgrep (rg) when available, falls back to built-in grep. Returns file:line: content."
 }
 
 func (f *grepFunc) InputSchema() json.RawMessage {
@@ -40,11 +41,6 @@ func (f *grepFunc) Execute(ctx context.Context, input json.RawMessage) (organ.Re
 		return organ.ErrorResult("grep: pattern and path required"), nil
 	}
 
-	re, err := regexp.Compile(in.Pattern)
-	if err != nil {
-		return organ.ErrorResult(fmt.Sprintf("grep: invalid regex %q: %s", in.Pattern, err)), nil
-	}
-
 	limit := 100
 	if in.Limit > 0 {
 		limit = in.Limit
@@ -53,6 +49,49 @@ func (f *grepFunc) Execute(ctx context.Context, input json.RawMessage) (organ.Re
 	path := in.Path
 	if f.root != "" && !filepath.IsAbs(path) {
 		path = filepath.Join(f.root, path)
+	}
+
+	if rgPath, err := exec.LookPath("rg"); err == nil {
+		return f.ripgrep(ctx, rgPath, in.Pattern, path, limit)
+	}
+	return f.fallbackGrep(ctx, in.Pattern, path, limit)
+}
+
+func (f *grepFunc) ripgrep(ctx context.Context, rgPath, pattern, path string, limit int) (organ.Result, error) {
+	args := []string{
+		"--line-number",
+		"--no-heading",
+		"--color=never",
+		"--max-count", fmt.Sprintf("%d", limit),
+		pattern,
+		path,
+	}
+
+	cmd := exec.CommandContext(ctx, rgPath, args...)
+	cmd.Dir = f.root
+	out, err := cmd.CombinedOutput()
+
+	output := string(out)
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
+			return organ.TextResult("no matches found"), nil
+		}
+		if output != "" {
+			return organ.ErrorResult(output), nil
+		}
+		return organ.ErrorResult(fmt.Sprintf("rg: %v", err)), nil
+	}
+
+	if output == "" {
+		return organ.TextResult("no matches found"), nil
+	}
+	return organ.TextResult(output), nil
+}
+
+func (f *grepFunc) fallbackGrep(_ context.Context, pattern, path string, limit int) (organ.Result, error) {
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return organ.ErrorResult(fmt.Sprintf("grep: invalid regex %q: %s", pattern, err)), nil
 	}
 
 	var sb strings.Builder
