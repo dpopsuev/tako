@@ -106,6 +106,15 @@ func defaultRender(ctx Context) string {
 		b.WriteString("\n")
 	}
 
+	b.WriteString("\n## Constraints (KISS)\n")
+	b.WriteString("- No interfaces unless 2+ implementations exist right now\n")
+	b.WriteString("- Implement ONLY what the task describes, nothing extra\n")
+	b.WriteString("- Call things directly, no unnecessary wrapper layers\n")
+	b.WriteString("- Use stdlib first, import deps only when genuinely insufficient\n")
+	b.WriteString("- Write zero comments by default, one line max when WHY is non-obvious\n")
+	b.WriteString("- Trust internal code, only validate at system boundaries\n")
+	b.WriteString("- Delete unused code, don't rename to _ or add // deprecated\n")
+
 	b.WriteString("\n## Response Format\n")
 	b.WriteString(`Respond with JSON: {"atoms": [{"type": "<phase>", "taxonomy": "<phase.domain>", "content": "<your answer to the contract>"}]}`)
 	b.WriteString("\n")
