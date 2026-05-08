@@ -1,7 +1,6 @@
 package cerebrum
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/dpopsuev/tako/agent/reactivity"
@@ -23,24 +22,20 @@ type TaskCard struct {
 // Trust = priority mapping (critical=0.3, high=0.5, medium=0.7, low=0.9).
 // Criteria = derived from acceptance section or defaults to {tests_pass: true, build_clean: true}.
 func CatalystFromTask(card TaskCard) reactivity.Catalyst {
-	var need strings.Builder
-	fmt.Fprint(&need, card.Title)
+	parts := []string{card.Title}
 	if card.Goal != "" {
-		fmt.Fprintf(&need, "\n\n%s", card.Goal)
+		parts = append(parts, card.Goal)
 	}
-	for name, text := range card.Sections {
-		if name == "acceptance" || name == "checklist" || name == "context" {
-			fmt.Fprintf(&need, "\n\n## %s\n%s", name, text)
+	for _, name := range []string{"context", "acceptance", "checklist"} {
+		if text, ok := card.Sections[name]; ok {
+			parts = append(parts, "## "+name+"\n"+text)
 		}
 	}
 
-	trust := trustFromPriority(card.Priority)
-	criteria := criteriaFromCard(card)
-
 	return reactivity.Catalyst{
-		Need:    need.String(),
-		Desired: criteria,
-		Trust:   trust,
+		Need:    strings.Join(parts, "\n\n"),
+		Desired: criteriaFromCard(card),
+		Trust:   trustFromPriority(card.Priority),
 	}
 }
 
