@@ -295,6 +295,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 
 	history, _ := molecule.Context().([]tangle.Message)
 	var turnRecords []TurnRecord
+	debouncer := NewDebouncer(3, 2)
 
 	prevTriad := molecule.CurrentTriad()
 	for turn := 0; turn < cb.budget.MaxTurns && !molecule.Sealed(); turn++ {
@@ -451,6 +452,15 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 					history = append(history, tangle.Message{
 						Role:       RoleTool,
 						Content:    fmt.Sprintf("atom %s recorded: %s", atom.Type, atom.Taxonomy),
+						ToolCallID: tc.ID,
+					})
+				} else if debouncer.Check(tc.Name, tc.Input) {
+					slog.WarnContext(ctx, "cerebrum.think.debounced",
+						slog.Int("turn", turn),
+						slog.String("name", tc.Name))
+					history = append(history, tangle.Message{
+						Role:       RoleTool,
+						Content:    debouncer.BlockedMessage(tc.Name),
 						ToolCallID: tc.ID,
 					})
 				} else {
@@ -618,11 +628,32 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 		slog.WarnContext(ctx, "cerebrum.think.max_turns",
 			slog.Int("max_turns", cb.budget.MaxTurns),
 			slog.Int("mass", molecule.TotalMass()))
+
+		synthesisPrompt := "You have reached the maximum number of steps. Summarize what you accomplished and what remains."
+		history = append(history, tangle.Message{Role: RoleUser, Content: synthesisPrompt})
+		completer := cb.router.Route(molecule)
+		synthCtx, synthCancel := context.WithTimeout(ctx, cb.budget.TurnTimeout)
+		synthesis, err := completer.Complete(synthCtx, tangle.CompletionParams{
+			Messages:      history,
+			ThinkingLevel: ThinkingMinimal,
+		})
+		synthCancel()
+
+		var content string
+		if err == nil && synthesis.Content != "" {
+			content = synthesis.Content
+			molecule.SetResponse(content)
+			slog.InfoContext(ctx, "cerebrum.think.graceful_degradation",
+				slog.Int("content_len", len(content)))
+		} else {
+			content = "exceeded max turns"
+		}
+
 		cb.reactor.Seal(molecule, reactivity.Atom{
 			ID:        "wish-max-turns",
 			Type:      reactivity.RetrospectionAtom,
 			Taxonomy:  "retrospection.wish.max-turns-exceeded",
-			Content:   []byte("exceeded max turns"),
+			Content:   []byte(content),
 			CreatedAt: time.Now(),
 		})
 	}

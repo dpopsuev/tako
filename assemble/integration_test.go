@@ -300,6 +300,118 @@ func TestSignalBus_EmitsOnOrganExecution(t *testing.T) {
 	}
 }
 
+func TestDebounce_BlocksRepeatedOrganCalls(t *testing.T) {
+	ping, organCalls := pingOrgan()
+
+	completer := &scriptedCompleter{
+		turns: []tangle.Completion{
+			{
+				Content: "pinging three times",
+				ToolCalls: []tangle.ToolCall{
+					{ID: "c1", Name: "ping", Input: json.RawMessage(`{}`)},
+				},
+			},
+			{
+				Content: "pinging again",
+				ToolCalls: []tangle.ToolCall{
+					{ID: "c2", Name: "ping", Input: json.RawMessage(`{}`)},
+				},
+			},
+			{
+				Content: "pinging third time",
+				ToolCalls: []tangle.ToolCall{
+					{ID: "c3", Name: "ping", Input: json.RawMessage(`{}`)},
+				},
+			},
+			{
+				Content: `{"atoms":[{"type":"retrospection","taxonomy":"retrospection.done","content":"done"}]}`,
+			},
+		},
+	}
+
+	bp := Blueprint{
+		Model:        "stub",
+		Capabilities: []organ.Func{ping},
+		Budget: cerebrum.Budget{
+			MaxTurns:    10,
+			TurnTimeout: 10 * time.Second,
+		},
+	}
+
+	agent := Assemble(bp, completer)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	agent.Think(ctx, "ping repeatedly")
+
+	calls := organCalls.Load()
+	if calls >= 3 {
+		t.Errorf("debouncer should have blocked the 3rd identical call, but organ was called %d times", calls)
+	}
+	if calls < 2 {
+		t.Errorf("first 2 calls should go through, but organ was only called %d times", calls)
+	}
+}
+
+func TestGracefulDegradation_SynthesizesOnMaxTurns(t *testing.T) {
+	ping, _ := pingOrgan()
+
+	completer := &scriptedCompleter{
+		turns: []tangle.Completion{
+			{
+				Content: "working",
+				ToolCalls: []tangle.ToolCall{
+					{ID: "c1", Name: "ping", Input: json.RawMessage(`{}`)},
+				},
+			},
+			{
+				Content: "still working",
+				ToolCalls: []tangle.ToolCall{
+					{ID: "c2", Name: "ping", Input: json.RawMessage(`{"x":1}`)},
+				},
+			},
+			{
+				Content: "still going",
+				ToolCalls: []tangle.ToolCall{
+					{ID: "c3", Name: "ping", Input: json.RawMessage(`{"x":2}`)},
+				},
+			},
+		},
+	}
+
+	bp := Blueprint{
+		Model:        "stub",
+		Capabilities: []organ.Func{ping},
+		Budget: cerebrum.Budget{
+			MaxTurns:    3,
+			TurnTimeout: 10 * time.Second,
+		},
+		Config: &reactivity.Config{
+			DistanceClose:     0.3,
+			DistanceMid:       0.5,
+			RecollectionMin:   0.3,
+			UnmetDimMax:       2,
+			BackwardTurnLimit: 3,
+		},
+	}
+
+	agent := Assemble(bp, completer)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	agent.Think(ctx, "do a long task")
+
+	m := agent.Result()
+	if !m.Sealed() {
+		t.Fatal("molecule should be sealed")
+	}
+
+	response := m.Response()
+	if response == "" || response == "exceeded max turns" {
+		t.Errorf("graceful degradation should produce a synthesis response, got %q", response)
+	}
+}
+
 func containsSubstring(s, substr string) bool {
 	return len(s) >= len(substr) && searchSubstring(s, substr)
 }
