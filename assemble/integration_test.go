@@ -412,6 +412,119 @@ func TestGracefulDegradation_SynthesizesOnMaxTurns(t *testing.T) {
 	}
 }
 
+func TestDrill_Brainstorm_PureConversation(t *testing.T) {
+	completer := &capturingCompleter{
+		turns: []tangle.Completion{
+			{
+				Content: "There are three approaches to adding authentication:\n\n" +
+					"1. **JWT tokens** — stateless, scales horizontally, but requires token refresh logic.\n" +
+					"2. **Session cookies** — simple, server-side state, but sticky sessions needed for scaling.\n" +
+					"3. **OAuth2 delegation** — offload to identity provider, most secure, but adds external dependency.\n\n" +
+					"I'd recommend starting with JWT for the API and OAuth2 for the web UI. " +
+					"The JWT middleware is ~50 lines and can be swapped later without changing the handlers.",
+			},
+		},
+	}
+
+	bp := Blueprint{
+		Model:  "stub",
+		Budget: cerebrum.Budget{MaxTurns: 10, TurnTimeout: 5 * time.Second},
+	}
+
+	agent := Assemble(bp, completer)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := agent.Think(ctx, "How should we approach adding authentication to the API?"); err != nil {
+		t.Fatalf("Think: %v", err)
+	}
+
+	m := agent.Result()
+	if !m.Sealed() {
+		t.Fatal("molecule should be sealed")
+	}
+
+	if completer.call != 1 {
+		t.Errorf("pure conversation should use exactly 1 LLM call, got %d", completer.call)
+	}
+
+	response := m.Response()
+	if !containsSubstring(response, "JWT") {
+		t.Errorf("response should contain the brainstorm content, got: %s", truncateForTest(response, 200))
+	}
+
+	if m.Turns() != 1 {
+		t.Errorf("expected 1 turn, got %d", m.Turns())
+	}
+}
+
+func TestDrill_Brainstorm_ReasoningChainThenSeal(t *testing.T) {
+	completer := &scriptedCompleter{
+		turns: []tangle.Completion{
+			{
+				Content: "Let me think through the options.",
+				ToolCalls: []tangle.ToolCall{
+					{ID: "a1", Name: "assessment", Input: json.RawMessage(`{
+						"taxonomy": "assessment.approach",
+						"content": "Authentication can be JWT, session, or OAuth2. JWT is stateless and fits our microservice architecture.",
+						"dimensions": ["auth.strategy"]
+					}`)},
+				},
+			},
+			{
+				Content: "Considering the tradeoffs.",
+				ToolCalls: []tangle.ToolCall{
+					{ID: "k1", Name: "knowledge", Input: json.RawMessage(`{
+						"taxonomy": "knowledge.tradeoff",
+						"content": "JWT pros: stateless, horizontal scaling. Cons: token revocation requires a blocklist. Session pros: simple revocation. Cons: sticky sessions.",
+						"dimensions": ["auth.tradeoffs"]
+					}`)},
+				},
+			},
+			{
+				Content: "Based on the analysis, I recommend JWT with a short-lived access token (15min) " +
+					"and a refresh token stored in an httpOnly cookie. This gives you stateless auth " +
+					"for the API with easy revocation via refresh token rotation.",
+			},
+		},
+	}
+
+	bp := Blueprint{
+		Model:  "stub",
+		Budget: cerebrum.Budget{MaxTurns: 10, TurnTimeout: 5 * time.Second},
+	}
+
+	agent := Assemble(bp, completer)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := agent.Think(ctx, "What auth strategy should we use?"); err != nil {
+		t.Fatalf("Think: %v", err)
+	}
+
+	m := agent.Result()
+	if !m.Sealed() {
+		t.Fatal("molecule should be sealed")
+	}
+
+	if completer.call < 3 {
+		t.Errorf("reasoning chain should use at least 3 LLM calls (2 phase atoms + seal), got %d", completer.call)
+	}
+
+	if m.TotalMass() < 3 {
+		t.Errorf("expected at least 3 atoms (intent + assessment + knowledge), got %d", m.TotalMass())
+	}
+
+	response := m.Response()
+	if !containsSubstring(response, "JWT") {
+		t.Errorf("response should contain the recommendation, got: %s", truncateForTest(response, 200))
+	}
+
+	if m.Turns() > 4 {
+		t.Errorf("reasoning chain should seal after final text response, not spin to max_turns. Got %d turns", m.Turns())
+	}
+}
+
 func containsSubstring(s, substr string) bool {
 	return len(s) >= len(substr) && searchSubstring(s, substr)
 }
