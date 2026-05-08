@@ -5,7 +5,6 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/dpopsuev/tako/agent/cerebrum"
 	"github.com/dpopsuev/tako/tui/widgets"
 )
 
@@ -13,14 +12,12 @@ type Adapter struct {
 	Program *tea.Program
 }
 
-var _ cerebrum.ContextListener = (*Adapter)(nil)
-
-func (a *Adapter) OnContext(ctx cerebrum.Context, turn int) {
+func (a *Adapter) OnContext(phase string, turn int, distance float64) {
 	if a.Program == nil {
 		return
 	}
 	a.Program.Send(widgets.PhaseChangeMsg{
-		Phase: ctx.Phase.String(),
+		Phase: phase,
 		Turn:  turn + 1,
 	})
 }

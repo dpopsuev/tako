@@ -11,13 +11,11 @@ type SlogListener struct{}
 
 var _ cerebrum.ContextListener = SlogListener{}
 
-func (SlogListener) OnContext(ctx cerebrum.Context, turn int) {
+func (SlogListener) OnContext(phase string, turn int, distance float64) {
 	slog.Info("turn",
 		slog.Int("turn", turn),
-		slog.String("phase", ctx.Phase.String()),
-		slog.Float64("distance", ctx.Distance),
-		slog.Float64("delta", ctx.DeltaDistance),
-		slog.Int("stagnant", ctx.StagnantTurns))
+		slog.String("phase", phase),
+		slog.Float64("distance", distance))
 }
 
 func (SlogListener) OnToolCall(name string, _ []byte) {

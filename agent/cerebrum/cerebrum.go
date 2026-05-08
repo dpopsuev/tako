@@ -843,7 +843,7 @@ func (cb *Cerebrum) assemble(m *reactivity.Molecule, need []byte, domain Domain,
 	}
 	ctx := cb.regulate(raw)
 	if cb.listener != nil {
-		cb.listener.OnContext(ctx, turn)
+		cb.listener.OnContext(ctx.Phase.String(), turn, ctx.Distance)
 	}
 	return cb.render(ctx)
 }

@@ -3,7 +3,7 @@ package cerebrum
 import "time"
 
 type ContextListener interface {
-	OnContext(ctx Context, turn int)
+	OnContext(phase string, turn int, distance float64)
 	OnToolCall(name string, input []byte)
 	OnToolResult(name string, result []byte, elapsed time.Duration)
 	OnSealed(moleculeID string, distance float64, turns int, result string)
