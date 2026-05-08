@@ -43,7 +43,16 @@ func tuiCmd(args []string) error {
 		bp.Model = *model
 	}
 
-	completer, err := newAgentCompleter(nil, *provider, bp.Model)
+	resolved := resolveProvider(*provider)
+	if resolved == "" {
+		picked, err := interactiveSetup()
+		if err != nil {
+			return err
+		}
+		resolved = picked
+	}
+
+	completer, err := newAgentCompleter(nil, resolved, bp.Model)
 	if err != nil {
 		return fmt.Errorf("completer: %w", err)
 	}

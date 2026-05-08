@@ -111,18 +111,18 @@ func defaultBlueprint() assemble.Blueprint {
 }
 
 func newAgentCompleter(_ context.Context, providerName, model string) (tangle.Completer, error) {
-	var completer tangle.Completer
-	var err error
-	if providerName != "" {
-		completer, err = providers.NewCompleterByName(providerName, model)
-	} else {
-		completer, err = providers.NewCompleterFromEnv("TAKO_PROVIDER", model)
+	resolved := resolveProvider(providerName)
+	if resolved == "" {
+		_, err := providers.NewProviderFromEnv("TAKO_PROVIDER")
+		return nil, err
 	}
+
+	completer, err := providers.NewCompleterByName(resolved, model)
 	if err != nil {
 		return nil, err
 	}
 
-	slog.Info("tako.agent.provider", slog.String("model", model))
+	slog.Info("tako.agent.provider", slog.String("provider", resolved), slog.String("model", model))
 
 	return completer, nil
 }
