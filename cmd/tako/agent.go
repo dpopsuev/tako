@@ -11,14 +11,22 @@ import (
 	"github.com/dpopsuev/tako/assemble"
 	tangle "github.com/dpopsuev/tangle"
 	"github.com/dpopsuev/tangle/providers"
-	anyllm "github.com/mozilla-ai/any-llm-go/providers"
 )
+
+const defaultModel = "claude-sonnet-4-6"
+
+func resolveModel() string {
+	if m := os.Getenv("TAKO_MODEL"); m != "" {
+		return m
+	}
+	return defaultModel
+}
 
 func agentCmd(args []string) error {
 	fs := flag.NewFlagSet("agent", flag.ExitOnError)
 	blueprintPath := fs.String("blueprint", "", "path to Blueprint YAML")
-	provider := fs.String("provider", "", "LLM provider (claude, vertex-ai, gemini, openrouter)")
-	model := fs.String("model", "", "model name (default: claude-sonnet-4-6)")
+	provider := fs.String("provider", "", "LLM provider (vertex-ai, anthropic, openai, gemini, openrouter)")
+	model := fs.String("model", "", "model name (env: TAKO_MODEL, default: "+defaultModel+")")
 	verbose := fs.Bool("v", false, "verbose output (debug level)")
 	_ = fs.Parse(args)
 
@@ -84,7 +92,7 @@ func agentCmd(args []string) error {
 func defaultBlueprint() assemble.Blueprint {
 	wd, _ := os.Getwd()
 	cfg := assemble.BlueprintConfig{
-		Model:        "claude-sonnet-4-6",
+		Model:        resolveModel(),
 		Capabilities: []string{"code"},
 		WorkDir:      wd,
 		Budget: assemble.BudgetConfig{
@@ -96,16 +104,12 @@ func defaultBlueprint() assemble.Blueprint {
 }
 
 func newAgentCompleter(_ context.Context, providerName, model string) (tangle.Completer, error) {
-	if model == "" {
-		model = "claude-sonnet-4-6"
-	}
-
-	var p anyllm.Provider
+	var completer tangle.Completer
 	var err error
 	if providerName != "" {
-		p, err = providers.NewProviderByName(providerName)
+		completer, err = providers.NewCompleterByName(providerName, model)
 	} else {
-		p, err = providers.NewProviderFromEnv("TAKO_PROVIDER")
+		completer, err = providers.NewCompleterFromEnv("TAKO_PROVIDER", model)
 	}
 	if err != nil {
 		return nil, err
@@ -113,5 +117,5 @@ func newAgentCompleter(_ context.Context, providerName, model string) (tangle.Co
 
 	slog.Info("tako.agent.provider", slog.String("model", model))
 
-	return providers.NewCompleter(p, model, nil), nil
+	return completer, nil
 }
