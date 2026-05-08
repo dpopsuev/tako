@@ -11,6 +11,7 @@ import (
 	"github.com/dpopsuev/tako/assemble"
 	tangle "github.com/dpopsuev/tangle"
 	"github.com/dpopsuev/tangle/providers"
+	anyllm "github.com/mozilla-ai/any-llm-go/providers"
 )
 
 func agentCmd(args []string) error {
@@ -99,16 +100,15 @@ func newAgentCompleter(_ context.Context, providerName, model string) (tangle.Co
 		model = "claude-sonnet-4-6"
 	}
 
+	var p anyllm.Provider
 	var err error
-	if providerName == "" {
-		providerName = os.Getenv("TAKO_PROVIDER")
+	if providerName != "" {
+		p, err = providers.NewProviderByName(providerName)
+	} else {
+		p, err = providers.NewProviderFromEnv("TAKO_PROVIDER")
 	}
-	if providerName == "" {
-		return nil, fmt.Errorf("provider: set --provider flag or TAKO_PROVIDER env var (e.g. vertex-ai, anthropic-api)")
-	}
-	p, err := providers.NewProviderByName(providerName)
 	if err != nil {
-		return nil, fmt.Errorf("provider: %w", err)
+		return nil, err
 	}
 
 	slog.Info("tako.agent.provider", slog.String("model", model))
