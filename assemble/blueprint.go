@@ -7,15 +7,17 @@ import (
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
 	"github.com/dpopsuev/tako/agent/corpus"
-	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/agent/organ"
+	"github.com/dpopsuev/tako/agent/reactivity"
 	tangle "github.com/dpopsuev/tangle"
+	"github.com/jmoiron/sqlx"
 )
 
 type Blueprint struct {
 	Model        string
 	ModelWatcher string
 	Watcher      tangle.Completer
+	DoltDB       *sqlx.DB
 	Capabilities []organ.Func
 	Budget       cerebrum.Budget
 	Config       *reactivity.Config
@@ -100,9 +102,18 @@ func Assemble(bp Blueprint, completer tangle.Completer, opts ...cerebrum.Option)
 	motorBus := corp.MotorBus(sensory, signal, nil)
 
 	embedder := cerebrum.StubEmbedder{}
-	pipeStore := cerebrum.NewPipeStore()
+
+	var reflexStore cerebrum.ReflexStore
+	var recorder cerebrum.Recorder
+	if bp.DoltDB != nil {
+		reflexStore = cerebrum.NewDoltPipeStore(bp.DoltDB)
+		recorder = cerebrum.NewDoltTurnRecorder(bp.DoltDB)
+	} else {
+		reflexStore = cerebrum.NewPipeStore()
+	}
+
 	consolidator := &cerebrum.PipeConsolidator{
-		Store:    pipeStore,
+		Store:    reflexStore,
 		Embedder: embedder,
 	}
 
@@ -115,10 +126,14 @@ func Assemble(bp Blueprint, completer tangle.Completer, opts ...cerebrum.Option)
 		cerebrum.WithCapabilities(allCaps),
 		cerebrum.WithConfig(cfg),
 		cerebrum.WithEmbedder(embedder),
-		cerebrum.WithReflexStore(pipeStore),
+		cerebrum.WithReflexStore(reflexStore),
 		cerebrum.WithConsolidator(consolidator),
 		cerebrum.WithRegulator(&cerebrum.DeltaRegulator{}),
 		cerebrum.WithAlignmentChecker(cerebrum.TieredAlignment{}),
+	}
+
+	if recorder != nil {
+		baseOpts = append(baseOpts, cerebrum.WithRecorder(recorder))
 	}
 
 	if bp.Watcher != nil {
