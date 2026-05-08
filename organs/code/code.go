@@ -27,18 +27,18 @@ func Capabilities(rootPath string) []organ.Func {
 	gd := &gitDiffFunc{root: rootPath}
 	gc := &gitCommitFunc{root: rootPath}
 	return []organ.Func{
-		{Name: "read_file", Description: rf.Description(), Schema: rf.InputSchema(), Mode: organ.ReadAction, Risk: 0, Source: organ.Environment, Reads: []string{"filesystem"}, Execute: rf.Execute},
-		{Name: "write_file", Description: wf.Description(), Schema: wf.InputSchema(), Mode: organ.WriteAction, Risk: 0.7, Source: organ.Environment, Writes: []string{"filesystem"}, Execute: wf.Execute},
+		{Name: "file.read", Description: rf.Description(), Schema: rf.InputSchema(), Mode: organ.ReadAction, Risk: 0, Source: organ.Environment, Reads: []string{"filesystem"}, Execute: rf.Execute},
+		{Name: "file.write", Description: wf.Description(), Schema: wf.InputSchema(), Mode: organ.WriteAction, Risk: 0.7, Source: organ.Environment, Writes: []string{"filesystem"}, Execute: wf.Execute},
 		{Name: "edit", Description: ef.Description(), Schema: ef.InputSchema(), Mode: organ.WriteAction, Risk: 0.5, Source: organ.Environment, Reads: []string{"filesystem"}, Writes: []string{"filesystem"}, Execute: ef.Execute},
 		{Name: "bash", Description: bf.Description(), Schema: bf.InputSchema(), Mode: organ.WriteAction, Risk: 0.8, Source: organ.Environment, Execute: bf.Execute},
 		{Name: "glob", Description: gl.Description(), Schema: gl.InputSchema(), Mode: organ.ReadAction, Risk: 0, Source: organ.Environment, Reads: []string{"filesystem"}, Execute: gl.Execute},
 		{Name: "grep", Description: gr.Description(), Schema: gr.InputSchema(), Mode: organ.ReadAction, Risk: 0, Source: organ.Environment, Reads: []string{"filesystem"}, Execute: gr.Execute},
-		{Name: "git_status", Description: gs.Description(), Schema: gs.InputSchema(), Mode: organ.ReadAction, Risk: 0, Source: organ.Environment, Reads: []string{"git"}, Execute: gs.Execute},
-		{Name: "git_diff", Description: gd.Description(), Schema: gd.InputSchema(), Mode: organ.ReadAction, Risk: 0, Source: organ.Environment, Reads: []string{"git"}, Execute: gd.Execute},
-		{Name: "git_commit", Description: gc.Description(), Schema: gc.InputSchema(), Mode: organ.WriteAction, Risk: 0.7, Source: organ.Environment, Reads: []string{"git"}, Writes: []string{"git"}, Execute: gc.Execute},
-		{Name: "go_build", Description: gb.Description(), Schema: gb.InputSchema(), Mode: organ.ReadAction, Risk: 0, Source: organ.Environment, Reads: []string{"filesystem"}, Execute: gb.Execute},
-		{Name: "go_test", Description: gt.Description(), Schema: gt.InputSchema(), Mode: organ.WriteAction, Risk: 0.3, Source: organ.Environment, Reads: []string{"filesystem"}, Writes: []string{"filesystem"}, Execute: gt.Execute},
-		{Name: "go_vet", Description: gv.Description(), Schema: gv.InputSchema(), Mode: organ.ReadAction, Risk: 0, Source: organ.Environment, Reads: []string{"filesystem"}, Execute: gv.Execute},
+		{Name: "git.status", Description: gs.Description(), Schema: gs.InputSchema(), Mode: organ.ReadAction, Risk: 0, Source: organ.Environment, Reads: []string{"git"}, Execute: gs.Execute},
+		{Name: "git.diff", Description: gd.Description(), Schema: gd.InputSchema(), Mode: organ.ReadAction, Risk: 0, Source: organ.Environment, Reads: []string{"git"}, Execute: gd.Execute},
+		{Name: "git.commit", Description: gc.Description(), Schema: gc.InputSchema(), Mode: organ.WriteAction, Risk: 0.7, Source: organ.Environment, Reads: []string{"git"}, Writes: []string{"git"}, Execute: gc.Execute},
+		{Name: "go.build", Description: gb.Description(), Schema: gb.InputSchema(), Mode: organ.ReadAction, Risk: 0, Source: organ.Environment, Reads: []string{"filesystem"}, Execute: gb.Execute},
+		{Name: "go.test", Description: gt.Description(), Schema: gt.InputSchema(), Mode: organ.WriteAction, Risk: 0.3, Source: organ.Environment, Reads: []string{"filesystem"}, Writes: []string{"filesystem"}, Execute: gt.Execute},
+		{Name: "go.vet", Description: gv.Description(), Schema: gv.InputSchema(), Mode: organ.ReadAction, Risk: 0, Source: organ.Environment, Reads: []string{"filesystem"}, Execute: gv.Execute},
 	}
 }
 
@@ -46,7 +46,7 @@ func Capabilities(rootPath string) []organ.Func {
 
 type readFileFunc struct{ root string }
 
-func (f *readFileFunc) Name() string        { return "read_file" }
+func (f *readFileFunc) Name() string        { return "file.read" }
 func (f *readFileFunc) Description() string { return "Read a file's contents. Input: relative path from project root." }
 func (f *readFileFunc) InputSchema() json.RawMessage {
 	return json.RawMessage(`{"type":"object","properties":{"path":{"type":"string","description":"relative file path"}},"required":["path"]}`)
@@ -72,7 +72,7 @@ func (f *readFileFunc) Execute(_ context.Context, input json.RawMessage) (organ.
 
 type writeFileFunc struct{ root string }
 
-func (f *writeFileFunc) Name() string        { return "write_file" }
+func (f *writeFileFunc) Name() string        { return "file.write" }
 func (f *writeFileFunc) Description() string { return "Write content to a file. Creates parent directories if needed." }
 func (f *writeFileFunc) InputSchema() json.RawMessage {
 	return json.RawMessage(`{"type":"object","properties":{"path":{"type":"string","description":"relative file path"},"content":{"type":"string","description":"file content to write"}},"required":["path","content"]}`)
@@ -106,7 +106,7 @@ func (f *writeFileFunc) Execute(_ context.Context, input json.RawMessage) (organ
 
 type goBuildFunc struct{ root string }
 
-func (f *goBuildFunc) Name() string        { return "go_build" }
+func (f *goBuildFunc) Name() string        { return "go.build" }
 func (f *goBuildFunc) Description() string { return "Run go build on a package. Input: package pattern (e.g. './...' or './agent/...')." }
 func (f *goBuildFunc) InputSchema() json.RawMessage {
 	return json.RawMessage(`{"type":"object","properties":{"package":{"type":"string","description":"Go package pattern","default":"./..."}},"required":[]}`)
@@ -124,7 +124,7 @@ func (f *goBuildFunc) Execute(ctx context.Context, input json.RawMessage) (organ
 
 type goTestFunc struct{ root string }
 
-func (f *goTestFunc) Name() string        { return "go_test" }
+func (f *goTestFunc) Name() string        { return "go.test" }
 func (f *goTestFunc) Description() string { return "Run go test on a package. Input: package pattern and optional flags." }
 func (f *goTestFunc) InputSchema() json.RawMessage {
 	return json.RawMessage(`{"type":"object","properties":{"package":{"type":"string","description":"Go package pattern","default":"./..."},"flags":{"type":"string","description":"additional flags (e.g. '-race -count=1')"}},"required":[]}`)
@@ -147,7 +147,7 @@ func (f *goTestFunc) Execute(ctx context.Context, input json.RawMessage) (organ.
 
 type goVetFunc struct{ root string }
 
-func (f *goVetFunc) Name() string        { return "go_vet" }
+func (f *goVetFunc) Name() string        { return "go.vet" }
 func (f *goVetFunc) Description() string { return "Run go vet on a package." }
 func (f *goVetFunc) InputSchema() json.RawMessage {
 	return json.RawMessage(`{"type":"object","properties":{"package":{"type":"string","description":"Go package pattern","default":"./..."}},"required":[]}`)

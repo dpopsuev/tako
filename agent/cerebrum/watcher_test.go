@@ -14,7 +14,7 @@ func TestWatcherClassifier_ReflexHit(t *testing.T) {
 	store.Add(Pipe{
 		Name:      "read",
 		Embedding: []float64{1, 0, 0},
-		Steps:     []PipeStep{{ID: "read", Call: "read_file"}},
+		Steps:     []PipeStep{{ID: "read", Call: "file.read"}},
 	})
 
 	embedder := StubEmbedder{Dims: 3}

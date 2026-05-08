@@ -49,7 +49,7 @@ func TestHello(t *testing.T) {
 			{
 				Content: "Let me read the code first.",
 				ToolCalls: []tangle.ToolCall{
-					{ID: "c1", Name: "read_file", Input: json.RawMessage(`{"path":"main.go"}`)},
+					{ID: "c1", Name: "file.read", Input: json.RawMessage(`{"path":"main.go"}`)},
 				},
 			},
 			{
@@ -67,13 +67,13 @@ func TestHello(t *testing.T) {
 			{
 				Content: "Let me run the tests.",
 				ToolCalls: []tangle.ToolCall{
-					{ID: "c4", Name: "go_test", Input: json.RawMessage(`{"package":"./..."}`)},
+					{ID: "c4", Name: "go.test", Input: json.RawMessage(`{"package":"./..."}`)},
 				},
 			},
 			{
 				Content: "Tests pass. Committing.",
 				ToolCalls: []tangle.ToolCall{
-					{ID: "c5", Name: "git_commit", Input: json.RawMessage(`{"message":"feat: change greeting to world","files":["main.go","main_test.go"]}`)},
+					{ID: "c5", Name: "git.commit", Input: json.RawMessage(`{"message":"feat: change greeting to world","files":["main.go","main_test.go"]}`)},
 				},
 			},
 			{

@@ -32,7 +32,7 @@ func TestDoltPipeStore_AddAndMatch(t *testing.T) {
 		Description: "test description",
 		Embedding:   embedding,
 		Steps: []PipeStep{
-			{ID: "s1", Call: "read_file", Confidence: 0.8},
+			{ID: "s1", Call: "file.read", Confidence: 0.8},
 			{ID: "s2", Call: "edit", Confidence: 0.7, DependsOn: []string{"s1"}},
 		},
 	}
@@ -58,8 +58,8 @@ func TestDoltPipeStore_AddAndMatch(t *testing.T) {
 	if len(matched.Steps) != 2 {
 		t.Errorf("steps = %d, want 2", len(matched.Steps))
 	}
-	if matched.Steps[0].Call != "read_file" {
-		t.Errorf("step[0].Call = %q, want %q", matched.Steps[0].Call, "read_file")
+	if matched.Steps[0].Call != "file.read" {
+		t.Errorf("step[0].Call = %q, want %q", matched.Steps[0].Call, "file.read")
 	}
 }
 

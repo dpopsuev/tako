@@ -83,8 +83,8 @@ func TestHeadless_AgentDoneUpdatesView(t *testing.T) {
 	m = drain(m, cmd)
 
 	m, _ = send(m, widgets.PhaseChangeMsg{Phase: "assessment", Turn: 1})
-	m, _ = send(m, widgets.ToolCallStartMsg{Name: "read_file", Input: `{"path":"main.go"}`})
-	m, _ = send(m, widgets.ToolCallResultMsg{Name: "read_file", Result: "package main"})
+	m, _ = send(m, widgets.ToolCallStartMsg{Name: "file.read", Input: `{"path":"main.go"}`})
+	m, _ = send(m, widgets.ToolCallResultMsg{Name: "file.read", Result: "package main"})
 	m, _ = send(m, widgets.StreamTokenMsg("The answer "))
 	m, _ = send(m, widgets.StreamTokenMsg("is 42."))
 	m, _ = send(m, widgets.AgentDoneMsg{

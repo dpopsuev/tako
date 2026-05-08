@@ -15,7 +15,7 @@ func TestSubsystems_AlignmentRewardPipeStore(t *testing.T) {
 	cfg := reactivity.DefaultConfig
 
 	readCap := organ.Func{
-		Name:        "read_file",
+		Name:        "file.read",
 		Description: "read a file",
 		Schema:      json.RawMessage(`{"type":"object","properties":{"path":{"type":"string"}}}`),
 		Mode:        organ.ReadAction,
@@ -76,7 +76,7 @@ func TestSubsystems_AlignmentRewardPipeStore(t *testing.T) {
 		pipeStore.Add(Pipe{
 			Name:      "test-read",
 			Embedding: embedding,
-			Steps:     []PipeStep{{ID: "read", Call: "read_file"}},
+			Steps:     []PipeStep{{ID: "read", Call: "file.read"}},
 		})
 		pipe, sim := pipeStore.Match(embedding)
 		if sim < 0.999 || pipe == nil {

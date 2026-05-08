@@ -19,7 +19,7 @@ func TestPipeConsolidator_ExtractsSteps(t *testing.T) {
 	history := []tangle.Message{
 		{Role: "user", Content: "fix the bug"},
 		{Role: "assistant", ToolCalls: []tangle.ToolCall{
-			{ID: "tc1", Name: "read_file", Input: json.RawMessage(`{"path":"main.go"}`)},
+			{ID: "tc1", Name: "file.read", Input: json.RawMessage(`{"path":"main.go"}`)},
 		}},
 		{Role: "tool", Content: "package main\nfunc main() {}", ToolCallID: "tc1"},
 		{Role: "assistant", ToolCalls: []tangle.ToolCall{
@@ -42,7 +42,7 @@ func TestPipeConsolidator_ExtractsSteps(t *testing.T) {
 	if len(pipe.Steps) != 2 {
 		t.Fatalf("expected 2 steps, got %d", len(pipe.Steps))
 	}
-	if pipe.Steps[0].Call != "read_file" {
+	if pipe.Steps[0].Call != "file.read" {
 		t.Errorf("step 0 = %s, want read_file", pipe.Steps[0].Call)
 	}
 	if pipe.Steps[1].Call != "edit" {
@@ -89,14 +89,14 @@ func TestPipeConsolidator_MergesOnSecondRun(t *testing.T) {
 
 	history1 := []tangle.Message{
 		{Role: "assistant", ToolCalls: []tangle.ToolCall{
-			{ID: "tc1", Name: "read_file"},
+			{ID: "tc1", Name: "file.read"},
 		}},
 		{Role: "tool", Content: "content", ToolCallID: "tc1"},
 	}
 
 	history2 := []tangle.Message{
 		{Role: "assistant", ToolCalls: []tangle.ToolCall{
-			{ID: "tc2", Name: "go_build"},
+			{ID: "tc2", Name: "go.build"},
 		}},
 		{Role: "tool", Content: "ok", ToolCallID: "tc2"},
 	}

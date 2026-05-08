@@ -107,7 +107,7 @@ func defaultBlueprint() assemble.Blueprint {
 		WorkDir:      wd,
 		Budget: assemble.BudgetConfig{
 			MaxTurns:    30,
-			TurnTimeout: "30s",
+			TurnTimeout: "120s",
 		},
 	}
 	return cfg.ToBlueprint()
