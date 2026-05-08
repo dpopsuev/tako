@@ -87,6 +87,10 @@ func NewFabCollective(cfg FabCollectiveConfig) *FabCollective {
 // Run boots the FabCollective: assembles one worker agent with Corpus,
 // runs the reactivity loop, processes the Fab graph from intake to terminus.
 func (fc *FabCollective) Run(ctx context.Context) error {
+	if fc.capabilities == nil {
+		fc.capabilities = organ.NewFuncSet()
+	}
+
 	intake, err := fc.Assembly.Intake()
 	if err != nil {
 		return fmt.Errorf("tako: %w", err)

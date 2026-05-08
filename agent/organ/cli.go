@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	ErrCLITimeout  = errors.New("instrument/cli: command timed out")
-	ErrCLINoOutput = errors.New("instrument/cli: command produced no output")
+	ErrCLITimeout  = errors.New("organ/cli: command timed out")
+	ErrCLINoOutput = errors.New("organ/cli: command produced no output")
 )
 
 type Command struct {
@@ -30,7 +30,7 @@ type CommandInput struct {
 func NewCommand(command string, description string, args ...string) (*Command, error) {
 	resolved, err := exec.LookPath(command)
 	if err != nil {
-		return nil, fmt.Errorf("instrument/cli: command %q not found: %w", command, err)
+		return nil, fmt.Errorf("organ/cli: command %q not found: %w", command, err)
 	}
 	return &Command{
 		command:     resolved,

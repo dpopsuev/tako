@@ -2,10 +2,12 @@ package framework
 
 import (
 	"context"
+	"encoding/json"
 	"path/filepath"
 	"testing"
 
 	"github.com/dpopsuev/tako/agent"
+	"github.com/dpopsuev/tako/agent/organ"
 	"github.com/dpopsuev/tako/ergograph"
 	"github.com/dpopsuev/tako/fab"
 	"github.com/dpopsuev/tako/memory"
@@ -31,17 +33,28 @@ func TestWalkingSkeleton(t *testing.T) {
 	lobby := agent.StubLobby{}
 	runner := &agent.StubRunner{}
 
+	caps := organ.NewFuncSet()
+	caps.Register(organ.Func{
+		Name:        "echo",
+		Description: "echo input",
+		Source:      organ.Environment,
+		Execute: func(_ context.Context, input json.RawMessage) (organ.Result, error) {
+			return organ.TextResult(string(input)), nil
+		},
+	})
+
 	fc := NewFabCollective(FabCollectiveConfig{
-		Assembly:  assembly,
-		Kanban:    kb,
-		Andon:     an,
-		Pool:      pool,
-		Inspector: inspector,
-		Canvas:    canvas,
-		Depo:      dp,
-		Lobby:     lobby,
-		Mesh:      mesh,
-		Runner:    runner,
+		Assembly:     assembly,
+		Kanban:       kb,
+		Andon:        an,
+		Pool:         pool,
+		Inspector:    inspector,
+		Canvas:       canvas,
+		Depo:         dp,
+		Lobby:        lobby,
+		Mesh:         mesh,
+		Runner:       runner,
+		Capabilities: caps,
 	})
 
 	ctx := context.Background()
@@ -151,17 +164,28 @@ func TestWalkingSkeletonDolt(t *testing.T) {
 	lobby := agent.StubLobby{}
 	runner := &agent.StubRunner{}
 
+	caps := organ.NewFuncSet()
+	caps.Register(organ.Func{
+		Name:        "echo",
+		Description: "echo input",
+		Source:      organ.Environment,
+		Execute: func(_ context.Context, input json.RawMessage) (organ.Result, error) {
+			return organ.TextResult(string(input)), nil
+		},
+	})
+
 	fc := NewFabCollective(FabCollectiveConfig{
-		Assembly:  assembly,
-		Kanban:    kb,
-		Andon:     an,
-		Pool:      pool,
-		Inspector: inspector,
-		Canvas:    canvas,
-		Depo:      dp,
-		Lobby:     lobby,
-		Mesh:      mesh,
-		Runner:    runner,
+		Assembly:     assembly,
+		Kanban:       kb,
+		Andon:        an,
+		Pool:         pool,
+		Inspector:    inspector,
+		Canvas:       canvas,
+		Depo:         dp,
+		Lobby:        lobby,
+		Mesh:         mesh,
+		Runner:       runner,
+		Capabilities: caps,
 	})
 
 	ctx := context.Background()
