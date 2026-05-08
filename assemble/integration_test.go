@@ -525,6 +525,339 @@ func TestDrill_Brainstorm_ReasoningChainThenSeal(t *testing.T) {
 	}
 }
 
+// --- SDLC Drills: Plan Phase ---
+
+func TestDrill_Plan_TaskBreakdown(t *testing.T) {
+	completer := &scriptedCompleter{
+		turns: []tangle.Completion{
+			{
+				Content: "analyzing the spec",
+				ToolCalls: []tangle.ToolCall{
+					{ID: "a1", Name: "assessment", Input: json.RawMessage(`{
+						"taxonomy": "assessment.decomposition",
+						"content": "The feature decomposes into 4 tasks: 1) Add API endpoint, 2) Write handler, 3) Add validation, 4) Write tests",
+						"dimensions": ["tasks"]
+					}`)},
+				},
+			},
+			{
+				Content: "Based on the spec, here are the 4 subtasks with estimates.",
+			},
+		},
+	}
+
+	bp := Blueprint{
+		Model:  "stub",
+		Budget: cerebrum.Budget{MaxTurns: 5, TurnTimeout: 5 * time.Second},
+	}
+
+	agent := Assemble(bp, completer)
+	if err := agent.Think(context.Background(), "Break down this feature spec into tasks: Add user profile editing with avatar upload"); err != nil {
+		t.Fatalf("Think: %v", err)
+	}
+
+	m := agent.Result()
+	if !m.Sealed() {
+		t.Fatal("molecule should be sealed")
+	}
+	if m.TotalMass() < 2 {
+		t.Errorf("expected assessment atom for decomposition, got %d atoms", m.TotalMass())
+	}
+}
+
+func TestDrill_Plan_BlastRadius(t *testing.T) {
+	ping, organCalls := pingOrgan()
+
+	completer := &scriptedCompleter{
+		turns: []tangle.Completion{
+			{
+				Content: "searching for callers",
+				ToolCalls: []tangle.ToolCall{
+					{ID: "c1", Name: "ping", Input: json.RawMessage(`{}`)},
+				},
+			},
+			{
+				Content: "Found 12 callers across 5 packages. The blast radius is medium.",
+			},
+		},
+	}
+
+	bp := Blueprint{
+		Model:        "stub",
+		Capabilities: []organ.Func{ping},
+		Budget:       cerebrum.Budget{MaxTurns: 5, TurnTimeout: 5 * time.Second},
+	}
+
+	agent := Assemble(bp, completer)
+	agent.Think(context.Background(), "Estimate the blast radius of renaming the Process function")
+
+	if organCalls.Load() == 0 {
+		t.Error("agent should call grep/search organ to find callers")
+	}
+	if !agent.Result().Sealed() {
+		t.Fatal("molecule should be sealed")
+	}
+}
+
+// --- SDLC Drills: Code Phase ---
+
+func TestDrill_Code_RefactorRename(t *testing.T) {
+	ping, organCalls := pingOrgan()
+
+	completer := &scriptedCompleter{
+		turns: []tangle.Completion{
+			{
+				Content: "searching for references",
+				ToolCalls: []tangle.ToolCall{
+					{ID: "c1", Name: "ping", Input: json.RawMessage(`{}`)},
+				},
+			},
+			{
+				Content: "renaming across files",
+				ToolCalls: []tangle.ToolCall{
+					{ID: "c2", Name: "ping", Input: json.RawMessage(`{"file":"a.go"}`)},
+					{ID: "c3", Name: "ping", Input: json.RawMessage(`{"file":"b.go"}`)},
+				},
+			},
+			{
+				Content: "Renamed Process to Transform in 3 files.",
+			},
+		},
+	}
+
+	bp := Blueprint{
+		Model:        "stub",
+		Capabilities: []organ.Func{ping},
+		Budget:       cerebrum.Budget{MaxTurns: 10, TurnTimeout: 5 * time.Second},
+	}
+
+	agent := Assemble(bp, completer)
+	agent.Think(context.Background(), "Rename the function Process to Transform across all files")
+
+	if organCalls.Load() < 2 {
+		t.Errorf("rename should call organs multiple times (search + edit), got %d", organCalls.Load())
+	}
+	if !agent.Result().Sealed() {
+		t.Fatal("molecule should be sealed")
+	}
+}
+
+func TestDrill_Code_DeadCodeDetection(t *testing.T) {
+	ping, organCalls := pingOrgan()
+
+	completer := &scriptedCompleter{
+		turns: []tangle.Completion{
+			{
+				Content: "searching for unused functions",
+				ToolCalls: []tangle.ToolCall{
+					{ID: "c1", Name: "ping", Input: json.RawMessage(`{}`)},
+				},
+			},
+			{
+				Content: "Found 2 unused functions: oldHelper and deprecatedProcess. Removing them.",
+				ToolCalls: []tangle.ToolCall{
+					{ID: "c2", Name: "ping", Input: json.RawMessage(`{"action":"delete"}`)},
+				},
+			},
+			{Content: "Removed 2 dead functions. Build passes."},
+		},
+	}
+
+	bp := Blueprint{
+		Model:        "stub",
+		Capabilities: []organ.Func{ping},
+		Budget:       cerebrum.Budget{MaxTurns: 10, TurnTimeout: 5 * time.Second},
+	}
+
+	agent := Assemble(bp, completer)
+	agent.Think(context.Background(), "Find and remove dead code in the utils package")
+
+	if organCalls.Load() < 2 {
+		t.Errorf("dead code detection needs search + delete, got %d calls", organCalls.Load())
+	}
+	if !agent.Result().Sealed() {
+		t.Fatal("molecule should be sealed")
+	}
+}
+
+func TestDrill_Code_WriteNewModule(t *testing.T) {
+	ping, organCalls := pingOrgan()
+
+	completer := &scriptedCompleter{
+		turns: []tangle.Completion{
+			{
+				Content: "creating the module",
+				ToolCalls: []tangle.ToolCall{
+					{ID: "c1", Name: "ping", Input: json.RawMessage(`{"action":"write","file":"cache.go"}`)},
+				},
+			},
+			{
+				Content: "creating the test",
+				ToolCalls: []tangle.ToolCall{
+					{ID: "c2", Name: "ping", Input: json.RawMessage(`{"action":"write","file":"cache_test.go"}`)},
+				},
+			},
+			{
+				Content: "running tests",
+				ToolCalls: []tangle.ToolCall{
+					{ID: "c3", Name: "ping", Input: json.RawMessage(`{"action":"test"}`)},
+				},
+			},
+			{Content: "Created cache.go with LRU cache implementation and cache_test.go. Tests pass."},
+		},
+	}
+
+	bp := Blueprint{
+		Model:        "stub",
+		Capabilities: []organ.Func{ping},
+		Budget:       cerebrum.Budget{MaxTurns: 10, TurnTimeout: 5 * time.Second},
+	}
+
+	agent := Assemble(bp, completer)
+	agent.Think(context.Background(), "Write a new LRU cache module with tests")
+
+	if organCalls.Load() < 3 {
+		t.Errorf("new module needs write + write_test + test, got %d calls", organCalls.Load())
+	}
+	if !agent.Result().Sealed() {
+		t.Fatal("molecule should be sealed")
+	}
+}
+
+// --- SDLC Drills: Build Phase ---
+
+func TestDrill_Build_VetLintFix(t *testing.T) {
+	ping, organCalls := pingOrgan()
+
+	completer := &scriptedCompleter{
+		turns: []tangle.Completion{
+			{
+				Content: "running vet",
+				ToolCalls: []tangle.ToolCall{
+					{ID: "c1", Name: "ping", Input: json.RawMessage(`{"action":"vet"}`)},
+				},
+			},
+			{
+				Content: "fixing violation",
+				ToolCalls: []tangle.ToolCall{
+					{ID: "c2", Name: "ping", Input: json.RawMessage(`{"action":"edit"}`)},
+				},
+			},
+			{
+				Content: "re-running vet",
+				ToolCalls: []tangle.ToolCall{
+					{ID: "c3", Name: "ping", Input: json.RawMessage(`{"action":"vet"}`)},
+				},
+			},
+			{Content: "All vet/lint violations fixed. Clean build."},
+		},
+	}
+
+	bp := Blueprint{
+		Model:        "stub",
+		Capabilities: []organ.Func{ping},
+		Budget:       cerebrum.Budget{MaxTurns: 10, TurnTimeout: 5 * time.Second},
+	}
+
+	agent := Assemble(bp, completer)
+	agent.Think(context.Background(), "Run go vet, fix any violations, verify clean")
+
+	if organCalls.Load() < 3 {
+		t.Errorf("vet-fix-verify loop needs at least 3 calls, got %d", organCalls.Load())
+	}
+	if !agent.Result().Sealed() {
+		t.Fatal("molecule should be sealed")
+	}
+}
+
+// --- SDLC Drills: Test Phase ---
+
+func TestDrill_Test_AddCoverage(t *testing.T) {
+	ping, organCalls := pingOrgan()
+
+	completer := &scriptedCompleter{
+		turns: []tangle.Completion{
+			{
+				Content: "reading the untested function",
+				ToolCalls: []tangle.ToolCall{
+					{ID: "c1", Name: "ping", Input: json.RawMessage(`{"action":"read"}`)},
+				},
+			},
+			{
+				Content: "writing the test",
+				ToolCalls: []tangle.ToolCall{
+					{ID: "c2", Name: "ping", Input: json.RawMessage(`{"action":"write_test"}`)},
+				},
+			},
+			{
+				Content: "running tests",
+				ToolCalls: []tangle.ToolCall{
+					{ID: "c3", Name: "ping", Input: json.RawMessage(`{"action":"test"}`)},
+				},
+			},
+			{Content: "Added TestValidateEmail with 4 table-driven cases. All pass."},
+		},
+	}
+
+	bp := Blueprint{
+		Model:        "stub",
+		Capabilities: []organ.Func{ping},
+		Budget:       cerebrum.Budget{MaxTurns: 10, TurnTimeout: 5 * time.Second},
+	}
+
+	agent := Assemble(bp, completer)
+	agent.Think(context.Background(), "Add test coverage for the ValidateEmail function")
+
+	if organCalls.Load() < 3 {
+		t.Errorf("add coverage needs read + write + test, got %d calls", organCalls.Load())
+	}
+	if !agent.Result().Sealed() {
+		t.Fatal("molecule should be sealed")
+	}
+}
+
+// --- SDLC Drills: Monitor Phase ---
+
+func TestDrill_Monitor_ArchHealth(t *testing.T) {
+	ping, organCalls := pingOrgan()
+
+	completer := &scriptedCompleter{
+		turns: []tangle.Completion{
+			{
+				Content: "analyzing dependencies",
+				ToolCalls: []tangle.ToolCall{
+					{ID: "c1", Name: "ping", Input: json.RawMessage(`{"action":"grep_imports"}`)},
+				},
+			},
+			{
+				Content: "checking for violations",
+				ToolCalls: []tangle.ToolCall{
+					{ID: "c2", Name: "ping", Input: json.RawMessage(`{"action":"read_structure"}`)},
+				},
+			},
+			{
+				Content: "Architecture audit: 2 layer violations found (service→domain, handler→db). 3 packages with fan-in=0. Recommend merging orphan packages.",
+			},
+		},
+	}
+
+	bp := Blueprint{
+		Model:        "stub",
+		Capabilities: []organ.Func{ping},
+		Budget:       cerebrum.Budget{MaxTurns: 10, TurnTimeout: 5 * time.Second},
+	}
+
+	agent := Assemble(bp, completer)
+	agent.Think(context.Background(), "Audit the architecture health: check for layer violations and orphan packages")
+
+	if organCalls.Load() < 2 {
+		t.Errorf("arch audit needs grep + read, got %d calls", organCalls.Load())
+	}
+	if !agent.Result().Sealed() {
+		t.Fatal("molecule should be sealed")
+	}
+}
+
 func containsSubstring(s, substr string) bool {
 	return len(s) >= len(substr) && searchSubstring(s, substr)
 }
