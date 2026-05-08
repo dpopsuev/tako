@@ -10,16 +10,23 @@ import (
 )
 
 type stubCompleter struct {
-	response  string
-	toolCalls []tangle.ToolCall
-	err       error
+	response     string
+	toolCalls    []tangle.ToolCall
+	toolCallOnce bool
+	err          error
+	calls        int
 }
 
 func (s *stubCompleter) Complete(_ context.Context, _ tangle.CompletionParams) (*tangle.Completion, error) {
+	s.calls++
 	if s.err != nil {
 		return nil, s.err
 	}
-	return &tangle.Completion{Content: s.response, ToolCalls: s.toolCalls}, nil
+	tc := s.toolCalls
+	if s.toolCallOnce && s.calls > 1 {
+		tc = nil
+	}
+	return &tangle.Completion{Content: s.response, ToolCalls: tc}, nil
 }
 
 type stubBus struct {

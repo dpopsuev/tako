@@ -108,6 +108,7 @@ type Cerebrum struct {
 	embedder           Embedder
 	reflexStore        ReflexStore
 	consolidator       Consolidator
+	sealStrategy       SealStrategy
 
 	molecule *reactivity.Molecule
 }
@@ -144,6 +145,10 @@ func New(reactor *reactivity.Core, completer tangle.Completer, opts ...Option) *
 				Embedder: cb.embedder,
 			}
 		}
+	}
+
+	if cb.sealStrategy == nil {
+		cb.sealStrategy = ImmediateSeal{}
 	}
 
 	cb.config.Validate()
@@ -554,10 +559,31 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 		if len(completion.ToolCalls) == 0 {
 			if completion.Content != "" {
 				molecule.SetResponse(completion.Content)
-				slog.WarnContext(ctx, "cerebrum.think.no_tool_calls",
+			}
+			check := SealCheck{
+				Turn:         turn,
+				HasDesired:   molecule.Catalyst() != nil && len(molecule.Catalyst().Desired) > 0,
+				HasToolCalls: false,
+				Content:      completion.Content,
+				Distance:     molecule.Distance(),
+				DeltaDistance: molecule.DeltaDistance(),
+				Molecule:     molecule,
+			}
+			if cb.sealStrategy.ShouldSeal(check) {
+				slog.InfoContext(ctx, "cerebrum.think.seal_strategy",
 					slog.Int("turn", turn),
 					slog.Int("content_len", len(completion.Content)))
+				cb.reactor.Seal(molecule, reactivity.Atom{
+					ID:       fmt.Sprintf("wish-sealed-%d", turn),
+					Type:     reactivity.RetrospectionAtom,
+					Taxonomy: "retrospection.sealed",
+					Content:  []byte(completion.Content),
+				})
+				break
 			}
+			slog.WarnContext(ctx, "cerebrum.think.no_tool_calls",
+				slog.Int("turn", turn),
+				slog.Int("content_len", len(completion.Content)))
 			molecule.SetContext(history)
 			continue
 		}

@@ -127,3 +127,7 @@ func WithReflexStore(s ReflexStore) Option {
 func WithConsolidator(c Consolidator) Option {
 	return func(cb *Cerebrum) { cb.consolidator = c }
 }
+
+func WithSealStrategy(s SealStrategy) Option {
+	return func(cb *Cerebrum) { cb.sealStrategy = s }
+}
