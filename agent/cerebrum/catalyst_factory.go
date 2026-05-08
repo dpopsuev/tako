@@ -24,14 +24,13 @@ type TaskCard struct {
 // Criteria = derived from acceptance section or defaults to {tests_pass: true, build_clean: true}.
 func CatalystFromTask(card TaskCard) reactivity.Catalyst {
 	var need strings.Builder
-	need.WriteString(card.Title)
+	fmt.Fprint(&need, card.Title)
 	if card.Goal != "" {
-		need.WriteString("\n\n")
-		need.WriteString(card.Goal)
+		fmt.Fprintf(&need, "\n\n%s", card.Goal)
 	}
 	for name, text := range card.Sections {
 		if name == "acceptance" || name == "checklist" || name == "context" {
-			need.WriteString(fmt.Sprintf("\n\n## %s\n%s", name, text))
+			fmt.Fprintf(&need, "\n\n## %s\n%s", name, text)
 		}
 	}
 
