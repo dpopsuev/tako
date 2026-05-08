@@ -1,22 +1,21 @@
-# Origami — Makefile (thin wrapper around justfile)
-# Prefer `just` for full recipes. This exists so `make lint` works everywhere.
+.PHONY: build install test test-fast test-e2e fmt lint lint-new vet check preflight cover clean
 
-.PHONY: build install test test-fast test-accept fmt lint lint-new vet circuit check preflight cover clean install-hooks serve-image serve serve-stack serve-stack-down
+BIN := bin/tako
 
 build:
-	go build ./...
+	go build -o $(BIN) ./cmd/tako/
 
 install:
-	go install ./cmd/origami ./cmd/operator ./cmd/agent-worker
+	go install ./cmd/tako/
 
 test:
 	go test ./... -count=1 -race -timeout 120s
 
 test-fast:
-	go test ./... -short -count=1 -timeout 60s
+	go test ./agent/cerebrum/ ./assemble/ ./tui/ -count=1 -race -timeout 60s
 
-test-accept:
-	go test ./testkit/acceptance/ -race -v -count=1 -timeout 120s
+test-e2e:
+	TAKO_PROVIDER=$${TAKO_PROVIDER} go test ./tests/e2e/ -v -count=1 -race -timeout 300s
 
 fmt:
 	goimports -w .
@@ -30,12 +29,9 @@ lint-new:
 vet:
 	go vet ./...
 
-circuit: fmt vet build lint test test-accept
-	@echo "Circuit complete — all gates passed"
+check: build vet test-fast
 
-check: build lint test-fast
-
-preflight: fmt vet lint test install
+preflight: fmt vet lint test
 	@echo "Preflight complete"
 
 cover:
@@ -43,41 +39,11 @@ cover:
 	go tool cover -html=coverage.out -o coverage.html
 	go tool cover -func=coverage.out | tail -1
 
-install-hooks:
-	@echo '#!/bin/sh' > .git/hooks/pre-commit
-	@echo 'make lint-new' >> .git/hooks/pre-commit
-	@chmod +x .git/hooks/pre-commit
-	@echo "pre-commit hook installed (runs make lint-new)"
-
-serve-image:
-	podman build -f Dockerfile.serve -t origami-serve:latest .
-
-serve:
-	podman run --rm -p 9100:9100 \
-		--security-opt label=disable \
-		--add-host=host.containers.internal:host-gateway \
-		-e REPO_URL=$${REPO_URL} \
-		-e REPO_BRANCH=$${REPO_BRANCH:-master} \
-		-e SDLC_MODE=$${SDLC_MODE:-real} \
-		-e SDLC_PROVIDER=$${SDLC_PROVIDER:-anthropic} \
-		-e SDLC_MODEL=$${SDLC_MODEL:-claude-sonnet-4-6} \
-		-e SCRIBE_ENDPOINT=$${SCRIBE_ENDPOINT} \
-		-e LOCUS_ENDPOINT=$${LOCUS_ENDPOINT} \
-		-e GIT_USER="$$(git config user.name)" \
-		-e GIT_EMAIL="$$(git config user.email)" \
-		-v $${SSH_AUTH_SOCK}:/ssh-agent -e SSH_AUTH_SOCK=/ssh-agent \
-		-v $${HOME}/.ssh:/root/.ssh:ro \
-		origami-serve:latest
-
-serve-stack:
-	REPO_URL=$${REPO_URL} \
-	REPO_BRANCH=$${REPO_BRANCH:-master} \
-	GIT_USER="$$(git config user.name)" \
-	GIT_EMAIL="$$(git config user.email)" \
-	podman compose -f deploy/docker-compose.sdlc.yaml up -d
-
-serve-stack-down:
-	podman compose -f deploy/docker-compose.sdlc.yaml down
-
 clean:
 	rm -rf bin/ coverage.out coverage.html
+
+run: build
+	./$(BIN) agent $(ARGS)
+
+tui: build
+	./$(BIN) tui $(ARGS)
