@@ -29,8 +29,8 @@ func TestWaitToolResult_MatchByID(t *testing.T) {
 	defer cancel()
 	result := cb.waitToolResult(ctx, tc)
 
-	if result != "file contents" {
-		t.Fatalf("result = %q, want 'file contents'", result)
+	if result.Content != "file contents" {
+		t.Fatalf("result = %q, want 'file contents'", result.Content)
 	}
 }
 
@@ -53,18 +53,18 @@ func TestWaitToolResult_OutOfOrderBuffering(t *testing.T) {
 	defer cancel()
 
 	r1 := cb.waitToolResult(ctx, tangle.ToolCall{ID: "tc-1", Name: "read_file"})
-	if r1 != "result-1" {
-		t.Fatalf("tc-1: got %q, want 'result-1'", r1)
+	if r1.Content != "result-1" {
+		t.Fatalf("tc-1: got %q, want 'result-1'", r1.Content)
 	}
 
 	r2 := cb.waitToolResult(ctx, tangle.ToolCall{ID: "tc-2", Name: "edit"})
-	if r2 != "result-2" {
-		t.Fatalf("tc-2: got %q, want 'result-2'", r2)
+	if r2.Content != "result-2" {
+		t.Fatalf("tc-2: got %q, want 'result-2'", r2.Content)
 	}
 
 	r3 := cb.waitToolResult(ctx, tangle.ToolCall{ID: "tc-3", Name: "go_test"})
-	if r3 != "result-3" {
-		t.Fatalf("tc-3: got %q, want 'result-3'", r3)
+	if r3.Content != "result-3" {
+		t.Fatalf("tc-3: got %q, want 'result-3'", r3.Content)
 	}
 }
 
@@ -83,8 +83,8 @@ func TestWaitToolResult_NonToolEventRequeued(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	result := cb.waitToolResult(ctx, tangle.ToolCall{ID: "tc-1", Name: "read_file"})
-	if result != "ok" {
-		t.Fatalf("result = %q, want 'ok'", result)
+	if result.Content != "ok" {
+		t.Fatalf("result = %q, want 'ok'", result.Content)
 	}
 
 	events := cb.DrainMonitorEvents()
@@ -101,8 +101,8 @@ func TestWaitToolResult_Timeout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
 	result := cb.waitToolResult(ctx, tangle.ToolCall{ID: "tc-never", Name: "slow"})
-	if result != "tool call timed out" {
-		t.Fatalf("result = %q, want timeout message", result)
+	if result.Content != "tool call timed out" {
+		t.Fatalf("result = %q, want timeout message", result.Content)
 	}
 }
 
@@ -117,8 +117,8 @@ func TestWaitToolResult_BufferedResult(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	result := cb.waitToolResult(ctx, tangle.ToolCall{ID: "tc-pre", Name: "cached"})
-	if result != "pre-buffered" {
-		t.Fatalf("result = %q, want 'pre-buffered'", result)
+	if result.Content != "pre-buffered" {
+		t.Fatalf("result = %q, want 'pre-buffered'", result.Content)
 	}
 
 	if _, exists := cb.resultBuffer["tc-pre"]; exists {

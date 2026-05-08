@@ -490,31 +490,47 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 			if len(capCalls) > 0 {
 				cb.dispatch(ctx, molecule)
 				toolCtx, toolCancel := context.WithTimeout(ctx, cb.budget.TurnTimeout)
+				var sealOnResult bool
 				for _, tc := range capCalls {
-					result := cb.waitToolResult(toolCtx, tc)
+					tr := cb.waitToolResult(toolCtx, tc)
 					history = append(history, tangle.Message{
 						Role:       RoleTool,
-						Content:    result,
+						Content:    tr.Content,
 						ToolCallID: tc.ID,
 					})
 					slog.InfoContext(ctx, "cerebrum.think.tool_result",
 						slog.Int("turn", turn),
 						slog.String("name", tc.Name),
-						slog.Int("result_len", len(result)))
+						slog.Int("result_len", len(tr.Content)))
 					cb.emit("cerebrum.tool_result", map[string]string{
 						"molecule":   molecule.ID,
 						"turn":       fmt.Sprintf("%d", turn),
 						"tool":       tc.Name,
-						"result_len": fmt.Sprintf("%d", len(result)),
+						"result_len": fmt.Sprintf("%d", len(tr.Content)),
 					})
 					if cb.listener != nil {
-						cb.listener.OnToolResult(tc.Name, []byte(result), elapsed)
+						cb.listener.OnToolResult(tc.Name, []byte(tr.Content), elapsed)
 					}
 					if molecule.Catalyst() != nil {
-						cb.checkCatalystDesired(molecule, tc.Name, result)
+						cb.checkCatalystDesired(molecule, tc.Name, tr.Content)
+					}
+					if tr.Seal {
+						molecule.SetResponse(tr.Content)
+						sealOnResult = true
 					}
 				}
 				toolCancel()
+				if sealOnResult {
+					slog.InfoContext(ctx, "cerebrum.think.organ_seal",
+						slog.Int("turn", turn))
+					cb.reactor.Seal(molecule, reactivity.Atom{
+						ID:       fmt.Sprintf("wish-organ-seal-%d", turn),
+						Type:     reactivity.RetrospectionAtom,
+						Taxonomy: "retrospection.organ.seal",
+						Content:  []byte(molecule.Response()),
+					})
+					break
+				}
 			}
 
 			if molecule.Sealed() {
@@ -905,21 +921,26 @@ func (cb *Cerebrum) checkCatalystDesired(m *reactivity.Molecule, toolName, resul
 	}
 }
 
-func (cb *Cerebrum) waitToolResult(ctx context.Context, tc tangle.ToolCall) string {
+type toolResult struct {
+	Content string
+	Seal    bool
+}
+
+func (cb *Cerebrum) waitToolResult(ctx context.Context, tc tangle.ToolCall) toolResult {
 	if buffered, ok := cb.resultBuffer[tc.ID]; ok {
 		delete(cb.resultBuffer, tc.ID)
 		cb.clearPending(tc.ID)
-		return string(buffered.Payload)
+		return toolResult{Content: string(buffered.Payload), Seal: buffered.Seal}
 	}
 
 	for {
 		event, ok := cb.sensory.Receive(ctx)
 		if !ok {
-			return "tool call timed out"
+			return toolResult{Content: "tool call timed out"}
 		}
 		if event.ToolCallID == tc.ID || (event.ToolCallID == "" && event.Source == tc.Name) {
 			cb.clearPending(tc.ID)
-			return string(event.Payload)
+			return toolResult{Content: string(event.Payload), Seal: event.Seal}
 		}
 		if event.ToolCallID != "" && cb.isPending(event.ToolCallID) {
 			cb.resultBuffer[event.ToolCallID] = event

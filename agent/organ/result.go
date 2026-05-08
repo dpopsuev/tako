@@ -4,6 +4,7 @@ package organ
 type Result struct {
 	Content []Content `json:"content"`
 	IsError bool      `json:"isError,omitempty"`
+	Seal    bool      `json:"seal,omitempty"`
 }
 
 func (r Result) Text() []byte {
@@ -24,5 +25,12 @@ func ErrorResult(text string) Result {
 	return Result{
 		Content: []Content{ErrorContent(text)},
 		IsError: true,
+	}
+}
+
+func SealResult(text string) Result {
+	return Result{
+		Content: []Content{TextContent(text)},
+		Seal:    true,
 	}
 }

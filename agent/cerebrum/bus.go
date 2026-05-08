@@ -11,6 +11,7 @@ type Event struct {
 	Source     string
 	Payload    []byte
 	ToolCallID string
+	Seal       bool
 	CreatedAt  time.Time
 }
 

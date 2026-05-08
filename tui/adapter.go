@@ -26,6 +26,9 @@ func (a *Adapter) OnToolCall(name string, input []byte) {
 	if a.Program == nil {
 		return
 	}
+	if name == "speak" {
+		return
+	}
 	s := string(input)
 	if len(s) > 100 {
 		s = s[:100] + "..."
@@ -38,6 +41,10 @@ func (a *Adapter) OnToolCall(name string, input []byte) {
 
 func (a *Adapter) OnToolResult(name string, result []byte, _ time.Duration) {
 	if a.Program == nil {
+		return
+	}
+	if name == "speak" {
+		a.Program.Send(widgets.AppendOutputMsg{Line: string(result)})
 		return
 	}
 	s := string(result)
