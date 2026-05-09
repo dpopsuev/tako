@@ -52,7 +52,6 @@ type Instigator struct {
 var DefaultContracts = []struct {
 	From, To, Predicate string
 }{
-	{"think", "reflect", "!HasDesired"},
 	{"think", "implement", "HasDesired && MassKnowledge > 0"},
 	{"think", "compose", "SenseCount > 0 && HasDesired"},
 	{"compose", "implement", "MassAssessment > 0"},

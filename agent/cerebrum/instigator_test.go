@@ -6,7 +6,7 @@ import (
 	"github.com/dpopsuev/tako/agent/reactivity"
 )
 
-func TestInstigator_HelloSkipsToReflect(t *testing.T) {
+func TestInstigator_HelloStaysInThink(t *testing.T) {
 	ins := MustInstigator(nil)
 	ctx := InstigatorContext{
 		HasDesired: false,
@@ -15,8 +15,8 @@ func TestInstigator_HelloSkipsToReflect(t *testing.T) {
 	}
 
 	next := ins.NextTriad(reactivity.ThinkTriad, ctx)
-	if next != reactivity.ReflectTriad {
-		t.Errorf("no Desired should skip to reflect, got %v", next)
+	if next != reactivity.ThinkTriad {
+		t.Errorf("no Desired should stay in think (SealStrategy handles conversational), got %v", next)
 	}
 }
 

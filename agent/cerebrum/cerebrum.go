@@ -552,6 +552,22 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 				break
 			}
 
+			ictx := BuildInstigatorContext(molecule, chain)
+			nextTriad := cb.instigator.NextTriad(molecule.CurrentTriad(), ictx)
+			if nextTriad == reactivity.ReflectTriad && nextTriad != molecule.CurrentTriad() {
+				cb.reactor.Seal(molecule, reactivity.Atom{
+					ID:       fmt.Sprintf("wish-instigator-%d", turn),
+					Type:     reactivity.RetrospectionAtom,
+					Taxonomy: "retrospection.instigator.telos",
+					Content:  []byte(molecule.Response()),
+				})
+				slog.InfoContext(ctx, "cerebrum.think.instigator_seal",
+					slog.Int("turn", turn),
+					slog.String("from", molecule.CurrentTriad().String()),
+					slog.String("to", "reflect"))
+				break
+			}
+
 			if len(phaseAtoms) > 0 {
 				for _, atom := range phaseAtoms {
 					if cb.alignment != nil {
