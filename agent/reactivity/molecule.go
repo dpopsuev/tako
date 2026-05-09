@@ -73,6 +73,13 @@ func NewMoleculeWithCatalyst(id string, c Catalyst) *Molecule {
 func (m *Molecule) Catalyst() *Catalyst { return m.catalyst }
 func (m *Molecule) Chain() *EventChain   { return m.chain }
 
+func (m *Molecule) SetCatalyst(c Catalyst) {
+	m.catalyst = &c
+	if m.sensorResults == nil {
+		m.sensorResults = make(map[string]any)
+	}
+}
+
 // ReportSensor records a sensor result. If all criteria are met, seals the Molecule.
 func (m *Molecule) ReportSensor(key string, value any) {
 	if m.sensorResults == nil {

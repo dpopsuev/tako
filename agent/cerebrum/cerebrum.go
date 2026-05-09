@@ -221,7 +221,21 @@ func (cb *Cerebrum) Run(ctx context.Context) {
 func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) error {
 	need := []byte(catalyst.Need)
 	var molecule *reactivity.Molecule
-	if len(catalyst.Desired) > 0 {
+
+	if cb.molecule != nil && !cb.molecule.Sealed() {
+		molecule = cb.molecule
+		cb.reactor.Add(molecule, reactivity.Atom{
+			ID:   fmt.Sprintf("need-%d", time.Now().UnixNano()),
+			Type: reactivity.IntentAtom, Taxonomy: "intent.need",
+			Content: need, CreatedAt: time.Now(),
+		})
+		if len(catalyst.Desired) > 0 && molecule.Catalyst() == nil {
+			molecule.SetCatalyst(catalyst)
+		}
+		slog.InfoContext(ctx, "cerebrum.think.resume",
+			slog.String("molecule", molecule.ID),
+			slog.Int("mass", molecule.TotalMass()))
+	} else if len(catalyst.Desired) > 0 {
 		molecule = reactivity.NewMoleculeWithCatalyst(
 			fmt.Sprintf("mol-%d", time.Now().UnixNano()), catalyst)
 		cb.reactor.Add(molecule, reactivity.Atom{
@@ -302,6 +316,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 	chain := molecule.Chain()
 	var turnRecords []TurnRecord
 	debouncer := NewDebouncer(3, 2)
+	parked := false
 
 	prevTriad := molecule.CurrentTriad()
 	for turn := 0; turn < cb.budget.MaxTurns && !molecule.Sealed(); turn++ {
@@ -525,9 +540,24 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 					if molecule.Catalyst() != nil {
 						cb.checkCatalystDesired(molecule, tc.Name, tr.Content)
 					}
-					molecule.SetResponse(tr.Content)
 				}
 				toolCancel()
+
+				noDesired := molecule.Catalyst() == nil || len(molecule.Catalyst().Desired) == 0
+				spoke := false
+				for _, tc := range capCalls {
+					for _, cap := range cb.capabilities {
+						if cap.Name == tc.Name && cap.Source == organ.BuiltIn {
+							spoke = true
+						}
+					}
+				}
+				if noDesired && spoke {
+					slog.InfoContext(ctx, "cerebrum.think.park_after_builtin",
+						slog.Int("turn", turn))
+					parked = true
+					break
+				}
 			}
 
 			if molecule.Sealed() {
@@ -653,7 +683,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 		}
 	}
 
-	if !molecule.Sealed() {
+	if !molecule.Sealed() && !parked {
 		slog.WarnContext(ctx, "cerebrum.think.max_turns",
 			slog.Int("max_turns", cb.budget.MaxTurns),
 			slog.Int("mass", molecule.TotalMass()))

@@ -46,6 +46,12 @@ func (a *Agent) Run(ctx context.Context, task string) (string, error) {
 	if r := m.Response(); r != "" {
 		return r, nil
 	}
+	if chain := m.Chain(); chain != nil && chain.Len() > 0 {
+		last, ok := chain.Last()
+		if ok && len(last.Output) > 0 {
+			return string(last.Output), nil
+		}
+	}
 	retro := m.ByTaxonomy("retrospection.")
 	if len(retro) > 0 {
 		return string(retro[len(retro)-1].Content), nil
