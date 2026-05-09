@@ -3,6 +3,7 @@ package widgets
 import (
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 
 	"github.com/dpopsuev/tako/tui/core"
 )
@@ -19,6 +20,13 @@ func NewInputPanel() *InputPanel {
 	ta.Placeholder = "Type a task..."
 	ta.ShowLineNumbers = false
 	ta.SetHeight(3)
+	ta.Prompt = "> "
+	ta.FocusedStyle.Prompt = lipgloss.NewStyle()
+	ta.FocusedStyle.CursorLine = lipgloss.NewStyle()
+	ta.FocusedStyle.Base = lipgloss.NewStyle()
+	ta.BlurredStyle.Prompt = lipgloss.NewStyle()
+	ta.BlurredStyle.CursorLine = lipgloss.NewStyle()
+	ta.BlurredStyle.Base = lipgloss.NewStyle()
 	ta.Focus()
 	return &InputPanel{
 		BasePanel: core.NewBasePanel("input", 3),
