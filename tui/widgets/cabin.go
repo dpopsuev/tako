@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 
 	"github.com/dpopsuev/tako/tui/core"
 	"github.com/dpopsuev/tako/tui/layout"
@@ -140,8 +141,9 @@ func (c *CabinCenter) View(width int) string {
 }
 
 func padRight(s string, w int) string {
-	if len(s) >= w {
-		return s[:w]
+	vis := lipgloss.Width(s)
+	if vis >= w {
+		return s
 	}
-	return s + strings.Repeat(" ", w-len(s))
+	return s + strings.Repeat(" ", w-vis)
 }

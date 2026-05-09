@@ -97,6 +97,46 @@ func TestGolden_Cabin_40x12(t *testing.T) {
 	assertGolden(t, "cabin_40x12", got)
 }
 
+func TestGolden_CabinStructure_80x24(t *testing.T) {
+	got := renderModel(nil, "test-model", 80, 24)
+	lines := strings.Split(got, "\n")
+
+	if len(lines) < 22 {
+		t.Fatalf("expected 22+ lines, got %d", len(lines))
+	}
+
+	if !strings.Contains(lines[0], "tako") {
+		t.Error("line 0: missing status bar with 'tako'")
+	}
+
+	if !strings.Contains(lines[1], "─") {
+		t.Error("line 1: missing top horizontal rule")
+	}
+
+	for i := 2; i <= 14; i++ {
+		if !strings.Contains(lines[i], "│") {
+			t.Errorf("line %d: missing pillar border │", i)
+		}
+		count := strings.Count(lines[i], "│")
+		if count < 2 {
+			t.Errorf("line %d: expected 2 │ borders, got %d", i, count)
+		}
+	}
+
+	if !strings.Contains(lines[15], "─") || !strings.Contains(lines[15], "│") {
+		t.Error("line 15: missing separator between output and input")
+	}
+
+	if !strings.Contains(lines[len(lines)-2], "─") {
+		t.Error("second-to-last line: missing bottom horizontal rule")
+	}
+
+	lastLine := lines[len(lines)-1]
+	if !strings.Contains(lastLine, "turn") || !strings.Contains(lastLine, "↑") {
+		t.Errorf("footer missing phase/token info: %q", lastLine)
+	}
+}
+
 func TestGolden_CabinWithContent(t *testing.T) {
 	m := NewModel(nil, "test-model")
 	m.width = 80

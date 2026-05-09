@@ -20,7 +20,7 @@ func NewInputPanel() *InputPanel {
 	ta.Placeholder = "Type a task..."
 	ta.ShowLineNumbers = false
 	ta.SetHeight(3)
-	ta.Prompt = "> "
+	ta.Prompt = ""
 	ta.FocusedStyle.Prompt = lipgloss.NewStyle()
 	ta.FocusedStyle.CursorLine = lipgloss.NewStyle()
 	ta.FocusedStyle.Base = lipgloss.NewStyle()
