@@ -31,6 +31,7 @@ type Molecule struct {
 	unsealCount int
 	emissions        []Emission
 	context          any
+	chain            *EventChain
 	createdAt        time.Time
 	turns            int
 	phaseTransitions int
@@ -56,6 +57,7 @@ func NewMolecule(id string) *Molecule {
 		sourceMass:  make(map[AtomSource]int),
 		triadSealed: make(map[Triad]bool),
 		phase:       IntentAtom,
+		chain:       NewEventChain(),
 		createdAt:   time.Now(),
 	}
 }
@@ -69,6 +71,7 @@ func NewMoleculeWithCatalyst(id string, c Catalyst) *Molecule {
 }
 
 func (m *Molecule) Catalyst() *Catalyst { return m.catalyst }
+func (m *Molecule) Chain() *EventChain   { return m.chain }
 
 // ReportSensor records a sensor result. If all criteria are met, seals the Molecule.
 func (m *Molecule) ReportSensor(key string, value any) {
