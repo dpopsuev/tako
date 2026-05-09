@@ -544,15 +544,21 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 				toolCancel()
 
 				noDesired := molecule.Catalyst() == nil || len(molecule.Catalyst().Desired) == 0
-				spoke := false
+				builtInOnly := true
+				hasBuiltIn := false
 				for _, tc := range capCalls {
+					isBuiltIn := false
 					for _, cap := range cb.capabilities {
 						if cap.Name == tc.Name && cap.Source == organ.BuiltIn {
-							spoke = true
+							isBuiltIn = true
+							hasBuiltIn = true
 						}
 					}
+					if !isBuiltIn {
+						builtInOnly = false
+					}
 				}
-				if noDesired && spoke {
+				if noDesired && hasBuiltIn && builtInOnly {
 					slog.InfoContext(ctx, "cerebrum.think.park_after_builtin",
 						slog.Int("turn", turn))
 					parked = true
