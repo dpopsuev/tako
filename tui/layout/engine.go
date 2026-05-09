@@ -238,8 +238,11 @@ func (e *LayoutEngine) Render() string { //nolint:gocyclo // layout composition 
 		return ""
 	}
 
-	// Sync FocusManager with visible focusable panels.
-	e.focus.SetPanels(e.FocusablePanels())
+	// Sync FocusManager with visible focusable panels (skip if empty —
+	// the Model may manage focus for panels inside composite containers).
+	if fp := e.FocusablePanels(); len(fp) > 0 {
+		e.focus.SetPanels(fp)
+	}
 
 	innerWidth := e.width - 2
 	if innerWidth < 10 {

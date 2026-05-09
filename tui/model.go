@@ -46,7 +46,6 @@ func NewModel(runner Runner, modelName string) Model {
 		Panel:     cabin,
 		Weight:    1,
 		MinHeight: 10,
-		Focusable: true,
 		Border:    layout.BorderNone,
 	})
 	engine.Register(layout.PanelSlot{
