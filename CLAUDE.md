@@ -246,7 +246,8 @@ Complex is thin (refs + wiring + topology). Fab has the substance. Rehearsal val
 - Use `lipgloss.Width()` for visible width, never `len()` — ANSI escapes and multi-byte runes break byte counting.
 - Use `lipgloss.JoinVertical` / `lipgloss.JoinHorizontal` for composition, not string concatenation.
 - Cabin layout: double outer frame (`╔═╗║╚═╝`), heavy inner frame (`┏━┓┃┗━┛`), pillar padding between frames.
-- Golden snapshot tests in `tui/testdata/*.golden` — run `go test ./tui/ -run TestGolden -update` to regenerate.
+- Use `teatest` for TUI tests — `teatest.NewTestModel`, `teatest.RequireEqualOutput` for golden snapshots. Never hand-roll View() capture.
+- Golden files in `tui/testdata/*.golden` — run `go test ./tui/ -run TestGolden -update` to regenerate.
 - TUI is a bus subscriber — it reads events, never imports Cerebrum.
 - Tako is provider-agnostic — no hardcoded model names, no vendor defaults anywhere in TUI or CLI.
 

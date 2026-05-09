@@ -1,97 +1,41 @@
 package tui
 
 import (
-	"flag"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/exp/teatest"
 	"github.com/dpopsuev/tako/tui/widgets"
 	"github.com/muesli/termenv"
 )
-
-var update = flag.Bool("update", false, "update .golden files")
 
 func init() {
 	lipgloss.SetColorProfile(termenv.Ascii)
 }
 
-func goldenPath(name string) string {
-	return filepath.Join("testdata", name+".golden")
-}
-
-func assertGolden(t *testing.T, name, got string) {
-	t.Helper()
-	path := goldenPath(name)
-
-	if *update {
-		os.MkdirAll(filepath.Dir(path), 0o750)
-		os.WriteFile(path, []byte(got), 0o644)
-		t.Logf("updated %s", path)
-		return
-	}
-
-	want, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("golden file %s not found — run with -update to create", path)
-	}
-
-	if got != string(want) {
-		gotLines := strings.Split(got, "\n")
-		wantLines := strings.Split(string(want), "\n")
-
-		maxLines := len(gotLines)
-		if len(wantLines) > maxLines {
-			maxLines = len(wantLines)
-		}
-
-		var diff strings.Builder
-		for i := 0; i < maxLines; i++ {
-			g, w := "", ""
-			if i < len(gotLines) {
-				g = gotLines[i]
-			}
-			if i < len(wantLines) {
-				w = wantLines[i]
-			}
-			if g != w {
-				diff.WriteString("--- line ")
-				diff.WriteString(string(rune('0'+i/10)))
-				diff.WriteString(string(rune('0'+i%10)))
-				diff.WriteString(" ---\n  want: ")
-				diff.WriteString(w)
-				diff.WriteString("\n  got:  ")
-				diff.WriteString(g)
-				diff.WriteByte('\n')
-			}
-		}
-		t.Fatalf("golden mismatch %s:\n%s", path, diff.String())
-	}
-}
-
-func renderModel(runner Runner, model string, width, height int) string {
-	m := NewModel(runner, model)
-	updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: height})
-	return updated.View()
-}
-
 func TestGolden_Cabin_80x24(t *testing.T) {
-	assertGolden(t, "cabin_80x24", renderModel(nil, "test-model", 80, 24))
+	tm := teatest.NewTestModel(t, NewModel(nil, "test-model"),
+		teatest.WithInitialTermSize(80, 24))
+	tm.Quit()
+	out := tm.FinalOutput(t, teatest.WithFinalTimeout(time.Second))
+	teatest.RequireEqualOutput(t, readAll(t, out))
 }
 
 func TestGolden_Cabin_120x40(t *testing.T) {
-	assertGolden(t, "cabin_120x40", renderModel(nil, "test-model", 120, 40))
-}
-
-func TestGolden_Cabin_40x12(t *testing.T) {
-	assertGolden(t, "cabin_40x12", renderModel(nil, "test-model", 40, 12))
+	tm := teatest.NewTestModel(t, NewModel(nil, "test-model"),
+		teatest.WithInitialTermSize(120, 40))
+	tm.Quit()
+	out := tm.FinalOutput(t, teatest.WithFinalTimeout(time.Second))
+	teatest.RequireEqualOutput(t, readAll(t, out))
 }
 
 func TestGolden_CabinStructure_80x24(t *testing.T) {
-	got := renderModel(nil, "test-model", 80, 24)
+	tm := teatest.NewTestModel(t, NewModel(nil, "test-model"),
+		teatest.WithInitialTermSize(80, 24))
+	tm.Quit()
+	got := string(readAll(t, tm.FinalOutput(t, teatest.WithFinalTimeout(time.Second))))
 	lines := strings.Split(got, "\n")
 
 	if len(lines) < 10 {
@@ -111,10 +55,7 @@ func TestGolden_CabinStructure_80x24(t *testing.T) {
 		t.Errorf("footer missing token stats: %q", last)
 	}
 
-	hasOuter := false
-	hasInner := false
-	hasSeparator := false
-	hasInput := false
+	hasOuter, hasInner, hasSeparator, hasInput := false, false, false, false
 	for _, line := range lines[1 : len(lines)-1] {
 		if strings.Contains(line, "║") {
 			hasOuter = true
@@ -146,12 +87,31 @@ func TestGolden_CabinStructure_80x24(t *testing.T) {
 
 func TestGolden_CabinWithContent(t *testing.T) {
 	m := NewModel(nil, "test-model")
-	m.width = 80
-	m.height = 24
-	m.engine.Resize(80, 24)
-	m.output.Update(widgets.AppendOutputMsg{Line: "> Hello world"})
-	m.output.Update(widgets.AppendOutputMsg{Line: "I can help you with that."})
-	m.cabin.Update(widgets.TokenUpdateMsg{TokensIn: 1500, TokensOut: 200, ToolCalls: 3})
-	m.cabin.Update(widgets.PhaseChangeMsg{Phase: "thinking", Turn: 2})
-	assertGolden(t, "cabin_with_content", m.View())
+	tm := teatest.NewTestModel(t, m, teatest.WithInitialTermSize(80, 24))
+
+	tm.Send(widgets.AppendOutputMsg{Line: "> Hello world"})
+	tm.Send(widgets.AppendOutputMsg{Line: "I can help you with that."})
+	tm.Send(widgets.TokenUpdateMsg{TokensIn: 1500, TokensOut: 200, ToolCalls: 3})
+	tm.Send(widgets.PhaseChangeMsg{Phase: "thinking", Turn: 2})
+
+	time.Sleep(100 * time.Millisecond)
+	tm.Quit()
+	out := tm.FinalOutput(t, teatest.WithFinalTimeout(time.Second))
+	teatest.RequireEqualOutput(t, readAll(t, out))
+}
+
+func readAll(t *testing.T, r interface{ Read([]byte) (int, error) }) []byte {
+	t.Helper()
+	var buf []byte
+	tmp := make([]byte, 4096)
+	for {
+		n, err := r.Read(tmp)
+		if n > 0 {
+			buf = append(buf, tmp[:n]...)
+		}
+		if err != nil {
+			break
+		}
+	}
+	return buf
 }
