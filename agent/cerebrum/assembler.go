@@ -234,7 +234,7 @@ Respond with JSON: {"atoms": [{"type": "<phase>", "taxonomy": "<phase.domain>", 
 {{- else}}
 
 ## Instructions
-Use the available tools to accomplish the task. When you have the answer, call the speak tool to respond to the operator.
+Use the available tools to accomplish the task. When you have the answer, call dialog_speak to respond to the operator.
 {{- end}}
 {{- range .Directives}}
 

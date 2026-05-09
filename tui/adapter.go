@@ -26,7 +26,7 @@ func (a *Adapter) OnToolCall(name string, input []byte) {
 	if a.Program == nil {
 		return
 	}
-	if name == "speak" {
+	if name == "dialog_speak" {
 		return
 	}
 	s := string(input)
@@ -43,7 +43,7 @@ func (a *Adapter) OnToolResult(name string, result []byte, _ time.Duration) {
 	if a.Program == nil {
 		return
 	}
-	if name == "speak" {
+	if name == "dialog_speak" {
 		a.Program.Send(widgets.AppendOutputMsg{Line: string(result)})
 		return
 	}

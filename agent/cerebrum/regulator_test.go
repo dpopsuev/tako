@@ -19,7 +19,7 @@ func TestDefaultRender_Basic(t *testing.T) {
 	if !strings.Contains(result, "feed the tako") {
 		t.Error("should contain the need")
 	}
-	if !strings.Contains(result, "speak") {
+	if !strings.Contains(result, "dialog_speak") {
 		t.Error("should instruct to use speak tool")
 	}
 }

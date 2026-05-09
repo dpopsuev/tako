@@ -18,15 +18,15 @@ func TestIntentRouter_ReflexBypass(t *testing.T) {
 		Name:      "greet",
 		Embedding: embedding,
 		Steps: []PipeStep{{
-			ID:       "speak",
-			Call:     "speak",
+			ID:       "dialog_speak",
+			Call:     "dialog_speak",
 			Args:     map[string]any{"response": "Hello! How can I help?"},
 			Expected: HashResult([]byte("Hello! How can I help?")),
 		}},
 	})
 
 	speakCap := organ.Func{
-		Name: "speak",
+		Name: "dialog_speak",
 		Execute: func(_ context.Context, input json.RawMessage) (organ.Result, error) {
 			var args struct{ Response string `json:"response"` }
 			json.Unmarshal(input, &args)

@@ -17,7 +17,7 @@ var speakSchema = json.RawMessage(`{
 
 func speakCapability() organ.Func {
 	return organ.Func{
-		Name:        "speak",
+		Name:        "dialog_speak",
 		Description: "Respond to the operator. Use this to answer questions, greet, or provide information.",
 		Schema:      speakSchema,
 		Mode:        organ.ReadAction,

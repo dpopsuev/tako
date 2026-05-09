@@ -115,7 +115,7 @@ func TestFlywheel_ConsolidateThenReflex(t *testing.T) {
 	cons := &PipeConsolidator{Store: store, Embedder: embedder}
 
 	speakCap := organ.Func{
-		Name: "speak",
+		Name: "dialog_speak",
 		Execute: func(_ context.Context, input json.RawMessage) (organ.Result, error) {
 			var args struct{ Response string `json:"response"` }
 			json.Unmarshal(input, &args)
@@ -127,13 +127,13 @@ func TestFlywheel_ConsolidateThenReflex(t *testing.T) {
 	completer := &stubCompleter{
 		toolCalls: []tangle.ToolCall{{
 			ID:    "tc1",
-			Name:  "speak",
+			Name:  "dialog_speak",
 			Input: json.RawMessage(`{"response":"Hi there!"}`),
 		}},
 	}
 
 	sensory := NewChannelBus(64)
-	motor := &autoExecMotor{caps: map[string]organ.Func{"speak": speakCap}, sensory: sensory}
+	motor := &autoExecMotor{caps: map[string]organ.Func{"dialog_speak": speakCap}, sensory: sensory}
 
 	reactor := reactivity.NewReactor()
 	cb := New(reactor, completer,
