@@ -145,7 +145,7 @@ func (c *CabinCenter) View(width int) string {
 	innerContent := strings.Join(contentLines, "\n")
 	innerBox := lipgloss.NewStyle().
 		Border(innerFrame).
-		BorderForeground(c.theme.FocusDim).
+		BorderForeground(c.theme.Border).
 		Width(centerW).
 		Render(innerContent)
 
@@ -170,12 +170,12 @@ func (c *CabinCenter) View(width int) string {
 	phaseStyle := lipgloss.NewStyle().Foreground(phaseColor)
 
 	titleText := accentStyle.Render(" tako") + mutedStyle.Render(" · "+c.modelName+" ")
-	title := "═══" + titleText
+	title := borderStyle.Render("═══") + titleText
 	phaseText := phaseStyle.Render(fmt.Sprintf(" %s", c.phase)) +
 		mutedStyle.Render(fmt.Sprintf(" · t%d · d=%.2f ", c.turn, c.distance))
-	footer := "═══" + phaseText
+	footer := borderStyle.Render("═══") + phaseText
 	footerRight := mutedStyle.Render(fmt.Sprintf(" ↑%s ↓%s · %dt ",
-		formatTokens(c.tokensIn), formatTokens(c.tokensOut), c.toolCalls)) + "═"
+		formatTokens(c.tokensIn), formatTokens(c.tokensOut), c.toolCalls)) + borderStyle.Render("═")
 
 	outerStyle := lipgloss.NewStyle().
 		Border(outerFrame).
@@ -183,7 +183,7 @@ func (c *CabinCenter) View(width int) string {
 		BorderBottom(true).
 		BorderLeft(true).
 		BorderRight(true).
-		BorderForeground(c.theme.Border).
+		BorderForeground(c.theme.Accent).
 		Width(width - outerBorderCols)
 
 	rendered := outerStyle.Render(body)
@@ -195,8 +195,8 @@ func (c *CabinCenter) View(width int) string {
 		if topW < 0 {
 			topW = 0
 		}
-		lines[0] = borderStyle.Render("╔") + title +
-			borderStyle.Render(strings.Repeat("═", topW)+"╗")
+		lines[0] = accentStyle.Render("╔") + title +
+			accentStyle.Render(strings.Repeat("═", topW)+"╗")
 	}
 
 	if len(lines) > 1 {
@@ -204,9 +204,9 @@ func (c *CabinCenter) View(width int) string {
 		if botW < 0 {
 			botW = 0
 		}
-		lines[len(lines)-1] = borderStyle.Render("╚") + footer +
-			borderStyle.Render(strings.Repeat("═", botW)) + footerRight +
-			borderStyle.Render("╝")
+		lines[len(lines)-1] = accentStyle.Render("╚") + footer +
+			accentStyle.Render(strings.Repeat("═", botW)) + footerRight +
+			accentStyle.Render("╝")
 	}
 
 	return strings.Join(lines, "\n")
