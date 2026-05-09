@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/dpopsuev/tako/tui/core"
+	"github.com/dpopsuev/tako/tui/design"
 	"github.com/dpopsuev/tako/tui/layout"
 )
 
@@ -26,6 +27,7 @@ type CabinCenter struct {
 	output    *OutputPanel
 	input     *InputPanel
 	spinner   PhaseSpinner
+	theme     design.Theme
 	modelName string
 	width     int
 	height    int
@@ -43,6 +45,7 @@ func NewCabinCenter(output *OutputPanel, input *InputPanel, modelName string) *C
 		output:    output,
 		input:     input,
 		spinner:   NewPhaseSpinner(SpinnerGeometric),
+		theme:     design.DefaultTheme,
 		modelName: modelName,
 		phase:     "idle",
 	}
@@ -142,6 +145,7 @@ func (c *CabinCenter) View(width int) string {
 	innerContent := strings.Join(contentLines, "\n")
 	innerBox := lipgloss.NewStyle().
 		Border(innerFrame).
+		BorderForeground(c.theme.FocusDim).
 		Width(centerW).
 		Render(innerContent)
 
@@ -159,10 +163,19 @@ func (c *CabinCenter) View(width int) string {
 
 	body := strings.Join(bodyLines, "\n")
 
-	title := fmt.Sprintf("═══ tako · %s ", c.modelName)
-	footer := fmt.Sprintf("═══ %s · t%d · d=%.2f ", c.phase, c.turn, c.distance)
-	footerRight := fmt.Sprintf(" ↑%s ↓%s · %dt ═",
-		formatTokens(c.tokensIn), formatTokens(c.tokensOut), c.toolCalls)
+	accentStyle := lipgloss.NewStyle().Foreground(c.theme.Accent)
+	borderStyle := lipgloss.NewStyle().Foreground(c.theme.Border)
+	mutedStyle := lipgloss.NewStyle().Foreground(c.theme.Muted)
+	phaseColor := c.phaseColor()
+	phaseStyle := lipgloss.NewStyle().Foreground(phaseColor)
+
+	titleText := accentStyle.Render(" tako") + mutedStyle.Render(" · "+c.modelName+" ")
+	title := "═══" + titleText
+	phaseText := phaseStyle.Render(fmt.Sprintf(" %s", c.phase)) +
+		mutedStyle.Render(fmt.Sprintf(" · t%d · d=%.2f ", c.turn, c.distance))
+	footer := "═══" + phaseText
+	footerRight := mutedStyle.Render(fmt.Sprintf(" ↑%s ↓%s · %dt ",
+		formatTokens(c.tokensIn), formatTokens(c.tokensOut), c.toolCalls)) + "═"
 
 	outerStyle := lipgloss.NewStyle().
 		Border(outerFrame).
@@ -170,6 +183,7 @@ func (c *CabinCenter) View(width int) string {
 		BorderBottom(true).
 		BorderLeft(true).
 		BorderRight(true).
+		BorderForeground(c.theme.Border).
 		Width(width - outerBorderCols)
 
 	rendered := outerStyle.Render(body)
@@ -181,7 +195,8 @@ func (c *CabinCenter) View(width int) string {
 		if topW < 0 {
 			topW = 0
 		}
-		lines[0] = "╔" + title + strings.Repeat("═", topW) + "╗"
+		lines[0] = borderStyle.Render("╔") + title +
+			borderStyle.Render(strings.Repeat("═", topW)+"╗")
 	}
 
 	if len(lines) > 1 {
@@ -189,10 +204,23 @@ func (c *CabinCenter) View(width int) string {
 		if botW < 0 {
 			botW = 0
 		}
-		lines[len(lines)-1] = "╚" + footer + strings.Repeat("═", botW) + footerRight + "╝"
+		lines[len(lines)-1] = borderStyle.Render("╚") + footer +
+			borderStyle.Render(strings.Repeat("═", botW)) + footerRight +
+			borderStyle.Render("╝")
 	}
 
 	return strings.Join(lines, "\n")
+}
+
+func (c *CabinCenter) phaseColor() lipgloss.AdaptiveColor {
+	switch c.phase {
+	case "executing", "implement":
+		return c.theme.Executing
+	case "reading", "assessment", "knowledge":
+		return c.theme.Reading
+	default:
+		return c.theme.Thinking
+	}
 }
 
 func formatTokens(n int) string {

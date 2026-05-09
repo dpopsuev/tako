@@ -50,22 +50,22 @@ func TokensFromTheme(t Theme) TokenSet { //nolint:gocritic // Theme is a value t
 		// Direct from Theme
 		UserFg:      t.User,
 		AssistantFg: t.Assistant,
-		ToolNameFg:  t.ToolName,
-		ToolArgFg:   t.ToolArg,
+		ToolNameFg:  t.Executing,
+		ToolArgFg:   t.Muted,
 		SuccessFg:   t.Success,
 		ErrorFg:     t.Error,
 		AccentFg:    t.Accent,
 		FocusDimFg:  t.FocusDim,
 
 		// Extended — derived from Theme semantics
-		WarningFg:    t.ToolName,
+		WarningFg:    t.Warning,
 		DiffAddFg:    t.Success,
 		DiffDelFg:    t.Error,
 		DiffHeaderFg: lipgloss.AdaptiveColor{Light: Teal40, Dark: Teal20},
 
 		// Health uses the traffic light triad
 		HealthGreenFg:  t.Success,
-		HealthYellowFg: t.ToolName,
+		HealthYellowFg: t.Warning,
 		HealthRedFg:    t.Error,
 
 		// Coherence thermal gradient

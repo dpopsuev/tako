@@ -73,12 +73,19 @@ func TestRegisterTheme(t *testing.T) {
 	custom := Theme{
 		User:      lipgloss.AdaptiveColor{Light: "#111111", Dark: "#222222"},
 		Assistant: lipgloss.AdaptiveColor{Light: "#333333", Dark: "#444444"},
-		ToolName:  lipgloss.AdaptiveColor{Light: "#555555", Dark: "#666666"},
-		ToolArg:   lipgloss.AdaptiveColor{Light: "#777777", Dark: "#888888"},
+		Muted:     lipgloss.AdaptiveColor{Light: "#555555", Dark: "#666666"},
 		Success:   lipgloss.AdaptiveColor{Light: "#99aaaa", Dark: "#aabbbb"},
 		Error:     lipgloss.AdaptiveColor{Light: "#bbcccc", Dark: "#ccdddd"},
+		Warning:   lipgloss.AdaptiveColor{Light: "#777777", Dark: "#888888"},
 		Accent:    lipgloss.AdaptiveColor{Light: "#ddeeff", Dark: "#eeffaa"},
+		Border:    lipgloss.AdaptiveColor{Light: "#aaaaaa", Dark: "#bbbbbb"},
 		FocusDim:  lipgloss.AdaptiveColor{Light: "#aaaaaa", Dark: "#bbbbbb"},
+		Thinking:  lipgloss.AdaptiveColor{Light: "#555555", Dark: "#666666"},
+		Executing: lipgloss.AdaptiveColor{Light: "#555555", Dark: "#666666"},
+		Reading:   lipgloss.AdaptiveColor{Light: "#555555", Dark: "#666666"},
+		Surface0:  lipgloss.AdaptiveColor{Light: "#ffffff", Dark: "#000000"},
+		Surface1:  lipgloss.AdaptiveColor{Light: "#eeeeee", Dark: "#111111"},
+		Surface2:  lipgloss.AdaptiveColor{Light: "#dddddd", Dark: "#222222"},
 	}
 	RegisterTheme("test-custom", custom)
 
@@ -98,7 +105,7 @@ func TestRegisterTheme(t *testing.T) {
 }
 
 func TestThemeByName_Presets(t *testing.T) {
-	presets := []string{"djinn", "claude", "gemini", "codex"}
+	presets := []string{"redhat", "claude", "gemini", "codex"}
 	for _, name := range presets {
 		t.Run(name, func(t *testing.T) {
 			th := ThemeByName(name)
@@ -127,7 +134,7 @@ func TestThemeNames(t *testing.T) {
 	if len(names) < 4 {
 		t.Fatalf("expected at least 4 theme names, got %d", len(names))
 	}
-	for _, req := range []string{"djinn", "claude", "gemini", "codex"} {
+	for _, req := range []string{"redhat", "claude", "gemini", "codex"} {
 		if !slices.Contains(names, req) {
 			t.Errorf("ThemeNames() missing %q", req)
 		}
