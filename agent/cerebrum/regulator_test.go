@@ -19,8 +19,8 @@ func TestDefaultRender_Basic(t *testing.T) {
 	if !strings.Contains(result, "feed the tako") {
 		t.Error("should contain the need")
 	}
-	if !strings.Contains(result, "respond to the operator") {
-		t.Error("should instruct to respond to operator")
+	if !strings.Contains(result, "fulfill the need") {
+		t.Error("should instruct to fulfill the need")
 	}
 }
 

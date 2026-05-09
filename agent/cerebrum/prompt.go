@@ -131,7 +131,7 @@ func instructionsForPhase(phase reactivity.AtomType) string {
 			return "BUILD: Adapt. What needs refinement based on actual results?"
 		}
 	default:
-		return "REFLECT: Was the need fulfilled? If YES — respond to the operator with the outcome. If NO — state what is still missing. Do NOT repeat actions already taken."
+		return "REFLECT: Was the need fulfilled? If YES — deliver the result. If NO — state what is still missing. Do NOT repeat actions already taken."
 	}
 }
 
