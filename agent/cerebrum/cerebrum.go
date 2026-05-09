@@ -313,7 +313,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 		slog.Int("cfg.unmet_dim_max", cb.config.UnmetDimMax),
 		slog.Int("cfg.backward_turn_limit", cb.config.BackwardTurnLimit))
 
-	history, _ := molecule.Context().([]tangle.Message)
+	var history []tangle.Message
 	chain := molecule.Chain()
 	var turnRecords []TurnRecord
 	debouncer := NewDebouncer(3, 2)
@@ -617,7 +617,6 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 				}
 			}
 
-			molecule.SetContext(history)
 			continue
 		}
 
@@ -642,11 +641,8 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 			slog.WarnContext(ctx, "cerebrum.think.no_tool_calls",
 				slog.Int("turn", turn),
 				slog.Int("content_len", len(completion.Content)))
-			molecule.SetContext(history)
 			continue
 		}
-
-		molecule.SetContext(history)
 
 		criticality := cb.assert.Evaluate(molecule)
 		if criticality == reactivity.Subcritical {
