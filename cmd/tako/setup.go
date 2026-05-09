@@ -17,10 +17,8 @@ type takoConfig struct {
 	Model    string `yaml:"model,omitempty"`
 }
 
-const configPath = ".tako/config.yaml"
-
 func loadConfig() *takoConfig {
-	data, err := os.ReadFile(configPath)
+	data, err := os.ReadFile(configFile())
 	if err != nil {
 		return nil
 	}
@@ -32,14 +30,15 @@ func loadConfig() *takoConfig {
 }
 
 func saveConfig(cfg takoConfig) error {
-	if err := os.MkdirAll(filepath.Dir(configPath), 0o750); err != nil {
+	path := configFile()
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 		return err
 	}
 	data, err := yaml.Marshal(&cfg)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(configPath, data, 0o644)
+	return os.WriteFile(path, data, 0o644)
 }
 
 func resolveProvider(flagProvider string) string {
@@ -82,7 +81,7 @@ func interactiveSetup() (string, error) {
 	if err := saveConfig(takoConfig{Provider: provider}); err != nil {
 		fmt.Fprintf(os.Stderr, "warning: could not save config: %v\n", err)
 	} else {
-		fmt.Printf("\nSaved to %s\n", configPath)
+		fmt.Printf("\nSaved to %s\n", configFile())
 	}
 
 	return provider, nil

@@ -41,6 +41,8 @@ func main() {
 
 	var err error
 	switch os.Args[1] {
+	case "init":
+		err = initCmd(os.Args[2:])
 	case "tui":
 		err = tuiCmd(os.Args[2:])
 	case "agent":
@@ -99,6 +101,7 @@ func printUsage() {
 	fmt.Fprintln(os.Stderr, `Usage: tako <command> [flags]
 
 Commands:
+  init       Configure provider and create .tako/blueprint.yaml
   agent      Run a code agent from a Blueprint YAML (e.g. tako agent --blueprint code.yaml 'fix the bug')
   serve      Start HTTP MCP server for a circuit (e.g. tako serve --circuit sdlc)
   run        Execute a circuit YAML
