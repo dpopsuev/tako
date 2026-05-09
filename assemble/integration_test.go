@@ -906,7 +906,6 @@ func TestDrill_Monitor_ArchHealth(t *testing.T) {
 }
 
 func TestDrill_Hello_ShouldNotRepeatSpeak(t *testing.T) {
-	t.Skip("KNOWN BUG: agent repeats dialog_speak for conversational inputs — needs one-shot path in Think")
 
 	speakCalls := 0
 	completer := &scriptedCompleter{

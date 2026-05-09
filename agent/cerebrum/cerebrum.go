@@ -285,6 +285,16 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 			slog.String("gear", string(result.EscalatedGear)))
 	}
 
+	noDesired := len(catalyst.Desired) == 0
+	if noDesired && intent.Gear != GearReflex && isConversational(need) {
+		outcome, err := cb.oneShot(ctx, molecule, need)
+		if err == nil {
+			return outcome, nil
+		}
+		slog.WarnContext(ctx, "cerebrum.oneshot.fallthrough",
+			slog.Any("error", err))
+	}
+
 	if cb.recollector != nil {
 		recollected := cb.recollector.Recollect(need)
 		for _, atom := range recollected {
