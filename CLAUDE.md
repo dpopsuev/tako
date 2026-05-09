@@ -240,6 +240,16 @@ Complex is thin (refs + wiring + topology). Fab has the substance. Rehearsal val
 - TAK-ADR-1: FAR 4-Layer Architecture
 - TAK-ADR-2: Cloud-Native Alignment (CRI/Agent Sandbox/CRIU)
 
+## TUI Rules
+
+- Use `lipgloss.Border` and `lipgloss.Style` for all box drawing — never manual WriteString with box chars.
+- Use `lipgloss.Width()` for visible width, never `len()` — ANSI escapes and multi-byte runes break byte counting.
+- Use `lipgloss.JoinVertical` / `lipgloss.JoinHorizontal` for composition, not string concatenation.
+- Cabin layout: double outer frame (`╔═╗║╚═╝`), heavy inner frame (`┏━┓┃┗━┛`), pillar padding between frames.
+- Golden snapshot tests in `tui/testdata/*.golden` — run `go test ./tui/ -run TestGolden -update` to regenerate.
+- TUI is a bus subscriber — it reads events, never imports Cerebrum.
+- Tako is provider-agnostic — no hardcoded model names, no vendor defaults anywhere in TUI or CLI.
+
 ### First Tasks
 - GOL-175: Rename Origami → Tako (CMP-35)
 - GOL-173: Rename Troupe → Tangle (CMP-44)

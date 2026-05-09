@@ -9,24 +9,10 @@ func TestCabinLayout_Proportions(t *testing.T) {
 	m.engine.Resize(80, 24)
 
 	heights := m.engine.ComputeHeights()
-
-	statusH := heights[m.status.ID()]
 	cabinH := heights[m.cabin.ID()]
-	footerH := heights[m.footer.ID()]
 
-	if statusH < 1 {
-		t.Errorf("status height = %d, want >= 1", statusH)
-	}
-	if cabinH < 10 {
-		t.Errorf("cabin height = %d, want >= 10 (MinHeight)", cabinH)
-	}
-	if footerH < 1 {
-		t.Errorf("footer height = %d, want >= 1", footerH)
-	}
-
-	total := statusH + cabinH + footerH
-	if cabinH < total*3/4 {
-		t.Errorf("cabin should get majority of space: cabin=%d total=%d", cabinH, total)
+	if cabinH < 20 {
+		t.Errorf("cabin height = %d, want >= 20 at 80x24", cabinH)
 	}
 }
 
@@ -49,7 +35,7 @@ func TestCabinLayout_WideTerminal(t *testing.T) {
 	heights := m.engine.ComputeHeights()
 	cabinH := heights[m.cabin.ID()]
 
-	if cabinH < 40 {
+	if cabinH < 45 {
 		t.Errorf("cabin should scale with terminal: got %d for height=50", cabinH)
 	}
 }

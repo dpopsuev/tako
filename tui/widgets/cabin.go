@@ -1,6 +1,7 @@
 package widgets
 
 import (
+	"fmt"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -10,73 +11,95 @@ import (
 	"github.com/dpopsuev/tako/tui/layout"
 )
 
-var innerBorder = lipgloss.Border{
+var outerFrame = lipgloss.Border{
+	Top: "═", Bottom: "═", Left: "║", Right: "║",
+	TopLeft: "╔", TopRight: "╗", BottomLeft: "╚", BottomRight: "╝",
+}
+
+var innerFrame = lipgloss.Border{
 	Top: "━", Bottom: "━", Left: "┃", Right: "┃",
 	TopLeft: "┏", TopRight: "┓", BottomLeft: "┗", BottomRight: "┛",
 }
 
 type CabinCenter struct {
 	core.BasePanel
-	left   *PillarPanel
-	right  *PillarPanel
-	output *OutputPanel
-	input  *InputPanel
-	width  int
-	height int
+	output    *OutputPanel
+	input     *InputPanel
+	modelName string
+	width     int
+	height    int
+	phase     string
+	turn      int
+	distance  float64
+	tokensIn  int
+	tokensOut int
+	toolCalls int
 }
 
-func NewCabinCenter(output *OutputPanel, input *InputPanel, left, right *PillarPanel) *CabinCenter {
+func NewCabinCenter(output *OutputPanel, input *InputPanel, modelName string) *CabinCenter {
 	return &CabinCenter{
 		BasePanel: core.NewBasePanel("cabin-center", 0),
-		left:      left,
-		right:     right,
 		output:    output,
 		input:     input,
+		modelName: modelName,
+		phase:     "idle",
 	}
 }
 
 var _ core.Panel = (*CabinCenter)(nil)
 
 func (c *CabinCenter) Children() []core.Panel {
-	return []core.Panel{c.left, c.output, c.input, c.right}
+	return []core.Panel{c.output, c.input}
 }
 
 func (c *CabinCenter) Update(msg tea.Msg) (core.Panel, tea.Cmd) {
-	if rm, ok := msg.(layout.ResizeMsg); ok {
-		c.width = rm.Width
-		c.height = rm.Height
+	switch msg := msg.(type) {
+	case layout.ResizeMsg:
+		c.width = msg.Width
+		c.height = msg.Height
+	case PhaseChangeMsg:
+		c.phase = msg.Phase
+		c.turn = msg.Turn
+	case TokenUpdateMsg:
+		c.tokensIn += msg.TokensIn
+		c.tokensOut += msg.TokensOut
+		c.toolCalls += msg.ToolCalls
+	case AgentDoneMsg:
+		c.distance = msg.Distance
 	}
 	return c, nil
 }
 
 func (c *CabinCenter) View(width int) string {
-	pillarW := width / 8
+	if c.height < 8 {
+		return ""
+	}
+
+	outerBorderCols := 2
+	pillarW := (width - outerBorderCols) / 8
 	if pillarW < 1 {
 		pillarW = 1
 	}
-
-	outerBorderW := 2
-	innerBorderW := 2
-	centerW := width - 2*pillarW - outerBorderW - innerBorderW
+	innerBorderCols := 2
+	centerW := width - outerBorderCols - 2*pillarW - innerBorderCols
 	if centerW < 10 {
 		centerW = 10
 	}
 
+	outerH := c.height - 2
+	innerBorderRows := 2
 	inputH := 4
-	innerH := c.height - 2
-	if innerH < inputH+1 {
-		innerH = inputH + 1
-	}
-	outputH := innerH - inputH - 3
+	separatorH := 1
+	outputH := outerH - innerBorderRows - inputH - separatorH
 	if outputH < 1 {
 		outputH = 1
 	}
 
 	c.output.Update(layout.ResizeMsg{Width: centerW, Height: outputH})
-	c.input.Update(layout.ResizeMsg{Width: centerW - 2, Height: inputH})
+	c.input.Update(layout.ResizeMsg{Width: centerW, Height: inputH})
 
-	outputContent := c.output.View(centerW)
-	outputLines := strings.Split(outputContent, "\n")
+	outputView := c.output.View(centerW)
+	outputLines := strings.Split(outputView, "\n")
 	for len(outputLines) < outputH {
 		outputLines = append([]string{""}, outputLines...)
 	}
@@ -84,41 +107,89 @@ func (c *CabinCenter) View(width int) string {
 		outputLines = outputLines[len(outputLines)-outputH:]
 	}
 
-	inputContent := c.input.View(centerW - 2)
-	inputLines := strings.Split(inputContent, "\n")
+	inputView := c.input.View(centerW)
+	inputLines := strings.Split(inputView, "\n")
 	for len(inputLines) < inputH {
 		inputLines = append(inputLines, "")
 	}
 
-	var centerLines []string
-	for _, line := range outputLines {
-		centerLines = append(centerLines, padToWidth(line, centerW))
+	var contentLines []string
+	for _, l := range outputLines {
+		contentLines = append(contentLines, pad(l, centerW))
 	}
-	centerLines = append(centerLines, strings.Repeat("━", centerW))
-	for _, line := range inputLines {
-		centerLines = append(centerLines, " "+padToWidth(line, centerW-2)+" ")
+	contentLines = append(contentLines, strings.Repeat("━", centerW))
+	for _, l := range inputLines {
+		contentLines = append(contentLines, pad(l, centerW))
 	}
 
-	centerContent := strings.Join(centerLines, "\n")
-
+	innerContent := strings.Join(contentLines, "\n")
 	innerBox := lipgloss.NewStyle().
-		Border(innerBorder).
+		Border(innerFrame).
 		Width(centerW).
-		Render(centerContent)
+		Render(innerContent)
 
-	leftPad := strings.Repeat(" ", pillarW)
-	rightPad := strings.Repeat(" ", pillarW)
+	innerLines := strings.Split(innerBox, "\n")
 
-	boxLines := strings.Split(innerBox, "\n")
-	var rows []string
-	for _, line := range boxLines {
-		rows = append(rows, leftPad+line+rightPad)
+	pillarPad := strings.Repeat(" ", pillarW)
+
+	var bodyLines []string
+	for _, row := range innerLines {
+		bodyLines = append(bodyLines, pillarPad+row+pillarPad)
+	}
+	for len(bodyLines) < outerH {
+		bodyLines = append(bodyLines, strings.Repeat(" ", width-outerBorderCols))
 	}
 
-	return strings.Join(rows, "\n")
+	body := strings.Join(bodyLines, "\n")
+
+	title := fmt.Sprintf("═══ tako · %s ", c.modelName)
+	footer := fmt.Sprintf("═══ %s · t%d · d=%.2f ", c.phase, c.turn, c.distance)
+	footerRight := fmt.Sprintf(" ↑%s ↓%s · %dt ═",
+		formatTokens(c.tokensIn), formatTokens(c.tokensOut), c.toolCalls)
+
+	outerStyle := lipgloss.NewStyle().
+		Border(outerFrame).
+		BorderTop(true).
+		BorderBottom(true).
+		BorderLeft(true).
+		BorderRight(true).
+		Width(width - outerBorderCols)
+
+	rendered := outerStyle.Render(body)
+
+	lines := strings.Split(rendered, "\n")
+
+	if len(lines) > 0 {
+		topW := width - lipgloss.Width(title) - 2
+		if topW < 0 {
+			topW = 0
+		}
+		lines[0] = "╔" + title + strings.Repeat("═", topW) + "╗"
+	}
+
+	if len(lines) > 1 {
+		botW := width - lipgloss.Width(footer) - lipgloss.Width(footerRight) - 2
+		if botW < 0 {
+			botW = 0
+		}
+		lines[len(lines)-1] = "╚" + footer + strings.Repeat("═", botW) + footerRight + "╝"
+	}
+
+	return strings.Join(lines, "\n")
 }
 
-func padToWidth(s string, w int) string {
+func formatTokens(n int) string {
+	switch {
+	case n < 1000:
+		return fmt.Sprintf("%d", n)
+	case n < 10000:
+		return fmt.Sprintf("%.1fk", float64(n)/1000)
+	default:
+		return fmt.Sprintf("%dk", n/1000)
+	}
+}
+
+func pad(s string, w int) string {
 	vis := lipgloss.Width(s)
 	if vis >= w {
 		return s

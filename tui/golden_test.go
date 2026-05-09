@@ -50,8 +50,7 @@ func assertGolden(t *testing.T, name, got string) {
 
 		var diff strings.Builder
 		for i := 0; i < maxLines; i++ {
-			g := ""
-			w := ""
+			g, w := "", ""
 			if i < len(gotLines) {
 				g = gotLines[i]
 			}
@@ -60,16 +59,13 @@ func assertGolden(t *testing.T, name, got string) {
 			}
 			if g != w {
 				diff.WriteString("--- line ")
-				diff.WriteString(strings.Repeat(" ", 0))
-				diff.WriteString(string(rune('0' + i/10)))
-				diff.WriteString(string(rune('0' + i%10)))
-				diff.WriteString(" ---\n")
-				diff.WriteString("  want: ")
+				diff.WriteString(string(rune('0'+i/10)))
+				diff.WriteString(string(rune('0'+i%10)))
+				diff.WriteString(" ---\n  want: ")
 				diff.WriteString(w)
-				diff.WriteString("\n")
-				diff.WriteString("  got:  ")
+				diff.WriteString("\n  got:  ")
 				diff.WriteString(g)
-				diff.WriteString("\n")
+				diff.WriteByte('\n')
 			}
 		}
 		t.Fatalf("golden mismatch %s:\n%s", path, diff.String())
@@ -83,63 +79,68 @@ func renderModel(runner Runner, model string, width, height int) string {
 }
 
 func TestGolden_Cabin_80x24(t *testing.T) {
-	got := renderModel(nil, "test-model", 80, 24)
-	assertGolden(t, "cabin_80x24", got)
+	assertGolden(t, "cabin_80x24", renderModel(nil, "test-model", 80, 24))
 }
 
 func TestGolden_Cabin_120x40(t *testing.T) {
-	got := renderModel(nil, "test-model", 120, 40)
-	assertGolden(t, "cabin_120x40", got)
+	assertGolden(t, "cabin_120x40", renderModel(nil, "test-model", 120, 40))
 }
 
 func TestGolden_Cabin_40x12(t *testing.T) {
-	got := renderModel(nil, "test-model", 40, 12)
-	assertGolden(t, "cabin_40x12", got)
+	assertGolden(t, "cabin_40x12", renderModel(nil, "test-model", 40, 12))
 }
 
 func TestGolden_CabinStructure_80x24(t *testing.T) {
 	got := renderModel(nil, "test-model", 80, 24)
 	lines := strings.Split(got, "\n")
 
-	if len(lines) < 20 {
-		t.Fatalf("expected 20+ lines, got %d", len(lines))
+	if len(lines) < 10 {
+		t.Fatalf("expected 10+ lines, got %d", len(lines))
 	}
 
-	if !strings.Contains(lines[0], "tako") || !strings.Contains(lines[0], "╔") {
-		t.Errorf("line 0: missing top border with title: %q", lines[0])
+	first := lines[0]
+	if !strings.Contains(first, "╔") || !strings.Contains(first, "tako") {
+		t.Errorf("top border missing ╔ or title: %q", first)
 	}
 
-	hasPillarBorder := false
+	last := lines[len(lines)-1]
+	if !strings.Contains(last, "╚") || !strings.Contains(last, "╝") {
+		t.Errorf("bottom border missing ╚╝: %q", last)
+	}
+	if !strings.Contains(last, "↑") {
+		t.Errorf("footer missing token stats: %q", last)
+	}
+
+	hasOuter := false
+	hasInner := false
 	hasSeparator := false
-	hasInputLine := false
+	hasInput := false
 	for _, line := range lines[1 : len(lines)-1] {
+		if strings.Contains(line, "║") {
+			hasOuter = true
+		}
 		if strings.Contains(line, "┃") {
-			hasPillarBorder = true
+			hasInner = true
 		}
 		if strings.Count(line, "━") > 10 {
 			hasSeparator = true
 		}
 		if strings.Contains(line, "Type a task") {
-			hasInputLine = true
+			hasInput = true
 		}
 	}
 
-	if !hasPillarBorder {
-		t.Error("missing inner ┃ pillar borders")
+	if !hasOuter {
+		t.Error("missing outer ║ borders")
+	}
+	if !hasInner {
+		t.Error("missing inner ┃ borders")
 	}
 	if !hasSeparator {
-		t.Error("missing ━ separator between output and input")
+		t.Error("missing ━ separator")
 	}
-	if !hasInputLine {
+	if !hasInput {
 		t.Error("missing input placeholder")
-	}
-
-	lastLine := lines[len(lines)-1]
-	if !strings.Contains(lastLine, "╚") || !strings.Contains(lastLine, "╝") {
-		t.Errorf("footer missing bottom border: %q", lastLine)
-	}
-	if !strings.Contains(lastLine, "↑") {
-		t.Errorf("footer missing token stats: %q", lastLine)
 	}
 }
 
@@ -150,8 +151,7 @@ func TestGolden_CabinWithContent(t *testing.T) {
 	m.engine.Resize(80, 24)
 	m.output.Update(widgets.AppendOutputMsg{Line: "> Hello world"})
 	m.output.Update(widgets.AppendOutputMsg{Line: "I can help you with that."})
-	m.footer.Update(widgets.TokenUpdateMsg{TokensIn: 1500, TokensOut: 200, ToolCalls: 3})
-	m.footer.Update(widgets.PhaseChangeMsg{Phase: "thinking", Turn: 2})
-	got := m.View()
-	assertGolden(t, "cabin_with_content", got)
+	m.cabin.Update(widgets.TokenUpdateMsg{TokensIn: 1500, TokensOut: 200, ToolCalls: 3})
+	m.cabin.Update(widgets.PhaseChangeMsg{Phase: "thinking", Turn: 2})
+	assertGolden(t, "cabin_with_content", m.View())
 }

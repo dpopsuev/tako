@@ -14,8 +14,6 @@ type Model struct {
 	runner  Runner
 	output  *widgets.OutputPanel
 	input   *widgets.InputPanel
-	status  *widgets.StatusPanel
-	footer  *widgets.FooterPanel
 	cabin   *widgets.CabinCenter
 	overlay *widgets.OverlayContainer
 	engine  *layout.LayoutEngine
@@ -28,38 +26,22 @@ type Model struct {
 func NewModel(runner Runner, modelName string) Model {
 	output := widgets.NewOutputPanel()
 	input := widgets.NewInputPanel()
-	status := widgets.NewStatusPanel(modelName)
-	footer := widgets.NewFooterPanel()
-	leftPillar := widgets.NewPillarPanel("left-pillar")
-	rightPillar := widgets.NewPillarPanel("right-pillar")
-	cabin := widgets.NewCabinCenter(output, input, leftPillar, rightPillar)
+	cabin := widgets.NewCabinCenter(output, input, modelName)
 
 	fm := core.NewFocusManager(input, output)
 	engine := layout.NewLayoutEngine(fm, plainBorder{})
 
-	engine.Register(layout.PanelSlot{
-		Panel:  status,
-		Weight: 0,
-		Border: layout.BorderNone,
-	})
 	engine.Register(layout.PanelSlot{
 		Panel:     cabin,
 		Weight:    1,
 		MinHeight: 10,
 		Border:    layout.BorderNone,
 	})
-	engine.Register(layout.PanelSlot{
-		Panel:  footer,
-		Weight: 0,
-		Border: layout.BorderNone,
-	})
 
 	return Model{
 		runner:  runner,
 		output:  output,
 		input:   input,
-		status:  status,
-		footer:  footer,
 		cabin:   cabin,
 		overlay: widgets.NewOverlayContainer(),
 		engine:  engine,
@@ -137,7 +119,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.Result != "" {
 			m.output.Update(widgets.AppendOutputMsg{Line: "\n" + msg.Result})
 		}
-		m.footer.Update(msg)
+		m.cabin.Update(msg)
 		return m, nil
 
 	case widgets.ErrorMsg:
@@ -148,11 +130,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case widgets.PhaseChangeMsg:
 		m.output.Update(msg)
-		m.footer.Update(msg)
+		m.cabin.Update(msg)
 		return m, nil
 
 	case widgets.TokenUpdateMsg:
-		m.footer.Update(msg)
+		m.cabin.Update(msg)
 		return m, nil
 
 	case widgets.ToolCallStartMsg:
