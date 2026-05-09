@@ -109,6 +109,13 @@ func (m *Molecule) criteriaMet() bool {
 func (m *Molecule) Phase() AtomType             { return m.phase }
 func (m *Molecule) Sealed() bool                { return m.sealed }
 func (m *Molecule) Parked() bool                { return m.parked }
+
+func (m *Molecule) Settled() bool {
+	if m.catalyst != nil && len(m.catalyst.Desired) > 0 {
+		return m.criteriaMet()
+	}
+	return m.mass[IntentAtom] > 0 && m.response != ""
+}
 func (m *Molecule) Park()                       { m.parked = true }
 func (m *Molecule) Unpark()                     { m.parked = false }
 func (m *Molecule) Mass(t AtomType) int         { return m.mass[t] }

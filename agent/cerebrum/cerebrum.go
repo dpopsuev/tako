@@ -449,10 +449,6 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 			slog.Int("turn", turn),
 			slog.String("content", completion.Content))
 
-		if completion.Content != "" {
-			molecule.SetResponse(completion.Content)
-		}
-
 		history = append(history, tangle.Message{Role: RoleUser, Content: prompt})
 		history = append(history, tangle.Message{
 			Role:      RoleAssistant,
@@ -554,6 +550,19 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 				break
 			}
 
+			if molecule.Settled() {
+				slog.InfoContext(ctx, "cerebrum.think.settled",
+					slog.Int("turn", turn),
+					slog.Bool("has_desired", molecule.Catalyst() != nil && len(molecule.Catalyst().Desired) > 0))
+				cb.reactor.Seal(molecule, reactivity.Atom{
+					ID:       fmt.Sprintf("wish-settled-%d", turn),
+					Type:     reactivity.RetrospectionAtom,
+					Taxonomy: "retrospection.settled",
+					Content:  []byte(molecule.Response()),
+				})
+				break
+			}
+
 			ictx := BuildInstigatorContext(molecule, chain)
 			nextTriad := cb.instigator.NextTriad(molecule.CurrentTriad(), ictx)
 			if nextTriad == reactivity.ReflectTriad && nextTriad != molecule.CurrentTriad() {
@@ -612,31 +621,24 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 			continue
 		}
 
+		if len(completion.ToolCalls) == 0 && completion.Content != "" {
+			molecule.SetResponse(completion.Content)
+		}
+
+		if len(completion.ToolCalls) == 0 && molecule.Settled() {
+			slog.InfoContext(ctx, "cerebrum.think.settled",
+				slog.Int("turn", turn),
+				slog.Bool("has_desired", molecule.Catalyst() != nil && len(molecule.Catalyst().Desired) > 0))
+			cb.reactor.Seal(molecule, reactivity.Atom{
+				ID:       fmt.Sprintf("wish-settled-%d", turn),
+				Type:     reactivity.RetrospectionAtom,
+				Taxonomy: "retrospection.settled",
+				Content:  []byte(molecule.Response()),
+			})
+			break
+		}
+
 		if len(completion.ToolCalls) == 0 {
-			if completion.Content != "" {
-				molecule.SetResponse(completion.Content)
-			}
-			check := SealCheck{
-				Turn:         turn,
-				HasDesired:   molecule.Catalyst() != nil && len(molecule.Catalyst().Desired) > 0,
-				HasToolCalls: false,
-				Content:      completion.Content,
-				Distance:     molecule.Distance(),
-				DeltaDistance: molecule.DeltaDistance(),
-				Molecule:     molecule,
-			}
-			if cb.sealStrategy.ShouldSeal(check) {
-				slog.InfoContext(ctx, "cerebrum.think.seal_strategy",
-					slog.Int("turn", turn),
-					slog.Int("content_len", len(completion.Content)))
-				cb.reactor.Seal(molecule, reactivity.Atom{
-					ID:       fmt.Sprintf("wish-sealed-%d", turn),
-					Type:     reactivity.RetrospectionAtom,
-					Taxonomy: "retrospection.sealed",
-					Content:  []byte(completion.Content),
-				})
-				break
-			}
 			slog.WarnContext(ctx, "cerebrum.think.no_tool_calls",
 				slog.Int("turn", turn),
 				slog.Int("content_len", len(completion.Content)))
