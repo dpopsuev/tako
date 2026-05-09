@@ -37,7 +37,7 @@ func TestSubagent_SpawnAndComplete(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	err := agent.Think(ctx, "delegate reading go.mod to a subagent")
+	_, err := agent.Think(ctx, "delegate reading go.mod to a subagent")
 	if err != nil {
 		t.Fatalf("Think: %v", err)
 	}

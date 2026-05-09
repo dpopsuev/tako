@@ -144,7 +144,7 @@ func TestSmoke_SingleCompletion(t *testing.T) {
 
 	t.Log("Sending single Think with 3 max turns...")
 	start := time.Now()
-	if err := cb.Think(ctx, reactivity.Catalyst{Need: "Say hello"}); err != nil {
+	if _, err := cb.Think(ctx, reactivity.Catalyst{Need: "Say hello"}); err != nil {
 		t.Fatalf("Think: %v", err)
 	}
 	t.Logf("Think completed in %s", time.Since(start))
@@ -269,7 +269,7 @@ func TestScenario_Fridge_BookMoves(t *testing.T) {
 		cerebrum.WithObserver(scenario.Adventure.State),
 		cerebrum.WithCapabilities(scenario.Adventure.Capabilities()),
 	)
-	if err := cb1.Think(ctx1, reactivity.Catalyst{Need: scenario.Need}); err != nil {
+	if _, err := cb1.Think(ctx1, reactivity.Catalyst{Need: scenario.Need}); err != nil {
 		t.Fatalf("Run 1 Think: %v", err)
 	}
 	m1 := cb1.Result()

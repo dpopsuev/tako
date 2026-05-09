@@ -103,10 +103,3 @@ func (s *MemoryStore) Set(key, value string) error {
 	t.Logf("PASS: answered architecture question in %d turns", agent.Result().Turns())
 	t.Logf("Result: %s", result[:min(len(result), 300)])
 }
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}

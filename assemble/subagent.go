@@ -76,7 +76,7 @@ func (f *SubagentFactory) execute(ctx context.Context, input json.RawMessage) (o
 		slog.Int("capabilities", len(caps)))
 
 	start := time.Now()
-	err := child.Think(ctx, in.Task)
+	_, err := child.Think(ctx, in.Task)
 	elapsed := time.Since(start)
 
 	if err != nil {

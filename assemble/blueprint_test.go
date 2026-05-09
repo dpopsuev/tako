@@ -73,7 +73,7 @@ func TestWalkingSkeleton_ReadFile(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	err := agent.Think(ctx, "read the blueprint.go file")
+	_, err := agent.Think(ctx, "read the blueprint.go file")
 	if err != nil {
 		t.Fatalf("Think: %v", err)
 	}
@@ -183,7 +183,7 @@ func TestWalkingSkeleton_ToolResultReachesLLM(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	agent.Think(ctx, "read blueprint.go")
+	_, _ = agent.Think(ctx, "read blueprint.go")
 
 	foundToolResult := false
 	for _, msg := range secondCallMessages {
@@ -249,7 +249,7 @@ func TestClosedCircuit_OrganExecutesAndResultReturns(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	if err := agent.Think(ctx, "ping the organ"); err != nil {
+	if _, err := agent.Think(ctx, "ping the organ"); err != nil {
 		t.Fatalf("Think: %v", err)
 	}
 

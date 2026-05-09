@@ -93,7 +93,7 @@ func TestHello(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	err := agent.Think(ctx, "Change the greeting from hello to world, update the test, verify it passes, and commit")
+	_, err := agent.Think(ctx, "Change the greeting from hello to world, update the test, verify it passes, and commit")
 	if err != nil {
 		t.Fatalf("Think: %v", err)
 	}

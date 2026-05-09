@@ -16,7 +16,7 @@ import (
 
 // --- Stress 1: Rapid multi-turn — 10 inputs on same Molecule ---
 
-func TestStress_RapidMultiTurn_10Inputs(t *testing.T) {
+func TestStress_RapidSequential_10Sessions(t *testing.T) {
 	speak := speakCap()
 	var llmCalls atomic.Int32
 	completer := tangle.CompleteFunc(func(_ context.Context, _ tangle.CompletionParams) (*tangle.Completion, error) {
@@ -43,23 +43,20 @@ func TestStress_RapidMultiTurn_10Inputs(t *testing.T) {
 	)
 
 	for i := 0; i < 10; i++ {
-		cb.Think(context.Background(), reactivity.Catalyst{
+		_, _ = cb.Think(context.Background(), reactivity.Catalyst{
 			Need: fmt.Sprintf("Question %d about animals", i),
 		})
 	}
 
 	m := cb.Result()
-	if m.Sealed() {
-		t.Error("molecule should stay open across 10 inputs (no Desired)")
+	if !m.Sealed() {
+		t.Error("last molecule should be sealed (ImmediateSeal after text)")
 	}
-	if m.Mass(reactivity.IntentAtom) < 10 {
-		t.Errorf("expected 10+ intent atoms, got %d", m.Mass(reactivity.IntentAtom))
+	if llmCalls.Load() < 10 {
+		t.Errorf("expected 10+ LLM calls across sessions, got %d", llmCalls.Load())
 	}
-	if m.Chain().Len() < 10 {
-		t.Errorf("expected 10+ chain events, got %d", m.Chain().Len())
-	}
-	t.Logf("10 turns: intents=%d chain=%d llm_calls=%d",
-		m.Mass(reactivity.IntentAtom), m.Chain().Len(), llmCalls.Load())
+	t.Logf("10 sessions: llm_calls=%d last_molecule_mass=%d",
+		llmCalls.Load(), m.TotalMass())
 }
 
 // --- Stress 2: Desired emerges mid-conversation ---
@@ -108,29 +105,32 @@ func TestStress_DesiredEmergesMidConversation(t *testing.T) {
 		WithTurnTimeout(5*time.Second),
 	)
 
-	// Turn 1: open-ended
-	cb.Think(context.Background(), reactivity.Catalyst{Need: "Hello"})
-	m := cb.Result()
-	if m.Sealed() {
-		t.Fatal("should park after Hello, not seal")
+	// Session 1: open-ended, seals via ImmediateSeal
+	_, _ = cb.Think(context.Background(), reactivity.Catalyst{Need: "Hello"})
+	m1 := cb.Result()
+	if !m1.Sealed() {
+		t.Fatal("should seal after Hello (ImmediateSeal: no Desired, text only)")
 	}
-	if m.Catalyst() != nil && len(m.Catalyst().Desired) > 0 {
+	if m1.Catalyst() != nil && len(m1.Catalyst().Desired) > 0 {
 		t.Fatal("should have no Desired after Hello")
 	}
 
-	// Turn 2: Desired emerges
-	cb.Think(context.Background(), reactivity.Catalyst{
+	// Session 2: Desired emerges on new Molecule
+	_, _ = cb.Think(context.Background(), reactivity.Catalyst{
 		Need:    "Tell me specifically about cow milk production",
 		Desired: map[string]any{"milk_info": true},
 	})
-	m = cb.Result()
+	m2 := cb.Result()
 
-	if m.Catalyst() == nil || len(m.Catalyst().Desired) == 0 {
-		t.Fatal("Desired should exist after second input")
+	if m2.Catalyst() == nil || len(m2.Catalyst().Desired) == 0 {
+		t.Fatal("Desired should exist on second molecule")
+	}
+	if m2.ID == m1.ID {
+		t.Fatal("second Think should create a new Molecule (first was sealed)")
 	}
 
-	t.Logf("desired emerged: has_desired=%v distance=%.2f intents=%d",
-		m.Catalyst() != nil, m.Distance(), m.Mass(reactivity.IntentAtom))
+	t.Logf("desired emerged: mol1=%s mol2=%s has_desired=%v distance=%.2f",
+		m1.ID, m2.ID, m2.Catalyst() != nil, m2.Distance())
 }
 
 // --- Stress 3: Organ failure mid-session ---
@@ -191,7 +191,10 @@ func TestStress_OrganFailureMidSession(t *testing.T) {
 		WithTurnTimeout(5*time.Second),
 	)
 
-	cb.Think(context.Background(), reactivity.Catalyst{Need: "Read the data"})
+	_, _ = cb.Think(context.Background(), reactivity.Catalyst{
+		Need:    "Read the data",
+		Desired: map[string]any{"data_read": true},
+	})
 	m := cb.Result()
 
 	chain := m.Chain()
@@ -257,7 +260,7 @@ func TestStress_DebouncerAcrossMultiTurn(t *testing.T) {
 		WithTurnTimeout(5*time.Second),
 	)
 
-	cb.Think(context.Background(), reactivity.Catalyst{
+	_, _ = cb.Think(context.Background(), reactivity.Catalyst{
 		Need:    "Read the data",
 		Desired: map[string]any{"data_read": true},
 	})
@@ -294,7 +297,7 @@ func TestStress_EmptyInput(t *testing.T) {
 		WithTurnTimeout(5*time.Second),
 	)
 
-	cb.Think(context.Background(), reactivity.Catalyst{Need: ""})
+	_, _ = cb.Think(context.Background(), reactivity.Catalyst{Need: ""})
 	m := cb.Result()
 
 	if m == nil {
@@ -344,7 +347,7 @@ func TestStress_ConcurrentThinkPanics(t *testing.T) {
 				}
 				done <- true
 			}()
-			cb.Think(context.Background(), reactivity.Catalyst{
+			_, _ = cb.Think(context.Background(), reactivity.Catalyst{
 				Need: fmt.Sprintf("concurrent input %d", n),
 			})
 		}(i)
@@ -381,7 +384,7 @@ func TestStress_MaxTurns_DesiredNeverMet(t *testing.T) {
 		WithTurnTimeout(5*time.Second),
 	)
 
-	cb.Think(context.Background(), reactivity.Catalyst{
+	_, _ = cb.Think(context.Background(), reactivity.Catalyst{
 		Need:    "Solve world hunger",
 		Desired: map[string]any{"hunger_solved": true},
 	})

@@ -28,6 +28,7 @@ type Molecule struct {
 	triadSealed map[Triad]bool
 	phase       AtomType
 	sealed      bool
+	parked      bool
 	unsealCount int
 	emissions        []Emission
 	context          any
@@ -88,6 +89,7 @@ func (m *Molecule) ReportSensor(key string, value any) {
 	m.sensorResults[key] = value
 	if m.catalyst != nil && m.criteriaMet() {
 		m.sealed = true
+		m.parked = false
 	}
 }
 
@@ -106,6 +108,9 @@ func (m *Molecule) criteriaMet() bool {
 
 func (m *Molecule) Phase() AtomType             { return m.phase }
 func (m *Molecule) Sealed() bool                { return m.sealed }
+func (m *Molecule) Parked() bool                { return m.parked }
+func (m *Molecule) Park()                       { m.parked = true }
+func (m *Molecule) Unpark()                     { m.parked = false }
 func (m *Molecule) Mass(t AtomType) int         { return m.mass[t] }
 func (m *Molecule) SourceMass(s AtomSource) int { return m.sourceMass[s] }
 func (m *Molecule) CurrentTriad() Triad         { return m.phase.Triad }
@@ -256,6 +261,7 @@ func (m *Molecule) Seal(wish Atom) {
 		m.taxonomy[wish.Taxonomy] = append(m.taxonomy[wish.Taxonomy], wish.ID)
 	}
 	m.sealed = true
+	m.parked = false
 	m.notify("sealed", nil)
 }
 

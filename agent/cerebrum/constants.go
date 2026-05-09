@@ -61,5 +61,17 @@ var (
 	ErrPipeExists   = errors.New("pipe already exists")
 )
 
+// ThinkOutcome describes how a Think call concluded.
+type ThinkOutcome int
+
+const (
+	OutcomeSealed ThinkOutcome = iota // Molecule done — Telos reached or max_turns
+	OutcomeParked                     // Molecule yielded — waiting for more input
+)
+
+func (o ThinkOutcome) String() string {
+	return [...]string{"sealed", "parked"}[o]
+}
+
 // toolOutputMax is the maximum character length for tool output before truncation.
 const toolOutputMax = 2000

@@ -85,7 +85,7 @@ func (m *Match) Run(ctx context.Context, completer tangle.Completer) MatchResult
 			cat := p.Catalyst
 			cat.Need = cat.Need + "\n\nCurrent state: " + state
 
-			if err := p.cerebrum.Think(ctx, cat); err != nil {
+			if _, err := p.cerebrum.Think(ctx, cat); err != nil {
 				slog.WarnContext(ctx, "match.think_error",
 					slog.String("player", p.ID),
 					slog.Any("error", err))

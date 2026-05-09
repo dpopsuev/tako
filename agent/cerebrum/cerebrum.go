@@ -218,12 +218,13 @@ func (cb *Cerebrum) Run(ctx context.Context) {
 	wg.Wait()
 }
 
-func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) error {
+func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (ThinkOutcome, error) {
 	need := []byte(catalyst.Need)
 	var molecule *reactivity.Molecule
 
 	if cb.molecule != nil && !cb.molecule.Sealed() {
 		molecule = cb.molecule
+		molecule.Unpark()
 		cb.reactor.Add(molecule, reactivity.Atom{
 			ID:   fmt.Sprintf("need-%d", time.Now().UnixNano()),
 			Type: reactivity.IntentAtom, Taxonomy: "intent.need",
@@ -276,7 +277,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 			if cb.listener != nil {
 				cb.listener.OnSealed(molecule.ID, molecule.Distance(), molecule.Turns(), result.Response)
 			}
-			return nil
+			return OutcomeSealed, nil
 		}
 		slog.InfoContext(ctx, "cerebrum.think.reflex_escalated",
 			slog.String("pipe", intent.Pipe.Name),
@@ -316,7 +317,6 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 	chain := molecule.Chain()
 	var turnRecords []TurnRecord
 	debouncer := NewDebouncer(3, 2)
-	parked := false
 
 	prevTriad := molecule.CurrentTriad()
 	for turn := 0; turn < cb.budget.MaxTurns && !molecule.Sealed(); turn++ {
@@ -543,27 +543,6 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 				}
 				toolCancel()
 
-				noDesired := molecule.Catalyst() == nil || len(molecule.Catalyst().Desired) == 0
-				builtInOnly := true
-				hasBuiltIn := false
-				for _, tc := range capCalls {
-					isBuiltIn := false
-					for _, cap := range cb.capabilities {
-						if cap.Name == tc.Name && cap.Source == organ.BuiltIn {
-							isBuiltIn = true
-							hasBuiltIn = true
-						}
-					}
-					if !isBuiltIn {
-						builtInOnly = false
-					}
-				}
-				if noDesired && hasBuiltIn && builtInOnly {
-					slog.InfoContext(ctx, "cerebrum.think.park_after_builtin",
-						slog.Int("turn", turn))
-					parked = true
-					break
-				}
 			}
 
 			if molecule.Sealed() {
@@ -689,7 +668,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 		}
 	}
 
-	if !molecule.Sealed() && !parked {
+	if !molecule.Sealed() && !molecule.Parked() {
 		slog.WarnContext(ctx, "cerebrum.think.max_turns",
 			slog.Int("max_turns", cb.budget.MaxTurns),
 			slog.Int("mass", molecule.TotalMass()))
@@ -752,7 +731,11 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 
 	cb.molecule = molecule
 	cb.reactor.Monolog().Park()
-	return nil
+
+	if molecule.Parked() {
+		return OutcomeParked, nil
+	}
+	return OutcomeSealed, nil
 }
 
 func (cb *Cerebrum) Result() *reactivity.Molecule {

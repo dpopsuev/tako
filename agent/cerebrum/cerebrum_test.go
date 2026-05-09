@@ -15,7 +15,7 @@ func TestCerebrum_Think(t *testing.T) {
 	reactor := reactivity.NewReactor()
 	cb := New(reactor, completer)
 
-	if err := cb.Think(context.Background(), reactivity.Catalyst{Need: string("test need")}); err != nil {
+	if _, err := cb.Think(context.Background(), reactivity.Catalyst{Need: string("test need")}); err != nil {
 		t.Fatalf("Think: %v", err)
 	}
 
@@ -30,7 +30,7 @@ func TestThink_SealsAndProducesAtoms(t *testing.T) {
 	circuit := reactivity.NewReactor()
 	cb := New(circuit, completer)
 
-	if err := cb.Think(context.Background(), reactivity.Catalyst{Need: string("clean the room")}); err != nil {
+	if _, err := cb.Think(context.Background(), reactivity.Catalyst{Need: string("clean the room")}); err != nil {
 		t.Fatalf("Think: %v", err)
 	}
 	m := cb.Result()
@@ -49,7 +49,7 @@ func TestThink_SealOnCompleterError(t *testing.T) {
 	circuit := reactivity.NewReactor()
 	cb := New(circuit, completer)
 
-	if err := cb.Think(context.Background(), reactivity.Catalyst{Need: string("anything")}); err != nil {
+	if _, err := cb.Think(context.Background(), reactivity.Catalyst{Need: string("anything")}); err != nil {
 		t.Fatalf("Think should not return error (Wish handles it): %v", err)
 	}
 	m := cb.Result()
@@ -75,7 +75,7 @@ func TestThink_ConversationalSeal_SetsResponse(t *testing.T) {
 	circuit := reactivity.NewReactor()
 	cb := New(circuit, completer, WithMaxTurns(5))
 
-	cb.Think(context.Background(), reactivity.Catalyst{Need: "help me", Desired: map[string]any{"helped": true}})
+	_, _ = cb.Think(context.Background(), reactivity.Catalyst{Need: "help me", Desired: map[string]any{"helped": true}})
 	m := cb.Result()
 
 	if !m.Sealed() {
@@ -94,7 +94,7 @@ func TestThink_MaxTurnsAbort(t *testing.T) {
 	circuit := reactivity.NewReactor()
 	cb := New(circuit, completer, WithMaxTurns(3))
 
-	cb.Think(context.Background(), reactivity.Catalyst{Need: "impossible", Desired: map[string]any{"done": true}})
+	_, _ = cb.Think(context.Background(), reactivity.Catalyst{Need: "impossible", Desired: map[string]any{"done": true}})
 	m := cb.Result()
 
 	if !m.Sealed() {
@@ -120,8 +120,8 @@ func TestThink_MultipleSessions_StoredInMonolog(t *testing.T) {
 	reactor := reactivity.NewReactor()
 	cb := New(reactor, completer)
 
-	cb.Think(context.Background(), reactivity.Catalyst{Need: string("first need")})
-	cb.Think(context.Background(), reactivity.Catalyst{Need: string("second need")})
+	_, _ = cb.Think(context.Background(), reactivity.Catalyst{Need: string("first need")})
+	_, _ = cb.Think(context.Background(), reactivity.Catalyst{Need: string("second need")})
 
 	store := cb.Store()
 	molecules := store.Molecules()
@@ -146,7 +146,7 @@ func TestThink_EmissionsDispatchedViaMotor(t *testing.T) {
 	motor := &stubBus{}
 	cb := New(reactor, completer, WithMotor(motor))
 
-	cb.Think(context.Background(), reactivity.Catalyst{Need: "test emission", Desired: map[string]any{"emitted": true}})
+	_, _ = cb.Think(context.Background(), reactivity.Catalyst{Need: "test emission", Desired: map[string]any{"emitted": true}})
 
 	found := false
 	for _, cmd := range motor.Events() {
@@ -165,7 +165,7 @@ func TestThink_WithMotorBus(t *testing.T) {
 	motor := &stubBus{}
 	cb := New(reactor, completer, WithMotor(motor))
 
-	cb.Think(context.Background(), reactivity.Catalyst{Need: string("test")})
+	_, _ = cb.Think(context.Background(), reactivity.Catalyst{Need: string("test")})
 	m := cb.Result()
 	if !m.Sealed() {
 		t.Error("molecule should be sealed")
@@ -184,7 +184,7 @@ func TestThink_ToolCallDispatchedToMotor(t *testing.T) {
 	cb := New(reactor, completer, WithMotor(motor), WithMaxTurns(3),
 		WithTurnTimeout(100*time.Millisecond))
 
-	cb.Think(context.Background(), reactivity.Catalyst{Need: string("find food")})
+	_, _ = cb.Think(context.Background(), reactivity.Catalyst{Need: string("find food")})
 
 	found := false
 	for _, evt := range motor.Events() {
@@ -210,7 +210,7 @@ func TestThink_MultipleToolCalls(t *testing.T) {
 	cb := New(reactor, completer, WithMotor(motor), WithMaxTurns(3),
 		WithTurnTimeout(100*time.Millisecond))
 
-	cb.Think(context.Background(), reactivity.Catalyst{Need: string("cook")})
+	_, _ = cb.Think(context.Background(), reactivity.Catalyst{Need: string("cook")})
 
 	names := map[string]bool{}
 	for _, evt := range motor.Events() {

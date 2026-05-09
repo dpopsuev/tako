@@ -42,7 +42,7 @@ func TestIntentRouter_ReflexBypass(t *testing.T) {
 		WithCapabilities([]organ.Func{speakCap}),
 	)
 
-	err := cb.Think(context.Background(), reactivity.Catalyst{Need: "hello"})
+	_, err := cb.Think(context.Background(), reactivity.Catalyst{Need: "hello"})
 	if err != nil {
 		t.Fatalf("Think: %v", err)
 	}
@@ -68,7 +68,7 @@ func TestIntentRouter_NoMatch_FallsThrough(t *testing.T) {
 		WithMaxTurns(3),
 	)
 
-	err := cb.Think(context.Background(), reactivity.Catalyst{Need: "something novel", Desired: map[string]any{"done": true}})
+	_, err := cb.Think(context.Background(), reactivity.Catalyst{Need: "something novel", Desired: map[string]any{"done": true}})
 	if err != nil {
 		t.Fatalf("Think: %v", err)
 	}
@@ -84,7 +84,7 @@ func TestIntentRouter_NoEmbedder_FallsThrough(t *testing.T) {
 	reactor := reactivity.NewReactor()
 	cb := New(reactor, completer, WithMaxTurns(3))
 
-	err := cb.Think(context.Background(), reactivity.Catalyst{Need: "test", Desired: map[string]any{"done": true}})
+	_, err := cb.Think(context.Background(), reactivity.Catalyst{Need: "test", Desired: map[string]any{"done": true}})
 	if err != nil {
 		t.Fatalf("Think: %v", err)
 	}

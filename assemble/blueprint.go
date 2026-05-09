@@ -30,7 +30,7 @@ type Agent struct {
 	corpus   *corpus.Corpus
 }
 
-func (a *Agent) Think(ctx context.Context, need string) error {
+func (a *Agent) Think(ctx context.Context, need string) (cerebrum.ThinkOutcome, error) {
 	return a.cerebrum.Think(ctx, reactivity.Catalyst{Need: need})
 }
 
@@ -39,7 +39,7 @@ func (a *Agent) Result() *reactivity.Molecule {
 }
 
 func (a *Agent) Run(ctx context.Context, task string) (string, error) {
-	if err := a.Think(ctx, task); err != nil {
+	if _, err := a.Think(ctx, task); err != nil {
 		return "", err
 	}
 	m := a.Result()

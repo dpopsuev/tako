@@ -43,3 +43,4 @@ deploy/ca-certificates.crt
 # Binaries
 /tako
 /origami
+tests/e2e/tako

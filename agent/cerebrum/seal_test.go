@@ -16,6 +16,7 @@ type sealResult struct {
 	Turns    int
 	Sealed   bool
 	Response string
+	Molecule *reactivity.Molecule
 }
 
 func runWithStrategy(t *testing.T, strategy SealStrategy, completer tangle.Completer, catalyst reactivity.Catalyst, caps []organ.Func) sealResult {
@@ -47,13 +48,14 @@ func runWithStrategy(t *testing.T, strategy SealStrategy, completer tangle.Compl
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	cb.Think(ctx, catalyst)
+	_, _ = cb.Think(ctx, catalyst)
 	m := cb.Result()
 
 	return sealResult{
 		Turns:    m.Turns(),
 		Sealed:   m.Sealed(),
 		Response: m.Response(),
+		Molecule: m,
 	}
 }
 
@@ -152,6 +154,7 @@ func TestSealStrategy_Matrix(t *testing.T) {
 	type cell struct {
 		turns  int
 		sealed bool
+		parked bool
 	}
 
 	results := make(map[string]map[string]cell)
@@ -161,10 +164,11 @@ func TestSealStrategy_Matrix(t *testing.T) {
 		for _, sc := range scenarios {
 			t.Run(fmt.Sprintf("%s/%s", strat.name, sc.name), func(t *testing.T) {
 				r := runWithStrategy(t, strat.factory(), sc.completer, sc.catalyst, sc.caps)
-				results[strat.name][sc.name] = cell{turns: r.Turns, sealed: r.Sealed}
+				m := r.Molecule
+				results[strat.name][sc.name] = cell{turns: r.Turns, sealed: r.Sealed, parked: m != nil && m.Parked()}
 
-				if !r.Sealed {
-					t.Error("molecule should be sealed")
+				if !r.Sealed && (m == nil || !m.Parked()) {
+					t.Error("molecule should be sealed or parked")
 				}
 				if r.Turns > sc.wantMax {
 					t.Errorf("turns=%d exceeds max=%d for this scenario", r.Turns, sc.wantMax)
@@ -174,21 +178,22 @@ func TestSealStrategy_Matrix(t *testing.T) {
 	}
 
 	t.Run("summary", func(t *testing.T) {
-		t.Logf("\n%-14s | %-14s | %-14s | %-14s | %-14s",
+		t.Logf("\n%-14s | %-20s | %-20s | %-20s | %-20s",
 			"strategy", "conversation", "single_tool", "multi_step", "stuck")
-		t.Logf("%-14s-+-%-14s-+-%-14s-+-%-14s-+-%-14s",
-			"--------------", "--------------", "--------------", "--------------", "--------------")
 		for _, strat := range strategies {
 			conv := results[strat.name]["conversation"]
 			tool := results[strat.name]["single_tool"]
 			multi := results[strat.name]["multi_step_with_desired"]
 			stuck := results[strat.name]["stuck_no_desired"]
-			t.Logf("%-14s | %-14s | %-14s | %-14s | %-14s",
-				strat.name,
-				fmt.Sprintf("%d turns", conv.turns),
-				fmt.Sprintf("%d turns", tool.turns),
-				fmt.Sprintf("%d turns", multi.turns),
-				fmt.Sprintf("%d turns", stuck.turns))
+			fmtCell := func(c cell) string {
+				state := "sealed"
+				if c.parked {
+					state = "parked"
+				}
+				return fmt.Sprintf("%d turns (%s)", c.turns, state)
+			}
+			t.Logf("%-14s | %-20s | %-20s | %-20s | %-20s",
+				strat.name, fmtCell(conv), fmtCell(tool), fmtCell(multi), fmtCell(stuck))
 		}
 	})
 }

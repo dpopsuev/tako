@@ -146,7 +146,7 @@ func TestFlywheel_ConsolidateThenReflex(t *testing.T) {
 		WithMaxTurns(3),
 	)
 
-	cb.Think(context.Background(), reactivity.Catalyst{Need: "hello", Desired: map[string]any{"greeted": true}})
+	_, _ = cb.Think(context.Background(), reactivity.Catalyst{Need: "hello", Desired: map[string]any{"greeted": true}})
 
 	if store.Len() != 1 {
 		t.Fatalf("consolidator should have written 1 pipe, got %d", store.Len())
@@ -161,7 +161,7 @@ func TestFlywheel_ConsolidateThenReflex(t *testing.T) {
 		WithCapabilities([]organ.Func{speakCap}),
 	)
 
-	err := cb2.Think(context.Background(), reactivity.Catalyst{Need: "hello"})
+	_, err := cb2.Think(context.Background(), reactivity.Catalyst{Need: "hello"})
 	if err != nil {
 		t.Fatalf("session 2 Think: %v", err)
 	}

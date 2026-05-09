@@ -62,7 +62,7 @@ func TestSubsystems_AlignmentRewardPipeStore(t *testing.T) {
 		Desired: map[string]any{"file.exists": true},
 	}
 
-	if err := cb.Think(context.Background(), catalyst); err != nil {
+	if _, err := cb.Think(context.Background(), catalyst); err != nil {
 		t.Fatalf("Think: %v", err)
 	}
 

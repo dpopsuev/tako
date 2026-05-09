@@ -13,7 +13,7 @@ func TestThink_SealsWithIntentAndRetrospection(t *testing.T) {
 	motor := &stubBus{}
 	cb := New(reactor, completer, WithMotor(motor))
 
-	if err := cb.Think(context.Background(), reactivity.Catalyst{Need: string("investigate PTP failure")}); err != nil {
+	if _, err := cb.Think(context.Background(), reactivity.Catalyst{Need: string("investigate PTP failure")}); err != nil {
 		t.Fatalf("Think: %v", err)
 	}
 	m := cb.Result()

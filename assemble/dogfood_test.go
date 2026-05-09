@@ -91,7 +91,7 @@ func TestAdd(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	err := agent.Think(ctx, "Add a Subtract function to calc.go with a test")
+	_, err := agent.Think(ctx, "Add a Subtract function to calc.go with a test")
 	if err != nil {
 		t.Fatalf("Think: %v", err)
 	}
@@ -169,7 +169,7 @@ func TestDogfood_ToolErrorRecovery(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	err := agent.Think(ctx, "read a file")
+	_, err := agent.Think(ctx, "read a file")
 	if err != nil {
 		t.Fatalf("Think should not fail on tool error: %v", err)
 	}
@@ -210,7 +210,7 @@ func TestDogfood_SubagentExplore(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	err := agent.Think(ctx, "explore the codebase")
+	_, err := agent.Think(ctx, "explore the codebase")
 	if err != nil {
 		t.Fatalf("Think: %v", err)
 	}

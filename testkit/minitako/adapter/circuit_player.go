@@ -21,7 +21,7 @@ func NewReactorPlayer(cb *cerebrum.Cerebrum) *ReactorPlayer {
 func (p *ReactorPlayer) Act(state minitako.GameState) minitako.Action {
 	stateJSON, _ := json.Marshal(state)
 
-	if err := p.cerebrum.Think(context.Background(), reactivity.Catalyst{Need: "Minitako game state: " + string(stateJSON)}); err != nil {
+	if _, err := p.cerebrum.Think(context.Background(), reactivity.Catalyst{Need: "Minitako game state: " + string(stateJSON)}); err != nil {
 		return minitako.Feed
 	}
 
