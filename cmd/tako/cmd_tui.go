@@ -16,8 +16,8 @@ import (
 func tuiCmd(args []string) error {
 	fs := flag.NewFlagSet("tui", flag.ExitOnError)
 	blueprintPath := fs.String("blueprint", "", "path to Blueprint YAML")
-	provider := fs.String("provider", "", "LLM provider (vertex-ai, anthropic-api, etc.)")
-	model := fs.String("model", "", "model name (env: TAKO_MODEL, default: "+defaultModel+")")
+	provider := fs.String("provider", "", "LLM provider")
+	model := fs.String("model", "", "model name (env: TAKO_MODEL)")
 	_ = fs.Parse(args)
 
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn})))

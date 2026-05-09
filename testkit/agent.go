@@ -17,7 +17,7 @@ const envProvider = "TAKO_PROVIDER"
 func SkipWithoutLLM(t *testing.T) {
 	t.Helper()
 	if os.Getenv(envProvider) == "" {
-		t.Skipf("no LLM: set %s (e.g. vertex-ai, anthropic-api)", envProvider)
+		t.Skipf("no LLM: set %s to a Tangle provider name", envProvider)
 	}
 }
 
@@ -31,7 +31,7 @@ func NewRealAgent(t *testing.T, workdir string) *assemble.Agent {
 
 	model := os.Getenv("TAKO_TEST_MODEL")
 	if model == "" {
-		model = "claude-sonnet-4-6"
+		t.Fatal("TAKO_TEST_MODEL not set — specify the model to test with")
 	}
 
 	completer := providers.NewCompleter(p, model, nil)

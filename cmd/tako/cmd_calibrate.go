@@ -24,7 +24,7 @@ func calibrateCmd(args []string) error {
 	backend := fs.String("backend", "llm", "Backend type passed in circuit start extra")
 	parallel := fs.Int("parallel", 4, "Number of parallel workers")
 	timeout := fs.Duration("timeout", 30*time.Minute, "Overall calibration timeout")
-	cliCommand := fs.String("cli", "claude", "CLI command for LLM processing")
+	cliCommand := fs.String("cli", "tako", "CLI command for LLM processing")
 	cliArgs := fs.String("cli-args", "--print", "Arguments for CLI command (space-separated)")
 	mode := fs.String("mode", "offline", "Calibration mode: offline or online")
 	traceLevel := fs.String("trace-level", "debug", "Trace recording level: info, debug, or trace")

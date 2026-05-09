@@ -13,7 +13,7 @@ import (
 	"github.com/dpopsuev/tangle/providers"
 )
 
-const defaultModel = "claude-sonnet-4-6"
+const defaultModel = ""
 
 func resolveModel() string {
 	if m := os.Getenv("TAKO_MODEL"); m != "" {
@@ -25,8 +25,8 @@ func resolveModel() string {
 func agentCmd(args []string) error {
 	fs := flag.NewFlagSet("agent", flag.ExitOnError)
 	blueprintPath := fs.String("blueprint", "", "path to Blueprint YAML")
-	provider := fs.String("provider", "", "LLM provider (vertex-ai, anthropic, openai, gemini, openrouter)")
-	model := fs.String("model", "", "model name (env: TAKO_MODEL, default: "+defaultModel+")")
+	provider := fs.String("provider", "", "LLM provider")
+	model := fs.String("model", "", "model name (env: TAKO_MODEL)")
 	verbose := fs.Bool("v", false, "verbose output (debug level)")
 	_ = fs.Parse(args)
 

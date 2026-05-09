@@ -30,7 +30,7 @@ func workersCmd(args []string) error {
 	fs := flag.NewFlagSet("workers", flag.ContinueOnError)
 	gateway := fs.String("gateway", envOr("GATEWAY_ENDPOINT", "http://localhost:9000/mcp"), "MCP gateway endpoint")
 	sessionID := fs.String("session", envOr("TAKO_SESSION", ""), "session ID or alias (required)")
-	agentName := fs.String("agent", envOr("TAKO_AGENT", "claude"), "agent CLI name")
+	agentName := fs.String("agent", envOr("TAKO_AGENT", "tako"), "agent CLI name")
 	count := fs.Int("count", 4, "number of workers to spawn")
 	if err := fs.Parse(args); err != nil {
 		return err
