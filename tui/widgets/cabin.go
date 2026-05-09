@@ -25,6 +25,7 @@ type CabinCenter struct {
 	core.BasePanel
 	output    *OutputPanel
 	input     *InputPanel
+	spinner   PhaseSpinner
 	modelName string
 	width     int
 	height    int
@@ -41,6 +42,7 @@ func NewCabinCenter(output *OutputPanel, input *InputPanel, modelName string) *C
 		BasePanel: core.NewBasePanel("cabin-center", 0),
 		output:    output,
 		input:     input,
+		spinner:   NewPhaseSpinner(SpinnerGeometric),
 		modelName: modelName,
 		phase:     "idle",
 	}
@@ -53,6 +55,7 @@ func (c *CabinCenter) Children() []core.Panel {
 }
 
 func (c *CabinCenter) Update(msg tea.Msg) (core.Panel, tea.Cmd) {
+	var spinCmd tea.Cmd
 	switch msg := msg.(type) {
 	case layout.ResizeMsg:
 		c.width = msg.Width
@@ -60,14 +63,20 @@ func (c *CabinCenter) Update(msg tea.Msg) (core.Panel, tea.Cmd) {
 	case PhaseChangeMsg:
 		c.phase = msg.Phase
 		c.turn = msg.Turn
+		c.spinner, spinCmd = c.spinner.Update(msg)
 	case TokenUpdateMsg:
 		c.tokensIn += msg.TokensIn
 		c.tokensOut += msg.TokensOut
 		c.toolCalls += msg.ToolCalls
 	case AgentDoneMsg:
 		c.distance = msg.Distance
+		c.spinner, spinCmd = c.spinner.Update(msg)
+	case ErrorMsg:
+		c.spinner, spinCmd = c.spinner.Update(msg)
+	default:
+		c.spinner, spinCmd = c.spinner.Update(msg)
 	}
-	return c, nil
+	return c, spinCmd
 }
 
 func (c *CabinCenter) View(width int) string {
@@ -117,6 +126,14 @@ func (c *CabinCenter) View(width int) string {
 	for _, l := range outputLines {
 		contentLines = append(contentLines, pad(l, centerW))
 	}
+
+	if c.spinner.Active() {
+		spinView := " " + c.spinner.View() + " " + c.phase
+		if len(contentLines) > 0 {
+			contentLines[len(contentLines)-1] = pad(spinView, centerW)
+		}
+	}
+
 	contentLines = append(contentLines, strings.Repeat("━", centerW))
 	for _, l := range inputLines {
 		contentLines = append(contentLines, pad(l, centerW))

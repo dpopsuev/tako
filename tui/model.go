@@ -119,8 +119,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.Result != "" {
 			m.output.Update(widgets.AppendOutputMsg{Line: "\n" + msg.Result})
 		}
-		m.cabin.Update(msg)
-		return m, nil
+		_, cmd := m.cabin.Update(msg)
+		return m, cmd
 
 	case widgets.ErrorMsg:
 		m.running = false
@@ -130,8 +130,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case widgets.PhaseChangeMsg:
 		m.output.Update(msg)
-		m.cabin.Update(msg)
-		return m, nil
+		_, cmd := m.cabin.Update(msg)
+		return m, cmd
 
 	case widgets.TokenUpdateMsg:
 		m.cabin.Update(msg)
@@ -150,6 +150,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
+	_, spinCmd := m.cabin.Update(msg)
+
 	active := m.focus.Active()
 	if active != nil {
 		updated, cmd := active.Update(msg)
@@ -159,10 +161,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if p, ok := updated.(*widgets.OutputPanel); ok {
 			m.output = p
 		}
-		return m, cmd
+		return m, tea.Batch(cmd, spinCmd)
 	}
 
-	return m, nil
+	return m, spinCmd
 }
 
 func (m Model) View() string {
