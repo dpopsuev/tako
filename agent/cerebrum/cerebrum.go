@@ -545,7 +545,6 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 					}
 				}
 				toolCancel()
-
 			}
 
 			if molecule.Sealed() {

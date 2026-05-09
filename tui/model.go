@@ -1,8 +1,6 @@
 package tui
 
 import (
-	"fmt"
-
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/dpopsuev/tako/tui/core"
@@ -112,12 +110,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case widgets.AgentDoneMsg:
 		m.running = false
 		m.output.Update(widgets.SetOverlayMsg{Text: ""})
-		m.output.Update(widgets.AppendOutputMsg{
-			Line: fmt.Sprintf("\n--- done: %d turns, d=%.2f ---",
-				msg.Turns, msg.Distance),
-		})
 		if msg.Result != "" {
-			m.output.Update(widgets.AppendOutputMsg{Line: "\n" + msg.Result})
+			m.output.Update(widgets.AppendOutputMsg{Line: msg.Result})
 		}
 		_, cmd := m.cabin.Update(msg)
 		return m, cmd

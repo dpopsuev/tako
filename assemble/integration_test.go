@@ -905,6 +905,56 @@ func TestDrill_Monitor_ArchHealth(t *testing.T) {
 	}
 }
 
+func TestDrill_Hello_ShouldNotRepeatSpeak(t *testing.T) {
+	t.Skip("KNOWN BUG: agent repeats dialog_speak for conversational inputs — needs one-shot path in Think")
+
+	speakCalls := 0
+	completer := &scriptedCompleter{
+		turns: []tangle.Completion{
+			{
+				ToolCalls: []tangle.ToolCall{
+					{ID: "s1", Name: "dialog_speak", Input: json.RawMessage(`{"response":"Hello! How can I help you?"}`)},
+				},
+			},
+			{
+				ToolCalls: []tangle.ToolCall{
+					{ID: "s2", Name: "dialog_speak", Input: json.RawMessage(`{"response":"What would you like to do?"}`)},
+				},
+			},
+			{
+				ToolCalls: []tangle.ToolCall{
+					{ID: "s3", Name: "dialog_speak", Input: json.RawMessage(`{"response":"Just let me know!"}`)},
+				},
+			},
+			{Content: "waiting"},
+		},
+	}
+
+	bp := Blueprint{
+		Model:  "stub",
+		Budget: cerebrum.Budget{MaxTurns: 10, TurnTimeout: 5 * time.Second},
+	}
+
+	agent := Assemble(bp, completer)
+	_, _ = agent.Think(context.Background(), "Hello")
+
+	m := agent.Result()
+
+	for _, e := range m.Chain().All() {
+		if e.Organ == "dialog_speak" {
+			speakCalls++
+		}
+	}
+
+	if speakCalls > 1 {
+		t.Errorf("agent should not call dialog_speak more than once for 'Hello', got %d calls", speakCalls)
+	}
+
+	if m.Turns() > 2 {
+		t.Errorf("'Hello' should resolve in 2 turns max (speak + seal), got %d", m.Turns())
+	}
+}
+
 func TestDrill_Dialog_ReadThenSpeak(t *testing.T) {
 	readAnimal := organ.Func{
 		Name:        "read_animal",

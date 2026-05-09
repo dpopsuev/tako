@@ -99,8 +99,8 @@ func TestHeadless_AgentDoneUpdatesView(t *testing.T) {
 	}
 
 	view := m.View()
-	if !strings.Contains(view, "done") {
-		t.Errorf("view should contain 'done' after seal, got:\n%s", truncateView(view))
+	if !strings.Contains(view, "42") {
+		t.Errorf("view should contain agent result after seal, got:\n%s", truncateView(view))
 	}
 }
 
