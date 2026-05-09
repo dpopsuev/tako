@@ -28,9 +28,9 @@ func speakCapability() organ.Func {
 				Response string `json:"response"`
 			}
 			if err := json.Unmarshal(input, &args); err != nil {
-				return organ.SealResult(string(input)), nil
+				return organ.TextResult(string(input)), nil
 			}
-			return organ.SealResult(args.Response), nil
+			return organ.TextResult(args.Response), nil
 		},
 	}
 }

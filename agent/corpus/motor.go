@@ -113,7 +113,6 @@ func (m *corpusMotor) executeCapability(ctx context.Context, event cerebrum.Even
 		Source:     event.Source,
 		Payload:    result.Text(),
 		ToolCallID: event.ToolCallID,
-		Seal:       result.Seal,
 		CreatedAt:  time.Now(),
 	})
 }

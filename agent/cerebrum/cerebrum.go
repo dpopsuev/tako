@@ -496,7 +496,6 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 			if len(capCalls) > 0 {
 				cb.dispatch(ctx, molecule)
 				toolCtx, toolCancel := context.WithTimeout(ctx, cb.budget.TurnTimeout)
-				var sealOnResult bool
 				for _, tc := range capCalls {
 					tr := cb.waitToolResult(toolCtx, tc)
 					history = append(history, tangle.Message{
@@ -526,23 +525,9 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 					if molecule.Catalyst() != nil {
 						cb.checkCatalystDesired(molecule, tc.Name, tr.Content)
 					}
-					if tr.Seal {
-						molecule.SetResponse(tr.Content)
-						sealOnResult = true
-					}
+					molecule.SetResponse(tr.Content)
 				}
 				toolCancel()
-				if sealOnResult {
-					slog.InfoContext(ctx, "cerebrum.think.organ_seal",
-						slog.Int("turn", turn))
-					cb.reactor.Seal(molecule, reactivity.Atom{
-						ID:       fmt.Sprintf("wish-organ-seal-%d", turn),
-						Type:     reactivity.RetrospectionAtom,
-						Taxonomy: "retrospection.organ.seal",
-						Content:  []byte(molecule.Response()),
-					})
-					break
-				}
 			}
 
 			if molecule.Sealed() {
@@ -956,14 +941,13 @@ func (cb *Cerebrum) checkCatalystDesired(m *reactivity.Molecule, toolName, resul
 
 type toolResult struct {
 	Content string
-	Seal    bool
 }
 
 func (cb *Cerebrum) waitToolResult(ctx context.Context, tc tangle.ToolCall) toolResult {
 	if buffered, ok := cb.resultBuffer[tc.ID]; ok {
 		delete(cb.resultBuffer, tc.ID)
 		cb.clearPending(tc.ID)
-		return toolResult{Content: string(buffered.Payload), Seal: buffered.Seal}
+		return toolResult{Content: string(buffered.Payload)}
 	}
 
 	for {
@@ -973,7 +957,7 @@ func (cb *Cerebrum) waitToolResult(ctx context.Context, tc tangle.ToolCall) tool
 		}
 		if event.ToolCallID == tc.ID || (event.ToolCallID == "" && event.Source == tc.Name) {
 			cb.clearPending(tc.ID)
-			return toolResult{Content: string(event.Payload), Seal: event.Seal}
+			return toolResult{Content: string(event.Payload)}
 		}
 		if event.ToolCallID != "" && cb.isPending(event.ToolCallID) {
 			cb.resultBuffer[event.ToolCallID] = event
