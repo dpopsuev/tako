@@ -131,3 +131,7 @@ func WithConsolidator(c Consolidator) Option {
 func WithSealStrategy(s SealStrategy) Option {
 	return func(cb *Cerebrum) { cb.sealStrategy = s }
 }
+
+func WithInstigator(ins *Instigator) Option {
+	return func(cb *Cerebrum) { cb.instigator = ins }
+}

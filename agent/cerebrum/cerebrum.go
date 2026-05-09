@@ -109,6 +109,7 @@ type Cerebrum struct {
 	reflexStore        ReflexStore
 	consolidator       Consolidator
 	sealStrategy       SealStrategy
+	instigator         *Instigator
 
 	molecule *reactivity.Molecule
 }
@@ -149,6 +150,10 @@ func New(reactor *reactivity.Core, completer tangle.Completer, opts ...Option) *
 
 	if cb.sealStrategy == nil {
 		cb.sealStrategy = ImmediateSeal{}
+	}
+
+	if cb.instigator == nil {
+		cb.instigator = MustInstigator(nil)
 	}
 
 	cb.config.Validate()
