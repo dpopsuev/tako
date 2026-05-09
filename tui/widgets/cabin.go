@@ -10,6 +10,11 @@ import (
 	"github.com/dpopsuev/tako/tui/layout"
 )
 
+var innerBorder = lipgloss.Border{
+	Top: "━", Bottom: "━", Left: "┃", Right: "┃",
+	TopLeft: "┏", TopRight: "┓", BottomLeft: "┗", BottomRight: "┛",
+}
+
 type CabinCenter struct {
 	core.BasePanel
 	left   *PillarPanel
@@ -40,54 +45,40 @@ func (c *CabinCenter) Update(msg tea.Msg) (core.Panel, tea.Cmd) {
 	if rm, ok := msg.(layout.ResizeMsg); ok {
 		c.width = rm.Width
 		c.height = rm.Height
-		c.resizeChildren()
 	}
 	return c, nil
 }
 
-func (c *CabinCenter) resizeChildren() {
-	pillarW := c.pillarWidth()
-	centerW := c.centerWidth()
+func (c *CabinCenter) View(width int) string {
+	pillarW := width / 8
+	if pillarW < 1 {
+		pillarW = 1
+	}
+
+	outerBorderW := 2
+	innerBorderW := 2
+	centerW := width - 2*pillarW - outerBorderW - innerBorderW
+	if centerW < 10 {
+		centerW = 10
+	}
+
 	inputH := 4
-	outputH := c.height - inputH - 3
+	innerH := c.height - 2
+	if innerH < inputH+1 {
+		innerH = inputH + 1
+	}
+	outputH := innerH - inputH - 3
 	if outputH < 1 {
 		outputH = 1
 	}
 
-	c.left.Update(layout.ResizeMsg{Width: pillarW, Height: c.height - 2})
-	c.right.Update(layout.ResizeMsg{Width: pillarW, Height: c.height - 2})
 	c.output.Update(layout.ResizeMsg{Width: centerW, Height: outputH})
 	c.input.Update(layout.ResizeMsg{Width: centerW - 2, Height: inputH})
-}
-
-func (c *CabinCenter) pillarWidth() int {
-	w := c.width / 8
-	if w < 2 {
-		w = 2
-	}
-	return w
-}
-
-func (c *CabinCenter) centerWidth() int {
-	return c.width - 2*c.pillarWidth() - 2
-}
-
-func (c *CabinCenter) View(width int) string {
-	pillarW := c.pillarWidth()
-	centerW := c.centerWidth()
-	inputH := 4
-	outputH := c.height - inputH - 3
-	if outputH < 1 {
-		outputH = 1
-	}
-
-	hrFull := strings.Repeat("─", c.width)
 
 	outputContent := c.output.View(centerW)
 	outputLines := strings.Split(outputContent, "\n")
-
 	for len(outputLines) < outputH {
-		outputLines = append([]string{padRight("", centerW)}, outputLines...)
+		outputLines = append([]string{""}, outputLines...)
 	}
 	if len(outputLines) > outputH {
 		outputLines = outputLines[len(outputLines)-outputH:]
@@ -96,51 +87,38 @@ func (c *CabinCenter) View(width int) string {
 	inputContent := c.input.View(centerW - 2)
 	inputLines := strings.Split(inputContent, "\n")
 	for len(inputLines) < inputH {
-		inputLines = append(inputLines, padRight("", centerW-2))
+		inputLines = append(inputLines, "")
 	}
+
+	var centerLines []string
+	for _, line := range outputLines {
+		centerLines = append(centerLines, padToWidth(line, centerW))
+	}
+	centerLines = append(centerLines, strings.Repeat("━", centerW))
+	for _, line := range inputLines {
+		centerLines = append(centerLines, " "+padToWidth(line, centerW-2)+" ")
+	}
+
+	centerContent := strings.Join(centerLines, "\n")
+
+	innerBox := lipgloss.NewStyle().
+		Border(innerBorder).
+		Width(centerW).
+		Render(centerContent)
 
 	leftPad := strings.Repeat(" ", pillarW)
 	rightPad := strings.Repeat(" ", pillarW)
-	separator := strings.Repeat("─", centerW)
 
-	var sb strings.Builder
-
-	sb.WriteString(hrFull)
-	sb.WriteByte('\n')
-
-	for _, line := range outputLines {
-		sb.WriteString(leftPad)
-		sb.WriteString("│")
-		sb.WriteString(padRight(line, centerW))
-		sb.WriteString("│")
-		sb.WriteString(rightPad)
-		sb.WriteByte('\n')
+	boxLines := strings.Split(innerBox, "\n")
+	var rows []string
+	for _, line := range boxLines {
+		rows = append(rows, leftPad+line+rightPad)
 	}
 
-	sb.WriteString(leftPad)
-	sb.WriteString("│")
-	sb.WriteString(separator)
-	sb.WriteString("│")
-	sb.WriteString(rightPad)
-	sb.WriteByte('\n')
-
-	for _, line := range inputLines {
-		sb.WriteString(leftPad)
-		sb.WriteString("│")
-		sb.WriteString(" ")
-		sb.WriteString(padRight(line, centerW-2))
-		sb.WriteString(" ")
-		sb.WriteString("│")
-		sb.WriteString(rightPad)
-		sb.WriteByte('\n')
-	}
-
-	sb.WriteString(hrFull)
-
-	return sb.String()
+	return strings.Join(rows, "\n")
 }
 
-func padRight(s string, w int) string {
+func padToWidth(s string, w int) string {
 	vis := lipgloss.Width(s)
 	if vis >= w {
 		return s

@@ -2,6 +2,7 @@ package widgets
 
 import (
 	"fmt"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -10,11 +11,11 @@ import (
 
 type FooterPanel struct {
 	core.BasePanel
-	phase    string
-	turn     int
-	distance float64
-	sealed   bool
-	tokensIn int
+	phase     string
+	turn      int
+	distance  float64
+	sealed    bool
+	tokensIn  int
 	tokensOut int
 	toolCalls int
 }
@@ -45,14 +46,16 @@ func (p *FooterPanel) Update(msg tea.Msg) (core.Panel, tea.Cmd) {
 }
 
 func (p *FooterPanel) View(width int) string {
-	left := fmt.Sprintf(" %s · turn %d · d=%.2f", p.phase, p.turn, p.distance)
-	right := fmt.Sprintf("↑%s ↓%s · %d calls ", formatTokens(p.tokensIn), formatTokens(p.tokensOut), p.toolCalls)
+	left := fmt.Sprintf(" %s · t%d · d=%.2f ", p.phase, p.turn, p.distance)
+	right := fmt.Sprintf(" ↑%s ↓%s · %dt ",
+		formatTokens(p.tokensIn), formatTokens(p.tokensOut), p.toolCalls)
 
-	pad := width - len(left) - len(right)
-	if pad < 1 {
-		pad = 1
+	fill := width - len(left) - len(right) - 5
+	if fill < 0 {
+		fill = 0
 	}
-	return left + fmt.Sprintf("%*s", pad, "") + right
+
+	return "╚═══" + left + strings.Repeat("═", fill) + right + "═╝"
 }
 
 func formatTokens(n int) string {

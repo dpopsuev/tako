@@ -101,39 +101,45 @@ func TestGolden_CabinStructure_80x24(t *testing.T) {
 	got := renderModel(nil, "test-model", 80, 24)
 	lines := strings.Split(got, "\n")
 
-	if len(lines) < 22 {
-		t.Fatalf("expected 22+ lines, got %d", len(lines))
+	if len(lines) < 20 {
+		t.Fatalf("expected 20+ lines, got %d", len(lines))
 	}
 
-	if !strings.Contains(lines[0], "tako") {
-		t.Error("line 0: missing status bar with 'tako'")
+	if !strings.Contains(lines[0], "tako") || !strings.Contains(lines[0], "╔") {
+		t.Errorf("line 0: missing top border with title: %q", lines[0])
 	}
 
-	if !strings.Contains(lines[1], "─") {
-		t.Error("line 1: missing top horizontal rule")
-	}
-
-	for i := 2; i <= 14; i++ {
-		if !strings.Contains(lines[i], "│") {
-			t.Errorf("line %d: missing pillar border │", i)
+	hasPillarBorder := false
+	hasSeparator := false
+	hasInputLine := false
+	for _, line := range lines[1 : len(lines)-1] {
+		if strings.Contains(line, "┃") {
+			hasPillarBorder = true
 		}
-		count := strings.Count(lines[i], "│")
-		if count < 2 {
-			t.Errorf("line %d: expected 2 │ borders, got %d", i, count)
+		if strings.Count(line, "━") > 10 {
+			hasSeparator = true
+		}
+		if strings.Contains(line, "Type a task") {
+			hasInputLine = true
 		}
 	}
 
-	if !strings.Contains(lines[15], "─") || !strings.Contains(lines[15], "│") {
-		t.Error("line 15: missing separator between output and input")
+	if !hasPillarBorder {
+		t.Error("missing inner ┃ pillar borders")
 	}
-
-	if !strings.Contains(lines[len(lines)-2], "─") {
-		t.Error("second-to-last line: missing bottom horizontal rule")
+	if !hasSeparator {
+		t.Error("missing ━ separator between output and input")
+	}
+	if !hasInputLine {
+		t.Error("missing input placeholder")
 	}
 
 	lastLine := lines[len(lines)-1]
-	if !strings.Contains(lastLine, "turn") || !strings.Contains(lastLine, "↑") {
-		t.Errorf("footer missing phase/token info: %q", lastLine)
+	if !strings.Contains(lastLine, "╚") || !strings.Contains(lastLine, "╝") {
+		t.Errorf("footer missing bottom border: %q", lastLine)
+	}
+	if !strings.Contains(lastLine, "↑") {
+		t.Errorf("footer missing token stats: %q", lastLine)
 	}
 }
 

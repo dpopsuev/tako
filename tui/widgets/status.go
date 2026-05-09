@@ -2,6 +2,7 @@ package widgets
 
 import (
 	"fmt"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -27,5 +28,10 @@ func (p *StatusPanel) Update(msg tea.Msg) (core.Panel, tea.Cmd) {
 }
 
 func (p *StatusPanel) View(width int) string {
-	return fmt.Sprintf(" tako · %s", p.model)
+	title := fmt.Sprintf(" tako · %s ", p.model)
+	fill := width - len(title) - 5
+	if fill < 0 {
+		fill = 0
+	}
+	return "╔═══" + title + strings.Repeat("═", fill) + "╗"
 }
