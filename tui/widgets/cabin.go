@@ -164,18 +164,17 @@ func (c *CabinCenter) View(width int) string {
 	body := strings.Join(bodyLines, "\n")
 
 	accentStyle := lipgloss.NewStyle().Foreground(c.theme.Accent)
-	borderStyle := lipgloss.NewStyle().Foreground(c.theme.Border)
 	mutedStyle := lipgloss.NewStyle().Foreground(c.theme.Muted)
 	phaseColor := c.phaseColor()
 	phaseStyle := lipgloss.NewStyle().Foreground(phaseColor)
 
 	titleText := accentStyle.Render(" tako") + mutedStyle.Render(" · "+c.modelName+" ")
-	title := borderStyle.Render("═══") + titleText
+	title := accentStyle.Render("═══") + titleText
 	phaseText := phaseStyle.Render(fmt.Sprintf(" %s", c.phase)) +
 		mutedStyle.Render(fmt.Sprintf(" · t%d · d=%.2f ", c.turn, c.distance))
-	footer := borderStyle.Render("═══") + phaseText
+	footer := accentStyle.Render("═══") + phaseText
 	footerRight := mutedStyle.Render(fmt.Sprintf(" ↑%s ↓%s · %dt ",
-		formatTokens(c.tokensIn), formatTokens(c.tokensOut), c.toolCalls)) + borderStyle.Render("═")
+		formatTokens(c.tokensIn), formatTokens(c.tokensOut), c.toolCalls)) + accentStyle.Render("═")
 
 	outerStyle := lipgloss.NewStyle().
 		Border(outerFrame).
