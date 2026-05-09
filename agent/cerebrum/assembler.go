@@ -27,11 +27,13 @@ var KISSDirectives = []reactivity.Directive{
 var promptTmpl = template.Must(template.New("prompt").Parse(promptText))
 
 func defaultRender(ctx Context) string {
+	hasDesired := len(ctx.Desired) > 0
 	data := promptData{
 		Need:          ctx.Need,
 		State:         sortedKVs(ctx.State),
 		StateChanges:  formatChanges(ctx.StateChanges),
 		StagnantTurns: ctx.StagnantTurns,
+		HasDesired:    hasDesired,
 		Desired:       sortedKVs(ctx.Desired),
 		Residual:      formatResidual(ctx.Residual),
 		Distance:      ctx.Distance,
@@ -57,6 +59,7 @@ type promptData struct {
 	State         []kv
 	StateChanges  []string
 	StagnantTurns int
+	HasDesired    bool
 	Desired       []kv
 	Residual      []kv
 	Distance      float64
@@ -209,6 +212,7 @@ Distance: {{printf "%.2f" .Distance}} | Trend: {{.Trend}}
 - {{.}}
 {{- end}}
 {{- end}}
+{{- if .HasDesired}}
 
 # Thinking Tree
 {{- range .Tree}}
@@ -217,10 +221,6 @@ Distance: {{printf "%.2f" .Distance}} | Trend: {{.Trend}}
 
 ## Active: {{.ActivePhase}}
 {{.Instructions}}
-{{- range .Directives}}
-
-> {{.}}
-{{- end}}
 {{- if .Completed}}
 
 ## Completed
@@ -228,12 +228,21 @@ Distance: {{printf "%.2f" .Distance}} | Trend: {{.Trend}}
 - {{.}}
 {{- end}}
 {{- end}}
+
+## Response Format
+Respond with JSON: {"atoms": [{"type": "<phase>", "taxonomy": "<phase.domain>", "content": "<your answer to the contract>"}]}
+{{- else}}
+
+## Instructions
+Use the available tools to accomplish the task. When you have the answer, call the speak tool to respond to the operator.
+{{- end}}
+{{- range .Directives}}
+
+> {{.}}
+{{- end}}
 {{- if .Sight}}
 
 # Operator Focus
 {{.Sight}}
 {{- end}}
-
-## Response Format
-Respond with JSON: {"atoms": [{"type": "<phase>", "taxonomy": "<phase.domain>", "content": "<your answer to the contract>"}]}
 `

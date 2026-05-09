@@ -51,7 +51,7 @@ func TestCapability_BuiltInVsEnvironment(t *testing.T) {
 
 func TestCapability_RiskAndMode(t *testing.T) {
 	cap := Func{
-		Name: "file.write",
+		Name: "file_write",
 		Mode: WriteAction,
 		Risk: 0.7,
 	}

@@ -825,7 +825,12 @@ func (cb *Cerebrum) tools(phase reactivity.AtomType) []tangle.Tool {
 		return nil
 	}
 
-	tools := []tangle.Tool{phaseToolFor(phase)}
+	var tools []tangle.Tool
+
+	hasDesired := cb.molecule != nil && cb.molecule.Catalyst() != nil && len(cb.molecule.Catalyst().Desired) > 0
+	if hasDesired {
+		tools = append(tools, phaseToolFor(phase))
+	}
 
 	for _, cap := range cb.capabilities {
 		if cap.Mode == organ.WriteAction && phase.Triad != reactivity.ImplementTriad {

@@ -44,9 +44,9 @@ func TestDebouncer_WindowSlides(t *testing.T) {
 
 func TestDebouncer_DifferentArgsDifferentFingerprint(t *testing.T) {
 	d := NewDebouncer(3, 2)
-	d.Check("file.read", json.RawMessage(`{"path":"a.go"}`))
-	d.Check("file.read", json.RawMessage(`{"path":"b.go"}`))
-	if d.Check("file.read", json.RawMessage(`{"path":"c.go"}`)) {
+	d.Check("file_read", json.RawMessage(`{"path":"a.go"}`))
+	d.Check("file_read", json.RawMessage(`{"path":"b.go"}`))
+	if d.Check("file_read", json.RawMessage(`{"path":"c.go"}`)) {
 		t.Error("same tool with different args should not be blocked")
 	}
 }

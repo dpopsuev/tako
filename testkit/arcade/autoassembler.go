@@ -28,7 +28,7 @@ func NewAutoassembler(workDir string) Scenario {
 		"files_written": 0,
 	})
 
-	adv.AddInstrument("file.read", "Read a file from the workspace. Input: relative path.", organ.ReadAction, func(s map[string]any, input string) string {
+	adv.AddInstrument("file_read", "Read a file from the workspace. Input: relative path.", organ.ReadAction, func(s map[string]any, input string) string {
 		path := strings.TrimSpace(input)
 		abs := filepath.Join(workDir, filepath.Clean(path))
 		data, err := os.ReadFile(abs)
@@ -40,7 +40,7 @@ func NewAutoassembler(workDir string) Scenario {
 		return string(data)
 	})
 
-	adv.AddInstrument("file.write", "Write content to a file. Input JSON: {\"path\": \"...\", \"content\": \"...\"}.", organ.WriteAction, func(s map[string]any, input string) string {
+	adv.AddInstrument("file_write", "Write content to a file. Input JSON: {\"path\": \"...\", \"content\": \"...\"}.", organ.WriteAction, func(s map[string]any, input string) string {
 		var args struct {
 			Path    string `json:"path"`
 			Content string `json:"content"`
@@ -65,7 +65,7 @@ func NewAutoassembler(workDir string) Scenario {
 		return fmt.Sprintf("wrote %d bytes to %s", len(args.Content), args.Path)
 	})
 
-	adv.AddInstrument("go.build", "Run go build on the workspace. Checks if code compiles.", organ.ReadAction, func(s map[string]any, _ string) string {
+	adv.AddInstrument("go_build", "Run go build on the workspace. Checks if code compiles.", organ.ReadAction, func(s map[string]any, _ string) string {
 		src := filepath.Join(workDir, "greet", "greet.go")
 		data, err := os.ReadFile(src)
 		if err != nil {
@@ -85,7 +85,7 @@ func NewAutoassembler(workDir string) Scenario {
 		return "build ok: greet package compiles"
 	})
 
-	adv.AddInstrument("go.test", "Run go test on the workspace. Verifies the implementation.", organ.WriteAction, func(s map[string]any, _ string) string {
+	adv.AddInstrument("go_test", "Run go test on the workspace. Verifies the implementation.", organ.WriteAction, func(s map[string]any, _ string) string {
 		src := filepath.Join(workDir, "greet", "greet.go")
 		data, err := os.ReadFile(src)
 		if err != nil {

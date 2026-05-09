@@ -19,11 +19,8 @@ func TestDefaultRender_Basic(t *testing.T) {
 	if !strings.Contains(result, "feed the tako") {
 		t.Error("should contain the need")
 	}
-	if !strings.Contains(result, "Active: intent") {
-		t.Error("should show active phase")
-	}
-	if !strings.Contains(result, "Response Format") {
-		t.Error("should include response format")
+	if !strings.Contains(result, "speak") {
+		t.Error("should instruct to use speak tool")
 	}
 }
 
@@ -176,6 +173,7 @@ func TestDefaultRender_FilledContracts(t *testing.T) {
 	ctx := Context{
 		Need:  "test",
 		Phase: reactivity.SelectionAtom,
+		Desired: map[string]any{"hungry": false},
 		Contracts: []reactivity.ContractInfo{
 			{Phase: reactivity.IntentAtom, Contract: "discover intent"},
 			{Phase: reactivity.SelectionAtom, Contract: "select approach"},

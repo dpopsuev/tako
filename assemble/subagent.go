@@ -26,7 +26,7 @@ type SubagentFactory struct {
 
 func (f *SubagentFactory) Capability() organ.Func {
 	return organ.Func{
-		Name:        "agent.spawn",
+		Name:        "agent_spawn",
 		Description: "Spawn a child agent to handle a sub-task. Types: explore (read-only, fast), plan (read-only, deep), general (full capabilities). Returns the child's result.",
 		Schema:      json.RawMessage(`{"type":"object","properties":{"task":{"type":"string","description":"Task for the child agent"},"type":{"type":"string","enum":["explore","plan","general"],"description":"Agent type (default: general)"},"max_turns":{"type":"integer","description":"Max turns for child (default: 10)"}},"required":["task"]}`),
 		Mode:        organ.WriteAction,

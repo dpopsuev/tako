@@ -47,7 +47,7 @@ func TestAdd(t *testing.T) {
 			{
 				Content: "Found it. Let me read the file.",
 				ToolCalls: []tangle.ToolCall{
-					{ID: "c2", Name: "file.read", Input: json.RawMessage(`{"path":"calc.go"}`)},
+					{ID: "c2", Name: "file_read", Input: json.RawMessage(`{"path":"calc.go"}`)},
 				},
 			},
 			{
@@ -65,13 +65,13 @@ func TestAdd(t *testing.T) {
 			{
 				Content: "Running tests.",
 				ToolCalls: []tangle.ToolCall{
-					{ID: "c5", Name: "go.test", Input: json.RawMessage(`{"package":"./..."}`)},
+					{ID: "c5", Name: "go_test", Input: json.RawMessage(`{"package":"./..."}`)},
 				},
 			},
 			{
 				Content: "Tests pass. Committing.",
 				ToolCalls: []tangle.ToolCall{
-					{ID: "c6", Name: "git.commit", Input: json.RawMessage(`{"message":"feat: add Subtract function with test","files":["calc.go","calc_test.go"]}`)},
+					{ID: "c6", Name: "git_commit", Input: json.RawMessage(`{"message":"feat: add Subtract function with test","files":["calc.go","calc_test.go"]}`)},
 				},
 			},
 			{
@@ -143,13 +143,13 @@ func TestDogfood_ToolErrorRecovery(t *testing.T) {
 			{
 				Content: "Reading nonexistent file.",
 				ToolCalls: []tangle.ToolCall{
-					{ID: "c1", Name: "file.read", Input: json.RawMessage(`{"path":"nonexistent.go"}`)},
+					{ID: "c1", Name: "file_read", Input: json.RawMessage(`{"path":"nonexistent.go"}`)},
 				},
 			},
 			{
 				Content: "File doesn't exist. Reading main.go instead.",
 				ToolCalls: []tangle.ToolCall{
-					{ID: "c2", Name: "file.read", Input: json.RawMessage(`{"path":"main.go"}`)},
+					{ID: "c2", Name: "file_read", Input: json.RawMessage(`{"path":"main.go"}`)},
 				},
 			},
 			{
@@ -190,7 +190,7 @@ func TestDogfood_SubagentExplore(t *testing.T) {
 			{
 				Content: "Delegating exploration to subagent.",
 				ToolCalls: []tangle.ToolCall{
-					{ID: "c1", Name: "agent.spawn", Input: json.RawMessage(`{"task":"find all Go files","type":"explore","max_turns":3}`)},
+					{ID: "c1", Name: "agent_spawn", Input: json.RawMessage(`{"task":"find all Go files","type":"explore","max_turns":3}`)},
 				},
 			},
 			{

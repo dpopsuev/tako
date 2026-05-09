@@ -38,7 +38,7 @@ func TestE2E_FixTheTest_Rehearsal(t *testing.T) {
 			{
 				Content: "Found it. Reading the handler.",
 				ToolCalls: []tangle.ToolCall{
-					{ID: "c2", Name: "file.read", Input: json.RawMessage(`{"path":"auth/handler.go"}`)},
+					{ID: "c2", Name: "file_read", Input: json.RawMessage(`{"path":"auth/handler.go"}`)},
 				},
 			},
 			{
@@ -50,7 +50,7 @@ func TestE2E_FixTheTest_Rehearsal(t *testing.T) {
 			{
 				Content: "Running tests.",
 				ToolCalls: []tangle.ToolCall{
-					{ID: "c4", Name: "go.test", Input: json.RawMessage(`{"package":"./..."}`)},
+					{ID: "c4", Name: "go_test", Input: json.RawMessage(`{"package":"./..."}`)},
 				},
 			},
 			{

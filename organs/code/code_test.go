@@ -21,7 +21,7 @@ func capSet(dir string) *organ.FuncSet {
 func TestCodeCapabilities_Names(t *testing.T) {
 	cs := capSet(t.TempDir())
 	names := cs.Names()
-	expected := []string{"file.read", "file.write", "edit", "bash", "glob", "grep", "git.status", "git.diff", "git.commit", "go.build", "go.test", "go.vet"}
+	expected := []string{"file_read", "file_write", "edit", "bash", "glob", "grep", "git_status", "git_diff", "git_commit", "go_build", "go_test", "go_vet"}
 	if len(names) != len(expected) {
 		t.Fatalf("expected %d names, got %d: %v", len(expected), len(names), names)
 	}
@@ -43,9 +43,9 @@ func TestCodeCapabilities_Modes(t *testing.T) {
 			t.Errorf("%s mode = %v, want %v", name, cap.Mode, want)
 		}
 	}
-	check("file.read", organ.ReadAction)
-	check("file.write", organ.WriteAction)
-	check("go.test", organ.WriteAction)
+	check("file_read", organ.ReadAction)
+	check("file_write", organ.WriteAction)
+	check("go_test", organ.WriteAction)
 }
 
 func TestCodeCapabilities_Risk(t *testing.T) {
@@ -56,9 +56,9 @@ func TestCodeCapabilities_Risk(t *testing.T) {
 			t.Errorf("%s risk = %f, want %f", name, cap.Risk, want)
 		}
 	}
-	check("file.read", 0)
-	check("file.write", 0.7)
-	check("go.test", 0.3)
+	check("file_read", 0)
+	check("file_write", 0.7)
+	check("go_test", 0.3)
 }
 
 func TestCodeCapabilities_ReadFile(t *testing.T) {
@@ -66,7 +66,7 @@ func TestCodeCapabilities_ReadFile(t *testing.T) {
 	os.WriteFile(filepath.Join(dir, "hello.txt"), []byte("world"), 0o644)
 
 	cs := capSet(dir)
-	cap, _ := cs.Get("file.read")
+	cap, _ := cs.Get("file_read")
 	result, err := cap.Execute(context.Background(), json.RawMessage(`{"path":"hello.txt"}`))
 	if err != nil {
 		t.Fatal(err)
@@ -78,7 +78,7 @@ func TestCodeCapabilities_ReadFile(t *testing.T) {
 
 func TestCodeCapabilities_ReadFile_Escape(t *testing.T) {
 	cs := capSet(t.TempDir())
-	cap, _ := cs.Get("file.read")
+	cap, _ := cs.Get("file_read")
 	result, _ := cap.Execute(context.Background(), json.RawMessage(`{"path":"../../etc/passwd"}`))
 	if !result.IsError {
 		t.Error("expected error for path escape")
@@ -88,7 +88,7 @@ func TestCodeCapabilities_ReadFile_Escape(t *testing.T) {
 func TestCodeCapabilities_WriteFile(t *testing.T) {
 	dir := t.TempDir()
 	cs := capSet(dir)
-	cap, _ := cs.Get("file.write")
+	cap, _ := cs.Get("file_write")
 
 	result, err := cap.Execute(context.Background(), json.RawMessage(`{"path":"sub/test.go","content":"package sub\n"}`))
 	if err != nil {
@@ -109,7 +109,7 @@ func TestCodeCapabilities_WriteFile(t *testing.T) {
 
 func TestCodeCapabilities_WriteFile_Escape(t *testing.T) {
 	cs := capSet(t.TempDir())
-	cap, _ := cs.Get("file.write")
+	cap, _ := cs.Get("file_write")
 	result, _ := cap.Execute(context.Background(), json.RawMessage(`{"path":"../../tmp/evil","content":"bad"}`))
 	if !result.IsError {
 		t.Error("expected error for path escape")

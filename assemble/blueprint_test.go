@@ -32,7 +32,7 @@ func TestWalkingSkeleton_ReadFile(t *testing.T) {
 
 	var readCap bool
 	for _, c := range caps {
-		if c.Name == "file.read" {
+		if c.Name == "file_read" {
 			readCap = true
 			break
 		}
@@ -48,7 +48,7 @@ func TestWalkingSkeleton_ReadFile(t *testing.T) {
 				ToolCalls: []tangle.ToolCall{
 					{
 						ID:    "call_1",
-						Name:  "file.read",
+						Name:  "file_read",
 						Input: json.RawMessage(`{"path":"blueprint.go"}`),
 					},
 				},
@@ -108,7 +108,7 @@ func TestAssemble_Capabilities(t *testing.T) {
 
 	found := false
 	for _, n := range names {
-		if n == "file.read" {
+		if n == "file_read" {
 			found = true
 		}
 	}
@@ -159,7 +159,7 @@ func TestWalkingSkeleton_ToolResultReachesLLM(t *testing.T) {
 			{
 				Content: "reading file",
 				ToolCalls: []tangle.ToolCall{
-					{ID: "call_1", Name: "file.read", Input: json.RawMessage(`{"path":"blueprint.go"}`)},
+					{ID: "call_1", Name: "file_read", Input: json.RawMessage(`{"path":"blueprint.go"}`)},
 				},
 			},
 			{

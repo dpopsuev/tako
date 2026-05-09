@@ -66,7 +66,7 @@ func TestPipeStoreMatch(t *testing.T) {
 	store.Add(Pipe{
 		Name:      "code",
 		Embedding: []float64{0, 1, 0},
-		Steps:     []PipeStep{{ID: "read", Call: "file.read"}},
+		Steps:     []PipeStep{{ID: "read", Call: "file_read"}},
 	})
 
 	t.Run("exact match", func(t *testing.T) {
@@ -156,15 +156,15 @@ func TestReplayPipe_Escalation(t *testing.T) {
 		Name: "test",
 		Steps: []PipeStep{{
 			ID:         "read",
-			Call:       "file.read",
+			Call:       "file_read",
 			Expected:   HashResult([]byte("expected content")),
 			Confidence: 0.1,
 		}},
 	}
 
 	caps := map[string]organ.Func{
-		"file.read": {
-			Name: "file.read",
+		"file_read": {
+			Name: "file_read",
 			Execute: func(_ context.Context, _ json.RawMessage) (organ.Result, error) {
 				return organ.TextResult("different content"), nil
 			},

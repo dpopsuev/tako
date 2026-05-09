@@ -66,7 +66,7 @@ func TestSummaryCompactor_TruncatesToolOutput(t *testing.T) {
 	}
 	history := []tangle.Message{
 		{Role: "user", Content: "read the file"},
-		{Role: "assistant", Content: "", ToolCalls: []tangle.ToolCall{{ID: "tc1", Name: "file.read"}}},
+		{Role: "assistant", Content: "", ToolCalls: []tangle.ToolCall{{ID: "tc1", Name: "file_read"}}},
 		{Role: "tool", Content: longOutput, ToolCallID: "tc1"},
 	}
 

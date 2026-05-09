@@ -17,7 +17,7 @@ func TestSubagent_SpawnAndComplete(t *testing.T) {
 			{
 				Content: "I'll delegate this to a subagent.",
 				ToolCalls: []tangle.ToolCall{
-					{ID: "c1", Name: "agent.spawn", Input: json.RawMessage(`{"task":"read the go.mod file","type":"explore","max_turns":3}`)},
+					{ID: "c1", Name: "agent_spawn", Input: json.RawMessage(`{"task":"read the go.mod file","type":"explore","max_turns":3}`)},
 				},
 			},
 			{
