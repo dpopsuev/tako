@@ -294,6 +294,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 		slog.Int("cfg.backward_turn_limit", cb.config.BackwardTurnLimit))
 
 	history, _ := molecule.Context().([]tangle.Message)
+	chain := molecule.Chain()
 	var turnRecords []TurnRecord
 	debouncer := NewDebouncer(3, 2)
 
@@ -497,6 +498,12 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) err
 						Role:       RoleTool,
 						Content:    tr.Content,
 						ToolCallID: tc.ID,
+					})
+					chain.Append(reactivity.ChainEvent{
+						Kind:   organEventRole(tc.Name, cb.capabilities),
+						Organ:  tc.Name,
+						Input:  tc.Input,
+						Output: []byte(tr.Content),
 					})
 					slog.InfoContext(ctx, "cerebrum.think.tool_result",
 						slog.Int("turn", turn),
@@ -959,6 +966,15 @@ func (cb *Cerebrum) waitToolResult(ctx context.Context, tc tangle.ToolCall) tool
 				slog.String("expected_tool", tc.Name))
 		}
 	}
+}
+
+func organEventRole(name string, caps []organ.Func) reactivity.EventRole {
+	for _, c := range caps {
+		if c.Name == name && c.Mode == organ.WriteAction {
+			return reactivity.Motor
+		}
+	}
+	return reactivity.Sense
 }
 
 func (cb *Cerebrum) dispatch(ctx context.Context, m *reactivity.Molecule) {

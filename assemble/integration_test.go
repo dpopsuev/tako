@@ -412,6 +412,53 @@ func TestGracefulDegradation_SynthesizesOnMaxTurns(t *testing.T) {
 	}
 }
 
+func TestEventChain_PopulatedAfterOrganCall(t *testing.T) {
+	ping, _ := pingOrgan()
+
+	completer := &scriptedCompleter{
+		turns: []tangle.Completion{
+			{
+				Content: "pinging",
+				ToolCalls: []tangle.ToolCall{
+					{ID: "c1", Name: "ping", Input: json.RawMessage(`{}`)},
+				},
+			},
+			{
+				Content: `{"atoms":[{"type":"retrospection","taxonomy":"retrospection.done","content":"done"}]}`,
+			},
+		},
+	}
+
+	bp := Blueprint{
+		Model:        "stub",
+		Capabilities: []organ.Func{ping},
+		Budget:       cerebrum.Budget{MaxTurns: 5, TurnTimeout: 10 * time.Second},
+	}
+
+	agent := Assemble(bp, completer)
+	agent.Think(context.Background(), "ping it")
+
+	m := agent.Result()
+	chain := m.Chain()
+
+	if chain.Len() == 0 {
+		t.Fatal("EventChain should have events after organ call")
+	}
+
+	senses := chain.Senses()
+	if len(senses) == 0 {
+		t.Error("expected at least one Sense event (ping is ReadAction)")
+	}
+
+	if senses[0].Organ != "ping" {
+		t.Errorf("first sense organ = %q, want %q", senses[0].Organ, "ping")
+	}
+
+	if string(senses[0].Output) != "pong" {
+		t.Errorf("sense output = %q, want %q", string(senses[0].Output), "pong")
+	}
+}
+
 func TestDrill_Brainstorm_PureConversation(t *testing.T) {
 	completer := &capturingCompleter{
 		turns: []tangle.Completion{
