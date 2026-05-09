@@ -15,6 +15,9 @@ type Model struct {
 	output  *widgets.OutputPanel
 	input   *widgets.InputPanel
 	status  *widgets.StatusPanel
+	footer  *widgets.FooterPanel
+	cabin   *widgets.CabinCenter
+	overlay *widgets.OverlayContainer
 	engine  *layout.LayoutEngine
 	focus   *core.FocusManager
 	width   int
@@ -26,6 +29,10 @@ func NewModel(runner Runner, modelName string) Model {
 	output := widgets.NewOutputPanel()
 	input := widgets.NewInputPanel()
 	status := widgets.NewStatusPanel(modelName)
+	footer := widgets.NewFooterPanel()
+	leftPillar := widgets.NewPillarPanel("left-pillar")
+	rightPillar := widgets.NewPillarPanel("right-pillar")
+	cabin := widgets.NewCabinCenter(output, input, leftPillar, rightPillar)
 
 	fm := core.NewFocusManager(input, output)
 	engine := layout.NewLayoutEngine(fm, plainBorder{})
@@ -36,26 +43,28 @@ func NewModel(runner Runner, modelName string) Model {
 		Border: layout.BorderNone,
 	})
 	engine.Register(layout.PanelSlot{
-		Panel:     output,
+		Panel:     cabin,
 		Weight:    1,
-		MinHeight: 5,
+		MinHeight: 10,
 		Focusable: true,
 		Border:    layout.BorderNone,
 	})
 	engine.Register(layout.PanelSlot{
-		Panel:     input,
-		Weight:    0,
-		Focusable: true,
-		Border:    layout.BorderNone,
+		Panel:  footer,
+		Weight: 0,
+		Border: layout.BorderNone,
 	})
 
 	return Model{
-		runner: runner,
-		output: output,
-		input:  input,
-		status: status,
-		engine: engine,
-		focus:  fm,
+		runner:  runner,
+		output:  output,
+		input:   input,
+		status:  status,
+		footer:  footer,
+		cabin:   cabin,
+		overlay: widgets.NewOverlayContainer(),
+		engine:  engine,
+		focus:   fm,
 	}
 }
 
@@ -81,10 +90,27 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.engine.Resize(msg.Width, msg.Height)
 		return m, nil
 
+	case widgets.ShowOverlayMsg:
+		m.overlay.Show(msg.Panel)
+		return m, nil
+
+	case widgets.HideOverlayMsg:
+		m.overlay.Hide()
+		return m, nil
+
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+c":
+		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
+		}
+		if m.overlay.Active() {
+			if msg.String() == "esc" {
+				m.overlay.Hide()
+				return m, nil
+			}
+			cmd := m.overlay.Update(msg)
+			return m, cmd
+		}
+		switch msg.String() {
 		case "tab":
 			m.focus.Cycle()
 			return m, nil
@@ -112,7 +138,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.Result != "" {
 			m.output.Update(widgets.AppendOutputMsg{Line: "\n" + msg.Result})
 		}
-		m.status.Update(msg)
+		m.footer.Update(msg)
 		return m, nil
 
 	case widgets.ErrorMsg:
@@ -123,7 +149,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case widgets.PhaseChangeMsg:
 		m.output.Update(msg)
-		m.status.Update(msg)
+		m.footer.Update(msg)
+		return m, nil
+
+	case widgets.TokenUpdateMsg:
+		m.footer.Update(msg)
 		return m, nil
 
 	case widgets.ToolCallStartMsg:
@@ -158,5 +188,9 @@ func (m Model) View() string {
 	if m.width == 0 {
 		return "initializing..."
 	}
-	return m.engine.Render()
+	base := m.engine.Render()
+	if m.overlay.Active() {
+		return m.overlay.Render(base, m.width, m.height)
+	}
+	return base
 }

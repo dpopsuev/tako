@@ -23,6 +23,12 @@ type PhaseChangeMsg struct {
 	Turn  int
 }
 
+type TokenUpdateMsg struct {
+	TokensIn  int
+	TokensOut int
+	ToolCalls int
+}
+
 type AgentDoneMsg struct {
 	Sealed   bool
 	Distance float64

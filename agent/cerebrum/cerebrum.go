@@ -442,6 +442,9 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 		}
 		cb.emit("cerebrum.turn", tr.Labels())
 		turnRecords = append(turnRecords, tr)
+		if cb.listener != nil {
+			cb.listener.OnTokenUpdate(completion.Tokens.Input, completion.Tokens.Output, len(completion.ToolCalls))
+		}
 		slog.DebugContext(ctx, "cerebrum.think.response_content",
 			slog.Int("turn", turn),
 			slog.String("content", completion.Content))

@@ -22,6 +22,17 @@ func (a *Adapter) OnContext(phase string, turn int, distance float64) {
 	})
 }
 
+func (a *Adapter) OnTokenUpdate(tokensIn, tokensOut, toolCalls int) {
+	if a.Program == nil {
+		return
+	}
+	a.Program.Send(widgets.TokenUpdateMsg{
+		TokensIn:  tokensIn,
+		TokensOut: tokensOut,
+		ToolCalls: toolCalls,
+	})
+}
+
 func (a *Adapter) OnToolCall(name string, input []byte) {
 	if a.Program == nil {
 		return
