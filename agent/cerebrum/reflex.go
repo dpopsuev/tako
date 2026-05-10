@@ -24,7 +24,7 @@ type ReplayResult struct {
 	StepsTotal    int
 	StepsReflex   int
 	EscalatedAt   int
-	EscalatedGear Gear
+	EscalatedConventionality Conventionality
 	Response      string
 }
 
@@ -50,7 +50,7 @@ func ReplayPipe(ctx context.Context, pipe *Pipe, caps map[string]organ.Func) (Re
 		if !ok || cap.Execute == nil {
 			exec.SubmitAndUnlock(runID, step.ID, nil, "unknown capability: "+step.Call, pr.steps)
 			result.EscalatedAt = result.StepsTotal - 1
-			result.EscalatedGear = GearNovel
+			result.EscalatedConventionality = ConventionalityChaotic
 			break
 		}
 
@@ -58,7 +58,7 @@ func ReplayPipe(ctx context.Context, pipe *Pipe, caps map[string]organ.Func) (Re
 		if err != nil {
 			exec.SubmitAndUnlock(runID, step.ID, nil, err.Error(), pr.steps)
 			result.EscalatedAt = result.StepsTotal - 1
-			result.EscalatedGear = GearFamiliar
+			result.EscalatedConventionality = ConventionalityComplex
 			break
 		}
 
@@ -70,7 +70,7 @@ func ReplayPipe(ctx context.Context, pipe *Pipe, caps map[string]organ.Func) (Re
 				slog.String("action", step.Call),
 				slog.Float64("confidence", step.Confidence))
 			result.EscalatedAt = result.StepsTotal - 1
-			result.EscalatedGear = GearFamiliar
+			result.EscalatedConventionality = ConventionalityComplex
 			break
 		}
 
@@ -85,16 +85,16 @@ func ReplayPipe(ctx context.Context, pipe *Pipe, caps map[string]organ.Func) (Re
 	return result, nil
 }
 
-func selectGear(overlap float64) Gear {
+func selectConventionality(overlap float64) Conventionality {
 	switch {
 	case overlap >= 0.95:
-		return GearReflex
+		return ConventionalityClear
 	case overlap >= 0.7:
-		return GearIntuition
+		return ConventionalityComplicated
 	case overlap >= 0.3:
-		return GearFamiliar
+		return ConventionalityComplex
 	default:
-		return GearNovel
+		return ConventionalityChaotic
 	}
 }
 

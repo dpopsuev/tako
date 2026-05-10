@@ -11,7 +11,7 @@ func TestTurnRecord_Labels(t *testing.T) {
 		MoleculeID: "mol-1",
 		Turn:       3,
 		Phase:      "execution",
-		Gear:       GearFamiliar,
+		Conventionality:       ConventionalityComplex,
 		Domain:     "complicated",
 		TokensIn:   500,
 		TokensOut:  100,
@@ -21,8 +21,8 @@ func TestTurnRecord_Labels(t *testing.T) {
 	}
 
 	labels := tr.Labels()
-	if labels["gear"] != "familiar" {
-		t.Errorf("gear: got %s, want familiar", labels["gear"])
+	if labels["conventionality"] != "complex" {
+		t.Errorf("gear: got %s, want familiar", labels["conventionality"])
 	}
 	if labels["tokens_in"] != "500" {
 		t.Errorf("tokens_in: got %s, want 500", labels["tokens_in"])
@@ -34,10 +34,10 @@ func TestTurnRecord_Labels(t *testing.T) {
 
 func TestSessionSummary_FromTurnRecords(t *testing.T) {
 	turns := []TurnRecord{
-		{Gear: GearNovel, TokensIn: 1000, TokensOut: 200, ToolCalls: 1, ElapsedMs: 5000},
-		{Gear: GearNovel, TokensIn: 800, TokensOut: 150, ToolCalls: 2, ElapsedMs: 3000},
-		{Gear: GearFamiliar, TokensIn: 400, TokensOut: 80, ToolCalls: 1, ElapsedMs: 1000},
-		{Gear: GearFamiliar, TokensIn: 300, TokensOut: 60, ToolCalls: 0, ElapsedMs: 800},
+		{Conventionality: ConventionalityChaotic, TokensIn: 1000, TokensOut: 200, ToolCalls: 1, ElapsedMs: 5000},
+		{Conventionality: ConventionalityChaotic, TokensIn: 800, TokensOut: 150, ToolCalls: 2, ElapsedMs: 3000},
+		{Conventionality: ConventionalityComplex, TokensIn: 400, TokensOut: 80, ToolCalls: 1, ElapsedMs: 1000},
+		{Conventionality: ConventionalityComplex, TokensIn: 300, TokensOut: 60, ToolCalls: 0, ElapsedMs: 800},
 	}
 
 	m := reactivity.NewMoleculeWithCatalyst("test", reactivity.Catalyst{
@@ -57,11 +57,11 @@ func TestSessionSummary_FromTurnRecords(t *testing.T) {
 	if summary.TotalTokensOut != 490 {
 		t.Errorf("tokens_out: got %d, want 490", summary.TotalTokensOut)
 	}
-	if summary.GearNovelPct != 50 {
-		t.Errorf("novel_pct: got %.1f, want 50.0", summary.GearNovelPct)
+	if summary.ChaoticPct != 50 {
+		t.Errorf("novel_pct: got %.1f, want 50.0", summary.ChaoticPct)
 	}
-	if summary.GearFamiliarPct != 50 {
-		t.Errorf("familiar_pct: got %.1f, want 50.0", summary.GearFamiliarPct)
+	if summary.ComplexPct != 50 {
+		t.Errorf("familiar_pct: got %.1f, want 50.0", summary.ComplexPct)
 	}
 	if summary.AvgTurnMs != 2450 {
 		t.Errorf("avg_turn_ms: got %d, want 2450", summary.AvgTurnMs)
@@ -75,9 +75,9 @@ func TestSessionSummary_Labels(t *testing.T) {
 	s := SessionSummary{
 		MoleculeID:      "mol-1",
 		TotalTurns:      10,
-		GearNovelPct:    30,
-		GearFamiliarPct: 50,
-		GearReflexPct:   20,
+		ChaoticPct:    30,
+		ComplexPct: 50,
+		ClearPct:   20,
 		OAE:             0.65,
 	}
 
@@ -85,7 +85,7 @@ func TestSessionSummary_Labels(t *testing.T) {
 	if labels["oae"] != "0.650" {
 		t.Errorf("oae: got %s, want 0.650", labels["oae"])
 	}
-	if labels["gear_reflex_pct"] != "20.0" {
-		t.Errorf("reflex_pct: got %s, want 20.0", labels["gear_reflex_pct"])
+	if labels["clear_pct"] != "20.0" {
+		t.Errorf("reflex_pct: got %s, want 20.0", labels["clear_pct"])
 	}
 }

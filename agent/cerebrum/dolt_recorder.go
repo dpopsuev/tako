@@ -27,7 +27,7 @@ func (r *DoltTurnRecorder) Append(record Record) error {
 		record.Labels["molecule"],
 		record.Labels["turn"],
 		record.Labels["phase"],
-		record.Labels["gear"],
+		record.Labels["conventionality"],
 		record.Labels["domain"],
 		record.Labels["model"],
 		record.Labels["tokens_in"],
@@ -56,8 +56,8 @@ func (r *DoltTurnRecorder) RecordSession(s SessionSummary) error {
 		  sealed, final_distance, created_at)
 		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		s.MoleculeID, s.TotalTurns, s.TotalTokensIn, s.TotalTokensOut,
-		s.TotalToolCalls, s.OAE, s.GearNovelPct, s.GearFamiliarPct,
-		s.GearIntuitionPct, s.GearReflexPct, s.ReflexHits,
+		s.TotalToolCalls, s.OAE, s.ChaoticPct, s.ComplexPct,
+		s.ComplicatedPct, s.ClearPct, s.ReflexHits,
 		s.ReflexCoverage, s.LLMCalls, s.ReflexFires, s.AvgTurnMs,
 		s.Sealed, s.FinalDistance, time.Now(),
 	)

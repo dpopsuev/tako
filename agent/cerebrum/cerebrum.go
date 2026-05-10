@@ -251,7 +251,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 	chain := molecule.Chain()
 
 	intent := cb.classifyIntent(ctx, need)
-	if intent.Gear == GearReflex && intent.Pipe != nil {
+	if intent.Conventionality == ConventionalityClear && intent.Pipe != nil {
 		capMap := make(map[string]organ.Func)
 		for _, c := range cb.organs {
 			capMap[c.Name] = c
@@ -286,7 +286,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 		slog.InfoContext(ctx, "cerebrum.think.reflex_escalated",
 			slog.String("pipe", intent.Pipe.Name),
 			slog.Int("escalated_at", result.EscalatedAt),
-			slog.String("gear", string(result.EscalatedGear)))
+			slog.String("conventionality", string(result.EscalatedConventionality)))
 	}
 
 	if cb.recollector != nil {
@@ -432,7 +432,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 			MoleculeID:   molecule.ID,
 			Turn:         turn,
 			Phase:        molecule.Phase().String(),
-			Gear:         intent.Gear,
+			Conventionality:         intent.Conventionality,
 			Domain:       domain.String(),
 			TokensIn:     completion.Tokens.Input,
 			TokensOut:    completion.Tokens.Output,
@@ -742,9 +742,9 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 		slog.Int("tokens_in", summary.TotalTokensIn),
 		slog.Int("tokens_out", summary.TotalTokensOut),
 		slog.Float64("oae", summary.OAE),
-		slog.Float64("gear_novel_pct", summary.GearNovelPct),
-		slog.Float64("gear_familiar_pct", summary.GearFamiliarPct),
-		slog.Float64("gear_reflex_pct", summary.GearReflexPct),
+		slog.Float64("chaotic_pct", summary.ChaoticPct),
+		slog.Float64("complex_pct", summary.ComplexPct),
+		slog.Float64("clear_pct", summary.ClearPct),
 		slog.Int("reflex_hits", summary.ReflexHits),
 		slog.Int64("avg_turn_ms", summary.AvgTurnMs),
 		slog.Float64("final_distance", summary.FinalDistance))

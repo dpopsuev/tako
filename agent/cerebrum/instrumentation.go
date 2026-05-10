@@ -6,20 +6,20 @@ import (
 	"github.com/dpopsuev/tako/agent/reactivity"
 )
 
-type Gear string
+type Conventionality string
 
 const (
-	GearNovel     Gear = "novel"
-	GearFamiliar  Gear = "familiar"
-	GearIntuition Gear = "intuition"
-	GearReflex    Gear = "reflex"
+	ConventionalityChaotic     Conventionality = "chaotic"
+	ConventionalityComplex  Conventionality = "complex"
+	ConventionalityComplicated Conventionality = "complicated"
+	ConventionalityClear    Conventionality = "clear"
 )
 
 type TurnRecord struct {
 	MoleculeID        string
 	Turn              int
 	Phase             string
-	Gear              Gear
+	Conventionality             Conventionality
 	Domain            string
 	ModelName         string
 	TokensIn          int
@@ -42,7 +42,7 @@ func (r TurnRecord) Labels() map[string]string {
 		"molecule":           r.MoleculeID,
 		"turn":               fmt.Sprintf("%d", r.Turn),
 		"phase":              r.Phase,
-		"gear":               string(r.Gear),
+		"conventionality":               string(r.Conventionality),
 		"domain":             r.Domain,
 		"model":              r.ModelName,
 		"tokens_in":          fmt.Sprintf("%d", r.TokensIn),
@@ -68,10 +68,10 @@ type SessionSummary struct {
 	TotalTokensOut  int
 	TotalToolCalls  int
 	OAE               float64
-	GearNovelPct      float64
-	GearFamiliarPct   float64
-	GearIntuitionPct  float64
-	GearReflexPct     float64
+	ChaoticPct      float64
+	ComplexPct   float64
+	ComplicatedPct  float64
+	ClearPct     float64
 	ReflexHits      int
 	ReflexCoverage  float64
 	LLMCalls        int
@@ -89,10 +89,10 @@ func (s SessionSummary) Labels() map[string]string {
 		"total_tokens_out":  fmt.Sprintf("%d", s.TotalTokensOut),
 		"total_tool_calls":  fmt.Sprintf("%d", s.TotalToolCalls),
 		"oae":               fmt.Sprintf("%.3f", s.OAE),
-		"gear_novel_pct":     fmt.Sprintf("%.1f", s.GearNovelPct),
-		"gear_familiar_pct": fmt.Sprintf("%.1f", s.GearFamiliarPct),
-		"gear_intuition_pct": fmt.Sprintf("%.1f", s.GearIntuitionPct),
-		"gear_reflex_pct":   fmt.Sprintf("%.1f", s.GearReflexPct),
+		"chaotic_pct":     fmt.Sprintf("%.1f", s.ChaoticPct),
+		"complex_pct": fmt.Sprintf("%.1f", s.ComplexPct),
+		"complicated_pct": fmt.Sprintf("%.1f", s.ComplicatedPct),
+		"clear_pct":   fmt.Sprintf("%.1f", s.ClearPct),
 		"reflex_hits":       fmt.Sprintf("%d", s.ReflexHits),
 		"reflex_coverage":   fmt.Sprintf("%.3f", s.ReflexCoverage),
 		"llm_calls":         fmt.Sprintf("%d", s.LLMCalls),
@@ -119,14 +119,14 @@ func computeSessionSummary(moleculeID string, turns []TurnRecord, m *reactivity.
 		s.TotalToolCalls += t.ToolCalls
 		s.ReflexHits += t.ReflexHits
 		totalMs += t.ElapsedMs
-		switch t.Gear {
-		case GearNovel:
+		switch t.Conventionality {
+		case ConventionalityChaotic:
 			novel++
-		case GearFamiliar:
+		case ConventionalityComplex:
 			familiar++
-		case GearIntuition:
+		case ConventionalityComplicated:
 			intuition++
-		case GearReflex:
+		case ConventionalityClear:
 			reflex++
 		}
 	}
@@ -136,10 +136,10 @@ func computeSessionSummary(moleculeID string, turns []TurnRecord, m *reactivity.
 	if s.TotalTurns > 0 {
 		s.AvgTurnMs = totalMs / int64(s.TotalTurns)
 		total := float64(s.TotalTurns)
-		s.GearNovelPct = float64(novel) / total * 100
-		s.GearFamiliarPct = float64(familiar) / total * 100
-		s.GearIntuitionPct = float64(intuition) / total * 100
-		s.GearReflexPct = float64(reflex) / total * 100
+		s.ChaoticPct = float64(novel) / total * 100
+		s.ComplexPct = float64(familiar) / total * 100
+		s.ComplicatedPct = float64(intuition) / total * 100
+		s.ClearPct = float64(reflex) / total * 100
 		s.ReflexCoverage = float64(reflex) / total
 	}
 

@@ -82,8 +82,8 @@ func TestSubsystems_AlignmentRewardPipeStore(t *testing.T) {
 		if sim < 0.999 || pipe == nil {
 			t.Fatalf("exact embedding should match, got sim=%v", sim)
 		}
-		gear := selectGear(sim)
-		if gear != GearReflex {
+		gear := selectConventionality(sim)
+		if gear != ConventionalityClear {
 			t.Fatalf("high sim should be reflex, got %s", gear)
 		}
 	})
@@ -110,26 +110,26 @@ func TestSubsystems_AlignmentRewardPipeStore(t *testing.T) {
 
 func TestSessionSummary_GearDistribution(t *testing.T) {
 	turns := []TurnRecord{
-		{Gear: GearNovel},
-		{Gear: GearFamiliar},
-		{Gear: GearIntuition},
-		{Gear: GearReflex},
-		{Gear: GearIntuition},
+		{Conventionality: ConventionalityChaotic},
+		{Conventionality: ConventionalityComplex},
+		{Conventionality: ConventionalityComplicated},
+		{Conventionality: ConventionalityClear},
+		{Conventionality: ConventionalityComplicated},
 	}
 
 	m := reactivity.NewMolecule("test-gear-dist")
 	summary := computeSessionSummary("test-gear-dist", turns, m)
 
-	if summary.GearNovelPct != 20 {
-		t.Errorf("novel pct = %.1f, want 20", summary.GearNovelPct)
+	if summary.ChaoticPct != 20 {
+		t.Errorf("novel pct = %.1f, want 20", summary.ChaoticPct)
 	}
-	if summary.GearFamiliarPct != 20 {
-		t.Errorf("familiar pct = %.1f, want 20", summary.GearFamiliarPct)
+	if summary.ComplexPct != 20 {
+		t.Errorf("familiar pct = %.1f, want 20", summary.ComplexPct)
 	}
-	if summary.GearIntuitionPct != 40 {
-		t.Errorf("intuition pct = %.1f, want 40", summary.GearIntuitionPct)
+	if summary.ComplicatedPct != 40 {
+		t.Errorf("intuition pct = %.1f, want 40", summary.ComplicatedPct)
 	}
-	if summary.GearReflexPct != 20 {
-		t.Errorf("reflex pct = %.1f, want 20", summary.GearReflexPct)
+	if summary.ClearPct != 20 {
+		t.Errorf("reflex pct = %.1f, want 20", summary.ClearPct)
 	}
 }

@@ -9,7 +9,7 @@ import (
 type IntentResult struct {
 	Pipe        *Pipe
 	Overlap     float64
-	Gear        Gear
+	Conventionality       Conventionality
 	Temperature float64
 }
 
@@ -25,21 +25,21 @@ func overlapToTemperature(overlap float64) float64 {
 
 func (cb *Cerebrum) classifyIntent(ctx context.Context, need []byte) IntentResult {
 	if cb.embedder == nil || cb.reflexStore == nil {
-		return IntentResult{Gear: GearNovel}
+		return IntentResult{Conventionality: ConventionalityChaotic}
 	}
 
 	embedding, err := cb.embedder.Embed(ctx, string(need))
 	if err != nil {
 		slog.WarnContext(ctx, "intent.embed_error", slog.Any("error", err))
-		return IntentResult{Gear: GearNovel}
+		return IntentResult{Conventionality: ConventionalityChaotic}
 	}
 
 	pipe, overlap := cb.reflexStore.Match(embedding)
-	gear := selectGear(overlap)
+	gear := selectConventionality(overlap)
 
 	slog.InfoContext(ctx, "intent.classified",
 		slog.Float64("overlap", overlap),
-		slog.String("gear", string(gear)))
+		slog.String("conventionality", string(gear)))
 
 	if pipe != nil {
 		slog.InfoContext(ctx, "intent.match",
@@ -53,5 +53,5 @@ func (cb *Cerebrum) classifyIntent(ctx context.Context, need []byte) IntentResul
 	slog.InfoContext(ctx, "intent.temperature",
 		slog.Float64("temperature", temperature))
 
-	return IntentResult{Pipe: pipe, Overlap: overlap, Gear: gear, Temperature: temperature}
+	return IntentResult{Pipe: pipe, Overlap: overlap, Conventionality: gear, Temperature: temperature}
 }

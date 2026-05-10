@@ -33,25 +33,25 @@ func TestCosineSimilarity(t *testing.T) {
 	}
 }
 
-func TestSelectGear(t *testing.T) {
+func TestSelectConventionality(t *testing.T) {
 	tests := []struct {
 		overlap float64
-		want    Gear
+		want    Conventionality
 	}{
-		{1.0, GearReflex},
-		{0.95, GearReflex},
-		{0.9, GearIntuition},
-		{0.7, GearIntuition},
-		{0.5, GearFamiliar},
-		{0.3, GearFamiliar},
-		{0.2, GearNovel},
-		{0, GearNovel},
+		{1.0, ConventionalityClear},
+		{0.95, ConventionalityClear},
+		{0.9, ConventionalityComplicated},
+		{0.7, ConventionalityComplicated},
+		{0.5, ConventionalityComplex},
+		{0.3, ConventionalityComplex},
+		{0.2, ConventionalityChaotic},
+		{0, ConventionalityChaotic},
 	}
 
 	for _, tt := range tests {
-		got := selectGear(tt.overlap)
+		got := selectConventionality(tt.overlap)
 		if got != tt.want {
-			t.Errorf("selectGear(%v) = %v, want %v", tt.overlap, got, tt.want)
+			t.Errorf("selectConventionality(%v) = %v, want %v", tt.overlap, got, tt.want)
 		}
 	}
 }
@@ -178,8 +178,8 @@ func TestReplayPipe_Escalation(t *testing.T) {
 	if result.EscalatedAt != 0 {
 		t.Fatalf("escalated at %d, want 0", result.EscalatedAt)
 	}
-	if result.EscalatedGear != GearFamiliar {
-		t.Fatalf("gear = %s, want familiar", result.EscalatedGear)
+	if result.EscalatedConventionality != ConventionalityComplex {
+		t.Fatalf("gear = %s, want familiar", result.EscalatedConventionality)
 	}
 }
 
