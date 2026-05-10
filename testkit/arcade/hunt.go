@@ -94,7 +94,7 @@ func NewHuntTheTako() Scenario {
 				return organ.TextResult("You are dead. Game over."), nil
 			}
 			var args struct{ Room int `json:"room"` }
-			json.Unmarshal(input, &args)
+			if err := json.Unmarshal(input, &args); err != nil { return organ.ErrorResult("invalid input: " + err.Error()), nil }
 			target := args.Room
 			if target == 0 {
 				var str string
@@ -152,7 +152,7 @@ func NewHuntTheTako() Scenario {
 				return organ.TextResult("Out of arrows, the Tako finds you."), nil
 			}
 			var args struct{ Room int `json:"room"` }
-			json.Unmarshal(input, &args)
+			if err := json.Unmarshal(input, &args); err != nil { return organ.ErrorResult("invalid input: " + err.Error()), nil }
 			target := args.Room
 			if target == 0 {
 				var str string

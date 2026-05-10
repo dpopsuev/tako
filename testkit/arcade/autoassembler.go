@@ -25,7 +25,7 @@ func NewAutoassembler(workDir string) Scenario {
 		organ.ReadAction,
 		func(s map[string]any, input json.RawMessage) (organ.Result, error) {
 			var args struct{ Path string `json:"path"` }
-			json.Unmarshal(input, &args)
+			if err := json.Unmarshal(input, &args); err != nil { return organ.ErrorResult("invalid input: " + err.Error()), nil }
 			abs := filepath.Join(workDir, filepath.Clean(args.Path))
 			data, err := os.ReadFile(abs)
 			if err != nil {
@@ -45,7 +45,7 @@ func NewAutoassembler(workDir string) Scenario {
 				Content string `json:"content"`
 			}
 			if err := json.Unmarshal(input, &args); err != nil {
-				return organ.ErrorResult(fmt.Sprintf("invalid input: %v", err)), nil
+				return organ.ErrorResult("invalid input: " + err.Error()), nil
 			}
 			abs := filepath.Join(workDir, filepath.Clean(args.Path))
 			if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {

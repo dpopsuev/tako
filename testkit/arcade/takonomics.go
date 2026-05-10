@@ -38,7 +38,7 @@ func NewTakonomics() Scenario {
 				return organ.TextResult("you already harvested this season, advance to next season first"), nil
 			}
 			var args struct{ Amount int `json:"amount"` }
-			json.Unmarshal(input, &args)
+			if err := json.Unmarshal(input, &args); err != nil { return organ.ErrorResult("invalid input: " + err.Error()), nil }
 			amount := args.Amount
 			if amount < 0 {
 				return organ.TextResult("provide a valid non-negative number"), nil
@@ -65,7 +65,7 @@ func NewTakonomics() Scenario {
 				return organ.TextResult("you already harvested this season, advance to next season first"), nil
 			}
 			var args struct{ Amount int `json:"amount"` }
-			json.Unmarshal(input, &args)
+			if err := json.Unmarshal(input, &args); err != nil { return organ.ErrorResult("invalid input: " + err.Error()), nil }
 			amount := args.Amount
 			if amount < 0 {
 				return organ.TextResult("provide a valid non-negative number"), nil
@@ -92,7 +92,7 @@ func NewTakonomics() Scenario {
 				Action string `json:"action"`
 				Acres  int    `json:"acres"`
 			}
-			json.Unmarshal(input, &args)
+			if err := json.Unmarshal(input, &args); err != nil { return organ.ErrorResult("invalid input: " + err.Error()), nil }
 			action := strings.ToLower(args.Action)
 			amount := args.Acres
 			if amount < 0 {

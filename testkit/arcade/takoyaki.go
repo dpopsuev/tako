@@ -177,7 +177,7 @@ func NewTakoyaki(ctx context.Context, sensory cerebrum.Bus) Scenario {
 				return organ.TextResult("kitchen is on fire! extinguish before serving"), nil
 			}
 			var args struct{ Dish string `json:"dish"` }
-			json.Unmarshal(input, &args)
+			if err := json.Unmarshal(input, &args); err != nil { return organ.ErrorResult("invalid input: " + err.Error()), nil }
 			dish := args.Dish
 
 			pending, _ := s["orders_pending"].([]string)

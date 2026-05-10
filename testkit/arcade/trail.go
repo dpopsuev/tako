@@ -10,6 +10,8 @@ import (
 	"github.com/dpopsuev/tako/agent/organ"
 )
 
+var moneySchema = json.RawMessage(`{"type":"object","properties":{"amount":{"type":"integer","description":"money to spend"}},"required":["amount"]}`)
+
 func NewTakoTrail(ctx context.Context, sensory cerebrum.Bus) Scenario {
 	adv := NewGame(map[string]any{
 		"money":              100,
@@ -36,11 +38,11 @@ func NewTakoTrail(ctx context.Context, sensory cerebrum.Bus) Scenario {
 		})
 
 	adv.Organ("buy_food", "Spend money to buy food (1 money = 2 food)",
-		json.RawMessage(`{"type":"object","properties":{"amount":{"type":"integer","description":"money to spend"}},"required":["amount"]}`),
+		moneySchema,
 		organ.WriteAction,
 		func(s map[string]any, input json.RawMessage) (organ.Result, error) {
 			var args struct{ Amount int `json:"amount"` }
-			json.Unmarshal(input, &args)
+			if err := json.Unmarshal(input, &args); err != nil { return organ.ErrorResult("invalid input: " + err.Error()), nil }
 			if args.Amount <= 0 {
 				return organ.TextResult("specify a positive number"), nil
 			}
@@ -55,11 +57,11 @@ func NewTakoTrail(ctx context.Context, sensory cerebrum.Bus) Scenario {
 		})
 
 	adv.Organ("buy_medicine", "Spend money to buy medicine (5 money = 1 medicine)",
-		json.RawMessage(`{"type":"object","properties":{"amount":{"type":"integer","description":"money to spend"}},"required":["amount"]}`),
+		moneySchema,
 		organ.WriteAction,
 		func(s map[string]any, input json.RawMessage) (organ.Result, error) {
 			var args struct{ Amount int `json:"amount"` }
-			json.Unmarshal(input, &args)
+			if err := json.Unmarshal(input, &args); err != nil { return organ.ErrorResult("invalid input: " + err.Error()), nil }
 			if args.Amount <= 0 {
 				return organ.TextResult("specify a positive number"), nil
 			}

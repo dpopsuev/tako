@@ -80,7 +80,7 @@ func NewFridge() Scenario {
 		organ.WriteAction,
 		func(s map[string]any, input json.RawMessage) (organ.Result, error) {
 			var args struct{ Item string `json:"item"` }
-			json.Unmarshal(input, &args)
+			if err := json.Unmarshal(input, &args); err != nil { return organ.ErrorResult("invalid input: " + err.Error()), nil }
 			item := strings.TrimSpace(strings.ToLower(args.Item))
 			items, _ := s["fridge"].([]string)
 			for i, it := range items {

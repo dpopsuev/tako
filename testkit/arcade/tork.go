@@ -62,7 +62,7 @@ func NewTork() Scenario {
 		organ.WriteAction,
 		func(s map[string]any, input json.RawMessage) (organ.Result, error) {
 			var args struct{ Room string `json:"room"` }
-			json.Unmarshal(input, &args)
+			if err := json.Unmarshal(input, &args); err != nil { return organ.ErrorResult("invalid input: " + err.Error()), nil }
 			current := s["current_room"].(string)
 			target := args.Room
 
@@ -104,7 +104,7 @@ func NewTork() Scenario {
 	adv.Organ("take", "Pick up an item in the current room", nameSchema, organ.WriteAction,
 		func(s map[string]any, input json.RawMessage) (organ.Result, error) {
 			var args struct{ Name string `json:"name"` }
-			json.Unmarshal(input, &args)
+			if err := json.Unmarshal(input, &args); err != nil { return organ.ErrorResult("invalid input: " + err.Error()), nil }
 			room := s["current_room"].(string)
 			switch args.Name {
 			case "key":
@@ -136,7 +136,7 @@ func NewTork() Scenario {
 	adv.Organ("use", "Use an item from your inventory", nameSchema, organ.WriteAction,
 		func(s map[string]any, input json.RawMessage) (organ.Result, error) {
 			var args struct{ Name string `json:"name"` }
-			json.Unmarshal(input, &args)
+			if err := json.Unmarshal(input, &args); err != nil { return organ.ErrorResult("invalid input: " + err.Error()), nil }
 			inv := s["inventory"].([]string)
 			hasItem := false
 			for _, item := range inv {
@@ -179,7 +179,7 @@ func NewTork() Scenario {
 	adv.Organ("examine", "Examine an item or object for details", nameSchema, organ.ReadAction,
 		func(s map[string]any, input json.RawMessage) (organ.Result, error) {
 			var args struct{ Name string `json:"name"` }
-			json.Unmarshal(input, &args)
+			if err := json.Unmarshal(input, &args); err != nil { return organ.ErrorResult("invalid input: " + err.Error()), nil }
 			room := s["current_room"].(string)
 			switch args.Name {
 			case "key":
