@@ -14,6 +14,7 @@ type Scenario struct {
 	Adventure    *Game
 	IsSolved     func(state map[string]any) bool
 	OptimalTurns int
+	OptimalSteps []string
 	Desired      map[string]any
 }
 
@@ -132,7 +133,8 @@ func NewFridge() Scenario {
 		Need:         "You are hungry. Find food in the fridge, cook it, and eat. You must turn on the stove before cooking. Use check_hunger to verify when you are no longer hungry — stop as soon as you are satisfied.",
 		Adventure:    adv,
 		IsSolved:     func(s map[string]any) bool { return s["hungry"] == false },
-		OptimalTurns: 5,
+		OptimalTurns: 3,
+		OptimalSteps: []string{"look_fridge", "take", "turn_on_stove", "cook", "eat", "check_hunger"},
 		Desired:      map[string]any{"hungry": false},
 	}
 }
@@ -224,7 +226,8 @@ func NewDirtyRoom() Scenario {
 		Need:         "The room is dirty. Look around, then clean everything: sweep the floor (need broom from closet first), wash dishes, take out trash. Use check_done to verify when the room is fully clean.",
 		Adventure:    adv,
 		IsSolved:     func(s map[string]any) bool { return s["cleaned"] == true },
-		OptimalTurns: 6,
+		OptimalTurns: 3,
+		OptimalSteps: []string{"look", "get_broom", "sweep", "wash_dishes", "take_out_trash", "check_done"},
 		Desired:      map[string]any{"cleaned": true},
 	}
 }

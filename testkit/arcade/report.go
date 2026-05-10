@@ -12,22 +12,37 @@ import (
 )
 
 type ArcadeResult struct {
-	Session   int                    `json:"session"`
-	Scenario  string                 `json:"scenario"`
-	Solved    bool                   `json:"solved"`
-	Report    cerebrum.SessionReport `json:"report"`
-	GameState map[string]any         `json:"game_state"`
-	PipeCount int                    `json:"pipe_count"`
+	Session      int                    `json:"session"`
+	Scenario     string                 `json:"scenario"`
+	Solved       bool                   `json:"solved"`
+	Report       cerebrum.SessionReport `json:"report"`
+	GameState    map[string]any         `json:"game_state"`
+	PipeCount    int                    `json:"pipe_count"`
+	OptimalTurns int                    `json:"optimal_turns"`
+	OptimalSteps []string               `json:"optimal_steps"`
+	ActualSteps  []string               `json:"actual_steps"`
 }
 
 func CollectResult(session int, scenario Scenario, agent *assemble.Agent, reflexStore cerebrum.ReflexStore) ArcadeResult {
+	report := agent.LastReport()
+
+	var actualSteps []string
+	for _, e := range report.ChainEvents {
+		if e.Organ != "" && e.Organ != "cerebrum.text" && e.Organ != "cerebrum.reflex" {
+			actualSteps = append(actualSteps, e.Organ)
+		}
+	}
+
 	return ArcadeResult{
-		Session:   session,
-		Scenario:  scenario.Name,
-		Solved:    scenario.IsSolved(scenario.Adventure.State()),
-		Report:    agent.LastReport(),
-		GameState: scenario.Adventure.State(),
-		PipeCount: reflexStore.Len(),
+		Session:      session,
+		Scenario:     scenario.Name,
+		Solved:       scenario.IsSolved(scenario.Adventure.State()),
+		Report:       report,
+		GameState:    scenario.Adventure.State(),
+		PipeCount:    reflexStore.Len(),
+		OptimalTurns: scenario.OptimalTurns,
+		OptimalSteps: scenario.OptimalSteps,
+		ActualSteps:  actualSteps,
 	}
 }
 
@@ -49,20 +64,23 @@ func (r ExperimentReport) Pretty() string {
 	t.SetStyle(table.StyleLight)
 	t.SetTitle(fmt.Sprintf("EXPERIMENT: %s (%d sessions)", r.Scenario, len(r.Sessions)))
 
-	t.AppendHeader(table.Row{"#", "Turns", "Solved", "Dist", "Pressure", "Pipes", "TokIn", "TokOut", "OAE", "Tools", "Conv"})
+	t.AppendHeader(table.Row{"#", "Turns", "Optimal", "Solved", "Dist", "Pipes", "TokIn", "TokOut", "Tools", "Conv"})
 
 	for _, s := range r.Sessions {
 		rep := s.Report
+		turnsLabel := fmt.Sprintf("%d", rep.TotalTurns)
+		if s.OptimalTurns > 0 {
+			turnsLabel = fmt.Sprintf("%d/%d", rep.TotalTurns, s.OptimalTurns)
+		}
 		t.AppendRow(table.Row{
 			s.Session,
-			rep.TotalTurns,
+			turnsLabel,
+			strings.Join(s.OptimalSteps, "→"),
 			s.Solved,
 			fmt.Sprintf("%.2f", rep.FinalDistance),
-			fmt.Sprintf("%.2f", rep.Pressure),
 			s.PipeCount,
 			rep.TotalTokensIn,
 			rep.TotalTokensOut,
-			fmt.Sprintf("%.2f", rep.OAE),
 			rep.TotalToolCalls,
 			conventionality(rep),
 		})
@@ -85,8 +103,20 @@ func (r ExperimentReport) Pretty() string {
 			last.TotalTokensIn+last.TotalTokensOut)
 	}
 	t.SetCaption(footer)
-
 	t.Render()
+
+	if len(r.Sessions) > 0 && len(r.Sessions[0].OptimalSteps) > 0 {
+		s := r.Sessions[0]
+		fmt.Fprintf(&b, "\nOptimal: %s\n", strings.Join(s.OptimalSteps, " → "))
+		fmt.Fprintf(&b, "Actual:  %s\n", strings.Join(s.ActualSteps, " → "))
+		extra := len(s.ActualSteps) - len(s.OptimalSteps)
+		if extra > 0 {
+			fmt.Fprintf(&b, "Gap:     %d extra steps\n", extra)
+		} else if extra == 0 {
+			fmt.Fprintf(&b, "Gap:     optimal path achieved\n")
+		}
+	}
+
 	return b.String()
 }
 
