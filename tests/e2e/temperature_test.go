@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
-	"github.com/dpopsuev/tako/agent/reactivity"
-	"github.com/dpopsuev/tako/assemble"
 	"github.com/dpopsuev/tako/testkit/arcade"
 	"github.com/dpopsuev/tangle/providers"
 )
@@ -30,61 +28,41 @@ func TestExperiment_FridgeTemperatureCurve(t *testing.T) {
 	completer := providers.NewCompleter(p, model, nil)
 
 	embedder := cerebrum.StubEmbedder{Dims: 64}
-	reflexStore := cerebrum.NewPipeStore()
-	consolidator := &cerebrum.PipeConsolidator{
-		Store:    reflexStore,
-		Embedder: embedder,
-	}
+	reflexStore, consolidator := arcade.NewFlywheel(embedder)
 
 	sessions := 5
 	type sessionResult struct {
-		Turns      int
-		Sealed     bool
-		Distance   float64
-		Pressure   float64
-		ReflexHits int
-		Solved     bool
+		Turns    int
+		Sealed   bool
+		Distance float64
+		Pressure float64
+		Solved   bool
 	}
 	results := make([]sessionResult, 0, sessions)
 
 	for i := 0; i < sessions; i++ {
 		scenario := arcade.NewFridge()
-		bp := assemble.Blueprint{
-			Model:  model,
-			Organs: scenario.Adventure.Organs(),
-			Budget: cerebrum.Budget{
-				MaxTurns:    20,
-				TurnTimeout: 60 * time.Second,
-			},
-		}
-
-		observe := func() map[string]any {
-			return map[string]any{"world": scenario.Adventure.Observe()}
-		}
 		listener := &instrumentedListener{t: t, session: i + 1}
-		agent := assemble.Assemble(bp, completer,
-			cerebrum.WithEmbedder(embedder),
-			cerebrum.WithReflexStore(reflexStore),
-			cerebrum.WithConsolidator(consolidator),
-			cerebrum.WithObserver(observe),
-			cerebrum.WithContextListener(listener),
+
+		agent := arcade.BuildArcadeAgent(scenario, completer,
+			arcade.WithEmbedder(embedder),
+			arcade.WithReflexStore(reflexStore),
+			arcade.WithConsolidator(consolidator),
+			arcade.WithListener(listener),
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-		catalyst := reactivity.Catalyst{
-			Need:    scenario.Need,
-			Desired: scenario.Desired,
-		}
-		if _, err := agent.ThinkWith(ctx, catalyst); err != nil {
-			cancel()
+		_, err := arcade.ThinkScenario(ctx, agent, scenario)
+		cancel()
+		if err != nil {
 			t.Logf("session %d error: %v", i+1, err)
 			continue
 		}
-		cancel()
 
 		m := agent.Result()
 		solved := scenario.IsSolved(scenario.Adventure.State())
 
+		chain := m.Chain()
 		sr := sessionResult{
 			Turns:    m.Turns(),
 			Sealed:   m.Sealed(),
@@ -94,12 +72,13 @@ func TestExperiment_FridgeTemperatureCurve(t *testing.T) {
 		}
 		results = append(results, sr)
 
-		chain := m.Chain()
 		t.Logf("session %d: turns=%d sealed=%v distance=%.2f pressure=%.2f solved=%v pipes=%d chain=%d",
 			i+1, sr.Turns, sr.Sealed, sr.Distance, sr.Pressure, sr.Solved, reflexStore.Len(), chain.Len())
 		for j, e := range chain.All() {
 			out := string(e.Output)
-			if len(out) > 80 { out = out[:80] + "..." }
+			if len(out) > 80 {
+				out = out[:80] + "..."
+			}
 			t.Logf("  chain[%d]: %s organ=%s response=%v out=%s", j, e.Kind, e.Organ, e.IsResponse, out)
 		}
 		state := scenario.Adventure.State()
@@ -141,26 +120,35 @@ func (l *instrumentedListener) OnContext(phase string, turn int, distance float6
 
 func (l *instrumentedListener) OnToolCall(name string, input []byte) {
 	s := string(input)
-	if len(s) > 100 { s = s[:100] + "..." }
+	if len(s) > 100 {
+		s = s[:100] + "..."
+	}
 	l.t.Logf("  [s%d] tool_call: %s input=%s", l.session, name, s)
 }
 
 func (l *instrumentedListener) OnToolResult(name string, result []byte, elapsed time.Duration) {
 	s := string(result)
-	if len(s) > 150 { s = s[:150] + "..." }
+	if len(s) > 150 {
+		s = s[:150] + "..."
+	}
 	l.t.Logf("  [s%d] tool_result: %s elapsed=%v result=%s", l.session, name, elapsed, s)
 }
 
 func (l *instrumentedListener) OnResponse(text string) {
-	if len(text) > 150 { text = text[:150] + "..." }
+	if len(text) > 150 {
+		text = text[:150] + "..."
+	}
 	l.t.Logf("  [s%d] response: %s", l.session, text)
 }
 
-func (l *instrumentedListener) OnTokenUpdate(tokensIn, tokensOut, toolCalls int) {}
+func (l *instrumentedListener) OnTokenUpdate(_, _, _ int) {}
+
 func (l *instrumentedListener) OnSealed(id string, distance float64, turns int) {
 	l.t.Logf("  [s%d] sealed: molecule=%s distance=%.2f turns=%d", l.session, id, distance, turns)
 }
+
 func (l *instrumentedListener) OnError(turn int, err error) {
 	l.t.Logf("  [s%d] error: turn=%d err=%v", l.session, turn, err)
 }
+
 func (l *instrumentedListener) OnToken(_ string) {}
