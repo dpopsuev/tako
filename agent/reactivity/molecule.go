@@ -2,6 +2,7 @@ package reactivity
 
 import (
 	"log/slog"
+	"math"
 	"sync"
 	"time"
 )
@@ -109,10 +110,59 @@ func (m *Molecule) Sealed() bool                { return m.sealed }
 func (m *Molecule) Parked() bool                { return m.parked }
 
 func (m *Molecule) Settled() bool {
-	if m.catalyst != nil && len(m.catalyst.Desired) > 0 {
-		return m.criteriaMet()
+	return m.Pressure() < 0.05
+}
+
+func (m *Molecule) Pressure() float64 {
+	if m.mass[IntentAtom] == 0 {
+		return 0
 	}
-	return m.mass[IntentAtom] > 0 && m.chain != nil && m.chain.HasResponse()
+	hasDesired := m.catalyst != nil && len(m.catalyst.Desired) > 0
+	if hasDesired && m.criteriaMet() {
+		return 0
+	}
+	hasResponse := m.chain != nil && m.chain.HasResponse()
+	if !hasDesired && hasResponse {
+		return 0
+	}
+	if hasDesired {
+		rn := m.residualNorm()
+		vg := m.VectorGap()
+		return 0.5*rn + 0.3*vg + 0.2*m.Distance()
+	}
+	if hasResponse {
+		return 0
+	}
+	return 1.0
+}
+
+func (m *Molecule) VectorGap() float64 {
+	hasResponse := m.chain != nil && m.chain.HasResponse()
+	vectors := [4]bool{
+		m.mass[IntentAtom] > 0,
+		m.mass[AssessmentAtom] > 0 || m.mass[KnowledgeAtom] > 0,
+		m.mass[ExecutionAtom] > 0 || hasResponse,
+		hasResponse,
+	}
+	filled := 0
+	for _, v := range vectors {
+		if v {
+			filled++
+		}
+	}
+	return float64(4-filled) / 4.0
+}
+
+func (m *Molecule) residualNorm() float64 {
+	r := m.Residual()
+	if len(r) == 0 {
+		return 0
+	}
+	var sum float64
+	for _, v := range r {
+		sum += v * v
+	}
+	return math.Sqrt(sum) / math.Sqrt(float64(len(r)))
 }
 func (m *Molecule) Park()                       { m.parked = true }
 func (m *Molecule) Unpark()                     { m.parked = false }

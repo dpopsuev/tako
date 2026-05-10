@@ -128,8 +128,9 @@ func WithConsolidator(c Consolidator) Option {
 	return func(cb *Cerebrum) { cb.consolidator = c }
 }
 
-func WithSealStrategy(s SealStrategy) Option {
-	return func(cb *Cerebrum) { cb.sealStrategy = s }
+// Deprecated: SealStrategy replaced by Molecule.Pressure() threshold.
+func WithSealStrategy(_ SealStrategy) Option {
+	return func(_ *Cerebrum) {}
 }
 
 func WithInstigator(ins *Instigator) Option {
