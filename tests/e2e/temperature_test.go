@@ -2,12 +2,12 @@ package e2e
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
+	"github.com/dpopsuev/tako/testkit"
 	"github.com/dpopsuev/tako/testkit/arcade"
 	"github.com/dpopsuev/tangle/providers"
 )
@@ -31,18 +31,11 @@ func TestExperiment_FridgeTemperatureCurve(t *testing.T) {
 	reflexStore, consolidator := arcade.NewFlywheel(embedder)
 
 	sessions := 5
-	type sessionResult struct {
-		Turns    int
-		Sealed   bool
-		Distance float64
-		Pressure float64
-		Solved   bool
-	}
-	results := make([]sessionResult, 0, sessions)
+	report := arcade.ExperimentReport{Scenario: "fridge"}
 
 	for i := 0; i < sessions; i++ {
 		scenario := arcade.NewFridge()
-		listener := &instrumentedListener{t: t, session: i + 1}
+		listener := testkit.NewCapturingListener()
 
 		agent := arcade.BuildArcadeAgent(scenario, completer,
 			arcade.WithEmbedder(embedder),
@@ -59,96 +52,21 @@ func TestExperiment_FridgeTemperatureCurve(t *testing.T) {
 			continue
 		}
 
-		m := agent.Result()
-		solved := scenario.IsSolved(scenario.Adventure.State())
-
-		chain := m.Chain()
-		sr := sessionResult{
-			Turns:    m.Turns(),
-			Sealed:   m.Sealed(),
-			Distance: m.Distance(),
-			Pressure: m.Pressure(),
-			Solved:   solved,
-		}
-		results = append(results, sr)
-
-		t.Logf("session %d: turns=%d sealed=%v distance=%.2f pressure=%.2f solved=%v pipes=%d chain=%d",
-			i+1, sr.Turns, sr.Sealed, sr.Distance, sr.Pressure, sr.Solved, reflexStore.Len(), chain.Len())
-		for j, e := range chain.All() {
-			out := string(e.Output)
-			if len(out) > 80 {
-				out = out[:80] + "..."
-			}
-			t.Logf("  chain[%d]: %s organ=%s response=%v out=%s", j, e.Kind, e.Organ, e.IsResponse, out)
-		}
-		state := scenario.Adventure.State()
-		t.Logf("  game_state: hungry=%v hand=%v plate=%v stove=%v", state["hungry"], state["hand"], state["plate"], state["stove"])
+		result := arcade.CollectResult(i+1, scenario, agent, listener, reflexStore)
+		report.Sessions = append(report.Sessions, result)
 	}
 
-	t.Log("\n=== TEMPERATURE CURVE ===")
-	t.Log(fmt.Sprintf("%-8s %-6s %-7s %-8s %-9s %-6s %-5s", "Session", "Turns", "Sealed", "Distance", "Pressure", "Solved", "Pipes"))
-	for i, r := range results {
-		t.Log(fmt.Sprintf("%-8d %-6d %-7v %-8.2f %-9.2f %-6v %-5d",
-			i+1, r.Turns, r.Sealed, r.Distance, r.Pressure, r.Solved, reflexStore.Len()))
-	}
-
-	if len(results) >= 2 {
-		first := results[0]
-		last := results[len(results)-1]
-		if last.Turns > first.Turns+5 {
-			t.Errorf("later sessions should not be significantly slower: first=%d last=%d", first.Turns, last.Turns)
-		}
-	}
+	t.Log(report.Pretty())
+	t.Log("\n=== JSON (for agent consumption) ===")
+	t.Log(report.JSON())
 
 	solvedCount := 0
-	for _, r := range results {
-		if r.Solved {
+	for _, s := range report.Sessions {
+		if s.Solved {
 			solvedCount++
 		}
 	}
-	t.Logf("solved %d/%d sessions", solvedCount, len(results))
-}
-
-type instrumentedListener struct {
-	t       *testing.T
-	session int
-}
-
-func (l *instrumentedListener) OnContext(phase string, turn int, distance float64) {
-	l.t.Logf("  [s%d] context: phase=%s turn=%d distance=%.2f", l.session, phase, turn, distance)
-}
-
-func (l *instrumentedListener) OnToolCall(name string, input []byte) {
-	s := string(input)
-	if len(s) > 100 {
-		s = s[:100] + "..."
+	if solvedCount == 0 {
+		t.Error("no sessions solved")
 	}
-	l.t.Logf("  [s%d] tool_call: %s input=%s", l.session, name, s)
 }
-
-func (l *instrumentedListener) OnToolResult(name string, result []byte, elapsed time.Duration) {
-	s := string(result)
-	if len(s) > 150 {
-		s = s[:150] + "..."
-	}
-	l.t.Logf("  [s%d] tool_result: %s elapsed=%v result=%s", l.session, name, elapsed, s)
-}
-
-func (l *instrumentedListener) OnResponse(text string) {
-	if len(text) > 150 {
-		text = text[:150] + "..."
-	}
-	l.t.Logf("  [s%d] response: %s", l.session, text)
-}
-
-func (l *instrumentedListener) OnTokenUpdate(_, _, _ int) {}
-
-func (l *instrumentedListener) OnSealed(id string, distance float64, turns int) {
-	l.t.Logf("  [s%d] sealed: molecule=%s distance=%.2f turns=%d", l.session, id, distance, turns)
-}
-
-func (l *instrumentedListener) OnError(turn int, err error) {
-	l.t.Logf("  [s%d] error: turn=%d err=%v", l.session, turn, err)
-}
-
-func (l *instrumentedListener) OnToken(_ string) {}

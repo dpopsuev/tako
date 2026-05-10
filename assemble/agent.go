@@ -27,6 +27,10 @@ func (a *Agent) Result() *reactivity.Molecule {
 	return a.cerebrum.Result()
 }
 
+func (a *Agent) LastSummary() cerebrum.SessionSummary {
+	return a.cerebrum.LastSummary()
+}
+
 func (a *Agent) Run(ctx context.Context, task string) error {
 	_, err := a.Think(ctx, task)
 	return err

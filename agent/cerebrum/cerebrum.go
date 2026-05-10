@@ -110,7 +110,8 @@ type Cerebrum struct {
 	consolidator       Consolidator
 	instigator         *Instigator
 
-	molecule *reactivity.Molecule
+	molecule    *reactivity.Molecule
+	lastSummary SessionSummary
 }
 
 func New(reactor *reactivity.Core, completer tangle.Completer, opts ...Option) *Cerebrum {
@@ -733,6 +734,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 		slog.Int("mass", molecule.TotalMass()))
 
 	summary := computeSessionSummary(molecule.ID, turnRecords, molecule)
+	cb.lastSummary = summary
 	cb.emit("cerebrum.session", summary.Labels())
 	if cb.listener != nil {
 		cb.listener.OnSealed(molecule.ID, molecule.Distance(), molecule.Turns())
@@ -765,6 +767,10 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 
 func (cb *Cerebrum) Result() *reactivity.Molecule {
 	return cb.molecule
+}
+
+func (cb *Cerebrum) LastSummary() SessionSummary {
+	return cb.lastSummary
 }
 
 func (cb *Cerebrum) Monitor(ctx context.Context, bus Bus) {
