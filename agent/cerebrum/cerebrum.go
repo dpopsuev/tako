@@ -354,7 +354,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 				"domain":   domain.String(),
 			})
 		}
-		prompt := cb.assemble(molecule, need, domain, turn)
+		prompt := cb.assemble(molecule, need, domain, turn, intent.Temperature)
 
 		slog.InfoContext(ctx, "cerebrum.think.turn",
 			slog.Int("turn", turn),
@@ -447,6 +447,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 			Momentum:     molecule.Momentum(),
 			UnmetCount:   unmetCount,
 			ElapsedMs:    elapsed.Milliseconds(),
+			Temperature:  intent.Temperature,
 		}
 		cb.emit("cerebrum.turn", tr.Labels())
 		turnRecords = append(turnRecords, tr)
@@ -901,7 +902,7 @@ func (cb *Cerebrum) tools(phase reactivity.AtomType) []tangle.Tool {
 	return tools
 }
 
-func (cb *Cerebrum) assemble(m *reactivity.Molecule, need []byte, domain Domain, turn int) string {
+func (cb *Cerebrum) assemble(m *reactivity.Molecule, need []byte, domain Domain, turn int, temperature float64) string {
 	var sight CellSight
 	if cb.sight != nil {
 		sight = cb.sight()
@@ -920,7 +921,7 @@ func (cb *Cerebrum) assemble(m *reactivity.Molecule, need []byte, domain Domain,
 	}
 	if cb.embedder != nil {
 		if queryEmb, err := cb.embedder.Embed(context.Background(), string(need)); err == nil {
-			raw.AttentionAtoms = m.Attend(queryEmb, 1.0)
+			raw.AttentionAtoms = m.Attend(queryEmb, temperature)
 		}
 	}
 	ctx := cb.regulate(raw)

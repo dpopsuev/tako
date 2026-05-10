@@ -265,7 +265,7 @@ func TestCerebrum_Assemble_WithObserver(t *testing.T) {
 		Desired: map[string]any{"hungry": false},
 	})
 
-	prompt := cb.assemble(m, []byte("feed"), Complicated, 0)
+	prompt := cb.assemble(m, []byte("feed"), Complicated, 0, 1.0)
 
 	if !strings.Contains(prompt, "hungry: true") {
 		t.Error("should contain observed state")
@@ -287,7 +287,7 @@ func TestCerebrum_Assemble_NoObserver(t *testing.T) {
 	cb := New(reactor, completer)
 
 	m := reactivity.NewMolecule("test")
-	prompt := cb.assemble(m, []byte("hello"), Complicated, 0)
+	prompt := cb.assemble(m, []byte("hello"), Complicated, 0, 1.0)
 
 	if !strings.Contains(prompt, "hello") {
 		t.Error("should contain the need")
@@ -310,7 +310,7 @@ func TestCerebrum_Assemble_CustomRegulator(t *testing.T) {
 	cb := New(reactor, completer, WithRegulator(custom))
 
 	m := reactivity.NewMolecule("test")
-	prompt := cb.assemble(m, []byte("hello"), Complicated, 0)
+	prompt := cb.assemble(m, []byte("hello"), Complicated, 0, 1.0)
 
 	if !strings.Contains(prompt, "REGULATED: hello") {
 		t.Errorf("expected custom thalamus output, got: %s", prompt)
@@ -327,7 +327,7 @@ func TestCerebrum_Assemble_CustomAssembler(t *testing.T) {
 	cb := New(reactor, completer, WithAssembler(custom))
 
 	m := reactivity.NewMolecule("test")
-	prompt := cb.assemble(m, []byte("hello"), Complicated, 0)
+	prompt := cb.assemble(m, []byte("hello"), Complicated, 0, 1.0)
 
 	if prompt != "CORTEX: hello" {
 		t.Errorf("expected custom cortex output, got: %s", prompt)

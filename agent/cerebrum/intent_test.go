@@ -97,3 +97,33 @@ func TestIntentRouter_NoEmbedder_FallsThrough(t *testing.T) {
 		t.Fatal("should seal without embedder")
 	}
 }
+
+func TestOverlapToTemperature(t *testing.T) {
+	cases := []struct {
+		overlap float64
+		wantMin float64
+		wantMax float64
+	}{
+		{0.99, 0.0, 0.15},
+		{0.95, 0.0, 0.15},
+		{0.7, 0.2, 0.6},
+		{0.5, 0.5, 1.0},
+		{0.3, 1.0, 2.5},
+		{0.1, 3.0, 5.1},
+		{0.0, 4.5, 5.1},
+	}
+	for _, tc := range cases {
+		got := overlapToTemperature(tc.overlap)
+		if got < tc.wantMin || got > tc.wantMax {
+			t.Errorf("overlap=%.2f → temperature=%.4f, want [%.1f, %.1f]", tc.overlap, got, tc.wantMin, tc.wantMax)
+		}
+		t.Logf("overlap=%.2f → T=%.4f", tc.overlap, got)
+	}
+
+	cold := overlapToTemperature(0.95)
+	warm := overlapToTemperature(0.5)
+	hot := overlapToTemperature(0.1)
+	if cold >= warm || warm >= hot {
+		t.Errorf("temperature should increase as overlap decreases: cold=%.4f warm=%.4f hot=%.4f", cold, warm, hot)
+	}
+}

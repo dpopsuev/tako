@@ -32,6 +32,7 @@ type TurnRecord struct {
 	QueueDrained      int
 	ReflexHits        int
 	ElapsedMs         int64
+	Temperature       float64
 	NavigatorDecision string
 	RegulatorDepth    string
 }
@@ -54,6 +55,7 @@ func (r TurnRecord) Labels() map[string]string {
 		"queue_drained":      fmt.Sprintf("%d", r.QueueDrained),
 		"reflex_hits":        fmt.Sprintf("%d", r.ReflexHits),
 		"elapsed_ms":         fmt.Sprintf("%d", r.ElapsedMs),
+		"temperature":        fmt.Sprintf("%.3f", r.Temperature),
 		"navigator_decision": r.NavigatorDecision,
 		"regulator_depth":    r.RegulatorDepth,
 	}
