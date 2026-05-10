@@ -48,35 +48,54 @@ func ReplayPipe(ctx context.Context, pipe *Pipe, caps map[string]organ.Func) (Re
 
 		cap, ok := caps[step.Call]
 		if !ok || cap.Execute == nil {
+			slog.InfoContext(ctx, "reflex.step.unknown",
+				slog.Int("step", result.StepsTotal),
+				slog.String("call", step.Call))
 			exec.SubmitAndUnlock(runID, step.ID, nil, "unknown capability: "+step.Call, pr.steps)
 			result.EscalatedAt = result.StepsTotal - 1
 			result.EscalatedConventionality = ConventionalityChaotic
 			break
 		}
 
-		out, err := cap.Execute(ctx, argsToJSON(step.Args))
+		inputJSON := argsToJSON(step.Args)
+		slog.InfoContext(ctx, "reflex.step.exec",
+			slog.Int("step", result.StepsTotal),
+			slog.String("call", step.Call),
+			slog.String("input", string(inputJSON)))
+
+		out, err := cap.Execute(ctx, inputJSON)
 		if err != nil {
+			slog.WarnContext(ctx, "reflex.step.error",
+				slog.Int("step", result.StepsTotal),
+				slog.String("call", step.Call),
+				slog.Any("error", err))
 			exec.SubmitAndUnlock(runID, step.ID, nil, err.Error(), pr.steps)
 			result.EscalatedAt = result.StepsTotal - 1
 			result.EscalatedConventionality = ConventionalityComplex
 			break
 		}
 
+		outText := string(out.Text())
+		slog.InfoContext(ctx, "reflex.step.result",
+			slog.Int("step", result.StepsTotal),
+			slog.String("call", step.Call),
+			slog.String("result", truncateStr(outText, 100)))
+
 		actual := HashResult(out.Text())
 		emptyHash := [32]byte{}
 		if step.Expected != emptyHash && actual != step.Expected && step.Confidence < 0.5 {
-			slog.InfoContext(ctx, "reflex.drift",
-				slog.String("step", step.ID),
-				slog.String("action", step.Call),
+			slog.InfoContext(ctx, "reflex.step.drift",
+				slog.Int("step", result.StepsTotal),
+				slog.String("call", step.Call),
 				slog.Float64("confidence", step.Confidence))
 			result.EscalatedAt = result.StepsTotal - 1
 			result.EscalatedConventionality = ConventionalityComplex
 			break
 		}
 
-		exec.SubmitAndUnlock(runID, step.ID, string(out.Text()), "", pr.steps)
+		exec.SubmitAndUnlock(runID, step.ID, outText, "", pr.steps)
 		result.StepsReflex++
-		result.Response = string(out.Text())
+		result.Response = outText
 	}
 
 	if result.EscalatedAt == -1 {
