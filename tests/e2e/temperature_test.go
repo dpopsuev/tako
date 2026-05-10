@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
-	"github.com/dpopsuev/tako/testkit"
 	"github.com/dpopsuev/tako/testkit/arcade"
 	"github.com/dpopsuev/tangle/providers"
 )
@@ -35,13 +34,11 @@ func TestExperiment_FridgeTemperatureCurve(t *testing.T) {
 
 	for i := 0; i < sessions; i++ {
 		scenario := arcade.NewFridge()
-		listener := testkit.NewCapturingListener()
 
 		agent := arcade.BuildArcadeAgent(scenario, completer,
 			arcade.WithEmbedder(embedder),
 			arcade.WithReflexStore(reflexStore),
 			arcade.WithConsolidator(consolidator),
-			arcade.WithListener(listener),
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
@@ -52,13 +49,11 @@ func TestExperiment_FridgeTemperatureCurve(t *testing.T) {
 			continue
 		}
 
-		result := arcade.CollectResult(i+1, scenario, agent, listener, reflexStore)
+		result := arcade.CollectResult(i+1, scenario, agent, reflexStore)
 		report.Sessions = append(report.Sessions, result)
 	}
 
 	t.Log(report.Pretty())
-	t.Log("\n=== JSON (for agent consumption) ===")
-	t.Log(report.JSON())
 
 	solvedCount := 0
 	for _, s := range report.Sessions {

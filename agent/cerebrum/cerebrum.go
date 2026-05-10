@@ -112,6 +112,8 @@ type Cerebrum struct {
 
 	molecule    *reactivity.Molecule
 	lastSummary SessionSummary
+	lastReport  SessionReport
+	eventLog    *EventLog
 }
 
 func New(reactor *reactivity.Core, completer tangle.Completer, opts ...Option) *Cerebrum {
@@ -151,6 +153,9 @@ func New(reactor *reactivity.Core, completer tangle.Completer, opts ...Option) *
 	if cb.instigator == nil {
 		cb.instigator = MustInstigator(nil)
 	}
+
+	cb.eventLog = NewEventLog()
+	cb.listener = newMultiListener(cb.eventLog, cb.listener)
 
 	cb.config.Validate()
 	return cb
@@ -735,6 +740,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 
 	summary := computeSessionSummary(molecule.ID, turnRecords, molecule)
 	cb.lastSummary = summary
+	cb.lastReport = buildSessionReport(summary, molecule, cb.eventLog)
 	cb.emit("cerebrum.session", summary.Labels())
 	if cb.listener != nil {
 		cb.listener.OnSealed(molecule.ID, molecule.Distance(), molecule.Turns())
@@ -771,6 +777,10 @@ func (cb *Cerebrum) Result() *reactivity.Molecule {
 
 func (cb *Cerebrum) LastSummary() SessionSummary {
 	return cb.lastSummary
+}
+
+func (cb *Cerebrum) LastReport() SessionReport {
+	return cb.lastReport
 }
 
 func (cb *Cerebrum) Monitor(ctx context.Context, bus Bus) {

@@ -31,6 +31,10 @@ func (a *Agent) LastSummary() cerebrum.SessionSummary {
 	return a.cerebrum.LastSummary()
 }
 
+func (a *Agent) LastReport() cerebrum.SessionReport {
+	return a.cerebrum.LastReport()
+}
+
 func (a *Agent) Run(ctx context.Context, task string) error {
 	_, err := a.Think(ctx, task)
 	return err
