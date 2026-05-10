@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"text/tabwriter"
+
+	"github.com/jedib0t/go-pretty/v6/table"
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
 	"github.com/dpopsuev/tako/assemble"
@@ -43,19 +44,29 @@ func (r ExperimentReport) JSON() string {
 func (r ExperimentReport) Pretty() string {
 	var b strings.Builder
 
-	fmt.Fprintf(&b, "\n=== EXPERIMENT: %s (%d sessions) ===\n", r.Scenario, len(r.Sessions))
+	t := table.NewWriter()
+	t.SetOutputMirror(&b)
+	t.SetStyle(table.StyleLight)
+	t.SetTitle(fmt.Sprintf("EXPERIMENT: %s (%d sessions)", r.Scenario, len(r.Sessions)))
 
-	w := tabwriter.NewWriter(&b, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "#\tTurns\tSolved\tDist\tPressure\tPipes\tTokIn\tTokOut\tOAE\tTools\tConv\t")
+	t.AppendHeader(table.Row{"#", "Turns", "Solved", "Dist", "Pressure", "Pipes", "TokIn", "TokOut", "OAE", "Tools", "Conv"})
 
 	for _, s := range r.Sessions {
 		rep := s.Report
-		fmt.Fprintf(w, "%d\t%d\t%v\t%.2f\t%.2f\t%d\t%d\t%d\t%.2f\t%d\t%s\t\n",
-			s.Session, rep.TotalTurns, s.Solved, rep.FinalDistance,
-			rep.Pressure, s.PipeCount, rep.TotalTokensIn, rep.TotalTokensOut,
-			rep.OAE, rep.TotalToolCalls, conventionality(rep))
+		t.AppendRow(table.Row{
+			s.Session,
+			rep.TotalTurns,
+			s.Solved,
+			fmt.Sprintf("%.2f", rep.FinalDistance),
+			fmt.Sprintf("%.2f", rep.Pressure),
+			s.PipeCount,
+			rep.TotalTokensIn,
+			rep.TotalTokensOut,
+			fmt.Sprintf("%.2f", rep.OAE),
+			rep.TotalToolCalls,
+			conventionality(rep),
+		})
 	}
-	w.Flush()
 
 	solvedCount := 0
 	for _, s := range r.Sessions {
@@ -63,17 +74,19 @@ func (r ExperimentReport) Pretty() string {
 			solvedCount++
 		}
 	}
-	fmt.Fprintf(&b, "\nSolved: %d/%d sessions\n", solvedCount, len(r.Sessions))
 
+	footer := fmt.Sprintf("Solved: %d/%d", solvedCount, len(r.Sessions))
 	if len(r.Sessions) >= 2 {
 		first := r.Sessions[0].Report
 		last := r.Sessions[len(r.Sessions)-1].Report
-		fmt.Fprintf(&b, "Flywheel: turns %d→%d, tokens %d→%d\n",
+		footer += fmt.Sprintf(" | Flywheel: turns %d→%d, tokens %d→%d",
 			first.TotalTurns, last.TotalTurns,
 			first.TotalTokensIn+first.TotalTokensOut,
 			last.TotalTokensIn+last.TotalTokensOut)
 	}
+	t.SetCaption(footer)
 
+	t.Render()
 	return b.String()
 }
 
