@@ -88,5 +88,6 @@ type Atom struct {
 	Content    []byte
 	Targets    []string
 	Dimensions []string
+	Embedding  []float64
 	CreatedAt  time.Time
 }

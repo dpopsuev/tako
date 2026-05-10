@@ -55,7 +55,14 @@ func Assemble(bp Blueprint, completer tangle.Completer, opts ...cerebrum.Option)
 	signal := cerebrum.NewChannelBus(64)
 	motorBus := corp.MotorBus(sensory, signal, nil)
 
-	embedder := cerebrum.StubEmbedder{}
+	var embedder cerebrum.Embedder
+	if hugot, err := cerebrum.NewHugotEmbedder(); err == nil {
+		embedder = hugot
+		slog.Info("assemble.embedder", slog.String("type", "hugot"))
+	} else {
+		embedder = cerebrum.StubEmbedder{}
+		slog.Warn("assemble.embedder.fallback", slog.String("type", "stub"), slog.Any("error", err))
+	}
 
 	var reflexStore cerebrum.ReflexStore
 	var recorder cerebrum.Recorder

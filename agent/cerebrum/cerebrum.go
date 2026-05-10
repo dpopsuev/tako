@@ -437,7 +437,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 			MoleculeID:   molecule.ID,
 			Turn:         turn,
 			Phase:        molecule.Phase().String(),
-			Gear:         GearNovel,
+			Gear:         intent.Gear,
 			Domain:       domain.String(),
 			TokensIn:     completion.Tokens.Input,
 			TokensOut:    completion.Tokens.Output,
