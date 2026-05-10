@@ -800,7 +800,7 @@ func TestDrill_Build_VetLintFix(t *testing.T) {
 			{
 				Content: "fixing violation",
 				ToolCalls: []tangle.ToolCall{
-					{ID: "c2", Name: "ping", Input: json.RawMessage(`{"action":"edit"}`)},
+					{ID: "c2", Name: "ping", Input: json.RawMessage(`{"action":"file_edit"}`)},
 				},
 			},
 			{

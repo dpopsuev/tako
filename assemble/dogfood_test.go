@@ -53,13 +53,13 @@ func TestAdd(t *testing.T) {
 			{
 				Content: "I'll add a Subtract function.",
 				ToolCalls: []tangle.ToolCall{
-					{ID: "c3", Name: "edit", Input: json.RawMessage(`{"path":"calc.go","old_string":"func Add(a, b int) int {\n\treturn a + b\n}","new_string":"func Add(a, b int) int {\n\treturn a + b\n}\n\nfunc Subtract(a, b int) int {\n\treturn a - b\n}"}`)},
+					{ID: "c3", Name: "file_edit", Input: json.RawMessage(`{"path":"calc.go","old_string":"func Add(a, b int) int {\n\treturn a + b\n}","new_string":"func Add(a, b int) int {\n\treturn a + b\n}\n\nfunc Subtract(a, b int) int {\n\treturn a - b\n}"}`)},
 				},
 			},
 			{
 				Content: "Now add a test for Subtract.",
 				ToolCalls: []tangle.ToolCall{
-					{ID: "c4", Name: "edit", Input: json.RawMessage(`{"path":"calc_test.go","old_string":"func TestAdd(t *testing.T) {\n\tif Add(1, 2) != 3 {\n\t\tt.Error(\"expected 3\")\n\t}\n}","new_string":"func TestAdd(t *testing.T) {\n\tif Add(1, 2) != 3 {\n\t\tt.Error(\"expected 3\")\n\t}\n}\n\nfunc TestSubtract(t *testing.T) {\n\tif Subtract(5, 3) != 2 {\n\t\tt.Error(\"expected 2\")\n\t}\n}"}`)},
+					{ID: "c4", Name: "file_edit", Input: json.RawMessage(`{"path":"calc_test.go","old_string":"func TestAdd(t *testing.T) {\n\tif Add(1, 2) != 3 {\n\t\tt.Error(\"expected 3\")\n\t}\n}","new_string":"func TestAdd(t *testing.T) {\n\tif Add(1, 2) != 3 {\n\t\tt.Error(\"expected 3\")\n\t}\n}\n\nfunc TestSubtract(t *testing.T) {\n\tif Subtract(5, 3) != 2 {\n\t\tt.Error(\"expected 2\")\n\t}\n}"}`)},
 				},
 			},
 			{

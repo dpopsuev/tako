@@ -55,13 +55,13 @@ func TestHello(t *testing.T) {
 			{
 				Content: "I'll change the greeting.",
 				ToolCalls: []tangle.ToolCall{
-					{ID: "c2", Name: "edit", Input: json.RawMessage(`{"path":"main.go","old_string":"return \"hello\"","new_string":"return \"world\""}`)},
+					{ID: "c2", Name: "file_edit", Input: json.RawMessage(`{"path":"main.go","old_string":"return \"hello\"","new_string":"return \"world\""}`)},
 				},
 			},
 			{
 				Content: "Now update the test.",
 				ToolCalls: []tangle.ToolCall{
-					{ID: "c3", Name: "edit", Input: json.RawMessage(`{"path":"main_test.go","old_string":"\"hello\"","new_string":"\"world\""}`)},
+					{ID: "c3", Name: "file_edit", Input: json.RawMessage(`{"path":"main_test.go","old_string":"\"hello\"","new_string":"\"world\""}`)},
 				},
 			},
 			{

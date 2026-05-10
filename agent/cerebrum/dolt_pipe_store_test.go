@@ -33,7 +33,7 @@ func TestDoltPipeStore_AddAndMatch(t *testing.T) {
 		Embedding:   embedding,
 		Steps: []PipeStep{
 			{ID: "s1", Call: "file_read", Confidence: 0.8},
-			{ID: "s2", Call: "edit", Confidence: 0.7, DependsOn: []string{"s1"}},
+			{ID: "s2", Call: "file_edit", Confidence: 0.7, DependsOn: []string{"s1"}},
 		},
 	}
 

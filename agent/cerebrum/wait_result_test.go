@@ -46,7 +46,7 @@ func TestWaitToolResult_OutOfOrderBuffering(t *testing.T) {
 	go func() {
 		sensory.Send(context.Background(), Event{ToolCallID: "tc-3", Source: "go_test", Payload: []byte("result-3")})
 		sensory.Send(context.Background(), Event{ToolCallID: "tc-1", Source: "file_read", Payload: []byte("result-1")})
-		sensory.Send(context.Background(), Event{ToolCallID: "tc-2", Source: "edit", Payload: []byte("result-2")})
+		sensory.Send(context.Background(), Event{ToolCallID: "tc-2", Source: "file_edit", Payload: []byte("result-2")})
 	}()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -57,7 +57,7 @@ func TestWaitToolResult_OutOfOrderBuffering(t *testing.T) {
 		t.Fatalf("tc-1: got %q, want 'result-1'", r1.Content)
 	}
 
-	r2 := cb.waitToolResult(ctx, tangle.ToolCall{ID: "tc-2", Name: "edit"})
+	r2 := cb.waitToolResult(ctx, tangle.ToolCall{ID: "tc-2", Name: "file_edit"})
 	if r2.Content != "result-2" {
 		t.Fatalf("tc-2: got %q, want 'result-2'", r2.Content)
 	}

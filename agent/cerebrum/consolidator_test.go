@@ -23,7 +23,7 @@ func TestPipeConsolidator_ExtractsSteps(t *testing.T) {
 		}},
 		{Role: "tool", Content: "package main\nfunc main() {}", ToolCallID: "tc1"},
 		{Role: "assistant", ToolCalls: []tangle.ToolCall{
-			{ID: "tc2", Name: "edit", Input: json.RawMessage(`{"path":"main.go","old":"{}","new":"{fmt.Println()}"}`)},
+			{ID: "tc2", Name: "file_edit", Input: json.RawMessage(`{"path":"main.go","old":"{}","new":"{fmt.Println()}"}`)},
 		}},
 		{Role: "tool", Content: "edited", ToolCallID: "tc2"},
 	}
@@ -45,7 +45,7 @@ func TestPipeConsolidator_ExtractsSteps(t *testing.T) {
 	if pipe.Steps[0].Call != "file_read" {
 		t.Errorf("step 0 = %s, want read_file", pipe.Steps[0].Call)
 	}
-	if pipe.Steps[1].Call != "edit" {
+	if pipe.Steps[1].Call != "file_edit" {
 		t.Errorf("step 1 = %s, want edit", pipe.Steps[1].Call)
 	}
 }

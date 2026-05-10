@@ -28,7 +28,7 @@ func Organs(rootPath string) []organ.Func {
 	return []organ.Func{
 		{Name: "file_read", Description: rf.Description(), Schema: rf.InputSchema(), Mode: organ.ReadAction, Risk: 0, Source: organ.Environment, Reads: []string{"filesystem"}, Execute: rf.Execute},
 		{Name: "file_write", Description: wf.Description(), Schema: wf.InputSchema(), Mode: organ.WriteAction, Risk: 0.7, Source: organ.Environment, Writes: []string{"filesystem"}, Execute: wf.Execute},
-		{Name: "edit", Description: ef.Description(), Schema: ef.InputSchema(), Mode: organ.WriteAction, Risk: 0.5, Source: organ.Environment, Reads: []string{"filesystem"}, Writes: []string{"filesystem"}, Execute: ef.Execute},
+		{Name: "file_edit", Description: ef.Description(), Schema: ef.InputSchema(), Mode: organ.WriteAction, Risk: 0.5, Source: organ.Environment, Reads: []string{"filesystem"}, Writes: []string{"filesystem"}, Execute: ef.Execute},
 		{Name: "bash", Description: bf.Description(), Schema: bf.InputSchema(), Mode: organ.WriteAction, Risk: 0.8, Source: organ.Environment, Execute: bf.Execute},
 		{Name: "glob", Description: gl.Description(), Schema: gl.InputSchema(), Mode: organ.ReadAction, Risk: 0, Source: organ.Environment, Reads: []string{"filesystem"}, Execute: gl.Execute},
 		{Name: "grep", Description: gr.Description(), Schema: gr.InputSchema(), Mode: organ.ReadAction, Risk: 0, Source: organ.Environment, Reads: []string{"filesystem"}, Execute: gr.Execute},

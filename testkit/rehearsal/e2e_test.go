@@ -44,7 +44,7 @@ func TestE2E_FixTheTest_Rehearsal(t *testing.T) {
 			{
 				Content: "The bug is that empty secret matches empty token. Fixing.",
 				ToolCalls: []tangle.ToolCall{
-					{ID: "c3", Name: "edit", Input: json.RawMessage(`{"path":"auth/handler.go","old_string":"func (h *Handler) Validate(token string) bool {\n\treturn token == h.secret\n}","new_string":"func (h *Handler) Validate(token string) bool {\n\tif h.secret == \"\" {\n\t\treturn false\n\t}\n\treturn token == h.secret\n}"}`)},
+					{ID: "c3", Name: "file_edit", Input: json.RawMessage(`{"path":"auth/handler.go","old_string":"func (h *Handler) Validate(token string) bool {\n\treturn token == h.secret\n}","new_string":"func (h *Handler) Validate(token string) bool {\n\tif h.secret == \"\" {\n\t\treturn false\n\t}\n\treturn token == h.secret\n}"}`)},
 				},
 			},
 			{
