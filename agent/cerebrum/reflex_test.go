@@ -239,6 +239,145 @@ func TestPipeExecutor_FailureCascade(t *testing.T) {
 	}
 }
 
+func TestPipeExecutor_OrderPreserved_NoDependencies(t *testing.T) {
+	pipe := Pipe{
+		Name: "test",
+		Steps: []PipeStep{
+			{ID: "first", Call: "step_first"},
+			{ID: "second", Call: "step_second"},
+			{ID: "third", Call: "step_third"},
+			{ID: "fourth", Call: "step_fourth"},
+			{ID: "fifth", Call: "step_fifth"},
+		},
+	}
+
+	exec := NewPipeExecutor()
+	runID, pr := exec.StartWithPipe(pipe)
+
+	expected := []string{"first", "second", "third", "fourth", "fifth"}
+	for i, want := range expected {
+		step, _, err := exec.NextStepFromPipe(runID, pr.steps)
+		if err != nil {
+			t.Fatalf("step %d error: %v", i, err)
+		}
+		if step == nil {
+			t.Fatalf("step %d: nil, want %s", i, want)
+		}
+		if step.ID != want {
+			t.Fatalf("step %d: got %s, want %s — insertion order not preserved", i, step.ID, want)
+		}
+		exec.SubmitAndUnlock(runID, step.ID, "done", "", pr.steps)
+	}
+
+	step, _, _ := exec.NextStepFromPipe(runID, pr.steps)
+	if step != nil {
+		t.Fatalf("expected nil after all steps, got %s", step.ID)
+	}
+}
+
+func TestReplayPipe_MultiStep_OrderAndResults(t *testing.T) {
+	var order []string
+	makeCap := func(name, response string) organ.Func {
+		return organ.Func{
+			Name: name,
+			Execute: func(_ context.Context, _ json.RawMessage) (organ.Result, error) {
+				order = append(order, name)
+				return organ.TextResult(response), nil
+			},
+		}
+	}
+
+	pipe := &Pipe{
+		Name: "cook",
+		Steps: []PipeStep{
+			{ID: "s1", Call: "look"},
+			{ID: "s2", Call: "take"},
+			{ID: "s3", Call: "cook"},
+			{ID: "s4", Call: "eat"},
+		},
+	}
+
+	caps := map[string]organ.Func{
+		"look": makeCap("look", "fridge has eggs"),
+		"take": makeCap("take", "took eggs"),
+		"cook": makeCap("cook", "cooked eggs"),
+		"eat":  makeCap("eat", "ate eggs, no longer hungry"),
+	}
+
+	result, err := ReplayPipe(context.Background(), pipe, caps)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if result.StepsReflex != 4 {
+		t.Errorf("steps reflex = %d, want 4", result.StepsReflex)
+	}
+
+	wantOrder := []string{"look", "take", "cook", "eat"}
+	if len(order) != len(wantOrder) {
+		t.Fatalf("execution order length = %d, want %d", len(order), len(wantOrder))
+	}
+	for i, want := range wantOrder {
+		if order[i] != want {
+			t.Errorf("execution order[%d] = %s, want %s", i, order[i], want)
+		}
+	}
+
+	if len(result.Steps) != 4 {
+		t.Fatalf("result.Steps length = %d, want 4", len(result.Steps))
+	}
+	if result.Steps[0].Call != "look" || result.Steps[0].Output != "fridge has eggs" {
+		t.Errorf("step 0: %+v", result.Steps[0])
+	}
+	if result.Steps[3].Call != "eat" || result.Steps[3].Output != "ate eggs, no longer hungry" {
+		t.Errorf("step 3: %+v", result.Steps[3])
+	}
+	if result.Response != "ate eggs, no longer hungry" {
+		t.Errorf("response = %q, want last step output", result.Response)
+	}
+}
+
+func TestReplayPipe_UnknownCapability_Escalates(t *testing.T) {
+	pipe := &Pipe{
+		Name:  "test",
+		Steps: []PipeStep{{ID: "s1", Call: "missing_tool"}},
+	}
+
+	result, err := ReplayPipe(context.Background(), pipe, map[string]organ.Func{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.EscalatedAt != 0 {
+		t.Errorf("escalated at %d, want 0", result.EscalatedAt)
+	}
+	if result.EscalatedConventionality != ConventionalityChaotic {
+		t.Errorf("conventionality = %s, want chaotic", result.EscalatedConventionality)
+	}
+}
+
+func TestReplayPipe_ErrorCapability_Escalates(t *testing.T) {
+	pipe := &Pipe{
+		Name:  "test",
+		Steps: []PipeStep{{ID: "s1", Call: "boom"}},
+	}
+	caps := map[string]organ.Func{
+		"boom": {
+			Name: "boom",
+			Execute: func(_ context.Context, _ json.RawMessage) (organ.Result, error) {
+				return organ.Result{}, errors.New("exploded")
+			},
+		},
+	}
+
+	result, err := ReplayPipe(context.Background(), pipe, caps)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.EscalatedAt != 0 {
+		t.Errorf("escalated at %d, want 0", result.EscalatedAt)
+	}
+}
+
 func TestFireReflex(t *testing.T) {
 	var called atomic.Int32
 	caps := []organ.Func{
