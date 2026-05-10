@@ -18,15 +18,15 @@ func TestIntentRouter_ReflexBypass(t *testing.T) {
 		Name:      "greet",
 		Embedding: embedding,
 		Steps: []PipeStep{{
-			ID:       "dialog_speak",
-			Call:     "dialog_speak",
+			ID:       "dialog",
+			Call:     "dialog",
 			Args:     map[string]any{"response": "Hello! How can I help?"},
 			Expected: HashResult([]byte("Hello! How can I help?")),
 		}},
 	})
 
-	speakCap := organ.Func{
-		Name: "dialog_speak",
+	dialogOrgan := organ.Func{
+		Name: "dialog",
 		Execute: func(_ context.Context, input json.RawMessage) (organ.Result, error) {
 			var args struct{ Response string `json:"response"` }
 			json.Unmarshal(input, &args)
@@ -39,7 +39,7 @@ func TestIntentRouter_ReflexBypass(t *testing.T) {
 	cb := New(reactor, completer,
 		WithEmbedder(embedder),
 		WithReflexStore(store),
-		WithCapabilities([]organ.Func{speakCap}),
+		WithOrgans([]organ.Func{dialogOrgan}),
 	)
 
 	_, err := cb.Think(context.Background(), reactivity.Catalyst{Need: "hello"})
@@ -51,8 +51,12 @@ func TestIntentRouter_ReflexBypass(t *testing.T) {
 	if !m.Sealed() {
 		t.Fatal("molecule should be sealed by reflex")
 	}
-	if m.Response() != "Hello! How can I help?" {
-		t.Fatalf("response = %q, want 'Hello! How can I help?'", m.Response())
+	motors := m.Chain().Motors()
+	if len(motors) == 0 {
+		t.Fatal("expected motor output from reflex replay")
+	}
+	if got := string(motors[len(motors)-1].Output); got != "Hello! How can I help?" {
+		t.Fatalf("last motor output = %q, want 'Hello! How can I help?'", got)
 	}
 }
 

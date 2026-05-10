@@ -204,9 +204,9 @@ func extractInput(raw json.RawMessage) string {
 	return string(raw)
 }
 
-// Capabilities returns all instruments as Capabilities.
+// Organs returns all instruments as organ.Func.
 // The unified path — Corpus.Register each one directly.
-func (a *Game) Capabilities() []organ.Func {
+func (a *Game) Organs() []organ.Func {
 	caps := make([]organ.Func, 0, len(a.instruments))
 	for _, name := range a.Names() {
 		inst := a.instruments[name]

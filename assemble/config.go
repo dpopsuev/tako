@@ -6,9 +6,10 @@ import (
 	"time"
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
-	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/agent/organ"
+	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/organs/code"
+	"github.com/dpopsuev/tako/organs/dialog"
 	"gopkg.in/yaml.v3"
 )
 
@@ -16,7 +17,7 @@ type BlueprintConfig struct {
 	Model        string       `yaml:"model"`
 	ModelWatcher string       `yaml:"model_watcher"`
 	ModelThinker string       `yaml:"model_thinker"`
-	Capabilities []string     `yaml:"capabilities"`
+	Organs []string     `yaml:"organs"`
 	Budget       BudgetConfig `yaml:"budget"`
 	Config       ConfigValues `yaml:"config"`
 	WorkDir      string       `yaml:"work_dir"`
@@ -92,20 +93,20 @@ func (bc *BlueprintConfig) ToBlueprint() Blueprint {
 	}
 	bp.Config = &cfg
 
-	bp.Capabilities = resolveCapabilities(bc.Capabilities, bc.WorkDir)
+	bp.Organs = resolveOrgans(bc.Organs, bc.WorkDir)
 
 	return bp
 }
 
-func resolveCapabilities(names []string, workDir string) []organ.Func {
+func resolveOrgans(names []string, workDir string) []organ.Func {
 	if workDir == "" {
 		workDir = "."
 	}
-	var caps []organ.Func
+	caps := []organ.Func{organ.ControllerFunc(dialog.New())}
 	for _, name := range names {
 		switch name {
 		case "code":
-			caps = append(caps, code.Capabilities(workDir)...)
+			caps = append(caps, code.Organs(workDir)...)
 		}
 	}
 	return caps

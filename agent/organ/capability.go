@@ -32,6 +32,7 @@ type Func struct {
 	Source      FuncSource
 	Reads       []string // state dimensions this capability observes
 	Writes      []string // state dimensions this capability modifies
+	Response    bool     // results are user-facing responses (dialog, not side-effects)
 	Execute     func(ctx context.Context, input json.RawMessage) (Result, error)
 }
 

@@ -36,10 +36,10 @@ func NewRealAgent(t *testing.T, workdir string) *assemble.Agent {
 
 	completer := providers.NewCompleter(p, model, nil)
 
-	caps := code.Capabilities(workdir)
+	caps := code.Organs(workdir)
 	bp := assemble.Blueprint{
 		Model:        model,
-		Capabilities: caps,
+		Organs: caps,
 		Budget: cerebrum.Budget{
 			MaxTurns:    20,
 			TurnTimeout: 60 * time.Second,
@@ -54,10 +54,9 @@ func RunAgent(t *testing.T, agent *assemble.Agent, task string) string {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	result, err := agent.Run(ctx, task)
-	if err != nil {
+	if err := agent.Run(ctx, task); err != nil {
 		t.Fatalf("agent.Run: %v", err)
 	}
-	return result
+	return agent.LastOutput()
 }
 

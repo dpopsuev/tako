@@ -17,14 +17,15 @@ func (r EventRole) String() string {
 }
 
 type ChainEvent struct {
-	ID        string
-	ParentID  string
-	Kind      EventRole
-	Organ     string
-	Input     []byte
-	Output    []byte
-	Phase     AtomType
-	Timestamp time.Time
+	ID         string
+	ParentID   string
+	Kind       EventRole
+	Organ      string
+	Input      []byte
+	Output     []byte
+	Phase      AtomType
+	Timestamp  time.Time
+	IsResponse bool
 }
 
 type EventChain struct {
@@ -82,6 +83,15 @@ func (c *EventChain) HasSenseAfterMotor() bool {
 	}
 	for i := lastMotor + 1; i < len(c.events); i++ {
 		if c.events[i].Kind == Sense {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *EventChain) HasResponse() bool {
+	for _, e := range c.events {
+		if e.IsResponse {
 			return true
 		}
 	}

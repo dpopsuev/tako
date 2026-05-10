@@ -12,8 +12,7 @@ import (
 	"github.com/dpopsuev/tako/agent/organ"
 )
 
-// Capabilities returns code operation capabilities rooted at the given path.
-func Capabilities(rootPath string) []organ.Func {
+func Organs(rootPath string) []organ.Func {
 	rf := &readFileFunc{root: rootPath}
 	wf := &writeFileFunc{root: rootPath}
 	gb := &goBuildFunc{root: rootPath}

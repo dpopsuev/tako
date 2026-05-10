@@ -162,7 +162,7 @@ func AvailableActions(gs *GameState) []Action {
 	return actions
 }
 
-func GameCapabilities(gs *GameState) []organ.Func {
+func GameOrgans(gs *GameState) []organ.Func {
 	actions := AvailableActions(gs)
 	fns := make([]organ.Func, len(actions))
 	for i, a := range actions {
@@ -172,5 +172,5 @@ func GameCapabilities(gs *GameState) []organ.Func {
 }
 
 func GameCapabilitySet(gs *GameState) *organ.FuncSet {
-	cs := organ.NewFuncSet(); for _, c := range GameCapabilities(gs) { cs.Register(c) }; return cs
+	cs := organ.NewFuncSet(); for _, c := range GameOrgans(gs) { cs.Register(c) }; return cs
 }

@@ -17,27 +17,27 @@ import (
 // --- Stress 1: Rapid multi-turn — 10 inputs on same Molecule ---
 
 func TestStress_RapidSequential_10Sessions(t *testing.T) {
-	speak := speakCap()
+	speak := dialogOrgan()
 	var llmCalls atomic.Int32
 	completer := tangle.CompleteFunc(func(_ context.Context, _ tangle.CompletionParams) (*tangle.Completion, error) {
 		n := llmCalls.Add(1)
 		return &tangle.Completion{
 			ToolCalls: []tangle.ToolCall{
-				{ID: fmt.Sprintf("s%d", n), Name: "dialog_speak",
+				{ID: fmt.Sprintf("s%d", n), Name: "dialog",
 					Input: json.RawMessage(fmt.Sprintf(`{"response":"Answer %d"}`, n))},
 			},
 		}, nil
 	})
 
 	motor := &autoExecMotor{
-		caps:    map[string]organ.Func{"dialog_speak": speak},
+		caps:    map[string]organ.Func{"dialog": speak},
 		sensory: NewChannelBus(64),
 	}
 	reactor := reactivity.NewReactor()
 	cb := New(reactor, completer,
 		WithSensory(motor.sensory),
 		WithMotor(motor),
-		WithCapabilities([]organ.Func{speak}),
+		WithOrgans([]organ.Func{speak}),
 		WithMaxTurns(3),
 		WithTurnTimeout(5*time.Second),
 	)
@@ -62,7 +62,7 @@ func TestStress_RapidSequential_10Sessions(t *testing.T) {
 // --- Stress 2: Desired emerges mid-conversation ---
 
 func TestStress_DesiredEmergesMidConversation(t *testing.T) {
-	speak := speakCap()
+	speak := dialogOrgan()
 	readAnimal := organ.Func{
 		Name:   "read_animal",
 		Schema: json.RawMessage(`{"type":"object","properties":{"animal":{"type":"string"}}}`),
@@ -79,7 +79,7 @@ func TestStress_DesiredEmergesMidConversation(t *testing.T) {
 		if callCount <= 2 {
 			return &tangle.Completion{
 				ToolCalls: []tangle.ToolCall{
-					{ID: fmt.Sprintf("s%d", callCount), Name: "dialog_speak",
+					{ID: fmt.Sprintf("s%d", callCount), Name: "dialog",
 						Input: json.RawMessage(`{"response":"What would you like to know?"}`)},
 				},
 			}, nil
@@ -93,14 +93,14 @@ func TestStress_DesiredEmergesMidConversation(t *testing.T) {
 	})
 
 	motor := &autoExecMotor{
-		caps:    map[string]organ.Func{"dialog_speak": speak, "read_animal": readAnimal},
+		caps:    map[string]organ.Func{"dialog": speak, "read_animal": readAnimal},
 		sensory: NewChannelBus(64),
 	}
 	reactor := reactivity.NewReactor()
 	cb := New(reactor, completer,
 		WithSensory(motor.sensory),
 		WithMotor(motor),
-		WithCapabilities([]organ.Func{speak, readAnimal}),
+		WithOrgans([]organ.Func{speak, readAnimal}),
 		WithMaxTurns(5),
 		WithTurnTimeout(5*time.Second),
 	)
@@ -136,7 +136,7 @@ func TestStress_DesiredEmergesMidConversation(t *testing.T) {
 // --- Stress 3: Organ failure mid-session ---
 
 func TestStress_OrganFailureMidSession(t *testing.T) {
-	speak := speakCap()
+	speak := dialogOrgan()
 	failCount := 0
 	failOrgan := organ.Func{
 		Name:   "flaky_read",
@@ -171,7 +171,7 @@ func TestStress_OrganFailureMidSession(t *testing.T) {
 		default:
 			return &tangle.Completion{
 				ToolCalls: []tangle.ToolCall{
-					{ID: "s1", Name: "dialog_speak",
+					{ID: "s1", Name: "dialog",
 						Input: json.RawMessage(`{"response":"Got it on second try"}`)},
 				},
 			}, nil
@@ -179,14 +179,14 @@ func TestStress_OrganFailureMidSession(t *testing.T) {
 	})
 
 	motor := &autoExecMotor{
-		caps:    map[string]organ.Func{"dialog_speak": speak, "flaky_read": failOrgan},
+		caps:    map[string]organ.Func{"dialog": speak, "flaky_read": failOrgan},
 		sensory: NewChannelBus(64),
 	}
 	reactor := reactivity.NewReactor()
 	cb := New(reactor, completer,
 		WithSensory(motor.sensory),
 		WithMotor(motor),
-		WithCapabilities([]organ.Func{speak, failOrgan}),
+		WithOrgans([]organ.Func{speak, failOrgan}),
 		WithMaxTurns(5),
 		WithTurnTimeout(5*time.Second),
 	)
@@ -223,7 +223,7 @@ func TestStress_OrganFailureMidSession(t *testing.T) {
 // --- Stress 4: Debouncer fires in multi-turn ---
 
 func TestStress_DebouncerAcrossMultiTurn(t *testing.T) {
-	speak := speakCap()
+	speak := dialogOrgan()
 	var readCalls atomic.Int32
 	repeatReader := organ.Func{
 		Name:   "repeat_read",
@@ -248,14 +248,14 @@ func TestStress_DebouncerAcrossMultiTurn(t *testing.T) {
 	})
 
 	motor := &autoExecMotor{
-		caps:    map[string]organ.Func{"dialog_speak": speak, "repeat_read": repeatReader},
+		caps:    map[string]organ.Func{"dialog": speak, "repeat_read": repeatReader},
 		sensory: NewChannelBus(64),
 	}
 	reactor := reactivity.NewReactor()
 	cb := New(reactor, completer,
 		WithSensory(motor.sensory),
 		WithMotor(motor),
-		WithCapabilities([]organ.Func{speak, repeatReader}),
+		WithOrgans([]organ.Func{speak, repeatReader}),
 		WithMaxTurns(5),
 		WithTurnTimeout(5*time.Second),
 	)
@@ -275,24 +275,24 @@ func TestStress_DebouncerAcrossMultiTurn(t *testing.T) {
 // --- Stress 5: Empty input ---
 
 func TestStress_EmptyInput(t *testing.T) {
-	speak := speakCap()
+	speak := dialogOrgan()
 	completer := &stubCompleter{
 		toolCalls: []tangle.ToolCall{
-			{ID: "s1", Name: "dialog_speak",
+			{ID: "s1", Name: "dialog",
 				Input: json.RawMessage(`{"response":"I received empty input."}`)},
 		},
 		toolCallOnce: true,
 	}
 
 	motor := &autoExecMotor{
-		caps:    map[string]organ.Func{"dialog_speak": speak},
+		caps:    map[string]organ.Func{"dialog": speak},
 		sensory: NewChannelBus(64),
 	}
 	reactor := reactivity.NewReactor()
 	cb := New(reactor, completer,
 		WithSensory(motor.sensory),
 		WithMotor(motor),
-		WithCapabilities([]organ.Func{speak}),
+		WithOrgans([]organ.Func{speak}),
 		WithMaxTurns(3),
 		WithTurnTimeout(5*time.Second),
 	)
@@ -314,26 +314,26 @@ func TestStress_ConcurrentThinkPanics(t *testing.T) {
 	if raceEnabled {
 		t.Skip("known race: cb.molecule shared state — needs mutex or per-session isolation")
 	}
-	speak := speakCap()
+	speak := dialogOrgan()
 	completer := tangle.CompleteFunc(func(_ context.Context, _ tangle.CompletionParams) (*tangle.Completion, error) {
 		time.Sleep(10 * time.Millisecond)
 		return &tangle.Completion{
 			ToolCalls: []tangle.ToolCall{
-				{ID: "s1", Name: "dialog_speak",
+				{ID: "s1", Name: "dialog",
 					Input: json.RawMessage(`{"response":"ok"}`)},
 			},
 		}, nil
 	})
 
 	motor := &autoExecMotor{
-		caps:    map[string]organ.Func{"dialog_speak": speak},
+		caps:    map[string]organ.Func{"dialog": speak},
 		sensory: NewChannelBus(64),
 	}
 	reactor := reactivity.NewReactor()
 	cb := New(reactor, completer,
 		WithSensory(motor.sensory),
 		WithMotor(motor),
-		WithCapabilities([]organ.Func{speak}),
+		WithOrgans([]organ.Func{speak}),
 		WithMaxTurns(2),
 		WithTurnTimeout(2*time.Second),
 	)
@@ -361,25 +361,25 @@ func TestStress_ConcurrentThinkPanics(t *testing.T) {
 // --- Stress 7: Max turns with Desired never met ---
 
 func TestStress_MaxTurns_DesiredNeverMet(t *testing.T) {
-	speak := speakCap()
+	speak := dialogOrgan()
 	completer := tangle.CompleteFunc(func(_ context.Context, _ tangle.CompletionParams) (*tangle.Completion, error) {
 		return &tangle.Completion{
 			ToolCalls: []tangle.ToolCall{
-				{ID: "s1", Name: "dialog_speak",
+				{ID: "s1", Name: "dialog",
 					Input: json.RawMessage(`{"response":"still working on it"}`)},
 			},
 		}, nil
 	})
 
 	motor := &autoExecMotor{
-		caps:    map[string]organ.Func{"dialog_speak": speak},
+		caps:    map[string]organ.Func{"dialog": speak},
 		sensory: NewChannelBus(64),
 	}
 	reactor := reactivity.NewReactor()
 	cb := New(reactor, completer,
 		WithSensory(motor.sensory),
 		WithMotor(motor),
-		WithCapabilities([]organ.Func{speak}),
+		WithOrgans([]organ.Func{speak}),
 		WithMaxTurns(3),
 		WithTurnTimeout(5*time.Second),
 	)

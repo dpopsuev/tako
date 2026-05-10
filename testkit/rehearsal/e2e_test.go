@@ -63,7 +63,7 @@ func TestE2E_FixTheTest_Rehearsal(t *testing.T) {
 
 	bp := assemble.Blueprint{
 		Model:        "stub",
-		Capabilities: code.Capabilities(workspace),
+		Organs: code.Organs(workspace),
 		Budget:       cerebrum.Budget{MaxTurns: 10, TurnTimeout: 30 * time.Second},
 	}
 	agent := assemble.Assemble(bp, completer)

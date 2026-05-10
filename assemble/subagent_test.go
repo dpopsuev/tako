@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
+	"github.com/dpopsuev/tako/agent/organ"
 	"github.com/dpopsuev/tako/organs/code"
+	"github.com/dpopsuev/tako/organs/subagent"
 	tangle "github.com/dpopsuev/tangle"
 )
 
@@ -26,10 +28,10 @@ func TestSubagent_SpawnAndComplete(t *testing.T) {
 		},
 	}
 
-	caps := code.Capabilities(".")
+	caps := code.Organs(".")
 	bp := Blueprint{
 		Model:        "stub",
-		Capabilities: caps,
+		Organs: caps,
 		Budget:       cerebrum.Budget{MaxTurns: 5, TurnTimeout: 10 * time.Second},
 	}
 
@@ -48,15 +50,22 @@ func TestSubagent_SpawnAndComplete(t *testing.T) {
 }
 
 func TestSubagent_ExploreIsReadOnly(t *testing.T) {
-	factory := &SubagentFactory{
-		Root:      ".",
-		Completer: &scriptedCompleter{},
+	var spawnedCaps []string
+	spawn := func(_ context.Context, caps []organ.Func, _ string, _ int) (string, error) {
+		for _, c := range caps {
+			spawnedCaps = append(spawnedCaps, c.Name)
+			if c.Mode != organ.ReadAction {
+				t.Errorf("explore subagent should only have ReadAction capabilities, got %s with mode %d", c.Name, c.Mode)
+			}
+		}
+		return "done", nil
 	}
 
-	caps := factory.capsForType("explore")
-	for _, c := range caps {
-		if c.Mode != 0 {
-			t.Errorf("explore subagent should only have ReadAction capabilities, got %s with mode %d", c.Name, c.Mode)
-		}
+	factory := &subagent.Factory{Root: ".", Spawn: spawn}
+	cap := factory.Organ()
+
+	_, _ = cap.Execute(context.Background(), json.RawMessage(`{"task":"test","type":"explore"}`))
+	if len(spawnedCaps) == 0 {
+		t.Error("spawn function was not called")
 	}
 }

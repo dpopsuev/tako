@@ -1,4 +1,4 @@
-package assemble
+package subagent
 
 import (
 	"context"
@@ -7,24 +7,24 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/dpopsuev/tako/agent/cerebrum"
 	"github.com/dpopsuev/tako/agent/organ"
 	"github.com/dpopsuev/tako/organs/code"
-	tangle "github.com/dpopsuev/tangle"
 )
 
-type subagentInput struct {
-	Task       string `json:"task"`
-	Type       string `json:"type"`
-	MaxTurns   int    `json:"max_turns"`
+type input struct {
+	Task     string `json:"task"`
+	Type     string `json:"type"`
+	MaxTurns int    `json:"max_turns"`
 }
 
-type SubagentFactory struct {
-	Root      string
-	Completer tangle.Completer
+type SpawnFunc func(ctx context.Context, caps []organ.Func, task string, maxTurns int) (string, error)
+
+type Factory struct {
+	Root  string
+	Spawn SpawnFunc
 }
 
-func (f *SubagentFactory) Capability() organ.Func {
+func (f *Factory) Organ() organ.Func {
 	return organ.Func{
 		Name:        "agent_spawn",
 		Description: "Spawn a child agent to handle a sub-task. Types: explore (read-only, fast), plan (read-only, deep), general (full capabilities). Returns the child's result.",
@@ -37,9 +37,9 @@ func (f *SubagentFactory) Capability() organ.Func {
 	}
 }
 
-func (f *SubagentFactory) execute(ctx context.Context, input json.RawMessage) (organ.Result, error) {
-	var in subagentInput
-	if err := json.Unmarshal(input, &in); err != nil {
+func (f *Factory) execute(ctx context.Context, raw json.RawMessage) (organ.Result, error) {
+	var in input
+	if err := json.Unmarshal(raw, &in); err != nil {
 		return organ.Result{}, fmt.Errorf("spawn_agent: %w", err)
 	}
 	if in.Task == "" {
@@ -58,25 +58,14 @@ func (f *SubagentFactory) execute(ctx context.Context, input json.RawMessage) (o
 
 	caps := f.capsForType(agentType)
 
-	bp := Blueprint{
-		Model:        "child",
-		Capabilities: caps,
-		Budget: cerebrum.Budget{
-			MaxTurns:    maxTurns,
-			TurnTimeout: 30 * time.Second,
-		},
-	}
-
-	child := Assemble(bp, f.Completer)
-
 	slog.InfoContext(ctx, "subagent.spawn",
 		slog.String("type", agentType),
-		slog.String("task", truncateStr(in.Task, 80)),
+		slog.String("task", truncate(in.Task, 80)),
 		slog.Int("max_turns", maxTurns),
-		slog.Int("capabilities", len(caps)))
+		slog.Int("organs", len(caps)))
 
 	start := time.Now()
-	_, err := child.Think(ctx, in.Task)
+	result, err := f.Spawn(ctx, caps, in.Task, maxTurns)
 	elapsed := time.Since(start)
 
 	if err != nil {
@@ -87,39 +76,22 @@ func (f *SubagentFactory) execute(ctx context.Context, input json.RawMessage) (o
 		return organ.ErrorResult(fmt.Sprintf("subagent failed: %s", err)), nil
 	}
 
-	m := child.Result()
 	slog.InfoContext(ctx, "subagent.done",
 		slog.String("type", agentType),
-		slog.Duration("elapsed", elapsed),
-		slog.Bool("sealed", m.Sealed()),
-		slog.Float64("distance", m.Distance()),
-		slog.Int("mass", m.TotalMass()))
+		slog.Duration("elapsed", elapsed))
 
-	var result string
-	retro := m.ByTaxonomy("retrospection.")
-	if len(retro) > 0 {
-		result = string(retro[len(retro)-1].Content)
-	}
 	if result == "" {
-		result = fmt.Sprintf("subagent completed (type=%s, mass=%d, distance=%.2f)", agentType, m.TotalMass(), m.Distance())
+		result = fmt.Sprintf("subagent completed (type=%s)", agentType)
 	}
 
 	return organ.TextResult(result), nil
 }
 
-func (f *SubagentFactory) capsForType(agentType string) []organ.Func {
-	all := code.Capabilities(f.Root)
+func (f *Factory) capsForType(agentType string) []organ.Func {
+	all := code.Organs(f.Root)
 
 	switch agentType {
-	case "explore":
-		var readOnly []organ.Func
-		for _, c := range all {
-			if c.Mode == organ.ReadAction {
-				readOnly = append(readOnly, c)
-			}
-		}
-		return readOnly
-	case "plan":
+	case "explore", "plan":
 		var readOnly []organ.Func
 		for _, c := range all {
 			if c.Mode == organ.ReadAction {
@@ -132,7 +104,7 @@ func (f *SubagentFactory) capsForType(agentType string) []organ.Func {
 	}
 }
 
-func truncateStr(s string, n int) string {
+func truncate(s string, n int) string {
 	if len(s) <= n {
 		return s
 	}

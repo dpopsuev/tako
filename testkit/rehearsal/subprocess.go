@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os/exec"
-	"strings"
 	"time"
 )
 
@@ -19,7 +18,7 @@ type SubprocessActor struct {
 
 var _ Actor = (*SubprocessActor)(nil)
 
-func (a *SubprocessActor) Run(ctx context.Context, task string) (string, error) {
+func (a *SubprocessActor) Run(ctx context.Context, task string) error {
 	args := []string{"agent"}
 	if a.Blueprint != "" {
 		args = append(args, "--blueprint", a.Blueprint)
@@ -53,16 +52,12 @@ func (a *SubprocessActor) Run(ctx context.Context, task string) (string, error) 
 			slog.Warn("subprocess.exit",
 				slog.Int("code", exitErr.ExitCode()),
 				slog.String("stderr", truncateString(stderr.String(), 500)))
-			return "", fmt.Errorf("tako agent exited %d: %s", exitErr.ExitCode(), truncateString(stderr.String(), 200))
+			return fmt.Errorf("tako agent exited %d: %s", exitErr.ExitCode(), truncateString(stderr.String(), 200))
 		}
-		return "", fmt.Errorf("subprocess: %w", err)
+		return fmt.Errorf("subprocess: %w", err)
 	}
 
-	result := strings.TrimSpace(stdout.String())
-	if result == "" {
-		result = "completed"
-	}
-	return result, nil
+	return nil
 }
 
 func truncateString(s string, n int) string {

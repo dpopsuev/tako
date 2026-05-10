@@ -110,9 +110,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case widgets.AgentDoneMsg:
 		m.running = false
 		m.output.Update(widgets.SetOverlayMsg{Text: ""})
-		if msg.Result != "" {
-			m.output.Update(widgets.AppendOutputMsg{Line: msg.Result})
-		}
 		_, cmd := m.cabin.Update(msg)
 		return m, cmd
 
@@ -140,6 +137,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case widgets.AppendOutputMsg:
+		m.output.Update(msg)
+		return m, nil
+
+	case widgets.StreamTokenMsg:
+		m.output.Update(msg)
+		return m, nil
+
+	case widgets.FlushStreamMsg:
 		m.output.Update(msg)
 		return m, nil
 	}

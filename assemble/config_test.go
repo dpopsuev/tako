@@ -10,7 +10,7 @@ func TestLoadBlueprint_YAML(t *testing.T) {
 	dir := t.TempDir()
 	yamlContent := `
 model: claude-sonnet-4-6
-capabilities:
+organs:
   - code
 budget:
   max_turns: 50
@@ -33,8 +33,8 @@ work_dir: /tmp/test
 	if cfg.Model != "claude-sonnet-4-6" {
 		t.Errorf("model: got %s, want claude-sonnet-4-6", cfg.Model)
 	}
-	if len(cfg.Capabilities) != 1 || cfg.Capabilities[0] != "code" {
-		t.Errorf("capabilities: got %v, want [code]", cfg.Capabilities)
+	if len(cfg.Organs) != 1 || cfg.Organs[0] != "code" {
+		t.Errorf("organs: got %v, want [code]", cfg.Organs)
 	}
 	if cfg.Budget.MaxTurns != 50 {
 		t.Errorf("max_turns: got %d, want 50", cfg.Budget.MaxTurns)
@@ -47,7 +47,7 @@ work_dir: /tmp/test
 func TestBlueprintConfig_ToBlueprint(t *testing.T) {
 	cfg := BlueprintConfig{
 		Model:        "claude-sonnet-4-6",
-		Capabilities: []string{"code"},
+		Organs: []string{"code"},
 		Budget: BudgetConfig{
 			MaxTurns:    25,
 			TurnTimeout: "15s",
@@ -71,8 +71,8 @@ func TestBlueprintConfig_ToBlueprint(t *testing.T) {
 	if bp.Config.DistanceClose != 0.15 {
 		t.Errorf("distance_close: got %v, want 0.15", bp.Config.DistanceClose)
 	}
-	if len(bp.Capabilities) < 10 {
-		t.Errorf("expected 10+ capabilities from 'code' bundle, got %d", len(bp.Capabilities))
+	if len(bp.Organs) < 10 {
+		t.Errorf("expected 10+ capabilities from 'code' bundle, got %d", len(bp.Organs))
 	}
 }
 
@@ -101,8 +101,8 @@ func TestLoadBlueprint_StoredFiles(t *testing.T) {
 				t.Errorf("max_turns: got %d, want %d", cfg.Budget.MaxTurns, f.minTurns)
 			}
 			bp := cfg.ToBlueprint()
-			if len(bp.Capabilities) < 10 {
-				t.Errorf("capabilities: got %d, want 10+", len(bp.Capabilities))
+			if len(bp.Organs) < 10 {
+				t.Errorf("organs: got %d, want 10+", len(bp.Organs))
 			}
 		})
 	}
@@ -111,7 +111,7 @@ func TestLoadBlueprint_StoredFiles(t *testing.T) {
 func TestBlueprintConfig_Defaults(t *testing.T) {
 	cfg := BlueprintConfig{
 		Model:        "test",
-		Capabilities: []string{"code"},
+		Organs: []string{"code"},
 	}
 
 	bp := cfg.ToBlueprint()

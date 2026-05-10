@@ -37,9 +37,6 @@ func (a *Adapter) OnToolCall(name string, input []byte) {
 	if a.Program == nil {
 		return
 	}
-	if name == "dialog_speak" {
-		return
-	}
 	s := string(input)
 	if len(s) > 100 {
 		s = s[:100] + "..."
@@ -54,10 +51,6 @@ func (a *Adapter) OnToolResult(name string, result []byte, _ time.Duration) {
 	if a.Program == nil {
 		return
 	}
-	if name == "dialog_speak" {
-		a.Program.Send(widgets.AppendOutputMsg{Line: string(result)})
-		return
-	}
 	s := string(result)
 	if len(s) > 200 {
 		s = s[:200] + "..."
@@ -68,7 +61,14 @@ func (a *Adapter) OnToolResult(name string, result []byte, _ time.Duration) {
 	})
 }
 
-func (a *Adapter) OnSealed(_ string, distance float64, turns int, result string) {
+func (a *Adapter) OnResponse(text string) {
+	if a.Program == nil {
+		return
+	}
+	a.Program.Send(widgets.AppendOutputMsg{Line: text})
+}
+
+func (a *Adapter) OnSealed(_ string, distance float64, turns int) {
 	if a.Program == nil {
 		return
 	}
@@ -76,7 +76,6 @@ func (a *Adapter) OnSealed(_ string, distance float64, turns int, result string)
 		Sealed:   true,
 		Distance: distance,
 		Turns:    turns,
-		Result:   result,
 	})
 }
 

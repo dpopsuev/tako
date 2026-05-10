@@ -40,13 +40,13 @@ func newSyncRunner() *syncRunner {
 	return &syncRunner{done: make(chan struct{})}
 }
 
-func (r *syncRunner) Run(_ context.Context, task string) (string, error) {
+func (r *syncRunner) Run(_ context.Context, task string) error {
 	r.mu.Lock()
 	r.task = task
 	r.mu.Unlock()
 	r.called.Store(true)
 	close(r.done)
-	return "done", nil
+	return nil
 }
 
 func (r *syncRunner) waitDone() {
@@ -87,11 +87,11 @@ func TestHeadless_AgentDoneUpdatesView(t *testing.T) {
 	m, _ = send(m, widgets.ToolCallResultMsg{Name: "file_read", Result: "package main"})
 	m, _ = send(m, widgets.StreamTokenMsg("The answer "))
 	m, _ = send(m, widgets.StreamTokenMsg("is 42."))
+	m, _ = send(m, widgets.FlushStreamMsg{})
 	m, _ = send(m, widgets.AgentDoneMsg{
 		Sealed:   true,
 		Distance: 0.3,
 		Turns:    2,
-		Result:   "The answer is 42.",
 	})
 
 	if m.running {

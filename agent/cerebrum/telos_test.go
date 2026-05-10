@@ -11,9 +11,9 @@ import (
 	tangle "github.com/dpopsuev/tangle"
 )
 
-func speakCap() organ.Func {
+func dialogOrgan() organ.Func {
 	return organ.Func{
-		Name:        "dialog_speak",
+		Name:        "dialog",
 		Description: "Respond to the operator",
 		Schema:      json.RawMessage(`{"type":"object","properties":{"response":{"type":"string"}},"required":["response"]}`),
 		Mode:        organ.ReadAction,
@@ -27,17 +27,17 @@ func speakCap() organ.Func {
 }
 
 func TestTelos_SimpleConversation_SealsAfterSpeak(t *testing.T) {
-	speak := speakCap()
+	speak := dialogOrgan()
 	completer := &stubCompleter{
 		toolCalls: []tangle.ToolCall{
-			{ID: "s1", Name: "dialog_speak", Input: json.RawMessage(`{"response":"Cows are bovine mammals."}`)},
+			{ID: "s1", Name: "dialog", Input: json.RawMessage(`{"response":"Cows are bovine mammals."}`)},
 		},
 		toolCallOnce: true,
 		response:     "here is the answer",
 	}
 
 	motor := &autoExecMotor{
-		caps:    map[string]organ.Func{"dialog_speak": speak},
+		caps:    map[string]organ.Func{"dialog": speak},
 		sensory: NewChannelBus(64),
 	}
 
@@ -45,7 +45,7 @@ func TestTelos_SimpleConversation_SealsAfterSpeak(t *testing.T) {
 	cb := New(reactor, completer,
 		WithSensory(motor.sensory),
 		WithMotor(motor),
-		WithCapabilities([]organ.Func{speak}),
+		WithOrgans([]organ.Func{speak}),
 		WithMaxTurns(5),
 		WithTurnTimeout(5*time.Second),
 	)
@@ -66,17 +66,17 @@ func TestTelos_SimpleConversation_SealsAfterSpeak(t *testing.T) {
 }
 
 func TestTelos_TaskWithDesired_SealOnDistanceZero(t *testing.T) {
-	speak := speakCap()
+	speak := dialogOrgan()
 	completer := &stubCompleter{
 		toolCalls: []tangle.ToolCall{
-			{ID: "s1", Name: "dialog_speak", Input: json.RawMessage(`{"response":"Cows produce milk."}`)},
+			{ID: "s1", Name: "dialog", Input: json.RawMessage(`{"response":"Cows produce milk."}`)},
 		},
 		toolCallOnce: true,
 		response:     "done",
 	}
 
 	motor := &autoExecMotor{
-		caps:    map[string]organ.Func{"dialog_speak": speak},
+		caps:    map[string]organ.Func{"dialog": speak},
 		sensory: NewChannelBus(64),
 	}
 
@@ -84,7 +84,7 @@ func TestTelos_TaskWithDesired_SealOnDistanceZero(t *testing.T) {
 	cb := New(reactor, completer,
 		WithSensory(motor.sensory),
 		WithMotor(motor),
-		WithCapabilities([]organ.Func{speak}),
+		WithOrgans([]organ.Func{speak}),
 		WithMaxTurns(5),
 		WithTurnTimeout(5*time.Second),
 	)
@@ -104,7 +104,7 @@ func TestTelos_TaskWithDesired_SealOnDistanceZero(t *testing.T) {
 }
 
 func TestTelos_DialogDoesNotSeal_JustAddsAtom(t *testing.T) {
-	speak := speakCap()
+	speak := dialogOrgan()
 	callCount := 0
 	completer := tangle.CompleteFunc(func(_ context.Context, params tangle.CompletionParams) (*tangle.Completion, error) {
 		callCount++
@@ -112,7 +112,7 @@ func TestTelos_DialogDoesNotSeal_JustAddsAtom(t *testing.T) {
 		case 1:
 			return &tangle.Completion{
 				ToolCalls: []tangle.ToolCall{
-					{ID: "s1", Name: "dialog_speak", Input: json.RawMessage(`{"response":"Tell me more about which animal?"}`)},
+					{ID: "s1", Name: "dialog", Input: json.RawMessage(`{"response":"Tell me more about which animal?"}`)},
 				},
 			}, nil
 		default:
@@ -123,7 +123,7 @@ func TestTelos_DialogDoesNotSeal_JustAddsAtom(t *testing.T) {
 	})
 
 	motor := &autoExecMotor{
-		caps:    map[string]organ.Func{"dialog_speak": speak},
+		caps:    map[string]organ.Func{"dialog": speak},
 		sensory: NewChannelBus(64),
 	}
 
@@ -131,7 +131,7 @@ func TestTelos_DialogDoesNotSeal_JustAddsAtom(t *testing.T) {
 	cb := New(reactor, completer,
 		WithSensory(motor.sensory),
 		WithMotor(motor),
-		WithCapabilities([]organ.Func{speak}),
+		WithOrgans([]organ.Func{speak}),
 		WithMaxTurns(3),
 		WithTurnTimeout(5*time.Second),
 	)
@@ -142,13 +142,13 @@ func TestTelos_DialogDoesNotSeal_JustAddsAtom(t *testing.T) {
 	chain := m.Chain()
 	speakEvents := 0
 	for _, e := range chain.All() {
-		if e.Organ == "dialog_speak" {
+		if e.Organ == "dialog" {
 			speakEvents++
 		}
 	}
 
 	if speakEvents == 0 {
-		t.Error("dialog_speak should appear in EventChain as execution, not as seal trigger")
+		t.Error("dialog should appear in EventChain as execution, not as seal trigger")
 	}
 
 	t.Logf("turns=%d chain_events=%d speak_events=%d sealed=%v",
@@ -156,7 +156,7 @@ func TestTelos_DialogDoesNotSeal_JustAddsAtom(t *testing.T) {
 }
 
 func TestTelos_EventChain_TracksConversationFlow(t *testing.T) {
-	speak := speakCap()
+	speak := dialogOrgan()
 	readAnimal := organ.Func{
 		Name:        "read_animal",
 		Description: "Look up animal facts",
@@ -190,7 +190,7 @@ func TestTelos_EventChain_TracksConversationFlow(t *testing.T) {
 		case 2:
 			return &tangle.Completion{
 				ToolCalls: []tangle.ToolCall{
-					{ID: "s1", Name: "dialog_speak", Input: json.RawMessage(`{"response":"Cows have four stomachs and produce milk."}`)},
+					{ID: "s1", Name: "dialog", Input: json.RawMessage(`{"response":"Cows have four stomachs and produce milk."}`)},
 				},
 			}, nil
 		default:
@@ -199,7 +199,7 @@ func TestTelos_EventChain_TracksConversationFlow(t *testing.T) {
 	})
 
 	motor := &autoExecMotor{
-		caps:    map[string]organ.Func{"dialog_speak": speak, "read_animal": readAnimal},
+		caps:    map[string]organ.Func{"dialog": speak, "read_animal": readAnimal},
 		sensory: NewChannelBus(64),
 	}
 
@@ -207,7 +207,7 @@ func TestTelos_EventChain_TracksConversationFlow(t *testing.T) {
 	cb := New(reactor, completer,
 		WithSensory(motor.sensory),
 		WithMotor(motor),
-		WithCapabilities([]organ.Func{speak, readAnimal}),
+		WithOrgans([]organ.Func{speak, readAnimal}),
 		WithMaxTurns(5),
 		WithTurnTimeout(5*time.Second),
 	)
@@ -232,8 +232,8 @@ func TestTelos_EventChain_TracksConversationFlow(t *testing.T) {
 		t.Errorf("read_animal should be Sense, got %v", events[0].Kind)
 	}
 
-	if events[1].Organ != "dialog_speak" {
-		t.Errorf("second event should be dialog_speak (Sense — ReadAction), got %s", events[1].Organ)
+	if events[1].Organ != "dialog" {
+		t.Errorf("second event should be dialog (Sense — ReadAction), got %s", events[1].Organ)
 	}
 
 	t.Logf("conversation flow: %s(%s) → %s(%s)",

@@ -16,7 +16,7 @@ type Blueprint struct {
 	ModelWatcher string
 	Watcher      tangle.Completer
 	DoltDB       *sqlx.DB
-	Capabilities []organ.Func
+	Organs []organ.Func
 	Budget       cerebrum.Budget
 	Config       *reactivity.Config
 }
@@ -40,28 +40,16 @@ func Assemble(bp Blueprint, completer tangle.Completer, opts ...cerebrum.Option)
 	sensory := cerebrum.NewChannelBus(64)
 	corp := corpus.New()
 
-	allCaps := make([]organ.Func, 0, len(bp.Capabilities)+1)
-	for _, cap := range bp.Capabilities {
-		corp.Register(cap)
-		allCaps = append(allCaps, cap)
+	if len(bp.Organs) == 0 {
+		slog.Warn("assemble.no_organs")
+	}
 
+	for _, cap := range bp.Organs {
+		corp.Register(cap)
 		slog.Info("assemble.capability",
 			slog.String("name", cap.Name),
 			slog.Float64("risk", cap.Risk),
 			slog.String("source", cap.Source.String()))
-	}
-
-	speakCap := speakCapability()
-	corp.Register(speakCap)
-	allCaps = append(allCaps, speakCap)
-
-	subagent := &SubagentFactory{Root: ".", Completer: completer}
-	subCap := subagent.Capability()
-	corp.Register(subCap)
-	allCaps = append(allCaps, subCap)
-
-	if len(bp.Capabilities) == 0 {
-		slog.Warn("assemble.no_capabilities")
 	}
 
 	signal := cerebrum.NewChannelBus(64)
@@ -89,7 +77,7 @@ func Assemble(bp Blueprint, completer tangle.Completer, opts ...cerebrum.Option)
 		cerebrum.WithMotor(motorBus),
 		cerebrum.WithCompactor(cerebrum.SummaryCompactor{}),
 		cerebrum.WithBudget(budget),
-		cerebrum.WithCapabilities(allCaps),
+		cerebrum.WithOrgans(bp.Organs),
 		cerebrum.WithConfig(cfg),
 		cerebrum.WithEmbedder(embedder),
 		cerebrum.WithReflexStore(reflexStore),
@@ -109,7 +97,7 @@ func Assemble(bp Blueprint, completer tangle.Completer, opts ...cerebrum.Option)
 
 	slog.Info("assemble.complete",
 		slog.String("model", bp.Model),
-		slog.Int("capabilities", len(bp.Capabilities)),
+		slog.Int("organs", len(bp.Organs)),
 		slog.Int("max_turns", budget.MaxTurns))
 
 	return &Agent{

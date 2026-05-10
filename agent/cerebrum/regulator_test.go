@@ -81,11 +81,11 @@ func TestDefaultRender_WithResidual(t *testing.T) {
 	}
 }
 
-func TestDefaultRender_WithCapabilities(t *testing.T) {
+func TestDefaultRender_WithOrgans(t *testing.T) {
 	ctx := Context{
 		Need:  "feed the tako",
 		Phase: reactivity.ExecutionAtom,
-		Capabilities: []organ.Func{
+		Organs: []organ.Func{
 			{
 				Name:        "eat",
 				Description: "eat food from plate",
@@ -204,7 +204,7 @@ func TestDefaultRegulate(t *testing.T) {
 		Need:     []byte("feed"),
 		Observer: func() map[string]any { return state },
 		Molecule: m,
-		Capabilities: []organ.Func{
+		Organs: []organ.Func{
 			{Name: "eat", Description: "eat food", Writes: []string{"hungry"}},
 		},
 		Domain: Complicated,
@@ -255,7 +255,7 @@ func TestCerebrum_Assemble_WithObserver(t *testing.T) {
 	reactor := reactivity.NewReactor()
 	cb := New(reactor, completer,
 		WithObserver(observer),
-		WithCapabilities([]organ.Func{
+		WithOrgans([]organ.Func{
 			{Name: "eat", Description: "eat food", Writes: []string{"hungry"}},
 		}),
 	)

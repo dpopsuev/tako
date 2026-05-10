@@ -244,7 +244,7 @@ func TestScenario_Fridge_BookMoves(t *testing.T) {
 	pool1 := &StubRecorder{}
 
 	corp1 := corpus.New()
-	for _, cap := range scenario.Adventure.Capabilities() {
+	for _, cap := range scenario.Adventure.Organs() {
 		corp1.Register(cap)
 	}
 
@@ -267,7 +267,7 @@ func TestScenario_Fridge_BookMoves(t *testing.T) {
 		cerebrum.WithHalter(&andon.StubSignal{}),
 		cerebrum.WithBudget(cerebrum.Budget{MaxTurns: 30, TurnTimeout: 30 * time.Second}),
 		cerebrum.WithObserver(scenario.Adventure.State),
-		cerebrum.WithCapabilities(scenario.Adventure.Capabilities()),
+		cerebrum.WithOrgans(scenario.Adventure.Organs()),
 	)
 	if _, err := cb1.Think(ctx1, reactivity.Catalyst{Need: scenario.Need}); err != nil {
 		t.Fatalf("Run 1 Think: %v", err)

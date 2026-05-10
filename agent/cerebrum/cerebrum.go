@@ -92,7 +92,7 @@ type Cerebrum struct {
 	observer           Observer
 	regulator          Regulator
 	assembler          Assembler
-	capabilities       []organ.Func
+	organs             []organ.Func
 	config             *reactivity.Config
 	priorityClassifier PriorityClassifier
 	watcher            tangle.Completer
@@ -253,16 +253,25 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 	}
 
 	cb.molecule = molecule
+	chain := molecule.Chain()
 
 	intent := cb.classifyIntent(ctx, need)
 	if intent.Gear == GearReflex && intent.Pipe != nil {
 		capMap := make(map[string]organ.Func)
-		for _, c := range cb.capabilities {
+		for _, c := range cb.organs {
 			capMap[c.Name] = c
 		}
 		result, err := ReplayPipe(ctx, intent.Pipe, capMap)
 		if err == nil && result.EscalatedAt == -1 {
-			molecule.SetResponse(result.Response)
+			chain.Append(reactivity.ChainEvent{
+				Kind:       reactivity.Motor,
+				Organ:      "cerebrum.reflex",
+				Output:     []byte(result.Response),
+				IsResponse: true,
+			})
+			if cb.listener != nil {
+				cb.listener.OnResponse(result.Response)
+			}
 			slog.InfoContext(ctx, "cerebrum.think.reflex_replay",
 				slog.String("pipe", intent.Pipe.Name),
 				slog.Int("steps", result.StepsReflex),
@@ -275,7 +284,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 				CreatedAt: time.Now(),
 			})
 			if cb.listener != nil {
-				cb.listener.OnSealed(molecule.ID, molecule.Distance(), molecule.Turns(), result.Response)
+				cb.listener.OnSealed(molecule.ID, molecule.Distance(), molecule.Turns())
 			}
 			return OutcomeSealed, nil
 		}
@@ -314,7 +323,6 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 		slog.Int("cfg.backward_turn_limit", cb.config.BackwardTurnLimit))
 
 	var history []tangle.Message
-	chain := molecule.Chain()
 	var turnRecords []TurnRecord
 	debouncer := NewDebouncer(3, 2)
 
@@ -495,7 +503,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 						"turn":     fmt.Sprintf("%d", turn),
 						"tool":     tc.Name,
 					})
-					if cb.listener != nil {
+					if cb.listener != nil && !isResponseCap(tc.Name, cb.organs) {
 						cb.listener.OnToolCall(tc.Name, tc.Input)
 					}
 					molecule.Emit(reactivity.Emission{
@@ -517,11 +525,13 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 						Content:    tr.Content,
 						ToolCallID: tc.ID,
 					})
+					isResp := isResponseCap(tc.Name, cb.organs)
 					chain.Append(reactivity.ChainEvent{
-						Kind:   organEventRole(tc.Name, cb.capabilities),
-						Organ:  tc.Name,
-						Input:  tc.Input,
-						Output: []byte(tr.Content),
+						Kind:       organEventRole(tc.Name, cb.organs),
+						Organ:      tc.Name,
+						Input:      tc.Input,
+						Output:     []byte(tr.Content),
+						IsResponse: isResp,
 					})
 					slog.InfoContext(ctx, "cerebrum.think.tool_result",
 						slog.Int("turn", turn),
@@ -534,7 +544,11 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 						"result_len": fmt.Sprintf("%d", len(tr.Content)),
 					})
 					if cb.listener != nil {
-						cb.listener.OnToolResult(tc.Name, []byte(tr.Content), elapsed)
+						if isResp {
+							cb.listener.OnResponse(tr.Content)
+						} else {
+							cb.listener.OnToolResult(tc.Name, []byte(tr.Content), elapsed)
+						}
 					}
 					if molecule.Catalyst() != nil {
 						cb.checkCatalystDesired(molecule, tc.Name, tr.Content)
@@ -558,7 +572,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 					ID:       fmt.Sprintf("wish-settled-%d", turn),
 					Type:     reactivity.RetrospectionAtom,
 					Taxonomy: "retrospection.settled",
-					Content:  []byte(molecule.Response()),
+					Content:  lastMotorOutput(chain),
 				})
 				break
 			}
@@ -570,7 +584,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 					ID:       fmt.Sprintf("wish-instigator-%d", turn),
 					Type:     reactivity.RetrospectionAtom,
 					Taxonomy: "retrospection.instigator.telos",
-					Content:  []byte(molecule.Response()),
+					Content:  lastMotorOutput(chain),
 				})
 				slog.InfoContext(ctx, "cerebrum.think.instigator_seal",
 					slog.Int("turn", turn),
@@ -621,7 +635,12 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 		}
 
 		if len(completion.ToolCalls) == 0 && completion.Content != "" {
-			molecule.SetResponse(completion.Content)
+			chain.Append(reactivity.ChainEvent{
+				Kind:       reactivity.Motor,
+				Organ:      "cerebrum.text",
+				Output:     []byte(completion.Content),
+				IsResponse: true,
+			})
 		}
 
 		if len(completion.ToolCalls) == 0 && molecule.Settled() {
@@ -632,7 +651,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 				ID:       fmt.Sprintf("wish-settled-%d", turn),
 				Type:     reactivity.RetrospectionAtom,
 				Taxonomy: "retrospection.settled",
-				Content:  []byte(molecule.Response()),
+				Content:  lastMotorOutput(chain),
 			})
 			break
 		}
@@ -686,7 +705,12 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 		var content string
 		if err == nil && synthesis.Content != "" {
 			content = synthesis.Content
-			molecule.SetResponse(content)
+			chain.Append(reactivity.ChainEvent{
+				Kind:       reactivity.Motor,
+				Organ:      "cerebrum.text",
+				Output:     []byte(content),
+				IsResponse: true,
+			})
 			slog.InfoContext(ctx, "cerebrum.think.graceful_degradation",
 				slog.Int("content_len", len(content)))
 		} else {
@@ -710,7 +734,7 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 	summary := computeSessionSummary(molecule.ID, turnRecords, molecule)
 	cb.emit("cerebrum.session", summary.Labels())
 	if cb.listener != nil {
-		cb.listener.OnSealed(molecule.ID, molecule.Distance(), molecule.Turns(), molecule.Response())
+		cb.listener.OnSealed(molecule.ID, molecule.Distance(), molecule.Turns())
 	}
 	if cb.consolidator != nil {
 		cb.consolidator.Consolidate(ctx, string(need), history)
@@ -853,7 +877,7 @@ func (cb *Cerebrum) SensoryBus() Bus {
 }
 
 func (cb *Cerebrum) tools(phase reactivity.AtomType) []tangle.Tool {
-	if len(cb.capabilities) == 0 {
+	if len(cb.organs) == 0 {
 		return nil
 	}
 
@@ -864,7 +888,7 @@ func (cb *Cerebrum) tools(phase reactivity.AtomType) []tangle.Tool {
 		tools = append(tools, phaseToolFor(phase))
 	}
 
-	for _, cap := range cb.capabilities {
+	for _, cap := range cb.organs {
 		if cap.Mode == organ.WriteAction && phase.Triad != reactivity.ImplementTriad {
 			continue
 		}
@@ -886,7 +910,7 @@ func (cb *Cerebrum) assemble(m *reactivity.Molecule, need []byte, domain Domain,
 		Need:         need,
 		Observer:     cb.observer,
 		Molecule:     m,
-		Capabilities: cb.capabilities,
+		Organs: cb.organs,
 		Domain:       domain,
 		Contracts:    cb.reactor.Contracts(),
 		Directives:   cb.reactor.Directives(m.Phase()),
@@ -990,6 +1014,23 @@ func (cb *Cerebrum) waitToolResult(ctx context.Context, tc tangle.ToolCall) tool
 				slog.String("expected_tool", tc.Name))
 		}
 	}
+}
+
+func isResponseCap(name string, caps []organ.Func) bool {
+	for _, c := range caps {
+		if c.Name == name {
+			return c.Response
+		}
+	}
+	return false
+}
+
+func lastMotorOutput(chain *reactivity.EventChain) []byte {
+	motors := chain.Motors()
+	if len(motors) == 0 {
+		return nil
+	}
+	return motors[len(motors)-1].Output
 }
 
 func organEventRole(name string, caps []organ.Func) reactivity.EventRole {

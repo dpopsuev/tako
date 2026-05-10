@@ -12,7 +12,7 @@ import (
 
 func capSet(dir string) *organ.FuncSet {
 	cs := organ.NewFuncSet()
-	for _, c := range Capabilities(dir) {
+	for _, c := range Organs(dir) {
 		cs.Register(c)
 	}
 	return cs

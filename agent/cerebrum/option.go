@@ -86,8 +86,8 @@ func WithAssembler(a Assembler) Option {
 	return func(cb *Cerebrum) { cb.assembler = a }
 }
 
-func WithCapabilities(caps []organ.Func) Option {
-	return func(cb *Cerebrum) { cb.capabilities = caps }
+func WithOrgans(caps []organ.Func) Option {
+	return func(cb *Cerebrum) { cb.organs = caps }
 }
 
 func WithConfig(cfg *reactivity.Config) Option {

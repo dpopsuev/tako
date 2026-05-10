@@ -12,7 +12,7 @@ import (
 func BuildArcadeAgent(scenario Scenario, completer tangle.Completer) *assemble.Agent {
 	bp := assemble.Blueprint{
 		Model:        "arcade",
-		Capabilities: scenario.Adventure.Capabilities(),
+		Organs: scenario.Adventure.Organs(),
 		Budget: cerebrum.Budget{
 			MaxTurns:    30,
 			TurnTimeout: 30 * time.Second,

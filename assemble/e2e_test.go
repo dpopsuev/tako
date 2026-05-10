@@ -82,10 +82,10 @@ func TestHello(t *testing.T) {
 		},
 	}
 
-	caps := code.Capabilities(dir)
+	caps := code.Organs(dir)
 	bp := Blueprint{
 		Model:        "stub",
-		Capabilities: caps,
+		Organs: caps,
 		Budget:       cerebrum.Budget{MaxTurns: 10, TurnTimeout: 30 * time.Second},
 	}
 

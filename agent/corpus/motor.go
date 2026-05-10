@@ -40,7 +40,7 @@ func (m *corpusMotor) Send(ctx context.Context, event cerebrum.Event) error {
 		return nil
 	}
 
-	cap, ok := m.corpus.Capability(event.Source)
+	cap, ok := m.corpus.Organ(event.Source)
 	if !ok {
 		m.sendError(ctx, event.Source, fmt.Sprintf("unknown capability: %s", event.Source))
 		return nil

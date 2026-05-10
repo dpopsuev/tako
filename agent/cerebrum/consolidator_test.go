@@ -114,8 +114,8 @@ func TestFlywheel_ConsolidateThenReflex(t *testing.T) {
 	store := NewPipeStore()
 	cons := &PipeConsolidator{Store: store, Embedder: embedder}
 
-	speakCap := organ.Func{
-		Name: "dialog_speak",
+	dialogOrgan := organ.Func{
+		Name: "dialog",
 		Execute: func(_ context.Context, input json.RawMessage) (organ.Result, error) {
 			var args struct{ Response string `json:"response"` }
 			json.Unmarshal(input, &args)
@@ -127,13 +127,13 @@ func TestFlywheel_ConsolidateThenReflex(t *testing.T) {
 	completer := &stubCompleter{
 		toolCalls: []tangle.ToolCall{{
 			ID:    "tc1",
-			Name:  "dialog_speak",
+			Name:  "dialog",
 			Input: json.RawMessage(`{"response":"Hi there!"}`),
 		}},
 	}
 
 	sensory := NewChannelBus(64)
-	motor := &autoExecMotor{caps: map[string]organ.Func{"dialog_speak": speakCap}, sensory: sensory}
+	motor := &autoExecMotor{caps: map[string]organ.Func{"dialog": dialogOrgan}, sensory: sensory}
 
 	reactor := reactivity.NewReactor()
 	cb := New(reactor, completer,
@@ -142,7 +142,7 @@ func TestFlywheel_ConsolidateThenReflex(t *testing.T) {
 		WithEmbedder(embedder),
 		WithReflexStore(store),
 		WithConsolidator(cons),
-		WithCapabilities([]organ.Func{speakCap}),
+		WithOrgans([]organ.Func{dialogOrgan}),
 		WithMaxTurns(3),
 	)
 
@@ -158,7 +158,7 @@ func TestFlywheel_ConsolidateThenReflex(t *testing.T) {
 	cb2 := New(reactor2, shouldNotCall,
 		WithEmbedder(embedder),
 		WithReflexStore(store),
-		WithCapabilities([]organ.Func{speakCap}),
+		WithOrgans([]organ.Func{dialogOrgan}),
 	)
 
 	_, err := cb2.Think(context.Background(), reactivity.Catalyst{Need: "hello"})
@@ -167,7 +167,11 @@ func TestFlywheel_ConsolidateThenReflex(t *testing.T) {
 	}
 
 	m := cb2.Result()
-	if m.Response() != "Hi there!" {
-		t.Fatalf("session 2 response = %q, want 'Hi there!'", m.Response())
+	motors := m.Chain().Motors()
+	if len(motors) == 0 {
+		t.Fatal("expected motor output from session 2")
+	}
+	if got := string(motors[len(motors)-1].Output); got != "Hi there!" {
+		t.Fatalf("session 2 last motor output = %q, want 'Hi there!'", got)
 	}
 }

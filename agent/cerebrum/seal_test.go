@@ -38,7 +38,7 @@ func runWithStrategy(t *testing.T, strategy SealStrategy, completer tangle.Compl
 	cb := New(reactor, completer,
 		WithSensory(sensory),
 		WithMotor(motor),
-		WithCapabilities(caps),
+		WithOrgans(caps),
 		WithConfig(&cfg),
 		WithMaxTurns(10),
 		WithTurnTimeout(5*time.Second),
@@ -51,10 +51,14 @@ func runWithStrategy(t *testing.T, strategy SealStrategy, completer tangle.Compl
 	_, _ = cb.Think(ctx, catalyst)
 	m := cb.Result()
 
+	var resp string
+	if motors := m.Chain().Motors(); len(motors) > 0 {
+		resp = string(motors[len(motors)-1].Output)
+	}
 	return sealResult{
 		Turns:    m.Turns(),
 		Sealed:   m.Sealed(),
-		Response: m.Response(),
+		Response: resp,
 		Molecule: m,
 	}
 }

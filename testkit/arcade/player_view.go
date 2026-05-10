@@ -58,9 +58,9 @@ func (v *PlayerView) Exec(ctx context.Context, name string, input json.RawMessag
 	return v.game.Exec(ctx, name, input)
 }
 
-// Capabilities returns the filtered subset as Capabilities.
-func (v *PlayerView) Capabilities() []organ.Func {
-	all := v.game.Capabilities()
+// Organs returns the filtered subset.
+func (v *PlayerView) Organs() []organ.Func {
+	all := v.game.Organs()
 	var filtered []organ.Func
 	for _, cap := range all {
 		if v.has(cap.Name) {

@@ -7,7 +7,7 @@ import (
 )
 
 type Runner interface {
-	Run(ctx context.Context, task string) (string, error)
+	Run(ctx context.Context, task string) error
 }
 
 type agentStartedMsg struct{}

@@ -7,8 +7,12 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"time"
 
+	"github.com/dpopsuev/tako/agent/cerebrum"
+	"github.com/dpopsuev/tako/agent/organ"
 	"github.com/dpopsuev/tako/assemble"
+	"github.com/dpopsuev/tako/organs/subagent"
 	tangle "github.com/dpopsuev/tangle"
 	"github.com/dpopsuev/tangle/providers"
 )
@@ -79,12 +83,28 @@ func agentCmd(args []string) error {
 		bp.Watcher = watcher
 	}
 
+	wd, _ := os.Getwd()
+	sub := &subagent.Factory{
+		Root: wd,
+		Spawn: func(ctx context.Context, caps []organ.Func, task string, maxTurns int) (string, error) {
+			child := assemble.Assemble(assemble.Blueprint{
+				Model:        bp.Model,
+				Organs: caps,
+				Budget:       cerebrum.Budget{MaxTurns: maxTurns, TurnTimeout: 30 * time.Second},
+			}, completer)
+			if err := child.Run(ctx, task); err != nil {
+				return "", err
+			}
+			return child.LastOutput(), nil
+		},
+	}
+	bp.Organs = append(bp.Organs, sub.Organ())
+
 	agent := assemble.Assemble(bp, completer)
 
 	slog.Info("tako.agent.start", slog.String("task", task), slog.String("model", bp.Model))
 
-	result, err := agent.Run(ctx, task)
-	if err != nil {
+	if err := agent.Run(ctx, task); err != nil {
 		return fmt.Errorf("agent: %w", err)
 	}
 
@@ -94,7 +114,7 @@ func agentCmd(args []string) error {
 		slog.Float64("distance", m.Distance()),
 		slog.Int("mass", m.TotalMass()))
 
-	fmt.Println(result)
+	fmt.Println(agent.LastOutput())
 
 	return nil
 }
@@ -103,7 +123,7 @@ func defaultBlueprint() assemble.Blueprint {
 	wd, _ := os.Getwd()
 	cfg := assemble.BlueprintConfig{
 		Model:        resolveModel(),
-		Capabilities: []string{"code"},
+		Organs: []string{"code"},
 		WorkDir:      wd,
 		Budget: assemble.BudgetConfig{
 			MaxTurns:    30,

@@ -14,7 +14,7 @@ type RawContext struct {
 	Need         []byte
 	Observer     Observer
 	Molecule     *reactivity.Molecule
-	Capabilities []organ.Func
+	Organs []organ.Func
 	Domain       Domain
 	Contracts    []reactivity.ContractInfo
 	Directives   []reactivity.Directive
@@ -29,7 +29,7 @@ type Context struct {
 	StateChanges  map[string][2]any
 	Desired       map[string]any
 	Residual      map[string]float64
-	Capabilities  []organ.Func
+	Organs        []organ.Func
 	Phase         reactivity.AtomType
 	Domain        Domain
 	Contracts     []reactivity.ContractInfo
@@ -83,7 +83,7 @@ func defaultRegulate(raw RawContext) Context {
 		State:        state,
 		Desired:      desired,
 		Residual:     m.Residual(),
-		Capabilities: raw.Capabilities,
+		Organs: raw.Organs,
 		Phase:        m.Phase(),
 		Domain:       raw.Domain,
 		Contracts:    raw.Contracts,

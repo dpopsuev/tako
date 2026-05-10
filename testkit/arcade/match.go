@@ -120,7 +120,7 @@ func (m *Match) wirePlayer(p *MatchPlayer, completer tangle.Completer) {
 	pool := &StubRecorder{}
 
 	corp := corpus.New()
-	for _, cap := range p.View.Capabilities() {
+	for _, cap := range p.View.Organs() {
 		corp.Register(cap)
 	}
 
@@ -147,7 +147,7 @@ func (m *Match) wirePlayer(p *MatchPlayer, completer tangle.Completer) {
 			MaxTurns:    15,
 			TurnTimeout: 30 * time.Second,
 		}),
-		cerebrum.WithCapabilities(p.View.Capabilities()),
+		cerebrum.WithOrgans(p.View.Organs()),
 	)
 
 	m.Game.WithSensory(sensory)

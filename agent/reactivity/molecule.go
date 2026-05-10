@@ -39,7 +39,6 @@ type Molecule struct {
 	sensorResults    map[string]any
 	prevDistance      float64
 	deltaDistance     float64
-	response         string
 	listeners    map[string][]MoleculeListener
 	eventLog     []MoleculeEvent
 	eventLogCap  int
@@ -113,7 +112,7 @@ func (m *Molecule) Settled() bool {
 	if m.catalyst != nil && len(m.catalyst.Desired) > 0 {
 		return m.criteriaMet()
 	}
-	return m.mass[IntentAtom] > 0 && m.response != ""
+	return m.mass[IntentAtom] > 0 && m.chain != nil && m.chain.HasResponse()
 }
 func (m *Molecule) Park()                       { m.parked = true }
 func (m *Molecule) Unpark()                     { m.parked = false }
@@ -463,8 +462,6 @@ type listenerFunc struct {
 func (l listenerFunc) Name() string                  { return l.name }
 func (l listenerFunc) OnMoleculeEvent(e MoleculeEvent) { l.fn(e) }
 
-func (m *Molecule) Response() string        { return m.response }
-func (m *Molecule) SetResponse(s string)    { m.response = s }
 
 func (m *Molecule) Emit(e Emission)        { m.emissions = append(m.emissions, e) }
 

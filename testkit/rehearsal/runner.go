@@ -12,12 +12,12 @@ import (
 )
 
 type Actor interface {
-	Run(ctx context.Context, task string) (string, error)
+	Run(ctx context.Context, task string) error
 }
 
-type ActorFunc func(ctx context.Context, prompt string) (string, error)
+type ActorFunc func(ctx context.Context, prompt string) error
 
-func (f ActorFunc) Run(ctx context.Context, task string) (string, error) { return f(ctx, task) }
+func (f ActorFunc) Run(ctx context.Context, task string) error { return f(ctx, task) }
 
 var (
 	ErrMissingScenario = errors.New("rehearsal: scenario is required")
@@ -77,7 +77,7 @@ func (r *Runner) Execute(ctx context.Context) (*RunMetrics, error) {
 		}
 	}
 
-	_, actorErr := r.actor.Run(ctx, prompt)
+	actorErr := r.actor.Run(ctx, prompt)
 	if actorErr != nil {
 		log.WarnContext(ctx, "rehearsal.actor_error",
 			slog.String("error", actorErr.Error()))

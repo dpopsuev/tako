@@ -19,41 +19,41 @@ type Handler interface {
 	Receive(wire artifact.Wire) error
 }
 
-// Corpus is the agent's body — registers all capabilities (built-in + environment),
+// Corpus is the agent's body — registers all organs (built-in + environment),
 // wires buses, enforces gating. The composition root.
 type Corpus struct {
 	mu            sync.RWMutex
 	handlers      map[string]Handler
-	capabilities  *organ.FuncSet
+	organs  *organ.FuncSet
 	subscriptions map[string][]string
 }
 
 func New() *Corpus {
 	return &Corpus{
 		handlers:      make(map[string]Handler),
-		capabilities:  organ.NewFuncSet(),
+		organs:  organ.NewFuncSet(),
 		subscriptions: make(map[string][]string),
 	}
 }
 
-// Register adds a Capability to the Corpus. The unified path —
+// Register adds a Organ to the Corpus. The unified path —
 // no distinction between organ, instrument, or organ.
 func (c *Corpus) Register(cap organ.Func) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.capabilities.Register(cap)
+	c.organs.Register(cap)
 }
 
-// Capability returns a registered capability by name.
-func (c *Corpus) Capability(name string) (organ.Func, bool) {
+// Organ returns a registered capability by name.
+func (c *Corpus) Organ(name string) (organ.Func, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	return c.capabilities.Get(name)
+	return c.organs.Get(name)
 }
 
-// Capabilities returns the full set.
-func (c *Corpus) Capabilities() *organ.FuncSet {
-	return c.capabilities
+// Organs returns the full set.
+func (c *Corpus) Organs() *organ.FuncSet {
+	return c.organs
 }
 
 func (c *Corpus) Attach(h Handler) {

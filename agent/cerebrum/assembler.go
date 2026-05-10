@@ -136,7 +136,7 @@ func trend(delta float64) string {
 
 func formatActions(ctx Context) []string {
 	var out []string
-	for _, cap := range ctx.Capabilities {
+	for _, cap := range ctx.Organs {
 		if len(cap.Writes) > 0 {
 			out = append(out, fmt.Sprintf("%s: %s [writes: %s]",
 				cap.Name, cap.Description, strings.Join(cap.Writes, ", ")))

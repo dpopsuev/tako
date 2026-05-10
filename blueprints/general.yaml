@@ -1,5 +1,5 @@
 model: claude-sonnet-4-6
-capabilities:
+organs:
   - code
 budget:
   max_turns: 20

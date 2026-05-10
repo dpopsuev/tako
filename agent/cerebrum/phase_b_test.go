@@ -48,7 +48,7 @@ func TestSubsystems_AlignmentRewardPipeStore(t *testing.T) {
 
 	cb := New(reactor, completer,
 		WithMotor(motor),
-		WithCapabilities([]organ.Func{readCap}),
+		WithOrgans([]organ.Func{readCap}),
 		WithConfig(&cfg),
 		WithAssert(convergenceAssert),
 		WithAlignmentChecker(alignment),

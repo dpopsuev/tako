@@ -2,7 +2,6 @@ package assemble
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
 	"github.com/dpopsuev/tako/agent/corpus"
@@ -24,23 +23,23 @@ func (a *Agent) Result() *reactivity.Molecule {
 	return a.cerebrum.Result()
 }
 
-func (a *Agent) Run(ctx context.Context, task string) (string, error) {
-	if _, err := a.Think(ctx, task); err != nil {
-		return "", err
-	}
+func (a *Agent) Run(ctx context.Context, task string) error {
+	_, err := a.Think(ctx, task)
+	return err
+}
+
+func (a *Agent) LastOutput() string {
 	m := a.Result()
-	if r := m.Response(); r != "" {
-		return r, nil
+	if m == nil {
+		return ""
 	}
-	if chain := m.Chain(); chain != nil && chain.Len() > 0 {
-		last, ok := chain.Last()
-		if ok && len(last.Output) > 0 {
-			return string(last.Output), nil
-		}
+	chain := m.Chain()
+	if chain == nil {
+		return ""
 	}
-	retro := m.ByTaxonomy("retrospection.")
-	if len(retro) > 0 {
-		return string(retro[len(retro)-1].Content), nil
+	motors := chain.Motors()
+	if len(motors) == 0 {
+		return ""
 	}
-	return fmt.Sprintf("completed (mass=%d, distance=%.2f)", m.TotalMass(), m.Distance()), nil
+	return string(motors[len(motors)-1].Output)
 }

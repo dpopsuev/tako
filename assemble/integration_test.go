@@ -47,7 +47,7 @@ func TestFlywheel_ConsolidateThenReflexViaAssemble(t *testing.T) {
 
 	bp := Blueprint{
 		Model:        "stub",
-		Capabilities: []organ.Func{ping},
+		Organs: []organ.Func{ping},
 		Budget:       cerebrum.Budget{MaxTurns: 5, TurnTimeout: 10 * time.Second},
 	}
 
@@ -125,7 +125,7 @@ func TestDeltaRegulator_StateChangesInPrompt(t *testing.T) {
 
 	bp := Blueprint{
 		Model:        "stub",
-		Capabilities: []organ.Func{ping},
+		Organs: []organ.Func{ping},
 		Budget:       cerebrum.Budget{MaxTurns: 5, TurnTimeout: 10 * time.Second},
 	}
 
@@ -210,7 +210,7 @@ func TestWatcher_ClassifiesViaCompleter(t *testing.T) {
 
 	bp := Blueprint{
 		Model:        "stub",
-		Capabilities: []organ.Func{ping},
+		Organs: []organ.Func{ping},
 		Watcher:      watcherCompleter,
 		Budget:       cerebrum.Budget{MaxTurns: 3, TurnTimeout: 5 * time.Second},
 	}
@@ -256,7 +256,7 @@ func TestSignalBus_EmitsOnOrganExecution(t *testing.T) {
 
 	bp := Blueprint{
 		Model:        "stub",
-		Capabilities: []organ.Func{ping},
+		Organs: []organ.Func{ping},
 		Budget:       cerebrum.Budget{MaxTurns: 5, TurnTimeout: 10 * time.Second},
 	}
 
@@ -331,7 +331,7 @@ func TestDebounce_BlocksRepeatedOrganCalls(t *testing.T) {
 
 	bp := Blueprint{
 		Model:        "stub",
-		Capabilities: []organ.Func{ping},
+		Organs: []organ.Func{ping},
 		Budget: cerebrum.Budget{
 			MaxTurns:    10,
 			TurnTimeout: 10 * time.Second,
@@ -381,7 +381,7 @@ func TestGracefulDegradation_SynthesizesOnMaxTurns(t *testing.T) {
 
 	bp := Blueprint{
 		Model:        "stub",
-		Capabilities: []organ.Func{ping},
+		Organs: []organ.Func{ping},
 		Budget: cerebrum.Budget{
 			MaxTurns:    3,
 			TurnTimeout: 10 * time.Second,
@@ -406,9 +406,14 @@ func TestGracefulDegradation_SynthesizesOnMaxTurns(t *testing.T) {
 		t.Fatal("molecule should be sealed")
 	}
 
-	response := m.Response()
-	if response == "" || response == "exceeded max turns" {
-		t.Errorf("graceful degradation should produce a synthesis response, got %q", response)
+	motors := m.Chain().Motors()
+	if len(motors) == 0 {
+		t.Error("graceful degradation should produce motor output")
+	} else {
+		response := string(motors[len(motors)-1].Output)
+		if response == "" || response == "exceeded max turns" {
+			t.Errorf("graceful degradation should produce a synthesis response, got %q", response)
+		}
 	}
 }
 
@@ -431,7 +436,7 @@ func TestEventChain_PopulatedAfterOrganCall(t *testing.T) {
 
 	bp := Blueprint{
 		Model:        "stub",
-		Capabilities: []organ.Func{ping},
+		Organs: []organ.Func{ping},
 		Budget:       cerebrum.Budget{MaxTurns: 5, TurnTimeout: 10 * time.Second},
 	}
 
@@ -495,7 +500,11 @@ func TestDrill_Brainstorm_PureConversation(t *testing.T) {
 		t.Errorf("pure conversation should use exactly 1 LLM call, got %d", completer.call)
 	}
 
-	response := m.Response()
+	motors := m.Chain().Motors()
+	if len(motors) == 0 {
+		t.Fatal("expected motor output")
+	}
+	response := string(motors[len(motors)-1].Output)
 	if !containsSubstring(response, "JWT") {
 		t.Errorf("response should contain the brainstorm content, got: %s", truncateForTest(response, 200))
 	}
@@ -562,7 +571,11 @@ func TestDrill_Brainstorm_ReasoningChainThenSeal(t *testing.T) {
 		t.Errorf("expected at least 3 atoms (intent + assessment + knowledge), got %d", m.TotalMass())
 	}
 
-	response := m.Response()
+	motors2 := m.Chain().Motors()
+	if len(motors2) == 0 {
+		t.Fatal("expected motor output")
+	}
+	response := string(motors2[len(motors2)-1].Output)
 	if !containsSubstring(response, "JWT") {
 		t.Errorf("response should contain the recommendation, got: %s", truncateForTest(response, 200))
 	}
@@ -631,7 +644,7 @@ func TestDrill_Plan_BlastRadius(t *testing.T) {
 
 	bp := Blueprint{
 		Model:        "stub",
-		Capabilities: []organ.Func{ping},
+		Organs: []organ.Func{ping},
 		Budget:       cerebrum.Budget{MaxTurns: 5, TurnTimeout: 5 * time.Second},
 	}
 
@@ -674,7 +687,7 @@ func TestDrill_Code_RefactorRename(t *testing.T) {
 
 	bp := Blueprint{
 		Model:        "stub",
-		Capabilities: []organ.Func{ping},
+		Organs: []organ.Func{ping},
 		Budget:       cerebrum.Budget{MaxTurns: 10, TurnTimeout: 5 * time.Second},
 	}
 
@@ -712,7 +725,7 @@ func TestDrill_Code_DeadCodeDetection(t *testing.T) {
 
 	bp := Blueprint{
 		Model:        "stub",
-		Capabilities: []organ.Func{ping},
+		Organs: []organ.Func{ping},
 		Budget:       cerebrum.Budget{MaxTurns: 10, TurnTimeout: 5 * time.Second},
 	}
 
@@ -756,7 +769,7 @@ func TestDrill_Code_WriteNewModule(t *testing.T) {
 
 	bp := Blueprint{
 		Model:        "stub",
-		Capabilities: []organ.Func{ping},
+		Organs: []organ.Func{ping},
 		Budget:       cerebrum.Budget{MaxTurns: 10, TurnTimeout: 5 * time.Second},
 	}
 
@@ -802,7 +815,7 @@ func TestDrill_Build_VetLintFix(t *testing.T) {
 
 	bp := Blueprint{
 		Model:        "stub",
-		Capabilities: []organ.Func{ping},
+		Organs: []organ.Func{ping},
 		Budget:       cerebrum.Budget{MaxTurns: 10, TurnTimeout: 5 * time.Second},
 	}
 
@@ -848,7 +861,7 @@ func TestDrill_Test_AddCoverage(t *testing.T) {
 
 	bp := Blueprint{
 		Model:        "stub",
-		Capabilities: []organ.Func{ping},
+		Organs: []organ.Func{ping},
 		Budget:       cerebrum.Budget{MaxTurns: 10, TurnTimeout: 5 * time.Second},
 	}
 
@@ -890,7 +903,7 @@ func TestDrill_Monitor_ArchHealth(t *testing.T) {
 
 	bp := Blueprint{
 		Model:        "stub",
-		Capabilities: []organ.Func{ping},
+		Organs: []organ.Func{ping},
 		Budget:       cerebrum.Budget{MaxTurns: 10, TurnTimeout: 5 * time.Second},
 	}
 
@@ -912,17 +925,17 @@ func TestDrill_Hello_ShouldNotRepeatSpeak(t *testing.T) {
 		turns: []tangle.Completion{
 			{
 				ToolCalls: []tangle.ToolCall{
-					{ID: "s1", Name: "dialog_speak", Input: json.RawMessage(`{"response":"Hello! How can I help you?"}`)},
+					{ID: "s1", Name: "dialog", Input: json.RawMessage(`{"response":"Hello! How can I help you?"}`)},
 				},
 			},
 			{
 				ToolCalls: []tangle.ToolCall{
-					{ID: "s2", Name: "dialog_speak", Input: json.RawMessage(`{"response":"What would you like to do?"}`)},
+					{ID: "s2", Name: "dialog", Input: json.RawMessage(`{"response":"What would you like to do?"}`)},
 				},
 			},
 			{
 				ToolCalls: []tangle.ToolCall{
-					{ID: "s3", Name: "dialog_speak", Input: json.RawMessage(`{"response":"Just let me know!"}`)},
+					{ID: "s3", Name: "dialog", Input: json.RawMessage(`{"response":"Just let me know!"}`)},
 				},
 			},
 			{Content: "waiting"},
@@ -940,13 +953,13 @@ func TestDrill_Hello_ShouldNotRepeatSpeak(t *testing.T) {
 	m := agent.Result()
 
 	for _, e := range m.Chain().All() {
-		if e.Organ == "dialog_speak" {
+		if e.Organ == "dialog" {
 			speakCalls++
 		}
 	}
 
 	if speakCalls > 1 {
-		t.Errorf("agent should not call dialog_speak more than once for 'Hello', got %d calls", speakCalls)
+		t.Errorf("agent should not call dialog more than once for 'Hello', got %d calls", speakCalls)
 	}
 
 	if !m.Sealed() {
@@ -990,7 +1003,7 @@ func TestDrill_Dialog_ReadThenSpeak(t *testing.T) {
 
 	bp := Blueprint{
 		Model:        "stub",
-		Capabilities: []organ.Func{readAnimal},
+		Organs: []organ.Func{readAnimal},
 		Budget:       cerebrum.Budget{MaxTurns: 5, TurnTimeout: 5 * time.Second},
 	}
 
@@ -1075,7 +1088,7 @@ func TestDrill_Dialog_MultiOrganPipeline(t *testing.T) {
 
 	bp := Blueprint{
 		Model:        "stub",
-		Capabilities: []organ.Func{readAnimal, writeNote},
+		Organs: []organ.Func{readAnimal, writeNote},
 		Budget:       cerebrum.Budget{MaxTurns: 10, TurnTimeout: 5 * time.Second},
 	}
 
@@ -1108,8 +1121,8 @@ func TestDrill_Dialog_MultiOrganPipeline(t *testing.T) {
 	if len(senses) != 2 {
 		t.Errorf("expected 2 senses (reads), got %d", len(senses))
 	}
-	if len(motors) != 1 {
-		t.Errorf("expected 1 motor (write), got %d", len(motors))
+	if len(motors) < 1 {
+		t.Errorf("expected at least 1 motor (write), got %d", len(motors))
 	}
 
 	if len(callOrder) != 3 || callOrder[0] != "read:cow" || callOrder[1] != "read:chicken" || callOrder[2] != "write:note" {
@@ -1151,7 +1164,7 @@ func TestDrill_Dialog_DesiredFulfillmentSeals(t *testing.T) {
 
 	bp := Blueprint{
 		Model:        "stub",
-		Capabilities: []organ.Func{readAnimal},
+		Organs: []organ.Func{readAnimal},
 		Budget:       cerebrum.Budget{MaxTurns: 10, TurnTimeout: 5 * time.Second},
 	}
 

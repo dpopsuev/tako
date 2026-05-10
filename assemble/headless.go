@@ -33,11 +33,15 @@ func (SlogListener) OnTokenUpdate(tokensIn, tokensOut, toolCalls int) {
 		slog.Int("tools", toolCalls))
 }
 
-func (SlogListener) OnSealed(id string, distance float64, turns int, _ string) {
+func (SlogListener) OnSealed(id string, distance float64, turns int) {
 	slog.Info("sealed",
 		slog.String("molecule", id),
 		slog.Float64("distance", distance),
 		slog.Int("turns", turns))
+}
+
+func (SlogListener) OnResponse(text string) {
+	slog.Info("response", slog.Int("len", len(text)))
 }
 
 func (SlogListener) OnError(turn int, err error) {

@@ -28,13 +28,13 @@ func TestUserStory_HelloSettlesQuickly(t *testing.T) {
 	chain := m.Chain()
 	speakCalls := 0
 	for _, e := range chain.All() {
-		if e.Organ == "dialog_speak" {
+		if e.Organ == "dialog" {
 			speakCalls++
 		}
 	}
 
 	if speakCalls > 1 {
-		t.Errorf("should not call dialog_speak more than once, got %d", speakCalls)
+		t.Errorf("should not call dialog more than once, got %d", speakCalls)
 	}
 
 	t.Logf("Hello: turns=%d speaks=%d chain=%d result=%s",

@@ -81,11 +81,12 @@ func TestThink_ConversationalSeal_SetsResponse(t *testing.T) {
 	if !m.Sealed() {
 		t.Error("molecule should be sealed")
 	}
-	if m.Response() == "" {
-		t.Error("expected response from speak tool call")
+	motors := m.Chain().Motors()
+	if len(motors) == 0 {
+		t.Error("expected motor output from speak tool call")
 	}
-	if m.Response() != "I can help with that" {
-		t.Errorf("response = %q, want 'I can help with that'", m.Response())
+	if got := string(motors[len(motors)-1].Output); got != "I can help with that" {
+		t.Errorf("last motor output = %q, want 'I can help with that'", got)
 	}
 }
 

@@ -60,7 +60,7 @@ func TestSubprocessActor_MissingProvider(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	_, err := actor.Run(ctx, "hello")
+	err := actor.Run(ctx, "hello")
 	if err == nil {
 		t.Error("expected error when no provider configured")
 	}

@@ -34,7 +34,7 @@ func initCmd(args []string) error {
 	wd, _ := os.Getwd()
 	bp := assemble.BlueprintConfig{
 		Model:        resolveModel(),
-		Capabilities: []string{"code"},
+		Organs: []string{"code"},
 		WorkDir:      wd,
 		Budget: assemble.BudgetConfig{
 			MaxTurns:    30,

@@ -28,7 +28,7 @@ func (s *scriptedCompleter) Complete(_ context.Context, _ tangle.CompletionParam
 }
 
 func TestWalkingSkeleton_ReadFile(t *testing.T) {
-	caps := code.Capabilities(".")
+	caps := code.Organs(".")
 
 	var readCap bool
 	for _, c := range caps {
@@ -61,7 +61,7 @@ func TestWalkingSkeleton_ReadFile(t *testing.T) {
 
 	bp := Blueprint{
 		Model:        "stub",
-		Capabilities: caps,
+		Organs: caps,
 		Budget: cerebrum.Budget{
 			MaxTurns:    5,
 			TurnTimeout: 10 * time.Second,
@@ -89,17 +89,17 @@ func TestWalkingSkeleton_ReadFile(t *testing.T) {
 }
 
 func TestAssemble_Capabilities(t *testing.T) {
-	caps := code.Capabilities(".")
+	caps := code.Organs(".")
 
 	bp := Blueprint{
 		Model:        "stub",
-		Capabilities: caps,
+		Organs: caps,
 	}
 
 	completer := &scriptedCompleter{}
 	agent := Assemble(bp, completer)
 
-	corpCaps := agent.corpus.Capabilities()
+	corpCaps := agent.corpus.Organs()
 	names := corpCaps.Names()
 
 	if len(names) < 5 {
@@ -120,7 +120,7 @@ func TestAssemble_Capabilities(t *testing.T) {
 func TestAssemble_EmptyCapabilities_Warns(t *testing.T) {
 	bp := Blueprint{
 		Model:        "stub",
-		Capabilities: nil,
+		Organs: nil,
 	}
 
 	completer := &scriptedCompleter{}
@@ -137,7 +137,7 @@ func TestAssemble_CustomConfig(t *testing.T) {
 
 	bp := Blueprint{
 		Model:        "stub",
-		Capabilities: code.Capabilities("."),
+		Organs: code.Organs("."),
 		Config:       &cfg,
 	}
 
@@ -150,7 +150,7 @@ func TestAssemble_CustomConfig(t *testing.T) {
 }
 
 func TestWalkingSkeleton_ToolResultReachesLLM(t *testing.T) {
-	caps := code.Capabilities(".")
+	caps := code.Organs(".")
 
 	var secondCallMessages []tangle.Message
 
@@ -175,7 +175,7 @@ func TestWalkingSkeleton_ToolResultReachesLLM(t *testing.T) {
 
 	bp := Blueprint{
 		Model:        "stub",
-		Capabilities: caps,
+		Organs: caps,
 		Budget:       cerebrum.Budget{MaxTurns: 5, TurnTimeout: 10 * time.Second},
 	}
 
@@ -241,7 +241,7 @@ func TestClosedCircuit_OrganExecutesAndResultReturns(t *testing.T) {
 
 	bp := Blueprint{
 		Model:        "stub",
-		Capabilities: []organ.Func{pingOrgan},
+		Organs: []organ.Func{pingOrgan},
 		Budget:       cerebrum.Budget{MaxTurns: 5, TurnTimeout: 10 * time.Second},
 	}
 
