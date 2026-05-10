@@ -1,16 +1,14 @@
 package arcade
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
-	"github.com/dpopsuev/tako/agent/reactivity"
 	"github.com/dpopsuev/tako/agent/organ"
+	"github.com/dpopsuev/tako/agent/reactivity"
 )
 
-// NewTakoFighter creates a 1v1 combat game.
-// Rock-paper-scissors core: attack beats special, special beats defend, defend beats attack.
-// Each player has 100 HP. Actions resolve simultaneously per round.
 func NewTakoFighter() (*Game, *PlayerView, *PlayerView) {
 	game := NewGame(map[string]any{
 		"p1_hp":     100,
@@ -21,43 +19,38 @@ func NewTakoFighter() (*Game, *PlayerView, *PlayerView) {
 		"winner":    "",
 	})
 
-	game.AddInstrument("p1_attack", "Player 1: Attack the opponent. Beats special, loses to defend.", organ.WriteAction, func(s map[string]any, _ string) string {
-		s["p1_action"] = "attack"
-		return resolveRound(s)
-	})
+	for _, p := range []struct{ prefix, label string }{{"p1", "Player 1"}, {"p2", "Player 2"}} {
+		prefix, label := p.prefix, p.label
 
-	game.AddInstrument("p1_defend", "Player 1: Defend against attacks. Beats attack, loses to special.", organ.WriteAction, func(s map[string]any, _ string) string {
-		s["p1_action"] = "defend"
-		return resolveRound(s)
-	})
+		game.Organ(prefix+"_attack", label+": Attack the opponent. Beats special, loses to defend.", emptySchema, organ.WriteAction,
+			func(s map[string]any, _ json.RawMessage) (organ.Result, error) {
+				s[prefix+"_action"] = "attack"
+				return organ.TextResult(resolveRound(s)), nil
+			})
 
-	game.AddInstrument("p1_special", "Player 1: Use special move. Beats defend, loses to attack.", organ.WriteAction, func(s map[string]any, _ string) string {
-		s["p1_action"] = "special"
-		return resolveRound(s)
-	})
+		game.Organ(prefix+"_defend", label+": Defend against attacks. Beats attack, loses to special.", emptySchema, organ.WriteAction,
+			func(s map[string]any, _ json.RawMessage) (organ.Result, error) {
+				s[prefix+"_action"] = "defend"
+				return organ.TextResult(resolveRound(s)), nil
+			})
 
-	game.AddInstrument("p1_check_hp", "Player 1: Check both players' HP and round number", organ.ReadAction, func(s map[string]any, _ string) string {
-		return fmt.Sprintf("Round %d | Your HP: %d | Opponent HP: %d", s["round"], s["p1_hp"], s["p2_hp"])
-	})
+		game.Organ(prefix+"_special", label+": Use special move. Beats defend, loses to attack.", emptySchema, organ.WriteAction,
+			func(s map[string]any, _ json.RawMessage) (organ.Result, error) {
+				s[prefix+"_action"] = "special"
+				return organ.TextResult(resolveRound(s)), nil
+			})
 
-	game.AddInstrument("p2_attack", "Player 2: Attack the opponent. Beats special, loses to defend.", organ.WriteAction, func(s map[string]any, _ string) string {
-		s["p2_action"] = "attack"
-		return resolveRound(s)
-	})
-
-	game.AddInstrument("p2_defend", "Player 2: Defend against attacks. Beats attack, loses to special.", organ.WriteAction, func(s map[string]any, _ string) string {
-		s["p2_action"] = "defend"
-		return resolveRound(s)
-	})
-
-	game.AddInstrument("p2_special", "Player 2: Use special move. Beats defend, loses to attack.", organ.WriteAction, func(s map[string]any, _ string) string {
-		s["p2_action"] = "special"
-		return resolveRound(s)
-	})
-
-	game.AddInstrument("p2_check_hp", "Player 2: Check both players' HP and round number", organ.ReadAction, func(s map[string]any, _ string) string {
-		return fmt.Sprintf("Round %d | Your HP: %d | Opponent HP: %d", s["round"], s["p2_hp"], s["p1_hp"])
-	})
+		game.Organ(prefix+"_check_hp", label+": Check both players' HP and round number", emptySchema, organ.ReadAction,
+			func(s map[string]any, _ json.RawMessage) (organ.Result, error) {
+				myHP := s[prefix+"_hp"]
+				oppPrefix := "p2"
+				if prefix == "p2" {
+					oppPrefix = "p1"
+				}
+				oppHP := s[oppPrefix+"_hp"]
+				return organ.TextResult(fmt.Sprintf("Round %d | Your HP: %v | Opponent HP: %v", s["round"], myHP, oppHP)), nil
+			})
+	}
 
 	p1View := NewPlayerView(game, "p1", []string{"p1_attack", "p1_defend", "p1_special", "p1_check_hp"})
 	p2View := NewPlayerView(game, "p2", []string{"p2_attack", "p2_defend", "p2_special", "p2_check_hp"})
@@ -125,7 +118,6 @@ func resolveDamage(p1, p2 string) (p1Takes, p2Takes int) {
 	}
 
 	dmg := 25
-
 	switch {
 	case p1 == "attack" && p2 == "special":
 		return 0, dmg
@@ -143,7 +135,6 @@ func resolveDamage(p1, p2 string) (p1Takes, p2Takes int) {
 	return 0, 0
 }
 
-// NewTakoFighterMatch creates a ready-to-run Match for the fighter game.
 func NewTakoFighterMatch() *Match {
 	game, p1View, p2View := NewTakoFighter()
 
@@ -152,12 +143,12 @@ func NewTakoFighterMatch() *Match {
 	}, 10)
 
 	match.AddPlayer("fighter_1", p1View, reactivity.Catalyst{
-		Need:     "You are Player 1 in a fighting game. Each round, choose attack, defend, or special. Attack beats special, special beats defend, defend beats attack. Check your HP with p1_check_hp. Reduce your opponent's HP to 0 to win.",
+		Need:    "You are Player 1 in a fighting game. Each round, choose attack, defend, or special. Attack beats special, special beats defend, defend beats attack. Check your HP with p1_check_hp. Reduce your opponent's HP to 0 to win.",
 		Desired: map[string]any{"winner": true},
 	})
 
 	match.AddPlayer("fighter_2", p2View, reactivity.Catalyst{
-		Need:     "You are Player 2 in a fighting game. Each round, choose attack, defend, or special. Attack beats special, special beats defend, defend beats attack. Check your HP with p2_check_hp. Reduce your opponent's HP to 0 to win.",
+		Need:    "You are Player 2 in a fighting game. Each round, choose attack, defend, or special. Attack beats special, special beats defend, defend beats attack. Check your HP with p2_check_hp. Reduce your opponent's HP to 0 to win.",
 		Desired: map[string]any{"winner": true},
 	})
 

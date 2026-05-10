@@ -77,9 +77,8 @@ func sumTokens(pool *StubRecorder) (int, int) {
 
 func instrumentList(adv *Game) string {
 	var parts []string
-	for _, name := range adv.Names() {
-		desc, _ := adv.Describe(name)
-		parts = append(parts, fmt.Sprintf("- %s: %s", name, desc))
+	for _, o := range adv.Organs() {
+		parts = append(parts, fmt.Sprintf("- %s: %s", o.Name, o.Description))
 	}
 	return strings.Join(parts, "\n")
 }
@@ -139,7 +138,6 @@ func TestSmoke_SingleCompletion(t *testing.T) {
 	cb := cerebrum.New(reactor, completer,
 		cerebrum.WithMaxTurns(3),
 		cerebrum.WithPromptBuilder(cerebrum.BasicPromptBuilder),
-		cerebrum.WithParser(cerebrum.PlainTextParser),
 	)
 
 	t.Log("Sending single Think with 3 max turns...")

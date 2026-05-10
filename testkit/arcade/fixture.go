@@ -31,14 +31,19 @@ func (f *FixtureMotor) Send(ctx context.Context, event cerebrum.Event) error {
 	f.mu.Unlock()
 
 	if event.Kind == "instrument" && f.adventure != nil {
-		result, _ := f.adventure.Exec(ctx, event.Source, json.RawMessage(event.Payload))
-		f.sensory.Send(ctx, cerebrum.Event{
-			ID:        fmt.Sprintf("fixture-%s-%d", event.Source, time.Now().UnixNano()),
-			Kind:      "instrument.result",
-			Source:    event.Source,
-			Payload:   []byte(result.Text()),
-			CreatedAt: time.Now(),
-		})
+		for _, o := range f.adventure.Organs() {
+			if o.Name == event.Source && o.Execute != nil {
+				result, _ := o.Execute(ctx, json.RawMessage(event.Payload))
+				f.sensory.Send(ctx, cerebrum.Event{
+					ID:        fmt.Sprintf("fixture-%s-%d", event.Source, time.Now().UnixNano()),
+					Kind:      "instrument.result",
+					Source:    event.Source,
+					Payload:   []byte(result.Text()),
+					CreatedAt: time.Now(),
+				})
+				break
+			}
+		}
 	}
 	return nil
 }

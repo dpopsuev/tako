@@ -156,9 +156,8 @@ func (m *Match) wirePlayer(p *MatchPlayer, completer tangle.Completer) {
 
 func instrumentListFromView(v *PlayerView) string {
 	var parts []string
-	for _, name := range v.Names() {
-		desc, _ := v.Describe(name)
-		parts = append(parts, fmt.Sprintf("- %s: %s", name, desc))
+	for _, o := range v.Organs() {
+		parts = append(parts, fmt.Sprintf("- %s: %s", o.Name, o.Description))
 	}
 	result := ""
 	for _, p := range parts {

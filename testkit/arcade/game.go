@@ -12,8 +12,6 @@ import (
 	"github.com/dpopsuev/tako/agent/organ"
 )
 
-type InstrumentFunc func(state map[string]any, input string) string
-
 type TimerConfig struct {
 	After   time.Duration
 	Event   string
@@ -23,30 +21,16 @@ type TimerConfig struct {
 }
 
 type Game struct {
-	mu          sync.Mutex
-	state       map[string]any
-	instruments map[string]*gameInstrument
-	fns         map[string]InstrumentFunc
-	sensory     cerebrum.Bus
-	cancel      context.CancelFunc
+	mu      sync.Mutex
+	state   map[string]any
+	organs  []organ.Func
+	sensory cerebrum.Bus
+	cancel  context.CancelFunc
 }
-
-type gameInstrument struct {
-	name        string
-	description string
-	mode        organ.ActionMode
-	approval    organ.ActionApproval
-	risk        float64
-	reads       []string
-	writes      []string
-}
-
 
 func NewGame(initialState map[string]any) *Game {
 	return &Game{
-		state:       initialState,
-		instruments: make(map[string]*gameInstrument),
-		fns:         make(map[string]InstrumentFunc),
+		state: initialState,
 	}
 }
 
@@ -55,8 +39,6 @@ func (a *Game) WithSensory(bus cerebrum.Bus) *Game {
 	return a
 }
 
-// Observe returns the current world state as a string.
-// Used to inject initial awareness before Think() starts.
 func (a *Game) Observe() string {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -67,18 +49,31 @@ func (a *Game) Observe() string {
 	return strings.Join(parts, ". ")
 }
 
-func (a *Game) AddInstrument(name, description string, mode organ.ActionMode, fn InstrumentFunc) {
-	a.instruments[name] = &gameInstrument{name: name, description: description, mode: mode}
-	a.fns[name] = fn
+func (a *Game) Register(f organ.Func) {
+	a.organs = append(a.organs, f)
 }
 
-// WithScope declares which state dimensions an instrument reads and writes.
-func (a *Game) WithScope(name string, reads, writes []string) *Game {
-	if inst, ok := a.instruments[name]; ok {
-		inst.reads = reads
-		inst.writes = writes
+func (a *Game) Organ(name, description string, schema json.RawMessage, mode organ.ActionMode, fn func(state map[string]any, input json.RawMessage) (organ.Result, error)) {
+	a.Register(organ.Func{
+		Name:        name,
+		Description: description,
+		Schema:      schema,
+		Mode:        mode,
+		Source:      organ.Environment,
+		Risk:        organRisk(mode),
+		Execute: func(ctx context.Context, input json.RawMessage) (organ.Result, error) {
+			a.mu.Lock()
+			defer a.mu.Unlock()
+			return fn(a.state, input)
+		},
+	})
+}
+
+func organRisk(mode organ.ActionMode) float64 {
+	if mode == organ.WriteAction {
+		return 0.5
 	}
-	return a
+	return 0
 }
 
 func (a *Game) StartTimer(ctx context.Context, cfg TimerConfig) {
@@ -103,8 +98,6 @@ func (a *Game) StartTimer(ctx context.Context, cfg TimerConfig) {
 				go func() {
 					select {
 					case <-time.After(cfg.Overdue):
-						a.mu.Lock()
-						a.mu.Unlock()
 						a.sensory.Send(ctx, cerebrum.Event{
 							ID:        fmt.Sprintf("overdue-%d", time.Now().UnixNano()),
 							Kind:      "sensory.warning",
@@ -121,120 +114,8 @@ func (a *Game) StartTimer(ctx context.Context, cfg TimerConfig) {
 	}()
 }
 
-func (a *Game) Names() []string {
-	out := make([]string, 0, len(a.instruments))
-	for name := range a.instruments {
-		out = append(out, name)
-	}
-	return out
-}
-
-func (a *Game) Describe(name string) (string, error) {
-	inst, ok := a.instruments[name]
-	if !ok {
-		return "", fmt.Errorf("unknown instrument: %s", name)
-	}
-	return inst.description, nil
-}
-
-func (a *Game) Mode(name string) organ.ActionMode {
-	inst, ok := a.instruments[name]
-	if !ok {
-		return organ.ReadAction
-	}
-	return inst.mode
-}
-
-func (a *Game) Approval(name string) organ.ActionApproval {
-	inst, ok := a.instruments[name]
-	if !ok {
-		return organ.Auto
-	}
-	return inst.approval
-}
-
-func (a *Game) Risk(name string) float64 {
-	inst, ok := a.instruments[name]
-	if !ok {
-		return 0
-	}
-	if inst.risk > 0 {
-		return inst.risk
-	}
-	if inst.mode == organ.WriteAction {
-		return 0.5
-	}
-	return 0
-}
-
-func (a *Game) Schema(name string) (json.RawMessage, error) {
-	if _, ok := a.instruments[name]; !ok {
-		return nil, fmt.Errorf("unknown instrument: %s", name)
-	}
-	return json.RawMessage(`{"type":"string"}`), nil
-}
-
-func (a *Game) Exec(ctx context.Context, name string, input json.RawMessage) (organ.Result, error) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
-	fn, ok := a.fns[name]
-	if !ok {
-		return organ.ErrorResult(fmt.Sprintf("unknown instrument: %s", name)), nil
-	}
-
-	s := extractInput(input)
-	result := fn(a.state, s)
-	return organ.TextResult(result), nil
-}
-
-func extractInput(raw json.RawMessage) string {
-	var s string
-	if json.Unmarshal(raw, &s) == nil && s != "" {
-		return s
-	}
-	var obj map[string]any
-	if json.Unmarshal(raw, &obj) == nil {
-		for _, v := range obj {
-			if str, ok := v.(string); ok {
-				return str
-			}
-		}
-	}
-	return string(raw)
-}
-
-// Organs returns all instruments as organ.Func.
-// The unified path — Corpus.Register each one directly.
 func (a *Game) Organs() []organ.Func {
-	caps := make([]organ.Func, 0, len(a.instruments))
-	for _, name := range a.Names() {
-		inst := a.instruments[name]
-		fn := a.fns[name]
-		risk := inst.risk
-		if risk == 0 && inst.mode == organ.WriteAction {
-			risk = 0.5
-		}
-		caps = append(caps, organ.Func{
-			Name:        inst.name,
-			Description: inst.description,
-			Schema:      json.RawMessage(`{"type":"string"}`),
-			Mode:        inst.mode,
-			Risk:        risk,
-			Approval:    inst.approval,
-			Source:      organ.Environment,
-			Reads:       inst.reads,
-			Writes:      inst.writes,
-			Execute: func(ctx context.Context, input json.RawMessage) (organ.Result, error) {
-				a.mu.Lock()
-				defer a.mu.Unlock()
-				s := extractInput(input)
-				result := fn(a.state, s)
-				return organ.TextResult(result), nil
-			},
-		})
-	}
-	return caps
+	return append([]organ.Func(nil), a.organs...)
 }
 
 func (a *Game) State() map[string]any {

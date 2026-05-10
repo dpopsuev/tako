@@ -2,6 +2,7 @@ package arcade
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -27,178 +28,194 @@ func NewPastaBolognese(ctx context.Context, sensory cerebrum.Bus) Scenario {
 		"eaten":         false,
 	}).WithSensory(sensory)
 
-	adv.AddInstrument("look_pantry", "Check what ingredients are in the pantry", organ.ReadAction, func(s map[string]any, _ string) string {
-		items, _ := s["pantry"].([]string)
-		if len(items) == 0 {
-			return "pantry is empty"
-		}
-		return fmt.Sprintf("pantry has: %v", items)
-	})
-
-	adv.AddInstrument("look_fridge", "Check what ingredients are in the fridge", organ.ReadAction, func(s map[string]any, _ string) string {
-		items, _ := s["fridge"].([]string)
-		if len(items) == 0 {
-			return "fridge is empty"
-		}
-		return fmt.Sprintf("fridge has: %v", items)
-	})
-
-	adv.AddInstrument("look_kitchen", "Check the current state of everything in the kitchen", organ.ReadAction, func(s map[string]any, _ string) string {
-		return fmt.Sprintf("stove: %s, pot: %s, pan: %s, cutting board: %s, water: %s, pasta: %s, meat: %s, sauce: %s",
-			s["stove"], s["pot"], s["pan"], s["cutting_board"], s["water"], s["pasta"], s["meat"], s["sauce"])
-	})
-
-	adv.AddInstrument("turn_on_stove", "Turn on the stove", organ.WriteAction, func(s map[string]any, _ string) string {
-		s["stove"] = "on"
-		return "stove is on"
-	})
-
-	adv.AddInstrument("chop_soffritto", "Chop onion, garlic, and carrot for the soffritto base", organ.WriteAction, func(s map[string]any, _ string) string {
-		s["cutting_board"] = "chopped soffritto"
-		s["soffritto"] = true
-		return "onion, garlic, and carrot chopped for soffritto"
-	})
-
-	adv.AddInstrument("saute_soffritto", "Saute the chopped soffritto in the pan with olive oil. Takes a moment to soften.", organ.WriteAction, func(s map[string]any, _ string) string {
-		if s["stove"] != "on" {
-			return "stove is off, turn it on first"
-		}
-		if s["soffritto"] != true {
-			return "chop the soffritto first (onion, garlic, carrot)"
-		}
-		s["pan"] = "sauteing soffritto"
-		adv.StartTimer(ctx, TimerConfig{
-			After: 3 * time.Second,
-			Event: "the soffritto is softened and fragrant, ready for meat",
-			Mutate: func(st map[string]any) { st["pan"] = "softened soffritto" },
+	adv.Organ("look_pantry", "Check what ingredients are in the pantry", emptySchema, organ.ReadAction,
+		func(s map[string]any, _ json.RawMessage) (organ.Result, error) {
+			items, _ := s["pantry"].([]string)
+			if len(items) == 0 {
+				return organ.TextResult("pantry is empty"), nil
+			}
+			return organ.TextResult(fmt.Sprintf("pantry has: %v", items)), nil
 		})
-		return "soffritto is sizzling in the pan, it will be ready in a moment"
-	})
 
-	adv.AddInstrument("brown_meat", "Add ground beef to the pan and brown it. Takes a moment.", organ.WriteAction, func(s map[string]any, _ string) string {
-		if s["stove"] != "on" {
-			return "stove is off"
-		}
-		pan, _ := s["pan"].(string)
-		if pan != "softened soffritto" {
-			return "saute the soffritto first, then add meat"
-		}
-		s["pan"] = "browning meat"
-		adv.StartTimer(ctx, TimerConfig{
-			After:   4 * time.Second,
-			Event:   "meat is browned and ready for tomatoes",
-			Mutate:  func(st map[string]any) { st["meat"] = "browned"; st["pan"] = "browned meat + soffritto" },
-			Overdue: 6 * time.Second,
-			Penalty: "WARNING: the meat is starting to burn! Add tomatoes now!",
+	adv.Organ("look_fridge", "Check what ingredients are in the fridge", emptySchema, organ.ReadAction,
+		func(s map[string]any, _ json.RawMessage) (organ.Result, error) {
+			items, _ := s["fridge"].([]string)
+			if len(items) == 0 {
+				return organ.TextResult("fridge is empty"), nil
+			}
+			return organ.TextResult(fmt.Sprintf("fridge has: %v", items)), nil
 		})
-		return "ground beef is browning with the soffritto, stir occasionally"
-	})
 
-	adv.AddInstrument("add_tomatoes", "Add canned tomatoes to the pan to start the sauce. It needs to simmer.", organ.WriteAction, func(s map[string]any, _ string) string {
-		if s["meat"] != "browned" {
-			return "brown the meat first"
-		}
-		s["sauce"] = "simmering"
-		s["pan"] = "bolognese simmering"
-		adv.StartTimer(ctx, TimerConfig{
-			After:  8 * time.Second,
-			Event:  "the bolognese sauce is thick and rich, ready to combine with pasta",
-			Mutate: func(st map[string]any) { st["sauce"] = "ready" },
+	adv.Organ("look_kitchen", "Check the current state of everything in the kitchen", emptySchema, organ.ReadAction,
+		func(s map[string]any, _ json.RawMessage) (organ.Result, error) {
+			return organ.TextResult(fmt.Sprintf("stove: %s, pot: %s, pan: %s, cutting board: %s, water: %s, pasta: %s, meat: %s, sauce: %s",
+				s["stove"], s["pot"], s["pan"], s["cutting_board"], s["water"], s["pasta"], s["meat"], s["sauce"])), nil
 		})
-		return "tomatoes added, sauce is now simmering. This will take a while. You can prepare pasta in the meantime."
-	})
 
-	adv.AddInstrument("boil_water", "Fill pot with water and put on stove. Takes a moment to boil.", organ.WriteAction, func(s map[string]any, _ string) string {
-		if s["stove"] != "on" {
-			return "stove is off, turn it on first"
-		}
-		s["pot"] = "heating"
-		s["water"] = "heating"
-		adv.StartTimer(ctx, TimerConfig{
-			After:  5 * time.Second,
-			Event:  "the water is boiling, ready for pasta",
-			Mutate: func(st map[string]any) { st["water"] = "boiling"; st["pot"] = "boiling water" },
+	adv.Organ("turn_on_stove", "Turn on the stove", emptySchema, organ.WriteAction,
+		func(s map[string]any, _ json.RawMessage) (organ.Result, error) {
+			s["stove"] = "on"
+			return organ.TextResult("stove is on"), nil
 		})
-		return "pot of water is on the stove, heating up"
-	})
 
-	adv.AddInstrument("cook_pasta", "Add pasta to boiling water. Takes a moment to cook al dente.", organ.WriteAction, func(s map[string]any, _ string) string {
-		if s["water"] != "boiling" {
-			return "water isn't boiling yet, wait for it"
-		}
-		s["pasta"] = "cooking"
-		s["pot"] = "pasta cooking"
-		adv.StartTimer(ctx, TimerConfig{
-			After:   5 * time.Second,
-			Event:   "pasta is al dente, drain it now!",
-			Mutate:  func(st map[string]any) { st["pasta"] = "al dente" },
-			Overdue: 4 * time.Second,
-			Penalty: "WARNING: pasta is getting mushy! Drain immediately!",
+	adv.Organ("chop_soffritto", "Chop onion, garlic, and carrot for the soffritto base", emptySchema, organ.WriteAction,
+		func(s map[string]any, _ json.RawMessage) (organ.Result, error) {
+			s["cutting_board"] = "chopped soffritto"
+			s["soffritto"] = true
+			return organ.TextResult("onion, garlic, and carrot chopped for soffritto"), nil
 		})
-		return "pasta is in the boiling water, cooking"
-	})
 
-	adv.AddInstrument("drain_pasta", "Drain the cooked pasta", organ.WriteAction, func(s map[string]any, _ string) string {
-		pasta, _ := s["pasta"].(string)
-		if pasta != "al dente" && pasta != "cooking" {
-			return "pasta isn't ready to drain"
-		}
-		s["pasta"] = "drained"
-		s["pot"] = "drained pasta"
-		return "pasta drained"
-	})
+	adv.Organ("saute_soffritto", "Saute the chopped soffritto in the pan with olive oil", emptySchema, organ.WriteAction,
+		func(s map[string]any, _ json.RawMessage) (organ.Result, error) {
+			if s["stove"] != "on" {
+				return organ.TextResult("stove is off, turn it on first"), nil
+			}
+			if s["soffritto"] != true {
+				return organ.TextResult("chop the soffritto first (onion, garlic, carrot)"), nil
+			}
+			s["pan"] = "sauteing soffritto"
+			adv.StartTimer(ctx, TimerConfig{
+				After: 3 * time.Second,
+				Event: "the soffritto is softened and fragrant, ready for meat",
+				Mutate: func(st map[string]any) { st["pan"] = "softened soffritto" },
+			})
+			return organ.TextResult("soffritto is sizzling in the pan, it will be ready in a moment"), nil
+		})
 
-	adv.AddInstrument("grate_parmesan", "Grate fresh parmesan cheese", organ.WriteAction, func(s map[string]any, _ string) string {
-		s["parmesan"] = "grated"
-		return "parmesan freshly grated"
-	})
+	adv.Organ("brown_meat", "Add ground beef to the pan and brown it", emptySchema, organ.WriteAction,
+		func(s map[string]any, _ json.RawMessage) (organ.Result, error) {
+			if s["stove"] != "on" {
+				return organ.TextResult("stove is off"), nil
+			}
+			pan, _ := s["pan"].(string)
+			if pan != "softened soffritto" {
+				return organ.TextResult("saute the soffritto first, then add meat"), nil
+			}
+			s["pan"] = "browning meat"
+			adv.StartTimer(ctx, TimerConfig{
+				After:   4 * time.Second,
+				Event:   "meat is browned and ready for tomatoes",
+				Mutate:  func(st map[string]any) { st["meat"] = "browned"; st["pan"] = "browned meat + soffritto" },
+				Overdue: 6 * time.Second,
+				Penalty: "WARNING: the meat is starting to burn! Add tomatoes now!",
+			})
+			return organ.TextResult("ground beef is browning with the soffritto, stir occasionally"), nil
+		})
 
-	adv.AddInstrument("combine", "Toss drained pasta with the sauce in the pan", organ.WriteAction, func(s map[string]any, _ string) string {
-		if s["pasta"] != "drained" {
-			return "drain the pasta first"
-		}
-		if s["sauce"] != "ready" {
-			return "sauce isn't ready yet, let it simmer"
-		}
-		s["pan"] = "pasta bolognese"
-		return "pasta tossed with bolognese sauce, it's coming together beautifully"
-	})
+	adv.Organ("add_tomatoes", "Add canned tomatoes to the pan to start the sauce", emptySchema, organ.WriteAction,
+		func(s map[string]any, _ json.RawMessage) (organ.Result, error) {
+			if s["meat"] != "browned" {
+				return organ.TextResult("brown the meat first"), nil
+			}
+			s["sauce"] = "simmering"
+			s["pan"] = "bolognese simmering"
+			adv.StartTimer(ctx, TimerConfig{
+				After:  8 * time.Second,
+				Event:  "the bolognese sauce is thick and rich, ready to combine with pasta",
+				Mutate: func(st map[string]any) { st["sauce"] = "ready" },
+			})
+			return organ.TextResult("tomatoes added, sauce is now simmering. This will take a while. You can prepare pasta in the meantime."), nil
+		})
 
-	adv.AddInstrument("plate", "Plate the pasta bolognese with parmesan on top", organ.WriteAction, func(s map[string]any, _ string) string {
-		pan, _ := s["pan"].(string)
-		if pan != "pasta bolognese" {
-			return "combine pasta and sauce first"
-		}
-		s["plated"] = true
-		if s["parmesan"] == "grated" {
-			return "pasta bolognese plated with fresh parmesan, buon appetito"
-		}
-		return "pasta bolognese plated (no parmesan)"
-	})
+	adv.Organ("boil_water", "Fill pot with water and put on stove", emptySchema, organ.WriteAction,
+		func(s map[string]any, _ json.RawMessage) (organ.Result, error) {
+			if s["stove"] != "on" {
+				return organ.TextResult("stove is off, turn it on first"), nil
+			}
+			s["pot"] = "heating"
+			s["water"] = "heating"
+			adv.StartTimer(ctx, TimerConfig{
+				After:  5 * time.Second,
+				Event:  "the water is boiling, ready for pasta",
+				Mutate: func(st map[string]any) { st["water"] = "boiling"; st["pot"] = "boiling water" },
+			})
+			return organ.TextResult("pot of water is on the stove, heating up"), nil
+		})
 
-	adv.AddInstrument("eat", "Eat the plated dish", organ.WriteAction, func(s map[string]any, _ string) string {
-		if s["plated"] != true {
-			return "nothing plated yet"
-		}
-		s["eaten"] = true
-		return "delicious pasta bolognese, buon appetito"
-	})
+	adv.Organ("cook_pasta", "Add pasta to boiling water", emptySchema, organ.WriteAction,
+		func(s map[string]any, _ json.RawMessage) (organ.Result, error) {
+			if s["water"] != "boiling" {
+				return organ.TextResult("water isn't boiling yet, wait for it"), nil
+			}
+			s["pasta"] = "cooking"
+			s["pot"] = "pasta cooking"
+			adv.StartTimer(ctx, TimerConfig{
+				After:   5 * time.Second,
+				Event:   "pasta is al dente, drain it now!",
+				Mutate:  func(st map[string]any) { st["pasta"] = "al dente" },
+				Overdue: 4 * time.Second,
+				Penalty: "WARNING: pasta is getting mushy! Drain immediately!",
+			})
+			return organ.TextResult("pasta is in the boiling water, cooking"), nil
+		})
 
-	adv.AddInstrument("check_served", "Check if the meal has been served and eaten", organ.ReadAction, func(s map[string]any, _ string) string {
-		if s["eaten"] == true {
-			return "the meal is served and eaten"
-		}
-		if s["plated"] == true {
-			return "the meal is not served yet — it is plated, call eat"
-		}
-		return "the meal is not served yet — keep cooking"
-	})
+	adv.Organ("drain_pasta", "Drain the cooked pasta", emptySchema, organ.WriteAction,
+		func(s map[string]any, _ json.RawMessage) (organ.Result, error) {
+			pasta, _ := s["pasta"].(string)
+			if pasta != "al dente" && pasta != "cooking" {
+				return organ.TextResult("pasta isn't ready to drain"), nil
+			}
+			s["pasta"] = "drained"
+			s["pot"] = "drained pasta"
+			return organ.TextResult("pasta drained"), nil
+		})
+
+	adv.Organ("grate_parmesan", "Grate fresh parmesan cheese", emptySchema, organ.WriteAction,
+		func(s map[string]any, _ json.RawMessage) (organ.Result, error) {
+			s["parmesan"] = "grated"
+			return organ.TextResult("parmesan freshly grated"), nil
+		})
+
+	adv.Organ("combine", "Toss drained pasta with the sauce in the pan", emptySchema, organ.WriteAction,
+		func(s map[string]any, _ json.RawMessage) (organ.Result, error) {
+			if s["pasta"] != "drained" {
+				return organ.TextResult("drain the pasta first"), nil
+			}
+			if s["sauce"] != "ready" {
+				return organ.TextResult("sauce isn't ready yet, let it simmer"), nil
+			}
+			s["pan"] = "pasta bolognese"
+			return organ.TextResult("pasta tossed with bolognese sauce, it's coming together beautifully"), nil
+		})
+
+	adv.Organ("plate", "Plate the pasta bolognese with parmesan on top", emptySchema, organ.WriteAction,
+		func(s map[string]any, _ json.RawMessage) (organ.Result, error) {
+			pan, _ := s["pan"].(string)
+			if pan != "pasta bolognese" {
+				return organ.TextResult("combine pasta and sauce first"), nil
+			}
+			s["plated"] = true
+			if s["parmesan"] == "grated" {
+				return organ.TextResult("pasta bolognese plated with fresh parmesan, buon appetito"), nil
+			}
+			return organ.TextResult("pasta bolognese plated (no parmesan)"), nil
+		})
+
+	adv.Organ("eat", "Eat the plated dish", emptySchema, organ.WriteAction,
+		func(s map[string]any, _ json.RawMessage) (organ.Result, error) {
+			if s["plated"] != true {
+				return organ.TextResult("nothing plated yet"), nil
+			}
+			s["eaten"] = true
+			return organ.TextResult("delicious pasta bolognese, buon appetito"), nil
+		})
+
+	adv.Organ("check_served", "Check if the meal has been served and eaten", emptySchema, organ.ReadAction,
+		func(s map[string]any, _ json.RawMessage) (organ.Result, error) {
+			if s["eaten"] == true {
+				return organ.TextResult("the meal is served and eaten"), nil
+			}
+			if s["plated"] == true {
+				return organ.TextResult("the meal is not served yet — it is plated, call eat"), nil
+			}
+			return organ.TextResult("the meal is not served yet — keep cooking"), nil
+		})
 
 	return Scenario{
-		Name: "pasta_bolognese",
-		Need: "Cook pasta bolognese from scratch. Check the pantry and fridge. The proper order: chop soffritto, saute it, brown meat, add tomatoes and let sauce simmer. While the sauce simmers, boil water and cook pasta. Grate parmesan while you wait. Drain pasta when al dente. Combine pasta with sauce, plate with parmesan, eat. Things cook in real time and you will receive notifications when they are ready. The stove must be on before any cooking. Use your time wisely while things simmer. Use check_served to verify completion.",
+		Name:      "pasta_bolognese",
+		Need:      "Cook pasta bolognese from scratch. Check the pantry and fridge. The proper order: chop soffritto, saute it, brown meat, add tomatoes and let sauce simmer. While the sauce simmers, boil water and cook pasta. Grate parmesan while you wait. Drain pasta when al dente. Combine pasta with sauce, plate with parmesan, eat. Things cook in real time and you will receive notifications when they are ready. The stove must be on before any cooking. Use your time wisely while things simmer. Use check_served to verify completion.",
 		Adventure: adv,
 		IsSolved:  func(s map[string]any) bool { return s["eaten"] == true },
-		Desired:  map[string]any{"served": true},
+		Desired:   map[string]any{"served": true},
 	}
 }

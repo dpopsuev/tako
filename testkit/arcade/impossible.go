@@ -1,25 +1,24 @@
 package arcade
 
 import (
+	"encoding/json"
+
 	"github.com/dpopsuev/tako/agent/organ"
 )
 
-// NewImpossible returns a scenario where the Need requires actions
-// the agent cannot perform — the only action is read-only (look).
-// Think should detect impossibility: Distance stays 1.0, Momentum
-// stays 0, Assert fires Subcritical → SCRAM.
 func NewImpossible() Scenario {
 	adv := NewGame(map[string]any{
 		"locked": true,
 		"key":    "hidden",
 	})
 
-	adv.AddInstrument("look", "Look at the locked door", organ.ReadAction, func(s map[string]any, _ string) string {
-		if s["locked"] == true {
-			return "you see a locked door. it requires a key to open. you need to use the 'unlock' instrument."
-		}
-		return "the door is open"
-	})
+	adv.Organ("look", "Look at the locked door", emptySchema, organ.ReadAction,
+		func(s map[string]any, _ json.RawMessage) (organ.Result, error) {
+			if s["locked"] == true {
+				return organ.TextResult("you see a locked door. it requires a key to open. you need to use the 'unlock' instrument."), nil
+			}
+			return organ.TextResult("the door is open"), nil
+		})
 
 	return Scenario{
 		Name:         "impossible",

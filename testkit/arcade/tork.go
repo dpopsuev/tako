@@ -1,26 +1,25 @@
 package arcade
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/dpopsuev/tako/agent/organ"
 )
 
-// NewTork returns a Zork-inspired inventory puzzle scenario.
-// The agent must explore rooms, collect items, solve lock/light
-// dependencies, and retrieve the hidden treasure.
+var nameSchema = json.RawMessage(`{"type":"object","properties":{"name":{"type":"string","description":"name of the target"}},"required":["name"]}`)
+
 func NewTork() Scenario {
 	adv := NewGame(map[string]any{
-		"current_room":  "entrance",
-		"inventory":     []string{},
-		"key_taken":     false,
-		"chest_opened":  false,
-		"lamp_lit":      false,
+		"current_room":   "entrance",
+		"inventory":      []string{},
+		"key_taken":      false,
+		"chest_opened":   false,
+		"lamp_lit":       false,
 		"treasure_taken": false,
-		"won":           false,
+		"won":            false,
 	})
 
-	// Room descriptions.
 	rooms := map[string]string{
 		"entrance":      "You are in a dungeon entrance. Stone walls surround you. A narrow passage leads north to a hallway.",
 		"hallway":       "You are in a long hallway. Torches flicker on the walls. A brass key glints on the floor. A heavy door to the east is marked 'LOCKED'. The entrance is to the south.",
@@ -29,7 +28,6 @@ func NewTork() Scenario {
 		"treasure_room": "You are in the treasure room! Gold coins are scattered everywhere. A gleaming ruby sits on a pedestal in the center. The dark cave is to the west.",
 	}
 
-	// Items visible per room (only when not yet taken).
 	roomItems := func(s map[string]any, room string) string {
 		switch room {
 		case "hallway":
@@ -49,207 +47,192 @@ func NewTork() Scenario {
 		return ""
 	}
 
-	adv.AddInstrument("look", "Look around the current room to see its description and visible items", organ.ReadAction, func(s map[string]any, _ string) string {
-		room := s["current_room"].(string)
-		desc, ok := rooms[room]
-		if !ok {
-			return "you see nothing but void"
-		}
-		return desc + roomItems(s, room)
-	})
-
-	adv.AddInstrument("go", "Move to a connected room. Input: room name (entrance, hallway, locked_room, dark_cave, treasure_room)", organ.WriteAction, func(s map[string]any, input string) string {
-		current := s["current_room"].(string)
-
-		// Define allowed connections.
-		type conn struct {
-			from, to string
-		}
-		allowed := []conn{
-			{"entrance", "hallway"},
-			{"hallway", "entrance"},
-			{"hallway", "locked_room"},
-			{"locked_room", "hallway"},
-			{"locked_room", "dark_cave"},
-			{"dark_cave", "locked_room"},
-			{"dark_cave", "treasure_room"},
-			{"treasure_room", "dark_cave"},
-		}
-
-		canGo := false
-		for _, c := range allowed {
-			if c.from == current && c.to == input {
-				canGo = true
-				break
+	adv.Organ("look", "Look around the current room", emptySchema, organ.ReadAction,
+		func(s map[string]any, _ json.RawMessage) (organ.Result, error) {
+			room := s["current_room"].(string)
+			desc, ok := rooms[room]
+			if !ok {
+				return organ.TextResult("you see nothing but void"), nil
 			}
-		}
-		if !canGo {
-			return fmt.Sprintf("you can't go to %s from %s", input, current)
-		}
+			return organ.TextResult(desc + roomItems(s, room)), nil
+		})
 
-		// Check locked_room requires key in inventory.
-		if input == "locked_room" {
-			inv := s["inventory"].([]string)
-			hasKey := false
-			for _, item := range inv {
-				if item == "key" {
-					hasKey = true
+	adv.Organ("go", "Move to a connected room",
+		json.RawMessage(`{"type":"object","properties":{"room":{"type":"string","description":"room name (entrance, hallway, locked_room, dark_cave, treasure_room)"}},"required":["room"]}`),
+		organ.WriteAction,
+		func(s map[string]any, input json.RawMessage) (organ.Result, error) {
+			var args struct{ Room string `json:"room"` }
+			json.Unmarshal(input, &args)
+			current := s["current_room"].(string)
+			target := args.Room
+
+			type conn struct{ from, to string }
+			allowed := []conn{
+				{"entrance", "hallway"}, {"hallway", "entrance"},
+				{"hallway", "locked_room"}, {"locked_room", "hallway"},
+				{"locked_room", "dark_cave"}, {"dark_cave", "locked_room"},
+				{"dark_cave", "treasure_room"}, {"treasure_room", "dark_cave"},
+			}
+			canGo := false
+			for _, c := range allowed {
+				if c.from == current && c.to == target {
+					canGo = true
 					break
 				}
 			}
-			if !hasKey {
-				return "the door to the locked room is locked. You need a key."
+			if !canGo {
+				return organ.TextResult(fmt.Sprintf("you can't go to %s from %s", target, current)), nil
 			}
-		}
+			if target == "locked_room" {
+				inv := s["inventory"].([]string)
+				hasKey := false
+				for _, item := range inv {
+					if item == "key" { hasKey = true; break }
+				}
+				if !hasKey {
+					return organ.TextResult("the door to the locked room is locked. You need a key."), nil
+				}
+			}
+			if target == "dark_cave" && !s["lamp_lit"].(bool) {
+				return organ.TextResult("it is pitch black. You need a lit lamp to enter."), nil
+			}
+			s["current_room"] = target
+			desc := rooms[target]
+			return organ.TextResult(fmt.Sprintf("you move to the %s. %s%s", target, desc, roomItems(s, target))), nil
+		})
 
-		// Check dark_cave requires lamp lit.
-		if input == "dark_cave" {
-			if !s["lamp_lit"].(bool) {
-				return "it is pitch black in the cave. You need a lit lamp to enter."
-			}
-		}
-
-		s["current_room"] = input
-		desc := rooms[input]
-		return fmt.Sprintf("you move to the %s. %s%s", input, desc, roomItems(s, input))
-	})
-
-	adv.AddInstrument("take", "Pick up an item in the current room. Input: item name (key, treasure)", organ.WriteAction, func(s map[string]any, input string) string {
-		room := s["current_room"].(string)
-
-		switch input {
-		case "key":
-			if room != "hallway" {
-				return "there is no key here"
-			}
-			if s["key_taken"].(bool) {
-				return "you already took the key"
-			}
-			s["key_taken"] = true
-			s["inventory"] = append(s["inventory"].([]string), "key")
-			return "you pick up the brass key. It feels old and heavy."
-		case "treasure", "ruby":
-			if room != "treasure_room" {
-				return "there is no treasure here"
-			}
-			if s["treasure_taken"].(bool) {
-				return "you already took the treasure"
-			}
-			s["treasure_taken"] = true
-			s["won"] = true
-			s["inventory"] = append(s["inventory"].([]string), "ruby")
-			return "you take the gleaming ruby from the pedestal. You win! The treasure is yours."
-		default:
-			return fmt.Sprintf("you can't take %s", input)
-		}
-	})
-
-	adv.AddInstrument("use", "Use an item from your inventory. Input: item name (key, lamp)", organ.WriteAction, func(s map[string]any, input string) string {
-		inv := s["inventory"].([]string)
-		hasItem := false
-		for _, item := range inv {
-			if item == input {
-				hasItem = true
-				break
-			}
-		}
-		if !hasItem {
-			return fmt.Sprintf("you don't have %s in your inventory", input)
-		}
-
-		switch input {
-		case "key":
+	adv.Organ("take", "Pick up an item in the current room", nameSchema, organ.WriteAction,
+		func(s map[string]any, input json.RawMessage) (organ.Result, error) {
+			var args struct{ Name string `json:"name"` }
+			json.Unmarshal(input, &args)
 			room := s["current_room"].(string)
-			if room != "locked_room" {
-				return "there is nothing to use the key on here"
-			}
-			if s["chest_opened"].(bool) {
-				return "the chest is already open"
-			}
-			s["chest_opened"] = true
-			s["inventory"] = append(s["inventory"].([]string), "lamp")
-			return "you unlock the chest with the brass key. Inside you find an oil lamp! You take the lamp."
-		case "lamp":
-			if s["lamp_lit"].(bool) {
-				return "the lamp is already lit"
-			}
-			s["lamp_lit"] = true
-			return "you light the oil lamp. It casts a warm glow around you. Dark places are no longer a problem."
-		default:
-			return fmt.Sprintf("you can't use %s right now", input)
-		}
-	})
-
-	adv.AddInstrument("inventory", "List what you are currently carrying", organ.ReadAction, func(s map[string]any, _ string) string {
-		inv := s["inventory"].([]string)
-		if len(inv) == 0 {
-			return "you are carrying nothing"
-		}
-		return fmt.Sprintf("you are carrying: %v", inv)
-	})
-
-	adv.AddInstrument("examine", "Examine an item or object in the current room for more details. Input: item or object name", organ.ReadAction, func(s map[string]any, input string) string {
-		room := s["current_room"].(string)
-
-		switch input {
-		case "key":
-			if room == "hallway" && !s["key_taken"].(bool) {
-				return "a tarnished brass key, about the size of your finger. It looks like it could open a lock."
-			}
-			// Check inventory.
-			for _, item := range s["inventory"].([]string) {
-				if item == "key" {
-					return "a tarnished brass key you picked up in the hallway. It might open something."
+			switch args.Name {
+			case "key":
+				if room != "hallway" {
+					return organ.TextResult("there is no key here"), nil
 				}
+				if s["key_taken"].(bool) {
+					return organ.TextResult("you already took the key"), nil
+				}
+				s["key_taken"] = true
+				s["inventory"] = append(s["inventory"].([]string), "key")
+				return organ.TextResult("you pick up the brass key. It feels old and heavy."), nil
+			case "treasure", "ruby":
+				if room != "treasure_room" {
+					return organ.TextResult("there is no treasure here"), nil
+				}
+				if s["treasure_taken"].(bool) {
+					return organ.TextResult("you already took the treasure"), nil
+				}
+				s["treasure_taken"] = true
+				s["won"] = true
+				s["inventory"] = append(s["inventory"].([]string), "ruby")
+				return organ.TextResult("you take the gleaming ruby from the pedestal. You win!"), nil
+			default:
+				return organ.TextResult(fmt.Sprintf("you can't take %s", args.Name)), nil
 			}
-			return "you don't see a key here"
-		case "chest":
-			if room != "locked_room" {
-				return "there is no chest here"
+		})
+
+	adv.Organ("use", "Use an item from your inventory", nameSchema, organ.WriteAction,
+		func(s map[string]any, input json.RawMessage) (organ.Result, error) {
+			var args struct{ Name string `json:"name"` }
+			json.Unmarshal(input, &args)
+			inv := s["inventory"].([]string)
+			hasItem := false
+			for _, item := range inv {
+				if item == args.Name { hasItem = true; break }
 			}
-			if s["chest_opened"].(bool) {
-				return "an open wooden chest. It is empty now."
+			if !hasItem {
+				return organ.TextResult(fmt.Sprintf("you don't have %s", args.Name)), nil
 			}
-			return "a large wooden chest with a brass lock. It looks like it needs a key to open."
-		case "lamp":
-			for _, item := range s["inventory"].([]string) {
-				if item == "lamp" {
-					if s["lamp_lit"].(bool) {
-						return "an oil lamp, currently lit and glowing warmly."
+			switch args.Name {
+			case "key":
+				if s["current_room"].(string) != "locked_room" {
+					return organ.TextResult("nothing to use the key on here"), nil
+				}
+				if s["chest_opened"].(bool) {
+					return organ.TextResult("the chest is already open"), nil
+				}
+				s["chest_opened"] = true
+				s["inventory"] = append(s["inventory"].([]string), "lamp")
+				return organ.TextResult("you unlock the chest. Inside you find an oil lamp! You take it."), nil
+			case "lamp":
+				if s["lamp_lit"].(bool) {
+					return organ.TextResult("the lamp is already lit"), nil
+				}
+				s["lamp_lit"] = true
+				return organ.TextResult("you light the oil lamp. Dark places are no longer a problem."), nil
+			default:
+				return organ.TextResult(fmt.Sprintf("you can't use %s right now", args.Name)), nil
+			}
+		})
+
+	adv.Organ("inventory", "List what you are carrying", emptySchema, organ.ReadAction,
+		func(s map[string]any, _ json.RawMessage) (organ.Result, error) {
+			inv := s["inventory"].([]string)
+			if len(inv) == 0 {
+				return organ.TextResult("you are carrying nothing"), nil
+			}
+			return organ.TextResult(fmt.Sprintf("you are carrying: %v", inv)), nil
+		})
+
+	adv.Organ("examine", "Examine an item or object for details", nameSchema, organ.ReadAction,
+		func(s map[string]any, input json.RawMessage) (organ.Result, error) {
+			var args struct{ Name string `json:"name"` }
+			json.Unmarshal(input, &args)
+			room := s["current_room"].(string)
+			switch args.Name {
+			case "key":
+				if room == "hallway" && !s["key_taken"].(bool) {
+					return organ.TextResult("a tarnished brass key, about the size of your finger."), nil
+				}
+				for _, item := range s["inventory"].([]string) {
+					if item == "key" {
+						return organ.TextResult("a tarnished brass key you picked up in the hallway."), nil
 					}
-					return "an oil lamp. It is not lit. You could use it to light your way."
 				}
+				return organ.TextResult("you don't see a key here"), nil
+			case "chest":
+				if room != "locked_room" {
+					return organ.TextResult("there is no chest here"), nil
+				}
+				if s["chest_opened"].(bool) {
+					return organ.TextResult("an open wooden chest. It is empty now."), nil
+				}
+				return organ.TextResult("a large wooden chest with a brass lock. It needs a key."), nil
+			case "lamp":
+				for _, item := range s["inventory"].([]string) {
+					if item == "lamp" {
+						if s["lamp_lit"].(bool) {
+							return organ.TextResult("an oil lamp, currently lit."), nil
+						}
+						return organ.TextResult("an oil lamp. Not lit. Use it to light your way."), nil
+					}
+				}
+				return organ.TextResult("you don't see a lamp here"), nil
+			case "treasure", "ruby":
+				if room == "treasure_room" && !s["treasure_taken"].(bool) {
+					return organ.TextResult("a large gleaming ruby, flawless and radiant. Take it!"), nil
+				}
+				return organ.TextResult("you don't see any treasure here"), nil
+			default:
+				return organ.TextResult(fmt.Sprintf("you see nothing special about %s", args.Name)), nil
 			}
-			return "you don't see a lamp here"
-		case "treasure", "ruby":
-			if room == "treasure_room" && !s["treasure_taken"].(bool) {
-				return "a large gleaming ruby, flawless and radiant. It must be worth a fortune. Take it!"
-			}
-			return "you don't see any treasure here"
-		case "door":
-			if room == "hallway" {
-				return "a heavy oak door to the east. The word 'LOCKED' is carved into its frame."
-			}
-			return "you don't see a notable door here"
-		case "walls":
-			return fmt.Sprintf("the %s has rough stone walls covered in moss and age.", room)
-		default:
-			return fmt.Sprintf("you see nothing special about %s", input)
-		}
-	})
+		})
 
-	adv.AddInstrument("check_escaped", "Check if you have retrieved the treasure and won", organ.ReadAction, func(s map[string]any, _ string) string {
-		if s["won"] == true {
-			return "you have escaped with the treasure"
-		}
-		return "you have not escaped yet — find and take the treasure"
-	})
+	adv.Organ("check_escaped", "Check if you have retrieved the treasure", emptySchema, organ.ReadAction,
+		func(s map[string]any, _ json.RawMessage) (organ.Result, error) {
+			if s["won"] == true {
+				return organ.TextResult("you have escaped with the treasure"), nil
+			}
+			return organ.TextResult("you have not escaped yet — find and take the treasure"), nil
+		})
 
 	return Scenario{
 		Name:      "tork",
-		Need:      "You are in a dungeon entrance. Explore the rooms, find items, solve puzzles, and retrieve the hidden treasure. Some doors are locked and some rooms are dark. Use check_escaped to verify when you have won.",
+		Need:      "You are in a dungeon entrance. Explore rooms, find items, solve puzzles, retrieve the hidden treasure. Some doors are locked, some rooms are dark. Use check_escaped to verify when you have won.",
 		Adventure: adv,
 		IsSolved:  func(s map[string]any) bool { return s["won"] == true },
-		Desired:  map[string]any{"escaped": true},
+		Desired:   map[string]any{"escaped": true},
 	}
 }
