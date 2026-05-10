@@ -212,30 +212,8 @@ Distance: {{printf "%.2f" .Distance}} | Trend: {{.Trend}}
 - {{.}}
 {{- end}}
 {{- end}}
-{{- if .HasDesired}}
-
-# Thinking Tree
-{{- range .Tree}}
-{{.}}
-{{- end}}
-
-## Active: {{.ActivePhase}}
-{{.Instructions}}
-{{- if .Completed}}
-
-## Completed
-{{- range .Completed}}
-- {{.}}
-{{- end}}
-{{- end}}
-
-## Response Format
-Respond with JSON: {"atoms": [{"type": "<phase>", "taxonomy": "<phase.domain>", "content": "<your answer to the contract>"}]}
-{{- else}}
-
 ## Instructions
-Use the available tools to fulfill the need. When the need is satisfied, respond with your final answer as plain text — do not call tools to deliver the response.
-{{- end}}
+Use the available tools to achieve the desired state. Act directly — call tools to make progress. When the need is satisfied, respond with your final answer as plain text — do not call tools to deliver the response.
 {{- range .Directives}}
 
 > {{.}}

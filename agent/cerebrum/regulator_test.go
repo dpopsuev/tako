@@ -19,8 +19,8 @@ func TestDefaultRender_Basic(t *testing.T) {
 	if !strings.Contains(result, "feed the tako") {
 		t.Error("should contain the need")
 	}
-	if !strings.Contains(result, "fulfill the need") {
-		t.Error("should instruct to fulfill the need")
+	if !strings.Contains(result, "available tools") {
+		t.Error("should instruct to use tools")
 	}
 }
 
@@ -185,11 +185,11 @@ func TestDefaultRender_FilledContracts(t *testing.T) {
 
 	result := defaultRender(ctx)
 
-	if !strings.Contains(result, "[DONE] the agent is hungry") {
-		t.Error("should show filled contract summary")
+	if !strings.Contains(result, "available tools") {
+		t.Error("should instruct to use tools")
 	}
-	if !strings.Contains(result, "## Completed") {
-		t.Error("should have completed section")
+	if !strings.Contains(result, "desired state") {
+		t.Error("should mention desired state")
 	}
 }
 

@@ -349,17 +349,6 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 		}
 
 		domain := cb.classifier.Classify(molecule)
-		if domain == Clear && molecule.CurrentTriad() == reactivity.ThinkTriad {
-			molecule.SetPhase(reactivity.ExecutionAtom)
-			slog.InfoContext(ctx, "cerebrum.think.cynefin_skip",
-				slog.Int("turn", turn),
-				slog.String("domain", domain.String()))
-			cb.emit("cerebrum.cynefin_skip", map[string]string{
-				"molecule": molecule.ID,
-				"turn":     fmt.Sprintf("%d", turn),
-				"domain":   domain.String(),
-			})
-		}
 		prompt := cb.assemble(molecule, need, domain, turn, intent.Temperature)
 
 		slog.InfoContext(ctx, "cerebrum.think.turn",
@@ -584,21 +573,6 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 				break
 			}
 
-			ictx := BuildInstigatorContext(molecule, chain)
-			nextTriad := cb.instigator.NextTriad(molecule.CurrentTriad(), ictx)
-			if nextTriad == reactivity.ReflectTriad && nextTriad != molecule.CurrentTriad() {
-				cb.reactor.Seal(molecule, reactivity.Atom{
-					ID:       fmt.Sprintf("wish-instigator-%d", turn),
-					Type:     reactivity.RetrospectionAtom,
-					Taxonomy: "retrospection.instigator.telos",
-					Content:  lastMotorOutput(chain),
-				})
-				slog.InfoContext(ctx, "cerebrum.think.instigator_seal",
-					slog.Int("turn", turn),
-					slog.String("from", molecule.CurrentTriad().String()),
-					slog.String("to", "reflect"))
-				break
-			}
 
 			if len(phaseAtoms) > 0 {
 				for _, atom := range phaseAtoms {
@@ -899,16 +873,7 @@ func (cb *Cerebrum) tools(phase reactivity.AtomType) []tangle.Tool {
 	}
 
 	var tools []tangle.Tool
-
-	hasDesired := cb.molecule != nil && cb.molecule.Catalyst() != nil && len(cb.molecule.Catalyst().Desired) > 0
-	if hasDesired {
-		tools = append(tools, phaseToolFor(phase))
-	}
-
 	for _, cap := range cb.organs {
-		if cap.Mode == organ.WriteAction && phase.Triad != reactivity.ImplementTriad {
-			continue
-		}
 		tools = append(tools, tangle.Tool{
 			Name:        cap.Name,
 			Description: cap.Description,
