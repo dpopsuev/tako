@@ -36,6 +36,7 @@ type RunState struct {
 	Pipe      string                `json:"pipe"`
 	Status    string                `json:"status"`
 	Steps     map[string]*StepState `json:"steps"`
+	Order     []string              `json:"order"`
 	StartedAt time.Time             `json:"started_at"`
 }
 
@@ -101,6 +102,7 @@ func (e *PipeExecutor) StartWithPipe(pipe Pipe) (string, *pipeRun) {
 	for _, step := range pipe.Steps {
 		state.Steps[step.ID] = &StepState{ID: step.ID, Status: StepPending}
 		stepMap[step.ID] = step
+		state.Order = append(state.Order, step.ID)
 	}
 
 	for _, step := range pipe.Steps {
@@ -124,7 +126,8 @@ func (e *PipeExecutor) NextStepFromPipe(runID string, steps map[string]PipeStep)
 		return nil, nil, fmt.Errorf("%w: %s", ErrRunNotFound, runID)
 	}
 
-	for id, ss := range run.Steps {
+	for _, id := range run.Order {
+		ss := run.Steps[id]
 		if ss.Status == StepReady {
 			ss.Status = StepRunning
 			step := steps[id]

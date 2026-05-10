@@ -20,12 +20,18 @@ type ReflexStore interface {
 	Len() int
 }
 
+type StepResult struct {
+	Call   string
+	Output string
+}
+
 type ReplayResult struct {
 	StepsTotal    int
 	StepsReflex   int
 	EscalatedAt   int
 	EscalatedConventionality Conventionality
 	Response      string
+	Steps         []StepResult
 }
 
 func ReplayPipe(ctx context.Context, pipe *Pipe, caps map[string]organ.Func) (ReplayResult, error) {
@@ -96,6 +102,7 @@ func ReplayPipe(ctx context.Context, pipe *Pipe, caps map[string]organ.Func) (Re
 		exec.SubmitAndUnlock(runID, step.ID, outText, "", pr.steps)
 		result.StepsReflex++
 		result.Response = outText
+		result.Steps = append(result.Steps, StepResult{Call: step.Call, Output: outText})
 	}
 
 	if result.EscalatedAt == -1 {

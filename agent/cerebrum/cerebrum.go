@@ -258,6 +258,11 @@ func (cb *Cerebrum) Think(ctx context.Context, catalyst reactivity.Catalyst) (Th
 		}
 		result, err := ReplayPipe(ctx, intent.Pipe, capMap)
 		if err == nil && result.EscalatedAt == -1 {
+			if molecule.Catalyst() != nil {
+				for _, step := range result.Steps {
+					cb.checkCatalystDesired(molecule, step.Call, step.Output)
+				}
+			}
 			chain.Append(reactivity.ChainEvent{
 				Kind:       reactivity.Motor,
 				Organ:      "cerebrum.reflex",
