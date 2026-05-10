@@ -1,8 +1,10 @@
 package arcade
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
+	"text/tabwriter"
 
 	"github.com/dpopsuev/tako/agent/cerebrum"
 	"github.com/dpopsuev/tako/assemble"
@@ -34,31 +36,26 @@ type ExperimentReport struct {
 }
 
 func (r ExperimentReport) JSON() string {
-	return r.Sessions[0].Report.JSON()
+	data, _ := json.MarshalIndent(r, "", "  ")
+	return string(data)
 }
 
 func (r ExperimentReport) Pretty() string {
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("\n=== EXPERIMENT: %s (%d sessions) ===\n", r.Scenario, len(r.Sessions)))
-	b.WriteString(fmt.Sprintf("%-4s %-5s %-6s %-8s %-8s %-5s %-6s %-6s %-5s %-6s %-6s\n",
-		"#", "Turns", "Solved", "Distance", "Pressure", "Pipes", "TokIn", "TokOut", "OAE", "Tools", "Conv"))
+
+	fmt.Fprintf(&b, "\n=== EXPERIMENT: %s (%d sessions) ===\n", r.Scenario, len(r.Sessions))
+
+	w := tabwriter.NewWriter(&b, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "#\tTurns\tSolved\tDist\tPressure\tPipes\tTokIn\tTokOut\tOAE\tTools\tConv\t")
 
 	for _, s := range r.Sessions {
 		rep := s.Report
-		conv := "chaotic"
-		if rep.ClearPct > 50 {
-			conv = "clear"
-		} else if rep.ComplicatedPct > 50 {
-			conv = "compli"
-		} else if rep.ComplexPct > 50 {
-			conv = "complex"
-		}
-
-		b.WriteString(fmt.Sprintf("%-4d %-5d %-6v %-8.2f %-8.2f %-5d %-6d %-6d %-5.2f %-6d %-6s\n",
+		fmt.Fprintf(w, "%d\t%d\t%v\t%.2f\t%.2f\t%d\t%d\t%d\t%.2f\t%d\t%s\t\n",
 			s.Session, rep.TotalTurns, s.Solved, rep.FinalDistance,
 			rep.Pressure, s.PipeCount, rep.TotalTokensIn, rep.TotalTokensOut,
-			rep.OAE, rep.TotalToolCalls, conv))
+			rep.OAE, rep.TotalToolCalls, conventionality(rep))
 	}
+	w.Flush()
 
 	solvedCount := 0
 	for _, s := range r.Sessions {
@@ -66,16 +63,29 @@ func (r ExperimentReport) Pretty() string {
 			solvedCount++
 		}
 	}
-	b.WriteString(fmt.Sprintf("\nSolved: %d/%d sessions\n", solvedCount, len(r.Sessions)))
+	fmt.Fprintf(&b, "\nSolved: %d/%d sessions\n", solvedCount, len(r.Sessions))
 
 	if len(r.Sessions) >= 2 {
 		first := r.Sessions[0].Report
 		last := r.Sessions[len(r.Sessions)-1].Report
-		b.WriteString(fmt.Sprintf("Flywheel: turns %d→%d, tokens %d→%d\n",
+		fmt.Fprintf(&b, "Flywheel: turns %d→%d, tokens %d→%d\n",
 			first.TotalTurns, last.TotalTurns,
 			first.TotalTokensIn+first.TotalTokensOut,
-			last.TotalTokensIn+last.TotalTokensOut))
+			last.TotalTokensIn+last.TotalTokensOut)
 	}
 
 	return b.String()
+}
+
+func conventionality(rep cerebrum.SessionReport) string {
+	switch {
+	case rep.ClearPct > 50:
+		return "clear"
+	case rep.ComplicatedPct > 50:
+		return "complicated"
+	case rep.ComplexPct > 50:
+		return "complex"
+	default:
+		return "chaotic"
+	}
 }
