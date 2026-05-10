@@ -19,6 +19,10 @@ func (a *Agent) Think(ctx context.Context, need string) (cerebrum.ThinkOutcome, 
 	return a.cerebrum.Think(ctx, reactivity.Catalyst{Need: need})
 }
 
+func (a *Agent) ThinkWith(ctx context.Context, catalyst reactivity.Catalyst) (cerebrum.ThinkOutcome, error) {
+	return a.cerebrum.Think(ctx, catalyst)
+}
+
 func (a *Agent) Result() *reactivity.Molecule {
 	return a.cerebrum.Result()
 }
