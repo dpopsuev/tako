@@ -11,35 +11,37 @@ import (
 type Observer func() map[string]any
 
 type RawContext struct {
-	Need         []byte
-	Observer     Observer
-	Molecule     *reactivity.Molecule
-	Organs []organ.Func
-	Domain       Domain
-	Contracts    []reactivity.ContractInfo
-	Directives   []reactivity.Directive
-	Config       *reactivity.Config
-	Turn         int
-	Sight        CellSight
+	Need           []byte
+	Observer       Observer
+	Molecule       *reactivity.Molecule
+	Organs         []organ.Func
+	Domain         Domain
+	Contracts      []reactivity.ContractInfo
+	Directives     []reactivity.Directive
+	Config         *reactivity.Config
+	Turn           int
+	Sight          CellSight
+	AttentionAtoms []reactivity.WeightedAtom
 }
 
 type Context struct {
-	Need          string
-	State         map[string]any
-	StateChanges  map[string][2]any
-	Desired       map[string]any
-	Residual      map[string]float64
-	Organs        []organ.Func
-	Phase         reactivity.AtomType
-	Domain        Domain
-	Contracts     []reactivity.ContractInfo
-	Directives    []reactivity.Directive
-	Filled        map[string]string
-	Distance      float64
-	DeltaDistance  float64
-	Turn          int
-	StagnantTurns int
-	Sight         CellSight
+	Need           string
+	State          map[string]any
+	StateChanges   map[string][2]any
+	Desired        map[string]any
+	Residual       map[string]float64
+	Organs         []organ.Func
+	Phase          reactivity.AtomType
+	Domain         Domain
+	Contracts      []reactivity.ContractInfo
+	Directives     []reactivity.Directive
+	Filled         map[string]string
+	Distance       float64
+	DeltaDistance   float64
+	Turn           int
+	StagnantTurns  int
+	Sight          CellSight
+	AttentionAtoms []reactivity.WeightedAtom
 }
 
 type Regulator interface {
@@ -91,8 +93,9 @@ func defaultRegulate(raw RawContext) Context {
 		Filled:       filled,
 		Distance:     m.Distance(),
 		DeltaDistance: m.DeltaDistance(),
-		Turn:         raw.Turn,
-		Sight:        raw.Sight,
+		Turn:           raw.Turn,
+		Sight:          raw.Sight,
+		AttentionAtoms: raw.AttentionAtoms,
 	}
 }
 

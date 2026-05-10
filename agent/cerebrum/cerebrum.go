@@ -918,6 +918,11 @@ func (cb *Cerebrum) assemble(m *reactivity.Molecule, need []byte, domain Domain,
 		Turn:         turn,
 		Sight:        sight,
 	}
+	if cb.embedder != nil {
+		if queryEmb, err := cb.embedder.Embed(context.Background(), string(need)); err == nil {
+			raw.AttentionAtoms = m.Attend(queryEmb, 1.0)
+		}
+	}
 	ctx := cb.regulate(raw)
 	if cb.listener != nil {
 		cb.listener.OnContext(ctx.Phase.String(), turn, ctx.Distance)
